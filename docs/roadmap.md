@@ -11,7 +11,7 @@ La IA (ChatGPT) debe consultar este documento **SIEMPRE** antes de continuar el 
 # 🟦 **Estado Global del Proyecto**
 
 ```
-FASE ACTUAL: 1 — Configuración inicial del proyecto
+FASE ACTUAL: 3 — Crear el Reloj Circular Base
 ```
 
 La IA deberá actualizar esta línea cuando tú lo indiques.

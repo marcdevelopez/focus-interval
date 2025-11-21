@@ -46,23 +46,29 @@ _(rellenar cuando ocurran)_
 
 ---
 
-## 🗓️ Día 2 — _(rellenar cuando llegue)_
+## 🗓️ Día 2 — 21/11/2025
 
 ### ✔ Trabajo realizado:
 
-_(escribe aquí lo que completes el próximo día)_
+- Creada la máquina de estados completa (`pomodoro_machine.dart`)
+- Probada manualmente con un test en `main.dart`
+- Confirmado: los estados, transiciones y finalización estricta funcionan según specs
+- Validado que la máquina rechaza configuraciones inválidas (valores <= 0)
 
 ### 🧠 Decisiones tomadas:
 
-_(escribe decisiones o cambios técnicos)_
+- Se ejecutarán tests ligeros directamente en consola por ahora
+- La lógica permanece completamente independiente de UI y Firebase, tal como dicta la arquitectura
 
 ### ⚠️ Problemas encontrados:
 
-_(errores, dudas, cosas que resolver)_
+- Configuración inicial con valores 0 generó excepción, pero era esperado
 
 ### 🎯 Próximos pasos:
 
-_(qué debe hacerse mañana)_
+- Crear el widget del reloj circular (FASE 3)
+- Preparar la estructura de `timer_display.dart`
+- Definir painter + animaciones base
 
 ---
 
