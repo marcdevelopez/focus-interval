@@ -3,9 +3,16 @@ import 'dart:async';
 
 import 'domain/pomodoro_machine.dart';
 import 'widgets/timer_display.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'app/app.dart';
 
 void main() {
-  runApp(const DemoApp());
+  runApp(
+    const ProviderScope(
+      child: FocusIntervalApp(),
+    ),
+  );
 }
 
 /// App de demostración temporal para ver el reloj.

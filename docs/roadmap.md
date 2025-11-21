@@ -11,7 +11,7 @@ La IA (ChatGPT) debe consultar este documento **SIEMPRE** antes de continuar el 
 # 🟦 **Estado Global del Proyecto**
 
 ```
-FASE ACTUAL: 3 — Crear el Reloj Circular Base
+FASE ACTUAL: 4 — Pantallas principales y navegación
 ```
 
 La IA deberá actualizar esta línea cuando tú lo indiques.
@@ -31,7 +31,7 @@ Cada fase contiene:
 
 ---
 
-# 🚀 **FASE 1 — Crear proyecto Flutter y estructura de carpetas**
+# [✔] **FASE 1 — Crear proyecto Flutter y estructura de carpetas (Copmpleta)**
 
 ### ✔ Objetivo
 
@@ -61,7 +61,7 @@ assets/sounds/
 
 ---
 
-# 🚀 **FASE 2 — Implementar la Máquina de Estados del Pomodoro**
+# [✔] **FASE 2 — Implementar la Máquina de Estados del Pomodoro (Completa)**
 
 _(Corazón de la app)_
 
@@ -87,7 +87,7 @@ _(Corazón de la app)_
 
 ---
 
-# 🚀 **FASE 3 — Crear el Reloj Circular Base**
+# [✔] **FASE 3 — Reloj Circular Premium (Completa)**
 
 _(UI principal del MVP)_
 

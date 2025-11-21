@@ -21,7 +21,7 @@ Fase activa: **1 — Configuración inicial del proyecto**
 
 # 📅 Diario de desarrollo
 
-## 🗓️ Día 1 — _(rellenar fecha)_
+## 🗓️ Día 1 — 21/11/2025
 
 ### ✔ Trabajo realizado:
 
@@ -72,11 +72,28 @@ _(rellenar cuando ocurran)_
 
 ---
 
-## 🗓️ Día 3 — _(rellenar más adelante)_
+## 🗓️ Día 3 — 21/11/2025
 
-_(continúa igual…)_
+### ✔ Trabajo realizado:
 
----
+- Implementado el reloj circular completo (TimerDisplay)
+- Animación continua 60fps con AnimationController
+- Aguja en sentido horario estilo analógico
+- Colores dinámicos: rojo, azul y verde/dorado al finalizar
+- Diseño responsive según tamaño de ventana
+- CustomPainter optimizado para escritorio
+- Demostración visual funcional con controles Start/Pause/Resume/Cancel
+
+### 🧠 Decisiones tomadas:
+
+- Se prioriza animación premium continua según specs (no por ticks)
+- TimerDisplay se mantiene independiente de UI principal
+- Se validará la UI final del reloj dentro de la estructura MVVM
+
+### 🎯 Próximos pasos:
+
+- Crear estructura base de navegación y pantallas principales
+- Implementar TimerScreen que integre TimerDisplay + lógica real
 
 # 🧾 Notas generales
 

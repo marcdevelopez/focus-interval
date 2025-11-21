@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../domain/pomodoro_machine.dart';
 
@@ -227,8 +228,10 @@ class _CenterContent extends StatelessWidget {
               fontWeight: FontWeight.w700,
               color: Colors.white,
               letterSpacing: 1.5,
+              fontFeatures: [FontFeature.tabularFigures()],
             ),
           ),
+
           const SizedBox(height: 8),
           Text(
             phaseText,
