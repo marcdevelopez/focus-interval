@@ -11,7 +11,7 @@ La IA (ChatGPT) debe consultar este documento **SIEMPRE** antes de continuar el 
 # 🟦 **Estado Global del Proyecto**
 
 ```
-FASE ACTUAL: 4 — Pantallas principales y navegación
+FASE ACTUAL: 5 — Integración Riverpod (MVVM)
 ```
 
 La IA deberá actualizar esta línea cuando tú lo indiques.
@@ -114,7 +114,7 @@ _(UI principal del MVP)_
 
 ---
 
-# 🚀 **FASE 4 — Pantalla de Ejecución (UI + integración parcial)**
+# [✔] **FASE 4 — Pantalla de Ejecución (UI + integración parcial) (Completada)**
 
 ### ⚙️ Tareas
 

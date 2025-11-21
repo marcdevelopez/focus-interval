@@ -95,6 +95,37 @@ _(rellenar cuando ocurran)_
 - Crear estructura base de navegación y pantallas principales
 - Implementar TimerScreen que integre TimerDisplay + lógica real
 
+## 🗓️ Día 4 — 21/11/2025
+
+### ✔ Trabajo realizado:
+
+- Integrada `TimerScreen` con `TimerDisplay`
+- Añadido reloj premium operativo con aguja animada
+- Añadido minutero digital superior sin duplicados
+- Añadida barra de controles dinámica (Start / Pause / Resume / Cancel)
+- Sincronización parcial con Riverpod lograda
+- Transición a pantalla de ejecución vía GoRouter
+- Comportamiento final al terminar la tarea funcionando con popup
+
+### 🧠 Decisiones tomadas:
+
+- El ViewModel del Pomodoro se gestionará con Riverpod (FASE 5)
+- La lógica de ejecución ahora depende de `pomodoro_view_model.dart`, no de pruebas locales
+- La pantalla de ejecución reemplaza al demo provisional
+
+### ⚠️ Problemas encontrados:
+
+- Minutero duplicado en pantalla (resuelto)
+- Import y parámetro inexistente `style:` dentro de `_CenterContent` (corregido)
+
+### 🎯 Próximos pasos:
+
+- Iniciar la FASE 5: Riverpod MVVM completo
+- Crear estructura de estado global para tareas
+- Preparar providers para Firebase Auth y Firestore (sin conectar aún)
+
+---
+
 # 🧾 Notas generales
 
 - Actualiza este documento al **final de cada sesión de desarrollo**
