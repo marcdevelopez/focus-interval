@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📘 Specs del Proyecto
+    url: ../docs/specs.md
+    about: "Consulta las especificaciones completas del proyecto."
+  - name: 📍 Roadmap oficial
+    url: ../docs/roadmap.md
+    about: "Consulta las fases de desarrollo."
