@@ -346,6 +346,38 @@ La pantalla de ejecución mostrará un **temporizador circular estilo reloj anal
 
 La animación final descrita en la sección 12 forma parte del comportamiento obligatorio y debe implementarse dentro del propio reloj circular.
 
+## **10.4.1. Mejoras visuales obligatorias del temporizador**
+
+### **1. Tiempo digital con ancho fijo (evitar movimiento horizontal)**
+
+El temporizador `MM:SS` debe mostrarse sin ningún tipo de desplazamiento o "temblor" visual.  
+Esto se logra usando **dígitos de ancho fijo** y un separador `:` totalmente estático.
+
+Requisitos:
+
+- Cada dígito del tiempo debe tener **ancho idéntico**, independientemente del número.
+- El separador `:` no debe moverse jamás.
+- Soluciones permitidas:
+  - Fuente con `FontFeature.tabularFigures()`
+  - Fuentes monoespaciadas
+  - O bien usar `SizedBox` para fijar el ancho de cada dígito
+- El tiempo no debe vibrar ni cambiar de posición durante el conteo.
+
+### **2. Mostrar la hora actual del sistema**
+
+La pantalla de ejecución debe mostrar en una esquina fija (preferentemente **esquina superior derecha**)  
+la **hora actual del sistema** del usuario.
+
+Requisitos:
+
+- Formato recomendado: `HH:mm` o `HH:mm:ss`.
+- Color recomendado: `Colors.white54` o equivalente.
+- Debe ser discreto, sin competir visualmente con el temporizador.
+- Debe actualizarse automáticamente (cada segundo o cada minuto según formato).
+- La hora debe permanecer visible incluso si la ventana se redimensiona.
+
+Propósito: permitir que el usuario vea la hora real sin necesidad de otro dispositivo ni ocupación excesiva de pantalla.
+
 ---
 
 ## **10.5. Requisitos extra para Desktop (importante)**
