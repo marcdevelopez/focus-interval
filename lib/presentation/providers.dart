@@ -1,18 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/repositories/task_repository.dart';
 import '../domain/pomodoro_machine.dart';
 import 'viewmodels/pomodoro_view_model.dart';
 
-final taskRepositoryProvider = Provider<TaskRepository>((ref) {
-  return InMemoryTaskRepository();
-});
-
+// Proveedor de la máquina (singleton)
 final pomodoroMachineProvider = Provider<PomodoroMachine>((ref) {
-  final machine = PomodoroMachine();
-  ref.onDispose(machine.dispose);
-  return machine;
+  return PomodoroMachine();
 });
 
+// ViewModel MVVM usando NotifierProvider
 final pomodoroViewModelProvider =
     NotifierProvider<PomodoroViewModel, PomodoroState>(PomodoroViewModel.new);

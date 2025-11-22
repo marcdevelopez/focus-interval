@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,13 +32,15 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
 
     // Config demo temporal (luego vendrá del repo por taskId)
     final vm = ref.read(pomodoroViewModelProvider.notifier);
-    vm.configureTask(
-      pomodoroMinutes: 25,
-      shortBreakMinutes: 5,
-      longBreakMinutes: 15,
-      totalPomodoros: 2,
-      longBreakInterval: 4,
-    );
+    Future.microtask(() {
+      vm.configureTask(
+        pomodoroMinutes: 25,
+        shortBreakMinutes: 5,
+        longBreakMinutes: 15,
+        totalPomodoros: 2,
+        longBreakInterval: 4,
+      );
+    });
   }
 
   void _updateClock() {

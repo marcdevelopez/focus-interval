@@ -146,6 +146,23 @@ _(rellenar cuando ocurran)_
 - Finalizar FASE 5 (integración total con Riverpod)
 - Preparar la FASE 6 (Firebase Auth)
 
+# 🔹 Bloque 6 — Riverpod MVVM (Subfases 5.1 y 5.2) — 22/11/2025
+
+### ✔ Trabajo realizado:
+
+- Creado PomodoroViewModel con AutoDisposeNotifier
+- Conectado stream de PomodoroMachine y sincronización total de estado
+- Eliminados timers locales de TimerScreen
+- Movido configureTask() fuera de initState
+- Corregido error “Tried to modify a provider while widget tree was building”
+- TimerScreen ahora utiliza ref.listen + ref.watch exclusivamente
+- TimerScreen ya no modifica el provider dentro de lifecycle
+- Ventana funcional sin duplicación de minuteros
+
+### 🎯 Próximos pasos:
+
+- FASE 5.3 — Unificar la lógica completa del temporizador dentro del ViewModel
+
 ---
 
 # 🧾 Notas generales

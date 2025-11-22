@@ -14,7 +14,7 @@ Este proyecto incluye un documento oficial de roles de equipo en:
 # 🟦 **Estado Global del Proyecto**
 
 ```
-FASE ACTUAL: 5 — Integración Riverpod (MVVM)
+FASE ACTUAL: 5.3 — Integración Riverpod (Unificación de lógica)
 ```
 
 La IA deberá actualizar esta línea cuando tú lo indiques.
@@ -136,18 +136,82 @@ _(UI principal del MVP)_
 
 ---
 
-# 🚀 **FASE 5 — Integrar Riverpod (State Management)**
+# 🚀 **FASE 5 — Integración Riverpod (MVVM) (detallada en sub-fases)**
 
-### ⚙️ Tareas
+### [✔] **5.1 — Crear el ViewModel del Pomodoro (Completa)**
 
-- Crear `pomodoro_view_model.dart`
-- Conectar estado de la máquina con la UI
-- Crear providers globales
+- Crear `PomodoroViewModel` extendiendo `AutoDisposeNotifier<PomodoroState>`.
+- Definir estado inicial usando `PomodoroState.idle()`.
+- Incluir una única instancia interna de `PomodoroMachine`.
+- Exponer métodos públicos:
 
-### 📌 Condiciones
+  - `configureTask(...)`
+  - `start()`
+  - `pause()`
+  - `resume()`
+  - `cancel()`
 
+### [✔] **5.2 — Conectar el stream de la máquina de estados (Completa)**
+
+- Suscribirse al stream que emite los estados del Pomodoro.
+- Mapear cada evento → actualizar `state = s`.
+- Manejar `dispose()` correctamente para cerrar el stream.
+- Asegurar que:
+
+  - Pausa → mantiene progreso actual
+  - Resume → continúa desde progreso
+  - Cancel → vuelve a estado idle
+
+### **5.3 — Unificar toda la lógica del temporizador dentro del ViewModel**
+
+- Eliminar el `Timer.periodic` manual de `TimerScreen`.
+- Controlar el tiempo exclusivamente desde `PomodoroMachine`.
+- Cualquier cambio (segundos restantes, progreso, fase) debe provenir del stream.
+- Asegurar que el UI:
+
+  - No calcula tiempo
+  - No gestiona temporizadores
+  - Se actualiza solo con `ref.watch(...)`
+
+### **5.4 — Crear los providers globales**
+
+- `pomodoroViewModelProvider`
+- `taskRepositoryProvider` (placeholder)
+- `firebaseAuthProvider` y `firestoreProvider` (placeholders para Fase 6)
+- Exportarlos todos desde `providers.dart`
+
+### **5.5 — Refactorar TimerScreen**
+
+- Consumir estado desde Riverpod exclusivamente.
+- Detectar transición a `PomodoroStatus.finished` mediante `ref.listen`.
+- Eliminar totalmente la configuración demo:
+
+```dart
+vm.configureTask(...)
+```
+
+- Preparar la pantalla para recibir una `PomodoroTask` real mediante `taskId`.
+- Ajustar los botones dinámicos (Start/Pause/Resume/Cancel) a los métodos reales del ViewModel.
+- Sincronizar la UI con el estado final:
+
+  - Cambio de color del círculo
+  - Mensaje “Tarea completada”
+  - Popup final
+
+### ✔ Condiciones
+
+- La UI **no contiene ningún Timer** local.
+- Todo el tiempo proviene del ViewModel.
+- `TimerDisplay` se actualiza exclusivamente por Riverpod.
+- `TimerScreen` funciona enteramente con lógica MVVM.
+- La máquina de estados controla todo el ciclo Pomodoro/Descanso.
+- Preparado para FASE 6 (Firebase Auth).
 - Reloj responde a cambios de estado
 - Pausa/reanudar funciona correctamente
+
+### 📌 Nota
+
+Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan completando.
 
 ---
 
