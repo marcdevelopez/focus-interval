@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/pomodoro_machine.dart';
 import '../data/models/pomodoro_task.dart';
 import '../data/repositories/task_repository.dart';
+// Placeholders Firebase (Fase 5.4)
+import 'package:firebase_auth/firebase_auth.dart' hide Provider;
+import 'package:cloud_firestore/cloud_firestore.dart' hide Provider;
 
 // VIEWMODELS
 import 'viewmodels/pomodoro_view_model.dart';
@@ -27,6 +30,13 @@ final pomodoroMachineProvider =
   ref.onDispose(machine.dispose);
   return machine;
 });
+
+//
+// ==============================================================
+//  PLACEHOLDERS FIREBASE (FASE 5.4)
+// ==============================================================
+final firebaseAuthProvider = Provider<FirebaseAuth?>((_) => null);
+final firestoreProvider = Provider<FirebaseFirestore?>((_) => null);
 
 //
 // ==============================================================

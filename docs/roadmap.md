@@ -14,10 +14,10 @@ Este proyecto incluye un documento oficial de roles de equipo en:
 # 🟦 **Estado Global del Proyecto**
 
 ```
-FASE ACTUAL: 5.4 — Providers Firebase placeholders
+FASE ACTUAL: 5.5 — Refactor TimerScreen (conexión real con tareas)
 NOTA: TimerScreen ya depende del ViewModel (sin timer local/config demo).
       PomodoroViewModel expuesto como Notifier auto-dispose y suscrito a la máquina.
-      Providers de Firebase (Fase 5.4) aún no creados.
+      Providers de Firebase creados como placeholders (Fase 5.4 completada).
 ```
 
 La IA deberá actualizar esta línea cuando tú lo indiques.
@@ -185,13 +185,13 @@ _(UI principal del MVP)_
 - Dependencia `uuid` añadida para IDs de tareas.
 - PomodoroViewModel expuesto con `NotifierProvider.autoDispose`, suscrito a `PomodoroMachine.stream`.
 - TimerScreen sin configuración demo; carga la tarea real mediante `taskId` y usa el VM para estados.
-- Subfase 5.3 completada; fase actual 5.4 (providers Firebase placeholders pendientes).
+- Subfase 5.3 completada; fase actual 5.5 (refactor TimerScreen y conexión con tareas).
 - FASE 5.5 está parcialmente completada (lista/editor OK, falta conexión con ejecución).
-- Faltan los providers placeholders de **FirebaseAuth** y **Firestore** (Fase 5.4).
+- Providers placeholders de **FirebaseAuth** y **Firestore** creados (Fase 5.4 completada).
 
 - FASE 5.5 se encuentra **parcialmente completada** (lista/editor ya existen), pero aún no conectada a ejecución por `taskId`.
 
-### **5.4 — Crear los providers globales**
+### [✔] **5.4 — Crear los providers globales**
 
 - `pomodoroViewModelProvider`
 - `taskRepositoryProvider` (placeholder)
@@ -200,12 +200,12 @@ _(UI principal del MVP)_
 
 ### 🔄 Estado actualizado:
 
-Aún no se han creado los providers:
+Providers placeholders creados (Fase 5.4 completada):
 
 - firebaseAuthProvider
 - firestoreProvider
 
-Estos se añadirán tras completar la migración del ViewModel en Fase 5.3.
+Integración real pendiente para Fases 6–7.
 
 ### **5.5 — Refactorar TimerScreen**
 

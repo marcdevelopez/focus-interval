@@ -26,12 +26,13 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   // cargar valores desde TaskRepository
-  Future<void> loadTask(String taskId) async {
+  Future<bool> loadTask(String taskId) async {
     final repo = ref.read(taskRepositoryProvider);
     final PomodoroTask? task = await repo.getById(taskId);
-    if (task == null) return;
+    if (task == null) return false;
 
     configureFromTask(task);
+    return true;
   }
 
   void configureFromTask(PomodoroTask task) {

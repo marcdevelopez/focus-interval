@@ -19,8 +19,7 @@ class TimerScreen extends ConsumerStatefulWidget {
 class _TimerScreenState extends ConsumerState<TimerScreen> {
   Timer? _clockTimer;
   String _currentClock = "";
-
-  PomodoroStatus? _lastStatus; // para detectar transición a finished
+  bool _taskLoaded = false;
 
   @override
   void initState() {
@@ -31,9 +30,34 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
     _clockTimer =
         Timer.periodic(const Duration(seconds: 1), (_) => _updateClock());
 
+    // Escuchar finalización del pomodoro
+    ref.listen<PomodoroState>(pomodoroViewModelProvider,
+        (previous, next) {
+      final wasFinished = previous?.status == PomodoroStatus.finished;
+      final nowFinished = next.status == PomodoroStatus.finished;
+      if (!wasFinished && nowFinished) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _showFinishedDialog(context);
+        });
+      }
+    });
+
     // Cargar parámetros reales de la tarea por ID
-    Future.microtask(() {
-      ref.read(pomodoroViewModelProvider.notifier).loadTask(widget.taskId);
+    Future.microtask(() async {
+      final ok =
+          await ref.read(pomodoroViewModelProvider.notifier).loadTask(widget.taskId);
+      if (!mounted) return;
+
+      if (!ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("No se encontró la tarea seleccionada.")),
+        );
+        Navigator.pop(context);
+        return;
+      }
+
+      setState(() => _taskLoaded = true);
     });
   }
 
@@ -56,15 +80,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(pomodoroViewModelProvider);
     final vm = ref.read(pomodoroViewModelProvider.notifier);
-
-    // Detectar finalización para mostrar diálogo
-    if (_lastStatus != PomodoroStatus.finished &&
-        state.status == PomodoroStatus.finished) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showFinishedDialog(context);
-      });
-    }
-    _lastStatus = state.status;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -100,7 +115,11 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
           ),
 
           // Botones dinámicos
-          _ControlsBar(state: state, vm: vm),
+          _ControlsBar(
+            state: state,
+            vm: vm,
+            taskLoaded: _taskLoaded,
+          ),
 
           const SizedBox(height: 16),
         ],
@@ -136,8 +155,13 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
 class _ControlsBar extends StatelessWidget {
   final PomodoroState state;
   final dynamic vm;
+  final bool taskLoaded;
 
-  const _ControlsBar({required this.state, required this.vm});
+  const _ControlsBar({
+    required this.state,
+    required this.vm,
+    required this.taskLoaded,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -152,7 +176,7 @@ class _ControlsBar extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        if (isIdle) _btn("Start", vm.start),
+        if (isIdle) _btn("Start", taskLoaded ? vm.start : null),
         if (isRunning) _btn("Pause", vm.pause),
         if (isPaused) _btn("Resume", vm.resume),
         if (!isIdle && !isFinished) _btn("Cancel", vm.cancel),
@@ -160,7 +184,7 @@ class _ControlsBar extends StatelessWidget {
     );
   }
 
-  Widget _btn(String text, VoidCallback onTap) {
+  Widget _btn(String text, VoidCallback? onTap) {
     return ElevatedButton(
       onPressed: onTap,
       style: ElevatedButton.styleFrom(

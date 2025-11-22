@@ -15,7 +15,7 @@ Este documento sirve para:
 
 # 📍 Estado actual
 
-Fase activa: **5.4 — Providers Firebase placeholders**  
+Fase activa: **5.5 — Refactor TimerScreen (conexión lista/editor → ejecución)**  
 Última actualización: **22/11/2025**
 
 ---
@@ -243,6 +243,21 @@ _(rellenar cuando ocurran)_
 
 - Añadir providers placeholders `firebaseAuthProvider` y `firestoreProvider` (Fase 5.4).
 - Conectar TimerScreen con selección de tarea real desde lista/editor y estados finales (Fase 5.5).
+
+---
+
+# 🔹 Bloque 9 — Fase 5.4 (Placeholders Firebase) — 22/11/2025
+
+### ✔ Trabajo realizado:
+
+- Añadidos providers placeholders `firebaseAuthProvider` y `firestoreProvider` en `providers.dart` (referencias nulas, sin integración real).
+- Dependencias `firebase_auth` y `cloud_firestore` añadidas al `pubspec.yaml` (pendiente integración real en fases 6–7).
+- Mantenida la compatibilidad de imports con Riverpod (ocultando `Provider` en los imports de Firebase).
+
+### 🎯 Próximos pasos:
+
+- Implementar servicios reales de Auth/Firestore en `data/services` (Fases 6–7).
+- Conectar TaskRepository a Firestore cuando se integren servicios reales.
 
 ---
 
