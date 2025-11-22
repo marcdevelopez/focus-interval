@@ -5,6 +5,7 @@ Pomodoro Desktop App (macOS / Windows / Linux) built with Flutter.
 - [Specifications](docs/specs.md)
 - [Roadmap](docs/roadmap.md)
 - [Development Log](docs/dev_log.md)
+- [Team Roles & Collaboration Model](docs/team_roles.md)
 
 ## 🧪 Status
 Project just initiated. Phase 1 in progress.

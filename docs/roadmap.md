@@ -6,6 +6,9 @@ Este documento define el plan de desarrollo **paso a paso**, en orden cronológi
 
 La IA (ChatGPT) debe consultar este documento **SIEMPRE** antes de continuar el desarrollo, para mantener coherencia técnica y de progreso.
 
+Este proyecto incluye un documento oficial de roles de equipo en:
+[docs/team_roles.md](team_roles.md)
+
 ---
 
 # 🟦 **Estado Global del Proyecto**

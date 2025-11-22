@@ -1,27 +1,28 @@
-# 📝 Focus Interval — Dev Log
+# 📝 Focus Interval — Dev Log (MVP 1.0)
 
-Historial cronológico del desarrollo de la aplicación Focus Interval (MVP 1.0).
+Historial cronológico del desarrollo del MVP usando bloques de trabajo.  
+Cada bloque representa un avance significativo dentro de la misma jornada o sprint.
 
-Este documento sirve como referencia diaria para:
+Este documento sirve para:
 
-- Saber en qué fase exacta se encuentra el proyecto
-- Qué decisiones se han tomado
-- Qué problemas se han encontrado
-- Qué tareas quedan por completar
-- Ayudar a la IA a continuar el trabajo sin pérdida de contexto
+- Mantener trazabilidad real del progreso
+- Alinear la arquitectura con el roadmap
+- Informar a la IA del punto exacto del proyecto
+- Servir como prueba profesional de trabajo con IA colaborativa
+- Evidenciar cómo se construyó el MVP a ritmo acelerado
 
 ---
 
 # 📍 Estado actual
 
-Fase activa: **1 — Configuración inicial del proyecto**
-Última actualización: _(rellenar manualmente)_
+Fase activa: **5 — Riverpod MVVM (Integración real)**  
+Última actualización: **22/11/2025**
 
 ---
 
 # 📅 Diario de desarrollo
 
-## 🗓️ Día 1 — 21/11/2025
+# 🔹 Bloque 1 — Configuración inicial (21/11/2025)
 
 ### ✔ Trabajo realizado:
 
@@ -46,7 +47,7 @@ _(rellenar cuando ocurran)_
 
 ---
 
-## 🗓️ Día 2 — 21/11/2025
+# 🔹 Bloque 2 — Máquina de estados Pomodoro (21/11/2025)
 
 ### ✔ Trabajo realizado:
 
@@ -72,7 +73,7 @@ _(rellenar cuando ocurran)_
 
 ---
 
-## 🗓️ Día 3 — 21/11/2025
+# 🔹 Bloque 3 — Reloj circular premium (TimerDisplay) (21/11/2025)
 
 ### ✔ Trabajo realizado:
 
@@ -95,7 +96,7 @@ _(rellenar cuando ocurran)_
 - Crear estructura base de navegación y pantallas principales
 - Implementar TimerScreen que integre TimerDisplay + lógica real
 
-## 🗓️ Día 4 — 21/11/2025
+# 🔹 Bloque 4 — Pantalla TimerScreen + Navegación (21/11/2025)
 
 ### ✔ Trabajo realizado:
 
@@ -123,6 +124,27 @@ _(rellenar cuando ocurran)_
 - Iniciar la FASE 5: Riverpod MVVM completo
 - Crear estructura de estado global para tareas
 - Preparar providers para Firebase Auth y Firestore (sin conectar aún)
+
+# 🔹 Bloque 5 — Documentación de roles (22/11/2025)
+
+### ✔ Trabajo realizado:
+
+- Creado `docs/team_roles.md` con:
+  - Lead Flutter Engineer (Marcos)
+  - Staff AI Engineer (ChatGPT)
+  - AI Implementation Engineer (Codex)
+- Actualizado README para enlazarlo
+- Añadida estructura profesional para reclutadores
+
+### 🧠 Decisiones tomadas:
+
+- Mantener este archivo como documento oficial del equipo IA+Humano
+- Usarlo como referencia profesional en entrevistas
+
+### 🎯 Próximos pasos:
+
+- Finalizar FASE 5 (integración total con Riverpod)
+- Preparar la FASE 6 (Firebase Auth)
 
 ---
 
