@@ -21,8 +21,11 @@ final taskRepositoryProvider = Provider<TaskRepository>((ref) {
 // ==============================================================
 //  MÁQUINA DE ESTADOS DEL POMODORO
 // ==============================================================
-final pomodoroMachineProvider = Provider<PomodoroMachine>((ref) {
-  return PomodoroMachine();
+final pomodoroMachineProvider =
+    Provider.autoDispose<PomodoroMachine>((ref) {
+  final machine = PomodoroMachine();
+  ref.onDispose(machine.dispose);
+  return machine;
 });
 
 //
@@ -30,7 +33,9 @@ final pomodoroMachineProvider = Provider<PomodoroMachine>((ref) {
 //  VIEWMODEL PRINCIPAL — POMODORO
 // ==============================================================
 final pomodoroViewModelProvider =
-    NotifierProvider<PomodoroViewModel, PomodoroState>(PomodoroViewModel.new);
+    NotifierProvider.autoDispose<PomodoroViewModel, PomodoroState>(
+  PomodoroViewModel.new,
+);
 
 //
 // ==============================================================

@@ -15,7 +15,7 @@ Este documento sirve para:
 
 # 📍 Estado actual
 
-Fase activa: **5.3 — Riverpod MVVM (Integración real)**  
+Fase activa: **5.4 — Providers Firebase placeholders**  
 Última actualización: **22/11/2025**
 
 ---
@@ -224,6 +224,25 @@ _(rellenar cuando ocurran)_
   - PomodoroViewModel sigue siendo `Notifier` (no AutoDispose aún).
   - TimerScreen conserva lógica temporal (timer local + config demo).
 - Todo esto será corregido durante la Fase 5.3.
+
+# 🔹 Bloque 8 — Fase 5.3 (Unificación TimerScreen + ViewModel) — 22/11/2025
+
+### ✔ Trabajo realizado:
+
+- `pomodoroMachineProvider` ahora es `Provider.autoDispose` con cleanup en `onDispose`.
+- `PomodoroViewModel` expuesto vía `NotifierProvider.autoDispose`, suscrito a `PomodoroMachine.stream` y limpiando la suscripción en `onDispose`.
+- `TimerScreen` carga la tarea real mediante `loadTask(taskId)` y elimina la configuración demo.
+- Hora del sistema restaurada con `_clockTimer` y `FontFeature` para dígitos tabulares en la appbar.
+
+### 🧠 Decisiones:
+
+- Mantener `_clockTimer` exclusivamente para la hora del sistema; toda la lógica del pomodoro vive en ViewModel/Machine.
+- `loadTask` mapea `PomodoroTask` → `configureFromTask` para inicializar la máquina.
+
+### 🎯 Próximos pasos:
+
+- Añadir providers placeholders `firebaseAuthProvider` y `firestoreProvider` (Fase 5.4).
+- Conectar TimerScreen con selección de tarea real desde lista/editor y estados finales (Fase 5.5).
 
 ---
 

@@ -14,7 +14,10 @@ Este proyecto incluye un documento oficial de roles de equipo en:
 # 🟦 **Estado Global del Proyecto**
 
 ```
-FASE ACTUAL: 5.3 — Integración Riverpod (Unificación de lógica)
+FASE ACTUAL: 5.4 — Providers Firebase placeholders
+NOTA: TimerScreen ya depende del ViewModel (sin timer local/config demo).
+      PomodoroViewModel expuesto como Notifier auto-dispose y suscrito a la máquina.
+      Providers de Firebase (Fase 5.4) aún no creados.
 ```
 
 La IA deberá actualizar esta línea cuando tú lo indiques.
@@ -146,12 +149,12 @@ _(UI principal del MVP)_
 - Exponer métodos públicos:
 
   - `configureTask(...)`
-  - `start()`
-  - `pause()`
-  - `resume()`
-  - `cancel()`
+- `start()`
+- `pause()`
+- `resume()`
+- `cancel()`
 
-- Pendiente: migración a AutoDisposeNotifier (programado para Fase 5.3)
+- Migración a AutoDisposeNotifier completada en Fase 5.3.
 
 ### [✔] **5.2 — Conectar el stream de la máquina de estados (Completa)**
 
@@ -164,7 +167,7 @@ _(UI principal del MVP)_
   - Resume → continúa desde progreso
   - Cancel → vuelve a estado idle
 
-### **5.3 — Unificar toda la lógica del temporizador dentro del ViewModel**
+### [✔] **5.3 — Unificar toda la lógica del temporizador dentro del ViewModel (Completa)**
 
 - Eliminar el `Timer.periodic` manual de `TimerScreen`.
 - Controlar el tiempo exclusivamente desde `PomodoroMachine`.
@@ -180,12 +183,13 @@ _(UI principal del MVP)_
 - Providers principales (machine, vm, repos, lista, editor) están creados y compilando.
 - `TaskListViewModel`, `TaskEditorViewModel` y pantallas asociadas funcionan correctamente.
 - Dependencia `uuid` añadida para IDs de tareas.
-- **PomodoroViewModel sigue siendo `Notifier`** (migración a `AutoDisposeNotifier` se realizará en Fase 5.3).
-- **TimerScreen aún contiene `_clockTimer` y configuración demo**, pendiente de eliminar en Fase 5.3.
+- PomodoroViewModel expuesto con `NotifierProvider.autoDispose`, suscrito a `PomodoroMachine.stream`.
+- TimerScreen sin configuración demo; carga la tarea real mediante `taskId` y usa el VM para estados.
+- Subfase 5.3 completada; fase actual 5.4 (providers Firebase placeholders pendientes).
 - FASE 5.5 está parcialmente completada (lista/editor OK, falta conexión con ejecución).
 - Faltan los providers placeholders de **FirebaseAuth** y **Firestore** (Fase 5.4).
 
-- FASE 5.5 se encuentra **parcialmente completada** (lista/editor ya existen), pero aún no conectada a ejecución por `taskId`
+- FASE 5.5 se encuentra **parcialmente completada** (lista/editor ya existen), pero aún no conectada a ejecución por `taskId`.
 
 ### **5.4 — Crear los providers globales**
 

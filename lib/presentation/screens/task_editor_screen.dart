@@ -53,7 +53,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               if (!_formKey.currentState!.validate()) return;
 
               await ref.read(taskEditorProvider.notifier).save();
-              if (mounted) Navigator.pop(context);
+              if (!context.mounted) return;
+              Navigator.pop(context);
             },
             child: const Text("Guardar"),
           )

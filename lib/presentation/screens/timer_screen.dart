@@ -25,23 +25,18 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
   @override
   void initState() {
     super.initState();
-    _updateClock();
-    _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      _updateClock();
-    });
 
-    // Config demo temporal (luego vendrá del repo por taskId)
-    final vm = ref.read(pomodoroViewModelProvider.notifier);
+    // Hora actual del sistema (actualiza cada segundo)
+    _updateClock();
+    _clockTimer =
+        Timer.periodic(const Duration(seconds: 1), (_) => _updateClock());
+
+    // Cargar parámetros reales de la tarea por ID
     Future.microtask(() {
-      vm.configureTask(
-        pomodoroMinutes: 25,
-        shortBreakMinutes: 5,
-        longBreakMinutes: 15,
-        totalPomodoros: 2,
-        longBreakInterval: 4,
-      );
+      ref.read(pomodoroViewModelProvider.notifier).loadTask(widget.taskId);
     });
   }
+
 
   void _updateClock() {
     final now = DateTime.now();
@@ -111,12 +106,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
         ],
       ),
     );
-  }
-
-  String _formatMMSS(int seconds) {
-    final m = (seconds ~/ 60).toString().padLeft(2, "0");
-    final s = (seconds % 60).toString().padLeft(2, "0");
-    return "$m:$s";
   }
 
   void _showFinishedDialog(BuildContext context) {

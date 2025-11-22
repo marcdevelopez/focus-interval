@@ -50,6 +50,7 @@ class TaskListScreen extends ConsumerWidget {
                 onTap: () => context.push("/timer/${t.id}"),
                 onEdit: () async {
                   await ref.read(taskEditorProvider.notifier).load(t.id);
+                  if (!context.mounted) return;
                   context.push("/tasks/edit/${t.id}");
                 },
                 onDelete: () => ref

@@ -306,7 +306,7 @@ class _TimerPainter extends CustomPainter {
     // Aguja analógica (solo si no está idle)
     if (status != PomodoroStatus.idle) {
       final needlePaint = Paint()
-        ..color = Colors.white.withOpacity(0.9)
+        ..color = Colors.white.withValues(alpha: 0.9)
         ..strokeWidth = size.shortestSide * 0.008
         ..strokeCap = StrokeCap.round;
 
