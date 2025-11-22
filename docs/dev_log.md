@@ -15,7 +15,7 @@ Este documento sirve para:
 
 # 📍 Estado actual
 
-Fase activa: **5.5 — Refactor TimerScreen (conexión lista/editor → ejecución)**  
+Fase activa: **6 — Configurar Firebase Auth (Google Sign-In)**  
 Última actualización: **22/11/2025**
 
 ---
@@ -258,6 +258,27 @@ _(rellenar cuando ocurran)_
 
 - Implementar servicios reales de Auth/Firestore en `data/services` (Fases 6–7).
 - Conectar TaskRepository a Firestore cuando se integren servicios reales.
+
+---
+
+# 🔹 Bloque 10 — Fase 5.5 (Refactor TimerScreen + conexión tareas) — 22/11/2025
+
+### ✔ Trabajo realizado:
+
+- TimerScreen carga la tarea real por `taskId`, muestra loader hasta configurarla y deshabilita Start si no carga.
+- Manejo de tarea inexistente con snackbar + back automático.
+- `ref.listen` integrado en build para detectar `PomodoroStatus.finished` y mostrar popup final.
+- TimerDisplay fuerza progreso al 100% y color final (verde/dorado) en estado `finished`.
+
+### 🧠 Decisiones:
+
+- Mantener InMemoryTaskRepository como fuente de datos local mientras llega Firestore (Fase 6–7).
+- Popup final cierra a la lista; se mostrará animación final en el círculo.
+
+### 🎯 Próximos pasos:
+
+- Iniciar Fase 6: configurar Firebase Auth (Google Sign-In) y providers reales.
+- Conectar TaskRepository a Firestore cuando estén listos los servicios.
 
 ---
 

@@ -14,10 +14,10 @@ Este proyecto incluye un documento oficial de roles de equipo en:
 # 🟦 **Estado Global del Proyecto**
 
 ```
-FASE ACTUAL: 5.5 — Refactor TimerScreen (conexión real con tareas)
+FASE ACTUAL: 6 — Configurar Firebase Auth (Google Sign-In)
 NOTA: TimerScreen ya depende del ViewModel (sin timer local/config demo).
       PomodoroViewModel expuesto como Notifier auto-dispose y suscrito a la máquina.
-      Providers de Firebase creados como placeholders (Fase 5.4 completada).
+      Fase 5.4 (placeholders Firebase) completada; Fase 5.5 (TimerScreen conectado) completada.
 ```
 
 La IA deberá actualizar esta línea cuando tú lo indiques.
@@ -185,8 +185,8 @@ _(UI principal del MVP)_
 - Dependencia `uuid` añadida para IDs de tareas.
 - PomodoroViewModel expuesto con `NotifierProvider.autoDispose`, suscrito a `PomodoroMachine.stream`.
 - TimerScreen sin configuración demo; carga la tarea real mediante `taskId` y usa el VM para estados.
-- Subfase 5.3 completada; fase actual 5.5 (refactor TimerScreen y conexión con tareas).
-- FASE 5.5 está parcialmente completada (lista/editor OK, falta conexión con ejecución).
+- Subfase 5.3 completada; fase actual 6 (Firebase Auth en curso).
+- FASE 5.5 completada: TimerScreen conectado a tareas y popup final con color de finalización.
 - Providers placeholders de **FirebaseAuth** y **Firestore** creados (Fase 5.4 completada).
 
 - FASE 5.5 se encuentra **parcialmente completada** (lista/editor ya existen), pero aún no conectada a ejecución por `taskId`.
@@ -207,18 +207,11 @@ Providers placeholders creados (Fase 5.4 completada):
 
 Integración real pendiente para Fases 6–7.
 
-### **5.5 — Refactorar TimerScreen**
-
-> **Nota:** Parte de esta fase (lista y editor de tareas) ya está implementada en el proyecto actual. Falta conectar la selección de tareas con `TimerScreen` y eliminar por completo la configuración demo.
+### [✔] **5.5 — Refactorar TimerScreen (Completada)**
 
 - Consumir estado desde Riverpod exclusivamente.
 - Detectar transición a `PomodoroStatus.finished` mediante `ref.listen`.
-- Eliminar totalmente la configuración demo:
-
-```dart
-vm.configureTask(...)
-```
-
+- Eliminar totalmente la configuración demo.
 - Preparar la pantalla para recibir una `PomodoroTask` real mediante `taskId`.
 - Ajustar los botones dinámicos (Start/Pause/Resume/Cancel) a los métodos reales del ViewModel.
 - Sincronizar la UI con el estado final:
@@ -237,8 +230,6 @@ vm.configureTask(...)
 - Preparado para FASE 6 (Firebase Auth).
 - Reloj responde a cambios de estado
 - Pausa/reanudar funciona correctamente
-
-### 📌 Nota
 
 Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan completando.
 

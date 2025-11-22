@@ -27,31 +27,23 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
 
     // Hora actual del sistema (actualiza cada segundo)
     _updateClock();
-    _clockTimer =
-        Timer.periodic(const Duration(seconds: 1), (_) => _updateClock());
-
-    // Escuchar finalización del pomodoro
-    ref.listen<PomodoroState>(pomodoroViewModelProvider,
-        (previous, next) {
-      final wasFinished = previous?.status == PomodoroStatus.finished;
-      final nowFinished = next.status == PomodoroStatus.finished;
-      if (!wasFinished && nowFinished) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          _showFinishedDialog(context);
-        });
-      }
-    });
+    _clockTimer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _updateClock(),
+    );
 
     // Cargar parámetros reales de la tarea por ID
     Future.microtask(() async {
-      final ok =
-          await ref.read(pomodoroViewModelProvider.notifier).loadTask(widget.taskId);
+      final ok = await ref
+          .read(pomodoroViewModelProvider.notifier)
+          .loadTask(widget.taskId);
       if (!mounted) return;
 
       if (!ok) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("No se encontró la tarea seleccionada.")),
+          const SnackBar(
+            content: Text("No se encontró la tarea seleccionada."),
+          ),
         );
         Navigator.pop(context);
         return;
@@ -60,7 +52,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
       setState(() => _taskLoaded = true);
     });
   }
-
 
   void _updateClock() {
     final now = DateTime.now();
@@ -78,6 +69,18 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Escuchar finalización del pomodoro
+    ref.listen<PomodoroState>(pomodoroViewModelProvider, (previous, next) {
+      final wasFinished = previous?.status == PomodoroStatus.finished;
+      final nowFinished = next.status == PomodoroStatus.finished;
+      if (!wasFinished && nowFinished) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _showFinishedDialog(context);
+        });
+      }
+    });
+
     final state = ref.watch(pomodoroViewModelProvider);
     final vm = ref.read(pomodoroViewModelProvider.notifier);
 
@@ -109,17 +112,27 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
         children: [
           const SizedBox(height: 12),
 
-          // Reloj premium
+          // Reloj premium o loader inicial mientras carga la tarea
           Expanded(
-            child: Center(child: TimerDisplay(state: state)),
+            child: Center(
+              child: _taskLoaded
+                  ? TimerDisplay(state: state)
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 12),
+                        Text(
+                          "Cargando tarea...",
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                      ],
+                    ),
+            ),
           ),
 
           // Botones dinámicos
-          _ControlsBar(
-            state: state,
-            vm: vm,
-            taskLoaded: _taskLoaded,
-          ),
+          _ControlsBar(state: state, vm: vm, taskLoaded: _taskLoaded),
 
           const SizedBox(height: 16),
         ],

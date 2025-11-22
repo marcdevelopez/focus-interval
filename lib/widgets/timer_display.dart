@@ -71,10 +71,16 @@ class _TimerDisplayState extends State<TimerDisplay>
     final total = s.totalSeconds;
     final remaining = s.remainingSeconds.clamp(0, total);
 
-    // En idle/finished no animamos.
-    if (s.status == PomodoroStatus.idle ||
-        s.status == PomodoroStatus.finished ||
-        total == 0) {
+    // Estado finalizado: mostrar círculo completo con color final.
+    if (s.status == PomodoroStatus.finished) {
+      _controller.duration = const Duration(milliseconds: 1);
+      _controller.value = 1.0;
+      if (!initial) setState(() {});
+      return;
+    }
+
+    // En idle o sin duración no animamos.
+    if (s.status == PomodoroStatus.idle || total == 0) {
       _controller.duration = const Duration(milliseconds: 1);
       _controller.value = s.progress.clamp(0, 1);
       if (!initial) setState(() {});

@@ -4,8 +4,8 @@ import '../domain/pomodoro_machine.dart';
 import '../data/models/pomodoro_task.dart';
 import '../data/repositories/task_repository.dart';
 // Placeholders Firebase (Fase 5.4)
-import 'package:firebase_auth/firebase_auth.dart' hide Provider;
-import 'package:cloud_firestore/cloud_firestore.dart' hide Provider;
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 // VIEWMODELS
 import 'viewmodels/pomodoro_view_model.dart';
@@ -24,8 +24,7 @@ final taskRepositoryProvider = Provider<TaskRepository>((ref) {
 // ==============================================================
 //  MÁQUINA DE ESTADOS DEL POMODORO
 // ==============================================================
-final pomodoroMachineProvider =
-    Provider.autoDispose<PomodoroMachine>((ref) {
+final pomodoroMachineProvider = Provider.autoDispose<PomodoroMachine>((ref) {
   final machine = PomodoroMachine();
   ref.onDispose(machine.dispose);
   return machine;
@@ -44,8 +43,8 @@ final firestoreProvider = Provider<FirebaseFirestore?>((_) => null);
 // ==============================================================
 final pomodoroViewModelProvider =
     NotifierProvider.autoDispose<PomodoroViewModel, PomodoroState>(
-  PomodoroViewModel.new,
-);
+      PomodoroViewModel.new,
+    );
 
 //
 // ==============================================================
