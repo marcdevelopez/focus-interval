@@ -15,7 +15,7 @@ Este documento sirve para:
 
 # 📍 Estado actual
 
-Fase activa: **5 — Riverpod MVVM (Integración real)**  
+Fase activa: **5.3 — Riverpod MVVM (Integración real)**  
 Última actualización: **22/11/2025**
 
 ---
@@ -150,18 +150,80 @@ _(rellenar cuando ocurran)_
 
 ### ✔ Trabajo realizado:
 
-- Creado PomodoroViewModel con AutoDisposeNotifier
-- Conectado stream de PomodoroMachine y sincronización total de estado
-- Eliminados timers locales de TimerScreen
-- Movido configureTask() fuera de initState
-- Corregido error “Tried to modify a provider while widget tree was building”
-- TimerScreen ahora utiliza ref.listen + ref.watch exclusivamente
-- TimerScreen ya no modifica el provider dentro de lifecycle
-- Ventana funcional sin duplicación de minuteros
+- Creado PomodoroViewModel con implementación inicial basada en `Notifier`
+  (la migración a `AutoDisposeNotifier` queda pendiente para Fase 5.3).
+- Conectado el stream principal de PomodoroMachine.
+- Estados sincronizados correctamente con la UI mediante Riverpod.
+- Primera versión estable de integración sin crashes.
+- Corregido error “Tried to modify a provider while the widget tree was building”
+  moviendo llamadas fuera de lifecycle.
+
+### ❗ Estado real actualizado:
+
+- **TimerScreen todavía contiene:**
+  - `_clockTimer` local
+  - `configureTask(...)` temporal en `initState`
+- Esto será eliminado en la Fase **5.3** cuando toda la lógica pase al ViewModel.
+
+### 🧠 Decisiones tomadas:
+
+- Mantener `Notifier` temporalmente para evitar romper TimerScreen
+  antes de realizar la migración completa.
+- Aplazar la eliminación de timers locales hasta que el VM gestione de forma total
+  progreso, segundos restantes y fases.
 
 ### 🎯 Próximos pasos:
 
-- FASE 5.3 — Unificar la lógica completa del temporizador dentro del ViewModel
+- Completar la Fase **5.3**, moviendo TODA la lógica de tiempo al ViewModel.
+- Migrar PomodoroViewModel a `AutoDisposeNotifier`.
+- Eliminar por completo `_clockTimer` y la configuración demo de TimerScreen.
+
+---
+
+## 🔹 Bloque 7 — Sincronización real del estado del proyecto (22/11/2025)
+
+### ✔ Trabajo realizado:
+
+- Correcciones estructurales en `providers.dart`:
+
+  - Añadido el import faltante de `pomodoro_task.dart`
+  - Reparados errores de tipos en `taskListProvider` y `taskEditorProvider`
+
+- Alineado el estado del código con Riverpod 2.x:
+
+  - `TaskListViewModel` como `AsyncNotifier<List<PomodoroTask>>`
+  - `TaskEditorViewModel` como `Notifier<PomodoroTask?>`
+
+- Confirmado que la compilación vuelve a ser estable tras los fixes
+- Revisada la estructura global de providers en la arquitectura MVVM
+
+### 🧠 Decisiones tomadas:
+
+- Mantener temporalmente `PomodoroViewModel` como `Notifier` mientras se completa la subfase 5.3
+- Postergar la migración a `AutoDisposeNotifier` hasta que TimerScreen esté totalmente unificado con el ViewModel
+- Priorizar coherencia entre roadmap y código REAL en lugar de seguir ciegamente la planificación previa
+
+### ⚠️ Problemas encontrados:
+
+- Varias inconsistencias entre código y roadmap causaban:
+
+  - Tipos no reconocidos en generics
+  - Providers desincronizados
+  - Errores de compilación en cascada
+
+### 🎯 Próximos pasos:
+
+- Completar FASE 5.3: unificar reloj + temporizador + stream en el ViewModel
+- Eliminar completamente la configuración demo de TimerScreen
+- Actualizar PomodoroViewModel → `AutoDisposeNotifier` según roadmap
+
+### 🔄 Ajustes importantes de documentación:
+
+- Se han detectado discrepancias entre roadmap y código real.
+- dev_log.md se ha actualizado para reflejar que:
+  - PomodoroViewModel sigue siendo `Notifier` (no AutoDispose aún).
+  - TimerScreen conserva lógica temporal (timer local + config demo).
+- Todo esto será corregido durante la Fase 5.3.
 
 ---
 

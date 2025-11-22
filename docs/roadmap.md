@@ -138,7 +138,7 @@ _(UI principal del MVP)_
 
 # 🚀 **FASE 5 — Integración Riverpod (MVVM) (detallada en sub-fases)**
 
-### [✔] **5.1 — Crear el ViewModel del Pomodoro (Completa)**
+### [✔] **5.1 — Crear el ViewModel del Pomodoro (Completada parcialmente)**
 
 - Crear `PomodoroViewModel` extendiendo `AutoDisposeNotifier<PomodoroState>`.
 - Definir estado inicial usando `PomodoroState.idle()`.
@@ -150,6 +150,8 @@ _(UI principal del MVP)_
   - `pause()`
   - `resume()`
   - `cancel()`
+
+- Pendiente: migración a AutoDisposeNotifier (programado para Fase 5.3)
 
 ### [✔] **5.2 — Conectar el stream de la máquina de estados (Completa)**
 
@@ -173,6 +175,18 @@ _(UI principal del MVP)_
   - No gestiona temporizadores
   - Se actualiza solo con `ref.watch(...)`
 
+### 🟦 Estado real al 22/11/2025
+
+- Providers principales (machine, vm, repos, lista, editor) están creados y compilando.
+- `TaskListViewModel`, `TaskEditorViewModel` y pantallas asociadas funcionan correctamente.
+- Dependencia `uuid` añadida para IDs de tareas.
+- **PomodoroViewModel sigue siendo `Notifier`** (migración a `AutoDisposeNotifier` se realizará en Fase 5.3).
+- **TimerScreen aún contiene `_clockTimer` y configuración demo**, pendiente de eliminar en Fase 5.3.
+- FASE 5.5 está parcialmente completada (lista/editor OK, falta conexión con ejecución).
+- Faltan los providers placeholders de **FirebaseAuth** y **Firestore** (Fase 5.4).
+
+- FASE 5.5 se encuentra **parcialmente completada** (lista/editor ya existen), pero aún no conectada a ejecución por `taskId`
+
 ### **5.4 — Crear los providers globales**
 
 - `pomodoroViewModelProvider`
@@ -180,7 +194,18 @@ _(UI principal del MVP)_
 - `firebaseAuthProvider` y `firestoreProvider` (placeholders para Fase 6)
 - Exportarlos todos desde `providers.dart`
 
+### 🔄 Estado actualizado:
+
+Aún no se han creado los providers:
+
+- firebaseAuthProvider
+- firestoreProvider
+
+Estos se añadirán tras completar la migración del ViewModel en Fase 5.3.
+
 ### **5.5 — Refactorar TimerScreen**
+
+> **Nota:** Parte de esta fase (lista y editor de tareas) ya está implementada en el proyecto actual. Falta conectar la selección de tareas con `TimerScreen` y eliminar por completo la configuración demo.
 
 - Consumir estado desde Riverpod exclusivamente.
 - Detectar transición a `PomodoroStatus.finished` mediante `ref.listen`.
