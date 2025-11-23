@@ -8,7 +8,7 @@
 PRODUCT_NAME = focus_interval
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.example.focusInterval
+PRODUCT_BUNDLE_IDENTIFIER = com.marcdevelopez.focusinterval
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2025 com.example. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2025 com.marcdevelopez. All rights reserved.

@@ -33,9 +33,10 @@ final pomodoroMachineProvider = Provider.autoDispose<PomodoroMachine>((ref) {
 // ==============================================================
 //  SERVICIOS FIREBASE (FASE 6 — real configurable)
 // ==============================================================
-final firebaseAuthServiceProvider = Provider<AuthService>((_) => StubAuthService());
+final firebaseAuthServiceProvider =
+    Provider<AuthService>((_) => FirebaseAuthService());
 final firestoreServiceProvider =
-    Provider<FirestoreService>((_) => StubFirestoreService());
+    Provider<FirestoreService>((_) => FirebaseFirestoreService());
 
 //
 // ==============================================================

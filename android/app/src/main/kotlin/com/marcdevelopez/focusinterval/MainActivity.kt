@@ -1,4 +1,4 @@
-package com.example.focus_interval
+package com.marcdevelopez.focusinterval
 
 import io.flutter.embedding.android.FlutterActivity
 

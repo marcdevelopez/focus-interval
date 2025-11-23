@@ -15,7 +15,7 @@ Este documento sirve para:
 
 # 📍 Estado actual
 
-Fase activa: **6 — Configurar Firebase Auth (Google Sign-In)**  
+Fase activa: **7 — Integrar Firestore**  
 Última actualización: **22/11/2025**
 
 ---
@@ -286,19 +286,44 @@ _(rellenar cuando ocurran)_
 
 ### ✔ Trabajo realizado:
 
-- Añadido `google_sign_in` a dependencias.
-- Creado esqueleto `FirebaseAuthService` (Google Sign-In) y `FirestoreService` con stubs de seguridad.
-- Providers actualizados para exponer servicios (`firebaseAuthServiceProvider`, `firestoreServiceProvider`) usando stub por defecto hasta configurar credenciales reales.
+- Añadido override para desactivar `google_sign_in` en macOS (se mantiene en Win/Linux/iOS/Android/Web).
+- Creado esqueleto `FirebaseAuthService` (Google + email/password) y `FirestoreService` con stubs de seguridad.
+- Providers expuestos para servicios (`firebaseAuthServiceProvider`, `firestoreServiceProvider`) usando stub por defecto hasta configurar credenciales reales.
+- Bundle ID de macOS actualizado a `com.marcdevelopez.focusinterval` (unificar namespace).
 
 ### 🧠 Decisiones:
 
-- Mantener stub para evitar crashes en local hasta configurar Firebase/Google.
+- Mantener stub para evitar crashes en local hasta configurar Firebase (en este bloque inicial).
+- Estrategia Auth: Google Sign-In para iOS/Android/Web/Win/Linux; email/password para macOS.
 - No se inicializa Firebase aún; integración real se hará con credenciales en fases 6–7.
 
 ### 🎯 Próximos pasos:
 
-- Configurar Firebase Core/Auth con credenciales reales (Google Sign-In para desktop).
+- Configurar Firebase Core/Auth con credenciales reales; usar email/password en macOS y Google en las demás.
 - Sustituir los providers stub por las instancias reales una vez configurado Firebase.
+- Ajustar bundle IDs en otras plataformas al namespace unificado cuando toque.
+
+---
+
+# 🔹 Bloque 12 — Fase 6 (Auth configurada) — 22/11/2025
+
+### ✔ Trabajo realizado:
+
+- Ejecutado FlutterFire con bundles unificados `com.marcdevelopez.focusinterval` (android/ios/macos/windows/web) y generado `firebase_options.dart`.
+- Añadido `GoogleService-Info.plist` correcto al target macOS (Build Phases → Copy Bundle Resources) y eliminado duplicados.
+- Providers apuntan a servicios reales (`FirebaseAuthService`, `FirebaseFirestoreService`); Firebase inicializa en `main.dart`.
+- Estrategia Auth activa: Google en iOS/Android/Web/Windows, email/password en macOS.
+- Config habilitada en consola: Google + Email/Password.
+
+### 🧠 Decisiones:
+
+- Reutilizar config web para Linux hasta generar app específica; sin UnsupportedError en `DefaultFirebaseOptions`.
+- Mantener namespace único `com.marcdevelopez.focusinterval` en todas las plataformas.
+
+### 🎯 Próximos pasos:
+
+- Fase 7: integrar Firestore real y conectar repositorios a datos remotos.
+- Añadir UI de login (email/password en macOS, Google en el resto) para validar flujos.
 
 ---
 

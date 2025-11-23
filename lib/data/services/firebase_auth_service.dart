@@ -1,28 +1,36 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:google_sign_in/google_sign_in.dart';
 
 /// Servicio de autenticación.
-/// Para producción, reemplazar la implementación Stub con la real
-/// cuando se configure Firebase (fase 6 en adelante).
+/// Implementa Google Sign-In para plataformas soportadas (no macOS desktop)
+/// y email/password para todas (especialmente macOS).
 abstract class AuthService {
   User? get currentUser;
   bool get isSignedIn;
 
   Future<UserCredential> signInWithGoogle();
+
+  Future<UserCredential> signInWithEmail({
+    required String email,
+    required String password,
+  });
+
+  Future<UserCredential> signUpWithEmail({
+    required String email,
+    required String password,
+  });
+
   Future<void> signOut();
 }
 
-/// Implementación real (Google Sign-In) — aún no configurada.
-/// No se utiliza hasta que tengamos credenciales.
 class FirebaseAuthService implements AuthService {
   final FirebaseAuth _auth;
   final GoogleSignIn _google;
 
-  FirebaseAuthService({
-    FirebaseAuth? auth,
-    GoogleSignIn? googleSignIn,
-  })  : _auth = auth ?? FirebaseAuth.instance,
-        _google = googleSignIn ?? GoogleSignIn();
+  FirebaseAuthService({FirebaseAuth? auth, GoogleSignIn? google})
+      : _auth = auth ?? FirebaseAuth.instance,
+        _google = google ?? GoogleSignIn();
 
   @override
   User? get currentUser => _auth.currentUser;
@@ -30,9 +38,16 @@ class FirebaseAuthService implements AuthService {
   @override
   bool get isSignedIn => _auth.currentUser != null;
 
+  bool get _isMacOS => defaultTargetPlatform == TargetPlatform.macOS && !kIsWeb;
+
   @override
   Future<UserCredential> signInWithGoogle() async {
-    // Nota: requiere configuración de Google Sign-In (fase 6 real).
+    if (_isMacOS) {
+      throw UnsupportedError(
+        'Google Sign-In no está disponible en macOS; usa email/password.',
+      );
+    }
+
     final googleUser = await _google.signIn();
     if (googleUser == null) {
       throw FirebaseAuthException(
@@ -50,11 +65,28 @@ class FirebaseAuthService implements AuthService {
   }
 
   @override
+  Future<UserCredential> signInWithEmail({
+    required String email,
+    required String password,
+  }) {
+    return _auth.signInWithEmailAndPassword(email: email, password: password);
+  }
+
+  @override
+  Future<UserCredential> signUpWithEmail({
+    required String email,
+    required String password,
+  }) {
+    return _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+  }
+
+  @override
   Future<void> signOut() async {
-    await Future.wait([
-      _auth.signOut(),
-      _google.signOut(),
-    ]);
+    await _auth.signOut();
+    await _google.signOut();
   }
 }
 
@@ -68,6 +100,26 @@ class StubAuthService implements AuthService {
 
   @override
   Future<UserCredential> signInWithGoogle() {
+    throw UnsupportedError(
+      'Firebase Auth no está configurado. Configura credenciales antes de usarlo.',
+    );
+  }
+
+  @override
+  Future<UserCredential> signInWithEmail({
+    required String email,
+    required String password,
+  }) {
+    throw UnsupportedError(
+      'Firebase Auth no está configurado. Configura credenciales antes de usarlo.',
+    );
+  }
+
+  @override
+  Future<UserCredential> signUpWithEmail({
+    required String email,
+    required String password,
+  }) {
     throw UnsupportedError(
       'Firebase Auth no está configurado. Configura credenciales antes de usarlo.',
     );

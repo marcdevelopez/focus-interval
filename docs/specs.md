@@ -200,13 +200,15 @@ Tabla local `task_cache`:
 
 # 🔐 **9. Autenticación**
 
-## **Login obligatorio**
+## **Login obligatorio (según plataforma)**
 
-Para acceder a la app:
-
-- Botón: “Continuar con Google”
-- Abre navegador o WebView
-- Obtiene `uid`, `email`, `displayName`, `photoURL`
+- iOS / Android / Web / Windows / Linux:
+  - Botón: “Continuar con Google”
+  - Abre navegador o WebView
+  - Obtiene `uid`, `email`, `displayName`, `photoURL`
+- macOS:
+  - Login por email/password (sin Google Sign-In, no soportado nativamente)
+  - Obtiene `uid`, `email` (y opcionalmente nombre)
 
 ## **Persistencia**
 

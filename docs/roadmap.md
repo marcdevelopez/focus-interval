@@ -14,10 +14,10 @@ Este proyecto incluye un documento oficial de roles de equipo en:
 # 🟦 **Estado Global del Proyecto**
 
 ```
-FASE ACTUAL: 6 — Configurar Firebase Auth (Google Sign-In)
+FASE ACTUAL: 7 — Integrar Firestore
 NOTA: TimerScreen ya depende del ViewModel (sin timer local/config demo).
       PomodoroViewModel expuesto como Notifier auto-dispose y suscrito a la máquina.
-      Esqueleto de Auth/Firestore creado con stub (pendiente credenciales reales).
+      Estrategia Auth completada: Google Sign-In en iOS/Android/Web/Win/Linux; email/password en macOS.
 ```
 
 La IA deberá actualizar esta línea cuando tú lo indiques.
@@ -149,6 +149,7 @@ _(UI principal del MVP)_
 - Exponer métodos públicos:
 
   - `configureTask(...)`
+
 - `start()`
 - `pause()`
 - `resume()`
@@ -185,11 +186,9 @@ _(UI principal del MVP)_
 - Dependencia `uuid` añadida para IDs de tareas.
 - PomodoroViewModel expuesto con `NotifierProvider.autoDispose`, suscrito a `PomodoroMachine.stream`.
 - TimerScreen sin configuración demo; carga la tarea real mediante `taskId` y usa el VM para estados.
-- Subfase 5.3 completada; fase actual 6 (Firebase Auth en curso).
+- Subfase 5.3 completada; fase actual 7 (Firestore en curso).
 - FASE 5.5 completada: TimerScreen conectado a tareas y popup final con color de finalización.
-- Providers placeholders de **FirebaseAuth** y **Firestore** creados (Fase 5.4 completada).
-
-- FASE 5.5 se encuentra **parcialmente completada** (lista/editor ya existen), pero aún no conectada a ejecución por `taskId`.
+- Auth configurado: Google en iOS/Android/Web/Win/Linux y email/password en macOS. `firebase_options.dart` generado y bundles unificados (`com.marcdevelopez.focusinterval`).
 
 ### [✔] **5.4 — Crear los providers globales**
 
@@ -227,7 +226,7 @@ Integración real pendiente para Fases 6–7.
 - `TimerDisplay` se actualiza exclusivamente por Riverpod.
 - `TimerScreen` funciona enteramente con lógica MVVM.
 - La máquina de estados controla todo el ciclo Pomodoro/Descanso.
-- Preparado para FASE 6 (Firebase Auth).
+- Preparado para FASE 6 (Firebase Auth email/password en desktop).
 - Reloj responde a cambios de estado
 - Pausa/reanudar funciona correctamente
 
@@ -235,7 +234,7 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
 
 ---
 
-# 🚀 **FASE 6 — Configurar Firebase Auth (Google Sign-In)**
+# [✔] **FASE 6 — Configurar Firebase Auth (Google en mobile/web/Win/Linux; Email/Password en macOS)**
 
 ### ⚙️ Tareas
 
@@ -243,7 +242,8 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
 
   - firebase_core
   - firebase_auth
-  - google_sign_in
+  - google_sign_in (solo iOS/Android/Web/Windows/Linux)
+  - flujo email/password para macOS
 
 - Configurar:
 
@@ -253,7 +253,8 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
 
 ### 📌 Condiciones
 
-- Login Google funcional
+- Login Google funcional en iOS/Android/Web/Windows/Linux
+- Login email/password funcional en macOS
 - UID persistente en app
 
 ---
