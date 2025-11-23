@@ -3,9 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/pomodoro_machine.dart';
 import '../data/models/pomodoro_task.dart';
 import '../data/repositories/task_repository.dart';
-// Placeholders Firebase (Fase 5.4)
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../data/services/firebase_auth_service.dart';
+import '../data/services/firestore_service.dart';
 
 // VIEWMODELS
 import 'viewmodels/pomodoro_view_model.dart';
@@ -32,10 +31,11 @@ final pomodoroMachineProvider = Provider.autoDispose<PomodoroMachine>((ref) {
 
 //
 // ==============================================================
-//  PLACEHOLDERS FIREBASE (FASE 5.4)
+//  SERVICIOS FIREBASE (FASE 6 — real configurable)
 // ==============================================================
-final firebaseAuthProvider = Provider<FirebaseAuth?>((_) => null);
-final firestoreProvider = Provider<FirebaseFirestore?>((_) => null);
+final firebaseAuthServiceProvider = Provider<AuthService>((_) => StubAuthService());
+final firestoreServiceProvider =
+    Provider<FirestoreService>((_) => StubFirestoreService());
 
 //
 // ==============================================================

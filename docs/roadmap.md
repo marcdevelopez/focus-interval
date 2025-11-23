@@ -17,7 +17,7 @@ Este proyecto incluye un documento oficial de roles de equipo en:
 FASE ACTUAL: 6 — Configurar Firebase Auth (Google Sign-In)
 NOTA: TimerScreen ya depende del ViewModel (sin timer local/config demo).
       PomodoroViewModel expuesto como Notifier auto-dispose y suscrito a la máquina.
-      Fase 5.4 (placeholders Firebase) completada; Fase 5.5 (TimerScreen conectado) completada.
+      Esqueleto de Auth/Firestore creado con stub (pendiente credenciales reales).
 ```
 
 La IA deberá actualizar esta línea cuando tú lo indiques.

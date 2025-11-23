@@ -282,6 +282,26 @@ _(rellenar cuando ocurran)_
 
 ---
 
+# 🔹 Bloque 11 — Fase 6 (Inicio Auth) — 22/11/2025
+
+### ✔ Trabajo realizado:
+
+- Añadido `google_sign_in` a dependencias.
+- Creado esqueleto `FirebaseAuthService` (Google Sign-In) y `FirestoreService` con stubs de seguridad.
+- Providers actualizados para exponer servicios (`firebaseAuthServiceProvider`, `firestoreServiceProvider`) usando stub por defecto hasta configurar credenciales reales.
+
+### 🧠 Decisiones:
+
+- Mantener stub para evitar crashes en local hasta configurar Firebase/Google.
+- No se inicializa Firebase aún; integración real se hará con credenciales en fases 6–7.
+
+### 🎯 Próximos pasos:
+
+- Configurar Firebase Core/Auth con credenciales reales (Google Sign-In para desktop).
+- Sustituir los providers stub por las instancias reales una vez configurado Firebase.
+
+---
+
 # 🧾 Notas generales
 
 - Actualiza este documento al **final de cada sesión de desarrollo**
