@@ -15,7 +15,7 @@ Este documento sirve para:
 
 # 📍 Estado actual
 
-Fase activa: **7 — Integrar Firestore**  
+Fase activa: **8 — Implementar CRUD de Tareas**  
 Última actualización: **22/11/2025**
 
 ---
@@ -282,7 +282,7 @@ _(rellenar cuando ocurran)_
 
 ---
 
-# 🔹 Bloque 11 — Fase 6 (Inicio Auth) — 22/11/2025
+# 🔹 Bloque 11 — Fase 6 (Inicio Auth) — 23/11/2025
 
 ### ✔ Trabajo realizado:
 
@@ -305,7 +305,7 @@ _(rellenar cuando ocurran)_
 
 ---
 
-# 🔹 Bloque 12 — Fase 6 (Auth configurada) — 22/11/2025
+# 🔹 Bloque 12 — Fase 6 (Auth configurada) — 23/11/2025
 
 ### ✔ Trabajo realizado:
 
@@ -324,6 +324,26 @@ _(rellenar cuando ocurran)_
 
 - Fase 7: integrar Firestore real y conectar repositorios a datos remotos.
 - Añadir UI de login (email/password en macOS, Google en el resto) para validar flujos.
+
+---
+
+# 🔹 Bloque 13 — Fase 7 (Firestore integrado) — 24/11/2025
+
+### ✔ Trabajo realizado:
+
+- Creado `FirestoreTaskRepository` implementando `TaskRepository` sobre `users/{uid}/tasks`.
+- `taskRepositoryProvider` alterna Firestore/InMemory según sesión; refresco de lista al cambiar usuario.
+- Login/registro refresca tareas y logout invalida estado; tareas aisladas por uid.
+- UI muestra email y botón de logout; repo de Firestore activo cuando hay usuario autenticado.
+
+### 🧠 Decisiones:
+
+- Mantener InMemory como fallback sin sesión.
+- Reglas en Firestore para aislar datos por `uid` (aplicar en consola).
+
+### 🎯 Próximos pasos:
+
+- Fase 8: pulir CRUD/streams y conectar completamente UI con Firestore.
 
 ---
 

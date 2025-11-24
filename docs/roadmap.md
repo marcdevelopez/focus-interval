@@ -14,10 +14,11 @@ Este proyecto incluye un documento oficial de roles de equipo en:
 # 🟦 **Estado Global del Proyecto**
 
 ```
-FASE ACTUAL: 7 — Integrar Firestore
+FASE ACTUAL: 8 — Implementar CRUD de Tareas
 NOTA: TimerScreen ya depende del ViewModel (sin timer local/config demo).
       PomodoroViewModel expuesto como Notifier auto-dispose y suscrito a la máquina.
       Estrategia Auth completada: Google Sign-In en iOS/Android/Web/Win/Linux; email/password en macOS.
+      Firestore integrado por usuario autenticado; tareas aisladas por uid.
 ```
 
 La IA deberá actualizar esta línea cuando tú lo indiques.
@@ -186,9 +187,10 @@ _(UI principal del MVP)_
 - Dependencia `uuid` añadida para IDs de tareas.
 - PomodoroViewModel expuesto con `NotifierProvider.autoDispose`, suscrito a `PomodoroMachine.stream`.
 - TimerScreen sin configuración demo; carga la tarea real mediante `taskId` y usa el VM para estados.
-- Subfase 5.3 completada; fase actual 7 (Firestore en curso).
+- Subfase 5.3 completada; fase actual 8 (CRUD en curso).
 - FASE 5.5 completada: TimerScreen conectado a tareas y popup final con color de finalización.
 - Auth configurado: Google en iOS/Android/Web/Win/Linux y email/password en macOS. `firebase_options.dart` generado y bundles unificados (`com.marcdevelopez.focusinterval`).
+- FASE 7 completada: repositorio Firestore activo por usuario autenticado, alternando a InMemory sin sesión; login/logout refresca tareas por uid.
 
 ### [✔] **5.4 — Crear los providers globales**
 
@@ -256,6 +258,10 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
 - Login Google funcional en iOS/Android/Web/Windows/Linux
 - Login email/password funcional en macOS
 - UID persistente en app
+
+### 📝 Mejoras pendientes (post-MVP)
+
+- Recordar último email usado en cada dispositivo (almacenado localmente) y permitir autofill/gestores de contraseñas; nunca guardar la contraseña en texto plano.
 
 ---
 
@@ -428,6 +434,7 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
 - Refactorizar widgets
 - Ajustar sombras, padding, bordes
 - Mantener estilo minimalista oscuro
+- Recordar el último email usado en el dispositivo (almacenado localmente) y habilitar autofill/gestores de contraseñas; nunca guardar la contraseña en claro.
 
 ---
 

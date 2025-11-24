@@ -5,7 +5,16 @@ import '../providers.dart';
 class TaskListViewModel extends AsyncNotifier<List<PomodoroTask>> {
   @override
   Future<List<PomodoroTask>> build() async {
-    final repo = ref.read(taskRepositoryProvider);
+    // Si cambia el usuario autenticado, recargamos la lista desde el repo activo.
+    ref.listen(firebaseAuthServiceProvider, (prev, next) {
+      final prevUid = prev?.currentUser?.uid;
+      final nextUid = next.currentUser?.uid;
+      if (prevUid != nextUid) {
+        refresh();
+      }
+    });
+
+    final repo = ref.watch(taskRepositoryProvider);
     return repo.getAll();
     }
 

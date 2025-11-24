@@ -11,12 +11,39 @@ class TaskListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tasksAsync = ref.watch(taskListProvider);
+    final auth = ref.watch(firebaseAuthServiceProvider);
 
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: const Text("Tus tareas"),
+        actions: [
+          if (auth.currentUser != null) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Center(
+                child: Text(
+                  auth.currentUser!.email ?? '',
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: () async {
+                await auth.signOut();
+                // Limpiamos la lista en memoria y navegamos a login
+                ref.invalidate(taskListProvider);
+                if (context.mounted) context.go('/login');
+              },
+            ),
+          ] else
+            IconButton(
+              icon: const Icon(Icons.person),
+              onPressed: () => context.go('/login'),
+            ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -53,9 +80,8 @@ class TaskListScreen extends ConsumerWidget {
                   if (!context.mounted) return;
                   context.push("/tasks/edit/${t.id}");
                 },
-                onDelete: () => ref
-                    .read(taskListProvider.notifier)
-                    .deleteTask(t.id),
+                onDelete: () =>
+                    ref.read(taskListProvider.notifier).deleteTask(t.id),
               );
             },
           );

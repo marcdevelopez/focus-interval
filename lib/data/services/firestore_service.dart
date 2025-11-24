@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Servicio Firestore — esqueleto.
-/// Se activará en Fases 7–8. Mientras tanto, evita crashes.
+/// Abstracción de Firestore para facilitar pruebas e inyección.
 abstract class FirestoreService {
   FirebaseFirestore get instance;
 }
