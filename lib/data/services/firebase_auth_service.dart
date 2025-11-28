@@ -8,6 +8,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 abstract class AuthService {
   User? get currentUser;
   bool get isSignedIn;
+  Stream<User?> get authStateChanges;
 
   Future<UserCredential> signInWithGoogle();
 
@@ -37,6 +38,9 @@ class FirebaseAuthService implements AuthService {
 
   @override
   bool get isSignedIn => _auth.currentUser != null;
+
+  @override
+  Stream<User?> get authStateChanges => _auth.authStateChanges();
 
   bool get _isMacOS => defaultTargetPlatform == TargetPlatform.macOS && !kIsWeb;
 
@@ -97,6 +101,9 @@ class StubAuthService implements AuthService {
 
   @override
   bool get isSignedIn => false;
+
+  @override
+  Stream<User?> get authStateChanges => const Stream.empty();
 
   @override
   Future<UserCredential> signInWithGoogle() {
