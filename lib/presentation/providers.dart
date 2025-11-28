@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/pomodoro_machine.dart';
@@ -16,11 +17,13 @@ import 'viewmodels/task_editor_view_model.dart';
 // ==============================================================
 //  REPO GLOBAL (MVP LOCAL)
 // ==============================================================
+final authStateProvider = StreamProvider<User?>(
+  (ref) => ref.watch(firebaseAuthServiceProvider).authStateChanges,
+);
+
 final taskRepositoryProvider = Provider<TaskRepository>((ref) {
-  final auth = ref.watch(firebaseAuthServiceProvider);
-  if (auth.currentUser != null) {
-    return ref.watch(firestoreTaskRepositoryProvider);
-  }
+  final authState = ref.watch(authStateProvider).value;
+  if (authState != null) return ref.watch(firestoreTaskRepositoryProvider);
   return InMemoryTaskRepository();
 });
 
