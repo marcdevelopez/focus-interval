@@ -140,7 +140,7 @@ _(UI principal del MVP)_
 
 ---
 
-# 🚀 **FASE 5 — Integración Riverpod (MVVM) (detallada en sub-fases)**
+# **FASE 5 — Integración Riverpod (MVVM) (detallada en sub-fases)**
 
 ### [✔] **5.1 — Crear el ViewModel del Pomodoro (Completada parcialmente)**
 
@@ -265,7 +265,7 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
 
 ---
 
-# 🚀 **FASE 7 — Integrar Firestore**
+# **FASE 7 — Integrar Firestore**
 
 ### ⚙️ Tareas
 
