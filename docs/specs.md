@@ -16,6 +16,7 @@ El objetivo principal es permitir al usuario:
 - Ejecutarlas con precisión y sonidos personalizados
 - Detener automáticamente la ejecución al completar todos los pomodoros
 - Recibir alertas y notificaciones del sistema
+- Sincronizar en tiempo real la ejecución del pomodoro entre todos los dispositivos logueados con la misma cuenta (un único dueño de la sesión, el resto en modo espejo)
 
 La aplicación se sincroniza con **Firebase** mediante login con **Google / Gmail**.
 
@@ -125,6 +126,25 @@ class PomodoroTask {
 }
 ```
 
+## **5.2. Modelo `PomodoroSession` (sincronización en vivo)**
+
+```dart
+class PomodoroSession {
+  String id; // sessionId
+  String taskId;
+  String ownerDeviceId; // dispositivo que escribe en tiempo real
+
+  PomodoroStatus status; // pomodoroRunning, shortBreakRunning, longBreakRunning, paused, finished, idle
+  int currentPomodoro;
+  int totalPomodoros;
+
+  int phaseDurationSeconds; // duración de la fase actual
+  int remainingSeconds;     // solo aplica en pausa
+  DateTime phaseStartedAt;  // serverTimestamp al iniciar/reanudar
+  DateTime lastUpdatedAt;   // serverTimestamp del último evento
+}
+```
+
 ---
 
 # 🧠 **6. Lógica del Pomodoro (máquina de estados)**
@@ -195,6 +215,16 @@ Tabla local `task_cache`:
 - Carga instantánea
 - Sincronización en background
 - Modo offline
+
+### **8.3. Sesión activa del Pomodoro (sincronización en tiempo real)**
+
+```
+users/{uid}/activeSession
+```
+
+- Documento único por usuario con la sesión en curso.
+- Campos mínimos: `taskId`, `ownerDeviceId`, `status`, `currentPomodoro`, `totalPomodoros`, `phaseDurationSeconds`, `remainingSeconds` (solo en pausa), `phaseStartedAt` (serverTimestamp), `lastUpdatedAt` (serverTimestamp).
+- Escribe **solo** el dispositivo dueño; el resto se suscribe en tiempo real y renderiza el progreso calculando el tiempo restante desde `phaseStartedAt` + `phaseDurationSeconds`.
 
 ---
 
@@ -347,6 +377,12 @@ La pantalla de ejecución mostrará un **temporizador circular estilo reloj anal
 | Finalizar tarea  | Sonido especial + popup + animación final obligatoria (círculo verde/dorado + “TAREA FINALIZADA”) |
 
 La animación final descrita en la sección 12 forma parte del comportamiento obligatorio y debe implementarse dentro del propio reloj circular.
+
+### **10.4.2. Sincronización multi-dispositivo en TimerScreen**
+
+- Si existe una `activeSession` en Firestore para el `uid`, la pantalla se conecta en modo espejo y refleja el estado remoto en tiempo real (estado, fase, tiempo restante).
+- Solo el `ownerDeviceId` puede iniciar/pausar/reanudar/cancelar; los demás dispositivos muestran el estado y ofrecen “Tomar control” si el dueño no responde.
+- El tiempo restante en modo espejo se calcula con `phaseDurationSeconds` y `phaseStartedAt` (no se envían ticks de 1s).
 
 ## **10.4.1. Mejoras visuales obligatorias del temporizador**
 
@@ -560,7 +596,16 @@ Cuando el temporizador complete el **último pomodoro** de la tarea:
 
 ---
 
-# 📈 **13. Funcionalidades futuras (no incluidas en el MVP)**
+# 🔄 **13. Sincronización en tiempo real multi-dispositivo (MVP)**
+
+- **Objetivo**: abrir la app en varios dispositivos con la misma sesión y ver el mismo pomodoro en vivo.
+- **Único escritor**: el dispositivo que inicia la sesión se marca como `ownerDeviceId` y es el único que publica eventos en `activeSession`.
+- **Eventos que escriben**: start, pausa, reanudación, cancelación, transición de fase y finalización. No se escribe cada segundo.
+- **Cálculo de tiempo**: se guarda `phaseStartedAt` (serverTimestamp) + `phaseDurationSeconds`; los clientes calculan `remainingSeconds` localmente y lo actualizan con cada snapshot.
+- **Conflictos**: si ya existe una `activeSession` y otro dispositivo intenta iniciar, debe preguntar si quiere “Tomar control” (sobrescribe `ownerDeviceId`) o “Respetar sesión remota” (solo espejo).
+- **Finalización**: al terminar la tarea, `activeSession` pasa a `finished` y luego se borra o resetea a `idle`.
+
+# 📈 **14. Funcionalidades futuras (no incluidas en el MVP)**
 
 - Estadísticas (gráfico de tareas completadas por día/semana)
 - Exportar tareas como archivo

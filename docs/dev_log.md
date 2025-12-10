@@ -16,7 +16,7 @@ Este documento sirve para:
 # 📍 Estado actual
 
 Fase activa: **8 — Implementar CRUD de Tareas**  
-Última actualización: **22/11/2025**
+Última actualización: **28/11/2025**
 
 ---
 
@@ -344,6 +344,25 @@ _(rellenar cuando ocurran)_
 ### 🎯 Próximos pasos:
 
 - Fase 8: pulir CRUD/streams y conectar completamente UI con Firestore.
+
+---
+
+# 🔹 Bloque 14 — Fase 8 (Bugfix repositorio reactivo a Auth) — 28/11/2025
+
+### ✔ Trabajo realizado:
+
+- `AuthService` expone `authStateChanges` y `authStateProvider` escucha login/logout.
+- `taskRepositoryProvider` se reconstruye al cambiar usuario y usa `FirestoreTaskRepository` cuando hay sesión.
+- `TaskListViewModel` refresca la lista al cambiar de `uid`; las tareas ya se sincronizan entre dispositivos con el mismo email/contraseña.
+
+### ⚠️ Problemas encontrados:
+
+- El repo se instanciaba antes de login y quedaba en memoria local; las tareas no subían a Firestore ni se compartían entre plataformas.
+
+### 🎯 Próximos pasos:
+
+- Continuar Fase 8: CRUD completo y streams sobre Firestore.
+- Re-crear tareas de prueba tras login para persistirlas en `users/{uid}/tasks`.
 
 ---
 

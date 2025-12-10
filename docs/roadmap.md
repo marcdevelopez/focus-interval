@@ -27,7 +27,7 @@ La IA deberá actualizar esta línea cuando tú lo indiques.
 
 # 🧩 **Estructura General del Roadmap**
 
-El desarrollo está dividido en **17 fases principales**, ordenadas de forma óptima para evitar bloqueos, errores y reescrituras.
+El desarrollo está dividido en **18 fases principales**, ordenadas de forma óptima para evitar bloqueos, errores y reescrituras.
 
 Cada fase contiene:
 
@@ -359,7 +359,24 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
 
 ---
 
-# 🚀 **FASE 12 — Sonidos y Notificaciones**
+# 🚀 **FASE 12 — Sincronización en tiempo real del Pomodoro (multi-dispositivo)**
+
+### ⚙️ Tareas
+
+- Crear `PomodoroSession` (modelo + serialización) y `pomodoro_session_repository.dart` sobre Firestore (`users/{uid}/activeSession`).
+- Exponer `pomodoroSessionRepositoryProvider` y dependencias necesarias (deviceId, helper de serverTimestamp).
+- Extender `PomodoroViewModel` para publicar eventos start/pausa/reanudación/cancelación/cambio de fase/finalización en `activeSession` (un único escritor por `ownerDeviceId`).
+- En TimerScreen, modo espejo: suscribirse a `activeSession` cuando no se es dueño y reflejar el estado calculando tiempo restante con `phaseStartedAt` + `phaseDurationSeconds`.
+- Manejar conflictos: si ya existe sesión activa, permitir “Tomar control” (sobrescribir `ownerDeviceId`) o respetar la sesión remota.
+- Limpiar `activeSession` al finalizar o cancelar la tarea.
+
+### 📌 Condiciones
+
+- Dos dispositivos con el mismo `uid` ven el mismo pomodoro en tiempo real (<1–2 s de retraso).
+- Solo el dueño escribe; el resto muestra los cambios en vivo.
+- Transiciones de fase, pausa/reanudación y finalización quedan persistidas y visibles al reabrir la app.
+
+# 🚀 **FASE 13 — Sonidos y Notificaciones**
 
 ### ⚙️ Tareas
 
@@ -380,7 +397,7 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
 
 ---
 
-# 🚀 **FASE 13 — Animación Final Obligatoria**
+# 🚀 **FASE 14 — Animación Final Obligatoria**
 
 ### ⚙️ Tareas
 
@@ -398,7 +415,7 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
 
 ---
 
-# 🚀 **FASE 14 — Redimensionado + Responsive Completo**
+# 🚀 **FASE 15 — Redimensionado + Responsive Completo**
 
 ### ⚙️ Tareas
 
@@ -413,7 +430,7 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
 
 ---
 
-# 🚀 **FASE 15 — Pruebas Unitarias y de Integración**
+# 🚀 **FASE 16 — Pruebas Unitarias y de Integración**
 
 ### ⚙️ Tareas
 
@@ -427,7 +444,7 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
 
 ---
 
-# 🚀 **FASE 16 — Pulido UI / UX**
+# 🚀 **FASE 17 — Pulido UI / UX**
 
 ### ⚙️ Tareas
 
@@ -438,7 +455,7 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
 
 ---
 
-# 🚀 **FASE 17 — Preparación de Release Interno**
+# 🚀 **FASE 18 — Preparación de Release Interno**
 
 ### ⚙️ Tareas
 
