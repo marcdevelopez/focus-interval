@@ -440,6 +440,7 @@ _(rellenar cuando ocurran)_
 - Añadido `just_audio` y `SoundService` con mapa id→asset y fallback silencioso si falta el archivo.
 - Integrado el servicio vía provider y callbacks del `PomodoroMachine` para disparar sonidos en: inicio pomodoro, inicio descanso, fin de tarea.
 - Creada carpeta `assets/sounds/` con README e incluida en `pubspec.yaml`; pub get ejecutado.
+- Añadidos los audios por defecto: `default_chime.mp3`, `default_chime_break.mp3`, `default_chime_finish.mp3`.
 
 ### 🧠 Decisiones tomadas:
 
@@ -448,7 +449,7 @@ _(rellenar cuando ocurran)_
 
 ### 🎯 Próximos pasos:
 
-- Añadir los archivos de audio reales a `assets/sounds/` y probar reproducción en macOS/Android/Web.
+- Probar reproducción en macOS/Android/Web con los audios añadidos.
 - Ajustar dev_log/roadmap con la fecha cuando se confirme la reproducción en plataformas.
 
 ---
