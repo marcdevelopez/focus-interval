@@ -13,7 +13,7 @@ class SoundService {
     'default_chime_finish': 'assets/sounds/default_chime_finish.mp3',
   };
 
-  Future<void> play(String id) async {
+  Future<void> play(String id, {String? fallbackId}) async {
     final asset = _assetById[id];
     if (asset == null) return;
 
@@ -22,6 +22,9 @@ class SoundService {
       await rootBundle.load(asset);
     } catch (_) {
       debugPrint('Sound asset not found: $asset');
+      if (fallbackId != null) {
+        await play(fallbackId);
+      }
       return;
     }
 
@@ -31,6 +34,9 @@ class SoundService {
       await _player.play();
     } catch (e) {
       debugPrint('Sound play error for $asset: $e');
+      if (fallbackId != null) {
+        await play(fallbackId);
+      }
     }
   }
 

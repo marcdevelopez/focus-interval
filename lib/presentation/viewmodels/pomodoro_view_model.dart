@@ -42,9 +42,9 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   void configureFromTask(PomodoroTask task) {
     _currentTask = task;
     _machine.callbacks = PomodoroCallbacks(
-      onPomodoroStart: (_) => _play(task.startSound),
-      onBreakStart: (_) => _play(task.startBreakSound),
-      onTaskFinished: (_) => _play(task.finishTaskSound),
+      onPomodoroStart: (_) => _play(task.startSound, fallback: task.startBreakSound),
+      onBreakStart: (_) => _play(task.startBreakSound, fallback: task.startSound),
+      onTaskFinished: (_) => _play(task.finishTaskSound, fallback: task.startSound),
     );
 
     _machine.configureTask(
@@ -63,5 +63,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   void resume() => _machine.resume();
   void cancel() => _machine.cancel();
 
-  Future<void> _play(String soundId) => _soundService.play(soundId);
+  Future<void> _play(String soundId, {String? fallback}) =>
+      _soundService.play(soundId, fallbackId: fallback);
 }
