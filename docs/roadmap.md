@@ -14,7 +14,7 @@ Este proyecto incluye un documento oficial de roles de equipo en:
 # 🟦 **Estado Global del Proyecto**
 
 ```
-FASE ACTUAL: 11 — Audio de eventos
+FASE ACTUAL: 13 — Sincronización en tiempo real del Pomodoro (multi-dispositivo)
 NOTA: TimerScreen ya depende del ViewModel (sin timer local/config demo).
       PomodoroViewModel expuesto como Notifier auto-dispose y suscrito a la máquina.
       Estrategia Auth completada: Google Sign-In en iOS/Android/Web/Win/Linux; email/password en macOS.
@@ -23,6 +23,8 @@ NOTA: TimerScreen ya depende del ViewModel (sin timer local/config demo).
       Fase 8 (CRUD + stream reactivo) completada el 17/12/2025.
       Fase 9 (Lista reactiva) completada el 17/12/2025. Test pendiente en Windows.
       Fase 10 (Editor con sonidos básicos) completada el 17/12/2025.
+      Fase 11 (Audio de eventos) completada el 17/12/2025.
+      Fase 12 (Conectar Editor → Lista → Ejecución) completada el 17/12/2025.
 ```
 Actualizarse en cada commit, si es necesario.
 
@@ -351,7 +353,7 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
 
 ---
 
-# 🚀 **FASE 11 — Audio de eventos (pendiente)**
+# [✔] **FASE 11 — Audio de eventos (completada 17/12/2025)**
 
 ### ⚙️ Tareas
 
@@ -364,7 +366,7 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
 - Sonidos reproducidos en macOS/Android/Web para los eventos clave.
 - Configuración de tareas respeta los sonidos seleccionados.
 
-# 🚀 **FASE 12 — Conectar Editor → Lista → Ejecución**
+# [✔] **FASE 12 — Conectar Editor → Lista → Ejecución (completada 17/12/2025)**
 
 ### ⚙️ Tareas
 

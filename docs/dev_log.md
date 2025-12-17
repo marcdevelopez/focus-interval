@@ -466,6 +466,19 @@ _(rellenar cuando ocurran)_
 - Probar en Windows cuando sea posible y anotar la fecha si pasa.
 - Continuar con Fase 12 (Conectar Editor → Lista → Ejecución).
 
+# 🔹 Bloque 21 — Fase 12 (Conectar Editor → Lista → Ejecución) — 17/12/2025
+
+### ✔ Trabajo realizado:
+
+- TimerScreen carga la tarea real desde la lista y usa el ViewModel para toda la ejecución.
+- Cambios hechos en el editor (duraciones, sonidos) se reflejan al abrir la ejecución; manejo de tarea inexistente muestra snackbar y regresa.
+- Flujo Editor → Lista → Ejecución funcionando en macOS/Android/Web (Windows pendiente de probar).
+
+### 🎯 Próximos pasos:
+
+- Probar en Windows el ciclo completo cuando sea posible y registrar fecha.
+- Avanzar a Fase 13 (sincronización en tiempo real del Pomodoro).
+
 ---
 
 # 🧾 Notas generales
