@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers.dart';
 import '../../data/models/pomodoro_task.dart';
+import '../../widgets/sound_selector.dart';
 
 class TaskEditorScreen extends ConsumerStatefulWidget {
   final bool isEditing;
@@ -45,6 +46,11 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   @override
   Widget build(BuildContext context) {
     final task = ref.watch(taskEditorProvider);
+    const soundOptions = [
+      SoundOption('default_chime', 'Chime (por defecto)'),
+      SoundOption('bell_soft', 'Campana suave'),
+      SoundOption('digital_beep', 'Beep digital'),
+    ];
 
     if (task == null) {
       return const Scaffold(
@@ -117,6 +123,46 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               initial: task.longBreakInterval,
               onChanged: (v) =>
                   _update(task.copyWith(longBreakInterval: v)),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              "Sonidos",
+              style: TextStyle(color: Colors.white70, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            SoundSelector(
+              label: "Inicio de pomodoro",
+              value: task.startSound,
+              options: soundOptions,
+              onChanged: (v) => _update(task.copyWith(startSound: v)),
+            ),
+            const SizedBox(height: 12),
+            SoundSelector(
+              label: "Fin de pomodoro",
+              value: task.endPomodoroSound,
+              options: soundOptions,
+              onChanged: (v) => _update(task.copyWith(endPomodoroSound: v)),
+            ),
+            const SizedBox(height: 12),
+            SoundSelector(
+              label: "Inicio de descanso",
+              value: task.startBreakSound,
+              options: soundOptions,
+              onChanged: (v) => _update(task.copyWith(startBreakSound: v)),
+            ),
+            const SizedBox(height: 12),
+            SoundSelector(
+              label: "Fin de descanso",
+              value: task.endBreakSound,
+              options: soundOptions,
+              onChanged: (v) => _update(task.copyWith(endBreakSound: v)),
+            ),
+            const SizedBox(height: 12),
+            SoundSelector(
+              label: "Fin de todos los pomodoros",
+              value: task.finishTaskSound,
+              options: soundOptions,
+              onChanged: (v) => _update(task.copyWith(finishTaskSound: v)),
             ),
           ],
         ),

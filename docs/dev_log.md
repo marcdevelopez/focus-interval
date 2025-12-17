@@ -407,6 +407,7 @@ _(rellenar cuando ocurran)_
 - `TaskEditorViewModel.load` devuelve `bool` y los flujos de edición muestran snackbar/cierran si la tarea no existe.
 - Validación de negocio: el intervalo de descanso largo no puede superar el total de pomodoros; se bloquea el guardado y se informa al usuario.
 - Manejo UX: al editar desde la lista, si falla la carga, se notifica y no navega al editor.
+- Añadido selector de sonidos por evento en el editor (opciones placeholder, pendientes assets reales) y persistencia de strings en el modelo/repos.
 
 ### 🧠 Decisiones tomadas:
 
