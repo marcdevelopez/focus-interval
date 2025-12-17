@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
 class DeviceInfoService {
@@ -7,9 +7,8 @@ class DeviceInfoService {
   DeviceInfoService._(this.deviceId);
 
   factory DeviceInfoService() {
-    final uuid = const Uuid();
-    final platform = Platform.operatingSystem;
-    final id = '$platform-${uuid.v4()}';
-    return DeviceInfoService._(id);
+    final uuid = const Uuid().v4();
+    final platform = kIsWeb ? 'web' : defaultTargetPlatform.name;
+    return DeviceInfoService._('$platform-$uuid');
   }
 }
