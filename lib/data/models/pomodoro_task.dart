@@ -22,9 +22,7 @@ class PomodoroTask {
     required this.totalPomodoros,
     required this.longBreakInterval,
     required this.startSound,
-    required this.endPomodoroSound,
     required this.startBreakSound,
-    required this.endBreakSound,
     required this.finishTaskSound,
   });
 
@@ -37,9 +35,7 @@ class PomodoroTask {
     int? totalPomodoros,
     int? longBreakInterval,
     String? startSound,
-    String? endPomodoroSound,
     String? startBreakSound,
-    String? endBreakSound,
     String? finishTaskSound,
   }) {
     return PomodoroTask(
