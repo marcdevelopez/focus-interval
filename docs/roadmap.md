@@ -14,14 +14,16 @@ Este proyecto incluye un documento oficial de roles de equipo en:
 # 🟦 **Estado Global del Proyecto**
 
 ```
-FASE ACTUAL: 8 — Implementar CRUD de Tareas
+FASE ACTUAL: 10 — Editor de Tarea
 NOTA: TimerScreen ya depende del ViewModel (sin timer local/config demo).
       PomodoroViewModel expuesto como Notifier auto-dispose y suscrito a la máquina.
       Estrategia Auth completada: Google Sign-In en iOS/Android/Web/Win/Linux; email/password en macOS.
       Firestore integrado por usuario autenticado; tareas aisladas por uid.
+      Fase 7 (Firestore integrado) completada el 24/11/2025.
+      Fase 8 (CRUD + stream reactivo) completada el 17/12/2025.
+      Fase 9 (Lista reactiva) completada el 17/12/2025. Test pendiente en Windows.
 ```
-
-La IA deberá actualizar esta línea cuando tú lo indiques.
+Actualizarse en cada commit, si es necesario.
 
 ---
 
@@ -265,7 +267,7 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
 
 ---
 
-# **FASE 7 — Integrar Firestore**
+# [✔] **FASE 7 — Integrar Firestore (completada 24/11/2025)**
 
 ### ⚙️ Tareas
 
@@ -283,7 +285,7 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
 
 ---
 
-# 🚀 **FASE 8 — Implementar CRUD de Tareas**
+# [✔] **FASE 8 — Implementar CRUD de Tareas (completada 17/12/2025)**
 
 ### ⚙️ Tareas
 
@@ -302,10 +304,11 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
 
 - CRUD funcionando
 - Datos persisten correctamente
+- Lista de tareas actualizada en tiempo real vía stream del repositorio activo (Firestore o InMemory)
 
 ---
 
-# 🚀 **FASE 9 — Pantalla de Lista de Tareas**
+# [✔] **FASE 9 — Pantalla de Lista de Tareas (completada 17/12/2025)**
 
 ### ⚙️ Tareas
 

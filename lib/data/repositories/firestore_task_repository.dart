@@ -51,12 +51,20 @@ class FirestoreTaskRepository implements TaskRepository {
     await _taskCollection(uid).doc(id).delete();
   }
 
+  @override
+  Stream<List<PomodoroTask>> watchAll() async* {
+    final uid = await _uidOrThrow();
+    yield* _taskCollection(uid).snapshots().map(
+          (snap) => snap.docs
+              .map((d) => PomodoroTask.fromMap(d.data()))
+              .toList(),
+        );
+  }
+
   /// Si quieres stream (opcional)
   Stream<List<PomodoroTask>> watchTasks() {
     final uid = authService.currentUser?.uid;
     if (uid == null) return const Stream.empty();
-    return _taskCollection(uid).snapshots().map(
-      (snap) => snap.docs.map((d) => PomodoroTask.fromMap(d.data())).toList(),
-    );
+    return watchAll();
   }
 }

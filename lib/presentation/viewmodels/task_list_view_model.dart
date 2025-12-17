@@ -1,31 +1,51 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/pomodoro_task.dart';
+import '../../data/repositories/task_repository.dart';
 import '../providers.dart';
 
 class TaskListViewModel extends AsyncNotifier<List<PomodoroTask>> {
+  StreamSubscription<List<PomodoroTask>>? _sub;
+
   @override
   Future<List<PomodoroTask>> build() async {
-    // Si cambia el usuario autenticado (login/logout), recargamos la lista desde el repo activo.
-    ref.listen(authStateProvider, (prev, next) {
-      final prevUid = prev?.value?.uid;
-      final nextUid = next.value?.uid;
-      if (prevUid != nextUid) {
-        refresh();
-      }
-    });
-
     final repo = ref.watch(taskRepositoryProvider);
-    return repo.getAll();
-    }
+    ref.onDispose(() => _sub?.cancel());
+    return _listenToRepo(repo);
+  }
 
   Future<void> refresh() async {
     state = const AsyncLoading();
-    state = AsyncData(await build());
+    final repo = ref.read(taskRepositoryProvider);
+    await _sub?.cancel();
+    await _listenToRepo(repo);
   }
 
   Future<void> deleteTask(String id) async {
     final repo = ref.read(taskRepositoryProvider);
     await repo.delete(id);
-    await refresh();
+  }
+
+  Future<List<PomodoroTask>> _listenToRepo(TaskRepository repo) async {
+    await _sub?.cancel();
+    final completer = Completer<List<PomodoroTask>>();
+
+    _sub = repo.watchAll().listen(
+      (tasks) {
+        state = AsyncData(tasks);
+        if (!completer.isCompleted) {
+          completer.complete(tasks);
+        }
+      },
+      onError: (error, stack) {
+        state = AsyncError(error, stack);
+        if (!completer.isCompleted) {
+          completer.completeError(error, stack);
+        }
+      },
+    );
+
+    return completer.future;
   }
 }

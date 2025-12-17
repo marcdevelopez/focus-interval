@@ -34,8 +34,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         email: _emailCtrl.text.trim(),
         password: _passCtrl.text,
       );
-      // Refrescamos lista tras login y navegamos.
-      await ref.read(taskListProvider.notifier).refresh();
       if (mounted) context.go('/tasks');
     } catch (e) {
       if (!mounted) return;
@@ -55,7 +53,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         email: _emailCtrl.text.trim(),
         password: _passCtrl.text,
       );
-      await ref.read(taskListProvider.notifier).refresh();
       if (mounted) context.go('/tasks');
     } catch (e) {
       if (!mounted) return;
@@ -72,7 +69,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final auth = ref.read(firebaseAuthServiceProvider);
     try {
       await auth.signInWithGoogle();
-      await ref.read(taskListProvider.notifier).refresh();
       if (mounted) context.go('/tasks');
     } catch (e) {
       if (!mounted) return;
@@ -87,6 +83,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final isGoogleDisabled = _isMacOS;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -94,66 +91,69 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         backgroundColor: Colors.black,
         title: const Text('Autenticación'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 12),
-            TextField(
-              controller: _emailCtrl,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                labelStyle: TextStyle(color: Colors.white70),
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white24),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomInset),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 12),
+              TextField(
+                controller: _emailCtrl,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  labelStyle: TextStyle(color: Colors.white70),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white24),
+                  ),
                 ),
+                style: const TextStyle(color: Colors.white),
               ),
-              style: const TextStyle(color: Colors.white),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _passCtrl,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Contraseña',
-                labelStyle: TextStyle(color: Colors.white70),
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white24),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _passCtrl,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Contraseña',
+                  labelStyle: TextStyle(color: Colors.white70),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white24),
+                  ),
                 ),
+                style: const TextStyle(color: Colors.white),
               ),
-              style: const TextStyle(color: Colors.white),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loading ? null : _signInEmail,
-              child: const Text('Iniciar sesión (email)'),
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: _loading ? null : _signUpEmail,
-              child: const Text('Crear cuenta (email)'),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _loading || isGoogleDisabled ? null : _signInGoogle,
-              icon: const Icon(Icons.login),
-              label: const Text('Continuar con Google'),
-            ),
-            if (isGoogleDisabled)
-              const Padding(
-                padding: EdgeInsets.only(top: 8.0),
-                child: Text(
-                  'Google Sign-In no está disponible en macOS; usa email/contraseña.',
-                  style: TextStyle(color: Colors.white54, fontSize: 12),
-                ),
-              ),
-            if (_loading) ...[
               const SizedBox(height: 16),
-              const Center(child: CircularProgressIndicator()),
+              ElevatedButton(
+                onPressed: _loading ? null : _signInEmail,
+                child: const Text('Iniciar sesión (email)'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton(
+                onPressed: _loading ? null : _signUpEmail,
+                child: const Text('Crear cuenta (email)'),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: _loading || isGoogleDisabled ? null : _signInGoogle,
+                icon: const Icon(Icons.login),
+                label: const Text('Continuar con Google'),
+              ),
+              if (isGoogleDisabled)
+                const Padding(
+                  padding: EdgeInsets.only(top: 8.0),
+                  child: Text(
+                    'Google Sign-In no está disponible en macOS; usa email/contraseña.',
+                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
+                ),
+              if (_loading) ...[
+                const SizedBox(height: 16),
+                const Center(child: CircularProgressIndicator()),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

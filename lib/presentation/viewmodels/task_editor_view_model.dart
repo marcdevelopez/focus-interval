@@ -37,8 +37,5 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
     if (state == null) return;
     final repo = ref.read(taskRepositoryProvider);
     await repo.save(state!);
-
-    // refresca lista
-    ref.read(taskListProvider.notifier).refresh();
   }
 }

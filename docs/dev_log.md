@@ -364,6 +364,42 @@ _(rellenar cuando ocurran)_
 - Continuar Fase 8: CRUD completo y streams sobre Firestore.
 - Re-crear tareas de prueba tras login para persistirlas en `users/{uid}/tasks`.
 
+# 🔹 Bloque 15 — Fase 8 (CRUD reactivo con streams) — 17/12/2025
+
+### ✔ Trabajo realizado:
+
+- `TaskRepository` ahora expone `watchAll()`; InMemory y Firestore emiten cambios en tiempo real.
+- `TaskListViewModel` se suscribe al stream del repo activo y actualiza la UI sin `refresh` manual.
+- Eliminados refrescos forzados desde `LoginScreen` y `TaskEditorViewModel`; la lista depende solo del stream.
+
+### 🧠 Decisiones tomadas:
+
+- Mantener InMemory como fallback sin sesión, pero también con stream para coherencia y pruebas locales.
+- Centralizar la fuente de verdad en `watchAll()` para reducir lecturas puntuales y evitar estados inconsistentes.
+
+### 🎯 Próximos pasos:
+
+- Validar latencia y errores de Firestore en streams; considerar manejo optimista para ediciones/borrados.
+- Revisar validaciones del editor y estados de carga/errores en la lista.
+
+# 🔹 Bloque 16 — Fase 9 (lista reactiva y UX login) — 17/12/2025
+
+### ✔ Trabajo realizado:
+
+- `InMemoryTaskRepository.watchAll()` ahora emite inmediatamente al suscribirse; evita loaders infinitos sin sesión.
+- Ajustado `LoginScreen` con `SafeArea + SingleChildScrollView + padding` dinámico para eliminar el rectángulo de overflow al mostrar teclado en Android.
+- Verificado en macOS, IOs, Android y Web: lista de tareas reactiva; loader desaparece sin sesión. Windows pendiente de prueba.
+
+### 🧠 Decisiones tomadas:
+
+- Mantener comportamiento reactivo en todos los repos (InMemory/Firestore) como fuente única de verdad.
+- El login permanece con email/contraseña en macOS/Android/web; Google en web/desktop Win/Linux pendiente de probar.
+
+### 🎯 Próximos pasos:
+
+- Probar en Windows (Google Sign-In) y validar CRUD/streams.
+- Iniciar Fase 10: revisar formulario del editor según roadmap (campos completos, sonidos) y pulir validaciones.
+
 ---
 
 # 🧾 Notas generales

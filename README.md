@@ -6,9 +6,10 @@ Pomodoro Desktop App (macOS / Windows / Linux) built with Flutter.
 - [Roadmap](docs/roadmap.md)
 - [Development Log](docs/dev_log.md)
 - [Team Roles & Collaboration Model](docs/team_roles.md)
+- [Agent Guide (internal)](agent.md)
 
 ## 🧪 Status
-Project just initiated. Phase 1 in progress.
+Roadmap phase: 10 — Editor de Tarea (Fases 7–9 completadas).
 
 ## 🛠️ Tech Stack
 Flutter · Firebase Auth · Firestore · Riverpod · MVVM
