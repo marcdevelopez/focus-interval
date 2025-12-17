@@ -10,7 +10,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   late PomodoroMachine _machine;
   StreamSubscription<PomodoroState>? _sub;
   late SoundService _soundService;
-  PomodoroTask? _currentTask;
 
   @override
   PomodoroState build() {
@@ -40,7 +39,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   void configureFromTask(PomodoroTask task) {
-    _currentTask = task;
     _machine.callbacks = PomodoroCallbacks(
       onPomodoroStart: (_) => _play(task.startSound, fallback: task.startBreakSound),
       onBreakStart: (_) => _play(task.startBreakSound, fallback: task.startSound),
