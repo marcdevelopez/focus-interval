@@ -420,6 +420,19 @@ _(rellenar cuando ocurran)_
 - Añadir selección de sonido (cuando tengamos assets/definición) y persistirlo en el modelo.
 - Probar en Windows pendiente; si pasa, ajustar roadmap/dev_log con fecha.
 
+# 🔹 Bloque 18 — Fase 10 (Editor completado) — 17/12/2025
+
+### ✔ Trabajo realizado:
+
+- Editor completo con sonidos configurables mínimos (inicio pomodoro, inicio descanso) y sonido final fijo por defecto.
+- Validaciones de negocio activas y manejo de errores al cargar/editar tareas inexistentes.
+- Roadmap actualizado: Fase 10 marcada como completada; Fase actual → 11 (audio de eventos).
+
+### 🎯 Próximos pasos:
+
+- Implementar reproducción de audio (Fase 11) con assets por defecto.
+- Probar en Windows pendiente y ajustar documentación cuando se valide.
+
 ---
 
 # 🧾 Notas generales
