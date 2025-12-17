@@ -11,6 +11,11 @@ class SoundService {
     'default_chime': 'assets/sounds/default_chime.mp3',
     'default_chime_break': 'assets/sounds/default_chime_break.mp3',
     'default_chime_finish': 'assets/sounds/default_chime_finish.mp3',
+    // Alias simples para opciones del selector (reutilizan los mismos assets)
+    'bell_soft': 'assets/sounds/default_chime.mp3',
+    'digital_beep': 'assets/sounds/default_chime.mp3',
+    'bell_soft_break': 'assets/sounds/default_chime_break.mp3',
+    'digital_beep_break': 'assets/sounds/default_chime_break.mp3',
   };
 
   Future<void> play(String id, {String? fallbackId}) async {
