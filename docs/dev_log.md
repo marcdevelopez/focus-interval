@@ -479,6 +479,20 @@ _(rellenar cuando ocurran)_
 - Probar en Windows el ciclo completo cuando sea posible y registrar fecha.
 - Avanzar a Fase 13 (sincronización en tiempo real del Pomodoro).
 
+# 🔹 Bloque 22 — Fase 13 (Sync tiempo real, setup) — 17/12/2025
+
+### ✔ Trabajo realizado:
+
+- Creado modelo `PomodoroSession` y repositorio Firestore (`users/{uid}/activeSession/current`) con publish/watch/clear.
+- `PomodoroViewModel` publica estado en eventos clave (inicio pomodoro, inicio descanso, pausa, resume, finish/cancel) con `ownerDeviceId`.
+- Modo espejo básico: si la sesión pertenece a otro dispositivo, el VM refleja el estado remoto (cálculo de remaining a partir de `phaseStartedAt` cuando está disponible).
+- DeviceId básico generado por sesión de app; pendiente persistencia entre ejecuciones.
+
+### 🎯 Próximos pasos:
+
+- Probar con dos dispositivos reales (misma cuenta) y validar retraso <2s; ajustar si es necesario publicar ticks o timestamps.
+- Decidir si se persiste `deviceId` localmente para mantener la propiedad entre reinicios.
+
 ---
 
 # 🧾 Notas generales

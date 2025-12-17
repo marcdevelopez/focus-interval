@@ -8,6 +8,9 @@ import '../data/services/firebase_auth_service.dart';
 import '../data/services/firestore_service.dart';
 import '../data/repositories/firestore_task_repository.dart';
 import '../data/services/sound_service.dart';
+import '../data/services/device_info_service.dart';
+import '../data/repositories/pomodoro_session_repository.dart';
+import '../data/repositories/firestore_pomodoro_session_repository.dart';
 
 // VIEWMODELS
 import 'viewmodels/pomodoro_view_model.dart';
@@ -63,6 +66,24 @@ final soundServiceProvider = Provider<SoundService>((ref) {
   final service = SoundService();
   ref.onDispose(service.dispose);
   return service;
+});
+
+// Device info (id único por ejecución)
+final deviceInfoServiceProvider = Provider<DeviceInfoService>((_) {
+  return DeviceInfoService();
+});
+
+// Repositorio de sesión Pomodoro
+final pomodoroSessionRepositoryProvider =
+    Provider<PomodoroSessionRepository>((ref) {
+  final firestore = ref.watch(firestoreServiceProvider);
+  final auth = ref.watch(firebaseAuthServiceProvider);
+  final deviceInfo = ref.watch(deviceInfoServiceProvider);
+  return FirestorePomodoroSessionRepository(
+    firestoreService: firestore,
+    authService: auth,
+    deviceId: deviceInfo.deviceId,
+  );
 });
 
 //
