@@ -446,11 +446,25 @@ _(rellenar cuando ocurran)_
 
 - Mantener tres sonidos en el MVP: inicio pomodoro, inicio descanso y fin de tarea (fijo), evitando duplicidad con fin de descanso.
 - Si el asset falta o falla la carga, se ignora y se registra en debug; no se muestra error al usuario.
+- Se detectó que algunos ids del selector no tenían asset mapeado, provocando silencio al iniciar el pomodoro; se resolvió mapeando aliases a los assets existentes.
 
 ### 🎯 Próximos pasos:
 
-- Probar reproducción en macOS/Android/Web con los audios añadidos.
-- Ajustar dev_log/roadmap con la fecha cuando se confirme la reproducción en plataformas.
+- Probar reproducción en macOS/Android/Web con los audios añadidos. ✔ (completado)
+- Ajustar dev_log/roadmap con la fecha cuando se confirme la reproducción en plataformas. ✔ (completado)
+
+# 🔹 Bloque 20 — Fase 11 (Audio de eventos completado) — 17/12/2025
+
+### ✔ Trabajo realizado:
+
+- Reproducción de sonidos confirmada en inicio de pomodoro, inicio de descanso y fin de tarea (Android/Web/macOS).
+- Aliases de sonidos del selector mapeados a assets para evitar ids sin ruta.
+- Código de audio simplificado sin logs temporales ni campos sin uso.
+
+### 🎯 Próximos pasos:
+
+- Probar en Windows cuando sea posible y anotar la fecha si pasa.
+- Continuar con Fase 12 (Conectar Editor → Lista → Ejecución).
 
 ---
 
