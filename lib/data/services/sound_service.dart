@@ -15,6 +15,7 @@ class SoundService {
 
   Future<void> play(String id, {String? fallbackId}) async {
     final asset = _assetById[id];
+    debugPrint('[SoundService] play("$id") fallback="$fallbackId" asset="$asset"');
     if (asset == null) return;
 
     // Verificamos que el asset exista; si falta, silencioso.
@@ -32,6 +33,7 @@ class SoundService {
       await _player.setAsset(asset);
       await _player.seek(Duration.zero);
       await _player.play();
+      debugPrint('[SoundService] played "$id"');
     } catch (e) {
       debugPrint('Sound play error for $asset: $e');
       if (fallbackId != null) {
