@@ -413,6 +413,7 @@ _(rellenar cuando ocurran)_
 
 - Priorizar validaciones y UX del editor antes de añadir campos nuevos (p.ej. sonidos) en esta fase.
 - Mantener el editor reactivo a repositorio activo (Firestore/InMemory) sin cambios adicionales.
+- Reducir la configuración de sonidos a lo esencial (inicio pomodoro, inicio descanso) y dejar el sonido final como valor por defecto para evitar confusión.
 
 ### 🎯 Próximos pasos:
 

@@ -21,10 +21,8 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
       totalPomodoros: 4,
       longBreakInterval: 4,
       startSound: 'default_chime',
-      endPomodoroSound: 'default_chime',
-      startBreakSound: 'default_chime',
-      endBreakSound: 'default_chime',
-      finishTaskSound: 'default_chime',
+      startBreakSound: 'default_chime_break',
+      finishTaskSound: 'default_chime_finish',
     );
   }
 

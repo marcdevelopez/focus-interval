@@ -10,9 +10,7 @@ class PomodoroTask {
   final int longBreakInterval;
 
   final String startSound;
-  final String endPomodoroSound;
   final String startBreakSound;
-  final String endBreakSound;
   final String finishTaskSound;
 
   PomodoroTask({
@@ -53,9 +51,7 @@ class PomodoroTask {
       totalPomodoros: totalPomodoros ?? this.totalPomodoros,
       longBreakInterval: longBreakInterval ?? this.longBreakInterval,
       startSound: startSound ?? this.startSound,
-      endPomodoroSound: endPomodoroSound ?? this.endPomodoroSound,
       startBreakSound: startBreakSound ?? this.startBreakSound,
-      endBreakSound: endBreakSound ?? this.endBreakSound,
       finishTaskSound: finishTaskSound ?? this.finishTaskSound,
     );
   }
@@ -69,9 +65,7 @@ class PomodoroTask {
     'totalPomodoros': totalPomodoros,
     'longBreakInterval': longBreakInterval,
     'startSound': startSound,
-    'endPomodoroSound': endPomodoroSound,
     'startBreakSound': startBreakSound,
-    'endBreakSound': endBreakSound,
     'finishTaskSound': finishTaskSound,
   };
 
@@ -84,12 +78,7 @@ class PomodoroTask {
     totalPomodoros: map['totalPomodoros'] as int,
     longBreakInterval: map['longBreakInterval'] as int,
     startSound: (map['startSound'] as String?) ?? 'default_chime',
-    endPomodoroSound:
-        (map['endPomodoroSound'] as String?) ?? 'default_chime',
-    startBreakSound:
-        (map['startBreakSound'] as String?) ?? 'default_chime',
-    endBreakSound: (map['endBreakSound'] as String?) ?? 'default_chime',
-    finishTaskSound:
-        (map['finishTaskSound'] as String?) ?? 'default_chime',
+    startBreakSound: (map['startBreakSound'] as String?) ?? 'default_chime_break',
+    finishTaskSound: (map['finishTaskSound'] as String?) ?? 'default_chime_finish',
   );
 }

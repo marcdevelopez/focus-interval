@@ -46,10 +46,16 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   @override
   Widget build(BuildContext context) {
     final task = ref.watch(taskEditorProvider);
-    const soundOptions = [
-      SoundOption('default_chime', 'Chime (por defecto)'),
+    const pomodoroSounds = [
+      SoundOption('default_chime', 'Chime (inicio pomodoro)'),
       SoundOption('bell_soft', 'Campana suave'),
       SoundOption('digital_beep', 'Beep digital'),
+    ];
+
+    const breakSounds = [
+      SoundOption('default_chime_break', 'Chime (inicio descanso)'),
+      SoundOption('bell_soft_break', 'Campana suave (descanso)'),
+      SoundOption('digital_beep_break', 'Beep digital (descanso)'),
     ];
 
     if (task == null) {
@@ -133,36 +139,25 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
             SoundSelector(
               label: "Inicio de pomodoro",
               value: task.startSound,
-              options: soundOptions,
+              options: pomodoroSounds,
               onChanged: (v) => _update(task.copyWith(startSound: v)),
-            ),
-            const SizedBox(height: 12),
-            SoundSelector(
-              label: "Fin de pomodoro",
-              value: task.endPomodoroSound,
-              options: soundOptions,
-              onChanged: (v) => _update(task.copyWith(endPomodoroSound: v)),
             ),
             const SizedBox(height: 12),
             SoundSelector(
               label: "Inicio de descanso",
               value: task.startBreakSound,
-              options: soundOptions,
+              options: breakSounds,
               onChanged: (v) => _update(task.copyWith(startBreakSound: v)),
             ),
             const SizedBox(height: 12),
-            SoundSelector(
-              label: "Fin de descanso",
-              value: task.endBreakSound,
-              options: soundOptions,
-              onChanged: (v) => _update(task.copyWith(endBreakSound: v)),
+            Text(
+              "Fin de todos los pomodoros",
+              style: TextStyle(color: Colors.white54, fontSize: 14),
             ),
-            const SizedBox(height: 12),
-            SoundSelector(
-              label: "Fin de todos los pomodoros",
-              value: task.finishTaskSound,
-              options: soundOptions,
-              onChanged: (v) => _update(task.copyWith(finishTaskSound: v)),
+            const SizedBox(height: 4),
+            const Text(
+              "Se usará un sonido final por defecto para evitar confusión.",
+              style: TextStyle(color: Colors.white38, fontSize: 12),
             ),
           ],
         ),
