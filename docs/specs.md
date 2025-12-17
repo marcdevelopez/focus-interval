@@ -178,15 +178,15 @@ class PomodoroSession {
 
 # 🔊 **7. Sistema de sonidos**
 
-**Eventos con sonido configurable:**
+**Eventos con sonido configurable en MVP actual:**
 
 | Evento                     | Sonido             |
 | -------------------------- | ------------------ |
 | Inicio de pomodoro         | `startSound`       |
-| Fin de pomodoro            | `endPomodoroSound` |
 | Inicio de descanso         | `startBreakSound`  |
-| Fin de descanso            | `endBreakSound`    |
-| Fin de todos los pomodoros | `finishTaskSound`  |
+| Fin de todos los pomodoros | `finishTaskSound` (fijo por defecto) |
+
+_Nota: Fin de pomodoro e inicio de descanso coinciden; se usarán sonidos distintos para evitar confusión. Los sonidos finales y reproducción real se implementarán en la fase de audio._
 
 Formatos permitidos:
 

@@ -339,15 +339,29 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
   - Duraciones
   - Total pomodoros
   - Intervalo de descanso largo
-  - Sonidos
+  - Sonidos (inicio de pomodoro, inicio de descanso; sonido final fijo por defecto en este MVP)
 
 - Guardar en Firestore
 
 ### 📌 Condiciones
 
 - Tareas editables completamente
+- Selector de sonidos básico conectado (sin reproducción aún) y plan para implementar audio real en fase posterior
 
 ---
+
+# 🚀 **FASE 11 — Audio de eventos (pendiente)**
+
+### ⚙️ Tareas
+
+- Añadir assets de sonido por defecto (inicio pomodoro, inicio descanso, fin de tarea).
+- Integrar un servicio de audio y disparar sonidos en los eventos del Pomodoro.
+- Configurar fallback silencioso en plataformas que no soporten reproducción.
+
+### 📌 Condiciones
+
+- Sonidos reproducidos en macOS/Android/Web para los eventos clave.
+- Configuración de tareas respeta los sonidos seleccionados.
 
 # 🚀 **FASE 11 — Conectar Editor → Lista → Ejecución**
 
