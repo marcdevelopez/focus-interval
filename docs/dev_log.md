@@ -400,6 +400,24 @@ _(rellenar cuando ocurran)_
 - Probar en Windows (Google Sign-In) y validar CRUD/streams.
 - Iniciar Fase 10: revisar formulario del editor según roadmap (campos completos, sonidos) y pulir validaciones.
 
+# 🔹 Bloque 17 — Fase 10 (validaciones editor) — 17/12/2025
+
+### ✔ Trabajo realizado:
+
+- `TaskEditorViewModel.load` devuelve `bool` y los flujos de edición muestran snackbar/cierran si la tarea no existe.
+- Validación de negocio: el intervalo de descanso largo no puede superar el total de pomodoros; se bloquea el guardado y se informa al usuario.
+- Manejo UX: al editar desde la lista, si falla la carga, se notifica y no navega al editor.
+
+### 🧠 Decisiones tomadas:
+
+- Priorizar validaciones y UX del editor antes de añadir campos nuevos (p.ej. sonidos) en esta fase.
+- Mantener el editor reactivo a repositorio activo (Firestore/InMemory) sin cambios adicionales.
+
+### 🎯 Próximos pasos:
+
+- Añadir selección de sonido (cuando tengamos assets/definición) y persistirlo en el modelo.
+- Probar en Windows pendiente; si pasa, ajustar roadmap/dev_log con fecha.
+
 ---
 
 # 🧾 Notas generales

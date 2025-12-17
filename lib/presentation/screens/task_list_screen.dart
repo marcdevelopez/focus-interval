@@ -76,8 +76,14 @@ class TaskListScreen extends ConsumerWidget {
                 task: t,
                 onTap: () => context.push("/timer/${t.id}"),
                 onEdit: () async {
-                  await ref.read(taskEditorProvider.notifier).load(t.id);
+                  final ok = await ref.read(taskEditorProvider.notifier).load(t.id);
                   if (!context.mounted) return;
+                  if (!ok) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("No se encontró la tarea.")),
+                    );
+                    return;
+                  }
                   context.push("/tasks/edit/${t.id}");
                 },
                 onDelete: () =>

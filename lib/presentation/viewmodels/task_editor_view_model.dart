@@ -23,10 +23,12 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
     );
   }
 
-  // Cargar existente por id
-  Future<void> load(String id) async {
+  // Cargar existente por id. Devuelve false si no se encuentra.
+  Future<bool> load(String id) async {
     final repo = ref.read(taskRepositoryProvider);
-    state = await repo.getById(id);
+    final task = await repo.getById(id);
+    state = task;
+    return task != null;
   }
 
   void update(PomodoroTask task) {

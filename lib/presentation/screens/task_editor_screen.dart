@@ -26,8 +26,19 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
 
     if (widget.isEditing && widget.taskId != null) {
       Future.microtask(() {
-        ref.read(taskEditorProvider.notifier).load(widget.taskId!);
+        _loadExisting();
       });
+    }
+  }
+
+  Future<void> _loadExisting() async {
+    final ok = await ref.read(taskEditorProvider.notifier).load(widget.taskId!);
+    if (!mounted) return;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("La tarea ya no existe.")),
+      );
+      Navigator.pop(context);
     }
   }
 
@@ -51,6 +62,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
           TextButton(
             onPressed: () async {
               if (!_formKey.currentState!.validate()) return;
+              if (!_validateBusinessRules()) return;
 
               await ref.read(taskEditorProvider.notifier).save();
               if (!context.mounted) return;
@@ -114,6 +126,23 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
 
   void _update(PomodoroTask updated) {
     ref.read(taskEditorProvider.notifier).update(updated);
+  }
+
+  bool _validateBusinessRules() {
+    final task = ref.read(taskEditorProvider);
+    if (task == null) return false;
+
+    if (task.longBreakInterval > task.totalPomodoros) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "El intervalo de descanso largo no puede ser mayor que el total de pomodoros.",
+          ),
+        ),
+      );
+      return false;
+    }
+    return true;
   }
 
   Widget _textField({
