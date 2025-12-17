@@ -363,7 +363,7 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
 - Sonidos reproducidos en macOS/Android/Web para los eventos clave.
 - Configuración de tareas respeta los sonidos seleccionados.
 
-# 🚀 **FASE 11 — Conectar Editor → Lista → Ejecución**
+# 🚀 **FASE 12 — Conectar Editor → Lista → Ejecución**
 
 ### ⚙️ Tareas
 
@@ -376,7 +376,7 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
 
 ---
 
-# 🚀 **FASE 12 — Sincronización en tiempo real del Pomodoro (multi-dispositivo)**
+# 🚀 **FASE 13 — Sincronización en tiempo real del Pomodoro (multi-dispositivo)**
 
 ### ⚙️ Tareas
 
@@ -393,7 +393,7 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
 - Solo el dueño escribe; el resto muestra los cambios en vivo.
 - Transiciones de fase, pausa/reanudación y finalización quedan persistidas y visibles al reabrir la app.
 
-# 🚀 **FASE 13 — Sonidos y Notificaciones**
+# 🚀 **FASE 14 — Sonidos y Notificaciones**
 
 ### ⚙️ Tareas
 
@@ -414,7 +414,7 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
 
 ---
 
-# 🚀 **FASE 14 — Animación Final Obligatoria**
+# 🚀 **FASE 15 — Animación Final Obligatoria**
 
 ### ⚙️ Tareas
 
@@ -432,7 +432,7 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
 
 ---
 
-# 🚀 **FASE 15 — Redimensionado + Responsive Completo**
+# 🚀 **FASE 16 — Redimensionado + Responsive Completo**
 
 ### ⚙️ Tareas
 
@@ -447,7 +447,7 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
 
 ---
 
-# 🚀 **FASE 16 — Pruebas Unitarias y de Integración**
+# 🚀 **FASE 17 — Pruebas Unitarias y de Integración**
 
 ### ⚙️ Tareas
 
@@ -461,7 +461,7 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
 
 ---
 
-# 🚀 **FASE 17 — Pulido UI / UX**
+# 🚀 **FASE 18 — Pulido UI / UX**
 
 ### ⚙️ Tareas
 
@@ -472,7 +472,7 @@ Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan co
 
 ---
 
-# 🚀 **FASE 18 — Preparación de Release Interno**
+# 🚀 **FASE 19 — Preparación de Release Interno**
 
 ### ⚙️ Tareas
 
