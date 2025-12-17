@@ -4,15 +4,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/pomodoro_task.dart';
 import '../../domain/pomodoro_machine.dart';
 import '../providers.dart';
+import '../../data/services/sound_service.dart';
 
 class PomodoroViewModel extends Notifier<PomodoroState> {
   late PomodoroMachine _machine;
   StreamSubscription<PomodoroState>? _sub;
+  late SoundService _soundService;
+  PomodoroTask? _currentTask;
 
   @override
   PomodoroState build() {
     // Mantener viva la máquina mientras exista el VM
     _machine = ref.watch(pomodoroMachineProvider);
+    _soundService = ref.watch(soundServiceProvider);
 
     // escuchamos estados
     _sub = _machine.stream.listen((s) => state = s);
@@ -36,6 +40,13 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   void configureFromTask(PomodoroTask task) {
+    _currentTask = task;
+    _machine.callbacks = PomodoroCallbacks(
+      onPomodoroStart: (_) => _play(task.startSound),
+      onBreakStart: (_) => _play(task.startBreakSound),
+      onTaskFinished: (_) => _play(task.finishTaskSound),
+    );
+
     _machine.configureTask(
       pomodoroMinutes: task.pomodoroMinutes,
       shortBreakMinutes: task.shortBreakMinutes,
@@ -51,4 +62,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   void pause() => _machine.pause();
   void resume() => _machine.resume();
   void cancel() => _machine.cancel();
+
+  Future<void> _play(String soundId) => _soundService.play(soundId);
 }

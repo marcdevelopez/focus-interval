@@ -433,6 +433,24 @@ _(rellenar cuando ocurran)_
 - Implementar reproducción de audio (Fase 11) con assets por defecto.
 - Probar en Windows pendiente y ajustar documentación cuando se valide.
 
+# 🔹 Bloque 19 — Fase 11 (Audio de eventos, setup) — 17/12/2025
+
+### ✔ Trabajo realizado:
+
+- Añadido `just_audio` y `SoundService` con mapa id→asset y fallback silencioso si falta el archivo.
+- Integrado el servicio vía provider y callbacks del `PomodoroMachine` para disparar sonidos en: inicio pomodoro, inicio descanso, fin de tarea.
+- Creada carpeta `assets/sounds/` con README e incluida en `pubspec.yaml`; pub get ejecutado.
+
+### 🧠 Decisiones tomadas:
+
+- Mantener tres sonidos en el MVP: inicio pomodoro, inicio descanso y fin de tarea (fijo), evitando duplicidad con fin de descanso.
+- Si el asset falta o falla la carga, se ignora y se registra en debug; no se muestra error al usuario.
+
+### 🎯 Próximos pasos:
+
+- Añadir los archivos de audio reales a `assets/sounds/` y probar reproducción en macOS/Android/Web.
+- Ajustar dev_log/roadmap con la fecha cuando se confirme la reproducción en plataformas.
+
 ---
 
 # 🧾 Notas generales

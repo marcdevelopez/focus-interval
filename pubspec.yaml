@@ -41,6 +41,7 @@ dependencies:
   firebase_auth: ^5.1.4
   cloud_firestore: ^5.1.0
   google_sign_in: ^6.2.1
+  just_audio: ^0.9.39
 
 # dependency_overrides:
 
@@ -69,6 +70,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/sounds/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

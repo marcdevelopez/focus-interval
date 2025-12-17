@@ -7,6 +7,7 @@ import '../data/repositories/task_repository.dart';
 import '../data/services/firebase_auth_service.dart';
 import '../data/services/firestore_service.dart';
 import '../data/repositories/firestore_task_repository.dart';
+import '../data/services/sound_service.dart';
 
 // VIEWMODELS
 import 'viewmodels/pomodoro_view_model.dart';
@@ -55,6 +56,13 @@ final firestoreTaskRepositoryProvider =
     firestoreService: firestore,
     authService: auth,
   );
+});
+
+// Servicio de sonidos
+final soundServiceProvider = Provider<SoundService>((ref) {
+  final service = SoundService();
+  ref.onDispose(service.dispose);
+  return service;
 });
 
 //
