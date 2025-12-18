@@ -1,0 +1,11 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Permite que cada usuario lea y escriba su sesión activa en tiempo real.
+    match /users/{userId}/activeSession/{docId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // TODO: añade aquí el resto de reglas del proyecto si las tienes en Firebase Console.
+  }
+}
