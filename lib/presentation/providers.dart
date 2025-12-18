@@ -76,9 +76,13 @@ final deviceInfoServiceProvider = Provider<DeviceInfoService>((_) {
 // Repositorio de sesión Pomodoro
 final pomodoroSessionRepositoryProvider =
     Provider<PomodoroSessionRepository>((ref) {
+  final authState = ref.watch(authStateProvider).value;
   final firestore = ref.watch(firestoreServiceProvider);
   final auth = ref.watch(firebaseAuthServiceProvider);
   final deviceInfo = ref.watch(deviceInfoServiceProvider);
+  if (authState == null) {
+    return NoopPomodoroSessionRepository();
+  }
   return FirestorePomodoroSessionRepository(
     firestoreService: firestore,
     authService: auth,

@@ -5,3 +5,14 @@ abstract class PomodoroSessionRepository {
   Stream<PomodoroSession?> watchSession();
   Future<void> clearSession();
 }
+
+class NoopPomodoroSessionRepository implements PomodoroSessionRepository {
+  @override
+  Future<void> clearSession() async {}
+
+  @override
+  Future<void> publishSession(PomodoroSession session) async {}
+
+  @override
+  Stream<PomodoroSession?> watchSession() => const Stream.empty();
+}

@@ -84,6 +84,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   void start() {
     _phaseStartedAt = DateTime.now();
     _machine.startTask();
+    _publishCurrentSession();
   }
 
   void pause() {
