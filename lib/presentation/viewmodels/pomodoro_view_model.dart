@@ -152,6 +152,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       if (session == null) {
         _mirrorTimer?.cancel();
         _remoteOwnerId = null;
+        // Si el owner cancela y borra la sesión, reflejamos idle en el espejo.
+        if (_currentTask != null) {
+          state = PomodoroState.idle();
+        }
         return;
       }
       if (session.ownerDeviceId == _deviceInfo.deviceId) {
