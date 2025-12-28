@@ -1,4 +1,5 @@
-Coloca aquí los sonidos por defecto. Ejemplos sugeridos:
+Aquí van los sonidos por defecto.  
+
 - default_chime.mp3 (inicio pomodoro)
 - default_chime_break.mp3 (inicio descanso)
 - default_chime_finish.mp3 (fin de tarea)
