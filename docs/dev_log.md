@@ -15,8 +15,8 @@ Este documento sirve para:
 
 # 📍 Estado actual
 
-Fase activa: **8 — Implementar CRUD de Tareas**  
-Última actualización: **28/11/2025**
+Fase activa: **13 — Sincronización en tiempo real del Pomodoro**  
+Última actualización: **06/01/2026**
 
 ---
 

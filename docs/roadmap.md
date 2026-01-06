@@ -25,6 +25,7 @@ NOTA: TimerScreen ya depende del ViewModel (sin timer local/config demo).
       Fase 10 (Editor con sonidos básicos) completada el 17/12/2025.
       Fase 11 (Audio de eventos) completada el 17/12/2025.
       Fase 12 (Conectar Editor → Lista → Ejecución) completada el 17/12/2025.
+      Fase 13 en curso: validar sincronización con dos dispositivos reales y decidir persistencia de deviceId.
 ```
 Actualizarse en cada commit, si es necesario.
 
