@@ -1,16 +1,16 @@
 import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 
-/// Servicio simple para reproducir sonidos desde assets.
+/// Simple service to play sounds from assets.
 class SoundService {
   final AudioPlayer _player = AudioPlayer();
 
-  /// Mapa ID lógico → ruta de asset.
+  /// Logical ID map → asset path.
   final Map<String, String> _assetById = const {
     'default_chime': 'assets/sounds/default_chime.mp3',
     'default_chime_break': 'assets/sounds/default_chime_break.mp3',
     'default_chime_finish': 'assets/sounds/default_chime_finish.mp3',
-    // Alias simples para opciones del selector (reutilizan los mismos assets)
+    // Simple aliases for selector options (reuse the same assets)
     'bell_soft': 'assets/sounds/default_chime.mp3',
     'digital_beep': 'assets/sounds/default_chime.mp3',
     'bell_soft_break': 'assets/sounds/default_chime_break.mp3',
@@ -21,7 +21,7 @@ class SoundService {
     final asset = _assetById[id];
     if (asset == null) return;
 
-    // Verificamos que el asset exista; si falta, silencioso.
+    // Verify the asset exists; if missing, stay silent.
     try {
       await rootBundle.load(asset);
     } catch (_) {

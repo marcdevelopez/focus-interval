@@ -38,7 +38,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al iniciar sesión: $e')),
+        SnackBar(content: Text('Sign-in error: $e')),
       );
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -57,7 +57,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al registrar: $e')),
+        SnackBar(content: Text('Sign-up error: $e')),
       );
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -73,7 +73,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error con Google: $e')),
+        SnackBar(content: Text('Google sign-in error: $e')),
       );
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -89,7 +89,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text('Autenticación'),
+        title: const Text('Authentication'),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -116,7 +116,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 controller: _passCtrl,
                 obscureText: true,
                 decoration: const InputDecoration(
-                  labelText: 'Contraseña',
+                  labelText: 'Password',
                   labelStyle: TextStyle(color: Colors.white70),
                   enabledBorder: UnderlineInputBorder(
                     borderSide: BorderSide(color: Colors.white24),
@@ -127,24 +127,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _loading ? null : _signInEmail,
-                child: const Text('Iniciar sesión (email)'),
+                child: const Text('Sign in (email)'),
               ),
               const SizedBox(height: 8),
               OutlinedButton(
                 onPressed: _loading ? null : _signUpEmail,
-                child: const Text('Crear cuenta (email)'),
+                child: const Text('Create account (email)'),
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: _loading || isGoogleDisabled ? null : _signInGoogle,
                 icon: const Icon(Icons.login),
-                label: const Text('Continuar con Google'),
+                label: const Text('Continue with Google'),
               ),
               if (isGoogleDisabled)
                 const Padding(
                   padding: EdgeInsets.only(top: 8.0),
                   child: Text(
-                    'Google Sign-In no está disponible en macOS; usa email/contraseña.',
+                    'Google Sign-In is not available on macOS; use email/password.',
                     style: TextStyle(color: Colors.white54, fontSize: 12),
                   ),
                 ),

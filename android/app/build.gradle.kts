@@ -35,14 +35,14 @@ android {
 
     bundle {
         language {
-            // Mantén idiomas juntos; no dividir por locale.
+            // Keep languages together; do not split by locale.
             enableSplit = false
         }
     }
 
     splits {
         abi {
-            // Genera APK por ABI para reducir tamaño.
+            // Generate APKs per ABI to reduce size.
             isEnable = true
             reset()
             include("armeabi-v7a", "arm64-v8a", "x86_64")

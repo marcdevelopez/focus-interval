@@ -1,506 +1,506 @@
 # 📝 Focus Interval — Dev Log (MVP 1.0)
 
-Historial cronológico del desarrollo del MVP usando bloques de trabajo.  
-Cada bloque representa un avance significativo dentro de la misma jornada o sprint.
+Chronological history of the MVP development using work blocks.  
+Each block represents significant progress within the same day or sprint.
 
-Este documento sirve para:
+This document is used to:
 
-- Mantener trazabilidad real del progreso
-- Alinear la arquitectura con el roadmap
-- Informar a la IA del punto exacto del proyecto
-- Servir como prueba profesional de trabajo con IA colaborativa
-- Evidenciar cómo se construyó el MVP a ritmo acelerado
-
----
-
-# 📍 Estado actual
-
-Fase activa: **13 — Sincronización en tiempo real del Pomodoro**  
-Última actualización: **06/01/2026**
+- Preserve real progress traceability
+- Align architecture with the roadmap
+- Inform the AI of the exact project state
+- Serve as professional evidence of collaborative AI work
+- Show how the MVP was built at an accelerated pace
 
 ---
 
-# 📅 Diario de desarrollo
+# 📍 Current status
 
-# 🔹 Bloque 1 — Configuración inicial (21/11/2025)
-
-### ✔ Trabajo realizado:
-
-- Estructura inicial `/docs` creada
-- Añadido `specs.md` completo
-- Añadido `roadmap.md` completo
-
-### 🧠 Decisiones tomadas:
-
-- La animación final del reloj será **obligatoria** en el MVP
-- El fondo será **100% negro**
-- Ventana redimensionable con tamaño mínimo dinámico
-
-### ⚠️ Problemas encontrados:
-
-_(rellenar cuando ocurran)_
-
-### 🎯 Próximos pasos:
-
-- Crear proyecto Flutter
-- Crear estructura base del proyecto (`lib/app`, `lib/data`, etc.)
+Active phase: **13 — Real-time Pomodoro sync**  
+Last update: **06/01/2026**
 
 ---
 
-# 🔹 Bloque 2 — Máquina de estados Pomodoro (21/11/2025)
+# 📅 Development log
 
-### ✔ Trabajo realizado:
+# 🔹 Block 1 — Initial setup (21/11/2025)
 
-- Creada la máquina de estados completa (`pomodoro_machine.dart`)
-- Probada manualmente con un test en `main.dart`
-- Confirmado: los estados, transiciones y finalización estricta funcionan según specs
-- Validado que la máquina rechaza configuraciones inválidas (valores <= 0)
+### ✔ Work completed:
 
-### 🧠 Decisiones tomadas:
+- Initial `/docs` structure created
+- Added full `specs.md`
+- Added full `roadmap.md`
 
-- Se ejecutarán tests ligeros directamente en consola por ahora
-- La lógica permanece completamente independiente de UI y Firebase, tal como dicta la arquitectura
+### 🧠 Decisions made:
 
-### ⚠️ Problemas encontrados:
+- The final clock animation will be **mandatory** in the MVP
+- The background will be **100% black**
+- Resizable window with a dynamic minimum size
 
-- Configuración inicial con valores 0 generó excepción, pero era esperado
+### ⚠️ Issues found:
 
-### 🎯 Próximos pasos:
+_(fill in when they happen)_
 
-- Crear el widget del reloj circular (FASE 3)
-- Preparar la estructura de `timer_display.dart`
-- Definir painter + animaciones base
+### 🎯 Next steps:
+
+- Create the Flutter project
+- Create the base project structure (`lib/app`, `lib/data`, etc.)
 
 ---
 
-# 🔹 Bloque 3 — Reloj circular premium (TimerDisplay) (21/11/2025)
+# 🔹 Block 2 — Pomodoro state machine (21/11/2025)
 
-### ✔ Trabajo realizado:
+### ✔ Work completed:
 
-- Implementado el reloj circular completo (TimerDisplay)
-- Animación continua 60fps con AnimationController
-- Aguja en sentido horario estilo analógico
-- Colores dinámicos: rojo, azul y verde/dorado al finalizar
-- Diseño responsive según tamaño de ventana
-- CustomPainter optimizado para escritorio
-- Demostración visual funcional con controles Start/Pause/Resume/Cancel
+- Created the full state machine (`pomodoro_machine.dart`)
+- Manually tested with a quick check in `main.dart`
+- Confirmed: states, transitions, and strict completion follow the specs
+- Validated the machine rejects invalid configs (values <= 0)
 
-### 🧠 Decisiones tomadas:
+### 🧠 Decisions made:
 
-- Se prioriza animación premium continua según specs (no por ticks)
-- TimerDisplay se mantiene independiente de UI principal
-- Se validará la UI final del reloj dentro de la estructura MVVM
+- Run lightweight tests directly in the console for now
+- Logic remains completely independent from UI and Firebase, per architecture
 
-### 🎯 Próximos pasos:
+### ⚠️ Issues found:
 
-- Crear estructura base de navegación y pantallas principales
-- Implementar TimerScreen que integre TimerDisplay + lógica real
+- Initial config with 0 values threw an exception, as expected
 
-# 🔹 Bloque 4 — Pantalla TimerScreen + Navegación (21/11/2025)
+### 🎯 Next steps:
 
-### ✔ Trabajo realizado:
+- Create the circular clock widget (PHASE 3)
+- Prepare the `timer_display.dart` structure
+- Define painter + base animations
 
-- Integrada `TimerScreen` con `TimerDisplay`
-- Añadido reloj premium operativo con aguja animada
-- Añadido minutero digital superior sin duplicados
-- Añadida barra de controles dinámica (Start / Pause / Resume / Cancel)
-- Sincronización parcial con Riverpod lograda
-- Transición a pantalla de ejecución vía GoRouter
-- Comportamiento final al terminar la tarea funcionando con popup
+---
 
-### 🧠 Decisiones tomadas:
+# 🔹 Block 3 — Premium circular clock (TimerDisplay) (21/11/2025)
 
-- El ViewModel del Pomodoro se gestionará con Riverpod (FASE 5)
-- La lógica de ejecución ahora depende de `pomodoro_view_model.dart`, no de pruebas locales
-- La pantalla de ejecución reemplaza al demo provisional
+### ✔ Work completed:
 
-### ⚠️ Problemas encontrados:
+- Implemented the full circular clock (TimerDisplay)
+- Continuous 60fps animation with AnimationController
+- Clockwise analog-style hand
+- Dynamic colors: red, blue, and green/gold on finish
+- Responsive design based on window size
+- CustomPainter optimized for desktop
+- Visual demo working with Start/Pause/Resume/Cancel controls
 
-- Minutero duplicado en pantalla (resuelto)
-- Import y parámetro inexistente `style:` dentro de `_CenterContent` (corregido)
+### 🧠 Decisions made:
 
-### 🎯 Próximos pasos:
+- Prioritize premium continuous animation per specs (not tick-based)
+- Keep TimerDisplay independent from the main UI
+- Validate the final clock UI within the MVVM structure
 
-- Iniciar la FASE 5: Riverpod MVVM completo
-- Crear estructura de estado global para tareas
-- Preparar providers para Firebase Auth y Firestore (sin conectar aún)
+### 🎯 Next steps:
 
-# 🔹 Bloque 5 — Documentación de roles (22/11/2025)
+- Create the base navigation and screen structure
+- Implement TimerScreen with TimerDisplay + real logic
 
-### ✔ Trabajo realizado:
+# 🔹 Block 4 — TimerScreen + Navigation (21/11/2025)
 
-- Creado `docs/team_roles.md` con:
+### ✔ Work completed:
+
+- Integrated `TimerScreen` with `TimerDisplay`
+- Added a working premium clock with animated hand
+- Added a top digital time display without duplicates
+- Added dynamic controls bar (Start / Pause / Resume / Cancel)
+- Partial Riverpod sync achieved
+- Navigation to execution screen via GoRouter
+- Final behavior on task completion working with popup
+
+### 🧠 Decisions made:
+
+- Pomodoro ViewModel will be managed with Riverpod (PHASE 5)
+- Execution logic now depends on `pomodoro_view_model.dart`, not local demos
+- Execution screen replaces the provisional demo
+
+### ⚠️ Issues found:
+
+- Duplicate time display on screen (fixed)
+- Missing import and invalid `style:` param inside `_CenterContent` (fixed)
+
+### 🎯 Next steps:
+
+- Start PHASE 5: full Riverpod MVVM
+- Create global state structure for tasks
+- Prepare providers for Firebase Auth and Firestore (not connected yet)
+
+# 🔹 Block 5 — Roles documentation (22/11/2025)
+
+### ✔ Work completed:
+
+- Created `docs/team_roles.md` with:
   - Lead Flutter Engineer (Marcos)
   - Staff AI Engineer (ChatGPT)
   - AI Implementation Engineer (Codex)
-- Actualizado README para enlazarlo
-- Añadida estructura profesional para reclutadores
+- Updated README to link it
+- Added a professional structure for recruiters
 
-### 🧠 Decisiones tomadas:
+### 🧠 Decisions made:
 
-- Mantener este archivo como documento oficial del equipo IA+Humano
-- Usarlo como referencia profesional en entrevistas
+- Keep this file as the official AI+Human team document
+- Use it as a professional reference in interviews
 
-### 🎯 Próximos pasos:
+### 🎯 Next steps:
 
-- Finalizar FASE 5 (integración total con Riverpod)
-- Preparar la FASE 6 (Firebase Auth)
+- Finish PHASE 5 (full Riverpod integration)
+- Prepare PHASE 6 (Firebase Auth)
 
-# 🔹 Bloque 6 — Riverpod MVVM (Subfases 5.1 y 5.2) — 22/11/2025
+# 🔹 Block 6 — Riverpod MVVM (Subphases 5.1 and 5.2) — 22/11/2025
 
-### ✔ Trabajo realizado:
+### ✔ Work completed:
 
-- Creado PomodoroViewModel con implementación inicial basada en `Notifier`
-  (la migración a `AutoDisposeNotifier` queda pendiente para Fase 5.3).
-- Conectado el stream principal de PomodoroMachine.
-- Estados sincronizados correctamente con la UI mediante Riverpod.
-- Primera versión estable de integración sin crashes.
-- Corregido error “Tried to modify a provider while the widget tree was building”
-  moviendo llamadas fuera de lifecycle.
+- Created PomodoroViewModel with an initial `Notifier` implementation
+  (migration to `AutoDisposeNotifier` pending for Phase 5.3).
+- Connected the main PomodoroMachine stream.
+- States synced correctly with the UI via Riverpod.
+- First stable integration version without crashes.
+- Fixed “Tried to modify a provider while the widget tree was building”
+  by moving calls outside lifecycle.
 
-### ❗ Estado real actualizado:
+### ❗ Updated actual status:
 
-- **TimerScreen todavía contiene:**
-  - `_clockTimer` local
-  - `configureTask(...)` temporal en `initState`
-- Esto será eliminado en la Fase **5.3** cuando toda la lógica pase al ViewModel.
+- **TimerScreen still contains:**
+  - local `_clockTimer`
+  - temporary `configureTask(...)` in `initState`
+- This will be removed in **Phase 5.3** when all logic moves to the ViewModel.
 
-### 🧠 Decisiones tomadas:
+### 🧠 Decisions made:
 
-- Mantener `Notifier` temporalmente para evitar romper TimerScreen
-  antes de realizar la migración completa.
-- Aplazar la eliminación de timers locales hasta que el VM gestione de forma total
-  progreso, segundos restantes y fases.
+- Keep `Notifier` temporarily to avoid breaking TimerScreen
+  before completing the full migration.
+- Delay removing local timers until the VM fully manages
+  progress, remaining seconds, and phases.
 
-### 🎯 Próximos pasos:
+### 🎯 Next steps:
 
-- Completar la Fase **5.3**, moviendo TODA la lógica de tiempo al ViewModel.
-- Migrar PomodoroViewModel a `AutoDisposeNotifier`.
-- Eliminar por completo `_clockTimer` y la configuración demo de TimerScreen.
-
----
-
-## 🔹 Bloque 7 — Sincronización real del estado del proyecto (22/11/2025)
-
-### ✔ Trabajo realizado:
-
-- Correcciones estructurales en `providers.dart`:
-
-  - Añadido el import faltante de `pomodoro_task.dart`
-  - Reparados errores de tipos en `taskListProvider` y `taskEditorProvider`
-
-- Alineado el estado del código con Riverpod 2.x:
-
-  - `TaskListViewModel` como `AsyncNotifier<List<PomodoroTask>>`
-  - `TaskEditorViewModel` como `Notifier<PomodoroTask?>`
-
-- Confirmado que la compilación vuelve a ser estable tras los fixes
-- Revisada la estructura global de providers en la arquitectura MVVM
-
-### 🧠 Decisiones tomadas:
-
-- Mantener temporalmente `PomodoroViewModel` como `Notifier` mientras se completa la subfase 5.3
-- Postergar la migración a `AutoDisposeNotifier` hasta que TimerScreen esté totalmente unificado con el ViewModel
-- Priorizar coherencia entre roadmap y código REAL en lugar de seguir ciegamente la planificación previa
-
-### ⚠️ Problemas encontrados:
-
-- Varias inconsistencias entre código y roadmap causaban:
-
-  - Tipos no reconocidos en generics
-  - Providers desincronizados
-  - Errores de compilación en cascada
-
-### 🎯 Próximos pasos:
-
-- Completar FASE 5.3: unificar reloj + temporizador + stream en el ViewModel
-- Eliminar completamente la configuración demo de TimerScreen
-- Actualizar PomodoroViewModel → `AutoDisposeNotifier` según roadmap
-
-### 🔄 Ajustes importantes de documentación:
-
-- Se han detectado discrepancias entre roadmap y código real.
-- dev_log.md se ha actualizado para reflejar que:
-  - PomodoroViewModel sigue siendo `Notifier` (no AutoDispose aún).
-  - TimerScreen conserva lógica temporal (timer local + config demo).
-- Todo esto será corregido durante la Fase 5.3.
-
-# 🔹 Bloque 8 — Fase 5.3 (Unificación TimerScreen + ViewModel) — 22/11/2025
-
-### ✔ Trabajo realizado:
-
-- `pomodoroMachineProvider` ahora es `Provider.autoDispose` con cleanup en `onDispose`.
-- `PomodoroViewModel` expuesto vía `NotifierProvider.autoDispose`, suscrito a `PomodoroMachine.stream` y limpiando la suscripción en `onDispose`.
-- `TimerScreen` carga la tarea real mediante `loadTask(taskId)` y elimina la configuración demo.
-- Hora del sistema restaurada con `_clockTimer` y `FontFeature` para dígitos tabulares en la appbar.
-
-### 🧠 Decisiones:
-
-- Mantener `_clockTimer` exclusivamente para la hora del sistema; toda la lógica del pomodoro vive en ViewModel/Machine.
-- `loadTask` mapea `PomodoroTask` → `configureFromTask` para inicializar la máquina.
-
-### 🎯 Próximos pasos:
-
-- Añadir providers placeholders `firebaseAuthProvider` y `firestoreProvider` (Fase 5.4).
-- Conectar TimerScreen con selección de tarea real desde lista/editor y estados finales (Fase 5.5).
+- Complete **Phase 5.3**, moving ALL time logic into the ViewModel.
+- Migrate PomodoroViewModel to `AutoDisposeNotifier`.
+- Remove `_clockTimer` and TimerScreen demo config completely.
 
 ---
 
-# 🔹 Bloque 9 — Fase 5.4 (Placeholders Firebase) — 22/11/2025
+## 🔹 Block 7 — Real sync of project state (22/11/2025)
 
-### ✔ Trabajo realizado:
+### ✔ Work completed:
 
-- Añadidos providers placeholders `firebaseAuthProvider` y `firestoreProvider` en `providers.dart` (referencias nulas, sin integración real).
-- Dependencias `firebase_auth` y `cloud_firestore` añadidas al `pubspec.yaml` (pendiente integración real en fases 6–7).
-- Mantenida la compatibilidad de imports con Riverpod (ocultando `Provider` en los imports de Firebase).
+- Structural fixes in `providers.dart`:
 
-### 🎯 Próximos pasos:
+  - Added missing `pomodoro_task.dart` import
+  - Fixed type errors in `taskListProvider` and `taskEditorProvider`
 
-- Implementar servicios reales de Auth/Firestore en `data/services` (Fases 6–7).
-- Conectar TaskRepository a Firestore cuando se integren servicios reales.
+- Aligned code state with Riverpod 2.x:
 
----
+  - `TaskListViewModel` as `AsyncNotifier<List<PomodoroTask>>`
+  - `TaskEditorViewModel` as `Notifier<PomodoroTask?>`
 
-# 🔹 Bloque 10 — Fase 5.5 (Refactor TimerScreen + conexión tareas) — 22/11/2025
+- Confirmed the build is stable again after fixes
+- Reviewed global providers structure in the MVVM architecture
 
-### ✔ Trabajo realizado:
+### 🧠 Decisions made:
 
-- TimerScreen carga la tarea real por `taskId`, muestra loader hasta configurarla y deshabilita Start si no carga.
-- Manejo de tarea inexistente con snackbar + back automático.
-- `ref.listen` integrado en build para detectar `PomodoroStatus.finished` y mostrar popup final.
-- TimerDisplay fuerza progreso al 100% y color final (verde/dorado) en estado `finished`.
+- Keep `PomodoroViewModel` as `Notifier` temporarily while subphase 5.3 completes
+- Postpone migration to `AutoDisposeNotifier` until TimerScreen is fully unified with the ViewModel
+- Prioritize consistency between roadmap and REAL code instead of blindly following prior planning
 
-### 🧠 Decisiones:
+### ⚠️ Issues found:
 
-- Mantener InMemoryTaskRepository como fuente de datos local mientras llega Firestore (Fase 6–7).
-- Popup final cierra a la lista; se mostrará animación final en el círculo.
+- Several inconsistencies between code and roadmap caused:
 
-### 🎯 Próximos pasos:
+  - Unrecognized generic types
+  - Out-of-sync providers
+  - Cascading compilation errors
 
-- Iniciar Fase 6: configurar Firebase Auth (Google Sign-In) y providers reales.
-- Conectar TaskRepository a Firestore cuando estén listos los servicios.
+### 🎯 Next steps:
 
----
+- Complete PHASE 5.3: unify clock + timer + stream in the ViewModel
+- Remove TimerScreen demo config completely
+- Update PomodoroViewModel → `AutoDisposeNotifier` per roadmap
 
-# 🔹 Bloque 11 — Fase 6 (Inicio Auth) — 23/11/2025
+### 🔄 Important documentation adjustments:
 
-### ✔ Trabajo realizado:
+- Discrepancies between roadmap and real code were found.
+- dev_log.md was updated to reflect that:
+  - PomodoroViewModel is still `Notifier` (not AutoDispose yet).
+  - TimerScreen kept temporal logic (local timer + demo config).
+- This will be corrected during Phase 5.3.
 
-- Añadido override para desactivar `google_sign_in` en macOS (se mantiene en Win/Linux/iOS/Android/Web).
-- Creado esqueleto `FirebaseAuthService` (Google + email/password) y `FirestoreService` con stubs de seguridad.
-- Providers expuestos para servicios (`firebaseAuthServiceProvider`, `firestoreServiceProvider`) usando stub por defecto hasta configurar credenciales reales.
-- Bundle ID de macOS actualizado a `com.marcdevelopez.focusinterval` (unificar namespace).
+# 🔹 Block 8 — Phase 5.3 (TimerScreen + ViewModel unification) — 22/11/2025
 
-### 🧠 Decisiones:
+### ✔ Work completed:
 
-- Mantener stub para evitar crashes en local hasta configurar Firebase (en este bloque inicial).
-- Estrategia Auth: Google Sign-In para iOS/Android/Web/Win/Linux; email/password para macOS.
-- No se inicializa Firebase aún; integración real se hará con credenciales en fases 6–7.
+- `pomodoroMachineProvider` is now `Provider.autoDispose` with cleanup in `onDispose`.
+- `PomodoroViewModel` exposed via `NotifierProvider.autoDispose`, subscribed to `PomodoroMachine.stream` and cleaning subscriptions in `onDispose`.
+- `TimerScreen` loads the real task via `loadTask(taskId)` and removes demo config.
+- System time restored with `_clockTimer` and `FontFeature` for tabular digits in the appbar.
 
-### 🎯 Próximos pasos:
+### 🧠 Decisions:
 
-- Configurar Firebase Core/Auth con credenciales reales; usar email/password en macOS y Google en las demás.
-- Sustituir los providers stub por las instancias reales una vez configurado Firebase.
-- Ajustar bundle IDs en otras plataformas al namespace unificado cuando toque.
+- Keep `_clockTimer` exclusively for system time; all Pomodoro logic lives in ViewModel/Machine.
+- `loadTask` maps `PomodoroTask` → `configureFromTask` to initialize the machine.
 
----
+### 🎯 Next steps:
 
-# 🔹 Bloque 12 — Fase 6 (Auth configurada) — 23/11/2025
-
-### ✔ Trabajo realizado:
-
-- Ejecutado FlutterFire con bundles unificados `com.marcdevelopez.focusinterval` (android/ios/macos/windows/web) y generado `firebase_options.dart`.
-- Añadido `GoogleService-Info.plist` correcto al target macOS (Build Phases → Copy Bundle Resources) y eliminado duplicados.
-- Providers apuntan a servicios reales (`FirebaseAuthService`, `FirebaseFirestoreService`); Firebase inicializa en `main.dart`.
-- Estrategia Auth activa: Google en iOS/Android/Web/Windows, email/password en macOS.
-- Config habilitada en consola: Google + Email/Password.
-
-### 🧠 Decisiones:
-
-- Reutilizar config web para Linux hasta generar app específica; sin UnsupportedError en `DefaultFirebaseOptions`.
-- Mantener namespace único `com.marcdevelopez.focusinterval` en todas las plataformas.
-
-### 🎯 Próximos pasos:
-
-- Fase 7: integrar Firestore real y conectar repositorios a datos remotos.
-- Añadir UI de login (email/password en macOS, Google en el resto) para validar flujos.
+- Add placeholder providers `firebaseAuthProvider` and `firestoreProvider` (Phase 5.4).
+- Connect TimerScreen with real task selection from list/editor and final states (Phase 5.5).
 
 ---
 
-# 🔹 Bloque 13 — Fase 7 (Firestore integrado) — 24/11/2025
+# 🔹 Block 9 — Phase 5.4 (Firebase placeholders) — 22/11/2025
 
-### ✔ Trabajo realizado:
+### ✔ Work completed:
 
-- Creado `FirestoreTaskRepository` implementando `TaskRepository` sobre `users/{uid}/tasks`.
-- `taskRepositoryProvider` alterna Firestore/InMemory según sesión; refresco de lista al cambiar usuario.
-- Login/registro refresca tareas y logout invalida estado; tareas aisladas por uid.
-- UI muestra email y botón de logout; repo de Firestore activo cuando hay usuario autenticado.
+- Added placeholder providers `firebaseAuthProvider` and `firestoreProvider` in `providers.dart` (null references, no real integration).
+- Added `firebase_auth` and `cloud_firestore` dependencies to `pubspec.yaml` (real integration pending in phases 6–7).
+- Preserved import compatibility with Riverpod (hiding `Provider` in Firebase imports).
 
-### 🧠 Decisiones:
+### 🎯 Next steps:
 
-- Mantener InMemory como fallback sin sesión.
-- Reglas en Firestore para aislar datos por `uid` (aplicar en consola).
-
-### 🎯 Próximos pasos:
-
-- Fase 8: pulir CRUD/streams y conectar completamente UI con Firestore.
+- Implement real Auth/Firestore services in `data/services` (Phases 6–7).
+- Connect TaskRepository to Firestore once real services are integrated.
 
 ---
 
-# 🔹 Bloque 14 — Fase 8 (Bugfix repositorio reactivo a Auth) — 28/11/2025
+# 🔹 Block 10 — Phase 5.5 (TimerScreen refactor + task connection) — 22/11/2025
 
-### ✔ Trabajo realizado:
+### ✔ Work completed:
 
-- `AuthService` expone `authStateChanges` y `authStateProvider` escucha login/logout.
-- `taskRepositoryProvider` se reconstruye al cambiar usuario y usa `FirestoreTaskRepository` cuando hay sesión.
-- `TaskListViewModel` refresca la lista al cambiar de `uid`; las tareas ya se sincronizan entre dispositivos con el mismo email/contraseña.
+- TimerScreen loads the real task by `taskId`, shows a loader until configured, and disables Start if it fails.
+- Handles missing task with snackbar + automatic back.
+- `ref.listen` integrated in build to detect `PomodoroStatus.finished` and show final popup.
+- TimerDisplay forces 100% progress and final color (green/gold) in `finished` state.
 
-### ⚠️ Problemas encontrados:
+### 🧠 Decisions:
 
-- El repo se instanciaba antes de login y quedaba en memoria local; las tareas no subían a Firestore ni se compartían entre plataformas.
+- Keep InMemoryTaskRepository as local data source until Firestore arrives (Phases 6–7).
+- Final popup closes to the list; final animation will be shown on the circle.
 
-### 🎯 Próximos pasos:
+### 🎯 Next steps:
 
-- Continuar Fase 8: CRUD completo y streams sobre Firestore.
-- Re-crear tareas de prueba tras login para persistirlas en `users/{uid}/tasks`.
-
-# 🔹 Bloque 15 — Fase 8 (CRUD reactivo con streams) — 17/12/2025
-
-### ✔ Trabajo realizado:
-
-- `TaskRepository` ahora expone `watchAll()`; InMemory y Firestore emiten cambios en tiempo real.
-- `TaskListViewModel` se suscribe al stream del repo activo y actualiza la UI sin `refresh` manual.
-- Eliminados refrescos forzados desde `LoginScreen` y `TaskEditorViewModel`; la lista depende solo del stream.
-
-### 🧠 Decisiones tomadas:
-
-- Mantener InMemory como fallback sin sesión, pero también con stream para coherencia y pruebas locales.
-- Centralizar la fuente de verdad en `watchAll()` para reducir lecturas puntuales y evitar estados inconsistentes.
-
-### 🎯 Próximos pasos:
-
-- Validar latencia y errores de Firestore en streams; considerar manejo optimista para ediciones/borrados.
-- Revisar validaciones del editor y estados de carga/errores en la lista.
-
-# 🔹 Bloque 16 — Fase 9 (lista reactiva y UX login) — 17/12/2025
-
-### ✔ Trabajo realizado:
-
-- `InMemoryTaskRepository.watchAll()` ahora emite inmediatamente al suscribirse; evita loaders infinitos sin sesión.
-- Ajustado `LoginScreen` con `SafeArea + SingleChildScrollView + padding` dinámico para eliminar el rectángulo de overflow al mostrar teclado en Android.
-- Verificado en macOS, IOs, Android y Web: lista de tareas reactiva; loader desaparece sin sesión. Windows pendiente de prueba.
-
-### 🧠 Decisiones tomadas:
-
-- Mantener comportamiento reactivo en todos los repos (InMemory/Firestore) como fuente única de verdad.
-- El login permanece con email/contraseña en macOS/Android/web; Google en web/desktop Win/Linux pendiente de probar.
-
-### 🎯 Próximos pasos:
-
-- Probar en Windows (Google Sign-In) y validar CRUD/streams.
-- Iniciar Fase 10: revisar formulario del editor según roadmap (campos completos, sonidos) y pulir validaciones.
-
-# 🔹 Bloque 17 — Fase 10 (validaciones editor) — 17/12/2025
-
-### ✔ Trabajo realizado:
-
-- `TaskEditorViewModel.load` devuelve `bool` y los flujos de edición muestran snackbar/cierran si la tarea no existe.
-- Validación de negocio: el intervalo de descanso largo no puede superar el total de pomodoros; se bloquea el guardado y se informa al usuario.
-- Manejo UX: al editar desde la lista, si falla la carga, se notifica y no navega al editor.
-- Añadido selector de sonidos por evento en el editor (opciones placeholder, pendientes assets reales) y persistencia de strings en el modelo/repos.
-
-### 🧠 Decisiones tomadas:
-
-- Priorizar validaciones y UX del editor antes de añadir campos nuevos (p.ej. sonidos) en esta fase.
-- Mantener el editor reactivo a repositorio activo (Firestore/InMemory) sin cambios adicionales.
-- Reducir la configuración de sonidos a lo esencial (inicio pomodoro, inicio descanso) y dejar el sonido final como valor por defecto para evitar confusión.
-
-### 🎯 Próximos pasos:
-
-- Añadir selección de sonido (cuando tengamos assets/definición) y persistirlo en el modelo.
-- Probar en Windows pendiente; si pasa, ajustar roadmap/dev_log con fecha.
-
-# 🔹 Bloque 18 — Fase 10 (Editor completado) — 17/12/2025
-
-### ✔ Trabajo realizado:
-
-- Editor completo con sonidos configurables mínimos (inicio pomodoro, inicio descanso) y sonido final fijo por defecto.
-- Validaciones de negocio activas y manejo de errores al cargar/editar tareas inexistentes.
-- Roadmap actualizado: Fase 10 marcada como completada; Fase actual → 11 (audio de eventos).
-
-### 🎯 Próximos pasos:
-
-- Implementar reproducción de audio (Fase 11) con assets por defecto.
-- Probar en Windows pendiente y ajustar documentación cuando se valide.
-
-# 🔹 Bloque 19 — Fase 11 (Audio de eventos, setup) — 17/12/2025
-
-### ✔ Trabajo realizado:
-
-- Añadido `just_audio` y `SoundService` con mapa id→asset y fallback silencioso si falta el archivo.
-- Integrado el servicio vía provider y callbacks del `PomodoroMachine` para disparar sonidos en: inicio pomodoro, inicio descanso, fin de tarea.
-- Creada carpeta `assets/sounds/` con README e incluida en `pubspec.yaml`; pub get ejecutado.
-- Añadidos los audios por defecto: `default_chime.mp3`, `default_chime_break.mp3`, `default_chime_finish.mp3`.
-
-### 🧠 Decisiones tomadas:
-
-- Mantener tres sonidos en el MVP: inicio pomodoro, inicio descanso y fin de tarea (fijo), evitando duplicidad con fin de descanso.
-- Si el asset falta o falla la carga, se ignora y se registra en debug; no se muestra error al usuario.
-- Se detectó que algunos ids del selector no tenían asset mapeado, provocando silencio al iniciar el pomodoro; se resolvió mapeando aliases a los assets existentes.
-
-### 🎯 Próximos pasos:
-
-- Probar reproducción en macOS/Android/Web con los audios añadidos. ✔ (completado)
-- Ajustar dev_log/roadmap con la fecha cuando se confirme la reproducción en plataformas. ✔ (completado)
-
-# 🔹 Bloque 20 — Fase 11 (Audio de eventos completado) — 17/12/2025
-
-### ✔ Trabajo realizado:
-
-- Reproducción de sonidos confirmada en inicio de pomodoro, inicio de descanso y fin de tarea (Android/Web/macOS).
-- Aliases de sonidos del selector mapeados a assets para evitar ids sin ruta.
-- Código de audio simplificado sin logs temporales ni campos sin uso.
-
-### 🎯 Próximos pasos:
-
-- Probar en Windows cuando sea posible y anotar la fecha si pasa.
-- Continuar con Fase 12 (Conectar Editor → Lista → Ejecución).
-
-# 🔹 Bloque 21 — Fase 12 (Conectar Editor → Lista → Ejecución) — 17/12/2025
-
-### ✔ Trabajo realizado:
-
-- TimerScreen carga la tarea real desde la lista y usa el ViewModel para toda la ejecución.
-- Cambios hechos en el editor (duraciones, sonidos) se reflejan al abrir la ejecución; manejo de tarea inexistente muestra snackbar y regresa.
-- Flujo Editor → Lista → Ejecución funcionando en macOS/Android/Web (Windows pendiente de probar).
-
-### 🎯 Próximos pasos:
-
-- Probar en Windows el ciclo completo cuando sea posible y registrar fecha.
-- Avanzar a Fase 13 (sincronización en tiempo real del Pomodoro).
-
-# 🔹 Bloque 22 — Fase 13 (Sync tiempo real, setup) — 17/12/2025
-
-### ✔ Trabajo realizado:
-
-- Creado modelo `PomodoroSession` y repositorio Firestore (`users/{uid}/activeSession/current`) con publish/watch/clear.
-- `PomodoroViewModel` publica estado en eventos clave (inicio pomodoro, inicio descanso, pausa, resume, finish/cancel) con `ownerDeviceId`.
-- Modo espejo básico: si la sesión pertenece a otro dispositivo, el VM refleja el estado remoto (cálculo de remaining a partir de `phaseStartedAt` cuando está disponible).
-- DeviceId básico generado por sesión de app; pendiente persistencia entre ejecuciones.
-
-### 🎯 Próximos pasos:
-
-- Probar con dos dispositivos reales (misma cuenta) y validar retraso <2s; ajustar si es necesario publicar ticks o timestamps.
-- Decidir si se persiste `deviceId` localmente para mantener la propiedad entre reinicios.
+- Start Phase 6: configure Firebase Auth (Google Sign-In) and real providers.
+- Connect TaskRepository to Firestore once services are ready.
 
 ---
 
-# 🧾 Notas generales
+# 🔹 Block 11 — Phase 6 (Auth start) — 23/11/2025
 
-- Actualiza este documento al **final de cada sesión de desarrollo**
-- Usa viñetas cortas, no es narrativa larga
-- Esto permite a la IA entrar en cualquier día y continuar directamente
+### ✔ Work completed:
+
+- Added override to disable `google_sign_in` on macOS (kept on Win/Linux/iOS/Android/Web).
+- Created `FirebaseAuthService` skeleton (Google + email/password) and `FirestoreService` with safety stubs.
+- Exposed providers for services (`firebaseAuthServiceProvider`, `firestoreServiceProvider`) using a default stub until real credentials are set.
+- Updated macOS bundle ID to `com.marcdevelopez.focusinterval` (unified namespace).
+
+### 🧠 Decisions:
+
+- Keep stub to avoid local crashes until Firebase is configured (in this initial block).
+- Auth strategy: Google Sign-In for iOS/Android/Web/Win/Linux; email/password for macOS.
+- Firebase is not initialized yet; real integration will be done with credentials in phases 6–7.
+
+### 🎯 Next steps:
+
+- Configure Firebase Core/Auth with real credentials; use email/password on macOS and Google elsewhere.
+- Replace stub providers with real instances once Firebase is configured.
+- Adjust bundle IDs on other platforms to the unified namespace when needed.
 
 ---
 
-# 🚀 Fin del archivo
+# 🔹 Block 12 — Phase 6 (Auth configured) — 23/11/2025
+
+### ✔ Work completed:
+
+- Ran FlutterFire with unified bundles `com.marcdevelopez.focusinterval` (android/ios/macos/windows/web) and generated `firebase_options.dart`.
+- Added the correct `GoogleService-Info.plist` to the macOS target (Build Phases → Copy Bundle Resources) and removed duplicates.
+- Providers point to real services (`FirebaseAuthService`, `FirebaseFirestoreService`); Firebase initializes in `main.dart`.
+- Auth strategy active: Google on iOS/Android/Web/Windows, email/password on macOS.
+- Console config enabled: Google + Email/Password.
+
+### 🧠 Decisions:
+
+- Reuse the web config for Linux until a specific app is generated; no UnsupportedError in `DefaultFirebaseOptions`.
+- Keep a single namespace `com.marcdevelopez.focusinterval` across all platforms.
+
+### 🎯 Next steps:
+
+- Phase 7: integrate real Firestore and connect repositories to remote data.
+- Add login UI (email/password on macOS, Google elsewhere) to validate flows.
+
+---
+
+# 🔹 Block 13 — Phase 7 (Firestore integrated) — 24/11/2025
+
+### ✔ Work completed:
+
+- Created `FirestoreTaskRepository` implementing `TaskRepository` on `users/{uid}/tasks`.
+- `taskRepositoryProvider` switches Firestore/InMemory based on session; list refreshes on user change.
+- Login/register refresh tasks and logout invalidates state; tasks isolated by uid.
+- UI shows email and logout button; Firestore repo active when a user is authenticated.
+
+### 🧠 Decisions:
+
+- Keep InMemory as fallback without session.
+- Firestore rules to isolate data by `uid` (apply in console).
+
+### 🎯 Next steps:
+
+- Phase 8: polish CRUD/streams and fully connect UI to Firestore.
+
+---
+
+# 🔹 Block 14 — Phase 8 (Reactive repo auth bugfix) — 28/11/2025
+
+### ✔ Work completed:
+
+- `AuthService` exposes `authStateChanges` and `authStateProvider` listens to login/logout.
+- `taskRepositoryProvider` rebuilds on user change and uses `FirestoreTaskRepository` when logged in.
+- `TaskListViewModel` refreshes the list on `uid` change; tasks now sync across devices with the same email/password.
+
+### ⚠️ Issues found:
+
+- The repo was instantiated before login and stayed in local memory; tasks were not saved to Firestore or shared across platforms.
+
+### 🎯 Next steps:
+
+- Continue Phase 8: full CRUD and streams over Firestore.
+- Re-create test tasks after login to persist them in `users/{uid}/tasks`.
+
+# 🔹 Block 15 — Phase 8 (Reactive CRUD with streams) — 17/12/2025
+
+### ✔ Work completed:
+
+- `TaskRepository` now exposes `watchAll()`; InMemory and Firestore emit real-time changes.
+- `TaskListViewModel` subscribes to the active repo stream and updates the UI without manual `refresh`.
+- Removed forced refreshes from `LoginScreen` and `TaskEditorViewModel`; the list depends only on the stream.
+
+### 🧠 Decisions made:
+
+- Keep InMemory as fallback without session, but also stream-based for coherence and local testing.
+- Centralize the source of truth in `watchAll()` to reduce point reads and avoid inconsistent states.
+
+### 🎯 Next steps:
+
+- Validate Firestore stream latency and errors; consider optimistic handling for edits/deletes.
+- Review editor validations and list loading/error states.
+
+# 🔹 Block 16 — Phase 9 (Reactive list and login UX) — 17/12/2025
+
+### ✔ Work completed:
+
+- `InMemoryTaskRepository.watchAll()` now emits immediately on subscription; avoids infinite loaders without a session.
+- Adjusted `LoginScreen` with dynamic `SafeArea + SingleChildScrollView + padding` to remove the Android keyboard overflow rectangle.
+- Verified on macOS, iOS, Android, and Web: reactive task list; loader disappears without session. Windows pending.
+
+### 🧠 Decisions made:
+
+- Keep reactive behavior across all repos (InMemory/Firestore) as the single source of truth.
+- Login remains email/password on macOS/Android/web; Google on web/desktop Win/Linux pending test.
+
+### 🎯 Next steps:
+
+- Test on Windows (Google Sign-In) and validate CRUD/streams.
+- Start Phase 10: review the editor form per roadmap (full fields, sounds) and polish validations.
+
+# 🔹 Block 17 — Phase 10 (Editor validations) — 17/12/2025
+
+### ✔ Work completed:
+
+- `TaskEditorViewModel.load` returns `bool` and edit flows show a snackbar/close if the task does not exist.
+- Business validation: long break interval cannot exceed total pomodoros; save is blocked and the user is informed.
+- UX handling: when editing from the list, if loading fails, it notifies and does not navigate to the editor.
+- Added per-event sound selector in the editor (placeholder options, real assets pending) and persisted strings in model/repo.
+
+### 🧠 Decisions made:
+
+- Prioritize editor validations and UX before adding new fields (e.g., sounds) in this phase.
+- Keep the editor reactive to the active repo (Firestore/InMemory) without extra changes.
+- Reduce sound configuration to essentials (pomodoro start, break start) and keep the final sound as a default to avoid confusion.
+
+### 🎯 Next steps:
+
+- Add sound selection (once assets/definitions are ready) and persist it in the model.
+- Windows test pending; if it passes, update roadmap/dev_log with date.
+
+# 🔹 Block 18 — Phase 10 (Editor completed) — 17/12/2025
+
+### ✔ Work completed:
+
+- Full editor with minimal configurable sounds (pomodoro start, break start) and a fixed final sound by default.
+- Business validations active and error handling when loading/editing missing tasks.
+- Roadmap updated: Phase 10 marked as completed; current phase → 11 (event audio).
+
+### 🎯 Next steps:
+
+- Implement audio playback (Phase 11) with default assets.
+- Windows test pending and update docs when validated.
+
+# 🔹 Block 19 — Phase 11 (Event audio, setup) — 17/12/2025
+
+### ✔ Work completed:
+
+- Added `just_audio` and `SoundService` with an id→asset map and silent fallback if the file is missing.
+- Integrated the service via provider and PomodoroMachine callbacks to trigger sounds on pomodoro start, break start, and task finish.
+- Created `assets/sounds/` with README and included it in `pubspec.yaml`; pub get executed.
+- Added default audio files: `default_chime.mp3`, `default_chime_break.mp3`, `default_chime_finish.mp3`.
+
+### 🧠 Decisions made:
+
+- Keep three sounds in the MVP: pomodoro start, break start, and task finish (fixed), avoiding duplication with break end.
+- If an asset is missing or fails to load, ignore it and log in debug; do not show an error to the user.
+- Some selector ids had no mapped asset, causing silence on pomodoro start; resolved by mapping aliases to existing assets.
+
+### 🎯 Next steps:
+
+- Test playback on macOS/Android/Web with the added audios. ✔ (completed)
+- Update dev_log/roadmap with the date once playback is confirmed on platforms. ✔ (completed)
+
+# 🔹 Block 20 — Phase 11 (Event audio completed) — 17/12/2025
+
+### ✔ Work completed:
+
+- Sound playback confirmed at pomodoro start, break start, and task finish (Android/Web/macOS).
+- Sound selector aliases mapped to assets to avoid ids without paths.
+- Audio code simplified without temporary logs or unused fields.
+
+### 🎯 Next steps:
+
+- Test on Windows when possible and note the date if it passes.
+- Continue with Phase 12 (Connect Editor → List → Execution).
+
+# 🔹 Block 21 — Phase 12 (Connect Editor → List → Execution) — 17/12/2025
+
+### ✔ Work completed:
+
+- TimerScreen loads the real task from the list and uses the ViewModel for all execution.
+- Changes in the editor (durations, sounds) are reflected when opening execution; missing task handling shows a snackbar and returns.
+- Editor → List → Execution flow working on macOS/Android/Web (Windows pending).
+
+### 🎯 Next steps:
+
+- Test the full cycle on Windows when possible and record the date.
+- Move to Phase 13 (real-time Pomodoro sync).
+
+# 🔹 Block 22 — Phase 13 (Real-time sync, setup) — 17/12/2025
+
+### ✔ Work completed:
+
+- Created `PomodoroSession` model and Firestore repository (`users/{uid}/activeSession/current`) with publish/watch/clear.
+- `PomodoroViewModel` publishes state on key events (pomodoro start, break start, pause, resume, finish/cancel) with `ownerDeviceId`.
+- Basic mirror mode: if the session belongs to another device, the VM mirrors the remote state (remaining time derived from `phaseStartedAt` when available).
+- Basic deviceId generated per app session; persistence between runs pending.
+
+### 🎯 Next steps:
+
+- Test with two real devices (same account) and validate delay <2s; adjust if ticks or timestamps need publishing.
+- Decide whether to persist `deviceId` locally to keep ownership across restarts.
+
+---
+
+# 🧾 General notes
+
+- Update this document at the **end of each development session**
+- Use short bullet points, not long narrative
+- This allows the AI to jump in on any day and continue directly
+
+---
+
+# 🚀 End of file

@@ -23,7 +23,7 @@ class TaskCard extends StatelessWidget {
       child: ListTile(
         onTap: onTap,
         title: Text(
-          task.name.isEmpty ? "(Sin nombre)" : task.name,
+          task.name.isEmpty ? "(Untitled)" : task.name,
           style: const TextStyle(color: Colors.white, fontSize: 18),
         ),
         subtitle: Text(

@@ -1,5 +1,5 @@
 # Focus Interval
-Pomodoro Desktop App (macOS / Windows / Linux) built with Flutter.
+Pomodoro desktop app (macOS / Windows / Linux) built with Flutter.
 
 ## 📘 Documentation
 - [Specifications](docs/specs.md)
@@ -9,13 +9,13 @@ Pomodoro Desktop App (macOS / Windows / Linux) built with Flutter.
 - [Agent Guide (internal)](agent.md)
 
 ## 🧪 Status
-Roadmap phase: 13 — Sincronización en tiempo real del Pomodoro (validación multi-dispositivo pendiente).
+Roadmap phase: 13 — Real-time Pomodoro sync (multi-device validation pending).
 
 ## 🛠️ Tech Stack
 Flutter · Firebase Auth · Firestore · Riverpod · MVVM
 
 ## 📦 Android builds
-- APKs release se generan divididos por ABI (armeabi-v7a, arm64-v8a, x86_64) con minify/shrink activos. Comando: `flutter build apk --release` (o `--split-per-abi`).
-- Los APK están en `build/app/outputs/flutter-apk/` por arquitectura.
-- Si necesitas un único APK universal, desactiva `splits.abi` en `android/app/build.gradle.kts` (o usa `flutter build apk --no-split-per-abi` si temporal).
-- Para publicar en Play, usa `flutter build appbundle`; el split lo hace Play.
+- Release APKs are generated per ABI (armeabi-v7a, arm64-v8a, x86_64) with minify/shrink enabled. Command: `flutter build apk --release` (or `--split-per-abi`).
+- APKs live in `build/app/outputs/flutter-apk/` per architecture.
+- If you need a single universal APK, disable `splits.abi` in `android/app/build.gradle.kts` (or use `flutter build apk --no-split-per-abi` temporarily).
+- For Play, use `flutter build appbundle`; Play handles the split.

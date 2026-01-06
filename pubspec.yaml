@@ -37,7 +37,7 @@ dependencies:
   google_fonts: ^6.1.0
   intl: ^0.19.0
   uuid: ^4.5.1
-  # Firebase placeholders (Fase 5.4 - integración real en Fase 6/7)
+  # Firebase placeholders (Phase 5.4 - real integration in Phase 6/7)
   firebase_auth: ^5.1.4
   cloud_firestore: ^5.1.0
   google_sign_in: ^6.2.1

@@ -22,16 +22,16 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   @override
   PomodoroState build() {
-    // Mantener viva la máquina mientras exista el VM
+    // Keep the machine alive while the VM exists.
     _machine = ref.watch(pomodoroMachineProvider);
     _soundService = ref.watch(soundServiceProvider);
     _sessionRepo = ref.watch(pomodoroSessionRepositoryProvider);
     _deviceInfo = ref.watch(deviceInfoServiceProvider);
 
-    // escuchamos estados
+    // Listen to states.
     _sub = _machine.stream.listen((s) => state = s);
 
-    // limpiar recursos
+    // Clean up resources.
     ref.onDispose(() {
       _sub?.cancel();
       _sessionSub?.cancel();
@@ -41,7 +41,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     return _machine.state;
   }
 
-  // cargar valores desde TaskRepository
+  // Load values from TaskRepository.
   Future<bool> loadTask(String taskId) async {
     final repo = ref.read(taskRepositoryProvider);
     final PomodoroTask? task = await repo.getById(taskId);
@@ -152,7 +152,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       if (session == null) {
         _mirrorTimer?.cancel();
         _remoteOwnerId = null;
-        // Si el owner cancela y borra la sesión, reflejamos idle en el espejo.
+        // If the owner cancels and clears the session, mirror idle.
         if (_currentTask != null) {
           state = PomodoroState.idle();
         }
@@ -164,7 +164,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         return;
       }
       if (_currentTask == null || session.taskId != _currentTask!.id) {
-        // Si la sesión remota pertenece a otra tarea, no la aplicamos.
+        // If the remote session belongs to another task, do not apply it.
         _mirrorTimer?.cancel();
         _remoteOwnerId = null;
         return;
@@ -219,7 +219,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   bool _shouldAllowTakeover(PomodoroSession session) {
-    // Permitimos retomar si no está corriendo y la sesión es vieja.
+    // Allow takeover if not running and the session is stale.
     if (_isRunning(session.status)) return false;
     return _isStale(session.lastUpdatedAt, minutes: 5);
   }

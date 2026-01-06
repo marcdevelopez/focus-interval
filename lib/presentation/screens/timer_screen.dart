@@ -25,14 +25,14 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
   void initState() {
     super.initState();
 
-    // Hora actual del sistema (actualiza cada segundo)
+    // Current system time (updates every second)
     _updateClock();
     _clockTimer = Timer.periodic(
       const Duration(seconds: 1),
       (_) => _updateClock(),
     );
 
-    // Cargar parámetros reales de la tarea por ID
+    // Load real task parameters by ID
     Future.microtask(() async {
       final ok = await ref
           .read(pomodoroViewModelProvider.notifier)
@@ -42,7 +42,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
       if (!ok) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("No se encontró la tarea seleccionada."),
+            content: Text("Selected task not found."),
           ),
         );
         Navigator.pop(context);
@@ -69,7 +69,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Escuchar finalización del pomodoro
+    // Listen for pomodoro completion
     ref.listen<PomodoroState>(pomodoroViewModelProvider, (previous, next) {
       final wasFinished = previous?.status == PomodoroStatus.finished;
       final nowFinished = next.status == PomodoroStatus.finished;
@@ -90,7 +90,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
         backgroundColor: Colors.black,
         title: Text(
           state.status == PomodoroStatus.finished
-              ? "Tarea completada"
+              ? "Task completed"
               : "Focus Interval",
         ),
         actions: [
@@ -112,7 +112,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
         children: [
           const SizedBox(height: 12),
 
-          // Reloj premium o loader inicial mientras carga la tarea
+          // Premium clock or initial loader while loading the task
           Expanded(
             child: Center(
               child: _taskLoaded
@@ -123,7 +123,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
                         CircularProgressIndicator(),
                         SizedBox(height: 12),
                         Text(
-                          "Cargando tarea...",
+                          "Loading task...",
                           style: TextStyle(color: Colors.white70),
                         ),
                       ],
@@ -131,7 +131,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
             ),
           ),
 
-          // Botones dinámicos
+          // Dynamic buttons
           _ControlsBar(state: state, vm: vm, taskLoaded: _taskLoaded),
 
           const SizedBox(height: 16),
@@ -147,11 +147,11 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
       builder: (_) => AlertDialog(
         backgroundColor: Colors.black,
         title: const Text(
-          "✅ Tarea finalizada",
+          "✅ Task completed",
           style: TextStyle(color: Colors.white),
         ),
         content: const Text(
-          "Has completado todos los pomodoros configurados.",
+          "You have completed all configured pomodoros.",
           style: TextStyle(color: Colors.white70),
         ),
         actions: [

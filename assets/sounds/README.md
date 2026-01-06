@@ -1,7 +1,7 @@
-Aquí van los sonidos por defecto.  
+Default sounds go here.  
 
-- default_chime.mp3 (inicio pomodoro)
-- default_chime_break.mp3 (inicio descanso)
-- default_chime_finish.mp3 (fin de tarea)
+- default_chime.mp3 (pomodoro start)
+- default_chime_break.mp3 (break start)
+- default_chime_finish.mp3 (task finish)
 
-Si faltan archivos, el reproductor simplemente no emitirá sonido.
+If files are missing, the player will simply stay silent.

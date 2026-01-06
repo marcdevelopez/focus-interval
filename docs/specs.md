@@ -1,53 +1,53 @@
-# 📘 **Especificaciones Funcionales – Aplicación de Pomodoro Multiplataforma (macOS / Windows / Linux)**
+# 📘 **Functional Specifications – Cross-Platform Pomodoro App (macOS / Windows / Linux)**
 
-**Versión 1.0 — Documento MVP Completo**
-
----
-
-# 🧭 **1. Descripción general del proyecto**
-
-La aplicación es un **gestor avanzado de sesiones Pomodoro**, diseñada para **escritorio** en **macOS**, **Windows** y **Linux**, desarrollada completamente con **Flutter**.
-
-El objetivo principal es permitir al usuario:
-
-- Crear tareas Pomodoro totalmente configurables
-- Guardarlas en la nube (Firestore)
-- Reutilizarlas en cualquier dispositivo
-- Ejecutarlas con precisión y sonidos personalizados
-- Detener automáticamente la ejecución al completar todos los pomodoros
-- Recibir alertas y notificaciones del sistema
-- Sincronizar en tiempo real la ejecución del pomodoro entre todos los dispositivos logueados con la misma cuenta (un único dueño de la sesión, el resto en modo espejo)
-
-La aplicación se sincroniza con **Firebase** mediante login con **Google / Gmail**.
+**Version 1.0 — Complete MVP Document**
 
 ---
 
-# 🖥️ **2. Plataformas objetivo**
+# 🧭 **1. Project overview**
+
+The app is an **advanced Pomodoro session manager**, designed for **desktop** on **macOS**, **Windows**, and **Linux**, built entirely with **Flutter**.
+
+The main goal is to allow the user to:
+
+- Create fully configurable Pomodoro tasks
+- Save them in the cloud (Firestore)
+- Reuse them on any device
+- Run them with precision and custom sounds
+- Automatically stop execution when all pomodoros are completed
+- Receive system alerts and notifications
+- Sync Pomodoro execution in real time across all devices logged into the same account (single session owner, others in mirror mode)
+
+The app syncs with **Firebase** via **Google / Gmail** login.
+
+---
+
+# 🖥️ **2. Target platforms**
 
 - macOS (Intel & Apple Silicon)
 - Windows 10/11 Desktop
-- Linux distros basadas en GTK (Ubuntu, Fedora, etc.)
+- Linux GTK-based distros (Ubuntu, Fedora, etc.)
 
 ---
 
-# 🔥 **3. Tecnologías principales**
+# 🔥 **3. Core technologies**
 
-| Área                   | Tecnología                               |
+| Area                   | Technology                               |
 | ---------------------- | ---------------------------------------- |
-| Framework UI           | Flutter 3.x                              |
+| UI Framework           | Flutter 3.x                              |
 | Auth                   | Firebase Authentication (Google Sign-In) |
 | Backend                | Firestore                                |
-| Local Cache (opcional) | Hive                                     |
+| Local Cache (optional) | Hive                                     |
 | State Management       | Riverpod                                 |
 | Navigation             | GoRouter                                 |
 | Audio                  | just_audio                               |
 | Notifications          | flutter_local_notifications              |
 | Logging                | logger                                   |
-| Arquitectura           | MVVM (Model–View–ViewModel)              |
+| Architecture           | MVVM (Model–View–ViewModel)              |
 
 ---
 
-# 📦 **4. Arquitectura general**
+# 📦 **4. General architecture**
 
 ```
 lib/
@@ -82,21 +82,21 @@ lib/
 
 ---
 
-# 🧩 **5. Modelo de datos**
+# 🧩 **5. Data model**
 
-## **5.1. Modelo `PomodoroTask`**
+## **5.1. `PomodoroTask` model**
 
 ```dart
 class PomodoroTask {
   String id;
   String name;
 
-  int pomodoroDuration; // minutos
+  int pomodoroDuration; // minutes
   int shortBreakDuration;
   int longBreakDuration;
 
   int totalPomodoros;
-  int longBreakInterval; // cada cuántos pomodoros va el descanso largo
+  int longBreakInterval; // how many pomodoros between long breaks
 
   String startSound;
   String endPomodoroSound;
@@ -126,30 +126,30 @@ class PomodoroTask {
 }
 ```
 
-## **5.2. Modelo `PomodoroSession` (sincronización en vivo)**
+## **5.2. `PomodoroSession` model (live sync)**
 
 ```dart
 class PomodoroSession {
   String id; // sessionId
   String taskId;
-  String ownerDeviceId; // dispositivo que escribe en tiempo real
+  String ownerDeviceId; // device that writes in real time
 
   PomodoroStatus status; // pomodoroRunning, shortBreakRunning, longBreakRunning, paused, finished, idle
   int currentPomodoro;
   int totalPomodoros;
 
-  int phaseDurationSeconds; // duración de la fase actual
-  int remainingSeconds;     // solo aplica en pausa
-  DateTime phaseStartedAt;  // serverTimestamp al iniciar/reanudar
-  DateTime lastUpdatedAt;   // serverTimestamp del último evento
+  int phaseDurationSeconds; // duration of the current phase
+  int remainingSeconds;     // only applies when paused
+  DateTime phaseStartedAt;  // serverTimestamp on start/resume
+  DateTime lastUpdatedAt;   // serverTimestamp of the last event
 }
 ```
 
 ---
 
-# 🧠 **6. Lógica del Pomodoro (máquina de estados)**
+# 🧠 **6. Pomodoro logic (state machine)**
 
-## **6.1. Estados**
+## **6.1. States**
 
 - `pomodoroRunning`
 - `shortBreakRunning`
@@ -158,460 +158,460 @@ class PomodoroSession {
 - `finished`
 - `idle`
 
-## **6.2. Transiciones**
+## **6.2. Transitions**
 
-1. Iniciar pomodoro → `pomodoroRunning`
-2. Terminar pomodoro:
+1. Start pomodoro → `pomodoroRunning`
+2. Finish pomodoro:
 
-   - Si el número actual % `longBreakInterval` == 0 → `longBreakRunning`
-   - Si no → `shortBreakRunning`
+   - If current number % `longBreakInterval` == 0 → `longBreakRunning`
+   - Otherwise → `shortBreakRunning`
 
-3. Terminar descanso → siguiente pomodoro
-4. Terminar el último pomodoro → `finished` + sonido final
-5. Usuario puede:
+3. Finish break → next pomodoro
+4. Finish the last pomodoro → `finished` + final sound
+5. User can:
 
-   - Pausar
-   - Reanudar
-   - Cancelar
+   - Pause
+   - Resume
+   - Cancel
 
 ---
 
-# 🔊 **7. Sistema de sonidos**
+# 🔊 **7. Sound system**
 
-**Eventos con sonido configurable en MVP actual:**
+**Configurable sound events in the current MVP:**
 
-| Evento                     | Sonido             |
-| -------------------------- | ------------------ |
-| Inicio de pomodoro         | `startSound`       |
-| Inicio de descanso         | `startBreakSound`  |
-| Fin de todos los pomodoros | `finishTaskSound` (fijo por defecto) |
+| Event                      | Sound                             |
+| -------------------------- | ---------------------------------- |
+| Pomodoro start             | `startSound`                       |
+| Break start                | `startBreakSound`                  |
+| End of all pomodoros       | `finishTaskSound` (fixed by default) |
 
-_Nota: Fin de pomodoro e inicio de descanso coinciden; se usarán sonidos distintos para evitar confusión. Los sonidos finales y reproducción real se implementarán en la fase de audio._
+_Note: Pomodoro end and break start coincide; distinct sounds will be used to avoid confusion. Final sounds and real playback will be implemented in the audio phase._
 
-Formatos permitidos:
+Allowed formats:
 
 - `.mp3`
 - `.wav`
 
-Los sonidos pueden ser:
+Sounds can be:
 
-- Incluidos en la app (assets)
-- O cargados por el usuario (local file picker)
+- Included in the app (assets)
+- Or loaded by the user (local file picker)
 
 ---
 
-# 💾 **8. Persistencia y sincronización**
+# 💾 **8. Persistence and sync**
 
-### **8.1. Firestore (principal)**
+### **8.1. Firestore (primary)**
 
 ```
 users/{uid}/tasks/{taskId}
 ```
 
-### **8.2. Hive (opcional)**
+### **8.2. Hive (optional)**
 
-Tabla local `task_cache`:
+Local table `task_cache`:
 
-- Carga instantánea
-- Sincronización en background
-- Modo offline
+- Instant load
+- Background sync
+- Offline mode
 
-### **8.3. Sesión activa del Pomodoro (sincronización en tiempo real)**
+### **8.3. Active Pomodoro session (real-time sync)**
 
 ```
 users/{uid}/activeSession
 ```
 
-- Documento único por usuario con la sesión en curso.
-- Campos mínimos: `taskId`, `ownerDeviceId`, `status`, `currentPomodoro`, `totalPomodoros`, `phaseDurationSeconds`, `remainingSeconds` (solo en pausa), `phaseStartedAt` (serverTimestamp), `lastUpdatedAt` (serverTimestamp).
-- Escribe **solo** el dispositivo dueño; el resto se suscribe en tiempo real y renderiza el progreso calculando el tiempo restante desde `phaseStartedAt` + `phaseDurationSeconds`.
+- Single document per user with the active session.
+- Minimum fields: `taskId`, `ownerDeviceId`, `status`, `currentPomodoro`, `totalPomodoros`, `phaseDurationSeconds`, `remainingSeconds` (only when paused), `phaseStartedAt` (serverTimestamp), `lastUpdatedAt` (serverTimestamp).
+- **Only** the owner device writes; others subscribe in real time and render progress by calculating remaining time from `phaseStartedAt` + `phaseDurationSeconds`.
 
 ---
 
-# 🔐 **9. Autenticación**
+# 🔐 **9. Authentication**
 
-## **Login obligatorio (según plataforma)**
+## **Mandatory login (by platform)**
 
 - iOS / Android / Web / Windows / Linux:
-  - Botón: “Continuar con Google”
-  - Abre navegador o WebView
-  - Obtiene `uid`, `email`, `displayName`, `photoURL`
+  - Button: “Continue with Google”
+  - Opens browser or WebView
+  - Gets `uid`, `email`, `displayName`, `photoURL`
 - macOS:
-  - Login por email/password (sin Google Sign-In, no soportado nativamente)
-  - Obtiene `uid`, `email` (y opcionalmente nombre)
+  - Email/password login (no Google Sign-In, not natively supported)
+  - Gets `uid`, `email` (and optionally name)
 
-## **Persistencia**
+## **Persistence**
 
-La sesión permanece activa en todos los dispositivos.
+The session remains active on all devices.
 
 ---
 
-# 🖼️ **10. Interfaz de usuario**
+# 🖼️ **10. User interface**
 
-## **10.1. Pantalla de Login**
+## **10.1. Login screen**
 
 - Logo
-- Botón Google
-- Texto: “Sincroniza tus tareas en la nube”
+- Google button
+- Text: “Sync your tasks in the cloud”
 
 ---
 
-## **10.2. Pantalla de Lista de Tareas**
+## **10.2. Task List screen**
 
-- Lista tipo tarjetas
-- Cada task muestra:
+- Card-style list
+- Each task shows:
 
-  - Nombre
-  - Pomodoros totales
-  - Duraciones
+  - Name
+  - Total pomodoros
+  - Durations
 
-- Botones:
+- Buttons:
 
-  - ▶ Ejecutar
-  - ✏ Editar
-  - 🗑 Eliminar
+  - ▶ Run
+  - ✏ Edit
+  - 🗑 Delete
 
-- Botón flotante **“+ Nueva tarea”**
+- Floating button **“+ New task”**
 
 ---
 
-## **10.3. Editor de Tarea**
+## **10.3. Task Editor**
 
 Inputs:
 
-- Nombre
-- Duración Pomodoro (minutos)
-- Duración descanso corto
-- Duración descanso largo
-- Total de pomodoros
-- Intervalo para descanso largo
-- Seleccionar sonidos para cada evento
+- Name
+- Pomodoro duration (minutes)
+- Short break duration
+- Long break duration
+- Total pomodoros
+- Long break interval
+- Select sounds for each event
 
-Botones:
+Buttons:
 
-- Guardar
-- Cancelar
-
----
-
-## **10.4. Pantalla de Ejecución**
-
-La pantalla de ejecución mostrará un **temporizador circular estilo reloj analógico**, con los siguientes requisitos visuales y funcionales:
-
-### 🎯 **Elementos principales**
-
-1. **Reloj circular grande** (al estilo “progress ring”).
-2. **Aguja animada**:
-
-   - Gira **en sentido horario**, como un reloj real.
-   - Representa el tiempo restante del ciclo actual (pomodoro o descanso).
-
-3. **Colores según el estado**:
-
-   - **Rojo (#E53935)** → Pomodoro
-   - **Azul (#1E88E5)** → Descanso corto o largo
-
-4. **Borde circular externo** que muestra el progreso general del ciclo.
-5. **Centro del reloj** muestra:
-
-   - Tiempo restante (MM:SS)
-   - Estado actual (“Pomodoro”, “Descanso corto”, “Descanso largo”)
-   - Pomodoro actual / total
+- Save
+- Cancel
 
 ---
 
-### 🎨 **Requisitos visuales del reloj**
+## **10.4. Execution Screen**
 
-#### **1. Círculo principal (progreso)**
+The execution screen will show an **analog-style circular timer**, with the following visual and functional requirements:
 
-- Grosor del trazo: 12–18 px
-- Redondeado en los extremos
-- Color dinámico (rojo/azul según estado)
-- Debe animarse suavemente con `TweenAnimationBuilder` o `AnimationController`
+### 🎯 **Main elements**
 
-#### **2. Aguja animada**
+1. **Large circular clock** (progress ring style).
+2. **Animated hand**:
 
-- Forma: línea fina desde el centro hacia el borde
-- Longitud: 90% del radio
-- Color: blanco o gris claro
-- Movimiento: **rotación continua** basada en:
+   - Rotates **clockwise**, like a real clock.
+   - Represents remaining time of the current cycle (pomodoro or break).
+
+3. **Colors by state**:
+
+   - **Red (#E53935)** → Pomodoro
+   - **Blue (#1E88E5)** → Short or long break
+
+4. **Outer circular border** showing overall cycle progress.
+5. **Clock center** shows:
+
+   - Remaining time (MM:SS)
+   - Current state (“Pomodoro”, “Short break”, “Long break”)
+   - Current pomodoro / total
+
+---
+
+### 🎨 **Clock visual requirements**
+
+#### **1. Main circle (progress)**
+
+- Stroke width: 12–18 px
+- Rounded ends
+- Dynamic color (red/blue by state)
+- Must animate smoothly with `TweenAnimationBuilder` or `AnimationController`
+
+#### **2. Animated hand**
+
+- Shape: thin line from center to edge
+- Length: 90% of the radius
+- Color: white or light gray
+- Movement: **continuous rotation** based on:
 
 ```
-ángulo = 360° * (1 - (tiempoRestante / tiempoTotal))
+angle = 360° * (1 - (remainingTime / totalTime))
 ```
 
-- Refrescado a 60 fps (AnimationController)
+- Refreshed at 60 fps (AnimationController)
 
 ---
 
-### 🕒 **Lógica del movimiento de la aguja**
+### 🕒 **Hand movement logic**
 
-- Al iniciar un pomodoro o descanso, la aguja se coloca en la posición de las 12 (–90°).
-- Gira gradualmente hasta cerrar el círculo completo al llegar a cero.
-- En pomodoro → color rojo
-- En descanso → color azul
-- Al cambiar de estado:
+- When a pomodoro or break starts, the hand is placed at the 12 o'clock position (–90°).
+- It rotates gradually until it completes the full circle when reaching zero.
+- In pomodoro → red color
+- In break → blue color
+- When changing state:
 
-  - Se reinicia la posición de la aguja
-  - Cambia el color
-  - Cambia el tiempo total
-
----
-
-### 🔊 **Sonidos**
-
-(ya definidos en tu documento original, se mantienen)
+  - Reset hand position
+  - Change color
+  - Change total time
 
 ---
 
-### 🧩 **Eventos que afectan al reloj**
+### 🔊 **Sounds**
 
-| Evento           | Acción sobre el reloj                                                                             |
+(already defined in your original document, kept as-is)
+
+---
+
+### 🧩 **Events that affect the clock**
+
+| Event            | Action on the clock                                                                               |
 | ---------------- | ------------------------------------------------------------------------------------------------- |
-| Iniciar pomodoro | Reset aguja, color rojo, animación hasta fin                                                      |
-| Fin pomodoro     | Cambio a descanso (color azul), reset aguja                                                       |
-| Fin descanso     | Cambio a pomodoro (color rojo), reset aguja                                                       |
-| Pausar           | Congela animación                                                                                 |
-| Reanudar         | Continúa animación                                                                                |
-| Cancelar         | Detiene animación y vuelve al estado idle                                                         |
-| Finalizar tarea  | Sonido especial + popup + animación final obligatoria (círculo verde/dorado + “TAREA FINALIZADA”) |
+| Start pomodoro   | Reset hand, red color, animate until end                                                          |
+| Pomodoro end     | Switch to break (blue color), reset hand                                                          |
+| Break end        | Switch to pomodoro (red color), reset hand                                                        |
+| Pause            | Freeze animation                                                                                  |
+| Resume           | Continue animation                                                                                |
+| Cancel           | Stop animation and return to idle state                                                           |
+| Finish task      | Special sound + popup + mandatory final animation (green/gold circle + “TASK COMPLETED”)          |
 
-La animación final descrita en la sección 12 forma parte del comportamiento obligatorio y debe implementarse dentro del propio reloj circular.
+The final animation described in section 12 is part of the mandatory behavior and must be implemented inside the circular clock itself.
 
-### **10.4.2. Sincronización multi-dispositivo en TimerScreen**
+### **10.4.2. Multi-device sync in TimerScreen**
 
-- Si existe una `activeSession` en Firestore para el `uid`, la pantalla se conecta en modo espejo y refleja el estado remoto en tiempo real (estado, fase, tiempo restante).
-- Solo el `ownerDeviceId` puede iniciar/pausar/reanudar/cancelar; los demás dispositivos muestran el estado y ofrecen “Tomar control” si el dueño no responde.
-- El tiempo restante en modo espejo se calcula con `phaseDurationSeconds` y `phaseStartedAt` (no se envían ticks de 1s).
+- If an `activeSession` exists in Firestore for the `uid`, the screen connects in mirror mode and reflects the remote state in real time (state, phase, remaining time).
+- Only the `ownerDeviceId` can start/pause/resume/cancel; other devices show the state and offer “Take over” if the owner does not respond.
+- Remaining time in mirror mode is calculated with `phaseDurationSeconds` and `phaseStartedAt` (no 1s ticks are sent).
 
-## **10.4.1. Mejoras visuales obligatorias del temporizador**
+## **10.4.1. Mandatory visual improvements for the timer**
 
-### **1. Tiempo digital con ancho fijo (evitar movimiento horizontal)**
+### **1. Fixed-width digital time (avoid horizontal jitter)**
 
-El temporizador `MM:SS` debe mostrarse sin ningún tipo de desplazamiento o "temblor" visual.  
-Esto se logra usando **dígitos de ancho fijo** y un separador `:` totalmente estático.
+The `MM:SS` timer must be displayed without any visual shifting or "jitter."  
+This is achieved using **fixed-width digits** and a fully static `:` separator.
 
-Requisitos:
+Requirements:
 
-- Cada dígito del tiempo debe tener **ancho idéntico**, independientemente del número.
-- El separador `:` no debe moverse jamás.
-- Soluciones permitidas:
-  - Fuente con `FontFeature.tabularFigures()`
-  - Fuentes monoespaciadas
-  - O bien usar `SizedBox` para fijar el ancho de cada dígito
-- El tiempo no debe vibrar ni cambiar de posición durante el conteo.
+- Each time digit must have an **identical width**, regardless of the number.
+- The `:` separator must never move.
+- Allowed solutions:
+  - A font with `FontFeature.tabularFigures()`
+  - Monospaced fonts
+  - Or use `SizedBox` to fix each digit width
+- The time must not jitter or change position during the countdown.
 
-### **2. Mostrar la hora actual del sistema**
+### **2. Show the current system time**
 
-La pantalla de ejecución debe mostrar en una esquina fija (preferentemente **esquina superior derecha**)  
-la **hora actual del sistema** del usuario.
+The execution screen must show, in a fixed corner (preferably **top-right**),  
+the user's **current system time**.
 
-Requisitos:
+Requirements:
 
-- Formato recomendado: `HH:mm` o `HH:mm:ss`.
-- Color recomendado: `Colors.white54` o equivalente.
-- Debe ser discreto, sin competir visualmente con el temporizador.
-- Debe actualizarse automáticamente (cada segundo o cada minuto según formato).
-- La hora debe permanecer visible incluso si la ventana se redimensiona.
+- Recommended format: `HH:mm` or `HH:mm:ss`.
+- Recommended color: `Colors.white54` or equivalent.
+- It must be subtle, not visually competing with the timer.
+- It must update automatically (every second or every minute depending on format).
+- The time must remain visible even if the window is resized.
 
-Propósito: permitir que el usuario vea la hora real sin necesidad de otro dispositivo ni ocupación excesiva de pantalla.
-
----
-
-## **10.5. Requisitos extra para Desktop (importante)**
-
-- Debe funcionar en pantallas grandes sin pixelarse (usar `CustomPainter`).
-- Debe permitir redimensionar la ventana y ajustar el tamaño del reloj automáticamente.
-- Animación fluida a 60fps en macOS / Windows / Linux.
+Purpose: allow the user to see the real time without needing another device or excessive screen space.
 
 ---
 
-# **10.6. Requisitos avanzados de ventana, adaptabilidad y accesibilidad visual**
+## **10.5. Extra requirements for Desktop (important)**
 
-## 🖥️ **A. Ventana redimensionable (obligatorio)**
-
-La aplicación debe permitir **redimensionar libremente la ventana** en macOS, Windows y Linux, con las siguientes reglas:
-
-1. **Se debe permitir cambiar el tamaño horizontal y vertical** en tiempo real.
-2. El contenido debe **adaptarse automáticamente** (responsive).
-3. La ventana no debe colapsar ni romper la UI al reducir su tamaño.
-4. El temporizador circular debe **escalar dinámicamente** según el tamaño disponible.
+- Must work on large screens without pixelation (use `CustomPainter`).
+- Must allow window resizing and automatically adjust clock size.
+- Smooth 60fps animation on macOS / Windows / Linux.
 
 ---
 
-## 📏 **B. Tamaño mínimo de ventana**
+# **10.6. Advanced window, responsiveness, and visual accessibility requirements**
 
-Para garantizar que el reloj sea siempre visible:
+## 🖥️ **A. Resizable window (mandatory)**
 
-- El tamaño mínimo permitido debe ser:
+The app must allow **free window resizing** on macOS, Windows, and Linux, with these rules:
 
-  - **¼ de la pantalla del usuario en la dimensión menor**
-  - Esto equivale aproximadamente a:
+1. **Allow horizontal and vertical resizing** in real time.
+2. Content must **adapt automatically** (responsive).
+3. The window must not collapse or break the UI when reduced.
+4. The circular timer must **scale dynamically** to the available size.
 
-    - 480×480 mínimo (si pantalla Full HD)
-    - 640×640 mínimo (si pantalla 1440p)
+---
 
-El tamaño real mínimo debe calcularse dinámicamente usando:
+## 📏 **B. Minimum window size**
+
+To ensure the clock is always visible:
+
+- The minimum allowed size should be:
+
+  - **1/4 of the user's screen on the shortest dimension**
+  - This is approximately:
+
+    - 480×480 minimum (if Full HD screen)
+    - 640×640 minimum (if 1440p screen)
+
+The actual minimum size must be calculated dynamically using:
 
 ```
 minSize = screen.shortestSide / 4
 ```
 
-Y la aplicación debe **bloquear** tamaños menores a este límite.
+And the app must **block** sizes smaller than this limit.
 
 ---
 
-## 🎛️ **C. El reloj debe ser completamente responsive**
+## 🎛️ **C. The clock must be fully responsive**
 
-El temporizador circular debe:
+The circular timer must:
 
-1. Escalar proporcionalmente según el tamaño de la ventana.
-2. Mantener siempre:
+1. Scale proportionally based on window size.
+2. Always keep:
 
-   - La aguja centrada
-   - El círculo visible y completo
-   - El texto central legible
+   - The hand centered
+   - The circle visible and complete
+   - The center text readable
 
-3. No debe superponerse con botones ni textos al reducirse el tamaño.
-4. Usar `LayoutBuilder` o `MediaQuery` para calcular tamaños basados en ancho/alto actual.
-
----
-
-## ⏸️ **D. Función de pausa y reanudación (obligatoria)**
-
-El usuario debe poder:
-
-### **1. Pausar en cualquier momento**
-
-- La aguja se congela.
-- El temporizador se detiene.
-- No se pierde el conteo actual.
-- Se guarda el estado internamente en el ViewModel.
-
-### **2. Reanudar cuando quiera**
-
-- La aguja continúa desde el punto exacto.
-- El tiempo restante y el estado se restauran sin saltos.
-
-### **3. Indicadores visuales**
-
-- Botón “Pausar” → se transforma en “Reanudar”.
-- Icono de pausa visible dentro del reloj (opcional).
-
-### **4. Comportamiento sonido/alertas**
-
-- Pausar no emite sonido.
-- Reanudar tampoco.
-- Solo eventos naturales del ciclo emiten audio.
+3. It must not overlap buttons or text when size is reduced.
+4. Use `LayoutBuilder` or `MediaQuery` to compute sizes based on current width/height.
 
 ---
 
-## 🌑 **E. Fondo totalmente negro (modo ahorro visual)**
+## ⏸️ **D. Pause and resume function (mandatory)**
 
-El modo por defecto debe ser:
+The user must be able to:
 
-- **Fondo 100% negro (#000000)**
-- Sin degradados
-- Sin transparencias
-- Textos y trazos del reloj en:
+### **1. Pause at any time**
 
-  - Blanco
-  - Gris claro
-  - Colores asignados (rojo/azul)
+- The hand freezes.
+- The timer stops.
+- The current count is not lost.
+- State is stored internally in the ViewModel.
 
-### Motivación:
+### **2. Resume whenever they want**
 
-- Reduce fatiga visual
-- Ideal para trabajar con poca luz
-- En monitores OLED (MacBook Pro modernos, monitores QD-OLED) ahorra energía
-- En Linux/macOS/Windows proporciona sensación de app profesional de productividad
+- The hand continues from the exact point.
+- Remaining time and state are restored without jumps.
 
----
+### **3. Visual indicators**
 
-## 🎯 **F. Visibilidad garantizada del reloj**
+- “Pause” button → changes to “Resume”.
+- Pause icon visible inside the clock (optional).
 
-Independientemente del tamaño de ventana:
+### **4. Sound/alert behavior**
 
-- El reloj debe ocupar mínimo el **60% del ancho disponible**.
-- Los controles (Pausar, Reanudar, Cancelar) deben reacomodarse para no invadir el círculo.
-- El texto central debe tener tamaño mínimo de:
-
-  - **32 px** para el tiempo
-  - **18 px** para el estado
-
-Si no cabe → se escala proporcionalmente, pero nunca desaparece.
+- Pausing emits no sound.
+- Resuming emits no sound either.
+- Only natural cycle events emit audio.
 
 ---
 
-# 🔔 **11. Notificaciones**
+## 🌑 **E. Fully black background (eye-saver mode)**
 
-- Notificación al terminar cada pomodoro
-- Notificación al finalizar la tarea completa
-- Posible vibración si el sistema lo permite (Linux no, Windows/macOS sí ocasionalmente)
+Default mode must be:
+
+- **100% black background (#000000)**
+- No gradients
+- No transparency
+- Clock text and strokes in:
+
+  - White
+  - Light gray
+  - Assigned colors (red/blue)
+
+### Motivation:
+
+- Reduces eye strain
+- Ideal for working in low light
+- On OLED monitors (modern MacBook Pro, QD-OLED monitors) it saves energy
+- On Linux/macOS/Windows it provides a professional productivity app feel
 
 ---
 
-# 🚨 **12. Comportamiento clave obligatorio (versión ampliada y definitiva)**
+## 🎯 **F. Guaranteed clock visibility**
 
-### ✔ **Finalización automática estricta de la tarea**
+Regardless of window size:
 
-Cuando el temporizador complete el **último pomodoro** de la tarea:
+- The clock must occupy at least **60% of the available width**.
+- Controls (Pause, Resume, Cancel) must rearrange to avoid invading the circle.
+- The center text must have a minimum size of:
 
-1. **La aplicación debe detenerse automáticamente**.
+  - **32 px** for time
+  - **18 px** for state
 
-   - No debe iniciar otro descanso.
-   - No debe iniciar un nuevo pomodoro.
-   - No debe permitir que el temporizador siga corriendo.
+If it does not fit → scale proportionally, but never disappear.
 
-2. Debe reproducir un **sonido final especial**, configurado por el usuario, diferente al resto de eventos.
+---
 
-3. Debe mostrar un **popup modal** con el mensaje:
+# 🔔 **11. Notifications**
 
-   - “**Tarea completada**”
-   - Información opcional: duración total trabajada, número de pomodoros completados.
+- Notification when each pomodoro ends
+- Notification when the full task ends
+- Possible vibration if the system allows it (Linux no, Windows/macOS occasionally yes)
 
-4. Debe enviar una **notificación del sistema**:
+---
+
+# 🚨 **12. Mandatory key behavior (expanded and definitive version)**
+
+### ✔ **Strict automatic task completion**
+
+When the timer completes the **last pomodoro** of the task:
+
+1. **The app must stop automatically**.
+
+   - It must not start another break.
+   - It must not start a new pomodoro.
+   - It must not allow the timer to keep running.
+
+2. It must play a **special final sound**, configured by the user, different from other events.
+
+3. It must show a **modal popup** with the message:
+
+   - “**Task completed**”
+   - Optional info: total time worked, number of pomodoros completed.
+
+4. It must send a **system notification**:
 
    - macOS → Notification Center
    - Windows → Windows Notification
    - Linux → libnotify
 
-5. El estado de la máquina de estados debe pasar obligatoriamente a:
+5. The state machine must transition to:
 
    - `finished`
 
-6. La pantalla del reloj debe:
+6. The clock screen must:
 
-   - Detener animación
-   - Mantener la aguja en su posición final (360°)
-   - Cambiar el color del círculo a **verde** o **dorado** (definido en la especificación del reloj)
-   - Mostrar visualmente “**Tarea Finalizada**” en el centro del círculo
+   - Stop animation
+   - Keep the hand in its final position (360°)
+   - Change the circle color to **green** or **gold** (defined in the clock spec)
+   - Show “**Task Finished**” in the center of the circle
 
-7. No debe permitir iniciar otra sesión automáticamente.
-   El usuario debe pulsar:
+7. It must not start another session automatically.
+   The user must press:
 
-   - “Cerrar”
-   - “Volver a la lista de tareas”
-   - “Iniciar nuevamente tarea” (opcional)
+   - “Close”
+   - “Back to task list”
+   - “Start task again” (optional)
 
 ---
 
-# 🔄 **13. Sincronización en tiempo real multi-dispositivo (MVP)**
+# 🔄 **13. Real-time multi-device sync (MVP)**
 
-- **Objetivo**: abrir la app en varios dispositivos con la misma sesión y ver el mismo pomodoro en vivo.
-- **Único escritor**: el dispositivo que inicia la sesión se marca como `ownerDeviceId` y es el único que publica eventos en `activeSession`.
-- **Eventos que escriben**: start, pausa, reanudación, cancelación, transición de fase y finalización. No se escribe cada segundo.
-- **Cálculo de tiempo**: se guarda `phaseStartedAt` (serverTimestamp) + `phaseDurationSeconds`; los clientes calculan `remainingSeconds` localmente y lo actualizan con cada snapshot.
-- **Conflictos**: si ya existe una `activeSession` y otro dispositivo intenta iniciar, debe preguntar si quiere “Tomar control” (sobrescribe `ownerDeviceId`) o “Respetar sesión remota” (solo espejo).
-- **Finalización**: al terminar la tarea, `activeSession` pasa a `finished` y luego se borra o resetea a `idle`.
+- **Goal**: open the app on multiple devices with the same session and see the same live pomodoro.
+- **Single writer**: the device that starts the session is marked as `ownerDeviceId` and is the only one publishing events to `activeSession`.
+- **Write events**: start, pause, resume, cancel, phase transition, and finish. No per-second writes.
+- **Time calculation**: store `phaseStartedAt` (serverTimestamp) + `phaseDurationSeconds`; clients compute `remainingSeconds` locally and update on each snapshot.
+- **Conflicts**: if an `activeSession` already exists and another device tries to start, ask whether to “Take over” (overwrite `ownerDeviceId`) or “Respect remote session” (mirror only).
+- **Completion**: when the task ends, `activeSession` goes to `finished` and then is deleted or reset to `idle`.
 
-# 📈 **14. Funcionalidades futuras (no incluidas en el MVP)**
+# 📈 **14. Future features (not included in the MVP)**
 
-- Estadísticas (gráfico de tareas completadas por día/semana)
-- Exportar tareas como archivo
-- Widgets flotantes “always on top”
-- Atajos de teclado globales
-- Modo minimalista
-- Modo oscuro/ligero personalizado
+- Statistics (chart of tasks completed per day/week)
+- Export tasks as a file
+- Floating widgets “always on top”
+- Global keyboard shortcuts
+- Minimal mode
+- Custom dark/light mode
 
 ---

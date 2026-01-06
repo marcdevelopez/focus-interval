@@ -10,7 +10,7 @@ abstract class TaskRepository {
   Stream<List<PomodoroTask>> watchAll();
 }
 
-/// Implementación temporal (MVP local)
+/// Temporary implementation (local MVP)
 class InMemoryTaskRepository implements TaskRepository {
   final Map<String, PomodoroTask> _store = {};
   final StreamController<List<PomodoroTask>> _controller;
@@ -19,7 +19,7 @@ class InMemoryTaskRepository implements TaskRepository {
       : _controller = StreamController<List<PomodoroTask>>.broadcast(
           sync: true,
           onListen: () {
-            // Emit el estado actual en cuanto alguien se suscribe.
+            // Emit the current state as soon as someone subscribes.
           },
         ) {
     _controller.onListen = _emit;

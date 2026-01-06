@@ -20,7 +20,7 @@ class FirestoreTaskRepository implements TaskRepository {
 
   Future<String> _uidOrThrow() async {
     final uid = authService.currentUser?.uid;
-    if (uid == null) throw Exception('No hay usuario autenticado');
+    if (uid == null) throw Exception('No authenticated user');
     return uid;
   }
 
@@ -61,7 +61,7 @@ class FirestoreTaskRepository implements TaskRepository {
         );
   }
 
-  /// Si quieres stream (opcional)
+  /// Optional stream helper.
   Stream<List<PomodoroTask>> watchTasks() {
     final uid = authService.currentUser?.uid;
     if (uid == null) return const Stream.empty();

@@ -1,12 +1,12 @@
-# 🟣 Guía de Uso de Codex — Flujo Perfecto para Trabajo Diario
+# 🟣 Codex Usage Guide — Ideal Daily Workflow
 
-Para que Codex analice SIEMPRE la versión real y actualizada del proyecto, usa esta secuencia **ANTES de preguntar por el estado del proyecto** o pedir diagnósticos.
+To ensure Codex ALWAYS analyzes the real and current version of the project, use this sequence **BEFORE asking about project status** or requesting diagnostics.
 
 ---
 
-## 🥇 1. Reset del índice
+## 🥇 1. Reset the index
 
-Resetea el contexto previo de Codex para asegurar que no haya basura o memoria de sesiones anteriores:
+Reset Codex's prior context to ensure there is no leftover memory from previous sessions:
 
 ```perl
 @codex reset index
@@ -14,9 +14,9 @@ Resetea el contexto previo de Codex para asegurar que no haya basura o memoria d
 
 ---
 
-## 🥈 2. Cargar la carpeta completa `lib`
+## 🥈 2. Load the full `lib` folder
 
-Esto permite que Codex vea todo tu código real:
+This allows Codex to see all your real code:
 
 ```kotlin
 @codex open lib
@@ -24,24 +24,24 @@ Esto permite que Codex vea todo tu código real:
 
 ---
 
-## 🥉 3. Preguntar
+## 🥉 3. Ask
 
-Ahora sí, Codex analiza la versión verdadera del proyecto.
+Now Codex can analyze the true state of the project.
 
-Ejemplos:
+Examples:
 
 ```text
-¿Cómo ves el estado del proyecto?
-¿Algún defecto?
-¿Qué parte está pendiente según el roadmap?
+How does the project look?
+Any issues?
+What is still pending according to the roadmap?
 ```
 
-Usa esta secuencia SIEMPRE que necesites análisis profundo del proyecto.
+Use this sequence EVERY time you need a deep analysis of the project.
 
 ---
 
-## 🟪 Nota personal
+## 🟪 Personal note
 
-Este archivo debe revisarse cada cierto tiempo y actualizarse si cambia el flujo de trabajo para Codex o si se añaden nuevas herramientas.
+Review this file periodically and update it if the Codex workflow changes or if new tools are added.
 
 ---

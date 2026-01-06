@@ -2,9 +2,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:google_sign_in/google_sign_in.dart';
 
-/// Servicio de autenticación.
-/// Implementa Google Sign-In para plataformas soportadas (no macOS desktop)
-/// y email/password para todas (especialmente macOS).
+/// Authentication service.
+/// Implements Google Sign-In for supported platforms (not macOS desktop)
+/// and email/password for all (especially macOS).
 abstract class AuthService {
   User? get currentUser;
   bool get isSignedIn;
@@ -48,7 +48,7 @@ class FirebaseAuthService implements AuthService {
   Future<UserCredential> signInWithGoogle() async {
     if (_isMacOS) {
       throw UnsupportedError(
-        'Google Sign-In no está disponible en macOS; usa email/password.',
+        'Google Sign-In is not available on macOS; use email/password.',
       );
     }
 
@@ -56,7 +56,7 @@ class FirebaseAuthService implements AuthService {
     if (googleUser == null) {
       throw FirebaseAuthException(
         code: 'ERROR_ABORTED_BY_USER',
-        message: 'El usuario canceló el inicio de sesión.',
+        message: 'The user canceled sign-in.',
       );
     }
 
@@ -94,7 +94,7 @@ class FirebaseAuthService implements AuthService {
   }
 }
 
-/// Implementación stub para evitar crashes si se llama sin configurar Firebase.
+/// Stub implementation to avoid crashes if called without configuring Firebase.
 class StubAuthService implements AuthService {
   @override
   User? get currentUser => null;
@@ -108,7 +108,7 @@ class StubAuthService implements AuthService {
   @override
   Future<UserCredential> signInWithGoogle() {
     throw UnsupportedError(
-      'Firebase Auth no está configurado. Configura credenciales antes de usarlo.',
+      'Firebase Auth is not configured. Set credentials before using it.',
     );
   }
 
@@ -118,7 +118,7 @@ class StubAuthService implements AuthService {
     required String password,
   }) {
     throw UnsupportedError(
-      'Firebase Auth no está configurado. Configura credenciales antes de usarlo.',
+      'Firebase Auth is not configured. Set credentials before using it.',
     );
   }
 
@@ -128,7 +128,7 @@ class StubAuthService implements AuthService {
     required String password,
   }) {
     throw UnsupportedError(
-      'Firebase Auth no está configurado. Configura credenciales antes de usarlo.',
+      'Firebase Auth is not configured. Set credentials before using it.',
     );
   }
 

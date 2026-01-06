@@ -19,7 +19,7 @@ import 'viewmodels/task_editor_view_model.dart';
 
 //
 // ==============================================================
-//  REPO GLOBAL (MVP LOCAL)
+//  GLOBAL REPO (LOCAL MVP)
 // ==============================================================
 final authStateProvider = StreamProvider<User?>(
   (ref) => ref.watch(firebaseAuthServiceProvider).authStateChanges,
@@ -33,7 +33,7 @@ final taskRepositoryProvider = Provider<TaskRepository>((ref) {
 
 //
 // ==============================================================
-//  MÁQUINA DE ESTADOS DEL POMODORO
+//  POMODORO STATE MACHINE
 // ==============================================================
 final pomodoroMachineProvider = Provider.autoDispose<PomodoroMachine>((ref) {
   final machine = PomodoroMachine();
@@ -43,14 +43,14 @@ final pomodoroMachineProvider = Provider.autoDispose<PomodoroMachine>((ref) {
 
 //
 // ==============================================================
-//  SERVICIOS FIREBASE (FASE 6 — real configurable)
+//  FIREBASE SERVICES (PHASE 6 — configurable real services)
 // ==============================================================
 final firebaseAuthServiceProvider =
     Provider<AuthService>((_) => FirebaseAuthService());
 final firestoreServiceProvider =
     Provider<FirestoreService>((_) => FirebaseFirestoreService());
 
-// Repositorio Firestore de tareas
+// Firestore task repository
 final firestoreTaskRepositoryProvider =
     Provider<FirestoreTaskRepository>((ref) {
   final firestore = ref.watch(firestoreServiceProvider);
@@ -61,19 +61,19 @@ final firestoreTaskRepositoryProvider =
   );
 });
 
-// Servicio de sonidos
+// Sound service
 final soundServiceProvider = Provider<SoundService>((ref) {
   final service = SoundService();
   ref.onDispose(service.dispose);
   return service;
 });
 
-// Device info (id único por ejecución)
+// Device info (unique id per run)
 final deviceInfoServiceProvider = Provider<DeviceInfoService>((_) {
   return DeviceInfoService();
 });
 
-// Repositorio de sesión Pomodoro
+// Pomodoro session repository
 final pomodoroSessionRepositoryProvider =
     Provider<PomodoroSessionRepository>((ref) {
   final authState = ref.watch(authStateProvider).value;
@@ -92,7 +92,7 @@ final pomodoroSessionRepositoryProvider =
 
 //
 // ==============================================================
-//  VIEWMODEL PRINCIPAL — POMODORO
+//  MAIN VIEWMODEL — POMODORO
 // ==============================================================
 final pomodoroViewModelProvider =
     NotifierProvider.autoDispose<PomodoroViewModel, PomodoroState>(
@@ -101,7 +101,7 @@ final pomodoroViewModelProvider =
 
 //
 // ==============================================================
-//  LISTA DE TAREAS — AsyncNotifier<List<PomodoroTask>>
+//  TASK LIST — AsyncNotifier<List<PomodoroTask>>
 // ==============================================================
 final taskListProvider =
     AsyncNotifierProvider<TaskListViewModel, List<PomodoroTask>>(
@@ -110,7 +110,7 @@ final taskListProvider =
 
 //
 // ==============================================================
-//  EDITOR DE TAREA — Notifier<PomodoroTask?>
+//  TASK EDITOR — Notifier<PomodoroTask?>
 // ==============================================================
 final taskEditorProvider = NotifierProvider<TaskEditorViewModel, PomodoroTask?>(
   TaskEditorViewModel.new,

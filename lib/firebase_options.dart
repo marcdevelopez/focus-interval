@@ -83,7 +83,7 @@ class DefaultFirebaseOptions {
     storageBucket: 'focus-interval.firebasestorage.app',
   );
 
-  // Linux usa la misma configuración web (appId web) que Windows.
+  // Linux uses the same web config (web appId) as Windows.
   static const FirebaseOptions linux = FirebaseOptions(
     apiKey: 'AIzaSyASPx5HN9jcgWaHtQZ1XjgUcQ8fQLWqcxQ',
     appId: '1:32274647226:web:fa0c033943ccf69c159a83',

@@ -1,59 +1,59 @@
-# 📍 **Roadmap Oficial de Desarrollo — Focus Interval (MVP 1.0)**
+# 📍 **Official Development Roadmap — Focus Interval (MVP 1.0)**
 
-**Versión inicial — 100% sincronizado con `/docs/specs.md`**
+**Initial version — 100% synchronized with `/docs/specs.md`**
 
-Este documento define el plan de desarrollo **paso a paso**, en orden cronológico, para implementar completamente la aplicación Focus Interval según las especificaciones oficiales del MVP 1.0.
+This document defines the development plan **step by step**, in chronological order, to fully implement the Focus Interval app according to the official MVP 1.0 specifications.
 
-La IA (ChatGPT) debe consultar este documento **SIEMPRE** antes de continuar el desarrollo, para mantener coherencia técnica y de progreso.
+The AI (ChatGPT) must consult this document **ALWAYS** before continuing development, to keep technical and progress coherence.
 
-Este proyecto incluye un documento oficial de roles de equipo en:
+This project includes an official team roles document at:
 [docs/team_roles.md](team_roles.md)
 
 ---
 
-# 🟦 **Estado Global del Proyecto**
+# 🟦 **Global Project Status**
 
 ```
-FASE ACTUAL: 13 — Sincronización en tiempo real del Pomodoro (multi-dispositivo)
-NOTA: TimerScreen ya depende del ViewModel (sin timer local/config demo).
-      PomodoroViewModel expuesto como Notifier auto-dispose y suscrito a la máquina.
-      Estrategia Auth completada: Google Sign-In en iOS/Android/Web/Win/Linux; email/password en macOS.
-      Firestore integrado por usuario autenticado; tareas aisladas por uid.
-      Fase 7 (Firestore integrado) completada el 24/11/2025.
-      Fase 8 (CRUD + stream reactivo) completada el 17/12/2025.
-      Fase 9 (Lista reactiva) completada el 17/12/2025. Test pendiente en Windows.
-      Fase 10 (Editor con sonidos básicos) completada el 17/12/2025.
-      Fase 11 (Audio de eventos) completada el 17/12/2025.
-      Fase 12 (Conectar Editor → Lista → Ejecución) completada el 17/12/2025.
-      Fase 13 en curso: validar sincronización con dos dispositivos reales y decidir persistencia de deviceId.
+CURRENT PHASE: 13 — Real-time Pomodoro sync (multi-device)
+NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
+      PomodoroViewModel exposed as Notifier auto-dispose and subscribed to the machine.
+      Auth strategy completed: Google Sign-In on iOS/Android/Web/Win/Linux; email/password on macOS.
+      Firestore integrated per authenticated user; tasks isolated by uid.
+      Phase 7 (Firestore integrated) completed on 24/11/2025.
+      Phase 8 (CRUD + reactive stream) completed on 17/12/2025.
+      Phase 9 (Reactive list) completed on 17/12/2025. Windows test pending.
+      Phase 10 (Editor with basic sounds) completed on 17/12/2025.
+      Phase 11 (Event audio) completed on 17/12/2025.
+      Phase 12 (Connect Editor → List → Execution) completed on 17/12/2025.
+      Phase 13 in progress: validate sync with two real devices and decide deviceId persistence.
 ```
-Actualizarse en cada commit, si es necesario.
+Update this on each commit if needed.
 
 ---
 
-# 🧩 **Estructura General del Roadmap**
+# 🧩 **Roadmap Structure**
 
-El desarrollo está dividido en **19 fases principales**, ordenadas de forma óptima para evitar bloqueos, errores y reescrituras.
+Development is divided into **19 main phases**, ordered to avoid blockers, errors, and rewrites.
 
-Cada fase contiene:
+Each phase contains:
 
-- ✔ **Objetivo**
-- ⚙️ **Tareas**
-- 📌 **Condiciones de avance**
-- 📁 **Archivos que se crearán o modificarán**
+- ✔ **Objective**
+- ⚙️ **Tasks**
+- 📌 **Exit conditions**
+- 📁 **Files to create or modify**
 
 ---
 
-# [✔] **FASE 1 — Crear proyecto Flutter y estructura de carpetas (Copmpleta)**
+# [✔] **PHASE 1 — Create Flutter project and folder structure (Complete)**
 
-### ✔ Objetivo
+### ✔ Objective
 
-Inicializar el proyecto con la estructura base del repositorio.
+Initialize the project with the base repository structure.
 
-### ⚙️ Tareas
+### ⚙️ Tasks
 
 - `flutter create focus_interval`
-- Crear estructura:
+- Create structure:
 
 ```
 lib/
@@ -66,22 +66,22 @@ docs/
 assets/sounds/
 ```
 
-### 📌 Condiciones para avanzar
+### 📌 Exit conditions
 
-- Proyecto compila en macOS
-- Rutas creadas correctamente
-- README inicial creado
+- Project compiles on macOS
+- Routes created correctly
+- Initial README created
 
 ---
 
-# [✔] **FASE 2 — Implementar la Máquina de Estados del Pomodoro (Completa)**
+# [✔] **PHASE 2 — Implement the Pomodoro State Machine (Complete)**
 
-_(Corazón de la app)_
+_(Core of the app)_
 
-### ⚙️ Tareas
+### ⚙️ Tasks
 
-- Crear: `domain/pomodoro_machine.dart`
-- Implementar estados:
+- Create: `domain/pomodoro_machine.dart`
+- Implement states:
 
   - idle
   - pomodoroRunning
@@ -90,70 +90,70 @@ _(Corazón de la app)_
   - paused
   - finished
 
-- Implementar transiciones exactas según documento ()
-- Temporizador interno
+- Implement exact transitions per document ()
+- Internal timer
 
-### 📌 Condiciones
+### 📌 Exit conditions
 
-- Tests básicos funcionando
-- Máquina de estados estable y predecible
-
----
-
-# [✔] **FASE 3 — Reloj Circular Premium (Completa)**
-
-_(UI principal del MVP)_
-
-### ⚙️ Tareas
-
-- Crear `widgets/timer_display.dart`
-- Implementar:
-
-  - Círculo principal
-  - Progreso animado
-  - Aguja rotatoria (–90° → 360°)
-  - Movimiento suave estilo reloj
-
-- Colores dinámicos según estado:
-
-  - Rojo para pomodoro
-  - Azul para descanso
-
-### 📌 Condiciones
-
-- Animación estable a 60 fps
-- Se adapta a diferentes tamaños de ventana
-- Renderizado perfecto sin pixelación
+- Basic tests working
+- State machine stable and predictable
 
 ---
 
-# [✔] **FASE 4 — Pantalla de Ejecución (UI + integración parcial) (Completada)**
+# [✔] **PHASE 3 — Premium Circular Clock (Complete)**
 
-### ⚙️ Tareas
+_(Main UI of the MVP)_
 
-- Crear `presentation/screens/timer_screen.dart`
-- Colocar `timer_display` dentro
-- Botones mínimos:
+### ⚙️ Tasks
 
-  - Pausar
-  - Reanudar
-  - Cancelar
+- Create `widgets/timer_display.dart`
+- Implement:
 
-### 📌 Condiciones
+  - Main circle
+  - Animated progress
+  - Rotating hand (–90° → 360°)
+  - Smooth clock-like movement
 
-- Pantalla funcional
-- Temporizador no conectado aún a Firestore
+- Dynamic colors per state:
+
+  - Red for pomodoro
+  - Blue for break
+
+### 📌 Exit conditions
+
+- Stable 60 fps animation
+- Adapts to different window sizes
+- Pixel-perfect rendering
 
 ---
 
-# **FASE 5 — Integración Riverpod (MVVM) (detallada en sub-fases)**
+# [✔] **PHASE 4 — Execution Screen (UI + partial integration) (Complete)**
 
-### [✔] **5.1 — Crear el ViewModel del Pomodoro (Completada parcialmente)**
+### ⚙️ Tasks
 
-- Crear `PomodoroViewModel` extendiendo `AutoDisposeNotifier<PomodoroState>`.
-- Definir estado inicial usando `PomodoroState.idle()`.
-- Incluir una única instancia interna de `PomodoroMachine`.
-- Exponer métodos públicos:
+- Create `presentation/screens/timer_screen.dart`
+- Place `timer_display` inside
+- Minimum buttons:
+
+  - Pause
+  - Resume
+  - Cancel
+
+### 📌 Exit conditions
+
+- Functional screen
+- Timer not yet connected to Firestore
+
+---
+
+# **PHASE 5 — Riverpod Integration (MVVM) (detailed in subphases)**
+
+### [✔] **5.1 — Create Pomodoro ViewModel (Partially complete)**
+
+- Create `PomodoroViewModel` extending `AutoDisposeNotifier<PomodoroState>`.
+- Define initial state using `PomodoroState.idle()`.
+- Include a single internal instance of `PomodoroMachine`.
+- Expose public methods:
 
   - `configureTask(...)`
 
@@ -162,343 +162,343 @@ _(UI principal del MVP)_
 - `resume()`
 - `cancel()`
 
-- Migración a AutoDisposeNotifier completada en Fase 5.3.
+- Migration to AutoDisposeNotifier completed in Phase 5.3.
 
-### [✔] **5.2 — Conectar el stream de la máquina de estados (Completa)**
+### [✔] **5.2 — Connect the state machine stream (Complete)**
 
-- Suscribirse al stream que emite los estados del Pomodoro.
-- Mapear cada evento → actualizar `state = s`.
-- Manejar `dispose()` correctamente para cerrar el stream.
-- Asegurar que:
+- Subscribe to the stream that emits Pomodoro states.
+- Map each event → update `state = s`.
+- Handle `dispose()` correctly to close the stream.
+- Ensure:
 
-  - Pausa → mantiene progreso actual
-  - Resume → continúa desde progreso
-  - Cancel → vuelve a estado idle
+  - Pause → keeps current progress
+  - Resume → continues from progress
+  - Cancel → returns to idle state
 
-### [✔] **5.3 — Unificar toda la lógica del temporizador dentro del ViewModel (Completa)**
+### [✔] **5.3 — Unify all timer logic inside the ViewModel (Complete)**
 
-- Eliminar el `Timer.periodic` manual de `TimerScreen`.
-- Controlar el tiempo exclusivamente desde `PomodoroMachine`.
-- Cualquier cambio (segundos restantes, progreso, fase) debe provenir del stream.
-- Asegurar que el UI:
+- Remove manual `Timer.periodic` from `TimerScreen`.
+- Control time exclusively from `PomodoroMachine`.
+- Any change (remaining seconds, progress, phase) must come from the stream.
+- Ensure the UI:
 
-  - No calcula tiempo
-  - No gestiona temporizadores
-  - Se actualiza solo con `ref.watch(...)`
+  - Does not calculate time
+  - Does not manage timers
+  - Updates only via `ref.watch(...)`
 
-### 🟦 Estado real al 22/11/2025
+### 🟦 Actual status on 22/11/2025
 
-- Providers principales (machine, vm, repos, lista, editor) están creados y compilando.
-- `TaskListViewModel`, `TaskEditorViewModel` y pantallas asociadas funcionan correctamente.
-- Dependencia `uuid` añadida para IDs de tareas.
-- PomodoroViewModel expuesto con `NotifierProvider.autoDispose`, suscrito a `PomodoroMachine.stream`.
-- TimerScreen sin configuración demo; carga la tarea real mediante `taskId` y usa el VM para estados.
-- Subfase 5.3 completada; fase actual 8 (CRUD en curso).
-- FASE 5.5 completada: TimerScreen conectado a tareas y popup final con color de finalización.
-- Auth configurado: Google en iOS/Android/Web/Win/Linux y email/password en macOS. `firebase_options.dart` generado y bundles unificados (`com.marcdevelopez.focusinterval`).
-- FASE 7 completada: repositorio Firestore activo por usuario autenticado, alternando a InMemory sin sesión; login/logout refresca tareas por uid.
+- Main providers (machine, vm, repos, list, editor) are created and compiling.
+- `TaskListViewModel`, `TaskEditorViewModel`, and related screens work correctly.
+- `uuid` dependency added for task IDs.
+- PomodoroViewModel exposed with `NotifierProvider.autoDispose`, subscribed to `PomodoroMachine.stream`.
+- TimerScreen without demo config; loads the real task via `taskId` and uses the VM for states.
+- Subphase 5.3 completed; current phase 8 (CRUD in progress).
+- PHASE 5.5 completed: TimerScreen connected to tasks and final popup with completion color.
+- Auth configured: Google on iOS/Android/Web/Win/Linux and email/password on macOS. `firebase_options.dart` generated and bundles unified (`com.marcdevelopez.focusinterval`).
+- PHASE 7 completed: Firestore repository active per authenticated user, switching to InMemory without session; login/logout refresh tasks by uid.
 
-### [✔] **5.4 — Crear los providers globales**
+### [✔] **5.4 — Create global providers**
 
 - `pomodoroViewModelProvider`
 - `taskRepositoryProvider` (placeholder)
-- `firebaseAuthProvider` y `firestoreProvider` (placeholders para Fase 6)
-- Exportarlos todos desde `providers.dart`
+- `firebaseAuthProvider` and `firestoreProvider` (placeholders for Phase 6)
+- Export them all from `providers.dart`
 
-### 🔄 Estado actualizado:
+### 🔄 Updated status:
 
-Providers placeholders creados (Fase 5.4 completada):
+Placeholder providers created (Phase 5.4 completed):
 
 - firebaseAuthProvider
 - firestoreProvider
 
-Integración real pendiente para Fases 6–7.
+Real integration pending for Phases 6–7.
 
-### [✔] **5.5 — Refactorar TimerScreen (Completada)**
+### [✔] **5.5 — Refactor TimerScreen (Complete)**
 
-- Consumir estado desde Riverpod exclusivamente.
-- Detectar transición a `PomodoroStatus.finished` mediante `ref.listen`.
-- Eliminar totalmente la configuración demo.
-- Preparar la pantalla para recibir una `PomodoroTask` real mediante `taskId`.
-- Ajustar los botones dinámicos (Start/Pause/Resume/Cancel) a los métodos reales del ViewModel.
-- Sincronizar la UI con el estado final:
+- Consume state exclusively from Riverpod.
+- Detect transition to `PomodoroStatus.finished` via `ref.listen`.
+- Remove demo config entirely.
+- Prepare the screen to receive a real `PomodoroTask` via `taskId`.
+- Align dynamic buttons (Start/Pause/Resume/Cancel) to real ViewModel methods.
+- Sync the UI with the final state:
 
-  - Cambio de color del círculo
-  - Mensaje “Tarea completada”
-  - Popup final
+  - Circle color change
+  - “Task completed” message
+  - Final popup
 
-### ✔ Condiciones
+### ✔ Exit conditions
 
-- La UI **no contiene ningún Timer** local.
-- Todo el tiempo proviene del ViewModel.
-- `TimerDisplay` se actualiza exclusivamente por Riverpod.
-- `TimerScreen` funciona enteramente con lógica MVVM.
-- La máquina de estados controla todo el ciclo Pomodoro/Descanso.
-- Preparado para FASE 6 (Firebase Auth email/password en desktop).
-- Reloj responde a cambios de estado
-- Pausa/reanudar funciona correctamente
+- The UI **contains no local Timer**.
+- All time comes from the ViewModel.
+- `TimerDisplay` updates exclusively via Riverpod.
+- `TimerScreen` works entirely with MVVM logic.
+- The state machine controls the full Pomodoro/Break cycle.
+- Ready for PHASE 6 (Firebase Auth email/password on desktop).
+- Clock responds to state changes
+- Pause/resume works correctly
 
-Estas subfases deben aparecer también en el **dev_log.md** conforme se vayan completando.
+These subphases should also appear in **dev_log.md** as they are completed.
 
 ---
 
-# [✔] **FASE 6 — Configurar Firebase Auth (Google en mobile/web/Win/Linux; Email/Password en macOS)**
+# [✔] **PHASE 6 — Configure Firebase Auth (Google on mobile/web/Win/Linux; Email/Password on macOS)**
 
-### ⚙️ Tareas
+### ⚙️ Tasks
 
-- Integrar:
+- Integrate:
 
   - firebase_core
   - firebase_auth
-  - google_sign_in (solo iOS/Android/Web/Windows/Linux)
-  - flujo email/password para macOS
+  - google_sign_in (iOS/Android/Web/Windows/Linux only)
+  - email/password flow for macOS
 
-- Configurar:
+- Configure:
 
   - macOS App ID
   - Windows config
   - Linux config
 
-### 📌 Condiciones
+### 📌 Exit conditions
 
-- Login Google funcional en iOS/Android/Web/Windows/Linux
-- Login email/password funcional en macOS
-- UID persistente en app
+- Google login working on iOS/Android/Web/Windows/Linux
+- Email/password login working on macOS
+- Persistent UID in the app
 
-### 📝 Mejoras pendientes (post-MVP)
+### 📝 Pending improvements (post-MVP)
 
-- Recordar último email usado en cada dispositivo (almacenado localmente) y permitir autofill/gestores de contraseñas; nunca guardar la contraseña en texto plano.
+- Remember the last email used on each device (stored locally) and allow autofill/password managers; never store the password in plain text.
 
 ---
 
-# [✔] **FASE 7 — Integrar Firestore (completada 24/11/2025)**
+# [✔] **PHASE 7 — Integrate Firestore (completed 24/11/2025)**
 
-### ⚙️ Tareas
+### ⚙️ Tasks
 
-- Crear `data/services/firestore_service.dart`
-- Configurar rutas:
+- Create `data/services/firestore_service.dart`
+- Configure paths:
 
   ```
   users/{uid}/tasks/{taskId}
   ```
 
-### 📌 Condiciones
+### 📌 Exit conditions
 
-- Firestore accesible
-- Creación/lectura pruebas OK
+- Firestore accessible
+- Create/read tests OK
 
 ---
 
-# [✔] **FASE 8 — Implementar CRUD de Tareas (completada 17/12/2025)**
+# [✔] **PHASE 8 — Implement Task CRUD (completed 17/12/2025)**
 
-### ⚙️ Tareas
+### ⚙️ Tasks
 
-- Crear:
+- Create:
 
   - `task_repository.dart`
 
-- Funciones:
+- Functions:
 
   - addTask
   - updateTask
   - deleteTask
   - streamTasks
 
-### 📌 Condiciones
+### 📌 Exit conditions
 
-- CRUD funcionando
-- Datos persisten correctamente
-- Lista de tareas actualizada en tiempo real vía stream del repositorio activo (Firestore o InMemory)
+- CRUD working
+- Data persists correctly
+- Task list updates in real time via the active repo stream (Firestore or InMemory)
 
 ---
 
-# [✔] **FASE 9 — Pantalla de Lista de Tareas (completada 17/12/2025)**
+# [✔] **PHASE 9 — Task List Screen (completed 17/12/2025)**
 
-### ⚙️ Tareas
+### ⚙️ Tasks
 
-- Crear:
+- Create:
 
   - `task_list_screen.dart`
-  - widget `task_card.dart`
+  - `task_card.dart` widget
 
-- Mostrar:
+- Show:
 
-  - Nombre
-  - Duraciones
+  - Name
+  - Durations
   - Total pomodoros
 
-### 📌 Condiciones
+### 📌 Exit conditions
 
-- Lista actualizada en tiempo real
+- List updates in real time
 
 ---
 
-# [✔] **FASE 10 — Editor de Tarea (completada 17/12/2025)**
+# [✔] **PHASE 10 — Task Editor (completed 17/12/2025)**
 
-### ⚙️ Tareas
+### ⚙️ Tasks
 
-- Crear formulario:
+- Create form:
 
-  - Nombre
-  - Duraciones
+  - Name
+  - Durations
   - Total pomodoros
-  - Intervalo de descanso largo
-  - Sonidos (inicio de pomodoro, inicio de descanso; sonido final fijo por defecto en este MVP)
+  - Long break interval
+  - Sounds (pomodoro start, break start; final sound fixed by default in this MVP)
 
-- Guardar en Firestore
+- Save to Firestore
 
-### 📌 Condiciones
+### 📌 Exit conditions
 
-- Tareas editables completamente
-- Selector de sonidos básico conectado (sin reproducción aún) y plan para implementar audio real en fase posterior
-
----
-
-# [✔] **FASE 11 — Audio de eventos (completada 17/12/2025)**
-
-### ⚙️ Tareas
-
-- Añadir assets de sonido por defecto (inicio pomodoro, inicio descanso, fin de tarea).
-- Integrar un servicio de audio y disparar sonidos en los eventos del Pomodoro.
-- Configurar fallback silencioso en plataformas que no soporten reproducción.
-
-### 📌 Condiciones
-
-- Sonidos reproducidos en macOS/Android/Web para los eventos clave.
-- Configuración de tareas respeta los sonidos seleccionados.
-
-# [✔] **FASE 12 — Conectar Editor → Lista → Ejecución (completada 17/12/2025)**
-
-### ⚙️ Tareas
-
-- Pasar task seleccionada a `timer_screen`
-- Cargar valores en el ViewModel
-
-### 📌 Condiciones
-
-- Ciclo completo funcionando
+- Tasks fully editable
+- Basic sound selector connected (no playback yet) and plan to implement real audio in a later phase
 
 ---
 
-# 🚀 **FASE 13 — Sincronización en tiempo real del Pomodoro (multi-dispositivo)**
+# [✔] **PHASE 11 — Event audio (completed 17/12/2025)**
 
-### ⚙️ Tareas
+### ⚙️ Tasks
 
-- Crear `PomodoroSession` (modelo + serialización) y `pomodoro_session_repository.dart` sobre Firestore (`users/{uid}/activeSession`).
-- Exponer `pomodoroSessionRepositoryProvider` y dependencias necesarias (deviceId, helper de serverTimestamp).
-- Extender `PomodoroViewModel` para publicar eventos start/pausa/reanudación/cancelación/cambio de fase/finalización en `activeSession` (un único escritor por `ownerDeviceId`).
-- En TimerScreen, modo espejo: suscribirse a `activeSession` cuando no se es dueño y reflejar el estado calculando tiempo restante con `phaseStartedAt` + `phaseDurationSeconds`.
-- Manejar conflictos: si ya existe sesión activa, permitir “Tomar control” (sobrescribir `ownerDeviceId`) o respetar la sesión remota.
-- Limpiar `activeSession` al finalizar o cancelar la tarea.
+- Add default sound assets (pomodoro start, break start, task finish).
+- Integrate an audio service and trigger sounds on Pomodoro events.
+- Configure silent fallback on platforms that do not support playback.
 
-### 📌 Condiciones
+### 📌 Exit conditions
 
-- Dos dispositivos con el mismo `uid` ven el mismo pomodoro en tiempo real (<1–2 s de retraso).
-- Solo el dueño escribe; el resto muestra los cambios en vivo.
-- Transiciones de fase, pausa/reanudación y finalización quedan persistidas y visibles al reabrir la app.
+- Sounds play on macOS/Android/Web for key events.
+- Task configuration respects selected sounds.
 
-# 🚀 **FASE 14 — Sonidos y Notificaciones**
+# [✔] **PHASE 12 — Connect Editor → List → Execution (completed 17/12/2025)**
 
-### ⚙️ Tareas
+### ⚙️ Tasks
 
-- Integrar `just_audio`
-- Integrar `flutter_local_notifications`
-- Añadir:
+- Pass the selected task to `timer_screen`
+- Load values into the ViewModel
 
-  - Inicio pomodoro
-  - Fin pomodoro
-  - Inicio descanso
-  - Fin descanso
-  - Finalización total (sonido especial)
+### 📌 Exit conditions
 
-### 📌 Condiciones
-
-- Todos los sonidos funcionan
-- Notificación final funciona en macOS/Win/Linux
+- Full cycle working
 
 ---
 
-# 🚀 **FASE 15 — Animación Final Obligatoria**
+# 🚀 **PHASE 13 — Real-time Pomodoro sync (multi-device)**
 
-### ⚙️ Tareas
+### ⚙️ Tasks
 
-- Implementar:
+- Create `PomodoroSession` (model + serialization) and `pomodoro_session_repository.dart` on Firestore (`users/{uid}/activeSession`).
+- Expose `pomodoroSessionRepositoryProvider` and required dependencies (deviceId, serverTimestamp helper).
+- Extend `PomodoroViewModel` to publish start/pause/resume/cancel/phase change/finish events in `activeSession` (single writer by `ownerDeviceId`).
+- In TimerScreen, mirror mode: subscribe to `activeSession` when not the owner and mirror state by computing remaining time from `phaseStartedAt` + `phaseDurationSeconds`.
+- Handle conflicts: if an active session exists, allow “Take over” (overwrite `ownerDeviceId`) or respect the remote session.
+- Clear `activeSession` on finish or cancel.
 
-  - Círculo verde/dorado completo
-  - Texto grande “TAREA FINALIZADA”
-  - Aguja detenida en 360°
+### 📌 Exit conditions
 
-- Animación suave
+- Two devices with the same `uid` see the same pomodoro in real time (<1–2 s delay).
+- Only the owner writes; others show live changes.
+- Phase transitions, pause/resume, and finish are persisted and visible when reopening the app.
 
-### 📌 Condiciones
+# 🚀 **PHASE 14 — Sounds and Notifications**
 
-- Totalmente fiel a especificaciones ()
+### ⚙️ Tasks
 
----
+- Integrate `just_audio`
+- Integrate `flutter_local_notifications`
+- Add:
 
-# 🚀 **FASE 16 — Redimensionado + Responsive Completo**
+  - Pomodoro start
+  - Pomodoro end
+  - Break start
+  - Break end
+  - Full completion (special sound)
 
-### ⚙️ Tareas
+### 📌 Exit conditions
 
-- Implementar tamaño mínimo calculado dinámicamente
-- Escalado proporcional del reloj
-- Reacomodar botones
-- Fondo negro completo
-
-### 📌 Condiciones
-
-- App usable desde ¼ de pantalla
-
----
-
-# 🚀 **FASE 17 — Pruebas Unitarias y de Integración**
-
-### ⚙️ Tareas
-
-- Tests para máquina de estados
-- Tests para lógica de pausa/reanudación
-- Tests para finalización estricta
-
-### 📌 Condiciones
-
-- Test suite estable
+- All sounds work
+- Final notification works on macOS/Win/Linux
 
 ---
 
-# 🚀 **FASE 18 — Pulido UI / UX**
+# 🚀 **PHASE 15 — Mandatory Final Animation**
 
-### ⚙️ Tareas
+### ⚙️ Tasks
 
-- Refactorizar widgets
-- Ajustar sombras, padding, bordes
-- Mantener estilo minimalista oscuro
-- Recordar el último email usado en el dispositivo (almacenado localmente) y habilitar autofill/gestores de contraseñas; nunca guardar la contraseña en claro.
+- Implement:
+
+  - Full green/gold circle
+  - Large “TASK COMPLETED” text
+  - Hand stopped at 360°
+
+- Smooth animation
+
+### 📌 Exit conditions
+
+- Fully faithful to specs ()
 
 ---
 
-# 🚀 **FASE 19 — Preparación de Release Interno**
+# 🚀 **PHASE 16 — Resizing + Full Responsive**
 
-### ⚙️ Tareas
+### ⚙️ Tasks
 
-- Empaquetar app para:
+- Implement a dynamically calculated minimum size
+- Proportional clock scaling
+- Re-layout buttons
+- Full black background
+
+### 📌 Exit conditions
+
+- App usable at 1/4 of the screen
+
+---
+
+# 🚀 **PHASE 17 — Unit and Integration Tests**
+
+### ⚙️ Tasks
+
+- Tests for the state machine
+- Tests for pause/resume logic
+- Tests for strict completion
+
+### 📌 Exit conditions
+
+- Stable test suite
+
+---
+
+# 🚀 **PHASE 18 — UI / UX Polish**
+
+### ⚙️ Tasks
+
+- Refactor widgets
+- Adjust shadows, padding, borders
+- Keep minimal dark style
+- Remember the last email used on the device (stored locally) and enable autofill/password managers; never store the password in plain text.
+
+---
+
+# 🚀 **PHASE 19 — Internal Release Preparation**
+
+### ⚙️ Tasks
+
+- Package the app for:
 
   - macOS `.app`
   - Windows `.exe`
   - Linux `.AppImage`
 
-- Crear instrucciones de instalación
-- Test de ejecución en todas las plataformas
+- Create installation instructions
+- Run the app on all platforms
 
-### 📌 Condiciones
+### 📌 Exit conditions
 
-- MVP 1.0 listo y funcional
+- MVP 1.0 ready and functional
 
 ---
 
-# 🧾 **Notas Finales**
+# 🧾 **Final Notes**
 
-- Este documento **controla el orden obligatorio del desarrollo**.
-- La IA debe usarlo **para avanzar paso a paso sin saltarse fases**.
-- Cualquier modificación futura debe anotarse aquí y en `docs/dev_log.md`.
+- This document **controls the mandatory development order**.
+- The AI must use it **to progress step by step without skipping phases**.
+- Any future changes must be recorded here and in `docs/dev_log.md`.
 
 ---

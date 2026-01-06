@@ -1,7 +1,7 @@
 import 'dart:async';
 
-/// Estados globales de la máquina Pomodoro.
-/// Deben coincidir con specs.md.
+/// Global states of the Pomodoro machine.
+/// Must match specs.md.
 enum PomodoroStatus {
   idle,
   pomodoroRunning,
@@ -11,35 +11,35 @@ enum PomodoroStatus {
   finished,
 }
 
-/// Tipo de ciclo actual (orientativo para UI/sonidos).
+/// Current cycle type (for UI/sounds).
 enum PomodoroPhase {
   pomodoro,
   shortBreak,
   longBreak,
 }
 
-/// Estado inmutable publicado por la máquina.
-/// La UI/ViewModel debe escuchar cambios de este estado.
+/// Immutable state emitted by the machine.
+/// The UI/ViewModel should listen to changes of this state.
 class PomodoroState {
   final PomodoroStatus status;
   final PomodoroPhase? phase;
 
-  /// Pomodoro actual (1-based). Ej: 1..totalPomodoros
+  /// Current pomodoro (1-based). Example: 1..totalPomodoros
   final int currentPomodoro;
 
-  /// Total de pomodoros configurados en la tarea.
+  /// Total pomodoros configured in the task.
   final int totalPomodoros;
 
-  /// Duración total del ciclo actual (en segundos).
+  /// Total duration of the current cycle (in seconds).
   final int totalSeconds;
 
-  /// Segundos restantes del ciclo actual.
+  /// Remaining seconds in the current cycle.
   final int remainingSeconds;
 
-  /// Indica si el ciclo actual acabó (remaining == 0).
+  /// Whether the current cycle ended (remaining == 0).
   bool get isCycleCompleted => remainingSeconds <= 0;
 
-  /// Progreso 0..1 del ciclo actual.
+  /// Progress 0..1 of the current cycle.
   double get progress =>
       totalSeconds == 0 ? 0 : 1 - (remainingSeconds / totalSeconds);
 
@@ -80,26 +80,26 @@ class PomodoroState {
       );
 }
 
-/// Callbacks de eventos para que el ViewModel dispare sonidos,
-/// notificaciones o UI extra.
+/// Event callbacks so the ViewModel can trigger sounds,
+/// notifications, or extra UI.
 class PomodoroCallbacks {
-  /// Se llama al iniciar un pomodoro.
+  /// Called when a pomodoro starts.
   final void Function(PomodoroState state)? onPomodoroStart;
 
-  /// Se llama al terminar un pomodoro (antes de pasar al descanso).
+  /// Called when a pomodoro ends (before switching to break).
   final void Function(PomodoroState state)? onPomodoroEnd;
 
-  /// Se llama al iniciar un descanso (corto o largo).
+  /// Called when a break starts (short or long).
   final void Function(PomodoroState state)? onBreakStart;
 
-  /// Se llama al terminar un descanso (antes de pasar a pomodoro).
+  /// Called when a break ends (before switching to pomodoro).
   final void Function(PomodoroState state)? onBreakEnd;
 
-  /// Se llama cuando se completa el ÚLTIMO pomodoro de la tarea.
-  /// Aquí se debe disparar sonido final + popup + notificación.
+  /// Called when the LAST pomodoro of the task completes.
+  /// This should trigger final sound + popup + notification.
   final void Function(PomodoroState state)? onTaskFinished;
 
-  /// Se llama en cada tick (1s).
+  /// Called on each tick (1s).
   final void Function(PomodoroState state)? onTick;
 
   const PomodoroCallbacks({
@@ -112,10 +112,10 @@ class PomodoroCallbacks {
   });
 }
 
-/// Máquina de estados Pomodoro.
-/// - Independiente de UI/Firebase.
-/// - Controla transiciones, pausas, reanudación, cancelación.
-/// - Finaliza estrictamente al llegar a totalPomodoros.
+/// Pomodoro state machine.
+/// - Independent from UI/Firebase.
+/// - Controls transitions, pause, resume, cancel.
+/// - Finishes strictly when reaching totalPomodoros.
 class PomodoroMachine {
   PomodoroState _state = PomodoroState.idle();
   PomodoroState get state => _state;
@@ -126,22 +126,22 @@ class PomodoroMachine {
   Timer? _timer;
   PomodoroCallbacks callbacks;
 
-  // Configuración actual (en segundos).
+  // Current configuration (in seconds).
   int _pomodoroSeconds = 25 * 60;
   int _shortBreakSeconds = 5 * 60;
   int _longBreakSeconds = 15 * 60;
   int _totalPomodoros = 1;
   int _longBreakInterval = 4;
 
-  // Guardamos estado previo para pausa/reanudar.
+  // Store previous state for pause/resume.
   PomodoroStatus? _prePauseStatus;
   PomodoroPhase? _prePausePhase;
 
   PomodoroMachine({PomodoroCallbacks? callbacks})
       : callbacks = callbacks ?? const PomodoroCallbacks();
 
-  /// Configura la tarea ACTUAL.
-  /// Todos los valores son minutos excepto total/intervalo.
+  /// Configure the CURRENT task.
+  /// All values are minutes except total/interval.
   void configureTask({
     required int pomodoroMinutes,
     required int shortBreakMinutes,
@@ -163,7 +163,7 @@ class PomodoroMachine {
     _totalPomodoros = totalPomodoros;
     _longBreakInterval = longBreakInterval;
 
-    // Reset a idle con configuración lista.
+    // Reset to idle with configuration ready.
     _emit(PomodoroState(
       status: PomodoroStatus.idle,
       phase: null,
@@ -174,8 +174,8 @@ class PomodoroMachine {
     ));
   }
 
-  /// Inicia la tarea desde cero.
-  /// Si ya estaba corriendo, reinicia completamente.
+  /// Start the task from zero.
+  /// If already running, fully restart.
   void startTask() {
     _cancelTimer();
 
@@ -192,7 +192,7 @@ class PomodoroMachine {
     _startTimer();
   }
 
-  /// Pausa el ciclo actual en cualquier momento.
+  /// Pause the current cycle at any time.
   void pause() {
     if (_state.status == PomodoroStatus.paused ||
         _state.status == PomodoroStatus.idle ||
@@ -205,7 +205,7 @@ class PomodoroMachine {
     _emit(_state.copyWith(status: PomodoroStatus.paused));
   }
 
-  /// Reanuda exactamente donde se pausó.
+  /// Resume exactly where it was paused.
   void resume() {
     if (_state.status != PomodoroStatus.paused) return;
 
@@ -220,7 +220,7 @@ class PomodoroMachine {
     _startTimer();
   }
 
-  /// Cancela la tarea y vuelve a idle.
+  /// Cancel the task and return to idle.
   void cancel() {
     _cancelTimer();
     _emit(PomodoroState(
@@ -260,7 +260,7 @@ class PomodoroMachine {
             _state.currentPomodoro >= _state.totalPomodoros;
 
         if (isLastPomodoro) {
-          // Finalización estricta de tarea (MVP obligatorio).
+          // Strict task completion (mandatory MVP behavior).
           _emit(_state.copyWith(
             status: PomodoroStatus.finished,
             phase: null,
@@ -268,10 +268,10 @@ class PomodoroMachine {
             remainingSeconds: 0,
           ));
           callbacks.onTaskFinished?.call(_state);
-          return; // No iniciar descanso.
+          return; // Do not start a break.
         }
 
-        // Decidir descanso corto o largo.
+        // Decide short or long break.
         final nextPomodoroIndex = _state.currentPomodoro;
         final shouldLongBreak =
             (nextPomodoroIndex % _longBreakInterval == 0);
@@ -345,7 +345,7 @@ class PomodoroMachine {
     _timer = null;
   }
 
-  /// Limpieza total (llamar en dispose del ViewModel).
+  /// Full cleanup (call in ViewModel dispose).
   Future<void> dispose() async {
     _cancelTimer();
     await _controller.close();

@@ -23,7 +23,7 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
 
   Future<String> _uidOrThrow() async {
     final uid = authService.currentUser?.uid;
-    if (uid == null) throw Exception('No hay usuario autenticado');
+    if (uid == null) throw Exception('No authenticated user');
     return uid;
   }
 

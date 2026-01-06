@@ -37,7 +37,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     if (!mounted) return;
     if (!ok) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("La tarea ya no existe.")),
+        const SnackBar(content: Text("The task no longer exists.")),
       );
       Navigator.pop(context);
     }
@@ -47,15 +47,15 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   Widget build(BuildContext context) {
     final task = ref.watch(taskEditorProvider);
     const pomodoroSounds = [
-      SoundOption('default_chime', 'Chime (inicio pomodoro)'),
-      SoundOption('bell_soft', 'Campana suave'),
-      SoundOption('digital_beep', 'Beep digital'),
+      SoundOption('default_chime', 'Chime (pomodoro start)'),
+      SoundOption('bell_soft', 'Soft bell'),
+      SoundOption('digital_beep', 'Digital beep'),
     ];
 
     const breakSounds = [
-      SoundOption('default_chime_break', 'Chime (inicio descanso)'),
-      SoundOption('bell_soft_break', 'Campana suave (descanso)'),
-      SoundOption('digital_beep_break', 'Beep digital (descanso)'),
+      SoundOption('default_chime_break', 'Chime (break start)'),
+      SoundOption('bell_soft_break', 'Soft bell (break)'),
+      SoundOption('digital_beep_break', 'Digital beep (break)'),
     ];
 
     if (task == null) {
@@ -69,7 +69,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: Text(widget.isEditing ? "Editar tarea" : "Nueva tarea"),
+        title: Text(widget.isEditing ? "Edit task" : "New task"),
         actions: [
           TextButton(
             onPressed: () async {
@@ -80,7 +80,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               if (!context.mounted) return;
               Navigator.pop(context);
             },
-            child: const Text("Guardar"),
+            child: const Text("Save"),
           )
         ],
       ),
@@ -90,28 +90,28 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
           padding: const EdgeInsets.all(16),
           children: [
             _textField(
-              label: "Nombre de la tarea",
+              label: "Task name",
               initial: task.name,
               onChanged: (v) => _update(task.copyWith(name: v)),
               validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? "Requerido" : null,
+                  (v == null || v.trim().isEmpty) ? "Required" : null,
             ),
             const SizedBox(height: 12),
 
             _numberField(
-              label: "Duración Pomodoro (min)",
+              label: "Pomodoro duration (min)",
               initial: task.pomodoroMinutes,
               onChanged: (v) =>
                   _update(task.copyWith(pomodoroMinutes: v)),
             ),
             _numberField(
-              label: "Descanso corto (min)",
+              label: "Short break (min)",
               initial: task.shortBreakMinutes,
               onChanged: (v) =>
                   _update(task.copyWith(shortBreakMinutes: v)),
             ),
             _numberField(
-              label: "Descanso largo (min)",
+              label: "Long break (min)",
               initial: task.longBreakMinutes,
               onChanged: (v) =>
                   _update(task.copyWith(longBreakMinutes: v)),
@@ -119,44 +119,44 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
             const SizedBox(height: 12),
 
             _numberField(
-              label: "Total Pomodoros",
+              label: "Total pomodoros",
               initial: task.totalPomodoros,
               onChanged: (v) =>
                   _update(task.copyWith(totalPomodoros: v)),
             ),
             _numberField(
-              label: "Pomodoros por descanso largo",
+              label: "Pomodoros per long break",
               initial: task.longBreakInterval,
               onChanged: (v) =>
                   _update(task.copyWith(longBreakInterval: v)),
             ),
             const SizedBox(height: 24),
             const Text(
-              "Sonidos",
+              "Sounds",
               style: TextStyle(color: Colors.white70, fontSize: 16),
             ),
             const SizedBox(height: 8),
             SoundSelector(
-              label: "Inicio de pomodoro",
+              label: "Pomodoro start",
               value: task.startSound,
               options: pomodoroSounds,
               onChanged: (v) => _update(task.copyWith(startSound: v)),
             ),
             const SizedBox(height: 12),
             SoundSelector(
-              label: "Inicio de descanso",
+              label: "Break start",
               value: task.startBreakSound,
               options: breakSounds,
               onChanged: (v) => _update(task.copyWith(startBreakSound: v)),
             ),
             const SizedBox(height: 12),
             Text(
-              "Fin de todos los pomodoros",
+              "End of all pomodoros",
               style: TextStyle(color: Colors.white54, fontSize: 14),
             ),
             const SizedBox(height: 4),
             const Text(
-              "Se usará un sonido final por defecto para evitar confusión.",
+              "A default final sound will be used to avoid confusion.",
               style: TextStyle(color: Colors.white38, fontSize: 12),
             ),
           ],
@@ -177,7 +177,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            "El intervalo de descanso largo no puede ser mayor que el total de pomodoros.",
+            "Long break interval cannot be greater than total pomodoros.",
           ),
         ),
       );
@@ -225,7 +225,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       ),
       validator: (v) {
         final n = int.tryParse(v ?? "");
-        if (n == null || n <= 0) return "Debe ser > 0";
+        if (n == null || n <= 0) return "Must be > 0";
         return null;
       },
       onChanged: (v) {

@@ -1,8 +1,9 @@
-# 🧭 Guía del agente — Focus Interval
+# 🧭 Agent Guide — Focus Interval
 
-- Consulta `docs/roadmap.md` y `docs/dev_log.md` antes de tocar código para mantener contexto y consistencia.
-- Antes de cada commit, revisa si el trabajo requiere actualizar alguno de esos dos archivos; si es necesario, modifícalos en ese mismo commit.
-- Cuando edites `docs/dev_log.md` o `docs/roadmap.md`, usa siempre la fecha real del día de trabajo para mantener la trazabilidad temporal.
-- Si completas una fase, márcalo en `docs/roadmap.md` (estado global y fase correspondiente) usando la fecha real, y ajusta la FASE ACTUAL si procede.
-- Antes de pasar a la siguiente fase, revisa el roadmap: si hay fases previas sin marcar pero ya cumplidas, márcalas con fecha y alinea `docs/dev_log.md` y el estado global del roadmap.
-- No hagas commit si hay errores/buils rotas o bugs conocidos sin resolver; confirma que el cambio funciona (al menos compila/analyzer) antes de comitear. Para trabajo incompleto, usa rama aparte o stash en vez de main.
+- Check `docs/roadmap.md` and `docs/dev_log.md` before touching code to keep context and consistency.
+- Before each commit, review whether the work requires updating either of those two files; if so, update them in the same commit.
+- When editing `docs/dev_log.md` or `docs/roadmap.md`, always use the real date of the workday to preserve traceability.
+- If you complete a phase, mark it in `docs/roadmap.md` (global status and that phase) using the real date, and update the CURRENT PHASE if needed.
+- Before moving to the next phase, review the roadmap: if earlier phases are done but not marked, mark them with dates and align `docs/dev_log.md` and the global roadmap status.
+- Do not commit if there are errors/build breaks or known unresolved bugs; confirm the change works (at least compiles/analyzer) before committing. For incomplete work, use a separate branch or stash instead of main.
+- Keep all documentation, UI strings, and code comments in English to maintain a single language across the project.

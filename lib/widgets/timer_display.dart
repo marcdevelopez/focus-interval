@@ -2,17 +2,17 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../domain/pomodoro_machine.dart';
 
-/// Reloj circular premium para Pomodoro/Descanso.
-/// - 60fps con AnimationController.
-/// - Aguja analógica en sentido horario.
-/// - Colores dinámicos según estado.
-/// - Responsive y fondo negro real.
-/// - Sin dependencias de Firebase/riverpod/UI externa.
+/// Premium circular clock for Pomodoro/Break.
+/// - 60fps with AnimationController.
+/// - Clockwise analog hand.
+/// - Dynamic colors by state.
+/// - Responsive with true black background.
+/// - No dependencies on Firebase/riverpod/external UI.
 class TimerDisplay extends StatefulWidget {
   final PomodoroState state;
 
-  /// Si quieres forzar color final concreto.
-  /// Si es null, alterna verde/dorado según pomodoro par/impar.
+  /// Use this to force a specific final color.
+  /// If null, alternates green/gold based on even/odd pomodoro.
   final Color? finishColorOverride;
 
   const TimerDisplay({
@@ -36,7 +36,7 @@ class _TimerDisplayState extends State<TimerDisplay>
     super.initState();
     _controller = AnimationController(vsync: this);
 
-    // Arranque inicial alineado con el estado.
+    // Initial start aligned with the current state.
     _syncControllerWithState(initial: true);
   }
 
@@ -44,7 +44,7 @@ class _TimerDisplayState extends State<TimerDisplay>
   void didUpdateWidget(covariant TimerDisplay oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Si cambió cualquier aspecto relevante del estado, resincronizamos.
+    // If any relevant state aspect changed, resync.
     final oldState = oldWidget.state;
     final newState = widget.state;
 
@@ -71,7 +71,7 @@ class _TimerDisplayState extends State<TimerDisplay>
     final total = s.totalSeconds;
     final remaining = s.remainingSeconds.clamp(0, total);
 
-    // Estado finalizado: mostrar círculo completo con color final.
+    // Finished state: show full circle with final color.
     if (s.status == PomodoroStatus.finished) {
       _controller.duration = const Duration(milliseconds: 1);
       _controller.value = 1.0;
@@ -79,7 +79,7 @@ class _TimerDisplayState extends State<TimerDisplay>
       return;
     }
 
-    // En idle o sin duración no animamos.
+    // In idle or with no duration, do not animate.
     if (s.status == PomodoroStatus.idle || total == 0) {
       _controller.duration = const Duration(milliseconds: 1);
       _controller.value = s.progress.clamp(0, 1);
@@ -87,7 +87,7 @@ class _TimerDisplayState extends State<TimerDisplay>
       return;
     }
 
-    // Si está pausado, congelamos en el progreso actual.
+    // If paused, freeze at the current progress.
     if (s.status == PomodoroStatus.paused) {
       _controller.duration = Duration(seconds: total);
       _controller.value = s.progress.clamp(0, 1);
@@ -95,14 +95,14 @@ class _TimerDisplayState extends State<TimerDisplay>
       return;
     }
 
-    // Running: animación continua desde el progreso actual hasta 1.0
+    // Running: continuous animation from current progress to 1.0
     final progress = s.progress.clamp(0, 1);
     _controller.duration = Duration(seconds: total);
     _controller.value = progress.toDouble();
 
     final remainingDuration = Duration(seconds: remaining);
 
-    // Si remaining == total pero progress no es 0 (edge), arreglamos.
+    // If remaining == total but progress is not 0 (edge case), fix it.
     if (remainingDuration.inSeconds <= 0) {
       _controller.value = 1.0;
       if (!initial) setState(() {});
@@ -121,17 +121,17 @@ class _TimerDisplayState extends State<TimerDisplay>
   Color _phaseColor() {
     switch (s.status) {
       case PomodoroStatus.pomodoroRunning:
-        return const Color(0xFFE53935); // rojo
+        return const Color(0xFFE53935); // red
       case PomodoroStatus.shortBreakRunning:
       case PomodoroStatus.longBreakRunning:
-        return const Color(0xFF1E88E5); // azul
+        return const Color(0xFF1E88E5); // blue
       case PomodoroStatus.finished:
         return widget.finishColorOverride ??
             (s.totalPomodoros > 0 && s.currentPomodoro.isEven
-                ? const Color(0xFFFFB300) // dorado
-                : const Color(0xFF43A047)); // verde
+                ? const Color(0xFFFFB300) // gold
+                : const Color(0xFF43A047)); // green
       default:
-        // paused/idle: usamos color de fase previa si existe
+        // paused/idle: use previous phase color if available
         if (s.phase == PomodoroPhase.shortBreak ||
             s.phase == PomodoroPhase.longBreak) {
           return const Color(0xFF1E88E5);
@@ -144,11 +144,11 @@ class _TimerDisplayState extends State<TimerDisplay>
   }
 
   String _phaseLabel() {
-    if (s.status == PomodoroStatus.finished) return "TAREA COMPLETADA";
+    if (s.status == PomodoroStatus.finished) return "TASK COMPLETED";
     if (s.phase == PomodoroPhase.pomodoro) return "Pomodoro";
-    if (s.phase == PomodoroPhase.shortBreak) return "Descanso corto";
-    if (s.phase == PomodoroPhase.longBreak) return "Descanso largo";
-    if (s.status == PomodoroStatus.paused) return "Pausado";
+    if (s.phase == PomodoroPhase.shortBreak) return "Short break";
+    if (s.phase == PomodoroPhase.longBreak) return "Long break";
+    if (s.status == PomodoroStatus.paused) return "Paused";
     return "";
   }
 
@@ -171,7 +171,7 @@ class _TimerDisplayState extends State<TimerDisplay>
         final size = math.min(constraints.maxWidth, constraints.maxHeight);
 
         return Container(
-          color: Colors.black, // fondo negro real
+          color: Colors.black, // true black background
           alignment: Alignment.center,
           child: AnimatedBuilder(
             animation: _controller,
@@ -208,7 +208,7 @@ class _TimerDisplayState extends State<TimerDisplay>
   }
 }
 
-/// Contenido central del reloj: tiempo, fase y contador.
+/// Clock center content: time, phase, and counter.
 class _CenterContent extends StatelessWidget {
   final String timeText;
   final String phaseText;
@@ -242,8 +242,8 @@ class _CenterContent extends StatelessWidget {
             phaseText,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: phaseText == "TAREA COMPLETADA" ? 20 : 18,
-              fontWeight: phaseText == "TAREA COMPLETADA"
+              fontSize: phaseText == "TASK COMPLETED" ? 20 : 18,
+              fontWeight: phaseText == "TASK COMPLETED"
                   ? FontWeight.w700
                   : FontWeight.w500,
               color: Colors.white70,
@@ -266,7 +266,7 @@ class _CenterContent extends StatelessWidget {
   }
 }
 
-/// Dibuja el reloj circular: aro base, progreso y aguja analógica.
+/// Draws the circular clock: base ring, progress, and analog hand.
 class _TimerPainter extends CustomPainter {
   final double progress; // 0..1
   final Color color;
@@ -284,10 +284,10 @@ class _TimerPainter extends CustomPainter {
     final radius = size.shortestSide * 0.42;
 
     final strokeWidth =
-        size.shortestSide * 0.06; // responsive (≈12–18px típico)
+        size.shortestSide * 0.06; // responsive (≈12–18px typical)
     final bgStrokeWidth = strokeWidth * 0.9;
 
-    // Aro base (gris oscuro)
+    // Base ring (dark gray)
     final bgPaint = Paint()
       ..color = const Color(0xFF222222)
       ..style = PaintingStyle.stroke
@@ -296,27 +296,27 @@ class _TimerPainter extends CustomPainter {
 
     canvas.drawCircle(center, radius, bgPaint);
 
-    // Progreso
+    // Progress
     final progressPaint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
 
-    final startAngle = -math.pi / 2; // 12 en punto
+    final startAngle = -math.pi / 2; // 12 o'clock
     final sweepAngle = (2 * math.pi) * progress;
 
     final rect = Rect.fromCircle(center: center, radius: radius);
     canvas.drawArc(rect, startAngle, sweepAngle, false, progressPaint);
 
-    // Aguja analógica (solo si no está idle)
+    // Analog hand (only if not idle)
     if (status != PomodoroStatus.idle) {
       final needlePaint = Paint()
         ..color = Colors.white.withValues(alpha: 0.9)
         ..strokeWidth = size.shortestSide * 0.008
         ..strokeCap = StrokeCap.round;
 
-      final angle = startAngle + sweepAngle; // sentido horario
+      final angle = startAngle + sweepAngle; // clockwise
       final needleLength = radius * 0.95;
 
       final needleEnd = Offset(
@@ -326,7 +326,7 @@ class _TimerPainter extends CustomPainter {
 
       canvas.drawLine(center, needleEnd, needlePaint);
 
-      // Punto central
+      // Center hub
       final hubPaint = Paint()..color = Colors.white;
       canvas.drawCircle(center, strokeWidth * 0.18, hubPaint);
     }

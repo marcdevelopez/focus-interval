@@ -10,7 +10,7 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
   @override
   PomodoroTask? build() => null;
 
-  // Crear nueva tarea con defaults
+  // Create a new task with defaults.
   void createNew() {
     state = PomodoroTask(
       id: _uuid.v4(),
@@ -26,7 +26,7 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
     );
   }
 
-  // Cargar existente por id. Devuelve false si no se encuentra.
+  // Load existing by id. Returns false if not found.
   Future<bool> load(String id) async {
     final repo = ref.read(taskRepositoryProvider);
     final task = await repo.getById(id);

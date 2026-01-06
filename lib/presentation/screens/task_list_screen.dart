@@ -17,7 +17,7 @@ class TaskListScreen extends ConsumerWidget {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text("Tus tareas"),
+        title: const Text("Your tasks"),
         actions: [
           if (auth.currentUser != null) ...[
             Padding(
@@ -33,7 +33,7 @@ class TaskListScreen extends ConsumerWidget {
               icon: const Icon(Icons.logout),
               onPressed: () async {
                 await auth.signOut();
-                // Limpiamos la lista en memoria y navegamos a login
+                // Clear the in-memory list and navigate to login
                 ref.invalidate(taskListProvider);
                 if (context.mounted) context.go('/login');
               },
@@ -61,7 +61,7 @@ class TaskListScreen extends ConsumerWidget {
           if (tasks.isEmpty) {
             return const Center(
               child: Text(
-                "Aquí aparecerán tus tareas",
+                "Your tasks will appear here",
                 style: TextStyle(color: Colors.white54),
               ),
             );
@@ -80,7 +80,7 @@ class TaskListScreen extends ConsumerWidget {
                   if (!context.mounted) return;
                   if (!ok) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("No se encontró la tarea.")),
+                      const SnackBar(content: Text("Task not found.")),
                     );
                     return;
                   }
