@@ -68,9 +68,9 @@ final soundServiceProvider = Provider<SoundService>((ref) {
   return service;
 });
 
-// Device info (unique id per run)
+// Device info (overridden in main with persisted id)
 final deviceInfoServiceProvider = Provider<DeviceInfoService>((_) {
-  return DeviceInfoService();
+  return DeviceInfoService.ephemeral();
 });
 
 // Pomodoro session repository

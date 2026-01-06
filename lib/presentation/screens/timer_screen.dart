@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../widgets/timer_display.dart';
 import '../providers.dart';
 import '../../domain/pomodoro_machine.dart';
+import '../viewmodels/pomodoro_view_model.dart';
 
 class TimerScreen extends ConsumerStatefulWidget {
   final String taskId;
@@ -167,7 +168,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
 
 class _ControlsBar extends StatelessWidget {
   final PomodoroState state;
-  final dynamic vm;
+  final PomodoroViewModel vm;
   final bool taskLoaded;
 
   const _ControlsBar({
@@ -185,16 +186,52 @@ class _ControlsBar extends StatelessWidget {
         state.status == PomodoroStatus.longBreakRunning;
     final isPaused = state.status == PomodoroStatus.paused;
     final isFinished = state.status == PomodoroStatus.finished;
+    final canTakeOver = vm.canTakeOver;
+    final controlsEnabled = !vm.isMirrorMode;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        if (isIdle) _btn("Start", taskLoaded ? vm.start : null),
-        if (isRunning) _btn("Pause", vm.pause),
-        if (isPaused) _btn("Resume", vm.resume),
-        if (!isIdle && !isFinished) _btn("Cancel", vm.cancel),
+        if (canTakeOver) _btn("Take over", () => _confirmTakeOver(context)),
+        if (isIdle)
+          _btn("Start", taskLoaded && controlsEnabled ? vm.start : null),
+        if (isRunning) _btn("Pause", controlsEnabled ? vm.pause : null),
+        if (isPaused) _btn("Resume", controlsEnabled ? vm.resume : null),
+        if (!isIdle && !isFinished)
+          _btn("Cancel", controlsEnabled ? vm.cancel : null),
       ],
     );
+  }
+
+  Future<void> _confirmTakeOver(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: Colors.black,
+        title: const Text(
+          "Take over session?",
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          "This device will become the owner and control the active pomodoro.",
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Take over"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await vm.takeOver();
+    }
   }
 
   Widget _btn(String text, VoidCallback? onTap) {

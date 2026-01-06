@@ -20,16 +20,46 @@ class TaskEditorScreen extends ConsumerStatefulWidget {
 
 class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _pomodoroCtrl;
+  late final TextEditingController _shortBreakCtrl;
+  late final TextEditingController _longBreakCtrl;
+  late final TextEditingController _totalPomodorosCtrl;
+  late final TextEditingController _longBreakIntervalCtrl;
+  String? _loadedTaskId;
 
   @override
   void initState() {
     super.initState();
+
+    _nameCtrl = TextEditingController();
+    _pomodoroCtrl = TextEditingController();
+    _shortBreakCtrl = TextEditingController();
+    _longBreakCtrl = TextEditingController();
+    _totalPomodorosCtrl = TextEditingController();
+    _longBreakIntervalCtrl = TextEditingController();
+
+    final initial = ref.read(taskEditorProvider);
+    if (initial != null) {
+      _syncControllers(initial);
+    }
 
     if (widget.isEditing && widget.taskId != null) {
       Future.microtask(() {
         _loadExisting();
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _pomodoroCtrl.dispose();
+    _shortBreakCtrl.dispose();
+    _longBreakCtrl.dispose();
+    _totalPomodorosCtrl.dispose();
+    _longBreakIntervalCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _loadExisting() async {
@@ -46,6 +76,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   @override
   Widget build(BuildContext context) {
     final task = ref.watch(taskEditorProvider);
+    _maybeSyncControllers(task);
     const pomodoroSounds = [
       SoundOption('default_chime', 'Chime (pomodoro start)'),
       SoundOption('bell_soft', 'Soft bell'),
@@ -91,7 +122,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
           children: [
             _textField(
               label: "Task name",
-              initial: task.name,
+              controller: _nameCtrl,
               onChanged: (v) => _update(task.copyWith(name: v)),
               validator: (v) =>
                   (v == null || v.trim().isEmpty) ? "Required" : null,
@@ -100,19 +131,19 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
 
             _numberField(
               label: "Pomodoro duration (min)",
-              initial: task.pomodoroMinutes,
+              controller: _pomodoroCtrl,
               onChanged: (v) =>
                   _update(task.copyWith(pomodoroMinutes: v)),
             ),
             _numberField(
               label: "Short break (min)",
-              initial: task.shortBreakMinutes,
+              controller: _shortBreakCtrl,
               onChanged: (v) =>
                   _update(task.copyWith(shortBreakMinutes: v)),
             ),
             _numberField(
               label: "Long break (min)",
-              initial: task.longBreakMinutes,
+              controller: _longBreakCtrl,
               onChanged: (v) =>
                   _update(task.copyWith(longBreakMinutes: v)),
             ),
@@ -120,13 +151,13 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
 
             _numberField(
               label: "Total pomodoros",
-              initial: task.totalPomodoros,
+              controller: _totalPomodorosCtrl,
               onChanged: (v) =>
                   _update(task.copyWith(totalPomodoros: v)),
             ),
             _numberField(
               label: "Pomodoros per long break",
-              initial: task.longBreakInterval,
+              controller: _longBreakIntervalCtrl,
               onChanged: (v) =>
                   _update(task.copyWith(longBreakInterval: v)),
             ),
@@ -169,6 +200,26 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     ref.read(taskEditorProvider.notifier).update(updated);
   }
 
+  void _syncControllers(PomodoroTask task) {
+    _loadedTaskId = task.id;
+    _nameCtrl.text = task.name;
+    _pomodoroCtrl.text = task.pomodoroMinutes.toString();
+    _shortBreakCtrl.text = task.shortBreakMinutes.toString();
+    _longBreakCtrl.text = task.longBreakMinutes.toString();
+    _totalPomodorosCtrl.text = task.totalPomodoros.toString();
+    _longBreakIntervalCtrl.text = task.longBreakInterval.toString();
+  }
+
+  void _maybeSyncControllers(PomodoroTask? task) {
+    if (task == null) return;
+    if (_loadedTaskId == task.id) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_loadedTaskId == task.id) return;
+      _syncControllers(task);
+    });
+  }
+
   bool _validateBusinessRules() {
     final task = ref.read(taskEditorProvider);
     if (task == null) return false;
@@ -188,12 +239,12 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
 
   Widget _textField({
     required String label,
-    required String initial,
+    required TextEditingController controller,
     required Function(String) onChanged,
     String? Function(String?)? validator,
   }) {
     return TextFormField(
-      initialValue: initial,
+      controller: controller,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
@@ -209,11 +260,11 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
 
   Widget _numberField({
     required String label,
-    required int initial,
+    required TextEditingController controller,
     required Function(int) onChanged,
   }) {
     return TextFormField(
-      initialValue: initial.toString(),
+      controller: controller,
       keyboardType: TextInputType.number,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(

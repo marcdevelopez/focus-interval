@@ -42,8 +42,7 @@ android {
 
     splits {
         abi {
-            // Generate APKs per ABI to reduce size.
-            isEnable = true
+            isEnable = gradle.startParameter.taskNames.any { it.contains("Release") }
             reset()
             include("armeabi-v7a", "arm64-v8a", "x86_64")
             isUniversalApk = false

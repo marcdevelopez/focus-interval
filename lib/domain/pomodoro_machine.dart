@@ -233,6 +233,43 @@ class PomodoroMachine {
     ));
   }
 
+  /// Restore state from a remote session (mirror/takeover).
+  void restoreFromSession({
+    required PomodoroStatus status,
+    required PomodoroPhase? phase,
+    required int currentPomodoro,
+    required int totalPomodoros,
+    required int totalSeconds,
+    required int remainingSeconds,
+  }) {
+    _cancelTimer();
+    _prePauseStatus = null;
+    _prePausePhase = null;
+
+    _emit(PomodoroState(
+      status: status,
+      phase: phase,
+      currentPomodoro: currentPomodoro,
+      totalPomodoros: totalPomodoros,
+      totalSeconds: totalSeconds,
+      remainingSeconds: remainingSeconds,
+    ));
+
+    if (status == PomodoroStatus.paused) {
+      _prePausePhase = phase;
+      _prePauseStatus = _runningStatusForPhase(phase);
+      return;
+    }
+
+    if (_isRunningStatus(status)) {
+      if (remainingSeconds <= 0) {
+        _onCycleCompleted();
+        return;
+      }
+      _startTimer();
+    }
+  }
+
   /// --- Internals ---
 
   void _startTimer() {
@@ -337,6 +374,23 @@ class PomodoroMachine {
     _state = newState;
     if (!_controller.isClosed) {
       _controller.add(_state);
+    }
+  }
+
+  bool _isRunningStatus(PomodoroStatus status) =>
+      status == PomodoroStatus.pomodoroRunning ||
+      status == PomodoroStatus.shortBreakRunning ||
+      status == PomodoroStatus.longBreakRunning;
+
+  PomodoroStatus _runningStatusForPhase(PomodoroPhase? phase) {
+    switch (phase) {
+      case PomodoroPhase.shortBreak:
+        return PomodoroStatus.shortBreakRunning;
+      case PomodoroPhase.longBreak:
+        return PomodoroStatus.longBreakRunning;
+      case PomodoroPhase.pomodoro:
+      default:
+        return PomodoroStatus.pomodoroRunning;
     }
   }
 

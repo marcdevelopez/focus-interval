@@ -495,6 +495,28 @@ _(fill in when they happen)_
 
 ---
 
+# 🔹 Block 23 — Phase 13 (Validation + ownership) — 06/01/2026
+
+### ✔ Work completed:
+
+- Real-device sync validated (2 devices, same account) with worst-case latency <1s.
+- Confirmed mirror device cannot control owner, per specs.
+- Persisted `deviceId` locally (SharedPreferences) to keep ownership after restarts.
+- Added "Take over" action to claim ownership when the remote owner is unresponsive.
+- Fixed macOS task editor input by using controllers and syncing state on load.
+
+### 🧠 Decisions made:
+
+- Persist `deviceId` once per install and inject via ProviderScope override.
+- Allow take over when a running phase is overdue or a non-running session is stale.
+
+### 🎯 Next steps:
+
+- Re-test after restart to confirm the owner retains control.
+- Validate take over flow on two devices when owner is down.
+
+---
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

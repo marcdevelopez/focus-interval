@@ -19,6 +19,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   StreamSubscription<PomodoroSession?>? _sessionSub;
   Timer? _mirrorTimer;
   String? _remoteOwnerId;
+  PomodoroSession? _remoteSession;
 
   @override
   PomodoroState build() {
@@ -98,10 +99,55 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _machine.resume();
     _publishCurrentSession();
   }
+
   void cancel() {
     if (!_controlsEnabled) return;
     _machine.cancel();
     _sessionRepo.clearSession();
+  }
+
+  Future<void> takeOver() async {
+    final session = _remoteSession;
+    if (session == null || !_shouldAllowTakeover(session)) return;
+    if (_currentTask == null || session.taskId != _currentTask!.id) return;
+
+    _mirrorTimer?.cancel();
+
+    final remaining = _remainingForSession(session);
+    final normalizedRemaining =
+        remaining.clamp(0, session.phaseDurationSeconds).toInt();
+    final phaseStartedAt = _isRunning(session.status)
+        ? (session.phaseStartedAt ??
+            DateTime.now().subtract(
+              Duration(
+                seconds: session.phaseDurationSeconds - normalizedRemaining,
+              ),
+            ))
+        : null;
+
+    final takeover = PomodoroSession(
+      taskId: session.taskId,
+      ownerDeviceId: _deviceInfo.deviceId,
+      status: session.status,
+      phase: session.phase,
+      currentPomodoro: session.currentPomodoro,
+      totalPomodoros: session.totalPomodoros,
+      phaseDurationSeconds: session.phaseDurationSeconds,
+      remainingSeconds: normalizedRemaining,
+      phaseStartedAt: phaseStartedAt,
+      lastUpdatedAt: DateTime.now(),
+    );
+
+    _remoteOwnerId = null;
+    _remoteSession = null;
+
+    _applySessionToMachine(takeover, normalizedRemaining);
+
+    final shouldPublishTakeover =
+        !_isRunning(session.status) || normalizedRemaining > 0;
+    if (shouldPublishTakeover) {
+      await _sessionRepo.publishSession(takeover);
+    }
   }
 
   Future<void> _play(String soundId, {String? fallback}) =>
@@ -152,6 +198,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       if (session == null) {
         _mirrorTimer?.cancel();
         _remoteOwnerId = null;
+        _remoteSession = null;
         // If the owner cancels and clears the session, mirror idle.
         if (_currentTask != null) {
           state = PomodoroState.idle();
@@ -161,26 +208,48 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       if (session.ownerDeviceId == _deviceInfo.deviceId) {
         _mirrorTimer?.cancel();
         _remoteOwnerId = null;
+        _remoteSession = null;
+        if (_currentTask != null && session.taskId == _currentTask!.id) {
+          final shouldHydrate =
+              _machine.state.status == PomodoroStatus.idle &&
+              session.status != PomodoroStatus.idle;
+          if (shouldHydrate) {
+            final remaining = _remainingForSession(session);
+            _applySessionToMachine(session, remaining);
+          }
+        }
         return;
       }
       if (_currentTask == null || session.taskId != _currentTask!.id) {
         // If the remote session belongs to another task, do not apply it.
         _mirrorTimer?.cancel();
         _remoteOwnerId = null;
+        _remoteSession = null;
         return;
       }
-      final isOwner = session.ownerDeviceId == _deviceInfo.deviceId;
-      final allowTakeover = _shouldAllowTakeover(session);
-      _remoteOwnerId = (isOwner || allowTakeover) ? null : session.ownerDeviceId;
+      _remoteOwnerId = session.ownerDeviceId;
+      _remoteSession = session;
       _setMirrorSession(session);
     });
   }
 
   int _remainingFromStart(int phaseDurationSeconds, DateTime startedAt) {
-    final elapsed =
-        DateTime.now().difference(startedAt).inSeconds.clamp(0, phaseDurationSeconds);
+    final elapsed = DateTime.now()
+        .difference(startedAt)
+        .inSeconds
+        .clamp(0, phaseDurationSeconds);
     final remaining = phaseDurationSeconds - elapsed;
     return remaining > 0 ? remaining : 0;
+  }
+
+  int _remainingForSession(PomodoroSession session) {
+    if (_isRunning(session.status) && session.phaseStartedAt != null) {
+      return _remainingFromStart(
+        session.phaseDurationSeconds,
+        session.phaseStartedAt!,
+      );
+    }
+    return session.remainingSeconds;
   }
 
   void _setMirrorSession(PomodoroSession session) {
@@ -194,10 +263,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   void _updateMirrorStateFromSession(PomodoroSession session) {
-    final remaining = session.phaseStartedAt != null
-        ? _remainingFromStart(
-            session.phaseDurationSeconds, session.phaseStartedAt!)
-        : session.remainingSeconds;
+    final remaining = _remainingForSession(session);
     state = PomodoroState(
       status: session.status,
       phase: session.phase,
@@ -205,6 +271,17 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       totalPomodoros: session.totalPomodoros,
       totalSeconds: session.phaseDurationSeconds,
       remainingSeconds: remaining,
+    );
+  }
+
+  void _applySessionToMachine(PomodoroSession session, int remainingSeconds) {
+    _machine.restoreFromSession(
+      status: session.status,
+      phase: session.phase,
+      currentPomodoro: session.currentPomodoro,
+      totalPomodoros: session.totalPomodoros,
+      totalSeconds: session.phaseDurationSeconds,
+      remainingSeconds: remainingSeconds,
     );
   }
 
@@ -219,9 +296,23 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   bool _shouldAllowTakeover(PomodoroSession session) {
-    // Allow takeover if not running and the session is stale.
-    if (_isRunning(session.status)) return false;
-    return _isStale(session.lastUpdatedAt, minutes: 5);
+    if (!_isRunning(session.status)) {
+      return _isStale(session.lastUpdatedAt, minutes: 5);
+    }
+    if (session.phaseStartedAt == null) return true;
+    final phaseEnd = session.phaseStartedAt!
+        .add(Duration(seconds: session.phaseDurationSeconds));
+    return DateTime.now().isAfter(
+      phaseEnd.add(const Duration(seconds: 10)),
+    );
+  }
+
+  bool get isMirrorMode => _remoteOwnerId != null;
+
+  bool get canTakeOver {
+    final session = _remoteSession;
+    if (session == null) return false;
+    return _shouldAllowTakeover(session);
   }
 
   bool get _controlsEnabled =>
