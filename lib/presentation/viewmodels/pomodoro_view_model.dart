@@ -9,6 +9,7 @@ import '../providers.dart';
 import '../../data/repositories/pomodoro_session_repository.dart';
 import '../../data/services/device_info_service.dart';
 import '../../data/services/notification_service.dart';
+import '../../data/services/foreground_service.dart';
 
 class PomodoroViewModel extends Notifier<PomodoroState> {
   late PomodoroMachine _machine;
@@ -23,6 +24,9 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   String? _remoteOwnerId;
   PomodoroSession? _remoteSession;
   DateTime? _localPhaseStartedAt;
+  bool _foregroundActive = false;
+  String? _foregroundTitle;
+  String? _foregroundText;
 
   @override
   PomodoroState build() {
@@ -34,13 +38,17 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _deviceInfo = ref.watch(deviceInfoServiceProvider);
 
     // Listen to states.
-    _sub = _machine.stream.listen((s) => state = s);
+    _sub = _machine.stream.listen((s) {
+      state = s;
+      _syncForegroundService(s);
+    });
 
     // Clean up resources.
     ref.onDispose(() {
       _sub?.cancel();
       _sessionSub?.cancel();
       _mirrorTimer?.cancel();
+      _stopForegroundService();
     });
 
     return _machine.state;
@@ -231,6 +239,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         _remoteOwnerId = null;
         _remoteSession = null;
         _localPhaseStartedAt = null;
+        _stopForegroundService();
         // If the owner cancels and clears the session, mirror idle.
         if (_currentTask != null) {
           state = PomodoroState.idle();
@@ -258,10 +267,12 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         _mirrorTimer?.cancel();
         _remoteOwnerId = null;
         _remoteSession = null;
+        _stopForegroundService();
         return;
       }
       _remoteOwnerId = session.ownerDeviceId;
       _remoteSession = session;
+      _stopForegroundService();
       _setMirrorSession(session);
     });
   }
@@ -344,6 +355,60 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   bool get _controlsEnabled =>
       _remoteOwnerId == null || _remoteOwnerId == _deviceInfo.deviceId;
+
+  void _syncForegroundService(PomodoroState state) {
+    if (!ForegroundService.isSupported) return;
+    if (_currentTask == null) {
+      _stopForegroundService();
+      return;
+    }
+    if (_remoteOwnerId != null && _remoteOwnerId != _deviceInfo.deviceId) {
+      _stopForegroundService();
+      return;
+    }
+    final shouldRun = _isRunning(state.status);
+    if (!shouldRun) {
+      _stopForegroundService();
+      return;
+    }
+    final title = _currentTask!.name.isNotEmpty
+        ? _currentTask!.name
+        : 'Pomodoro running';
+    final text = _foregroundTextForState(state);
+    if (!_foregroundActive) {
+      _foregroundActive = true;
+      _foregroundTitle = title;
+      _foregroundText = text;
+      unawaited(ForegroundService.start(title: title, text: text));
+      return;
+    }
+    if (_foregroundTitle != title || _foregroundText != text) {
+      _foregroundTitle = title;
+      _foregroundText = text;
+      unawaited(ForegroundService.update(title: title, text: text));
+    }
+  }
+
+  void _stopForegroundService() {
+    if (!_foregroundActive) return;
+    _foregroundActive = false;
+    _foregroundTitle = null;
+    _foregroundText = null;
+    unawaited(ForegroundService.stop());
+  }
+
+  String _foregroundTextForState(PomodoroState state) {
+    switch (state.phase) {
+      case PomodoroPhase.shortBreak:
+        return 'Short break running';
+      case PomodoroPhase.longBreak:
+        return 'Long break running';
+      case PomodoroPhase.pomodoro:
+        return 'Pomodoro running';
+      default:
+        return 'Focus Interval is active';
+    }
+  }
 
   void handleAppResumed() {
     if (_currentTask == null) return;

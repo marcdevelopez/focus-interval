@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class NotificationService {
@@ -7,6 +8,9 @@ class NotificationService {
   int _nextId = 0;
   bool _permissionsRequested = false;
   bool _permissionsGranted = true;
+
+  static const MethodChannel _macosChannel =
+      MethodChannel('focus_interval/macos_notifications');
 
   NotificationService._(this._plugin, {required this.enabled});
 
@@ -51,7 +55,7 @@ class NotificationService {
 
   Future<bool> _ensurePermissions() async {
     if (!enabled) return false;
-    if (_permissionsRequested) return _permissionsGranted;
+    if (_permissionsRequested && _permissionsGranted) return true;
     _permissionsRequested = true;
     _permissionsGranted = await _requestPermissions(_plugin);
     return _permissionsGranted;
@@ -60,6 +64,9 @@ class NotificationService {
   static Future<bool> _requestPermissions(
     FlutterLocalNotificationsPlugin plugin,
   ) async {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.macOS) {
+      return _requestMacOSPermissions();
+    }
     final android = await plugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
@@ -73,6 +80,17 @@ class NotificationService {
             MacOSFlutterLocalNotificationsPlugin>()
         ?.requestPermissions(alert: true, badge: true, sound: true);
     return (android ?? true) && (ios ?? true) && (macos ?? true);
+  }
+
+  static Future<bool> _requestMacOSPermissions() async {
+    try {
+      final granted =
+          await _macosChannel.invokeMethod<bool>('requestPermission');
+      return granted ?? false;
+    } catch (e) {
+      debugPrint('macOS permission request failed: $e');
+      return false;
+    }
   }
 
   static Future<void> _createAndroidChannel(
@@ -99,6 +117,10 @@ class NotificationService {
     if (!await _ensurePermissions()) return;
     final title = taskName.isNotEmpty ? taskName : 'Pomodoro completed';
     final body = 'Pomodoro $currentPomodoro of $totalPomodoros finished.';
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.macOS) {
+      await _showMacOSNotification(title: title, body: body);
+      return;
+    }
     await _plugin.show(
       _consumeId(),
       title,
@@ -111,6 +133,10 @@ class NotificationService {
     if (!await _ensurePermissions()) return;
     final title = taskName.isNotEmpty ? taskName : 'Task completed';
     const body = 'All pomodoros are done.';
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.macOS) {
+      await _showMacOSNotification(title: title, body: body);
+      return;
+    }
     await _plugin.show(
       _consumeId(),
       title,
@@ -148,5 +174,19 @@ class NotificationService {
       macOS: darwin,
       linux: linux,
     );
+  }
+
+  static Future<void> _showMacOSNotification({
+    required String title,
+    required String body,
+  }) async {
+    try {
+      await _macosChannel.invokeMethod('showNotification', {
+        'title': title,
+        'body': body,
+      });
+    } catch (e) {
+      debugPrint('macOS notification failed: $e');
+    }
   }
 }

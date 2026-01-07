@@ -569,6 +569,35 @@ _(fill in when they happen)_
 
 ---
 
+# 🔹 Block 27 — Phase 14 (Android foreground service) — 07/01/2026
+
+### ✔ Work completed:
+
+- Added a native Android foreground service with wake lock to keep the app process alive.
+- Wired a Flutter method channel to start/stop/update the foreground notification.
+- Hooked the service lifecycle into the pomodoro state (start on run, stop on pause/cancel/finish).
+- Validated Android background timing against iOS/macOS with sub-second drift.
+
+### 🎯 Next steps:
+
+- Confirm macOS/iOS banner delivery (foreground/background).
+
+---
+
+# 🔹 Block 28 — Phase 14 (macOS notifications) — 07/01/2026
+
+### ✔ Work completed:
+
+- Added a macOS native notification channel to schedule notifications via UserNotifications.
+- Requested permissions and delivered banners in foreground and background for owner sessions.
+- Validated macOS notifications after task completion on device.
+
+### 🎯 Next steps:
+
+- Validate Windows/Linux notification delivery if required for MVP.
+
+---
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

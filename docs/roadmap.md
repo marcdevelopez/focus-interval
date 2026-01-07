@@ -411,8 +411,8 @@ These subphases should also appear in **dev_log.md** as they are completed.
   - Break end
   - Full completion (special sound)
 - Auto-dismiss the "Task completed" modal when the same task restarts on another device.
-- Fix macOS notification banner visibility for owner sessions.
-- Android: keep pomodoro advancing in background (foreground service; resume catch-up exists).
+- Fix macOS notification banner visibility for owner sessions (validated).
+- Android: keep pomodoro advancing in background (foreground service; validated).
 
 ### 📌 Exit conditions
 
