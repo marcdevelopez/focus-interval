@@ -8,11 +8,13 @@ import '../../data/services/sound_service.dart';
 import '../providers.dart';
 import '../../data/repositories/pomodoro_session_repository.dart';
 import '../../data/services/device_info_service.dart';
+import '../../data/services/notification_service.dart';
 
 class PomodoroViewModel extends Notifier<PomodoroState> {
   late PomodoroMachine _machine;
   StreamSubscription<PomodoroState>? _sub;
   late SoundService _soundService;
+  late NotificationService _notificationService;
   late PomodoroSessionRepository _sessionRepo;
   late DeviceInfoService _deviceInfo;
   PomodoroTask? _currentTask;
@@ -20,12 +22,14 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   Timer? _mirrorTimer;
   String? _remoteOwnerId;
   PomodoroSession? _remoteSession;
+  DateTime? _localPhaseStartedAt;
 
   @override
   PomodoroState build() {
     // Keep the machine alive while the VM exists.
     _machine = ref.watch(pomodoroMachineProvider);
     _soundService = ref.watch(soundServiceProvider);
+    _notificationService = ref.watch(notificationServiceProvider);
     _sessionRepo = ref.watch(pomodoroSessionRepositoryProvider);
     _deviceInfo = ref.watch(deviceInfoServiceProvider);
 
@@ -51,21 +55,29 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _currentTask = task;
     configureFromTask(task);
     _subscribeToRemoteSession();
+    unawaited(_notificationService.requestPermissions());
     return true;
   }
 
   void configureFromTask(PomodoroTask task) {
     _machine.callbacks = PomodoroCallbacks(
       onPomodoroStart: (_) {
+        _markPhaseStartedFromState(_machine.state);
         _publishCurrentSession();
         _play(task.startSound, fallback: task.startBreakSound);
       },
+      onPomodoroEnd: (s) {
+        if (s.currentPomodoro >= s.totalPomodoros) return;
+        _notifyPomodoroEnd(s);
+      },
       onBreakStart: (_) {
+        _markPhaseStartedFromState(_machine.state);
         _publishCurrentSession();
         _play(task.startBreakSound, fallback: task.startSound);
       },
       onTaskFinished: (_) {
         _publishCurrentSession();
+        _notifyTaskFinished();
         _play(task.finishTaskSound, fallback: task.startSound);
         _sessionRepo.clearSession();
       },
@@ -85,24 +97,28 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   void start() {
     if (!_controlsEnabled) return;
     _machine.startTask();
+    _markPhaseStartedFromState(_machine.state);
     _publishCurrentSession();
   }
 
   void pause() {
     if (!_controlsEnabled) return;
     _machine.pause();
+    _localPhaseStartedAt = null;
     _publishCurrentSession();
   }
 
   void resume() {
     if (!_controlsEnabled) return;
     _machine.resume();
+    _markPhaseStartedFromState(_machine.state);
     _publishCurrentSession();
   }
 
   void cancel() {
     if (!_controlsEnabled) return;
     _machine.cancel();
+    _localPhaseStartedAt = null;
     _sessionRepo.clearSession();
   }
 
@@ -142,6 +158,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _remoteSession = null;
 
     _applySessionToMachine(takeover, normalizedRemaining);
+    _syncLocalPhaseStartFromSession(takeover, normalizedRemaining);
 
     final shouldPublishTakeover =
         !_isRunning(session.status) || normalizedRemaining > 0;
@@ -152,6 +169,20 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   Future<void> _play(String soundId, {String? fallback}) =>
       _soundService.play(soundId, fallbackId: fallback);
+
+  void _notifyPomodoroEnd(PomodoroState state) {
+    if (_currentTask == null) return;
+    _notificationService.notifyPomodoroEnd(
+      taskName: _currentTask!.name,
+      currentPomodoro: state.currentPomodoro,
+      totalPomodoros: state.totalPomodoros,
+    );
+  }
+
+  void _notifyTaskFinished() {
+    if (_currentTask == null) return;
+    _notificationService.notifyTaskFinished(taskName: _currentTask!.name);
+  }
 
   void _publishCurrentSession() {
     if (_currentTask == null) return;
@@ -199,6 +230,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         _mirrorTimer?.cancel();
         _remoteOwnerId = null;
         _remoteSession = null;
+        _localPhaseStartedAt = null;
         // If the owner cancels and clears the session, mirror idle.
         if (_currentTask != null) {
           state = PomodoroState.idle();
@@ -216,6 +248,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
           if (shouldHydrate) {
             final remaining = _remainingForSession(session);
             _applySessionToMachine(session, remaining);
+            _syncLocalPhaseStartFromSession(session, remaining);
           }
         }
         return;
@@ -263,15 +296,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   void _updateMirrorStateFromSession(PomodoroSession session) {
-    final remaining = _remainingForSession(session);
-    state = PomodoroState(
-      status: session.status,
-      phase: session.phase,
-      currentPomodoro: session.currentPomodoro,
-      totalPomodoros: session.totalPomodoros,
-      totalSeconds: session.phaseDurationSeconds,
-      remainingSeconds: remaining,
-    );
+    state = _projectStateFromSession(session);
   }
 
   void _applySessionToMachine(PomodoroSession session, int remainingSeconds) {
@@ -283,6 +308,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       totalSeconds: session.phaseDurationSeconds,
       remainingSeconds: remainingSeconds,
     );
+    _markPhaseStartedFromState(_machine.state);
   }
 
   bool _isRunning(PomodoroStatus status) =>
@@ -296,6 +322,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   bool _shouldAllowTakeover(PomodoroSession session) {
+    if (session.status == PomodoroStatus.finished) return true;
     if (!_isRunning(session.status)) {
       return _isStale(session.lastUpdatedAt, minutes: 5);
     }
@@ -317,4 +344,205 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   bool get _controlsEnabled =>
       _remoteOwnerId == null || _remoteOwnerId == _deviceInfo.deviceId;
+
+  void handleAppResumed() {
+    if (_currentTask == null) return;
+    if (_remoteOwnerId != null) {
+      final session = _remoteSession;
+      if (session != null) {
+        _setMirrorSession(session);
+      }
+      return;
+    }
+    final current = _machine.state;
+    if (!_isRunning(current.status)) return;
+    final phaseStartedAt = _localPhaseStartedAt;
+    if (phaseStartedAt == null) {
+      _markPhaseStartedFromState(current);
+      return;
+    }
+    final now = DateTime.now();
+    final baseSession = PomodoroSession(
+      taskId: _currentTask!.id,
+      ownerDeviceId: _deviceInfo.deviceId,
+      status: current.status,
+      phase: current.phase,
+      currentPomodoro: current.currentPomodoro,
+      totalPomodoros: current.totalPomodoros,
+      phaseDurationSeconds: current.totalSeconds,
+      remainingSeconds: current.remainingSeconds,
+      phaseStartedAt: phaseStartedAt,
+      lastUpdatedAt: now,
+    );
+    final projected = _projectStateFromSession(baseSession, now: now);
+    if (_isSameState(current, projected)) return;
+    final wasFinished = current.status == PomodoroStatus.finished;
+    _applyProjectedState(projected, now: now);
+    _publishCurrentSession();
+    if (!wasFinished && projected.status == PomodoroStatus.finished) {
+      _notifyTaskFinished();
+      _play(_currentTask!.finishTaskSound, fallback: _currentTask!.startSound);
+    }
+  }
+
+  void _applyProjectedState(PomodoroState projected, {DateTime? now}) {
+    _machine.restoreFromSession(
+      status: projected.status,
+      phase: projected.phase,
+      currentPomodoro: projected.currentPomodoro,
+      totalPomodoros: projected.totalPomodoros,
+      totalSeconds: projected.totalSeconds,
+      remainingSeconds: projected.remainingSeconds,
+    );
+    _markPhaseStartedFromState(projected, now: now);
+  }
+
+  void _markPhaseStartedFromState(PomodoroState state, {DateTime? now}) {
+    if (!_isRunning(state.status)) {
+      _localPhaseStartedAt = null;
+      return;
+    }
+    final total = state.totalSeconds;
+    if (total <= 0) {
+      _localPhaseStartedAt = now ?? DateTime.now();
+      return;
+    }
+    final elapsed =
+        (total - state.remainingSeconds).clamp(0, total).toInt();
+    final anchor = now ?? DateTime.now();
+    _localPhaseStartedAt = anchor.subtract(Duration(seconds: elapsed));
+  }
+
+  void _syncLocalPhaseStartFromSession(
+    PomodoroSession session,
+    int remainingSeconds,
+  ) {
+    if (!_isRunning(session.status)) {
+      _localPhaseStartedAt = null;
+      return;
+    }
+    if (session.phaseStartedAt != null) {
+      _localPhaseStartedAt = session.phaseStartedAt;
+      return;
+    }
+    final elapsed = (session.phaseDurationSeconds - remainingSeconds)
+        .clamp(0, session.phaseDurationSeconds)
+        .toInt();
+    _localPhaseStartedAt =
+        DateTime.now().subtract(Duration(seconds: elapsed));
+  }
+
+  PomodoroState _projectStateFromSession(
+    PomodoroSession session, {
+    DateTime? now,
+  }) {
+    if (_currentTask == null) {
+      return _stateFromSession(session, remaining: session.remainingSeconds);
+    }
+    if (!_isRunning(session.status) || session.phaseStartedAt == null) {
+      return _stateFromSession(session, remaining: session.remainingSeconds);
+    }
+    final anchor = now ?? DateTime.now();
+    var elapsed = anchor.difference(session.phaseStartedAt!).inSeconds;
+    if (elapsed < 0) elapsed = 0;
+    final initialPhase = session.phase;
+    if (initialPhase == null) {
+      return _stateFromSession(session, remaining: session.remainingSeconds);
+    }
+    PomodoroPhase phase = initialPhase;
+    var currentPomodoro = session.currentPomodoro;
+    final totalPomodoros = session.totalPomodoros;
+    var phaseDuration =
+        _phaseDurationForPhase(phase, fallback: session.phaseDurationSeconds);
+    if (phaseDuration <= 0) {
+      phaseDuration = session.phaseDurationSeconds;
+    }
+
+    while (true) {
+      if (elapsed < phaseDuration) {
+        final remaining = (phaseDuration - elapsed).clamp(0, phaseDuration);
+        return PomodoroState(
+          status: _statusForPhase(phase),
+          phase: phase,
+          currentPomodoro: currentPomodoro,
+          totalPomodoros: totalPomodoros,
+          totalSeconds: phaseDuration,
+          remainingSeconds: remaining,
+        );
+      }
+
+      elapsed -= phaseDuration;
+
+      if (phase == PomodoroPhase.pomodoro) {
+        if (currentPomodoro >= totalPomodoros) {
+          return PomodoroState(
+            status: PomodoroStatus.finished,
+            phase: null,
+            currentPomodoro: currentPomodoro,
+            totalPomodoros: totalPomodoros,
+            totalSeconds: 0,
+            remainingSeconds: 0,
+          );
+        }
+        final isLongBreak =
+            currentPomodoro % _currentTask!.longBreakInterval == 0;
+        phase = isLongBreak ? PomodoroPhase.longBreak : PomodoroPhase.shortBreak;
+        phaseDuration = _phaseDurationForPhase(phase);
+        continue;
+      }
+
+      currentPomodoro += 1;
+      phase = PomodoroPhase.pomodoro;
+      phaseDuration = _phaseDurationForPhase(phase);
+    }
+  }
+
+  PomodoroState _stateFromSession(
+    PomodoroSession session, {
+    required int remaining,
+  }) {
+    return PomodoroState(
+      status: session.status,
+      phase: session.phase,
+      currentPomodoro: session.currentPomodoro,
+      totalPomodoros: session.totalPomodoros,
+      totalSeconds: session.phaseDurationSeconds,
+      remainingSeconds: remaining,
+    );
+  }
+
+  int _phaseDurationForPhase(
+    PomodoroPhase phase, {
+    int? fallback,
+  }) {
+    if (_currentTask == null) return fallback ?? 0;
+    switch (phase) {
+      case PomodoroPhase.pomodoro:
+        return _currentTask!.pomodoroMinutes * 60;
+      case PomodoroPhase.shortBreak:
+        return _currentTask!.shortBreakMinutes * 60;
+      case PomodoroPhase.longBreak:
+        return _currentTask!.longBreakMinutes * 60;
+    }
+  }
+
+  PomodoroStatus _statusForPhase(PomodoroPhase phase) {
+    switch (phase) {
+      case PomodoroPhase.shortBreak:
+        return PomodoroStatus.shortBreakRunning;
+      case PomodoroPhase.longBreak:
+        return PomodoroStatus.longBreakRunning;
+      case PomodoroPhase.pomodoro:
+        return PomodoroStatus.pomodoroRunning;
+    }
+  }
+
+  bool _isSameState(PomodoroState a, PomodoroState b) {
+    return a.status == b.status &&
+        a.phase == b.phase &&
+        a.currentPomodoro == b.currentPomodoro &&
+        a.totalPomodoros == b.totalPomodoros &&
+        a.totalSeconds == b.totalSeconds &&
+        a.remainingSeconds == b.remainingSeconds;
+  }
 }

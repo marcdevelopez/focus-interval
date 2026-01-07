@@ -17,14 +17,17 @@ class TimerScreen extends ConsumerStatefulWidget {
   ConsumerState<TimerScreen> createState() => _TimerScreenState();
 }
 
-class _TimerScreenState extends ConsumerState<TimerScreen> {
+class _TimerScreenState extends ConsumerState<TimerScreen>
+    with WidgetsBindingObserver {
   Timer? _clockTimer;
   String _currentClock = "";
   bool _taskLoaded = false;
+  bool _finishedDialogVisible = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     // Current system time (updates every second)
     _updateClock();
@@ -65,11 +68,20 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
   @override
   void dispose() {
     _clockTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(pomodoroViewModelProvider.notifier).handleAppResumed();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final vm = ref.read(pomodoroViewModelProvider.notifier);
     // Listen for pomodoro completion
     ref.listen<PomodoroState>(pomodoroViewModelProvider, (previous, next) {
       final wasFinished = previous?.status == PomodoroStatus.finished;
@@ -77,13 +89,19 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
       if (!wasFinished && nowFinished) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
-          _showFinishedDialog(context);
+          _showFinishedDialog(context, vm);
+        });
+        return;
+      }
+      if (_finishedDialogVisible && vm.isMirrorMode && !nowFinished) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _dismissFinishedDialog();
         });
       }
     });
 
     final state = ref.watch(pomodoroViewModelProvider);
-    final vm = ref.read(pomodoroViewModelProvider.notifier);
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -141,9 +159,12 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
     );
   }
 
-  void _showFinishedDialog(BuildContext context) {
+  void _showFinishedDialog(BuildContext context, PomodoroViewModel vm) {
+    if (_finishedDialogVisible) return;
+    _finishedDialogVisible = true;
     showDialog(
       context: context,
+      useRootNavigator: true,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
         backgroundColor: Colors.black,
@@ -157,12 +178,26 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              _finishedDialogVisible = false;
+              if (!vm.isMirrorMode) {
+                vm.cancel();
+              }
+              Navigator.of(context, rootNavigator: true).pop();
+            },
             child: const Text("OK"),
           ),
         ],
       ),
-    );
+    ).whenComplete(() {
+      _finishedDialogVisible = false;
+    });
+  }
+
+  void _dismissFinishedDialog() {
+    if (!_finishedDialogVisible) return;
+    _finishedDialogVisible = false;
+    Navigator.of(context, rootNavigator: true).pop();
   }
 }
 
@@ -195,6 +230,8 @@ class _ControlsBar extends StatelessWidget {
         if (canTakeOver) _btn("Take over", () => _confirmTakeOver(context)),
         if (isIdle)
           _btn("Start", taskLoaded && controlsEnabled ? vm.start : null),
+        if (isFinished)
+          _btn("Start again", taskLoaded && controlsEnabled ? vm.start : null),
         if (isRunning) _btn("Pause", controlsEnabled ? vm.pause : null),
         if (isPaused) _btn("Resume", controlsEnabled ? vm.resume : null),
         if (!isIdle && !isFinished)

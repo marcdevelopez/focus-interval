@@ -9,6 +9,7 @@ import '../data/services/firestore_service.dart';
 import '../data/repositories/firestore_task_repository.dart';
 import '../data/services/sound_service.dart';
 import '../data/services/device_info_service.dart';
+import '../data/services/notification_service.dart';
 import '../data/repositories/pomodoro_session_repository.dart';
 import '../data/repositories/firestore_pomodoro_session_repository.dart';
 
@@ -66,6 +67,11 @@ final soundServiceProvider = Provider<SoundService>((ref) {
   final service = SoundService();
   ref.onDispose(service.dispose);
   return service;
+});
+
+// Notifications (overridden in main with initialized service)
+final notificationServiceProvider = Provider<NotificationService>((_) {
+  return NotificationService.disabled();
 });
 
 // Device info (overridden in main with persisted id)

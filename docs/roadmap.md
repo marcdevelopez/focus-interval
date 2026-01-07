@@ -14,7 +14,7 @@ This project includes an official team roles document at:
 # 🟦 **Global Project Status**
 
 ```
-CURRENT PHASE: 13 — Real-time Pomodoro sync (multi-device)
+CURRENT PHASE: 14 — Sounds and Notifications
 NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       PomodoroViewModel exposed as Notifier auto-dispose and subscribed to the machine.
       Auth strategy completed: Google Sign-In on iOS/Android/Web/Win/Linux; email/password on macOS.
@@ -25,7 +25,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       Phase 10 (Editor with basic sounds) completed on 17/12/2025.
       Phase 11 (Event audio) completed on 17/12/2025.
       Phase 12 (Connect Editor → List → Execution) completed on 17/12/2025.
-      Phase 13 in progress: real-device sync validated (<1s), deviceId persistence added, take over implemented; re-verify transitions and reopen ownership.
+      Phase 13 completed on 06/01/2026: real-device sync validated (<1s), deviceId persistence added, take over implemented, reopen transitions verified.
 ```
 Update this on each commit if needed.
 
@@ -380,7 +380,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ---
 
-# 🚀 **PHASE 13 — Real-time Pomodoro sync (multi-device)**
+# [✔] **PHASE 13 — Real-time Pomodoro sync (multi-device) (completed 06/01/2026)**
 
 ### ⚙️ Tasks
 
@@ -410,11 +410,15 @@ These subphases should also appear in **dev_log.md** as they are completed.
   - Break start
   - Break end
   - Full completion (special sound)
+- Auto-dismiss the "Task completed" modal when the same task restarts on another device.
+- Fix macOS notification banner visibility for owner sessions.
+- Android: keep pomodoro advancing in background (foreground service; resume catch-up exists).
 
 ### 📌 Exit conditions
 
 - All sounds work
 - Final notification works on macOS/Win/Linux
+- "Task completed" modal auto-dismisses when the same task restarts remotely
 
 ---
 

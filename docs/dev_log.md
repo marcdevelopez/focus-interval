@@ -15,8 +15,8 @@ This document is used to:
 
 # 📍 Current status
 
-Active phase: **13 — Real-time Pomodoro sync**  
-Last update: **06/01/2026**
+Active phase: **14 — Sounds and Notifications**  
+Last update: **07/01/2026**
 
 ---
 
@@ -504,16 +504,68 @@ _(fill in when they happen)_
 - Persisted `deviceId` locally (SharedPreferences) to keep ownership after restarts.
 - Added "Take over" action to claim ownership when the remote owner is unresponsive.
 - Fixed macOS task editor input by using controllers and syncing state on load.
+- Re-tested restart/reopen flow: owner can resume/pause/cancel consistently; take over validated when owner is down.
 
 ### 🧠 Decisions made:
 
 - Persist `deviceId` once per install and inject via ProviderScope override.
 - Allow take over when a running phase is overdue or a non-running session is stale.
+- Take over thresholds: running phase overdue by 10s; paused/idle stale after 5 minutes.
 
 ### 🎯 Next steps:
 
-- Re-test after restart to confirm the owner retains control.
-- Validate take over flow on two devices when owner is down.
+- Start Phase 14: integrate notifications for pomodoro end + task finish.
+
+---
+
+# 🔹 Block 24 — Phase 14 (Notifications, setup) — 07/01/2026
+
+### ✔ Work completed:
+
+- Added NotificationService using `flutter_local_notifications`.
+- Initialized notifications in `main.dart` and injected via provider.
+- Triggered notifications on pomodoro end and task finish.
+- Deferred permission prompts to avoid blocking app launch and request on TimerScreen.
+- Enabled Android core library desugaring for notifications.
+
+### 🎯 Next steps:
+
+- Run `flutter pub get` and validate notifications on macOS/Android.
+- Confirm Windows/Linux behavior and adjust platform settings if needed.
+- Re-test Android build after desugaring change.
+
+---
+
+# 🔹 Block 25 — Phase 14 (Notifications + UX polish) — 07/01/2026
+
+### ✔ Work completed:
+
+- Auto-dismissed the "Task completed" modal when the session moves out of finished state.
+- Scoped auto-dismiss to mirror sessions so local completion still requires confirmation.
+- Added a macOS notification center delegate to show banners/lists in foreground.
+- Reset finished state on owner acknowledgement (OK) and expose "Start again".
+- Allow immediate take over when a session is already finished.
+
+### 🎯 Next steps:
+
+- Validate macOS banner delivery in foreground/background.
+- Decide whether mirrors should fire notifications for remote-owned sessions.
+
+---
+
+# 🔹 Block 26 — Phase 14 (Background catch-up) — 07/01/2026
+
+### ✔ Work completed:
+
+- Added app resume handling to fast-forward the owner state using timestamps.
+- Projected mirror state from `phaseStartedAt` to avoid frozen 00:00 when the owner is backgrounded.
+- Allowed the timer to catch up and publish the updated session on resume.
+- Validated Android resumes in sync with real time across devices.
+
+### 🎯 Next steps:
+
+- Implement true Android background ticking (foreground service) to avoid relying on resume.
+- Confirm macOS banner delivery (foreground/background).
 
 ---
 

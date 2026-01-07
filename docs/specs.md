@@ -382,6 +382,7 @@ The final animation described in section 12 is part of the mandatory behavior an
 
 - If an `activeSession` exists in Firestore for the `uid`, the screen connects in mirror mode and reflects the remote state in real time (state, phase, remaining time).
 - Only the `ownerDeviceId` can start/pause/resume/cancel; other devices show the state and offer “Take over” if the owner does not respond.
+- Take over is enabled when the session is stale: running phase is past `phaseStartedAt + phaseDurationSeconds + 10s`, or paused/idle has no updates for 5 minutes.
 - Remaining time in mirror mode is calculated with `phaseDurationSeconds` and `phaseStartedAt` (no 1s ticks are sent).
 
 ## **10.4.1. Mandatory visual improvements for the timer**
@@ -604,6 +605,7 @@ When the timer completes the **last pomodoro** of the task:
 - **Time calculation**: store `phaseStartedAt` (serverTimestamp) + `phaseDurationSeconds`; clients compute `remainingSeconds` locally and update on each snapshot.
 - **Conflicts**: if an `activeSession` already exists and another device tries to start, ask whether to “Take over” (overwrite `ownerDeviceId`) or “Respect remote session” (mirror only).
 - **Completion**: when the task ends, `activeSession` goes to `finished` and then is deleted or reset to `idle`.
+- **Remote restart UX**: if a "Task completed" modal is visible and the same task starts on another device, dismiss it automatically so the current session is visible; do not dismiss for a different task.
 
 # 📈 **14. Future features (not included in the MVP)**
 
