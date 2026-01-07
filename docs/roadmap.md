@@ -269,6 +269,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 ### 📝 Pending improvements (post-MVP)
 
 - Remember the last email used on each device (stored locally) and allow autofill/password managers; never store the password in plain text.
+- macOS: add Google Sign-In via OAuth web flow (browser + PKCE) if the project expands beyond MVP.
 
 ---
 

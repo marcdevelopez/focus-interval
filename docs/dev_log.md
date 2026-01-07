@@ -608,6 +608,14 @@ _(fill in when they happen)_
 
 ---
 
+# 🔹 Block 30 — Auth roadmap note (macOS OAuth) — 08/01/2026
+
+### ✔ Work completed:
+
+- Logged a post-MVP note to add macOS Google Sign-In via OAuth web flow (PKCE + browser).
+
+---
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
