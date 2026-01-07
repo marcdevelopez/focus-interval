@@ -258,6 +258,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
   - macOS App ID
   - Windows config
   - Linux config
+  - Android debug SHA-1/SHA-256 when Google Sign-In fails (see `docs/android_setup.md`)
 
 ### 📌 Exit conditions
 

@@ -598,6 +598,16 @@ _(fill in when they happen)_
 
 ---
 
+# 🔹 Block 29 — Android Google Sign-In (debug keystore) — 08/01/2026
+
+### ✔ Work completed:
+
+- Identified Google Sign-In failure caused by a new macOS user generating a new debug keystore.
+- Updated SHA-1/SHA-256 in Firebase and replaced `android/app/google-services.json`.
+- Confirmed Google Sign-In works and session persists after rebuild.
+
+---
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

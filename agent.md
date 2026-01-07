@@ -9,3 +9,4 @@
 - Before moving to the next phase, review the roadmap: if earlier phases are done but not marked, mark them with dates and align `docs/dev_log.md` and the global roadmap status.
 - Do not commit if there are errors/build breaks or known unresolved bugs; confirm the change works (at least compiles/analyzer) before committing. For incomplete work, use a separate branch or stash instead of main.
 - Keep all documentation, UI strings, and code comments in English to maintain a single language across the project.
+- If Android release signing is discussed, confirm the release keystore is backed up; remind the user if not.

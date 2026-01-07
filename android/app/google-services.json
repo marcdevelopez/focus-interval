@@ -7,84 +7,20 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:32274647226:android:c9580a2b9b42b579159a83",
-        "android_client_info": {
-          "package_name": "com.marcdevelopez.focusinterval"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "32274647226-m9b87m5e9evbulkmruv4ql6k8l3oqkbd.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyBARsxaYow2OsXu_KNb7DGmAQ7vVWYF4R8"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "32274647226-m9b87m5e9evbulkmruv4ql6k8l3oqkbd.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "32274647226-2496tlb97lrbt0qim7qu7s0off27ttnp.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.marcdevelopez.focusinterval"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:32274647226:android:921076f3e98c99a2159a83",
-        "android_client_info": {
-          "package_name": "com.marcdevelopez.focusinterval"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "32274647226-m9b87m5e9evbulkmruv4ql6k8l3oqkbd.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyBARsxaYow2OsXu_KNb7DGmAQ7vVWYF4R8"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "32274647226-m9b87m5e9evbulkmruv4ql6k8l3oqkbd.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "32274647226-2496tlb97lrbt0qim7qu7s0off27ttnp.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.marcdevelopez.focusinterval"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
         "mobilesdk_app_id": "1:32274647226:android:7405613b584e2a09159a83",
         "android_client_info": {
           "package_name": "com.marcdevelopez.focusinterval"
         }
       },
       "oauth_client": [
+        {
+          "client_id": "32274647226-mcohp0kv0ujjobd0n721hkh2bg3ro8qe.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.marcdevelopez.focusinterval",
+            "certificate_hash": "391bc030ee1b0f91e234957c1a040248928263b2"
+          }
+        },
         {
           "client_id": "32274647226-m9b87m5e9evbulkmruv4ql6k8l3oqkbd.apps.googleusercontent.com",
           "client_type": 3

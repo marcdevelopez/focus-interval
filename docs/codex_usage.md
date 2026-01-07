@@ -45,3 +45,10 @@ Use this sequence EVERY time you need a deep analysis of the project.
 Review this file periodically and update it if the Codex workflow changes or if new tools are added.
 
 ---
+
+## 🟧 Android signing reminder
+
+If you work on Android builds or Google Sign-In, read `docs/android_setup.md` first.
+Do not store release keystores in the repo; keep them backed up in a secure vault.
+
+---
