@@ -12,6 +12,9 @@ class NotificationService {
   static const MethodChannel _macosChannel =
       MethodChannel('focus_interval/macos_notifications');
 
+  static bool get _isWindows =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.windows;
+
   NotificationService._(this._plugin, {required this.enabled});
 
   static NotificationService disabled() {
@@ -19,7 +22,14 @@ class NotificationService {
   }
 
   static Future<NotificationService> init() async {
-    if (kIsWeb) return NotificationService.disabled();
+    if (kIsWeb || _isWindows) {
+      if (_isWindows) {
+        debugPrint(
+          'Notifications disabled on Windows (flutter_local_notifications has no Windows implementation).',
+        );
+      }
+      return NotificationService.disabled();
+    }
     final plugin = FlutterLocalNotificationsPlugin();
     try {
       const android = AndroidInitializationSettings('@mipmap/ic_launcher');

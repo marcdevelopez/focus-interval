@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -17,7 +18,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passCtrl = TextEditingController();
   bool _loading = false;
 
-  bool get _isMacOS => defaultTargetPlatform == TargetPlatform.macOS;
+  bool get _isGoogleSignInSupported {
+    if (kIsWeb) return true;
+    return defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
+  }
 
   @override
   void dispose() {
@@ -82,7 +87,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isGoogleDisabled = _isMacOS;
+    final isGoogleDisabled = !_isGoogleSignInSupported;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
@@ -144,7 +149,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const Padding(
                   padding: EdgeInsets.only(top: 8.0),
                   child: Text(
-                    'Google Sign-In is not available on macOS; use email/password.',
+                    'Google Sign-In is not available on this platform; use email/password.',
                     style: TextStyle(color: Colors.white54, fontSize: 12),
                   ),
                 ),

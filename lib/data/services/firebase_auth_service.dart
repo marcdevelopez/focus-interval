@@ -3,8 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, Tar
 import 'package:google_sign_in/google_sign_in.dart';
 
 /// Authentication service.
-/// Implements Google Sign-In for supported platforms (not macOS desktop)
-/// and email/password for all (especially macOS).
+/// Implements Google Sign-In for Android/iOS/Web and email/password everywhere.
 abstract class AuthService {
   User? get currentUser;
   bool get isSignedIn;
@@ -42,13 +41,17 @@ class FirebaseAuthService implements AuthService {
   @override
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  bool get _isMacOS => defaultTargetPlatform == TargetPlatform.macOS && !kIsWeb;
+  bool get _isGoogleSignInSupported {
+    if (kIsWeb) return true;
+    return defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
+  }
 
   @override
   Future<UserCredential> signInWithGoogle() async {
-    if (_isMacOS) {
+    if (!_isGoogleSignInSupported) {
       throw UnsupportedError(
-        'Google Sign-In is not available on macOS; use email/password.',
+        'Google Sign-In is not available on this platform; use email/password.',
       );
     }
 
@@ -90,7 +93,9 @@ class FirebaseAuthService implements AuthService {
   @override
   Future<void> signOut() async {
     await _auth.signOut();
-    await _google.signOut();
+    if (_isGoogleSignInSupported) {
+      await _google.signOut();
+    }
   }
 }
 

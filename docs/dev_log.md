@@ -16,7 +16,7 @@ This document is used to:
 # 📍 Current status
 
 Active phase: **14 — Sounds and Notifications**  
-Last update: **07/01/2026**
+Last update: **08/01/2026**
 
 ---
 
@@ -622,6 +622,35 @@ _(fill in when they happen)_
 
 - Fixed iOS Google Sign-In crash by adding the REVERSED_CLIENT_ID URL scheme to `ios/Runner/Info.plist`.
 - Verified Google Sign-In works on iOS and the session persists.
+
+---
+
+# ?? Block 32 - Windows desktop validation and auth stubs - 08/01/2026
+
+### ? Work completed:
+
+- Validated Windows desktop build and runtime.
+- Added a CMake policy minimum and install prefix override to avoid Firebase C++ SDK build/install failures.
+- Guarded Google Sign-In, audio, and notifications on Windows with safe stubs/logs.
+- Documented Windows desktop audio/notification follow-up in the roadmap.
+
+### ?? Issues found:
+
+- Firebase C++ SDK emits a CMake minimum version warning on newer CMake.
+- Windows build failed installing to Program Files without admin permissions.
+- Legacy Firebase accounts created before provider linking return `firebase_auth/unknown-error` on Windows (C++ SDK).
+
+### ?? Decisions made:
+
+- Keep Windows desktop running with email/password only; Google Sign-In stays disabled where unsupported.
+- Disable audio and local notifications on Windows until a supported plugin or native implementation is selected.
+- Keep generated plugin registrants and build artifacts out of commits when building on Windows.
+
+### ?? Next steps:
+
+- Evaluate Windows-capable audio and notification plugins or native Windows integration.
+- Optionally add a migration hint for legacy accounts on Windows.
+- Before pushing from Windows, restore generated plugin registrants and remove `android/build` to avoid cross-platform churn.
 
 ---
 

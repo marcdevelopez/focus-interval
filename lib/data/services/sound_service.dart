@@ -1,9 +1,31 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 
 /// Simple service to play sounds from assets.
 class SoundService {
-  final AudioPlayer _player = AudioPlayer();
+  final AudioPlayer? _player;
+  final bool _enabled;
+  bool _loggedUnsupported = false;
+
+  SoundService()
+      : _enabled = _isSupportedPlatform,
+        _player = _isSupportedPlatform ? AudioPlayer() : null;
+
+  static bool get _isSupportedPlatform {
+    if (kIsWeb) return true;
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+      case TargetPlatform.iOS:
+      case TargetPlatform.macOS:
+      case TargetPlatform.linux:
+        return true;
+      case TargetPlatform.windows:
+        return false;
+      default:
+        return false;
+    }
+  }
 
   /// Logical ID map → asset path.
   final Map<String, String> _assetById = const {
@@ -18,6 +40,10 @@ class SoundService {
   };
 
   Future<void> play(String id, {String? fallbackId}) async {
+    if (!_enabled) {
+      _logUnsupportedOnce();
+      return;
+    }
     final asset = _assetById[id];
     if (asset == null) return;
 
@@ -31,10 +57,13 @@ class SoundService {
       return;
     }
 
+    final player = _player;
+    if (player == null) return;
+
     try {
-      await _player.setAsset(asset);
-      await _player.seek(Duration.zero);
-      await _player.play();
+      await player.setAsset(asset);
+      await player.seek(Duration.zero);
+      await player.play();
     } catch (e) {
       if (fallbackId != null) {
         await play(fallbackId);
@@ -42,5 +71,13 @@ class SoundService {
     }
   }
 
-  Future<void> dispose() => _player.dispose();
+  void _logUnsupportedOnce() {
+    if (_loggedUnsupported) return;
+    _loggedUnsupported = true;
+    debugPrint(
+      'Sound playback disabled on Windows (just_audio has no Windows implementation).',
+    );
+  }
+
+  Future<void> dispose() => _player?.dispose() ?? Future.value();
 }
