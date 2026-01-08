@@ -662,6 +662,12 @@ _(fill in when they happen)_
 - Implemented a Windows audio backend using `audioplayers` while keeping `just_audio` for other platforms.
 - Implemented a Windows notification backend using `local_notifier` while keeping `flutter_local_notifications` for other platforms.
 - Kept `SoundService` and `NotificationService` as the only public APIs with internal platform adapters.
+- Normalized Windows audio asset paths for `audioplayers`.
+
+### ?? Issues found:
+
+- Windows: start/break sounds did not play while notifications fired; re-test after path normalization.
+- Mirror device (Android, older build) showed break/pomodoro phase mismatch; re-test with the updated build.
 
 ### ?? Decisions made:
 
@@ -672,6 +678,7 @@ _(fill in when they happen)_
 
 - Validate audio playback and notifications on Windows.
 - Spot-check macOS/Android/iOS/Web to ensure no behavior regression.
+- Run macOS verification after switching back from Windows.
 
 ---
 
