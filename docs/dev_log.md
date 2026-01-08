@@ -616,6 +616,15 @@ _(fill in when they happen)_
 
 ---
 
+# 🔹 Block 31 — iOS Google Sign-In fix — 08/01/2026
+
+### ✔ Work completed:
+
+- Fixed iOS Google Sign-In crash by adding the REVERSED_CLIENT_ID URL scheme to `ios/Runner/Info.plist`.
+- Verified Google Sign-In works on iOS and the session persists.
+
+---
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
