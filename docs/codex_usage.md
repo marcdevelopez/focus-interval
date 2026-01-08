@@ -46,6 +46,32 @@ Review this file periodically and update it if the Codex workflow changes or if 
 
 ---
 
+## Cross-machine sync (Windows -> macOS)
+
+Use this checklist after pushing changes from Windows and pulling on macOS:
+
+```bash
+git pull
+flutter pub get
+```
+
+If Xcode or the build complains about missing pods, run:
+
+```bash
+cd ios && pod install
+cd ../macos && pod install
+```
+
+Then rebuild (this regenerates local plugin registrants):
+
+```bash
+flutter run -d macos
+```
+
+Note: Generated plugin registrants and build artifacts are local-only; do not commit them.
+
+---
+
 ## 🟧 Android signing reminder
 
 If you work on Android builds or Google Sign-In, read `docs/android_setup.md` first.
