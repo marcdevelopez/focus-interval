@@ -663,6 +663,7 @@ _(fill in when they happen)_
 - Implemented a Windows notification backend using `local_notifier` while keeping `flutter_local_notifications` for other platforms.
 - Kept `SoundService` and `NotificationService` as the only public APIs with internal platform adapters.
 - Normalized Windows audio asset paths for `audioplayers`.
+- Verified Windows audio + notifications and confirmed sync with Android after updating the Android build.
 
 ### ?? Issues found:
 
