@@ -654,6 +654,27 @@ _(fill in when they happen)_
 
 ---
 
+# ?? Block 33 - Windows audio/notifications via adapters - 08/01/2026
+
+### ? Work completed:
+
+- Added `audioplayers` and `local_notifier` dependencies for Windows desktop.
+- Implemented a Windows audio backend using `audioplayers` while keeping `just_audio` for other platforms.
+- Implemented a Windows notification backend using `local_notifier` while keeping `flutter_local_notifications` for other platforms.
+- Kept `SoundService` and `NotificationService` as the only public APIs with internal platform adapters.
+
+### ?? Decisions made:
+
+- Use immediate notifications only; no scheduling on Windows for now.
+- Keep platform branching inside services and fail silently with debug logs.
+
+### ?? Next steps:
+
+- Validate audio playback and notifications on Windows.
+- Spot-check macOS/Android/iOS/Web to ensure no behavior regression.
+
+---
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

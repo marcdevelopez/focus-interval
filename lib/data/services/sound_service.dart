@@ -2,32 +2,37 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 
+import 'sound_backends/audioplayers_backend.dart'
+    if (dart.library.html) 'sound_backends/audioplayers_backend_stub.dart';
+
 /// Simple service to play sounds from assets.
 class SoundService {
-  final AudioPlayer? _player;
-  final bool _enabled;
+  final _SoundBackend _backend;
   bool _loggedUnsupported = false;
+  bool _loggedPlaybackError = false;
 
-  SoundService()
-      : _enabled = _isSupportedPlatform,
-        _player = _isSupportedPlatform ? AudioPlayer() : null;
+  SoundService() : _backend = _createBackend();
 
-  static bool get _isSupportedPlatform {
-    if (kIsWeb) return true;
+  static _SoundBackend _createBackend() {
+    if (kIsWeb) {
+      return _JustAudioBackend();
+    }
     switch (defaultTargetPlatform) {
+      case TargetPlatform.windows:
+        return _AudioPlayersBackend();
       case TargetPlatform.android:
       case TargetPlatform.iOS:
       case TargetPlatform.macOS:
       case TargetPlatform.linux:
-        return true;
-      case TargetPlatform.windows:
-        return false;
+        return _JustAudioBackend();
       default:
-        return false;
+        return _SilentSoundBackend(
+          'Sound playback is not supported on this platform.',
+        );
     }
   }
 
-  /// Logical ID map → asset path.
+  /// Logical ID map - asset path.
   final Map<String, String> _assetById = const {
     'default_chime': 'assets/sounds/default_chime.mp3',
     'default_chime_break': 'assets/sounds/default_chime_break.mp3',
@@ -40,12 +45,13 @@ class SoundService {
   };
 
   Future<void> play(String id, {String? fallbackId}) async {
-    if (!_enabled) {
-      _logUnsupportedOnce();
-      return;
-    }
     final asset = _assetById[id];
     if (asset == null) return;
+
+    if (!_backend.isAvailable) {
+      _logUnsupportedOnce(_backend.unavailableReason);
+      return;
+    }
 
     // Verify the asset exists; if missing, stay silent.
     try {
@@ -57,27 +63,88 @@ class SoundService {
       return;
     }
 
-    final player = _player;
-    if (player == null) return;
-
     try {
-      await player.setAsset(asset);
-      await player.seek(Duration.zero);
-      await player.play();
+      await _backend.playAsset(asset);
     } catch (e) {
+      _logPlaybackErrorOnce(e);
       if (fallbackId != null) {
         await play(fallbackId);
       }
     }
   }
 
-  void _logUnsupportedOnce() {
-    if (_loggedUnsupported) return;
+  void _logUnsupportedOnce(String reason) {
+    if (_loggedUnsupported || reason.isEmpty) return;
     _loggedUnsupported = true;
-    debugPrint(
-      'Sound playback disabled on Windows (just_audio has no Windows implementation).',
-    );
+    debugPrint(reason);
   }
 
-  Future<void> dispose() => _player?.dispose() ?? Future.value();
+  void _logPlaybackErrorOnce(Object error) {
+    if (_loggedPlaybackError) return;
+    _loggedPlaybackError = true;
+    debugPrint('Sound playback failed: $error');
+  }
+
+  Future<void> dispose() => _backend.dispose();
+}
+
+abstract class _SoundBackend {
+  bool get isAvailable;
+  String get unavailableReason;
+  Future<void> playAsset(String assetPath);
+  Future<void> dispose();
+}
+
+class _JustAudioBackend implements _SoundBackend {
+  final AudioPlayer _player = AudioPlayer();
+
+  @override
+  bool get isAvailable => true;
+
+  @override
+  String get unavailableReason => '';
+
+  @override
+  Future<void> playAsset(String assetPath) async {
+    await _player.setAsset(assetPath);
+    await _player.seek(Duration.zero);
+    await _player.play();
+  }
+
+  @override
+  Future<void> dispose() => _player.dispose();
+}
+
+class _AudioPlayersBackend implements _SoundBackend {
+  final AudioPlayersBackend _backend = AudioPlayersBackend();
+
+  @override
+  bool get isAvailable => true;
+
+  @override
+  String get unavailableReason => '';
+
+  @override
+  Future<void> playAsset(String assetPath) => _backend.playAsset(assetPath);
+
+  @override
+  Future<void> dispose() => _backend.dispose();
+}
+
+class _SilentSoundBackend implements _SoundBackend {
+  final String _reason;
+
+  _SilentSoundBackend(this._reason);
+
+  @override
+  bool get isAvailable => false;
+
+  @override
+  String get unavailableReason => _reason;
+
+  @override
+  Future<void> playAsset(String assetPath) async {}
+
+  @override
+  Future<void> dispose() async {}
 }

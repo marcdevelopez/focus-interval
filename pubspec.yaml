@@ -43,7 +43,9 @@ dependencies:
   cloud_firestore: ^5.1.0
   google_sign_in: ^6.2.1
   just_audio: ^0.9.39
+  audioplayers: ^6.1.0
   flutter_local_notifications: ^17.2.1
+  local_notifier: ^0.1.5
 
   # dependency_overrides:
 

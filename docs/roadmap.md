@@ -405,9 +405,8 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 - Integrate `just_audio`
 - Integrate `flutter_local_notifications`
-- Windows desktop: replace unsupported audio/notification plugins with Windows-capable implementations
-  and wire adapters in `SoundService`/`NotificationService` (evaluate `audioplayers` or `flutter_soloud`,
-  and `local_notifier` or native Win32 toast).
+- Windows desktop: implement audio with `audioplayers` and notifications with `local_notifier`
+  via adapters in `SoundService`/`NotificationService`.
 - Add:
 
   - Pomodoro start
