@@ -17,7 +17,7 @@ This project includes an official team roles document at:
 CURRENT PHASE: 14 — Sounds and Notifications
 NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       PomodoroViewModel exposed as Notifier auto-dispose and subscribed to the machine.
-      Auth strategy: Google Sign-In on iOS/Android/Web (web pending OAuth client ID); email/password on macOS/Windows/Linux.
+      Auth strategy: Google Sign-In on iOS/Android/Web (web verified; People API enabled); email/password on macOS/Windows/Linux.
       Firestore integrated per authenticated user; tasks isolated by uid.
       Phase 7 (Firestore integrated) completed on 24/11/2025.
       Phase 8 (CRUD + reactive stream) completed on 17/12/2025.
@@ -263,7 +263,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ### 📌 Exit conditions
 
-- Google login working on iOS/Android/Web (web requires OAuth client ID)
+- Google login working on iOS/Android/Web
 - Email/password login working on macOS/Windows/Linux
 - Persistent UID in the app
 
@@ -422,7 +422,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 ### Status notes (08/01/2026)
 
 - Audio verified on macOS/Windows/Android/Web (Chrome); Linux pending.
-- Notifications verified on macOS/Windows/Android; web notifications disabled (no backend yet).
+- Notifications verified on macOS/Windows/Android; web notifications enabled via Notifications API (permission + app open).
 
 ### 📌 Exit conditions
 

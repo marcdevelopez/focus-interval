@@ -668,13 +668,17 @@ _(fill in when they happen)_
 - Verified macOS behavior after switching back from Windows.
 - Confirmed owner notifications are visible.
 - Verified web audio in Chrome (macOS).
+- Added Web Google Sign-In client ID meta tag.
+- Enabled web notifications via the Notifications API (permission required).
+- Enabled Google People API and verified Web Google Sign-In in Chrome.
+- Verified web notifications while the app is open (including minimized).
 
 ### Issues found:
 
 - Resolved: Windows start/break sounds play correctly while notifications fire (re-tested after path normalization).
 - Resolved: Mirror Android device phase mismatch cleared after updating to the latest build.
-- Open: Web Google Sign-In fails due to missing OAuth client ID configuration.
-- Open: Web notifications are disabled (no backend on web).
+- Resolved: Web Google Sign-In works after enabling Google People API.
+- Resolved: Web notifications enabled (requires browser permission and app open).
 - Open: Linux audio/notifications still not verified.
 
 ### Decisions made:
@@ -684,8 +688,6 @@ _(fill in when they happen)_
 
 ### Next steps:
 
-- Configure the Web OAuth client ID and wire it into `web/index.html` (Google Sign-In).
-- Decide on a web notifications approach (Notifications API or FCM + service worker).
 - Verify Linux audio/notifications.
 
 ---
