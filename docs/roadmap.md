@@ -17,7 +17,7 @@ This project includes an official team roles document at:
 CURRENT PHASE: 14 — Sounds and Notifications
 NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       PomodoroViewModel exposed as Notifier auto-dispose and subscribed to the machine.
-      Auth strategy completed: Google Sign-In on iOS/Android/Web/Win/Linux; email/password on macOS.
+      Auth strategy: Google Sign-In on iOS/Android/Web (web pending OAuth client ID); email/password on macOS/Windows/Linux.
       Firestore integrated per authenticated user; tasks isolated by uid.
       Phase 7 (Firestore integrated) completed on 24/11/2025.
       Phase 8 (CRUD + reactive stream) completed on 17/12/2025.
@@ -242,7 +242,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ---
 
-# [✔] **PHASE 6 — Configure Firebase Auth (Google on mobile/web/Win/Linux; Email/Password on macOS)**
+# [✔] **PHASE 6 — Configure Firebase Auth (Google on iOS/Android/Web; Email/Password on macOS/Windows/Linux)**
 
 ### ⚙️ Tasks
 
@@ -250,20 +250,21 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
   - firebase_core
   - firebase_auth
-  - google_sign_in (iOS/Android/Web/Windows/Linux only)
-  - email/password flow for macOS
+  - google_sign_in (iOS/Android/Web only)
+  - email/password flow for macOS/Windows/Linux
 
 - Configure:
 
   - macOS App ID
   - Windows config
   - Linux config
+  - Web OAuth client ID + authorized domains for Google Sign-In
   - Android debug SHA-1/SHA-256 when Google Sign-In fails (see `docs/android_setup.md`)
 
 ### 📌 Exit conditions
 
-- Google login working on iOS/Android/Web/Windows/Linux
-- Email/password login working on macOS
+- Google login working on iOS/Android/Web (web requires OAuth client ID)
+- Email/password login working on macOS/Windows/Linux
 - Persistent UID in the app
 
 ### 📝 Pending improvements (post-MVP)
@@ -417,6 +418,11 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Auto-dismiss the "Task completed" modal when the same task restarts on another device.
 - Fix macOS notification banner visibility for owner sessions (validated).
 - Android: keep pomodoro advancing in background (foreground service; validated).
+
+### Status notes (08/01/2026)
+
+- Audio verified on macOS/Windows/Android/Web (Chrome); Linux pending.
+- Notifications verified on macOS/Windows/Android; web notifications disabled (no backend yet).
 
 ### 📌 Exit conditions
 
