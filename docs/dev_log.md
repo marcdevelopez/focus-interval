@@ -672,6 +672,7 @@ _(fill in when they happen)_
 - Enabled web notifications via the Notifications API (permission required).
 - Enabled Google People API and verified Web Google Sign-In in Chrome.
 - Verified web notifications while the app is open (including minimized).
+- Confirmed the “Task completed” modal auto-dismisses when another device restarts the same task.
 
 ### Issues found:
 

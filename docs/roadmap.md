@@ -422,7 +422,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 ### Status notes (08/01/2026)
 
 - Audio verified on macOS/Windows/Android/Web (Chrome); Linux pending.
-- Notifications verified on macOS/Windows/Android; web notifications enabled via Notifications API (permission + app open).
+- Notifications verified on macOS/Windows/Android; web notifications enabled via Notifications API (permission + app open, including minimized).
 
 ### 📌 Exit conditions
 
