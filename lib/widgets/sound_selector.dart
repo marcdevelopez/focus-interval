@@ -34,7 +34,7 @@ class SoundSelector extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
-          value: effectiveValue,
+          initialValue: effectiveValue,
           dropdownColor: Colors.black,
           decoration: const InputDecoration(
             filled: true,
