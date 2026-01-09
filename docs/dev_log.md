@@ -625,28 +625,28 @@ _(fill in when they happen)_
 
 ---
 
-# ?? Block 32 - Windows desktop validation and auth stubs - 08/01/2026
+# Block 32 - Windows desktop validation and auth stubs - 08/01/2026
 
-### ? Work completed:
+### Work completed:
 
 - Validated Windows desktop build and runtime.
 - Added a CMake policy minimum and install prefix override to avoid Firebase C++ SDK build/install failures.
 - Guarded Google Sign-In, audio, and notifications on Windows with safe stubs/logs.
 - Documented Windows desktop audio/notification follow-up in the roadmap.
 
-### ?? Issues found:
+### Issues found:
 
 - Firebase C++ SDK emits a CMake minimum version warning on newer CMake.
 - Windows build failed installing to Program Files without admin permissions.
 - Legacy Firebase accounts created before provider linking return `firebase_auth/unknown-error` on Windows (C++ SDK).
 
-### ?? Decisions made:
+### Decisions made:
 
 - Keep Windows desktop running with email/password only; Google Sign-In stays disabled where unsupported.
 - Disable audio and local notifications on Windows until a supported plugin or native implementation is selected.
 - Keep generated plugin registrants and build artifacts out of commits when building on Windows.
 
-### ?? Next steps:
+### Next steps:
 
 - Evaluate Windows-capable audio and notification plugins or native Windows integration.
 - Optionally add a migration hint for legacy accounts on Windows.
@@ -654,9 +654,9 @@ _(fill in when they happen)_
 
 ---
 
-# ?? Block 33 - Windows audio/notifications via adapters - 08/01/2026
+# Block 33 - Windows audio/notifications via adapters - 08/01/2026
 
-### ? Work completed:
+### Work completed:
 
 - Added `audioplayers` and `local_notifier` dependencies for Windows desktop.
 - Implemented a Windows audio backend using `audioplayers` while keeping `just_audio` for other platforms.
@@ -664,22 +664,31 @@ _(fill in when they happen)_
 - Kept `SoundService` and `NotificationService` as the only public APIs with internal platform adapters.
 - Normalized Windows audio asset paths for `audioplayers`.
 - Verified Windows audio + notifications and confirmed sync with Android after updating the Android build.
+- Spot-checked macOS/Android/iOS/Web for regressions.
+- Verified macOS behavior after switching back from Windows.
+- Confirmed owner notifications are visible.
+- Verified web audio in Chrome (macOS).
+- Added Web Google Sign-In client ID meta tag.
+- Enabled web notifications via the Notifications API (permission required).
+- Enabled Google People API and verified Web Google Sign-In in Chrome.
+- Verified web notifications while the app is open (including minimized).
 
-### ?? Issues found:
+### Issues found:
 
-- Windows: start/break sounds did not play while notifications fired; re-test after path normalization.
-- Mirror device (Android, older build) showed break/pomodoro phase mismatch; re-test with the updated build.
+- Resolved: Windows start/break sounds play correctly while notifications fire (re-tested after path normalization).
+- Resolved: Mirror Android device phase mismatch cleared after updating to the latest build.
+- Resolved: Web Google Sign-In works after enabling Google People API.
+- Resolved: Web notifications enabled (requires browser permission and app open).
+- Open: Linux audio/notifications still not verified.
 
-### ?? Decisions made:
+### Decisions made:
 
-- Use immediate notifications only; no scheduling on Windows for now.
+- Notifications on Windows are now working correctly, including proper triggering and sound playback
 - Keep platform branching inside services and fail silently with debug logs.
 
-### ?? Next steps:
+### Next steps:
 
-- Validate audio playback and notifications on Windows.
-- Spot-check macOS/Android/iOS/Web to ensure no behavior regression.
-- Run macOS verification after switching back from Windows.
+- Verify Linux audio/notifications.
 
 ---
 

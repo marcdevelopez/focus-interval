@@ -14,6 +14,10 @@ Roadmap phase: 13 — Real-time Pomodoro sync (multi-device validation pending).
 ## 🛠️ Tech Stack
 Flutter · Firebase Auth · Firestore · Riverpod · MVVM
 
+## Web development (local)
+- Run with a fixed port: `flutter run -d chrome --web-port=5001`.
+- Ensure `http://localhost:5001` is listed in Google OAuth Authorized JavaScript origins.
+
 ## 📦 Android builds
 - Release APKs are generated per ABI (armeabi-v7a, arm64-v8a, x86_64) with minify/shrink enabled. Command: `flutter build apk --release` (or `--split-per-abi`).
 - APKs live in `build/app/outputs/flutter-apk/` per architecture.

@@ -4,6 +4,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'notification_backends/local_notifier_backend.dart'
     if (dart.library.html) 'notification_backends/local_notifier_backend_stub.dart';
+import 'notification_backends/web_notification_backend_stub.dart'
+    if (dart.library.html) 'notification_backends/web_notification_backend.dart';
 
 class NotificationService {
   final _NotificationBackend _backend;
@@ -22,8 +24,6 @@ class NotificationService {
   }
 
   static Future<NotificationService> init() async {
-    if (kIsWeb) return NotificationService.disabled();
-
     final backend = _createBackend();
     final ok = await backend.init();
     if (!ok) {
@@ -37,6 +37,9 @@ class NotificationService {
   }
 
   static _NotificationBackend _createBackend() {
+    if (kIsWeb) {
+      return _WebNotificationBackend(WebNotificationBackend());
+    }
     if (defaultTargetPlatform == TargetPlatform.windows) {
       return _LocalNotifierBackend(LocalNotifierBackend());
     }
@@ -263,6 +266,30 @@ class _FlutterLocalNotificationsBackend implements _NotificationBackend {
     } catch (e) {
       debugPrint('macOS notification failed: $e');
     }
+  }
+}
+
+class _WebNotificationBackend implements _NotificationBackend {
+  final WebNotificationBackend _backend;
+
+  _WebNotificationBackend(this._backend);
+
+  @override
+  String get initErrorMessage => _backend.initErrorMessage;
+
+  @override
+  Future<bool> init() => _backend.init();
+
+  @override
+  Future<bool> requestPermissions() => _backend.requestPermissions();
+
+  @override
+  Future<void> show({
+    required int id,
+    required String title,
+    required String body,
+  }) {
+    return _backend.show(title: title, body: body);
   }
 }
 
