@@ -823,6 +823,27 @@ _(fill in when they happen)_
 
 ---
 
+# Block 40 - Linux local task persistence - 13/01/2026
+
+### Work completed:
+
+- Added a local disk-backed task repository for Linux when auth is unavailable.
+- Kept task behavior unchanged on platforms with Firebase Auth support.
+
+### Issues found:
+
+- None.
+
+### Decisions made:
+
+- Use shared_preferences for low-friction local persistence on Linux.
+
+### Next steps:
+
+- Validate task persistence across app restarts on Linux.
+
+---
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

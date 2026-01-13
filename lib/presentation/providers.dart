@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/pomodoro_machine.dart';
 import '../data/models/pomodoro_task.dart';
 import '../data/repositories/task_repository.dart';
+import '../data/repositories/local_task_repository.dart';
 import '../data/services/firebase_auth_service.dart';
 import '../data/services/firestore_service.dart';
 import '../data/repositories/firestore_task_repository.dart';
@@ -31,6 +32,7 @@ final authStateProvider = StreamProvider<User?>(
 final taskRepositoryProvider = Provider<TaskRepository>((ref) {
   final authState = ref.watch(authStateProvider).value;
   if (authState != null) return ref.watch(firestoreTaskRepositoryProvider);
+  if (!_supportsFirebase) return LocalTaskRepository();
   return InMemoryTaskRepository();
 });
 
