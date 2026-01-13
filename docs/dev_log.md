@@ -16,7 +16,7 @@ This document is used to:
 # 📍 Current status
 
 Active phase: **14 — Sounds and Notifications**  
-Last update: **08/01/2026**
+Last update: **13/01/2026**
 
 ---
 
@@ -690,6 +690,31 @@ _(fill in when they happen)_
 ### Next steps:
 
 - Verify Linux audio/notifications.
+
+---
+
+# Block 34 - Linux dependency checks and docs - 13/01/2026
+
+### Work completed:
+
+- Documented Linux desktop dependencies per distro (GTK, libnotify, GStreamer).
+- Added a Linux startup dependency check with a warning dialog for missing audio
+  or notification libraries.
+- Included copy-to-clipboard support for install commands.
+- Linked the Linux dependency guide from the README.
+
+### Issues found:
+
+- None.
+
+### Decisions made:
+
+- Keep the Linux dependency check best-effort and non-blocking.
+
+### Next steps:
+
+- Verify the Linux startup dialog with missing dependencies and after installing
+  packages.
 
 ---
 

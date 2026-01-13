@@ -1,4 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/pomodoro_machine.dart';
@@ -46,10 +48,14 @@ final pomodoroMachineProvider = Provider.autoDispose<PomodoroMachine>((ref) {
 // ==============================================================
 //  FIREBASE SERVICES (PHASE 6 — configurable real services)
 // ==============================================================
-final firebaseAuthServiceProvider =
-    Provider<AuthService>((_) => FirebaseAuthService());
-final firestoreServiceProvider =
-    Provider<FirestoreService>((_) => FirebaseFirestoreService());
+final firebaseAuthServiceProvider = Provider<AuthService>((_) {
+  if (!_supportsFirebase) return StubAuthService();
+  return FirebaseAuthService();
+});
+final firestoreServiceProvider = Provider<FirestoreService>((_) {
+  if (!_supportsFirebase) return StubFirestoreService();
+  return FirebaseFirestoreService();
+});
 
 // Firestore task repository
 final firestoreTaskRepositoryProvider =
@@ -121,3 +127,11 @@ final taskListProvider =
 final taskEditorProvider = NotifierProvider<TaskEditorViewModel, PomodoroTask?>(
   TaskEditorViewModel.new,
 );
+
+bool get _supportsFirebase {
+  if (kIsWeb) return true;
+  return defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS ||
+      defaultTargetPlatform == TargetPlatform.macOS ||
+      defaultTargetPlatform == TargetPlatform.windows;
+}

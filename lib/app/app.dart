@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'router.dart';
 import 'theme.dart';
+import '../widgets/linux_dependency_gate.dart';
 
 class FocusIntervalApp extends StatelessWidget {
   const FocusIntervalApp({super.key});
@@ -12,6 +13,11 @@ class FocusIntervalApp extends StatelessWidget {
       title: "Focus Interval",
       routerConfig: buildRouter(),
       theme: buildDarkTheme(),
+      builder: (context, child) {
+        return LinuxDependencyGate(
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
   }
 }
