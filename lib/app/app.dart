@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'router.dart';
 import 'theme.dart';
 import '../widgets/linux_dependency_gate.dart';
@@ -14,10 +16,13 @@ class FocusIntervalApp extends StatelessWidget {
       routerConfig: buildRouter(),
       theme: buildDarkTheme(),
       builder: (context, child) {
-        return LinuxDependencyGate(
-          child: child ?? const SizedBox.shrink(),
-        );
+        final content = child ?? const SizedBox.shrink();
+        if (!_isLinux) return content;
+        return LinuxDependencyGate(child: content);
       },
     );
   }
 }
+
+bool get _isLinux =>
+    !kIsWeb && defaultTargetPlatform == TargetPlatform.linux;

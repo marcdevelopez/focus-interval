@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers.dart';
+import '../../data/services/firebase_auth_service.dart';
 import '../../widgets/task_card.dart';
 
 class TaskListScreen extends ConsumerWidget {
@@ -12,6 +13,7 @@ class TaskListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tasksAsync = ref.watch(taskListProvider);
     final auth = ref.watch(firebaseAuthServiceProvider);
+    final authSupported = auth is! StubAuthService;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -19,7 +21,7 @@ class TaskListScreen extends ConsumerWidget {
         backgroundColor: Colors.black,
         title: const Text("Your tasks"),
         actions: [
-          if (auth.currentUser != null) ...[
+          if (authSupported && auth.currentUser != null) ...[
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
               child: Center(
@@ -38,7 +40,7 @@ class TaskListScreen extends ConsumerWidget {
                 if (context.mounted) context.go('/login');
               },
             ),
-          ] else
+          ] else if (authSupported)
             IconButton(
               icon: const Icon(Icons.person),
               onPressed: () => context.go('/login'),

@@ -718,6 +718,28 @@ _(fill in when they happen)_
 
 ---
 
+# Block 35 - Linux auth guard on task list/login - 13/01/2026
+
+### Work completed:
+
+- Hid the login entry point on Linux where Firebase Auth is not supported.
+- Added a safe fallback in the login screen to return to the task list when
+  authentication is unavailable.
+
+### Issues found:
+
+- None.
+
+### Decisions made:
+
+- Keep authentication flows unchanged on supported platforms.
+
+### Next steps:
+
+- Validate the Linux task list UX now that login is disabled.
+
+---
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
