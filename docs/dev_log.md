@@ -15,7 +15,7 @@ This document is used to:
 
 # 📍 Current status
 
-Active phase: **14 — Sounds and Notifications**  
+Active phase: **15 — Mandatory Final Animation**  
 Last update: **13/01/2026**
 
 ---
@@ -598,7 +598,7 @@ _(fill in when they happen)_
 
 ---
 
-# 🔹 Block 29 — Android Google Sign-In (debug keystore) — 08/01/2026
+# 🔹 Block 29 — Phase 6 (Android Google Sign-In debug keystore) — 08/01/2026
 
 ### ✔ Work completed:
 
@@ -608,7 +608,7 @@ _(fill in when they happen)_
 
 ---
 
-# 🔹 Block 30 — Auth roadmap note (macOS OAuth) — 08/01/2026
+# 🔹 Block 30 — Phase 6 (Auth roadmap note: macOS OAuth) — 08/01/2026
 
 ### ✔ Work completed:
 
@@ -616,7 +616,7 @@ _(fill in when they happen)_
 
 ---
 
-# 🔹 Block 31 — iOS Google Sign-In fix — 08/01/2026
+# 🔹 Block 31 — Phase 6 (iOS Google Sign-In fix) — 08/01/2026
 
 ### ✔ Work completed:
 
@@ -625,7 +625,7 @@ _(fill in when they happen)_
 
 ---
 
-# Block 32 - Windows desktop validation and auth stubs - 08/01/2026
+# 🔹 Block 32 — Phase 6 (Windows desktop validation and auth stubs) — 08/01/2026
 
 ### Work completed:
 
@@ -654,7 +654,7 @@ _(fill in when they happen)_
 
 ---
 
-# Block 33 - Windows audio/notifications via adapters - 08/01/2026
+# 🔹 Block 33 — Phase 14 (Windows audio/notifications via adapters) — 08/01/2026
 
 ### Work completed:
 
@@ -693,7 +693,7 @@ _(fill in when they happen)_
 
 ---
 
-# Block 34 - Linux dependency checks and docs - 13/01/2026
+# 🔹 Block 34 — Phase 14 (Linux dependency checks and docs) — 13/01/2026
 
 ### Work completed:
 
@@ -718,7 +718,7 @@ _(fill in when they happen)_
 
 ---
 
-# Block 35 - Linux auth guard on task list/login - 13/01/2026
+# 🔹 Block 35 — Phase 6 (Linux auth guard on task list/login) — 13/01/2026
 
 ### Work completed:
 
@@ -740,7 +740,7 @@ _(fill in when they happen)_
 
 ---
 
-# Block 36 - Linux dependency debug override - 13/01/2026
+# 🔹 Block 36 — Phase 14 (Linux dependency debug override) — 13/01/2026
 
 ### Work completed:
 
@@ -761,7 +761,7 @@ _(fill in when they happen)_
 
 ---
 
-# Block 37 - Linux dependency dialog navigator fix - 13/01/2026
+# 🔹 Block 37 — Phase 14 (Linux dependency dialog navigator fix) — 13/01/2026
 
 ### Work completed:
 
@@ -782,7 +782,7 @@ _(fill in when they happen)_
 
 ---
 
-# Block 38 - Remove Linux dependency debug override - 13/01/2026
+# 🔹 Block 38 — Phase 14 (Remove Linux dependency debug override) — 13/01/2026
 
 ### Work completed:
 
@@ -802,12 +802,13 @@ _(fill in when they happen)_
 
 ---
 
-# Block 39 - Linux notifications via local_notifier - 13/01/2026
+# 🔹 Block 39 — Phase 14 (Linux notifications via local_notifier) — 13/01/2026
 
 ### Work completed:
 
 - Switched Linux notifications to use `local_notifier` for better reliability.
 - Kept other platforms unchanged.
+- Verified Linux notifications when completing a task.
 
 ### Issues found:
 
@@ -819,11 +820,11 @@ _(fill in when they happen)_
 
 ### Next steps:
 
-- Re-test notifications on Linux.
+- None.
 
 ---
 
-# Block 40 - Linux local task persistence - 13/01/2026
+# 🔹 Block 40 — Phase 6 (Linux local task persistence) — 13/01/2026
 
 ### Work completed:
 
@@ -841,6 +842,27 @@ _(fill in when they happen)_
 ### Next steps:
 
 - Validate task persistence across app restarts on Linux.
+
+---
+
+# 🔹 Block 41 — Phase 6 (Linux sync notice) — 13/01/2026
+
+### Work completed:
+
+- Added a Linux-only sync notice dialog explaining web sync availability.
+- Added an info action on the task list for Linux to reopen the notice.
+
+### Issues found:
+
+- None.
+
+### Decisions made:
+
+- Show the notice once on first launch and allow manual access from the app bar.
+
+### Next steps:
+
+- Confirm the notice appears only once and does not affect other platforms.
 
 ---
 

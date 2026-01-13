@@ -14,7 +14,7 @@ This project includes an official team roles document at:
 # 🟦 **Global Project Status**
 
 ```
-CURRENT PHASE: 14 — Sounds and Notifications
+CURRENT PHASE: 15 — Mandatory Final Animation
 NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       PomodoroViewModel exposed as Notifier auto-dispose and subscribed to the machine.
       Auth strategy: Google Sign-In on iOS/Android/Web (web verified; People API enabled); email/password on macOS/Windows/Linux.
@@ -26,6 +26,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       Phase 11 (Event audio) completed on 17/12/2025.
       Phase 12 (Connect Editor → List → Execution) completed on 17/12/2025.
       Phase 13 completed on 06/01/2026: real-device sync validated (<1s), deviceId persistence added, take over implemented, reopen transitions verified.
+      Phase 14 completed on 13/01/2026: Linux audio/notifications verified.
 ```
 Update this on each commit if needed.
 
@@ -400,7 +401,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Only the owner writes; others show live changes.
 - Phase transitions, pause/resume, and finish are persisted and visible when reopening the app.
 
-# 🚀 **PHASE 14 — Sounds and Notifications**
+# [✔] **PHASE 14 — Sounds and Notifications**
 
 ### ⚙️ Tasks
 
@@ -419,10 +420,10 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Fix macOS notification banner visibility for owner sessions (validated).
 - Android: keep pomodoro advancing in background (foreground service; validated).
 
-### Status notes (08/01/2026)
+### Status notes (13/01/2026)
 
-- Audio verified on macOS/Windows/Android/Web (Chrome); Linux pending.
-- Notifications verified on macOS/Windows/Android; web notifications enabled via Notifications API (permission + app open, including minimized).
+- Audio verified on macOS/Windows/Android/Web (Chrome) and Linux.
+- Notifications verified on macOS/Windows/Android/Linux; web notifications enabled via Notifications API (permission + app open, including minimized).
 
 ### 📌 Exit conditions
 
