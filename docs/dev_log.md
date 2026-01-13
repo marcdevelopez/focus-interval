@@ -830,6 +830,7 @@ _(fill in when they happen)_
 
 - Added a local disk-backed task repository for Linux when auth is unavailable.
 - Kept task behavior unchanged on platforms with Firebase Auth support.
+- Verified task persistence across app restarts on Linux.
 
 ### Issues found:
 
@@ -841,7 +842,7 @@ _(fill in when they happen)_
 
 ### Next steps:
 
-- Validate task persistence across app restarts on Linux.
+- None.
 
 ---
 
@@ -851,6 +852,7 @@ _(fill in when they happen)_
 
 - Added a Linux-only sync notice dialog explaining web sync availability.
 - Added an info action on the task list for Linux to reopen the notice.
+- Verified the sync notice on Android and web (Chrome).
 
 ### Issues found:
 
@@ -862,7 +864,7 @@ _(fill in when they happen)_
 
 ### Next steps:
 
-- Confirm the notice appears only once and does not affect other platforms.
+- Verify the notice on macOS/iOS/Windows.
 
 ---
 

@@ -10,7 +10,7 @@ Pomodoro desktop app (macOS / Windows / Linux) built with Flutter.
 - [Agent Guide (internal)](agent.md)
 
 ## 🧪 Status
-Roadmap phase: 14 — Sounds and Notifications (Linux verification pending).
+Roadmap phase: 15 — Mandatory Final Animation.
 
 ## 🛠️ Tech Stack
 Flutter · Firebase Auth · Firestore · Riverpod · MVVM
