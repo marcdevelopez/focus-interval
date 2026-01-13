@@ -740,6 +740,89 @@ _(fill in when they happen)_
 
 ---
 
+# Block 36 - Linux dependency debug override - 13/01/2026
+
+### Work completed:
+
+- Added a debug-only dart-define to force missing Linux dependencies for UI
+  testing without changing release behavior.
+
+### Issues found:
+
+- None.
+
+### Decisions made:
+
+- Keep the override inactive by default and only evaluated in debug mode.
+
+### Next steps:
+
+- Validate the dependency dialog using the forced flag.
+
+---
+
+# Block 37 - Linux dependency dialog navigator fix - 13/01/2026
+
+### Work completed:
+
+- Fixed the Linux dependency dialog to use the app navigator context to avoid
+  crashes at startup.
+
+### Issues found:
+
+- Dependency dialog crashed when shown from a context without a Navigator.
+
+### Decisions made:
+
+- Route dialog presentation through the root navigator key.
+
+### Next steps:
+
+- Re-test the forced dependency dialog on Linux.
+
+---
+
+# Block 38 - Remove Linux dependency debug override - 13/01/2026
+
+### Work completed:
+
+- Removed the temporary debug-only dependency override after validation.
+
+### Issues found:
+
+- None.
+
+### Decisions made:
+
+- Keep Linux dependency checks clean and production-only.
+
+### Next steps:
+
+- None.
+
+---
+
+# Block 39 - Linux notifications via local_notifier - 13/01/2026
+
+### Work completed:
+
+- Switched Linux notifications to use `local_notifier` for better reliability.
+- Kept other platforms unchanged.
+
+### Issues found:
+
+- Linux notifications were not appearing with the previous backend.
+
+### Decisions made:
+
+- Reuse the desktop notification backend used on Windows for Linux as well.
+
+### Next steps:
+
+- Re-test notifications on Linux.
+
+---
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

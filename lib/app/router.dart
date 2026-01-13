@@ -6,8 +6,12 @@ import '../presentation/screens/task_list_screen.dart';
 import '../presentation/screens/task_editor_screen.dart';
 import '../presentation/screens/timer_screen.dart';
 
+final GlobalKey<NavigatorState> rootNavigatorKey =
+    GlobalKey<NavigatorState>();
+
 GoRouter buildRouter() {
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/tasks',
     routes: [
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),

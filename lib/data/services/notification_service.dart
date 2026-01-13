@@ -40,7 +40,8 @@ class NotificationService {
     if (kIsWeb) {
       return _WebNotificationBackend(WebNotificationBackend());
     }
-    if (defaultTargetPlatform == TargetPlatform.windows) {
+    if (defaultTargetPlatform == TargetPlatform.windows ||
+        defaultTargetPlatform == TargetPlatform.linux) {
       return _LocalNotifierBackend(LocalNotifierBackend());
     }
     return _FlutterLocalNotificationsBackend(
@@ -306,8 +307,7 @@ class _LocalNotifierBackend implements _NotificationBackend {
   Future<bool> init() async {
     final ok = await _backend.init(appName: 'Focus Interval');
     if (!ok) {
-      _initError =
-          'Notification init failed on Windows (local_notifier setup failed).';
+      _initError = 'Notification init failed (local_notifier setup failed).';
     }
     return ok;
   }
@@ -324,7 +324,7 @@ class _LocalNotifierBackend implements _NotificationBackend {
     try {
       await _backend.show(title: title, body: body);
     } catch (e) {
-      debugPrint('Windows notification failed: $e');
+      debugPrint('Desktop notification failed: $e');
     }
   }
 }

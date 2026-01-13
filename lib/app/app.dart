@@ -18,7 +18,10 @@ class FocusIntervalApp extends StatelessWidget {
       builder: (context, child) {
         final content = child ?? const SizedBox.shrink();
         if (!_isLinux) return content;
-        return LinuxDependencyGate(child: content);
+        return LinuxDependencyGate(
+          navigatorKey: rootNavigatorKey,
+          child: content,
+        );
       },
     );
   }

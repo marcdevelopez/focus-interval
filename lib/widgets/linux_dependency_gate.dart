@@ -50,8 +50,13 @@ const Map<LinuxPackageFamily, Map<LinuxDependency, List<String>>>
 
 class LinuxDependencyGate extends StatefulWidget {
   final Widget child;
+  final GlobalKey<NavigatorState> navigatorKey;
 
-  const LinuxDependencyGate({super.key, required this.child});
+  const LinuxDependencyGate({
+    super.key,
+    required this.child,
+    required this.navigatorKey,
+  });
 
   @override
   State<LinuxDependencyGate> createState() => _LinuxDependencyGateState();
@@ -75,13 +80,17 @@ class _LinuxDependencyGateState extends State<LinuxDependencyGate> {
   }
 
   Future<void> _showDialog(LinuxDependencyReport report) async {
-    final parentContext = context;
+    final dialogContext = widget.navigatorKey.currentContext;
+    if (dialogContext == null) {
+      debugPrint('Linux dependency dialog skipped: navigator not ready.');
+      return;
+    }
     final missingText = _missingLines(report.missing);
     final installCommand = _installCommand(report.family, report.missing);
     final hasCommand = installCommand.isNotEmpty;
 
     await showDialog<void>(
-      context: context,
+      context: dialogContext,
       builder: (context) {
         return AlertDialog(
           title: const Text('Missing Linux desktop dependencies'),
@@ -116,7 +125,7 @@ class _LinuxDependencyGateState extends State<LinuxDependencyGate> {
                   Clipboard.setData(
                     ClipboardData(text: installCommand),
                   );
-                  ScaffoldMessenger.of(parentContext).showSnackBar(
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
                     const SnackBar(
                       content: Text('Install command copied to clipboard.'),
                     ),
