@@ -1,9 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/pomodoro_machine.dart';
 import '../data/models/pomodoro_task.dart';
 import '../data/repositories/task_repository.dart';
+import '../data/repositories/local_task_repository.dart';
 import '../data/services/firebase_auth_service.dart';
 import '../data/services/firestore_service.dart';
 import '../data/repositories/firestore_task_repository.dart';
@@ -29,6 +32,7 @@ final authStateProvider = StreamProvider<User?>(
 final taskRepositoryProvider = Provider<TaskRepository>((ref) {
   final authState = ref.watch(authStateProvider).value;
   if (authState != null) return ref.watch(firestoreTaskRepositoryProvider);
+  if (!_supportsFirebase) return LocalTaskRepository();
   return InMemoryTaskRepository();
 });
 
@@ -46,10 +50,14 @@ final pomodoroMachineProvider = Provider.autoDispose<PomodoroMachine>((ref) {
 // ==============================================================
 //  FIREBASE SERVICES (PHASE 6 — configurable real services)
 // ==============================================================
-final firebaseAuthServiceProvider =
-    Provider<AuthService>((_) => FirebaseAuthService());
-final firestoreServiceProvider =
-    Provider<FirestoreService>((_) => FirebaseFirestoreService());
+final firebaseAuthServiceProvider = Provider<AuthService>((_) {
+  if (!_supportsFirebase) return StubAuthService();
+  return FirebaseAuthService();
+});
+final firestoreServiceProvider = Provider<FirestoreService>((_) {
+  if (!_supportsFirebase) return StubFirestoreService();
+  return FirebaseFirestoreService();
+});
 
 // Firestore task repository
 final firestoreTaskRepositoryProvider =
@@ -121,3 +129,11 @@ final taskListProvider =
 final taskEditorProvider = NotifierProvider<TaskEditorViewModel, PomodoroTask?>(
   TaskEditorViewModel.new,
 );
+
+bool get _supportsFirebase {
+  if (kIsWeb) return true;
+  return defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS ||
+      defaultTargetPlatform == TargetPlatform.macOS ||
+      defaultTargetPlatform == TargetPlatform.windows;
+}

@@ -15,8 +15,8 @@ This document is used to:
 
 # 📍 Current status
 
-Active phase: **14 — Sounds and Notifications**  
-Last update: **08/01/2026**
+Active phase: **15 — Mandatory Final Animation**  
+Last update: **13/01/2026**
 
 ---
 
@@ -598,7 +598,7 @@ _(fill in when they happen)_
 
 ---
 
-# 🔹 Block 29 — Android Google Sign-In (debug keystore) — 08/01/2026
+# 🔹 Block 29 — Phase 6 (Android Google Sign-In debug keystore) — 08/01/2026
 
 ### ✔ Work completed:
 
@@ -608,7 +608,7 @@ _(fill in when they happen)_
 
 ---
 
-# 🔹 Block 30 — Auth roadmap note (macOS OAuth) — 08/01/2026
+# 🔹 Block 30 — Phase 6 (Auth roadmap note: macOS OAuth) — 08/01/2026
 
 ### ✔ Work completed:
 
@@ -616,7 +616,7 @@ _(fill in when they happen)_
 
 ---
 
-# 🔹 Block 31 — iOS Google Sign-In fix — 08/01/2026
+# 🔹 Block 31 — Phase 6 (iOS Google Sign-In fix) — 08/01/2026
 
 ### ✔ Work completed:
 
@@ -625,7 +625,7 @@ _(fill in when they happen)_
 
 ---
 
-# Block 32 - Windows desktop validation and auth stubs - 08/01/2026
+# 🔹 Block 32 — Phase 6 (Windows desktop validation and auth stubs) — 08/01/2026
 
 ### Work completed:
 
@@ -654,7 +654,7 @@ _(fill in when they happen)_
 
 ---
 
-# Block 33 - Windows audio/notifications via adapters - 08/01/2026
+# 🔹 Block 33 — Phase 14 (Windows audio/notifications via adapters) — 08/01/2026
 
 ### Work completed:
 
@@ -690,6 +690,179 @@ _(fill in when they happen)_
 ### Next steps:
 
 - Verify Linux audio/notifications.
+
+---
+
+# 🔹 Block 34 — Phase 14 (Linux dependency checks and docs) — 13/01/2026
+
+### Work completed:
+
+- Documented Linux desktop dependencies per distro (GTK, libnotify, GStreamer).
+- Added a Linux startup dependency check with a warning dialog for missing audio
+  or notification libraries.
+- Included copy-to-clipboard support for install commands.
+- Linked the Linux dependency guide from the README.
+
+### Issues found:
+
+- None.
+
+### Decisions made:
+
+- Keep the Linux dependency check best-effort and non-blocking.
+
+### Next steps:
+
+- Verify the Linux startup dialog with missing dependencies and after installing
+  packages.
+
+---
+
+# 🔹 Block 35 — Phase 6 (Linux auth guard on task list/login) — 13/01/2026
+
+### Work completed:
+
+- Hid the login entry point on Linux where Firebase Auth is not supported.
+- Added a safe fallback in the login screen to return to the task list when
+  authentication is unavailable.
+
+### Issues found:
+
+- None.
+
+### Decisions made:
+
+- Keep authentication flows unchanged on supported platforms.
+
+### Next steps:
+
+- Validate the Linux task list UX now that login is disabled.
+
+---
+
+# 🔹 Block 36 — Phase 14 (Linux dependency debug override) — 13/01/2026
+
+### Work completed:
+
+- Added a debug-only dart-define to force missing Linux dependencies for UI
+  testing without changing release behavior.
+
+### Issues found:
+
+- None.
+
+### Decisions made:
+
+- Keep the override inactive by default and only evaluated in debug mode.
+
+### Next steps:
+
+- Validate the dependency dialog using the forced flag.
+
+---
+
+# 🔹 Block 37 — Phase 14 (Linux dependency dialog navigator fix) — 13/01/2026
+
+### Work completed:
+
+- Fixed the Linux dependency dialog to use the app navigator context to avoid
+  crashes at startup.
+
+### Issues found:
+
+- Dependency dialog crashed when shown from a context without a Navigator.
+
+### Decisions made:
+
+- Route dialog presentation through the root navigator key.
+
+### Next steps:
+
+- Re-test the forced dependency dialog on Linux.
+
+---
+
+# 🔹 Block 38 — Phase 14 (Remove Linux dependency debug override) — 13/01/2026
+
+### Work completed:
+
+- Removed the temporary debug-only dependency override after validation.
+
+### Issues found:
+
+- None.
+
+### Decisions made:
+
+- Keep Linux dependency checks clean and production-only.
+
+### Next steps:
+
+- None.
+
+---
+
+# 🔹 Block 39 — Phase 14 (Linux notifications via local_notifier) — 13/01/2026
+
+### Work completed:
+
+- Switched Linux notifications to use `local_notifier` for better reliability.
+- Kept other platforms unchanged.
+- Verified Linux notifications when completing a task.
+
+### Issues found:
+
+- Linux notifications were not appearing with the previous backend.
+
+### Decisions made:
+
+- Reuse the desktop notification backend used on Windows for Linux as well.
+
+### Next steps:
+
+- None.
+
+---
+
+# 🔹 Block 40 — Phase 6 (Linux local task persistence) — 13/01/2026
+
+### Work completed:
+
+- Added a local disk-backed task repository for Linux when auth is unavailable.
+- Kept task behavior unchanged on platforms with Firebase Auth support.
+
+### Issues found:
+
+- None.
+
+### Decisions made:
+
+- Use shared_preferences for low-friction local persistence on Linux.
+
+### Next steps:
+
+- Validate task persistence across app restarts on Linux.
+
+---
+
+# 🔹 Block 41 — Phase 6 (Linux sync notice) — 13/01/2026
+
+### Work completed:
+
+- Added a Linux-only sync notice dialog explaining web sync availability.
+- Added an info action on the task list for Linux to reopen the notice.
+
+### Issues found:
+
+- None.
+
+### Decisions made:
+
+- Show the notice once on first launch and allow manual access from the app bar.
+
+### Next steps:
+
+- Confirm the notice appears only once and does not affect other platforms.
 
 ---
 

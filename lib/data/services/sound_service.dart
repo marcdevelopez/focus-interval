@@ -19,11 +19,11 @@ class SoundService {
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.windows:
+      case TargetPlatform.linux:
         return _AudioPlayersBackend();
       case TargetPlatform.android:
       case TargetPlatform.iOS:
       case TargetPlatform.macOS:
-      case TargetPlatform.linux:
         return _JustAudioBackend();
       default:
         return _SilentSoundBackend(

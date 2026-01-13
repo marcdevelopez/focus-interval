@@ -1,6 +1,6 @@
 import 'package:audioplayers/audioplayers.dart';
 
-/// Internal backend for Windows audio playback using audioplayers.
+/// Internal backend for desktop audio playback using audioplayers.
 class AudioPlayersBackend {
   final AudioPlayer _player = AudioPlayer();
 
