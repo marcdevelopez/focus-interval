@@ -914,6 +914,26 @@ _(fill in when they happen)_
 
 ---
 
+# 🔹 Block 44 — Local stash (14/01/2026)
+
+### Work completed:
+
+- Stashed local iOS/macOS build artifacts as `git stash` entry: `wip pods`.
+
+### Issues found:
+
+- None.
+
+### Decisions made:
+
+- Keep Podfile/lock and Xcode project changes out of feature commits.
+
+### Next steps:
+
+- Apply the stash only if those build artifacts are needed later.
+
+---
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
