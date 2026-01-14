@@ -13,6 +13,8 @@ class PomodoroSession {
   final int remainingSeconds;
   final DateTime? phaseStartedAt;
   final DateTime? lastUpdatedAt;
+  final DateTime? finishedAt;
+  final String? pauseReason;
 
   PomodoroSession({
     required this.taskId,
@@ -25,6 +27,8 @@ class PomodoroSession {
     required this.remainingSeconds,
     required this.phaseStartedAt,
     required this.lastUpdatedAt,
+    required this.finishedAt,
+    required this.pauseReason,
   });
 
   Map<String, dynamic> toMap() => {
@@ -38,6 +42,8 @@ class PomodoroSession {
         'remainingSeconds': remainingSeconds,
         'phaseStartedAt': phaseStartedAt,
         'lastUpdatedAt': lastUpdatedAt,
+        'finishedAt': finishedAt,
+        'pauseReason': pauseReason,
       };
 
   factory PomodoroSession.fromMap(Map<String, dynamic> map) => PomodoroSession(
@@ -55,5 +61,7 @@ class PomodoroSession {
         remainingSeconds: (map['remainingSeconds'] as num).toInt(),
         phaseStartedAt: (map['phaseStartedAt'] as Timestamp?)?.toDate(),
         lastUpdatedAt: (map['lastUpdatedAt'] as Timestamp?)?.toDate(),
+        finishedAt: (map['finishedAt'] as Timestamp?)?.toDate(),
+        pauseReason: map['pauseReason'] as String?,
       );
 }

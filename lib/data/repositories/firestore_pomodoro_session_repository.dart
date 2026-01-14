@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../domain/pomodoro_machine.dart';
+
 import '../models/pomodoro_session.dart';
 import '../services/firebase_auth_service.dart';
 import '../services/firestore_service.dart';
@@ -34,6 +36,9 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
       ...session.toMap(),
       'lastUpdatedAt': FieldValue.serverTimestamp(),
     };
+    if (session.status == PomodoroStatus.finished && session.finishedAt == null) {
+      data['finishedAt'] = FieldValue.serverTimestamp();
+    }
     await _doc(uid).set(data, SetOptions(merge: true));
   }
 

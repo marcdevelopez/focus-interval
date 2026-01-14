@@ -23,18 +23,17 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   String _currentClock = "";
   bool _taskLoaded = false;
   bool _finishedDialogVisible = false;
+  bool _resumeDialogVisible = false;
+  AppLifecycleState? _lifecycleState;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _lifecycleState = WidgetsBinding.instance.lifecycleState;
 
     // Current system time (updates every second)
-    _updateClock();
-    _clockTimer = Timer.periodic(
-      const Duration(seconds: 1),
-      (_) => _updateClock(),
-    );
+    _startClockTimer();
 
     // Load real task parameters by ID
     Future.microtask(() async {
@@ -58,6 +57,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   }
 
   void _updateClock() {
+    if (!mounted) return;
     final now = DateTime.now();
     setState(() {
       _currentClock =
@@ -65,17 +65,41 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     });
   }
 
+  void _startClockTimer() {
+    _clockTimer?.cancel();
+    _updateClock();
+    _clockTimer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _updateClock(),
+    );
+  }
+
+  void _stopClockTimer() {
+    _clockTimer?.cancel();
+    _clockTimer = null;
+  }
+
   @override
   void dispose() {
-    _clockTimer?.cancel();
+    _stopClockTimer();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    _lifecycleState = state;
+    final vm = ref.read(pomodoroViewModelProvider.notifier);
     if (state == AppLifecycleState.resumed) {
-      ref.read(pomodoroViewModelProvider.notifier).handleAppResumed();
+      _startClockTimer();
+      vm.handleAppResumed();
+      return;
+    }
+    _stopClockTimer();
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      vm.handleAppPaused();
     }
   }
 
@@ -100,6 +124,22 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         });
       }
     });
+
+    final lifecycleState =
+        _lifecycleState ?? WidgetsBinding.instance.lifecycleState;
+    final isResumed =
+        lifecycleState == null || lifecycleState == AppLifecycleState.resumed;
+    final canShowResumePrompt = _taskLoaded &&
+        vm.hasResumePrompt &&
+        !_resumeDialogVisible &&
+        isResumed;
+
+    if (canShowResumePrompt) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _showResumeDialog(context, vm);
+      });
+    }
 
     final state = ref.watch(pomodoroViewModelProvider);
 
@@ -180,9 +220,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           TextButton(
             onPressed: () {
               _finishedDialogVisible = false;
-              if (!vm.isMirrorMode) {
-                vm.cancel();
-              }
               Navigator.of(context, rootNavigator: true).pop();
             },
             child: const Text("OK"),
@@ -191,6 +228,52 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       ),
     ).whenComplete(() {
       _finishedDialogVisible = false;
+    });
+  }
+
+  void _showResumeDialog(BuildContext context, PomodoroViewModel vm) {
+    if (_resumeDialogVisible || _finishedDialogVisible) return;
+    if (!vm.hasResumePrompt) return;
+    final projected = vm.resumePromptProjected;
+    final isFinished = projected?.status == PomodoroStatus.finished;
+    final pausedInBackground = vm.resumePromptFromPause;
+    _resumeDialogVisible = true;
+    final title = isFinished ? 'Task finished' : 'Resume task?';
+    final body = isFinished
+        ? 'The timer finished while the app was closed. Continue to mark the task as completed or cancel it?'
+        : pausedInBackground
+            ? 'The app paused the timer in background. Continue or cancel the task?'
+            : 'The timer advanced while the app was closed. Continue from the current state or cancel the task?';
+
+    showDialog<bool>(
+      context: context,
+      useRootNavigator: true,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        backgroundColor: Colors.black,
+        title: Text(
+          title,
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          body,
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    ).then((result) {
+      _resumeDialogVisible = false;
+      if (!mounted) return;
+      vm.resolveResumePrompt(continueTask: result == true);
     });
   }
 

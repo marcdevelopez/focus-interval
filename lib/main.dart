@@ -37,8 +37,8 @@ Future<void> _initFirebase() async {
 }
 
 Future<DeviceInfoService> _loadDeviceInfo() async {
-  if (_isLinux) {
-    // Linux: guard startup plugin calls to avoid blocking the first frame.
+  if (_isLinux || _isMacos) {
+    // Desktop: guard startup plugin calls to avoid blocking the first frame.
     try {
       return await DeviceInfoService.load();
     } catch (e) {
@@ -50,8 +50,8 @@ Future<DeviceInfoService> _loadDeviceInfo() async {
 }
 
 Future<NotificationService> _initNotifications() async {
-  if (_isLinux) {
-    // Linux: guard startup plugin calls to avoid blocking the first frame.
+  if (_isLinux || _isMacos) {
+    // Desktop: guard startup plugin calls to avoid blocking the first frame.
     try {
       return await NotificationService.init();
     } catch (e) {
@@ -63,3 +63,4 @@ Future<NotificationService> _initNotifications() async {
 }
 
 bool get _isLinux => !kIsWeb && defaultTargetPlatform == TargetPlatform.linux;
+bool get _isMacos => !kIsWeb && defaultTargetPlatform == TargetPlatform.macOS;
