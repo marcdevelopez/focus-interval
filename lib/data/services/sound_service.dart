@@ -45,31 +45,61 @@ class SoundService {
   };
 
   Future<void> play(String id, {String? fallbackId}) async {
-    final asset = _assetById[id];
-    if (asset == null) return;
-
     if (!_backend.isAvailable) {
       _logUnsupportedOnce(_backend.unavailableReason);
       return;
     }
 
-    // Verify the asset exists; if missing, stay silent.
-    try {
-      await rootBundle.load(asset);
-    } catch (_) {
-      if (fallbackId != null) {
-        await play(fallbackId);
+    final candidates = _buildCandidateIds(id, fallbackId);
+    for (final candidate in candidates) {
+      final asset = _assetById[candidate];
+      if (asset == null) continue;
+      if (!await _assetExists(asset)) continue;
+
+      try {
+        await _backend.playAsset(asset);
+        return;
+      } catch (e) {
+        _logPlaybackErrorOnce(e);
       }
-      return;
+    }
+  }
+
+  List<String> _buildCandidateIds(String id, String? fallbackId) {
+    final candidates = <String>[];
+
+    void addCandidate(String? value) {
+      if (value == null) return;
+      final trimmed = value.trim();
+      if (trimmed.isEmpty) return;
+      if (candidates.contains(trimmed)) return;
+      candidates.add(trimmed);
     }
 
+    addCandidate(id);
+    addCandidate(fallbackId);
+    addCandidate(_defaultIdFor(id));
+    addCandidate(_defaultIdFor(fallbackId));
+
+    return candidates;
+  }
+
+  String _defaultIdFor(String? id) {
+    if (id == null) return 'default_chime';
+    final trimmed = id.trim();
+    if (trimmed.isEmpty) return 'default_chime';
+    final lowered = trimmed.toLowerCase();
+    if (lowered.contains('break')) return 'default_chime_break';
+    if (lowered.contains('finish')) return 'default_chime_finish';
+    return 'default_chime';
+  }
+
+  Future<bool> _assetExists(String assetPath) async {
     try {
-      await _backend.playAsset(asset);
-    } catch (e) {
-      _logPlaybackErrorOnce(e);
-      if (fallbackId != null) {
-        await play(fallbackId);
-      }
+      await rootBundle.load(assetPath);
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 
