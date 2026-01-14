@@ -20,7 +20,32 @@ Flutter · Firebase Auth · Firestore · Riverpod · MVVM
 - Ensure `http://localhost:5001` is listed in Google OAuth Authorized JavaScript origins.
 
 ## 📦 Android builds
-- Release APKs are generated per ABI (armeabi-v7a, arm64-v8a, x86_64) with minify/shrink enabled. Command: `flutter build apk --release` (or `--split-per-abi`).
-- APKs live in `build/app/outputs/flutter-apk/` per architecture.
+Lightweight release APKs (split ABI):
+
+```
+flutter clean
+flutter pub get
+flutter pub run flutter_launcher_icons   # optional
+flutter build apk --release --split-per-abi
+```
+
+- APKs are generated per ABI (armeabi-v7a, arm64-v8a, x86_64) in `build/app/outputs/flutter-apk/`.
+- Install an APK:
+  `adb -s <device> install -r build/app/outputs/flutter-apk/app-arm64-v8a-release.apk`
 - If you need a single universal APK, disable `splits.abi` in `android/app/build.gradle.kts` (or use `flutter build apk --no-split-per-abi` temporarily).
 - For Play, use `flutter build appbundle`; Play handles the split.
+- Note: release builds use minify/shrink and debug signing by default; for production, configure a keystore in `android/app/build.gradle.kts`.
+
+## 📱 iOS build (release)
+- `flutter build ios --release`
+- Requires Xcode signing; for CI you can use `--no-codesign` and archive later in Xcode.
+
+## 🖥️ Desktop builds (release)
+- macOS: `flutter build macos --release`
+- Windows: `flutter build windows --release`
+- Linux: `flutter build linux --release`
+- Artifacts land under `build/<platform>/...` (release bundles/executables).
+
+## 🌐 Web build (release)
+- `flutter build web --release`
+- Output is `build/web/` for deployment.
