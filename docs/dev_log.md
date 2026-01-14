@@ -853,6 +853,7 @@ _(fill in when they happen)_
 - Added a Linux-only sync notice dialog explaining web sync availability.
 - Added an info action on the task list for Linux to reopen the notice.
 - Verified the sync notice on Android and web (Chrome).
+- Verified the sync notice does not appear on macOS/iOS/Windows.
 
 ### Issues found:
 
@@ -864,7 +865,28 @@ _(fill in when they happen)_
 
 ### Next steps:
 
-- Verify the notice on macOS/iOS/Windows.
+- None.
+
+---
+
+# 🔹 Block 42 — Phase 14 (Windows/macOS/iOS verification) — 14/01/2026
+
+### Work completed:
+
+- Verified Windows sound playback after the latest updates.
+- Verified macOS and iOS behavior after the Windows changes.
+
+### Issues found:
+
+- None.
+
+### Decisions made:
+
+- None.
+
+### Next steps:
+
+- None.
 
 ---
 
