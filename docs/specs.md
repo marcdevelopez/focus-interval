@@ -135,13 +135,16 @@ class PomodoroSession {
   String ownerDeviceId; // device that writes in real time
 
   PomodoroStatus status; // pomodoroRunning, shortBreakRunning, longBreakRunning, paused, finished, idle
+  PomodoroPhase? phase;
   int currentPomodoro;
   int totalPomodoros;
 
   int phaseDurationSeconds; // duration of the current phase
-  int remainingSeconds;     // only applies when paused
+  int remainingSeconds;     // required for paused; running is projected from phaseStartedAt
   DateTime phaseStartedAt;  // serverTimestamp on start/resume
   DateTime lastUpdatedAt;   // serverTimestamp of the last event
+  DateTime? finishedAt;     // serverTimestamp when the task reaches finished
+  String? pauseReason;      // optional; "user" when paused manually
 }
 ```
 
@@ -223,7 +226,7 @@ users/{uid}/activeSession
 ```
 
 - Single document per user with the active session.
-- Minimum fields: `taskId`, `ownerDeviceId`, `status`, `currentPomodoro`, `totalPomodoros`, `phaseDurationSeconds`, `remainingSeconds` (only when paused), `phaseStartedAt` (serverTimestamp), `lastUpdatedAt` (serverTimestamp).
+- Minimum fields: `taskId`, `ownerDeviceId`, `status`, `phase`, `currentPomodoro`, `totalPomodoros`, `phaseDurationSeconds`, `remainingSeconds`, `phaseStartedAt` (serverTimestamp), `lastUpdatedAt` (serverTimestamp), `finishedAt` (serverTimestamp when finished), `pauseReason` (optional, only when paused).
 - **Only** the owner device writes; others subscribe in real time and render progress by calculating remaining time from `phaseStartedAt` + `phaseDurationSeconds`.
 
 ---
@@ -384,6 +387,7 @@ The final animation described in section 12 is part of the mandatory behavior an
 - Only the `ownerDeviceId` can start/pause/resume/cancel; other devices show the state and offer “Take over” if the owner does not respond.
 - Take over is enabled when the session is stale: running phase is past `phaseStartedAt + phaseDurationSeconds + 10s`, or paused/idle has no updates for 5 minutes.
 - Remaining time in mirror mode is calculated with `phaseDurationSeconds` and `phaseStartedAt` (no 1s ticks are sent).
+- The owner continues the session when reopening; no automatic pause is triggered on background.
 
 ## **10.4.1. Mandatory visual improvements for the timer**
 
@@ -604,7 +608,7 @@ When the timer completes the **last pomodoro** of the task:
 - **Write events**: start, pause, resume, cancel, phase transition, and finish. No per-second writes.
 - **Time calculation**: store `phaseStartedAt` (serverTimestamp) + `phaseDurationSeconds`; clients compute `remainingSeconds` locally and update on each snapshot.
 - **Conflicts**: if an `activeSession` already exists and another device tries to start, ask whether to “Take over” (overwrite `ownerDeviceId`) or “Respect remote session” (mirror only).
-- **Completion**: when the task ends, `activeSession` goes to `finished` and then is deleted or reset to `idle`.
+- **Completion**: when the task ends, `activeSession` goes to `finished` with `finishedAt` and is overwritten by the next session (cleanup can be deferred).
 - **Remote restart UX**: if a "Task completed" modal is visible and the same task starts on another device, dismiss it automatically so the current session is visible; do not dismiss for a different task.
 
 # 📈 **14. Future features (not included in the MVP)**

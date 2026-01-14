@@ -16,7 +16,7 @@ This document is used to:
 # 📍 Current status
 
 Active phase: **15 — Mandatory Final Animation**  
-Last update: **13/01/2026**
+Last update: **14/01/2026**
 
 ---
 
@@ -887,6 +887,30 @@ _(fill in when they happen)_
 ### Next steps:
 
 - None.
+
+---
+
+# 🔹 Block 43 — Reopen flow stabilization — 14/01/2026
+
+### Work completed:
+
+- Persisted `finishedAt` and `pauseReason` in session state and Firestore publish.
+- Normalized owner rehydrate to use projected state without background auto-pause.
+- Disabled resume prompt flow to avoid inconsistent cross-platform behavior.
+- Added macOS startup guards for SharedPreferences/notification init.
+
+### Issues found:
+
+- Resume prompt not reliable across platforms; disabled for now.
+
+### Decisions made:
+
+- Prefer consistent continuation on reopen over prompting until mirror detection is stable.
+
+### Next steps:
+
+- Revisit resume prompt once mirror presence is reliable.
+- Validate Windows lifecycle behavior.
 
 ---
 
