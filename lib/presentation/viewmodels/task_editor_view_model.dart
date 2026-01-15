@@ -2,7 +2,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../data/models/pomodoro_task.dart';
+import '../../data/models/pomodoro_session.dart';
+import '../../domain/pomodoro_machine.dart';
 import '../providers.dart';
+
+enum TaskEditorLoadResult {
+  loaded,
+  notFound,
+  blockedByActiveSession,
+}
 
 class TaskEditorViewModel extends Notifier<PomodoroTask?> {
   final _uuid = const Uuid();
@@ -26,21 +34,45 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
     );
   }
 
-  // Load existing by id. Returns false if not found.
-  Future<bool> load(String id) async {
+  // Load existing by id. Returns a result to handle active-session guards.
+  Future<TaskEditorLoadResult> load(String id) async {
+    final session = await _readCurrentSession();
+    if (session != null &&
+        session.status.isActiveExecution &&
+        session.taskId == id) {
+      return TaskEditorLoadResult.blockedByActiveSession;
+    }
     final repo = ref.read(taskRepositoryProvider);
     final task = await repo.getById(id);
     state = task;
-    return task != null;
+    return task == null
+        ? TaskEditorLoadResult.notFound
+        : TaskEditorLoadResult.loaded;
   }
 
   void update(PomodoroTask task) {
     state = task;
   }
 
-  Future<void> save() async {
-    if (state == null) return;
+  Future<bool> save() async {
+    if (state == null) return false;
+    final session = await _readCurrentSession();
+    if (session != null &&
+        session.status.isActiveExecution &&
+        session.taskId == state!.id) {
+      return false;
+    }
     final repo = ref.read(taskRepositoryProvider);
     await repo.save(state!);
+    return true;
+  }
+
+  Future<PomodoroSession?> _readCurrentSession() async {
+    final repo = ref.read(pomodoroSessionRepositoryProvider);
+    try {
+      return await repo.watchSession().first;
+    } on StateError {
+      return null;
+    }
   }
 }

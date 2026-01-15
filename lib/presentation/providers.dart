@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/pomodoro_machine.dart';
 import '../data/models/pomodoro_task.dart';
+import '../data/models/pomodoro_session.dart';
 import '../data/repositories/task_repository.dart';
 import '../data/repositories/local_task_repository.dart';
 import '../data/services/firebase_auth_service.dart';
@@ -102,6 +103,19 @@ final pomodoroSessionRepositoryProvider =
     authService: auth,
     deviceId: deviceInfo.deviceId,
   );
+});
+
+// Active session stream (used for global execution guards).
+final pomodoroSessionStreamProvider =
+    StreamProvider<PomodoroSession?>((ref) {
+  final repo = ref.watch(pomodoroSessionRepositoryProvider);
+  return repo.watchSession();
+});
+
+final activePomodoroSessionProvider = Provider<PomodoroSession?>((ref) {
+  final session = ref.watch(pomodoroSessionStreamProvider).value;
+  if (session == null) return null;
+  return session.status.isActiveExecution ? session : null;
 });
 
 //

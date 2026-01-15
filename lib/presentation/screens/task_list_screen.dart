@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../providers.dart';
+import '../viewmodels/task_editor_view_model.dart';
+import '../../data/models/pomodoro_session.dart';
+import '../../data/models/pomodoro_task.dart';
 import '../../data/services/firebase_auth_service.dart';
 import '../../widgets/task_card.dart';
 
@@ -86,6 +89,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final tasksAsync = ref.watch(taskListProvider);
     final auth = ref.watch(firebaseAuthServiceProvider);
     final authSupported = auth is! StubAuthService;
+    final activeSession = ref.watch(activePomodoroSessionProvider);
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -153,25 +157,114 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
               final t = tasks[i];
               return TaskCard(
                 task: t,
-                onTap: () => context.push("/timer/${t.id}"),
+                onTap: () => _handleTaskTap(
+                  context,
+                  task: t,
+                  tasks: tasks,
+                  activeSession: activeSession,
+                ),
                 onEdit: () async {
-                  final ok = await ref.read(taskEditorProvider.notifier).load(t.id);
+                  if (activeSession != null && activeSession.taskId == t.id) {
+                    _showSnackBar(
+                      context,
+                      "This task is running. Stop it before editing.",
+                    );
+                    return;
+                  }
+                  final result =
+                      await ref.read(taskEditorProvider.notifier).load(t.id);
                   if (!context.mounted) return;
-                  if (!ok) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Task not found.")),
+                  if (result == TaskEditorLoadResult.notFound) {
+                    _showSnackBar(context, "Task not found.");
+                    return;
+                  }
+                  if (result == TaskEditorLoadResult.blockedByActiveSession) {
+                    _showSnackBar(
+                      context,
+                      "This task is running. Stop it before editing.",
                     );
                     return;
                   }
                   context.push("/tasks/edit/${t.id}");
                 },
-                onDelete: () =>
-                    ref.read(taskListProvider.notifier).deleteTask(t.id),
+                onDelete: () {
+                  if (activeSession != null && activeSession.taskId == t.id) {
+                    _showSnackBar(
+                      context,
+                      "This task is running. Stop it before deleting.",
+                    );
+                    return;
+                  }
+                  ref.read(taskListProvider.notifier).deleteTask(t.id);
+                },
               );
             },
           );
         },
       ),
+    );
+  }
+
+  Future<void> _handleTaskTap(
+    BuildContext context, {
+    required PomodoroTask task,
+    required List<PomodoroTask> tasks,
+    PomodoroSession? activeSession,
+  }) async {
+    if (activeSession == null || activeSession.taskId == task.id) {
+      context.push("/timer/${task.id}");
+      return;
+    }
+
+    final activeTaskName = _findTaskName(tasks, activeSession.taskId);
+    final shouldOpenActive = await _showActiveSessionDialog(
+      context,
+      activeTaskName: activeTaskName,
+    );
+    if (!context.mounted || shouldOpenActive != true) return;
+    context.push("/timer/${activeSession.taskId}");
+  }
+
+  Future<bool?> _showActiveSessionDialog(
+    BuildContext context, {
+    String? activeTaskName,
+  }) {
+    final title = activeTaskName?.isNotEmpty == true
+        ? activeTaskName!
+        : "Another task";
+    return showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Task already running"),
+          content: Text(
+            "$title is currently running. Finish or cancel it before starting another task.",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text("Keep running"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text("Go to active task"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String? _findTaskName(List<PomodoroTask> tasks, String taskId) {
+    for (final task in tasks) {
+      if (task.id == taskId) return task.name.isEmpty ? "(Untitled)" : task.name;
+    }
+    return null;
+  }
+
+  void _showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
     );
   }
 }

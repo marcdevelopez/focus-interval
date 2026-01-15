@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers.dart';
+import '../viewmodels/task_editor_view_model.dart';
 import '../../data/models/pomodoro_task.dart';
 import '../../widgets/sound_selector.dart';
 
@@ -63,11 +64,21 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   }
 
   Future<void> _loadExisting() async {
-    final ok = await ref.read(taskEditorProvider.notifier).load(widget.taskId!);
+    final result =
+        await ref.read(taskEditorProvider.notifier).load(widget.taskId!);
     if (!mounted) return;
-    if (!ok) {
+    if (result == TaskEditorLoadResult.notFound) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("The task no longer exists.")),
+      );
+      Navigator.pop(context);
+      return;
+    }
+    if (result == TaskEditorLoadResult.blockedByActiveSession) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Stop the running task before editing it."),
+        ),
       );
       Navigator.pop(context);
     }
@@ -107,8 +118,19 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               if (!_formKey.currentState!.validate()) return;
               if (!_validateBusinessRules()) return;
 
-              await ref.read(taskEditorProvider.notifier).save();
+              final saved =
+                  await ref.read(taskEditorProvider.notifier).save();
               if (!context.mounted) return;
+              if (!saved) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      "Stop the running task before saving changes.",
+                    ),
+                  ),
+                );
+                return;
+              }
               Navigator.pop(context);
             },
             child: const Text("Save"),

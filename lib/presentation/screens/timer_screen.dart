@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../widgets/timer_display.dart';
 import '../providers.dart';
@@ -34,22 +35,27 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
     // Load real task parameters by ID
     Future.microtask(() async {
-      final ok = await ref
+      final result = await ref
           .read(pomodoroViewModelProvider.notifier)
           .loadTask(widget.taskId);
       if (!mounted) return;
 
-      if (!ok) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Selected task not found."),
-          ),
-        );
-        Navigator.pop(context);
-        return;
+      switch (result) {
+        case PomodoroTaskLoadResult.loaded:
+          setState(() => _taskLoaded = true);
+          break;
+        case PomodoroTaskLoadResult.notFound:
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Selected task not found."),
+            ),
+          );
+          Navigator.pop(context);
+          break;
+        case PomodoroTaskLoadResult.blockedByActiveSession:
+          await _handleBlockedStart();
+          break;
       }
-
-      setState(() => _taskLoaded = true);
     });
   }
 
@@ -113,68 +119,79 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         });
         return;
       }
-    if (_finishedDialogVisible && vm.isMirrorMode && !nowFinished) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        _dismissFinishedDialog();
-      });
-    }
-  });
+      if (_finishedDialogVisible && vm.isMirrorMode && !nowFinished) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _dismissFinishedDialog();
+        });
+      }
+    });
 
     final state = ref.watch(pomodoroViewModelProvider);
+    final shouldBlockExit = state.status.isActiveExecution;
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
+    return PopScope(
+      canPop: !shouldBlockExit,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final navigator = Navigator.of(context);
+        final shouldExit = await _confirmExit(state, vm);
+        if (!mounted || !shouldExit) return;
+        navigator.pop();
+      },
+      child: Scaffold(
         backgroundColor: Colors.black,
-        title: Text(
-          state.status == PomodoroStatus.finished
-              ? "Task completed"
-              : "Focus Interval",
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: Center(
-              child: Text(
-                _currentClock,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontFeatures: [FontFeature.tabularFigures()],
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          title: Text(
+            state.status == PomodoroStatus.finished
+                ? "Task completed"
+                : "Focus Interval",
+          ),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: Center(
+                child: Text(
+                  _currentClock,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          const SizedBox(height: 12),
+          ],
+        ),
+        body: Column(
+          children: [
+            const SizedBox(height: 12),
 
-          // Premium clock or initial loader while loading the task
-          Expanded(
-            child: Center(
-              child: _taskLoaded
-                  ? TimerDisplay(state: state)
-                  : Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 12),
-                        Text(
-                          "Loading task...",
-                          style: TextStyle(color: Colors.white70),
-                        ),
-                      ],
-                    ),
+            // Premium clock or initial loader while loading the task
+            Expanded(
+              child: Center(
+                child: _taskLoaded
+                    ? TimerDisplay(state: state)
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 12),
+                          Text(
+                            "Loading task...",
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                        ],
+                      ),
+              ),
             ),
-          ),
 
-          // Dynamic buttons
-          _ControlsBar(state: state, vm: vm, taskLoaded: _taskLoaded),
+            // Dynamic buttons
+            _ControlsBar(state: state, vm: vm, taskLoaded: _taskLoaded),
 
-          const SizedBox(height: 16),
-        ],
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }
@@ -216,6 +233,120 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _finishedDialogVisible = false;
     Navigator.of(context, rootNavigator: true).pop();
   }
+
+  Future<void> _handleBlockedStart() async {
+    final session = await ref
+        .read(pomodoroSessionStreamProvider.future)
+        .catchError((_) => null);
+    if (!mounted) return;
+    if (session == null || !session.status.isActiveExecution) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Another task is already running. Stop it before starting a new one.",
+          ),
+        ),
+      );
+      Navigator.pop(context);
+      return;
+    }
+
+    final repo = ref.read(taskRepositoryProvider);
+    final activeTask = await repo.getById(session.taskId);
+    if (!mounted) return;
+    final taskName = activeTask?.name.isNotEmpty == true
+        ? activeTask!.name
+        : "Another task";
+
+    final goToActive = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Task already running"),
+        content: Text(
+          "$taskName is currently running. Finish or cancel it before starting another task.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text("Keep running"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text("Go to active task"),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) return;
+    if (goToActive == true) {
+      context.go("/timer/${session.taskId}");
+      return;
+    }
+    Navigator.pop(context);
+  }
+
+  Future<bool> _confirmExit(
+    PomodoroState state,
+    PomodoroViewModel vm,
+  ) async {
+    if (!state.status.isActiveExecution) return true;
+
+    if (!vm.canControlSession) {
+      final canTakeOver = vm.canTakeOver;
+      final shouldTakeOver = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text("Task running on another device"),
+          content: Text(
+            canTakeOver
+                ? "This task is controlled by another device. End it there or take over to stop it."
+                : "This task is controlled by another device. End it there to stop it.",
+          ),
+          actions: [
+            if (canTakeOver)
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text("Take over and end"),
+              ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text("Keep running"),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldTakeOver != true) return false;
+      await vm.takeOver();
+      vm.cancel();
+      return true;
+    }
+
+    final shouldEnd = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Stop current task?"),
+        content: const Text(
+          "You have a task in progress. End it to leave this screen or keep it running.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text("Keep running"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text("End task and exit"),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldEnd != true) return false;
+    vm.cancel();
+    return true;
+  }
 }
 
 class _ControlsBar extends StatelessWidget {
@@ -239,7 +370,7 @@ class _ControlsBar extends StatelessWidget {
     final isPaused = state.status == PomodoroStatus.paused;
     final isFinished = state.status == PomodoroStatus.finished;
     final canTakeOver = vm.canTakeOver;
-    final controlsEnabled = !vm.isMirrorMode;
+    final controlsEnabled = vm.canControlSession;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,

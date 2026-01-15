@@ -11,6 +11,15 @@ enum PomodoroStatus {
   finished,
 }
 
+extension PomodoroStatusX on PomodoroStatus {
+  bool get isRunning =>
+      this == PomodoroStatus.pomodoroRunning ||
+      this == PomodoroStatus.shortBreakRunning ||
+      this == PomodoroStatus.longBreakRunning;
+
+  bool get isActiveExecution => isRunning || this == PomodoroStatus.paused;
+}
+
 /// Current cycle type (for UI/sounds).
 enum PomodoroPhase {
   pomodoro,

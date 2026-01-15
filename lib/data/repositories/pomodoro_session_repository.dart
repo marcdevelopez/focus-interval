@@ -14,5 +14,5 @@ class NoopPomodoroSessionRepository implements PomodoroSessionRepository {
   Future<void> publishSession(PomodoroSession session) async {}
 
   @override
-  Stream<PomodoroSession?> watchSession() => const Stream.empty();
+  Stream<PomodoroSession?> watchSession() => Stream.value(null);
 }

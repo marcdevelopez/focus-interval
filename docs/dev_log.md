@@ -956,6 +956,29 @@ _(fill in when they happen)_
 
 ---
 
+# 🔹 Block 46 — Execution guardrails — 15/01/2026
+
+### Work completed:
+
+- Prevented starting a new task while another execution is active.
+- Added exit confirmation on the timer screen to cancel or continue the active run.
+- Blocked editing/deleting tasks while they are currently running.
+- Centralized active-session checks in ViewModels and providers to avoid invalid states.
+
+### Issues found:
+
+- Users could start/edit tasks while a session was running, causing inconsistent states.
+
+### Decisions made:
+
+- Treat running and paused states as active executions; finished is allowed to exit.
+
+### Next steps:
+
+- None.
+
+---
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

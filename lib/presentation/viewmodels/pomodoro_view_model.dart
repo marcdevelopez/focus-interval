@@ -11,6 +11,12 @@ import '../../data/services/device_info_service.dart';
 import '../../data/services/notification_service.dart';
 import '../../data/services/foreground_service.dart';
 
+enum PomodoroTaskLoadResult {
+  loaded,
+  notFound,
+  blockedByActiveSession,
+}
+
 class PomodoroViewModel extends Notifier<PomodoroState> {
   static const int _heartbeatIntervalSeconds = 30;
   late PomodoroMachine _machine;
@@ -24,6 +30,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   Timer? _mirrorTimer;
   String? _remoteOwnerId;
   PomodoroSession? _remoteSession;
+  PomodoroSession? _latestSession;
   DateTime? _localPhaseStartedAt;
   DateTime? _lastHeartbeatAt;
   DateTime? _finishedAt;
@@ -59,10 +66,15 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   // Load values from TaskRepository.
-  Future<bool> loadTask(String taskId) async {
+  Future<PomodoroTaskLoadResult> loadTask(String taskId) async {
+    final session = await _readCurrentSession();
+    _latestSession = session;
+    if (_hasActiveConflict(session, taskId)) {
+      return PomodoroTaskLoadResult.blockedByActiveSession;
+    }
     final repo = ref.read(taskRepositoryProvider);
     final PomodoroTask? task = await repo.getById(taskId);
-    if (task == null) return false;
+    if (task == null) return PomodoroTaskLoadResult.notFound;
 
     _currentTask = task;
     _finishedAt = null;
@@ -71,7 +83,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     configureFromTask(task);
     _subscribeToRemoteSession();
     unawaited(_notificationService.requestPermissions());
-    return true;
+    return PomodoroTaskLoadResult.loaded;
   }
 
   void configureFromTask(PomodoroTask task) {
@@ -279,6 +291,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   void _subscribeToRemoteSession() {
     _sessionSub?.cancel();
     _sessionSub = _sessionRepo.watchSession().listen((session) {
+      _latestSession = session;
       if (session == null) {
         _mirrorTimer?.cancel();
         _remoteOwnerId = null;
@@ -381,8 +394,15 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     return _shouldAllowTakeover(session);
   }
 
-  bool get _controlsEnabled =>
-      _remoteOwnerId == null || _remoteOwnerId == _deviceInfo.deviceId;
+  bool get hasActiveConflict =>
+      _hasActiveConflict(_latestSession, _currentTask?.id);
+
+  bool get canControlSession => _controlsEnabled;
+
+  bool get _controlsEnabled {
+    if (hasActiveConflict) return false;
+    return _remoteOwnerId == null || _remoteOwnerId == _deviceInfo.deviceId;
+  }
 
   void _syncForegroundService(PomodoroState state) {
     if (!ForegroundService.isSupported) return;
@@ -507,6 +527,21 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         (total - state.remainingSeconds).clamp(0, total).toInt();
     final anchor = now ?? DateTime.now();
     _localPhaseStartedAt = anchor.subtract(Duration(seconds: elapsed));
+  }
+
+  Future<PomodoroSession?> _readCurrentSession() async {
+    try {
+      return await _sessionRepo.watchSession().first;
+    } on StateError {
+      return null;
+    }
+  }
+
+  bool _hasActiveConflict(PomodoroSession? session, String? taskId) {
+    if (session == null) return false;
+    if (!session.status.isActiveExecution) return false;
+    if (taskId == null) return true;
+    return session.taskId != taskId;
   }
 
 

@@ -27,6 +27,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       Phase 12 (Connect Editor → List → Execution) completed on 17/12/2025.
       Phase 13 completed on 06/01/2026: real-device sync validated (<1s), deviceId persistence added, take over implemented, reopen transitions verified.
       Phase 14 completed on 13/01/2026: Linux audio/notifications verified.
+      15/01/2026: Execution guardrails prevent concurrent runs and block editing active tasks.
 ```
 Update this on each commit if needed.
 
