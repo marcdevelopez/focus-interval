@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../domain/pomodoro_machine.dart';
 
@@ -332,22 +333,47 @@ class _TimerPainter extends CustomPainter {
     final rect = Rect.fromCircle(center: center, radius: radius);
     canvas.drawArc(rect, startAngle, sweepAngle, false, progressPaint);
 
-    // Analog hand (only if not idle)
-    if (status != PomodoroStatus.idle) {
+    // Analog hand (only if not idle or when we have a countdown preview)
+    if (status != PomodoroStatus.idle || progress > 0) {
+      final angle = startAngle + sweepAngle; // clockwise
+      final needleOuter = radius;
+      final needleLength = radius * 0.28;
+      final needleInner =
+          (needleOuter - needleLength).clamp(0.0, needleOuter).toDouble();
+      final direction = Offset(math.cos(angle), math.sin(angle));
+      final needleStart = center + direction * needleInner;
+      final needleEnd = center + direction * needleOuter;
+
       final needlePaint = Paint()
-        ..color = Colors.white.withValues(alpha: 0.9)
-        ..strokeWidth = size.shortestSide * 0.008
+        ..shader = ui.Gradient.linear(
+          needleStart,
+          needleEnd,
+          const [
+            Color.fromARGB(0, 255, 255, 255),
+            Color.fromARGB(255, 255, 255, 255),
+          ],
+        )
+        ..strokeWidth = size.shortestSide * 0.01
         ..strokeCap = StrokeCap.round;
 
-      final angle = startAngle + sweepAngle; // clockwise
-      final needleLength = radius * 0.95;
+      canvas.drawLine(needleStart, needleEnd, needlePaint);
 
-      final needleEnd = Offset(
-        center.dx + needleLength * math.cos(angle),
-        center.dy + needleLength * math.sin(angle),
-      );
+      final arrowLength = strokeWidth * 0.45;
+      final arrowWidth = strokeWidth * 0.6;
+      final baseCenter = needleEnd - direction * arrowLength;
+      final normal = Offset(-direction.dy, direction.dx);
+      final arrowLeft = baseCenter + normal * (arrowWidth / 2);
+      final arrowRight = baseCenter - normal * (arrowWidth / 2);
 
-      canvas.drawLine(center, needleEnd, needlePaint);
+      final arrowPaint = Paint()
+        ..color = Colors.white.withValues(alpha: 0.9)
+        ..style = PaintingStyle.fill;
+      final arrowPath = Path()
+        ..moveTo(needleEnd.dx, needleEnd.dy)
+        ..lineTo(arrowLeft.dx, arrowLeft.dy)
+        ..lineTo(arrowRight.dx, arrowRight.dy)
+        ..close();
+      canvas.drawPath(arrowPath, arrowPaint);
 
       // Center hub
       final hubPaint = Paint()..color = Colors.white;
