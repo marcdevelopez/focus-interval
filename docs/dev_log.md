@@ -16,7 +16,7 @@ This document is used to:
 # 📍 Current status
 
 Active phase: **15 — Mandatory Final Animation**  
-Last update: **14/01/2026**
+Last update: **15/01/2026**
 
 ---
 
@@ -931,6 +931,28 @@ _(fill in when they happen)_
 ### Next steps:
 
 - Apply the stash only if those build artifacts are needed later.
+
+---
+
+# 🔹 Block 45 — Notification silence + resume prompt cleanup — 15/01/2026
+
+### Work completed:
+
+- Silenced completion notifications across platforms while keeping app audio intact.
+- Added the iOS notification center delegate to ensure foreground banners display.
+- Removed the unused resume prompt flow from the ViewModel and TimerScreen.
+
+### Issues found:
+
+- iOS completion notifications were not showing; fixed by setting the delegate.
+
+### Decisions made:
+
+- Keep app sounds as the only audible signal; completion notifications remain silent.
+
+### Next steps:
+
+- None.
 
 ---
 

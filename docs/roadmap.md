@@ -425,6 +425,11 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Audio verified on macOS/Windows/iOS/Android/Web (Chrome) and Linux.
 - Notifications verified on macOS/Windows/iOS/Android/Linux; web notifications enabled via Notifications API (permission + app open, including minimized).
 
+### Status notes (15/01/2026)
+
+- Completion notifications are silent across platforms; app audio remains the only audible signal.
+- iOS notifications now display in foreground by assigning the notification center delegate.
+
 ### 📌 Exit conditions
 
 - All sounds work
