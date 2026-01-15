@@ -178,8 +178,8 @@ class PomodoroMachine {
       phase: null,
       currentPomodoro: 0,
       totalPomodoros: _totalPomodoros,
-      totalSeconds: 0,
-      remainingSeconds: 0,
+      totalSeconds: _pomodoroSeconds,
+      remainingSeconds: _pomodoroSeconds,
     ));
   }
 
@@ -237,8 +237,8 @@ class PomodoroMachine {
       phase: null,
       currentPomodoro: 0,
       totalPomodoros: _totalPomodoros,
-      totalSeconds: 0,
-      remainingSeconds: 0,
+      totalSeconds: _pomodoroSeconds,
+      remainingSeconds: _pomodoroSeconds,
     ));
   }
 

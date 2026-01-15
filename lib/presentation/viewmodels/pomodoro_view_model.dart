@@ -300,7 +300,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         _stopForegroundService();
         // If the owner cancels and clears the session, mirror idle.
         if (_currentTask != null) {
-          state = PomodoroState.idle();
+          final base = _machine.state;
+          state = base.status == PomodoroStatus.idle && base.totalSeconds > 0
+              ? base
+              : _idlePreviewState();
         }
         return;
       }
@@ -542,6 +545,19 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (!session.status.isActiveExecution) return false;
     if (taskId == null) return true;
     return session.taskId != taskId;
+  }
+
+  PomodoroState _idlePreviewState() {
+    if (_currentTask == null) return PomodoroState.idle();
+    final total = _currentTask!.pomodoroMinutes * 60;
+    return PomodoroState(
+      status: PomodoroStatus.idle,
+      phase: PomodoroPhase.pomodoro,
+      currentPomodoro: 0,
+      totalPomodoros: _currentTask!.totalPomodoros,
+      totalSeconds: total,
+      remainingSeconds: total,
+    );
   }
 
 

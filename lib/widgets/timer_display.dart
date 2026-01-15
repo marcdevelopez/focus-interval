@@ -4,7 +4,7 @@ import '../domain/pomodoro_machine.dart';
 
 /// Premium circular clock for Pomodoro/Break.
 /// - 60fps with AnimationController.
-/// - Clockwise analog hand.
+/// - Counterclockwise countdown hand.
 /// - Dynamic colors by state.
 /// - Responsive with true black background.
 /// - No dependencies on Firebase/riverpod/external UI.
@@ -69,7 +69,9 @@ class _TimerDisplayState extends State<TimerDisplay>
     _controller.stop();
 
     final total = s.totalSeconds;
-    final remaining = s.remainingSeconds.clamp(0, total);
+    final displayRemaining = _displayRemainingSeconds();
+    final remaining = displayRemaining.clamp(0, total);
+    final countdown = _countdownProgress();
 
     // Finished state: show full circle with final color.
     if (s.status == PomodoroStatus.finished) {
@@ -82,7 +84,7 @@ class _TimerDisplayState extends State<TimerDisplay>
     // In idle or with no duration, do not animate.
     if (s.status == PomodoroStatus.idle || total == 0) {
       _controller.duration = const Duration(milliseconds: 1);
-      _controller.value = s.progress.clamp(0, 1);
+      _controller.value = countdown;
       if (!initial) setState(() {});
       return;
     }
@@ -90,27 +92,26 @@ class _TimerDisplayState extends State<TimerDisplay>
     // If paused, freeze at the current progress.
     if (s.status == PomodoroStatus.paused) {
       _controller.duration = Duration(seconds: total);
-      _controller.value = s.progress.clamp(0, 1);
+      _controller.value = countdown;
       if (!initial) setState(() {});
       return;
     }
 
-    // Running: continuous animation from current progress to 1.0
-    final progress = s.progress.clamp(0, 1);
+    // Running: continuous animation from remaining progress to 0.0
     _controller.duration = Duration(seconds: total);
-    _controller.value = progress.toDouble();
+    _controller.value = countdown;
 
     final remainingDuration = Duration(seconds: remaining);
 
     // If remaining == total but progress is not 0 (edge case), fix it.
     if (remainingDuration.inSeconds <= 0) {
-      _controller.value = 1.0;
+      _controller.value = 0.0;
       if (!initial) setState(() {});
       return;
     }
 
     _controller.animateTo(
-      1.0,
+      0.0,
       duration: remainingDuration,
       curve: Curves.linear,
     );
@@ -118,8 +119,27 @@ class _TimerDisplayState extends State<TimerDisplay>
     if (!initial) setState(() {});
   }
 
+  double _countdownProgress() {
+    final total = s.totalSeconds;
+    if (total <= 0) return 0;
+    final remaining = _displayRemainingSeconds().clamp(0, total);
+    return remaining / total;
+  }
+
+  int _displayRemainingSeconds() {
+    if (s.status == PomodoroStatus.idle && s.totalSeconds > 0) {
+      return s.totalSeconds;
+    }
+    return s.remainingSeconds;
+  }
+
   Color _phaseColor() {
     switch (s.status) {
+      case PomodoroStatus.idle:
+        if (s.totalSeconds > 0) {
+          return const Color(0xFFE53935); // red
+        }
+        return const Color(0xFF222222);
       case PomodoroStatus.pomodoroRunning:
         return const Color(0xFFE53935); // red
       case PomodoroStatus.shortBreakRunning:
@@ -145,6 +165,9 @@ class _TimerDisplayState extends State<TimerDisplay>
 
   String _phaseLabel() {
     if (s.status == PomodoroStatus.finished) return "TASK COMPLETED";
+    if (s.status == PomodoroStatus.idle && s.totalSeconds > 0) {
+      return "Pomodoro";
+    }
     if (s.phase == PomodoroPhase.pomodoro) return "Pomodoro";
     if (s.phase == PomodoroPhase.shortBreak) return "Short break";
     if (s.phase == PomodoroPhase.longBreak) return "Long break";
@@ -190,7 +213,7 @@ class _TimerDisplayState extends State<TimerDisplay>
                   child: _CenterContent(
                     timeText: (s.status == PomodoroStatus.finished)
                         ? "00:00"
-                        : _formatMMSS(s.remainingSeconds),
+                        : _formatMMSS(_displayRemainingSeconds()),
                     phaseText: _phaseLabel(),
                     pomodoroText:
                         (s.status == PomodoroStatus.finished ||
@@ -266,9 +289,9 @@ class _CenterContent extends StatelessWidget {
   }
 }
 
-/// Draws the circular clock: base ring, progress, and analog hand.
+/// Draws the circular clock: base ring, remaining arc, and analog hand.
 class _TimerPainter extends CustomPainter {
-  final double progress; // 0..1
+  final double progress; // 0..1 remaining fraction
   final Color color;
   final PomodoroStatus status;
 
