@@ -217,6 +217,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           TextButton(
             onPressed: () {
               _finishedDialogVisible = false;
+              vm.cancel();
               Navigator.of(context, rootNavigator: true).pop();
             },
             child: const Text("OK"),
