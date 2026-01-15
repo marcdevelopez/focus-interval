@@ -23,14 +23,11 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   String _currentClock = "";
   bool _taskLoaded = false;
   bool _finishedDialogVisible = false;
-  bool _resumeDialogVisible = false;
-  AppLifecycleState? _lifecycleState;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _lifecycleState = WidgetsBinding.instance.lifecycleState;
 
     // Current system time (updates every second)
     _startClockTimer();
@@ -88,7 +85,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    _lifecycleState = state;
     final vm = ref.read(pomodoroViewModelProvider.notifier);
     if (state == AppLifecycleState.resumed) {
       _startClockTimer();
@@ -117,29 +113,13 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         });
         return;
       }
-      if (_finishedDialogVisible && vm.isMirrorMode && !nowFinished) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          _dismissFinishedDialog();
-        });
-      }
-    });
-
-    final lifecycleState =
-        _lifecycleState ?? WidgetsBinding.instance.lifecycleState;
-    final isResumed =
-        lifecycleState == null || lifecycleState == AppLifecycleState.resumed;
-    final canShowResumePrompt = _taskLoaded &&
-        vm.hasResumePrompt &&
-        !_resumeDialogVisible &&
-        isResumed;
-
-    if (canShowResumePrompt) {
+    if (_finishedDialogVisible && vm.isMirrorMode && !nowFinished) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        _showResumeDialog(context, vm);
+        _dismissFinishedDialog();
       });
     }
+  });
 
     final state = ref.watch(pomodoroViewModelProvider);
 
@@ -228,52 +208,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       ),
     ).whenComplete(() {
       _finishedDialogVisible = false;
-    });
-  }
-
-  void _showResumeDialog(BuildContext context, PomodoroViewModel vm) {
-    if (_resumeDialogVisible || _finishedDialogVisible) return;
-    if (!vm.hasResumePrompt) return;
-    final projected = vm.resumePromptProjected;
-    final isFinished = projected?.status == PomodoroStatus.finished;
-    final pausedInBackground = vm.resumePromptFromPause;
-    _resumeDialogVisible = true;
-    final title = isFinished ? 'Task finished' : 'Resume task?';
-    final body = isFinished
-        ? 'The timer finished while the app was closed. Continue to mark the task as completed or cancel it?'
-        : pausedInBackground
-            ? 'The app paused the timer in background. Continue or cancel the task?'
-            : 'The timer advanced while the app was closed. Continue from the current state or cancel the task?';
-
-    showDialog<bool>(
-      context: context,
-      useRootNavigator: true,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        backgroundColor: Colors.black,
-        title: Text(
-          title,
-          style: const TextStyle(color: Colors.white),
-        ),
-        content: Text(
-          body,
-          style: const TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Continue'),
-          ),
-        ],
-      ),
-    ).then((result) {
-      _resumeDialogVisible = false;
-      if (!mounted) return;
-      vm.resolveResumePrompt(continueTask: result == true);
     });
   }
 

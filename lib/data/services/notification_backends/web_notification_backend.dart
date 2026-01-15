@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
 
 import 'dart:html' as html;
+import 'dart:js' as js;
 
 class WebNotificationBackend {
   String _initError = '';
@@ -27,10 +28,13 @@ class WebNotificationBackend {
   Future<void> show({required String title, required String body}) async {
     if (!html.Notification.supported) return;
     if (html.Notification.permission != 'granted') return;
-    html.Notification(
-      title,
-      body: body,
-      icon: 'icons/Icon-192.png',
-    );
+    final options = js.JsObject.jsify({
+      'body': body,
+      'icon': 'icons/Icon-192.png',
+      'silent': true,
+    });
+    final constructor = js.context['Notification'];
+    if (constructor is! js.JsFunction) return;
+    js.JsObject(constructor, [title, options]);
   }
 }

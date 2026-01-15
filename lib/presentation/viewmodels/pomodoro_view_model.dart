@@ -28,8 +28,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   DateTime? _lastHeartbeatAt;
   DateTime? _finishedAt;
   String? _pauseReason;
-  PomodoroState? _resumePromptProjected;
-  bool _resumePromptFromPause = false;
   bool _foregroundActive = false;
   String? _foregroundTitle;
   String? _foregroundText;
@@ -70,7 +68,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _finishedAt = null;
     _lastHeartbeatAt = null;
     _pauseReason = null;
-    _clearResumePrompt();
     configureFromTask(task);
     _subscribeToRemoteSession();
     unawaited(_notificationService.requestPermissions());
@@ -114,7 +111,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   void start() {
     if (!_controlsEnabled) return;
-    _clearResumePrompt();
     _finishedAt = null;
     _lastHeartbeatAt = null;
     _pauseReason = null;
@@ -125,7 +121,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   void pause() {
     if (!_controlsEnabled) return;
-    _clearResumePrompt();
     _pauseReason = 'user';
     _machine.pause();
     _localPhaseStartedAt = null;
@@ -134,7 +129,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   void resume() {
     if (!_controlsEnabled) return;
-    _clearResumePrompt();
     _pauseReason = null;
     _machine.resume();
     _markPhaseStartedFromState(_machine.state);
@@ -143,7 +137,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   void cancel() {
     if (!_controlsEnabled) return;
-    _clearResumePrompt();
     _finishedAt = null;
     _lastHeartbeatAt = null;
     _pauseReason = null;
@@ -194,7 +187,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
     _remoteOwnerId = null;
     _remoteSession = null;
-    _clearResumePrompt();
     _finishedAt = finishedAt;
     _pauseReason = pauseReason;
     _applyProjectedState(projected, now: now);
@@ -339,7 +331,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (session.status == PomodoroStatus.finished) {
       _finishedAt = session.finishedAt;
     }
-    _clearResumePrompt();
     _pauseReason = pauseReason;
     _applyProjectedState(projected, now: now);
     _publishCurrentSession();
@@ -389,13 +380,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (session == null) return false;
     return _shouldAllowTakeover(session);
   }
-
-  bool get hasResumePrompt =>
-      _resumePromptFromPause || _resumePromptProjected != null;
-
-  PomodoroState? get resumePromptProjected => _resumePromptProjected;
-
-  bool get resumePromptFromPause => _resumePromptFromPause;
 
   bool get _controlsEnabled =>
       _remoteOwnerId == null || _remoteOwnerId == _deviceInfo.deviceId;
@@ -495,109 +479,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (_isSameState(current, projected)) return;
     _applyProjectedState(projected, now: now);
     _publishCurrentSession();
-  }
-
-  Future<void> resolveResumePrompt({required bool continueTask}) async {
-    if (!hasResumePrompt) return;
-    final projected = _resumePromptProjected;
-    _clearResumePrompt();
-    if (!continueTask) {
-      cancel();
-      return;
-    }
-    if (projected == null || projected.status == PomodoroStatus.paused) {
-      resume();
-      return;
-    }
-    final now = DateTime.now();
-    final wasFinished = _machine.state.status == PomodoroStatus.finished;
-    if (projected.status != PomodoroStatus.finished) {
-      _finishedAt = null;
-    } else {
-      _finishedAt ??= now;
-    }
-    _pauseReason = null;
-    _applyProjectedState(projected, now: now);
-    _publishCurrentSession();
-    if (!wasFinished && projected.status == PomodoroStatus.finished) {
-      _notifyTaskFinished();
-      if (_currentTask != null) {
-        unawaited(
-          _play(
-            _currentTask!.finishTaskSound,
-            fallback: _currentTask!.startSound,
-          ),
-        );
-      }
-    }
-  }
-
-  void _setResumePrompt({PomodoroState? projected, bool fromPause = false}) {
-    _resumePromptProjected = projected;
-    _resumePromptFromPause = fromPause;
-  }
-
-  void _clearResumePrompt() {
-    _resumePromptProjected = null;
-    _resumePromptFromPause = false;
-  }
-
-  void _pauseForPrompt({PomodoroState? projected}) {
-    final base = projected ?? _machine.state;
-    _machine.restoreFromSession(
-      status: PomodoroStatus.paused,
-      phase: base.phase,
-      currentPomodoro: base.currentPomodoro,
-      totalPomodoros: base.totalPomodoros,
-      totalSeconds: base.totalSeconds,
-      remainingSeconds: base.remainingSeconds,
-    );
-    _localPhaseStartedAt = null;
-    _publishCurrentSession();
-  }
-
-  bool _requiresResumePromptFromSession(
-    PomodoroSession session,
-    PomodoroState projected, {
-    String? pauseReason,
-  }) {
-    return _requiresResumePrompt(
-      status: session.status,
-      phase: session.phase,
-      currentPomodoro: session.currentPomodoro,
-      pauseReason: pauseReason,
-      projected: projected,
-    );
-  }
-
-  bool _requiresResumePromptFromState(
-    PomodoroState current,
-    PomodoroState projected,
-  ) {
-    return _requiresResumePrompt(
-      status: current.status,
-      phase: current.phase,
-      currentPomodoro: current.currentPomodoro,
-      pauseReason: _pauseReason,
-      projected: projected,
-    );
-  }
-
-  bool _requiresResumePrompt({
-    required PomodoroStatus status,
-    required PomodoroPhase? phase,
-    required int currentPomodoro,
-    required PomodoroState projected,
-    String? pauseReason,
-  }) {
-    if (status == PomodoroStatus.paused) {
-      return pauseReason == 'background';
-    }
-    if (!_isRunning(status)) return false;
-    if (projected.status == PomodoroStatus.finished) return true;
-    if (phase != projected.phase) return true;
-    if (currentPomodoro != projected.currentPomodoro) return true;
-    return false;
   }
 
   void _applyProjectedState(PomodoroState projected, {DateTime? now}) {

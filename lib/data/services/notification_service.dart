@@ -128,6 +128,12 @@ class _FlutterLocalNotificationsBackend implements _NotificationBackend {
   final MethodChannel _macosChannel;
   String _initError = '';
 
+  // Use a dedicated silent channel because Android 8+ channel sound is immutable.
+  static const String _androidSilentChannelId = 'pomodoro_updates_silent';
+  static const String _androidSilentChannelName = 'Pomodoro updates';
+  static const String _androidSilentChannelDescription =
+      'Notifications for pomodoro progress';
+
   _FlutterLocalNotificationsBackend(
     this._plugin, {
     required MethodChannel macosChannel,
@@ -178,11 +184,11 @@ class _FlutterLocalNotificationsBackend implements _NotificationBackend {
     final ios = await _plugin
         .resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(alert: true, badge: true, sound: true);
+        ?.requestPermissions(alert: true, badge: true, sound: false);
     final macos = await _plugin
         .resolvePlatformSpecificImplementation<
             MacOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(alert: true, badge: true, sound: true);
+        ?.requestPermissions(alert: true, badge: true, sound: false);
     return (android ?? true) && (ios ?? true) && (macos ?? true);
   }
 
@@ -210,28 +216,30 @@ class _FlutterLocalNotificationsBackend implements _NotificationBackend {
             AndroidFlutterLocalNotificationsPlugin>();
     if (androidPlugin == null) return;
     const channel = AndroidNotificationChannel(
-      'pomodoro_updates',
-      'Pomodoro updates',
-      description: 'Notifications for pomodoro progress',
+      _androidSilentChannelId,
+      _androidSilentChannelName,
+      description: _androidSilentChannelDescription,
       importance: Importance.high,
+      playSound: false,
     );
     await androidPlugin.createNotificationChannel(channel);
   }
 
   NotificationDetails _details() {
     const android = AndroidNotificationDetails(
-      'pomodoro_updates',
-      'Pomodoro updates',
-      channelDescription: 'Notifications for pomodoro progress',
+      _androidSilentChannelId,
+      _androidSilentChannelName,
+      channelDescription: _androidSilentChannelDescription,
       importance: Importance.high,
       priority: Priority.high,
+      playSound: false,
     );
     const darwin = DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentBanner: true,
       presentList: true,
-      presentSound: true,
+      presentSound: false,
     );
     const linux = LinuxNotificationDetails(
       defaultActionName: 'Open',

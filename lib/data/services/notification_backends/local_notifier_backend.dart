@@ -20,7 +20,11 @@ class LocalNotifierBackend {
     required String title,
     required String body,
   }) async {
-    final notification = LocalNotification(title: title, body: body);
+    final notification = LocalNotification(
+      title: title,
+      body: body,
+      silent: true,
+    );
     await notification.show();
   }
 }

@@ -50,7 +50,6 @@ class MainFlutterWindow: NSWindow {
         if !body.isEmpty {
           content.body = body
         }
-        content.sound = .default
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
         let request = UNNotificationRequest(
           identifier: UUID().uuidString,
