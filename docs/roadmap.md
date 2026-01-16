@@ -1,8 +1,8 @@
-# 📍 **Official Development Roadmap — Focus Interval (MVP 1.0)**
+# 📍 **Official Development Roadmap — Focus Interval (MVP 1.2)**
 
-**Initial version — 100% synchronized with `/docs/specs.md`**
+**Updated version — 100% synchronized with `/docs/specs.md` (v1.2.0)**
 
-This document defines the development plan **step by step**, in chronological order, to fully implement the Focus Interval app according to the official MVP 1.0 specifications.
+This document defines the development plan **step by step**, in chronological order, to fully implement the Focus Interval app according to the official MVP 1.2 specifications.
 
 The AI (ChatGPT) must consult this document **ALWAYS** before continuing development, to keep technical and progress coherence.
 
@@ -14,7 +14,7 @@ This project includes an official team roles document at:
 # 🟦 **Global Project Status**
 
 ```
-CURRENT PHASE: 15 — Mandatory Final Animation
+CURRENT PHASE: 20 — TaskRunGroup Model & Scheduling
 NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       PomodoroViewModel exposed as Notifier auto-dispose and subscribed to the machine.
       Auth strategy: Google Sign-In on iOS/Android/Web (web verified; People API enabled); email/password on macOS/Windows/Linux.
@@ -28,6 +28,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       Phase 13 completed on 06/01/2026: real-device sync validated (<1s), deviceId persistence added, take over implemented, reopen transitions verified.
       Phase 14 completed on 13/01/2026: Linux audio/notifications verified.
       15/01/2026: Execution guardrails prevent concurrent runs and block editing active tasks.
+      20/01/2026: Specs updated to v1.2.0 (TaskRunGroups, scheduling, Run Mode redesign).
 ```
 Update this on each commit if needed.
 
@@ -35,7 +36,7 @@ Update this on each commit if needed.
 
 # 🧩 **Roadmap Structure**
 
-Development is divided into **19 main phases**, ordered to avoid blockers, errors, and rewrites.
+Development is divided into **25 main phases**, ordered to avoid blockers, errors, and rewrites.
 
 Each phase contains:
 
@@ -464,6 +465,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Implement a dynamically calculated minimum size
 - Proportional clock scaling
 - Re-layout buttons
+- Mobile landscape layout for run mode (status + list to the right of the circle)
 - Full black background
 
 ### 📌 Exit conditions
@@ -479,6 +481,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Tests for the state machine
 - Tests for pause/resume logic
 - Tests for strict completion
+- Tests for TaskRunGroup transitions and scheduling conflicts
 
 ### 📌 Exit conditions
 
@@ -512,7 +515,96 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ### 📌 Exit conditions
 
-- MVP 1.0 ready and functional
+- MVP 1.0 milestone complete (historical)
+
+---
+
+# 🚀 **PHASE 20 — TaskRunGroup Model & Repository**
+
+### ⚙️ Tasks
+
+- Create `TaskRunGroup` / `TaskRunItem` models with snapshot semantics.
+- Implement Firestore repository at `users/{uid}/taskRunGroups/{groupId}`.
+- Add retention policy for scheduled/running/last N completed.
+- Extend `PomodoroSession` with group context fields.
+
+### 📌 Exit conditions
+
+- TaskRunGroups can be created, persisted, streamed, and pruned.
+- Active session includes group/task context.
+
+---
+
+# 🚀 **PHASE 21 — Task List Redesign + Group Creation**
+
+### ⚙️ Tasks
+
+- Replace per-task “Run” button with checkboxes and a single “Confirmar” action.
+- Implement reorder handle-only drag and drop.
+- Show theoretical start/end times per selected task (recalc on time/reorder/selection).
+- Build snapshot creation flow for TaskRunGroup.
+
+### 📌 Exit conditions
+
+- Task selection + ordering + confirm flow works and creates a group snapshot.
+
+---
+
+# 🚀 **PHASE 22 — Planning Flow + Conflict Management**
+
+### ⚙️ Tasks
+
+- Add “Start now” vs “Planificar comienzo” flow with date/time picker.
+- Compute and persist `scheduledStartTime` + `theoreticalEndTime`.
+- Enforce overlap rules and resolution choices (delete existing vs cancel new).
+- Add per-group `noticeMinutes` with global/default fallback.
+
+### 📌 Exit conditions
+
+- Scheduled groups can be created without conflicts; conflicts are resolved via UI.
+
+---
+
+# 🚀 **PHASE 23 — Run Mode Redesign for TaskRunGroups**
+
+### ⚙️ Tasks
+
+- Redesign timer UI: current time inside circle, status boxes, next box, contextual list.
+- Rotate needle counterclockwise for countdown and keep idle preview consistent.
+- Implement automatic transitions between tasks with no modal.
+- Update group completion modal and final animation.
+
+### 📌 Exit conditions
+
+- Full group execution works end-to-end with correct UI and transitions.
+
+---
+
+# 🚀 **PHASE 24 — Planned Groups Screen**
+
+### ⚙️ Tasks
+
+- Create Planned Groups screen accessible from Run Mode header.
+- List scheduled/running/last N completed groups with required fields.
+- Actions: view summary, cancel schedule, start now (if no conflict).
+
+### 📌 Exit conditions
+
+- Planned Groups screen manages group lifecycle reliably.
+
+---
+
+# 🚀 **PHASE 25 — Responsive Updates for New Run Mode**
+
+### ⚙️ Tasks
+
+- Mobile landscape layout: move status boxes and contextual list to the right.
+- Ensure desktop resizing still keeps the circle and text readable.
+- Validate minimum size constraints with the new layout.
+
+### 📌 Exit conditions
+
+- Run Mode remains legible and stable across mobile landscape and desktop resizing.
 
 ---
 
