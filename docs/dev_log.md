@@ -16,7 +16,7 @@ This document is used to:
 # 📍 Current status
 
 Active phase: **14 — Sounds and Notifications (reopened)**  
-Last update: **15/01/2026**
+Last update: **17/01/2026**
 
 ---
 

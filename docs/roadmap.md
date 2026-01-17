@@ -432,6 +432,12 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Completion notifications are silent across platforms; app audio remains the only audible signal.
 - iOS notifications now display in foreground by assigning the notification center delegate.
 
+### Status notes (17/01/2026)
+
+- Local custom sound picker added for Pomodoro start/Break start with per-device overrides only.
+- Web (Chrome) local sound picking remains disabled.
+- Verified on macOS/iOS/Android; Windows/Linux pending.
+
 ### 📌 Exit conditions
 
 - All sound events are configurable (pomodoro start/end, break start/end, task finish).
