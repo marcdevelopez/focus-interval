@@ -988,7 +988,9 @@ _(fill in when they happen)_
 
 ### ⚠️ Issues found:
 
-- None.
+- Sound selection appeared unchanged because built-in options mapped to the same asset; fixed by aligning selectors to the three available assets.
+- Initial analyzer errors after refactor (duplicate `save()`, missing helper methods, and async context checks) were resolved.
+- macOS file picker required Xcode sandbox user-selected file access to open the dialog.
 
 ### 🧠 Decisions made:
 
