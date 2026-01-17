@@ -1,6 +1,6 @@
-# 📝 Focus Interval — Dev Log (MVP 1.0)
+# 📝 Focus Interval — Dev Log (MVP 1.2)
 
-Chronological history of the MVP development using work blocks.  
+Chronological history of the MVP 1.2 development using work blocks.  
 Each block represents significant progress within the same day or sprint.
 
 This document is used to:
@@ -9,7 +9,7 @@ This document is used to:
 - Align architecture with the roadmap
 - Inform the AI of the exact project state
 - Serve as professional evidence of collaborative AI work
-- Show how the MVP was built at an accelerated pace
+- Show how the MVP 1.2 was built at an accelerated pace
 
 ---
 
@@ -32,7 +32,7 @@ Last update: **15/01/2026**
 
 ### 🧠 Decisions made:
 
-- The final clock animation will be **mandatory** in the MVP
+- The final clock animation will be **mandatory** in the MVP 1.2
 - The background will be **100% black**
 - Resizable window with a dynamic minimum size
 
@@ -444,7 +444,7 @@ _(fill in when they happen)_
 
 ### 🧠 Decisions made:
 
-- Keep three sounds in the MVP: pomodoro start, break start, and task finish (fixed), avoiding duplication with break end.
+- Keep three sounds in the MVP 1.2: pomodoro start, break start, and task finish (fixed), avoiding duplication with break end.
 - If an asset is missing or fails to load, ignore it and log in debug; do not show an error to the user.
 - Some selector ids had no mapped asset, causing silence on pomodoro start; resolved by mapping aliases to existing assets.
 
@@ -594,7 +594,7 @@ _(fill in when they happen)_
 
 ### 🎯 Next steps:
 
-- Validate Windows/Linux notification delivery if required for MVP.
+- Validate Windows/Linux notification delivery if required for MVP 1.2.
 
 ---
 

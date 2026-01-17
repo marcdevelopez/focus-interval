@@ -1,6 +1,6 @@
 # 📘 **Functional Specifications – Cross-Platform Pomodoro App (macOS / Windows / Linux / iOS / Android / Web)**
 
-**Version 1.2.0 — MVP Document**
+**Version 1.2.0 — MVP Release Document**
 
 ---
 
@@ -40,7 +40,7 @@ The app syncs with Firebase via Google Sign-In on iOS/Android/Web and email/pass
 | UI Framework           | Flutter 3.x                              |
 | Auth                   | Firebase Authentication (Google Sign-In + email/password) |
 | Backend                | Firestore                                |
-| Local Cache (optional) | SharedPreferences (Linux local-only); Hive (post-MVP) |
+| Local Cache (optional) | SharedPreferences (Linux local-only); Hive (v1.2) |
 | State Management       | Riverpod                                 |
 | Navigation             | GoRouter                                 |
 | Audio                  | just_audio                               |
@@ -330,7 +330,7 @@ Platform notes:
 ## **8.2. Local cache (optional)**
 
 - Current: SharedPreferences-backed storage for Linux local-only tasks.
-- Optional (post-MVP): Hive-based cache for cross-platform offline storage.
+- Planned (v1.2): Hive-based cache for cross-platform offline storage.
 
 ## **8.3. Active Pomodoro session (real-time sync)**
 
@@ -339,6 +339,7 @@ users/{uid}/activeSession
 - Single document per user with the active session.
 - Must include groupId, currentTaskId, currentTaskIndex, and totalTasks.
 - Only the owner device writes; others subscribe in real time and render progress by calculating remaining time from phaseStartedAt + phaseDurationSeconds.
+- On app launch or after login, if an active session is running (pomodoroRunning/shortBreakRunning/longBreakRunning), auto-open the execution screen for that group.
 
 ## **8.4. TaskRunGroup retention**
 
@@ -371,6 +372,11 @@ Mandatory login (by platform)
 Persistence
 
 The session remains active on all devices with Firebase Auth support.
+
+Email verification (email/password)
+
+- Require email verification to confirm ownership of the address before enabling sync.
+- Unverified accounts must not block real owners from registering later.
 
 ---
 
@@ -442,6 +448,13 @@ Buttons:
 
 - Save
 - Cancel
+- Apply settings to remaining tasks
+
+Behavior:
+
+- "Apply settings to remaining tasks" copies the current task configuration to all remaining tasks in the list (after the current task).
+- Applies to all task settings except Name (pomodoro duration, short break duration, long break duration, total pomodoros, long break interval, sound selections).
+- Task names are always unique within the list; block Save/Apply and show a validation error if the edited name duplicates another task name.
 
 ---
 
@@ -495,22 +508,27 @@ Pomodoro running
 - Current status:
   - Red border/text, black background
   - Text: Pomodoro Y de X
+  - Time range: HH:mm–HH:mm
 - Next status:
   - If another break follows:
     - Blue border/text, black background
     - Text: Descanso: N min
+    - Time range: HH:mm–HH:mm
   - If it is the last pomodoro of the task:
     - Golden-green border/text, black background
     - Text: Fin de tarea
+    - End time: HH:mm
 
 Break running
 
 - Current status:
   - Blue border/text, black background
   - Text: Descanso: N min
+  - Time range: HH:mm–HH:mm
 - Next status:
   - Red border/text, black background
   - Text: Siguiente: Pomodoro Y de X
+  - Time range: HH:mm–HH:mm
 
 Rule: the upper box always matches the current executing phase.
 
@@ -523,6 +541,8 @@ Location: below the circle and above Pause/Cancel buttons.
   - Current task (in progress)
   - Next task (upcoming)
 - No placeholders, no empty slots.
+- Each item shows its time range (HH:mm–HH:mm).
+- Completed tasks keep their actual time range; current/upcoming tasks are projected.
 
 Cases
 
@@ -542,7 +562,7 @@ The list rebuilds automatically when tasks change.
 - Task completion → auto-transition to next task
 - No modal between tasks
 - Group completion → modal + final animation (see section 12)
-- Status boxes and contextual list update automatically; no extra confirmations or animations in the MVP
+- Status boxes and contextual list update automatically (including time ranges after pause/resume); no extra confirmations or animations in the MVP
 
 ### **10.4.7. Mandatory visual improvements for the timer**
 
@@ -620,12 +640,14 @@ D. Pause and resume
 
 - Pause freezes the hand and countdown
 - Resume continues from exact point
+- On resume, recalculate projected start/end times used in the status boxes and contextual task list
 - No sound on pause/resume
 
 E. Black background
 
-- Background must be pure black (#000000)
+- Dark theme background must be pure black (#000000)
 - No gradients or transparency
+- Light theme uses a light background with strong contrast for readability.
 
 F. Guaranteed clock visibility
 
@@ -640,6 +662,31 @@ When isMobile && isLandscape (iOS / Android):
 - Move the status boxes and contextual list to the right of the circle
 - Keep the circle unobstructed
 - Preserve the vertical order of the status boxes
+
+H. Clear labeling and icon support
+
+- UI labels and names must be unambiguous.
+- If a label could still be unclear, add a supporting icon.
+
+I. Button clarity and usability
+
+- Buttons must look modern, be clearly defined, and be immediately discoverable as interactive elements.
+
+---
+
+# ⚙️ **10.7. Settings / Preferences**
+
+Entry point
+
+- A standard Settings/Preferences entry must be discoverable without guidance.
+- Primary access: a top-right gear icon on the Task List screen.
+- Desktop: also expose Settings/Preferences in the app menu.
+
+Content
+
+- Language selector with system auto-detect by default (user can override).
+- Theme selector lives here; dark and light modes are both available in MVP.
+- All app-wide configuration options are centralized in this menu.
 
 ---
 
@@ -691,10 +738,30 @@ When the timer completes the last pomodoro of the last task:
 
 ---
 
-# 📈 **14. Future features (not included in the MVP)**
+# 📈 **14. Roadmap**
 
-- Statistics (chart of tasks completed per day/week)
-- Export tasks as a file
-- Floating widgets “always on top”
-- Global keyboard shortcuts
-- Minimal mode
+Release order is fixed: v1.0 → v1.1 → v1.2 (MVP store release).
+v1.0 and v1.1 are internal milestones that must be completed before the v1.2 release.
+
+v1.0 (internal milestone)
+
+- Implement all requirements in sections 1-13 inclusive.
+- Email verification for email/password before enabling sync.
+- Theme: dark and light modes (selector in Settings).
+- Language selector with system auto-detect + override.
+- Task editing quality: apply settings to remaining tasks, unique task names validation.
+- Execution UX: status boxes and contextual task list show time ranges, recalculated after pause/resume.
+- Session continuity: auto-open the execution screen on launch/login when a session is running.
+- UI clarity: unambiguous labeling with icon support; modern, clearly defined, discoverable buttons.
+
+v1.1 (internal milestone)
+
+- Statistics (chart of tasks completed per day/week).
+- Export tasks as a file.
+
+v1.2 (MVP release)
+
+- Floating widgets "always on top".
+- Global keyboard shortcuts.
+- Minimal mode.
+- Cross-platform offline cache (Hive-based).

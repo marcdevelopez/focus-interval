@@ -1,4 +1,4 @@
-# 📍 **Official Development Roadmap — Focus Interval (MVP 1.2)**
+# 📍 **Official Development Roadmap — Focus Interval (MVP store release v1.2)**
 
 **Updated version — 100% synchronized with `/docs/specs.md` (v1.2.0)**
 
@@ -28,8 +28,11 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       Phase 13 completed on 06/01/2026: real-device sync validated (<1s), deviceId persistence added, take over implemented, reopen transitions verified.
       Phase 14 partially completed on 13/01/2026: Linux audio/notifications verified (reopened for sound config alignment).
       15/01/2026: Execution guardrails prevent concurrent runs and block editing active tasks.
-      20/01/2026: Specs updated to v1.2.0 (TaskRunGroups, scheduling, Run Mode redesign).
-      Hive/logger deferred post-MVP; SharedPreferences used for Linux local-only tasks.
+      17/01/2026: Specs updated to v1.2.0 (TaskRunGroups, scheduling, Run Mode redesign).
+      17/01/2026: Phase 6 reopened to add email verification gating sync.
+      17/01/2026: Phase 10 reopened to add unique-name validation and apply-settings copy.
+      17/01/2026: Phase 13 reopened to add auto-open of running sessions on launch/login.
+      Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Linux local-only tasks.
 ```
 Update this on each commit if needed.
 
@@ -246,7 +249,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ---
 
-# [✔] **PHASE 6 — Configure Firebase Auth (Google on iOS/Android/Web; Email/Password on macOS/Windows; Linux auth disabled)**
+# [✔] **PHASE 6 — Configure Firebase Auth (Google on iOS/Android/Web; Email/Password on macOS/Windows; Linux auth disabled) (reopened)**
 
 ### ⚙️ Tasks
 
@@ -264,11 +267,14 @@ These subphases should also appear in **dev_log.md** as they are completed.
   - Linux config (Firebase Core only; auth disabled)
   - Web OAuth client ID + authorized domains for Google Sign-In
   - Android debug SHA-1/SHA-256 when Google Sign-In fails (see `docs/android_setup.md`)
+- Add email verification flow for email/password accounts and block sync until verified.
+- Ensure unverified accounts do not block real owners: allow re-registration or reclaim flow if the email remains unverified.
 
 ### 📌 Exit conditions
 
 - Google login working on iOS/Android/Web
 - Email/password login working on macOS/Windows
+- Email/password users must verify email before enabling sync.
 - Linux runs without auth and uses local-only tasks
 - Persistent UID in the app
 
@@ -341,7 +347,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ---
 
-# [✔] **PHASE 10 — Task Editor (completed 17/12/2025)**
+# [✔] **PHASE 10 — Task Editor (completed 17/12/2025) (reopened)**
 
 ### ⚙️ Tasks
 
@@ -354,11 +360,15 @@ These subphases should also appear in **dev_log.md** as they are completed.
   - Sounds (pomodoro start, break start; final sound fixed by default in this MVP)
 
 - Save to Firestore
+- Validate unique task names in the list; block save and show a clear error when duplicated.
+- Add "Apply settings to remaining tasks" to copy durations, intervals, and sounds to all subsequent tasks.
 
 ### 📌 Exit conditions
 
 - Tasks fully editable
 - Basic sound selector connected (no playback yet) and plan to implement real audio in a later phase
+- Unique name validation blocks duplicates and shows a validation error.
+- Apply settings copies the current task configuration to all remaining tasks.
 
 ---
 
@@ -388,7 +398,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ---
 
-# [✔] **PHASE 13 — Real-time Pomodoro sync (multi-device) (completed 06/01/2026)**
+# [✔] **PHASE 13 — Real-time Pomodoro sync (multi-device) (completed 06/01/2026) (reopened)**
 
 ### ⚙️ Tasks
 
@@ -398,12 +408,14 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - In TimerScreen, mirror mode: subscribe to `activeSession` when not the owner and mirror state by computing remaining time from `phaseStartedAt` + `phaseDurationSeconds`.
 - Handle conflicts: if an active session exists, allow “Take over” (overwrite `ownerDeviceId`) or respect the remote session.
 - Clear `activeSession` on finish or cancel.
+- On app launch/login, auto-open TimerScreen if an active session is running.
 
 ### 📌 Exit conditions
 
 - Two devices with the same `uid` see the same pomodoro in real time (<1–2 s delay).
 - Only the owner writes; others show live changes.
 - Phase transitions, pause/resume, and finish are persisted and visible when reopening the app.
+- Reopening the app with a running session opens the execution screen automatically.
 
 # 🚀 **PHASE 14 — Sounds and Notifications**
 
@@ -416,6 +428,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
   with backfill for Firestore + local repositories.
 - Add sound selectors for pomodoro end and break end; persist on save.
 - Trigger pomodoro end / break end sounds without blocking automatic transitions.
+- Send a system notification when each pomodoro ends (Pomodoro → Break).
 - Add optional local file picker for custom sounds (persist file path or asset id).
 - Auto-dismiss the "Task completed" modal when the same task restarts on another device (done).
 - Fix macOS notification banner visibility for owner sessions (done).
@@ -448,6 +461,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Create `TaskRunGroup` / `TaskRunItem` models with snapshot semantics.
 - Implement Firestore repository at `users/{uid}/taskRunGroups/{groupId}`.
 - Add retention policy for scheduled/running/last N completed.
+- Persist user-configurable retention N (default 7, max 30) and apply it when pruning.
 - Extend `PomodoroSession` with group context fields (`groupId`, `currentTaskId`,
   `currentTaskIndex`, `totalTasks`) and update activeSession read/write paths.
 
@@ -455,6 +469,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 - TaskRunGroups can be created, persisted, streamed, and pruned.
 - Active session includes group/task context.
+- Retention policy honors the user-configured N value.
 
 ---
 
@@ -495,13 +510,22 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Prerequisite: complete Phases 15–17 (TaskRunGroup + PomodoroSession group context)
   before starting the TimerScreen redesign.
 - Redesign timer UI: current time inside circle, status boxes, next box, contextual list.
+- Show time ranges in status boxes and in each contextual task list item.
+- Apply golden-green color for the "Next" status box when the current pomodoro is the last in the task.
 - Rotate needle counterclockwise for countdown and keep idle preview consistent.
+- Define idle preview needle behavior (consistent position or motion) for pre-start planning state.
 - Implement automatic transitions between tasks with no modal.
-- Update group completion modal and final animation.
+- Update group completion modal and final animation, including an optional summary
+  (total tasks, pomodoros, total time).
+- Add a planned-groups indicator in the Run Mode header when pending groups exist.
+- On resume, recalculate projected start/end times for status boxes and the contextual task list.
 
 ### 📌 Exit conditions
 
 - Full group execution works end-to-end with correct UI and transitions.
+- Completion modal includes the optional summary data.
+- Header shows a visual indicator when planned groups are pending.
+- Status boxes and contextual task list show time ranges.
 
 ---
 
@@ -529,7 +553,9 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Mobile landscape layout: move status boxes and contextual list to the right.
 - Ensure desktop resizing still keeps the circle and text readable.
 - Validate minimum size constraints with the new layout.
-- Full black background.
+- Dark theme background must be pure black (#000000); light theme uses a light background with strong contrast.
+- Enforce fixed-width timer digits (FontFeature.tabularFigures() or monospaced font) to avoid jitter.
+- Set the initial window size to the computed minimum optimal size on app launch.
 
 ### 📌 Exit conditions
 
@@ -577,8 +603,14 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 - Refactor widgets
 - Adjust shadows, padding, borders
-- Keep minimal dark style
+- Keep a minimal, high-contrast style in both dark and light themes.
 - Remember the last email used on the device (stored locally) and enable autofill/password managers; never store the password in plain text.
+- Audit ambiguous labels and add supporting icons where clarity needs reinforcement.
+- Ensure buttons are modern, clearly defined, and immediately discoverable.
+- Add Settings/Preferences entry points (gear on Task List, app menu on desktop).
+- Add language selector with system auto-detect + user override.
+- Add theme selector (dark/light).
+- Add retention N selector (default 7, max 30).
 
 ---
 
@@ -597,7 +629,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ### 📌 Exit conditions
 
-- MVP 1.0 milestone complete (historical)
+- MVP 1.2 milestone complete (historical)
 
 ---
 
