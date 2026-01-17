@@ -16,6 +16,8 @@ import '../data/services/device_info_service.dart';
 import '../data/services/notification_service.dart';
 import '../data/repositories/pomodoro_session_repository.dart';
 import '../data/repositories/firestore_pomodoro_session_repository.dart';
+import '../data/services/local_sound_storage.dart';
+import '../data/services/local_sound_overrides.dart';
 
 // VIEWMODELS
 import 'viewmodels/pomodoro_view_model.dart';
@@ -61,8 +63,9 @@ final firestoreServiceProvider = Provider<FirestoreService>((_) {
 });
 
 // Firestore task repository
-final firestoreTaskRepositoryProvider =
-    Provider<FirestoreTaskRepository>((ref) {
+final firestoreTaskRepositoryProvider = Provider<FirestoreTaskRepository>((
+  ref,
+) {
   final firestore = ref.watch(firestoreServiceProvider);
   final auth = ref.watch(firebaseAuthServiceProvider);
   return FirestoreTaskRepository(
@@ -89,8 +92,9 @@ final deviceInfoServiceProvider = Provider<DeviceInfoService>((_) {
 });
 
 // Pomodoro session repository
-final pomodoroSessionRepositoryProvider =
-    Provider<PomodoroSessionRepository>((ref) {
+final pomodoroSessionRepositoryProvider = Provider<PomodoroSessionRepository>((
+  ref,
+) {
   final authState = ref.watch(authStateProvider).value;
   final firestore = ref.watch(firestoreServiceProvider);
   final auth = ref.watch(firebaseAuthServiceProvider);
@@ -106,8 +110,7 @@ final pomodoroSessionRepositoryProvider =
 });
 
 // Active session stream (used for global execution guards).
-final pomodoroSessionStreamProvider =
-    StreamProvider<PomodoroSession?>((ref) {
+final pomodoroSessionStreamProvider = StreamProvider<PomodoroSession?>((ref) {
   final repo = ref.watch(pomodoroSessionRepositoryProvider);
   return repo.watchSession();
 });
@@ -143,6 +146,14 @@ final taskListProvider =
 final taskEditorProvider = NotifierProvider<TaskEditorViewModel, PomodoroTask?>(
   TaskEditorViewModel.new,
 );
+
+final localSoundStorageProvider = Provider<LocalSoundStorage>((_) {
+  return createLocalSoundStorage();
+});
+
+final localSoundOverridesProvider = Provider<LocalSoundOverrides>((_) {
+  return LocalSoundOverrides();
+});
 
 bool get _supportsFirebase {
   if (kIsWeb) return true;

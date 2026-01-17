@@ -5,20 +5,14 @@ class AudioPlayersBackend {
   final AudioPlayer _player = AudioPlayer();
 
   Future<void> playAsset(String assetPath) async {
-    final normalized = _normalizeAssetPath(assetPath);
-    await _player.play(
-      AssetSource(normalized),
-      position: Duration.zero,
-    );
+    await _player.play(AssetSource(assetPath));
   }
 
-  Future<void> dispose() => _player.dispose();
+  Future<void> playFile(String filePath) async {
+    await _player.play(DeviceFileSource(filePath));
+  }
 
-  String _normalizeAssetPath(String assetPath) {
-    const prefix = 'assets/';
-    if (assetPath.startsWith(prefix)) {
-      return assetPath.substring(prefix.length);
-    }
-    return assetPath;
+  Future<void> dispose() async {
+    await _player.dispose();
   }
 }

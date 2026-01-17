@@ -9,11 +9,7 @@ class TaskEditorScreen extends ConsumerStatefulWidget {
   final bool isEditing;
   final String? taskId;
 
-  const TaskEditorScreen({
-    super.key,
-    required this.isEditing,
-    this.taskId,
-  });
+  const TaskEditorScreen({super.key, required this.isEditing, this.taskId});
 
   @override
   ConsumerState<TaskEditorScreen> createState() => _TaskEditorScreenState();
@@ -64,9 +60,11 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   }
 
   Future<void> _loadExisting() async {
-    final result =
-        await ref.read(taskEditorProvider.notifier).load(widget.taskId!);
+    final result = await ref
+        .read(taskEditorProvider.notifier)
+        .load(widget.taskId!);
     if (!mounted) return;
+
     if (result == TaskEditorLoadResult.notFound) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("The task no longer exists.")),
@@ -90,14 +88,14 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     _maybeSyncControllers(task);
     const pomodoroSounds = [
       SoundOption('default_chime', 'Chime (pomodoro start)'),
-      SoundOption('bell_soft', 'Soft bell'),
-      SoundOption('digital_beep', 'Digital beep'),
+      SoundOption('default_chime_break', 'Chime (break start)'),
+      SoundOption('default_chime_finish', 'Finish chime'),
     ];
 
     const breakSounds = [
       SoundOption('default_chime_break', 'Chime (break start)'),
-      SoundOption('bell_soft_break', 'Soft bell (break)'),
-      SoundOption('digital_beep_break', 'Digital beep (break)'),
+      SoundOption('default_chime', 'Chime (pomodoro start)'),
+      SoundOption('default_chime_finish', 'Finish chime'),
     ];
 
     if (task == null) {
@@ -118,8 +116,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               if (!_formKey.currentState!.validate()) return;
               if (!_validateBusinessRules()) return;
 
-              final saved =
-                  await ref.read(taskEditorProvider.notifier).save();
+              final saved = await ref.read(taskEditorProvider.notifier).save();
               if (!context.mounted) return;
               if (!saved) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -134,7 +131,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               Navigator.pop(context);
             },
             child: const Text("Save"),
-          )
+          ),
         ],
       ),
       body: Form(
@@ -154,34 +151,29 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
             _numberField(
               label: "Pomodoro duration (min)",
               controller: _pomodoroCtrl,
-              onChanged: (v) =>
-                  _update(task.copyWith(pomodoroMinutes: v)),
+              onChanged: (v) => _update(task.copyWith(pomodoroMinutes: v)),
             ),
             _numberField(
               label: "Short break (min)",
               controller: _shortBreakCtrl,
-              onChanged: (v) =>
-                  _update(task.copyWith(shortBreakMinutes: v)),
+              onChanged: (v) => _update(task.copyWith(shortBreakMinutes: v)),
             ),
             _numberField(
               label: "Long break (min)",
               controller: _longBreakCtrl,
-              onChanged: (v) =>
-                  _update(task.copyWith(longBreakMinutes: v)),
+              onChanged: (v) => _update(task.copyWith(longBreakMinutes: v)),
             ),
             const SizedBox(height: 12),
 
             _numberField(
               label: "Total pomodoros",
               controller: _totalPomodorosCtrl,
-              onChanged: (v) =>
-                  _update(task.copyWith(totalPomodoros: v)),
+              onChanged: (v) => _update(task.copyWith(totalPomodoros: v)),
             ),
             _numberField(
               label: "Pomodoros per long break",
               controller: _longBreakIntervalCtrl,
-              onChanged: (v) =>
-                  _update(task.copyWith(longBreakInterval: v)),
+              onChanged: (v) => _update(task.copyWith(longBreakInterval: v)),
             ),
             const SizedBox(height: 24),
             const Text(
@@ -193,14 +185,54 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               label: "Pomodoro start",
               value: task.startSound,
               options: pomodoroSounds,
-              onChanged: (v) => _update(task.copyWith(startSound: v)),
+              onPickLocal: () async {
+                final result = await ref
+                    .read(taskEditorProvider.notifier)
+                    .pickLocalSound(SoundPickTarget.pomodoroStart);
+                if (!context.mounted) return;
+                if (result.error != null) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(result.error!)));
+                  return;
+                }
+                if (result.sound != null) {
+                  _update(task.copyWith(startSound: result.sound));
+                }
+              },
+              onChanged: (v) async {
+                await ref
+                    .read(taskEditorProvider.notifier)
+                    .clearLocalSoundOverride(SoundPickTarget.pomodoroStart);
+                _update(task.copyWith(startSound: v));
+              },
             ),
             const SizedBox(height: 12),
             SoundSelector(
               label: "Break start",
               value: task.startBreakSound,
               options: breakSounds,
-              onChanged: (v) => _update(task.copyWith(startBreakSound: v)),
+              onPickLocal: () async {
+                final result = await ref
+                    .read(taskEditorProvider.notifier)
+                    .pickLocalSound(SoundPickTarget.breakStart);
+                if (!context.mounted) return;
+                if (result.error != null) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(result.error!)));
+                  return;
+                }
+                if (result.sound != null) {
+                  _update(task.copyWith(startBreakSound: result.sound));
+                }
+              },
+              onChanged: (v) async {
+                await ref
+                    .read(taskEditorProvider.notifier)
+                    .clearLocalSoundOverride(SoundPickTarget.breakStart);
+                _update(task.copyWith(startBreakSound: v));
+              },
             ),
             const SizedBox(height: 12),
             Text(
@@ -245,13 +277,10 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   bool _validateBusinessRules() {
     final task = ref.read(taskEditorProvider);
     if (task == null) return false;
-
     if (task.longBreakInterval > task.totalPomodoros) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            "Long break interval cannot be greater than total pomodoros.",
-          ),
+          content: Text("Long break interval cannot exceed total pomodoros."),
         ),
       );
       return false;
@@ -262,48 +291,63 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   Widget _textField({
     required String label,
     required TextEditingController controller,
-    required Function(String) onChanged,
+    required ValueChanged<String> onChanged,
     String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
+      onChanged: onChanged,
+      validator: validator,
       style: const TextStyle(color: Colors.white),
+      cursorColor: Colors.white,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.white70),
+        labelStyle: const TextStyle(color: Colors.white54),
+        filled: true,
+        fillColor: Colors.white10,
         enabledBorder: const UnderlineInputBorder(
           borderSide: BorderSide(color: Colors.white24),
         ),
+        focusedBorder: const UnderlineInputBorder(
+          borderSide: BorderSide(color: Colors.white54),
+        ),
       ),
-      validator: validator,
-      onChanged: onChanged,
     );
   }
 
   Widget _numberField({
     required String label,
     required TextEditingController controller,
-    required Function(int) onChanged,
+    required ValueChanged<int> onChanged,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: TextInputType.number,
       style: const TextStyle(color: Colors.white),
+      cursorColor: Colors.white,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.white70),
+        labelStyle: const TextStyle(color: Colors.white54),
+        filled: true,
+        fillColor: Colors.white10,
         enabledBorder: const UnderlineInputBorder(
           borderSide: BorderSide(color: Colors.white24),
         ),
+        focusedBorder: const UnderlineInputBorder(
+          borderSide: BorderSide(color: Colors.white54),
+        ),
       ),
       validator: (v) {
-        final n = int.tryParse(v ?? "");
-        if (n == null || n <= 0) return "Must be > 0";
+        final value = int.tryParse(v ?? '');
+        if (value == null || value <= 0) {
+          return "Enter a valid number";
+        }
         return null;
       },
       onChanged: (v) {
-        final n = int.tryParse(v);
-        if (n != null) onChanged(n);
+        final value = int.tryParse(v);
+        if (value == null) return;
+        onChanged(value);
       },
     );
   }

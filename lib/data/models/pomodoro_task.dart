@@ -1,3 +1,5 @@
+import 'selected_sound.dart';
+
 class PomodoroTask {
   final String id;
   final String name;
@@ -9,9 +11,9 @@ class PomodoroTask {
   final int totalPomodoros;
   final int longBreakInterval;
 
-  final String startSound;
-  final String startBreakSound;
-  final String finishTaskSound;
+  final SelectedSound startSound;
+  final SelectedSound startBreakSound;
+  final SelectedSound finishTaskSound;
 
   PomodoroTask({
     required this.id,
@@ -34,9 +36,9 @@ class PomodoroTask {
     int? longBreakMinutes,
     int? totalPomodoros,
     int? longBreakInterval,
-    String? startSound,
-    String? startBreakSound,
-    String? finishTaskSound,
+    SelectedSound? startSound,
+    SelectedSound? startBreakSound,
+    SelectedSound? finishTaskSound,
   }) {
     return PomodoroTask(
       id: id ?? this.id,
@@ -60,9 +62,9 @@ class PomodoroTask {
     'longBreakMinutes': longBreakMinutes,
     'totalPomodoros': totalPomodoros,
     'longBreakInterval': longBreakInterval,
-    'startSound': startSound,
-    'startBreakSound': startBreakSound,
-    'finishTaskSound': finishTaskSound,
+    'startSound': startSound.toMap(),
+    'startBreakSound': startBreakSound.toMap(),
+    'finishTaskSound': finishTaskSound.toMap(),
   };
 
   factory PomodoroTask.fromMap(Map<String, dynamic> map) => PomodoroTask(
@@ -73,8 +75,17 @@ class PomodoroTask {
     longBreakMinutes: map['longBreakMinutes'] as int,
     totalPomodoros: map['totalPomodoros'] as int,
     longBreakInterval: map['longBreakInterval'] as int,
-    startSound: (map['startSound'] as String?) ?? 'default_chime',
-    startBreakSound: (map['startBreakSound'] as String?) ?? 'default_chime_break',
-    finishTaskSound: (map['finishTaskSound'] as String?) ?? 'default_chime_finish',
+    startSound: SelectedSound.fromDynamic(
+      map['startSound'],
+      fallbackId: 'default_chime',
+    ),
+    startBreakSound: SelectedSound.fromDynamic(
+      map['startBreakSound'],
+      fallbackId: 'default_chime_break',
+    ),
+    finishTaskSound: SelectedSound.fromDynamic(
+      map['finishTaskSound'],
+      fallbackId: 'default_chime_finish',
+    ),
   );
 }

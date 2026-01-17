@@ -32,8 +32,10 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       17/01/2026: Phase 6 reopened to add email verification gating sync.
       17/01/2026: Phase 10 reopened to add unique-name validation and apply-settings copy.
       17/01/2026: Phase 13 reopened to add auto-open of running sessions on launch/login.
+      17/01/2026: Local custom sound picker added (Pomodoro start/Break start); custom sounds stored per-device only; built-in options aligned to available assets; web (Chrome) local pick disabled; macOS/iOS/Android verified, Windows/Linux pending.
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Linux local-only tasks.
 ```
+
 Update this on each commit if needed.
 
 ---
@@ -89,7 +91,6 @@ _(Core of the app)_
 
 - Create: `domain/pomodoro_machine.dart`
 - Implement states:
-
   - idle
   - pomodoroRunning
   - shortBreakRunning
@@ -115,14 +116,12 @@ _(Main UI of the MVP)_
 
 - Create `widgets/timer_display.dart`
 - Implement:
-
   - Main circle
   - Animated progress
   - Rotating hand (–90° → 360°)
   - Smooth clock-like movement
 
 - Dynamic colors per state:
-
   - Red for pomodoro
   - Blue for break
 
@@ -141,7 +140,6 @@ _(Main UI of the MVP)_
 - Create `presentation/screens/timer_screen.dart`
 - Place `timer_display` inside
 - Minimum buttons:
-
   - Pause
   - Resume
   - Cancel
@@ -161,7 +159,6 @@ _(Main UI of the MVP)_
 - Define initial state using `PomodoroState.idle()`.
 - Include a single internal instance of `PomodoroMachine`.
 - Expose public methods:
-
   - `configureTask(...)`
 
 - `start()`
@@ -177,7 +174,6 @@ _(Main UI of the MVP)_
 - Map each event → update `state = s`.
 - Handle `dispose()` correctly to close the stream.
 - Ensure:
-
   - Pause → keeps current progress
   - Resume → continues from progress
   - Cancel → returns to idle state
@@ -188,7 +184,6 @@ _(Main UI of the MVP)_
 - Control time exclusively from `PomodoroMachine`.
 - Any change (remaining seconds, progress, phase) must come from the stream.
 - Ensure the UI:
-
   - Does not calculate time
   - Does not manage timers
   - Updates only via `ref.watch(...)`
@@ -229,7 +224,6 @@ Real integration pending for Phases 6–7.
 - Prepare the screen to receive a real `PomodoroTask` via `taskId`.
 - Align dynamic buttons (Start/Pause/Resume/Cancel) to real ViewModel methods.
 - Sync the UI with the final state:
-
   - Circle color change
   - “Task completed” message
   - Final popup
@@ -254,19 +248,18 @@ These subphases should also appear in **dev_log.md** as they are completed.
 ### ⚙️ Tasks
 
 - Integrate:
-
   - firebase_core
   - firebase_auth
   - google_sign_in (iOS/Android/Web only)
   - email/password flow for macOS/Windows (Linux auth disabled)
 
 - Configure:
-
   - macOS App ID
   - Windows config
   - Linux config (Firebase Core only; auth disabled)
   - Web OAuth client ID + authorized domains for Google Sign-In
   - Android debug SHA-1/SHA-256 when Google Sign-In fails (see `docs/android_setup.md`)
+
 - Add email verification flow for email/password accounts and block sync until verified.
 - Ensure unverified accounts do not block real owners: allow re-registration or reclaim flow if the email remains unverified.
 
@@ -308,11 +301,9 @@ These subphases should also appear in **dev_log.md** as they are completed.
 ### ⚙️ Tasks
 
 - Create:
-
   - `task_repository.dart`
 
 - Functions:
-
   - addTask
   - updateTask
   - deleteTask
@@ -331,12 +322,10 @@ These subphases should also appear in **dev_log.md** as they are completed.
 ### ⚙️ Tasks
 
 - Create:
-
   - `task_list_screen.dart`
   - `task_card.dart` widget
 
 - Show:
-
   - Name
   - Durations
   - Total pomodoros
@@ -352,7 +341,6 @@ These subphases should also appear in **dev_log.md** as they are completed.
 ### ⚙️ Tasks
 
 - Create form:
-
   - Name
   - Durations
   - Total pomodoros
@@ -569,7 +557,6 @@ These subphases should also appear in **dev_log.md** as they are completed.
 ### ⚙️ Tasks
 
 - Implement:
-
   - Full green/gold circle
   - Large “TASK COMPLETED” text
   - Hand stopped at 360°
@@ -619,7 +606,6 @@ These subphases should also appear in **dev_log.md** as they are completed.
 ### ⚙️ Tasks
 
 - Package the app for:
-
   - macOS `.app`
   - Windows `.exe`
   - Linux `.AppImage`

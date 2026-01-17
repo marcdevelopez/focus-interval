@@ -185,12 +185,10 @@ _(fill in when they happen)_
 ### ✔ Work completed:
 
 - Structural fixes in `providers.dart`:
-
   - Added missing `pomodoro_task.dart` import
   - Fixed type errors in `taskListProvider` and `taskEditorProvider`
 
 - Aligned code state with Riverpod 2.x:
-
   - `TaskListViewModel` as `AsyncNotifier<List<PomodoroTask>>`
   - `TaskEditorViewModel` as `Notifier<PomodoroTask?>`
 
@@ -206,7 +204,6 @@ _(fill in when they happen)_
 ### ⚠️ Issues found:
 
 - Several inconsistencies between code and roadmap caused:
-
   - Unrecognized generic types
   - Out-of-sync providers
   - Cascading compilation errors
@@ -976,6 +973,31 @@ _(fill in when they happen)_
 ### Next steps:
 
 - None.
+
+---
+
+# 🔹 Block 47 — Phase 14 (Local custom sounds + per-device overrides) — 17/01/2026
+
+### ✔ Work completed:
+
+- Added typed `SelectedSound` and local custom sound picker for Pomodoro start and Break start.
+- Custom sounds are stored per-device only via SharedPreferences overrides (not synced to Firestore).
+- Built-in options aligned to the three available assets to ensure selection always maps to real files.
+- Added validation for local imports (format/size/duration) and fallback to built-in on failure.
+- Verified local sound selection on macOS/iOS/Android; web picker disabled on Chrome.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Firestore stores only built-in sounds; custom sounds remain local to the device.
+- Resolve local overrides before playback to avoid silent failures.
+
+### 🎯 Next steps:
+
+- Test custom sound picker and playback on Windows and Linux.
 
 ---
 

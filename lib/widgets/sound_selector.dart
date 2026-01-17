@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../data/models/selected_sound.dart';
+
 class SoundOption {
   final String id;
   final String label;
@@ -7,10 +9,14 @@ class SoundOption {
 }
 
 class SoundSelector extends StatelessWidget {
+  static const String _localPickId = '__local_pick__';
+  static const String _customCurrentId = '__custom_current__';
+
   final String label;
-  final String value;
+  final SelectedSound value;
   final List<SoundOption> options;
-  final ValueChanged<String> onChanged;
+  final ValueChanged<SelectedSound> onChanged;
+  final VoidCallback? onPickLocal;
 
   const SoundSelector({
     super.key,
@@ -18,12 +24,33 @@ class SoundSelector extends StatelessWidget {
     required this.value,
     required this.options,
     required this.onChanged,
+    this.onPickLocal,
   });
 
   @override
   Widget build(BuildContext context) {
-    final effectiveValue =
-        options.any((o) => o.id == value) ? value : options.first.id;
+    final hasCustom = value.type == SoundType.custom;
+
+    final items = <DropdownMenuItem<String>>[
+      if (onPickLocal != null)
+        const DropdownMenuItem(
+          value: _localPickId,
+          child: Text('Choose local file...'),
+        ),
+      ...options.map(
+        (o) => DropdownMenuItem<String>(value: o.id, child: Text(o.label)),
+      ),
+      if (hasCustom)
+        DropdownMenuItem<String>(
+          value: _customCurrentId,
+          child: Text('Custom: ${_basename(value.value)}'),
+        ),
+    ];
+
+    final builtInIds = options.map((o) => o.id).toSet();
+    final effectiveValue = hasCustom
+        ? _customCurrentId
+        : (builtInIds.contains(value.value) ? value.value : options.first.id);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -34,6 +61,7 @@ class SoundSelector extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
+          key: ValueKey(effectiveValue),
           initialValue: effectiveValue,
           dropdownColor: const Color(0xFF1A1A1A),
           decoration: const InputDecoration(
@@ -48,19 +76,25 @@ class SoundSelector extends StatelessWidget {
           ),
           iconEnabledColor: Colors.white70,
           style: const TextStyle(color: Colors.white),
-          items: options
-              .map(
-                (o) => DropdownMenuItem<String>(
-                  value: o.id,
-                  child: Text(o.label),
-                ),
-              )
-              .toList(),
+          items: items,
           onChanged: (v) {
-            if (v != null) onChanged(v);
+            if (v == null) return;
+            if (v == _localPickId) {
+              onPickLocal?.call();
+              return;
+            }
+            if (v == _customCurrentId) {
+              return;
+            }
+            onChanged(SelectedSound.builtIn(v));
           },
         ),
       ],
     );
+  }
+
+  String _basename(String path) {
+    final parts = path.split(RegExp(r'[\\/]+'));
+    return parts.isNotEmpty ? parts.last : path;
   }
 }

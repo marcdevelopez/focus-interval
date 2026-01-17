@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 
+import '../models/selected_sound.dart';
 import 'sound_backends/audioplayers_backend.dart'
     if (dart.library.html) 'sound_backends/audioplayers_backend_stub.dart';
 
@@ -44,54 +45,75 @@ class SoundService {
     'digital_beep_break': 'assets/sounds/default_chime_break.mp3',
   };
 
-  Future<void> play(String id, {String? fallbackId}) async {
+  Future<void> play(SelectedSound sound, {SelectedSound? fallback}) async {
     if (!_backend.isAvailable) {
       _logUnsupportedOnce(_backend.unavailableReason);
       return;
     }
 
-    final candidates = _buildCandidateIds(id, fallbackId);
+    final candidates = _buildCandidateSounds(sound, fallback);
     for (final candidate in candidates) {
-      final asset = _assetById[candidate];
-      if (asset == null) continue;
-      if (!await _assetExists(asset)) continue;
+      if (candidate.type == SoundType.builtIn) {
+        final asset = _assetById[candidate.value];
+        if (asset == null) continue;
+        if (!await _assetExists(asset)) continue;
 
-      try {
-        await _backend.playAsset(asset);
-        return;
-      } catch (e) {
-        _logPlaybackErrorOnce(e);
+        try {
+          await _backend.playAsset(asset);
+          return;
+        } catch (e) {
+          _logPlaybackErrorOnce(e);
+        }
+      } else {
+        if (!_backend.supportsFile) continue;
+        try {
+          await _backend.playFile(candidate.value);
+          return;
+        } catch (e) {
+          _logPlaybackErrorOnce(e);
+        }
       }
     }
   }
 
-  List<String> _buildCandidateIds(String id, String? fallbackId) {
-    final candidates = <String>[];
+  List<SelectedSound> _buildCandidateSounds(
+    SelectedSound sound,
+    SelectedSound? fallback,
+  ) {
+    final candidates = <SelectedSound>[];
 
-    void addCandidate(String? value) {
+    void add(SelectedSound? value) {
       if (value == null) return;
-      final trimmed = value.trim();
-      if (trimmed.isEmpty) return;
-      if (candidates.contains(trimmed)) return;
-      candidates.add(trimmed);
+      if (value.value.trim().isEmpty) return;
+      if (candidates.any(
+        (c) => c.type == value.type && c.value == value.value,
+      )) {
+        return;
+      }
+      candidates.add(value);
     }
 
-    addCandidate(id);
-    addCandidate(fallbackId);
-    addCandidate(_defaultIdFor(id));
-    addCandidate(_defaultIdFor(fallbackId));
+    add(sound);
+    add(fallback);
+    add(_defaultSoundFor(sound));
+    add(_defaultSoundFor(fallback));
 
     return candidates;
   }
 
-  String _defaultIdFor(String? id) {
-    if (id == null) return 'default_chime';
-    final trimmed = id.trim();
-    if (trimmed.isEmpty) return 'default_chime';
-    final lowered = trimmed.toLowerCase();
-    if (lowered.contains('break')) return 'default_chime_break';
-    if (lowered.contains('finish')) return 'default_chime_finish';
-    return 'default_chime';
+  SelectedSound _defaultSoundFor(SelectedSound? sound) {
+    if (sound == null) return const SelectedSound.builtIn('default_chime');
+    if (sound.type == SoundType.custom) {
+      return const SelectedSound.builtIn('default_chime');
+    }
+    final lowered = sound.value.toLowerCase();
+    if (lowered.contains('break')) {
+      return const SelectedSound.builtIn('default_chime_break');
+    }
+    if (lowered.contains('finish')) {
+      return const SelectedSound.builtIn('default_chime_finish');
+    }
+    return const SelectedSound.builtIn('default_chime');
   }
 
   Future<bool> _assetExists(String assetPath) async {
@@ -120,8 +142,10 @@ class SoundService {
 
 abstract class _SoundBackend {
   bool get isAvailable;
+  bool get supportsFile;
   String get unavailableReason;
   Future<void> playAsset(String assetPath);
+  Future<void> playFile(String filePath);
   Future<void> dispose();
 }
 
@@ -132,11 +156,21 @@ class _JustAudioBackend implements _SoundBackend {
   bool get isAvailable => true;
 
   @override
+  bool get supportsFile => true;
+
+  @override
   String get unavailableReason => '';
 
   @override
   Future<void> playAsset(String assetPath) async {
     await _player.setAsset(assetPath);
+    await _player.seek(Duration.zero);
+    await _player.play();
+  }
+
+  @override
+  Future<void> playFile(String filePath) async {
+    await _player.setFilePath(filePath);
     await _player.seek(Duration.zero);
     await _player.play();
   }
@@ -152,10 +186,16 @@ class _AudioPlayersBackend implements _SoundBackend {
   bool get isAvailable => true;
 
   @override
+  bool get supportsFile => true;
+
+  @override
   String get unavailableReason => '';
 
   @override
   Future<void> playAsset(String assetPath) => _backend.playAsset(assetPath);
+
+  @override
+  Future<void> playFile(String filePath) => _backend.playFile(filePath);
 
   @override
   Future<void> dispose() => _backend.dispose();
@@ -170,10 +210,16 @@ class _SilentSoundBackend implements _SoundBackend {
   bool get isAvailable => false;
 
   @override
+  bool get supportsFile => false;
+
+  @override
   String get unavailableReason => _reason;
 
   @override
   Future<void> playAsset(String assetPath) async {}
+
+  @override
+  Future<void> playFile(String filePath) async {}
 
   @override
   Future<void> dispose() async {}
