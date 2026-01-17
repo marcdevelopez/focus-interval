@@ -338,21 +338,18 @@ class _TimerPainter extends CustomPainter {
       final angle = startAngle + sweepAngle; // clockwise
       final needleOuter = radius;
       final needleLength = radius * 0.28;
-      final needleInner =
-          (needleOuter - needleLength).clamp(0.0, needleOuter).toDouble();
+      final needleInner = (needleOuter - needleLength)
+          .clamp(0.0, needleOuter)
+          .toDouble();
       final direction = Offset(math.cos(angle), math.sin(angle));
       final needleStart = center + direction * needleInner;
       final needleEnd = center + direction * needleOuter;
 
       final needlePaint = Paint()
-        ..shader = ui.Gradient.linear(
-          needleStart,
-          needleEnd,
-          const [
-            Color.fromARGB(0, 255, 255, 255),
-            Color.fromARGB(255, 255, 255, 255),
-          ],
-        )
+        ..shader = ui.Gradient.linear(needleStart, needleEnd, const [
+          Color.fromARGB(0, 255, 255, 255),
+          Color.fromARGB(255, 255, 255, 255),
+        ])
         ..strokeWidth = size.shortestSide * 0.01
         ..strokeCap = StrokeCap.round;
 

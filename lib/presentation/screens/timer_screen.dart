@@ -187,9 +187,11 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
             ),
 
             // Dynamic buttons
-            _ControlsBar(state: state, vm: vm, taskLoaded: _taskLoaded),
-
-            const SizedBox(height: 16),
+            SafeArea(
+              top: false,
+              minimum: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: _ControlsBar(state: state, vm: vm, taskLoaded: _taskLoaded),
+            ),
           ],
         ),
       ),
@@ -204,7 +206,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       useRootNavigator: true,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
-        backgroundColor: Colors.black,
         title: const Text(
           "✅ Task completed",
           style: TextStyle(color: Colors.white),
@@ -393,7 +394,6 @@ class _ControlsBar extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: Colors.black,
         title: const Text(
           "Take over session?",
           style: TextStyle(color: Colors.white),
