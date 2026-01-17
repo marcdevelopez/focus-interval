@@ -6,19 +6,19 @@
 
 # 🧭 **1. Project overview**
 
-The app is an **advanced Pomodoro session manager** built with **Flutter**, targeting **desktop and mobile**.
+The app is an advanced Pomodoro session manager built with Flutter, targeting desktop and mobile.
 
 The main goals are:
 
 - Create fully configurable Pomodoro tasks
-- Organize tasks into **TaskRunGroups** (ordered execution groups)
-- Plan or start a group immediately with **conflict-free scheduling**
-- Run tasks **sequentially without manual intervention**
+- Organize tasks into TaskRunGroups (ordered execution groups)
+- Plan or start a group immediately with conflict-free scheduling
+- Run tasks sequentially without manual intervention
 - Save and sync tasks/groups in the cloud (Firestore)
 - Sync Pomodoro execution in real time across devices (single session owner, others in mirror mode)
 - Play internal app sounds for state changes (notifications remain silent)
 
-The app syncs with **Firebase** via **Google / Gmail** login.
+The app syncs with Firebase via Google Sign-In on iOS/Android/Web and email/password on macOS/Windows; Linux runs in local-only mode (no Firebase Auth).
 
 ---
 
@@ -38,14 +38,14 @@ The app syncs with **Firebase** via **Google / Gmail** login.
 | Area                   | Technology                               |
 | ---------------------- | ---------------------------------------- |
 | UI Framework           | Flutter 3.x                              |
-| Auth                   | Firebase Authentication (Google Sign-In) |
+| Auth                   | Firebase Authentication (Google Sign-In + email/password) |
 | Backend                | Firestore                                |
-| Local Cache (optional) | Hive                                     |
+| Local Cache (optional) | SharedPreferences (Linux local-only); Hive (post-MVP) |
 | State Management       | Riverpod                                 |
 | Navigation             | GoRouter                                 |
 | Audio                  | just_audio                               |
 | Notifications          | flutter_local_notifications              |
-| Logging                | logger                                   |
+| Logging                | debugPrint (MVP); logger (post-MVP)      |
 | Architecture           | MVVM (Model–View–ViewModel)              |
 
 ---
@@ -82,10 +82,17 @@ lib/
 │   │   ├─ task_editor_screen.dart
 │   │   ├─ timer_screen.dart
 │   │   └─ planned_groups_screen.dart
-│   └─ widgets/
-│       ├─ timer_display.dart
-│       ├─ task_card.dart
-│       └─ sound_selector.dart
+│   ├─ viewmodels/
+│   │   ├─ pomodoro_view_model.dart
+│   │   ├─ task_editor_view_model.dart
+│   │   └─ task_list_view_model.dart
+│   ├─ providers.dart
+│   └─ flutter_riverpod.dart
+├─ widgets/
+│   ├─ linux_dependency_gate.dart
+│   ├─ timer_display.dart
+│   ├─ task_card.dart
+│   └─ sound_selector.dart
 └─ main.dart
 ```
 
@@ -93,7 +100,7 @@ lib/
 
 # 🧩 **5. Data model**
 
-## **5.1. `PomodoroTask` model**
+## **5.1. PomodoroTask model**
 
 ```dart
 class PomodoroTask {
@@ -135,9 +142,9 @@ class PomodoroTask {
 }
 ```
 
-## **5.2. `TaskRunGroup` model (snapshot execution group)**
+## **5.2. TaskRunGroup model (snapshot execution group)**
 
-A **TaskRunGroup** is an **immutable snapshot** generated when the user confirms a set of tasks to run. It is **independent** from the editable task list.
+A TaskRunGroup is an immutable snapshot generated when the user confirms a set of tasks to run. It is independent from the editable task list.
 
 ```dart
 class TaskRunGroup {
@@ -183,10 +190,10 @@ class TaskRunItem {
 
 Notes:
 
-- `theoreticalEndTime` is calculated at creation from **scheduledStartTime** (if set) or **now** (for immediate start).
-- Editing a `PomodoroTask` after group creation **does not affect** a running or scheduled group.
+- theoreticalEndTime is calculated when the group is scheduled or started, using scheduledStartTime (if set) or now (for immediate start). Recalculate if the start time changes.
+- Editing a PomodoroTask after group creation does not affect a running or scheduled group.
 
-## **5.3. `PomodoroSession` model (live sync)**
+## **5.3. PomodoroSession model (live sync)**
 
 ```dart
 class PomodoroSession {
@@ -218,42 +225,39 @@ class PomodoroSession {
 
 ## **6.1. States**
 
-- `pomodoroRunning`
-- `shortBreakRunning`
-- `longBreakRunning`
-- `paused`
-- `finished`
-- `idle`
+- pomodoroRunning
+- shortBreakRunning
+- longBreakRunning
+- paused
+- finished
+- idle
 
 ## **6.2. Transitions (within a single task)**
 
-1. Start pomodoro → `pomodoroRunning`
+1. Start pomodoro → pomodoroRunning
 2. Finish pomodoro:
-
-   - If current number % `longBreakInterval` == 0 → `longBreakRunning`
-   - Otherwise → `shortBreakRunning`
-
+   - If current number % longBreakInterval == 0 → longBreakRunning
+   - Otherwise → shortBreakRunning
 3. Finish break → next pomodoro
-4. Finish the last pomodoro of the task → **task completes**
+4. Finish the last pomodoro of the task → task completes (the group continues if there is a next task)
 5. User can:
-
    - Pause
    - Resume
    - Cancel
 
 ## **6.3. TaskRunGroup execution flow**
 
-- A group starts with the **first TaskRunItem**.
+- A group starts with the first TaskRunItem.
 - When a task completes:
-  - If there is a next task: **auto-transition** to the first pomodoro of the next task.
+  - If there is a next task: auto-transition to the first pomodoro of the next task.
   - No modal/popup is shown between tasks.
-- When the **last task** completes:
-  - The group ends (`status = completed`).
+- When the last task completes:
+  - The group ends (status = completed).
   - Final modal + final animation are shown (see section 12).
 
 ## **6.4. Scheduling and conflict rules**
 
-**Overlap definition**
+Overlap definition
 
 Two groups conflict if:
 
@@ -261,103 +265,112 @@ Two groups conflict if:
 [newStart, newEnd) ∩ [existingStart, existingEnd) ≠ ∅
 ```
 
-Where `end = theoreticalEndTime`.
+Where end = theoreticalEndTime.
 
-**Rules**
+Rules
 
-- If a group is `running`:
-
-  - ❌ Cannot schedule another group
-  - ❌ Cannot start another group
+- If a group is running:
+  - Cannot schedule another group
+  - Cannot start another group
   - Options: cancel the running group, or cancel the new action
-
-- If a group is `scheduled`:
-
+- If a group is scheduled:
   - Show conflict
   - Options: delete the existing schedule, or cancel the new schedule
+
+These conflict checks apply to both Comenzar ahora and Planificar comienzo.
+
+Scheduled start behavior
+
+- Send the pre-alert noticeMinutes before scheduledStartTime.
+- At scheduledStartTime, automatically start the group and open the execution screen.
 
 ---
 
 # 🔊 **7. Sound system**
 
-**Configurable sound events in the current MVP:**
+Configurable sound events in the current MVP:
 
-| Event            | Sound                           |
-| ---------------- | ------------------------------- |
-| Pomodoro start   | `startSound`                    |
-| Break start      | `startBreakSound`               |
-| End of each task | `finishTaskSound`               |
-| End of group     | `finishTaskSound` (same for now)|
+| Event            | Sound           |
+| ---------------- | --------------- |
+| Pomodoro start   | startSound      |
+| Break start      | startBreakSound |
+| End of each task | finishTaskSound |
+| End of group     | finishTaskSound (same for now) |
+
+Behavior notes:
+
+- The end-of-task sound plays on each task completion and must not pause or block the automatic transition.
+- Only the final task of the group triggers the stop behavior (see section 12).
 
 Allowed formats:
 
-- `.mp3`
-- `.wav`
+- .mp3
+- .wav
 
 Sounds can be:
 
 - Included in the app (assets)
 - Or loaded by the user (local file picker)
 
+Platform notes:
+
+- Windows audio uses an `audioplayers` adapter via SoundService.
+- Other platforms use `just_audio`.
+
 ---
 
 # 💾 **8. Persistence and sync**
 
-### **8.1. Firestore (primary)**
+## **8.1. Firestore (primary)**
 
-```
-users/{uid}/tasks/{taskId}
-users/{uid}/taskRunGroups/{groupId}
-```
+- users/{uid}/tasks/{taskId}
+- users/{uid}/taskRunGroups/{groupId}
+- Linux: Firebase Auth/Firestore sync is unavailable; tasks are stored locally (no cloud sync).
 
-### **8.2. Hive (optional)**
+## **8.2. Local cache (optional)**
 
-Local table `task_cache`:
+- Current: SharedPreferences-backed storage for Linux local-only tasks.
+- Optional (post-MVP): Hive-based cache for cross-platform offline storage.
 
-- Instant load
-- Background sync
-- Offline mode
+## **8.3. Active Pomodoro session (real-time sync)**
 
-### **8.3. Active Pomodoro session (real-time sync)**
-
-```
 users/{uid}/activeSession
-```
 
 - Single document per user with the active session.
-- Must include `groupId`, `currentTaskId`, `currentTaskIndex`, and `totalTasks`.
-- Only the owner device writes; others subscribe in real time and render progress by calculating remaining time from `phaseStartedAt` + `phaseDurationSeconds`.
+- Must include groupId, currentTaskId, currentTaskIndex, and totalTasks.
+- Only the owner device writes; others subscribe in real time and render progress by calculating remaining time from phaseStartedAt + phaseDurationSeconds.
 
-### **8.4. TaskRunGroup retention**
+## **8.4. TaskRunGroup retention**
 
 - Keep:
-
-  - All `scheduled`
-  - The current `running`
-  - The last **N** `completed`
-
-- `canceled` groups can be removed immediately or kept in the short history.
-- **N** is finite and configurable.
-- Default: **7** completed groups (last week).
-- User-configurable up to **30**.
+  - All scheduled
+  - The current running
+  - The last N completed
+- canceled groups can be removed immediately or kept in the short history.
+- N is finite and configurable.
+- Default: 7 completed groups (last week).
+- User-configurable up to 30.
 
 ---
 
 # 🔐 **9. Authentication**
 
-## **Mandatory login (by platform)**
+Mandatory login (by platform)
 
-- iOS / Android / Web / Windows / Linux:
+- iOS / Android / Web:
   - Button: “Continue with Google”
   - Opens browser or WebView
-  - Gets `uid`, `email`, `displayName`, `photoURL`
-- macOS:
-  - Email/password login (no Google Sign-In, not natively supported)
-  - Gets `uid`, `email` (and optionally name)
+  - Gets uid, email, displayName, photoURL
+- macOS / Windows:
+  - Email/password login (no Google Sign-In)
+  - Gets uid, email (and optionally name)
+- Linux:
+  - Firebase Auth is unavailable; login entry point is hidden
+  - Local-only tasks; no cloud sync
 
-## **Persistence**
+Persistence
 
-The session remains active on all devices.
+The session remains active on all devices with Firebase Auth support.
 
 ---
 
@@ -366,7 +379,9 @@ The session remains active on all devices.
 ## **10.1. Login screen**
 
 - Logo
-- Google button
+- Google button (iOS/Android/Web)
+- Email/password form (macOS/Windows)
+- Login entry hidden on Linux (local-only mode)
 - Text: “Sync your tasks in the cloud”
 
 ---
@@ -376,51 +391,38 @@ The session remains active on all devices.
 ### **10.2.1. Task list**
 
 - Manual ordering via drag & drop
+- Order is persisted after reordering
 - Selection by checkbox (tasks to include in the group)
 
-**Item layout (left → right):**
+Item layout (left → right):
 
 1. Checkbox (no special colors)
 2. Task title
 3. Theoretical time (start/end) for selected tasks
 4. Edit icon (pencil, light gray)
 5. Delete icon (trash, red)
-6. Reorder handle (≡, neutral gray) — **only this area is draggable**
+6. Reorder handle (≡, neutral gray) — only this area is draggable
 
 ### **10.2.2. Theoretical schedule preview**
 
-- Calculated assuming **“Start now”**
+- Calculated assuming “Start now” (recomputed if a scheduled start is later chosen)
 - For each selected task, show:
-
   - Estimated start time
   - Estimated end time
-
+  - Only selected tasks show theoretical times
 - Recalculate when:
-
   - Current time changes
   - Tasks are reordered
   - Selection changes
+  - Scheduled start time changes (planned start)
 
 ### **10.2.3. Confirm action**
 
-- Bottom button: **“Confirmar”**
+- Bottom button: “Confirmar”
 - Enabled only if at least 1 task is selected
 - On press:
-
-  - Create a **TaskRunGroup** snapshot
-  - Navigate to the planning step
-
-### **10.2.4. Planning choice (Start now vs Plan start)**
-
-- Two options:
-
-  - **Comenzar ahora**
-  - **Planificar comienzo** (date + time picker)
-
-- If planning is chosen:
-
-  - Recalculate all theoretical start/end times using the selected start time
-  - Validate conflicts before saving
+  - Create a TaskRunGroup snapshot
+  - Navigate to the execution screen pre-start planning (see section 10.4)
 
 ---
 
@@ -445,136 +447,134 @@ Buttons:
 
 ## **10.4. Execution Screen (Run Mode)**
 
-The execution screen shows an **analog-style circular timer** with a dynamic layout tailored for TaskRunGroups.
+The execution screen shows an analog-style circular timer with a dynamic layout tailored for TaskRunGroups.
 
-### **10.4.1. Header**
+### **10.4.1. Pre-start planning (before the timer begins)**
+
+- The user chooses when to run the group after tapping “Confirmar”.
+- Show a date + time picker (default: current date/time).
+- Two explicit actions:
+  - Comenzar ahora → start immediately
+  - Planificar comienzo → schedule the start time
+- Conflicts are validated for both actions (see section 6.4)
+- If a schedule is set:
+  - Recalculate theoretical start/end times using the selected start time
+  - Save as scheduled and add to Planned Groups
+  - Send the pre-alert noticeMinutes before the scheduled start
+  - At the scheduled time, auto-open the execution screen and auto-start the group
+  - The timer remains stopped until the scheduled start
+
+### **10.4.2. Header**
 
 - Back button + title (Focus Interval)
-- Access to **Planned Groups** screen
+- Access to Planned Groups screen (show a visual indicator when pending groups exist)
 
-### **10.4.2. Circle core elements**
+### **10.4.3. Circle core elements**
 
-1. **Large circular clock** (progress ring style)
-2. **Animated hand / needle**
-
+1. Large circular clock (progress ring style with a visible progress segment)
+2. Animated hand / needle
    - Short, placed on the inner edge
-   - Rotates **counterclockwise** (countdown)
-
-3. **Colors by state**
-
+   - Rotates counterclockwise (countdown)
+3. Colors by state
    - Red (#E53935) → Pomodoro
    - Blue (#1E88E5) → Break
+   - Progress segment uses the active state color
 
-### **10.4.3. Content inside the circle (strict vertical order)**
+### **10.4.4. Content inside the circle (strict vertical order)**
 
-1. **Current time (HH:mm)**  
-   - Black background, thin white border, white text  
+1. Current time (HH:mm)
+   - Black background, thin white border, white text
    - Updates every 60s
-2. **Remaining time (MM:SS)** — main countdown
-3. **Current status box (what is executing now)**
-4. **Next status box**
+   - Independent from pomodoro/break state (no color changes)
+2. Remaining time (MM:SS) — main countdown
+3. Current status box (what is executing now)
+4. Next status box
 
-#### **Pomodoro running**
+Pomodoro running
 
 - Current status:
-
   - Red border/text, black background
-  - Text: `Pomodoro Y de X`
-
+  - Text: Pomodoro Y de X
 - Next status:
-
   - If another break follows:
-
     - Blue border/text, black background
-    - Text: `Descanso: N min`
-
+    - Text: Descanso: N min
   - If it is the last pomodoro of the task:
-
     - Golden-green border/text, black background
-    - Text: `Fin de tarea`
+    - Text: Fin de tarea
 
-#### **Break running**
+Break running
 
 - Current status:
-
   - Blue border/text, black background
-  - Text: `Descanso: N min`
-
+  - Text: Descanso: N min
 - Next status:
-
   - Red border/text, black background
-  - Text: `Siguiente: Pomodoro Y de X`
+  - Text: Siguiente: Pomodoro Y de X
 
-**Rule:** the upper box always matches the current executing phase.
+Rule: the upper box always matches the current executing phase.
 
-### **10.4.4. Contextual task list (below circle)**
+### **10.4.5. Contextual task list (below circle)**
 
 Location: below the circle and above Pause/Cancel buttons.
 
-- Max **3 items**:
-
+- Max 3 items:
   - Previous task (completed)
   - Current task (in progress)
   - Next task (upcoming)
-
 - No placeholders, no empty slots.
 
-**Cases**
+Cases
 
-1. **First task in group**
-
+1. First task in group
    - Show current + next (2 items)
-
-2. **Middle of group**
-
+2. Middle of group
    - Show previous + current + next (3 items)
-
-3. **Last task**
-
+3. Last task
    - Show previous + current (2 items)
-
-4. **Single-task group**
-
+4. Single-task group
    - Show current only (1 item)
 
-The list **rebuilds automatically** when tasks change.
+The list rebuilds automatically when tasks change.
 
-### **10.4.5. Transitions**
+### **10.4.6. Transitions**
 
 - Task completion → auto-transition to next task
 - No modal between tasks
 - Group completion → modal + final animation (see section 12)
+- Status boxes and contextual list update automatically; no extra confirmations or animations in the MVP
 
-### **10.4.6. Mandatory visual improvements for the timer**
+### **10.4.7. Mandatory visual improvements for the timer**
 
-#### **1. Fixed-width digital time (avoid jitter)**
+1. Fixed-width digital time (avoid jitter)
 
-The `MM:SS` timer must not shift horizontally:
+The MM:SS timer must not shift horizontally:
 
-- Use `FontFeature.tabularFigures()` or a monospaced font
-- Or fix each digit width with `SizedBox`
+- Use FontFeature.tabularFigures() or a monospaced font
+- Or fix each digit width with SizedBox
 
-#### **2. Current system time (inside the circle)**
+2. Current system time (inside the circle)
 
 - Shown inside the circle (top of vertical stack)
-- Format: `HH:mm`
+- Format: HH:mm
 - Updates every 60s
 - Visible regardless of state or window size
 
-### **10.4.7. Multi-device sync in TimerScreen**
+### **10.4.8. Multi-device sync in TimerScreen**
 
-- If an `activeSession` exists, the screen connects in mirror mode and reflects the remote state.
-- Only the `ownerDeviceId` can start/pause/resume/cancel; others show “Take over” if stale.
-- `activeSession` includes: `groupId`, `currentTaskId`, `currentTaskIndex`, `totalTasks`.
-- Remaining time is calculated from `phaseStartedAt` + `phaseDurationSeconds`.
+- If an activeSession exists, the screen connects in mirror mode and reflects the remote state.
+- Only the ownerDeviceId can start/pause/resume/cancel; others show “Take over” if stale.
+- activeSession includes: groupId, currentTaskId, currentTaskIndex, totalTasks.
+- Remaining time is calculated from phaseStartedAt + phaseDurationSeconds.
+- Mirror devices render task names/durations from the TaskRunGroup snapshot (by groupId), not from the editable task list.
 
 ---
 
 ## **10.5. Planned Groups screen**
 
-**Purpose:** manage scheduled and running groups (not tasks).
+Purpose: manage scheduled and running groups (not tasks). Note: this screen is independent from the task list/editor.
 
-### **List fields per group**
+List fields per group
 
 - Scheduled start time
 - Theoretical end time
@@ -582,60 +582,62 @@ The `MM:SS` timer must not shift horizontally:
 - Total duration
 - Pre-alert setting (e.g., “Aviso 5 min antes”)
 
-### **Actions**
+Actions
 
 - Tap → light detail view (summary)
 - Cancel planning
 - Start now (only if no conflicts)
 
-### **History**
+History
 
-- Show scheduled + running + last **N** completed groups
+- Show scheduled + running + last N completed groups
 - Keep history short and finite
 
 ---
 
 ## **10.6. Advanced window, responsiveness, and visual accessibility requirements**
 
-### **A. Resizable window (mandatory)**
+A. Resizable window (mandatory)
 
 1. Allow horizontal and vertical resizing.
 2. Content must adapt automatically.
-3. The circle scales dynamically to available size.
+3. The circle and all UI components scale proportionally as the window grows (no max scale).
 
-### **B. Minimum window size**
+B. Minimum window size
 
-```
-minSize = screen.shortestSide / 4
-```
+- Enforce a minimum size that keeps the full vertical stack inside the circle visible, aligned, and legible.
+- The app should open at this minimum optimal size.
+- Avoid shrinking UI elements below a minimum legibility/usability threshold.
 
-### **C. Responsive clock**
+C. Responsive clock
 
 - Always centered
-- Never clipped
+- Never clipped or distorted
 - Text remains legible at minimum size
+- Internal vertical stack (current time, countdown, status boxes) stays inside the circle
 
-### **D. Pause and resume**
+D. Pause and resume
 
 - Pause freezes the hand and countdown
 - Resume continues from exact point
 - No sound on pause/resume
 
-### **E. Black background**
+E. Black background
 
 - Background must be pure black (#000000)
 - No gradients or transparency
 
-### **F. Guaranteed clock visibility**
+F. Guaranteed clock visibility
 
-- Circle occupies at least 60% of width
 - Buttons and list must not overlap the circle
+- The contextual list sits below the circle (portrait layouts)
+- The list scales proportionally with the rest of the UI
 
-### **G. Mobile landscape layout**
+G. Mobile landscape layout
 
-When `isMobile && isLandscape`:
+When isMobile && isLandscape (iOS / Android):
 
-- Move the **status boxes** and **contextual list** to the **right** of the circle
+- Move the status boxes and contextual list to the right of the circle
 - Keep the circle unobstructed
 - Preserve the vertical order of the status boxes
 
@@ -644,38 +646,36 @@ When `isMobile && isLandscape`:
 # 🔔 **11. Notifications**
 
 - Notification when each pomodoro ends
-- Notification when the **group** ends
+- Notification when the group ends
 - Scheduled groups:
-  - Send a pre-alert based on `noticeMinutes`
-- Notifications are **silent**; audio comes from the app sounds
+  - Send a pre-alert based on noticeMinutes
+- Notifications are silent; audio comes from the app sounds
+- Desktop adapters: Windows/Linux use `local_notifier`; other platforms use `flutter_local_notifications`.
 
 ---
 
 # 🚨 **12. Mandatory key behavior (expanded and definitive version)**
 
-### ✔ **Strict group completion behavior**
+✔ Strict group completion behavior
 
-When the timer completes the **last pomodoro of the last task**:
+When the timer completes the last pomodoro of the last task:
 
-1. **The app must stop automatically**.
+1. The app must stop automatically.
 2. It must play the final sound (same as task finish for now).
-3. It must show a **modal popup** with:
-
-   - “**Tasks Group completed**”
+3. It must show a modal popup with:
+   - “Tasks Group completed”
    - Optional summary: total tasks, pomodoros, total time
-
-4. It must send a **system notification**.
-5. The state machine transitions to `finished`.
+4. It must send a system notification.
+5. The state machine transitions to finished.
 6. The clock screen must:
-
    - Stop animation
    - Keep the hand in its final position (360°)
-   - Change the circle color to **green or gold**
-   - Show “**TASKS GROUP COMPLETED**” in the center
+   - Change the circle color to green or gold
+   - Show “TASKS GROUP COMPLETED” in the center
 
-### ✔ **No popup between tasks**
+✔ No popup between tasks
 
-- Completing a task inside a group **must not** stop the timer.
+- Completing a task inside a group must not stop the timer.
 - The next task starts automatically.
 
 ---
@@ -685,11 +685,9 @@ When the timer completes the **last pomodoro of the last task**:
 - Single writer (owner device) publishes events.
 - Mirror devices calculate time locally.
 - If a group is running, other devices:
-
   - Enter mirror mode
   - May “Take over” when stale
-
-- Group execution uses `groupId` + `currentTaskIndex` to maintain full context.
+- Group execution uses groupId + currentTaskIndex to maintain full context.
 
 ---
 

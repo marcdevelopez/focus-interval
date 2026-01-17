@@ -15,7 +15,7 @@ This document is used to:
 
 # 📍 Current status
 
-Active phase: **15 — Mandatory Final Animation**  
+Active phase: **14 — Sounds and Notifications (reopened)**  
 Last update: **15/01/2026**
 
 ---

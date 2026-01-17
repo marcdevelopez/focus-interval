@@ -14,10 +14,10 @@ This project includes an official team roles document at:
 # 🟦 **Global Project Status**
 
 ```
-CURRENT PHASE: 20 — TaskRunGroup Model & Scheduling
+CURRENT PHASE: 14 — Sounds and Notifications (reopened)
 NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       PomodoroViewModel exposed as Notifier auto-dispose and subscribed to the machine.
-      Auth strategy: Google Sign-In on iOS/Android/Web (web verified; People API enabled); email/password on macOS/Windows/Linux.
+      Auth strategy: Google Sign-In on iOS/Android/Web (web verified; People API enabled); email/password on macOS/Windows; Linux auth disabled (local-only).
       Firestore integrated per authenticated user; tasks isolated by uid.
       Phase 7 (Firestore integrated) completed on 24/11/2025.
       Phase 8 (CRUD + reactive stream) completed on 17/12/2025.
@@ -26,9 +26,10 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       Phase 11 (Event audio) completed on 17/12/2025.
       Phase 12 (Connect Editor → List → Execution) completed on 17/12/2025.
       Phase 13 completed on 06/01/2026: real-device sync validated (<1s), deviceId persistence added, take over implemented, reopen transitions verified.
-      Phase 14 completed on 13/01/2026: Linux audio/notifications verified.
+      Phase 14 partially completed on 13/01/2026: Linux audio/notifications verified (reopened for sound config alignment).
       15/01/2026: Execution guardrails prevent concurrent runs and block editing active tasks.
       20/01/2026: Specs updated to v1.2.0 (TaskRunGroups, scheduling, Run Mode redesign).
+      Hive/logger deferred post-MVP; SharedPreferences used for Linux local-only tasks.
 ```
 Update this on each commit if needed.
 
@@ -36,7 +37,7 @@ Update this on each commit if needed.
 
 # 🧩 **Roadmap Structure**
 
-Development is divided into **25 main phases**, ordered to avoid blockers, errors, and rewrites.
+Development is divided into **24 main phases**, ordered to avoid blockers, errors, and rewrites.
 
 Each phase contains:
 
@@ -198,7 +199,7 @@ _(Main UI of the MVP)_
 - TimerScreen without demo config; loads the real task via `taskId` and uses the VM for states.
 - Subphase 5.3 completed; current phase 8 (CRUD in progress).
 - PHASE 5.5 completed: TimerScreen connected to tasks and final popup with completion color.
-- Auth configured: Google on iOS/Android/Web/Win/Linux and email/password on macOS. `firebase_options.dart` generated and bundles unified (`com.marcdevelopez.focusinterval`).
+- Auth configured: Google on iOS/Android/Web; email/password on macOS/Windows; Linux auth disabled (local-only). `firebase_options.dart` generated and bundles unified (`com.marcdevelopez.focusinterval`).
 - PHASE 7 completed: Firestore repository active per authenticated user, switching to InMemory without session; login/logout refresh tasks by uid.
 
 ### [✔] **5.4 — Create global providers**
@@ -245,7 +246,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ---
 
-# [✔] **PHASE 6 — Configure Firebase Auth (Google on iOS/Android/Web; Email/Password on macOS/Windows/Linux)**
+# [✔] **PHASE 6 — Configure Firebase Auth (Google on iOS/Android/Web; Email/Password on macOS/Windows; Linux auth disabled)**
 
 ### ⚙️ Tasks
 
@@ -254,20 +255,21 @@ These subphases should also appear in **dev_log.md** as they are completed.
   - firebase_core
   - firebase_auth
   - google_sign_in (iOS/Android/Web only)
-  - email/password flow for macOS/Windows/Linux
+  - email/password flow for macOS/Windows (Linux auth disabled)
 
 - Configure:
 
   - macOS App ID
   - Windows config
-  - Linux config
+  - Linux config (Firebase Core only; auth disabled)
   - Web OAuth client ID + authorized domains for Google Sign-In
   - Android debug SHA-1/SHA-256 when Google Sign-In fails (see `docs/android_setup.md`)
 
 ### 📌 Exit conditions
 
 - Google login working on iOS/Android/Web
-- Email/password login working on macOS/Windows/Linux
+- Email/password login working on macOS/Windows
+- Linux runs without auth and uses local-only tasks
 - Persistent UID in the app
 
 ### 📝 Pending improvements (post-MVP)
@@ -403,24 +405,21 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Only the owner writes; others show live changes.
 - Phase transitions, pause/resume, and finish are persisted and visible when reopening the app.
 
-# [✔] **PHASE 14 — Sounds and Notifications**
+# 🚀 **PHASE 14 — Sounds and Notifications**
 
 ### ⚙️ Tasks
 
-- Integrate `just_audio`
-- Integrate `flutter_local_notifications`
+- Integrate `just_audio` and `flutter_local_notifications` (done).
 - Windows desktop: implement audio with `audioplayers` and notifications with `local_notifier`
-  via adapters in `SoundService`/`NotificationService`.
-- Add:
-
-  - Pomodoro start
-  - Pomodoro end
-  - Break start
-  - Break end
-  - Full completion (special sound)
-- Auto-dismiss the "Task completed" modal when the same task restarts on another device.
-- Fix macOS notification banner visibility for owner sessions (validated).
-- Android: keep pomodoro advancing in background (foreground service; validated).
+  via adapters in `SoundService`/`NotificationService` (done).
+- Migrate `PomodoroTask` schema: add `createdAt`/`updatedAt` and `endPomodoroSound`/`endBreakSound`
+  with backfill for Firestore + local repositories.
+- Add sound selectors for pomodoro end and break end; persist on save.
+- Trigger pomodoro end / break end sounds without blocking automatic transitions.
+- Add optional local file picker for custom sounds (persist file path or asset id).
+- Auto-dismiss the "Task completed" modal when the same task restarts on another device (done).
+- Fix macOS notification banner visibility for owner sessions (done).
+- Android: keep pomodoro advancing in background (foreground service; done).
 
 ### Status notes (13/01/2026)
 
@@ -434,13 +433,112 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ### 📌 Exit conditions
 
-- All sounds work
+- All sound events are configurable (pomodoro start/end, break start/end, task finish).
+- PomodoroTask migration (timestamps + new sound fields) complete across repos.
+- Custom sound selection (local file picker) works on supported platforms.
 - Final notification works on macOS/Win/Linux
 - "Task completed" modal auto-dismisses when the same task restarts remotely
 
 ---
 
-# 🚀 **PHASE 15 — Mandatory Final Animation**
+# 🚀 **PHASE 15 — TaskRunGroup Model & Repository**
+
+### ⚙️ Tasks
+
+- Create `TaskRunGroup` / `TaskRunItem` models with snapshot semantics.
+- Implement Firestore repository at `users/{uid}/taskRunGroups/{groupId}`.
+- Add retention policy for scheduled/running/last N completed.
+- Extend `PomodoroSession` with group context fields (`groupId`, `currentTaskId`,
+  `currentTaskIndex`, `totalTasks`) and update activeSession read/write paths.
+
+### 📌 Exit conditions
+
+- TaskRunGroups can be created, persisted, streamed, and pruned.
+- Active session includes group/task context.
+
+---
+
+# 🚀 **PHASE 16 — Task List Redesign + Group Creation**
+
+### ⚙️ Tasks
+
+- Replace per-task “Run” button with checkboxes and a single “Confirmar” action.
+- Implement reorder handle-only drag and drop.
+- Show theoretical start/end times per selected task (recalc on time/reorder/selection).
+- Build snapshot creation flow for TaskRunGroup.
+
+### 📌 Exit conditions
+
+- Task selection + ordering + confirm flow works and creates a group snapshot.
+
+---
+
+# 🚀 **PHASE 17 — Planning Flow + Conflict Management**
+
+### ⚙️ Tasks
+
+- Add “Start now” vs “Planificar comienzo” flow with date/time picker.
+- Compute and persist `scheduledStartTime` + `theoreticalEndTime`.
+- Enforce overlap rules and resolution choices (delete existing vs cancel new).
+- Add per-group `noticeMinutes` with global/default fallback.
+
+### 📌 Exit conditions
+
+- Scheduled groups can be created without conflicts; conflicts are resolved via UI.
+
+---
+
+# 🚀 **PHASE 18 — Run Mode Redesign for TaskRunGroups**
+
+### ⚙️ Tasks
+
+- Prerequisite: complete Phases 15–17 (TaskRunGroup + PomodoroSession group context)
+  before starting the TimerScreen redesign.
+- Redesign timer UI: current time inside circle, status boxes, next box, contextual list.
+- Rotate needle counterclockwise for countdown and keep idle preview consistent.
+- Implement automatic transitions between tasks with no modal.
+- Update group completion modal and final animation.
+
+### 📌 Exit conditions
+
+- Full group execution works end-to-end with correct UI and transitions.
+
+---
+
+# 🚀 **PHASE 19 — Planned Groups Screen**
+
+### ⚙️ Tasks
+
+- Create Planned Groups screen accessible from Run Mode header.
+- List scheduled/running/last N completed groups with required fields.
+- Actions: view summary, cancel schedule, start now (if no conflict).
+
+### 📌 Exit conditions
+
+- Planned Groups screen manages group lifecycle reliably.
+
+---
+
+# 🚀 **PHASE 20 — Responsive Updates for New Run Mode**
+
+### ⚙️ Tasks
+
+- Implement a dynamically calculated minimum size.
+- Proportional clock scaling.
+- Re-layout buttons to keep the circle unobstructed.
+- Mobile landscape layout: move status boxes and contextual list to the right.
+- Ensure desktop resizing still keeps the circle and text readable.
+- Validate minimum size constraints with the new layout.
+- Full black background.
+
+### 📌 Exit conditions
+
+- Run Mode remains legible and stable across mobile landscape and desktop resizing.
+- App usable at 1/4 of the screen.
+
+---
+
+# 🚀 **PHASE 21 — Mandatory Final Animation**
 
 ### ⚙️ Tasks
 
@@ -458,23 +556,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ---
 
-# 🚀 **PHASE 16 — Resizing + Full Responsive**
-
-### ⚙️ Tasks
-
-- Implement a dynamically calculated minimum size
-- Proportional clock scaling
-- Re-layout buttons
-- Mobile landscape layout for run mode (status + list to the right of the circle)
-- Full black background
-
-### 📌 Exit conditions
-
-- App usable at 1/4 of the screen
-
----
-
-# 🚀 **PHASE 17 — Unit and Integration Tests**
+# 🚀 **PHASE 22 — Unit and Integration Tests**
 
 ### ⚙️ Tasks
 
@@ -489,7 +571,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ---
 
-# 🚀 **PHASE 18 — UI / UX Polish**
+# 🚀 **PHASE 23 — UI / UX Polish**
 
 ### ⚙️ Tasks
 
@@ -500,7 +582,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ---
 
-# 🚀 **PHASE 19 — Internal Release Preparation**
+# 🚀 **PHASE 24 — Internal Release Preparation**
 
 ### ⚙️ Tasks
 
@@ -516,95 +598,6 @@ These subphases should also appear in **dev_log.md** as they are completed.
 ### 📌 Exit conditions
 
 - MVP 1.0 milestone complete (historical)
-
----
-
-# 🚀 **PHASE 20 — TaskRunGroup Model & Repository**
-
-### ⚙️ Tasks
-
-- Create `TaskRunGroup` / `TaskRunItem` models with snapshot semantics.
-- Implement Firestore repository at `users/{uid}/taskRunGroups/{groupId}`.
-- Add retention policy for scheduled/running/last N completed.
-- Extend `PomodoroSession` with group context fields.
-
-### 📌 Exit conditions
-
-- TaskRunGroups can be created, persisted, streamed, and pruned.
-- Active session includes group/task context.
-
----
-
-# 🚀 **PHASE 21 — Task List Redesign + Group Creation**
-
-### ⚙️ Tasks
-
-- Replace per-task “Run” button with checkboxes and a single “Confirmar” action.
-- Implement reorder handle-only drag and drop.
-- Show theoretical start/end times per selected task (recalc on time/reorder/selection).
-- Build snapshot creation flow for TaskRunGroup.
-
-### 📌 Exit conditions
-
-- Task selection + ordering + confirm flow works and creates a group snapshot.
-
----
-
-# 🚀 **PHASE 22 — Planning Flow + Conflict Management**
-
-### ⚙️ Tasks
-
-- Add “Start now” vs “Planificar comienzo” flow with date/time picker.
-- Compute and persist `scheduledStartTime` + `theoreticalEndTime`.
-- Enforce overlap rules and resolution choices (delete existing vs cancel new).
-- Add per-group `noticeMinutes` with global/default fallback.
-
-### 📌 Exit conditions
-
-- Scheduled groups can be created without conflicts; conflicts are resolved via UI.
-
----
-
-# 🚀 **PHASE 23 — Run Mode Redesign for TaskRunGroups**
-
-### ⚙️ Tasks
-
-- Redesign timer UI: current time inside circle, status boxes, next box, contextual list.
-- Rotate needle counterclockwise for countdown and keep idle preview consistent.
-- Implement automatic transitions between tasks with no modal.
-- Update group completion modal and final animation.
-
-### 📌 Exit conditions
-
-- Full group execution works end-to-end with correct UI and transitions.
-
----
-
-# 🚀 **PHASE 24 — Planned Groups Screen**
-
-### ⚙️ Tasks
-
-- Create Planned Groups screen accessible from Run Mode header.
-- List scheduled/running/last N completed groups with required fields.
-- Actions: view summary, cancel schedule, start now (if no conflict).
-
-### 📌 Exit conditions
-
-- Planned Groups screen manages group lifecycle reliably.
-
----
-
-# 🚀 **PHASE 25 — Responsive Updates for New Run Mode**
-
-### ⚙️ Tasks
-
-- Mobile landscape layout: move status boxes and contextual list to the right.
-- Ensure desktop resizing still keeps the circle and text readable.
-- Validate minimum size constraints with the new layout.
-
-### 📌 Exit conditions
-
-- Run Mode remains legible and stable across mobile landscape and desktop resizing.
 
 ---
 

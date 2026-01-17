@@ -1,5 +1,5 @@
 # Focus Interval
-Pomodoro desktop app (macOS / Windows / Linux) built with Flutter.
+Cross-platform Pomodoro app (macOS / Windows / Linux / iOS / Android / Web) built with Flutter.
 
 ## 📘 Documentation
 - [Specifications](docs/specs.md)
@@ -10,10 +10,20 @@ Pomodoro desktop app (macOS / Windows / Linux) built with Flutter.
 - [Agent Guide (internal)](agent.md)
 
 ## 🧪 Status
-Roadmap phase: 15 — Mandatory Final Animation.
+Roadmap phase: 14 — Sounds and Notifications (reopened).
+
+## 🖥️ Target platforms
+- macOS (Intel & Apple Silicon)
+- Windows 10/11 Desktop
+- Linux GTK-based distros (Ubuntu, Fedora, etc.)
+- iOS
+- Android
+- Web (Chrome)
+
+Linux runs in local-only mode (no Firebase Auth/sync).
 
 ## 🛠️ Tech Stack
-Flutter · Firebase Auth · Firestore · Riverpod · MVVM
+Flutter · Firebase Auth · Firestore · Riverpod · GoRouter · just_audio · flutter_local_notifications · audioplayers (Windows) · local_notifier (Windows/Linux) · shared_preferences (Linux local-only) · MVVM
 
 ## Web development (local)
 - Run with a fixed port: `flutter run -d chrome --web-port=5001`.
