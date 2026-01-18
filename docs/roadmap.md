@@ -412,10 +412,8 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Integrate `just_audio` and `flutter_local_notifications` (done).
 - Windows desktop: implement audio with `audioplayers` and notifications with `local_notifier`
   via adapters in `SoundService`/`NotificationService` (done).
-- Migrate `PomodoroTask` schema: add `createdAt`/`updatedAt` and `endPomodoroSound`/`endBreakSound`
+- Migrate `PomodoroTask` schema: add `createdAt`/`updatedAt`
   with backfill for Firestore + local repositories.
-- Add sound selectors for pomodoro end and break end; persist on save.
-- Trigger pomodoro end / break end sounds without blocking automatic transitions.
 - Send a system notification when each pomodoro ends (Pomodoro → Break).
 - Add optional local file picker for custom sounds (persist file path or asset id).
 - Auto-dismiss the "Task completed" modal when the same task restarts on another device (done).
@@ -443,10 +441,12 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Windows audioplayers asset path normalized to avoid assets/assets lookup; built-in sounds play again.
 - Skipped just_audio duration probe on Windows/Linux to avoid MissingPluginException during custom sound pick.
 - Linux custom sound selection and playback verified without code changes.
+- Confirmed sound policy: only pomodoro start, break start, and task finish play to avoid overlap.
+- PomodoroTask timestamps (createdAt/updatedAt) added with backfill in Firestore/local repositories.
 
 ### 📌 Exit conditions
 
-- All sound events are configurable (pomodoro start/end, break start/end, task finish).
+- All sound events are configurable (pomodoro start, break start, task finish).
 - PomodoroTask migration (timestamps + new sound fields) complete across repos.
 - Custom sound selection (local file picker) works on supported platforms.
 - Final notification works on macOS/Win/Linux

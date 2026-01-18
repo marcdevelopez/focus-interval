@@ -17,12 +17,12 @@ class LocalTaskRepository implements TaskRepository {
   Future<void>? _loadFuture;
 
   LocalTaskRepository()
-      : _controller = StreamController<List<PomodoroTask>>.broadcast(
-          sync: true,
-          onListen: () {
-            // Emit the current state as soon as someone subscribes.
-          },
-        ) {
+    : _controller = StreamController<List<PomodoroTask>>.broadcast(
+        sync: true,
+        onListen: () {
+          // Emit the current state as soon as someone subscribes.
+        },
+      ) {
     _controller.onListen = _handleListen;
   }
 
@@ -75,14 +75,25 @@ class LocalTaskRepository implements TaskRepository {
     }
     try {
       final decoded = jsonDecode(raw);
+      var hasChanges = false;
       if (decoded is List) {
         for (final entry in decoded) {
           if (entry is Map) {
             final map = Map<String, dynamic>.from(entry);
             final task = PomodoroTask.fromMap(map);
+            final hasCreated = map['createdAt'] != null;
+            final hasUpdated = map['updatedAt'] != null;
+            if (!hasCreated || !hasUpdated) {
+              map['createdAt'] = task.createdAt.toIso8601String();
+              map['updatedAt'] = task.updatedAt.toIso8601String();
+              hasChanges = true;
+            }
             _store[task.id] = task;
           }
         }
+      }
+      if (hasChanges) {
+        await _persist();
       }
     } catch (e) {
       debugPrint('Local task load failed: $e');

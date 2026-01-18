@@ -1059,6 +1059,28 @@ _(fill in when they happen)_
 
 ---
 
+# 🔹 Block 51 — Phase 14 (Task timestamps migration) — 18/01/2026
+
+### ✔ Work completed:
+
+- Added `createdAt`/`updatedAt` to `PomodoroTask` with ISO serialization and safe parsing.
+- Updated task editor to initialize and refresh timestamps on save.
+- Backfilled missing timestamps in Firestore reads and Linux local storage.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Store timestamps as ISO strings for cross-platform persistence and JSON storage.
+
+### 🎯 Next steps:
+
+- None.
+
+---
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

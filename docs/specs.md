@@ -35,18 +35,18 @@ The app syncs with Firebase via Google Sign-In on iOS/Android/Web and email/pass
 
 # 🔥 **3. Core technologies**
 
-| Area                   | Technology                               |
-| ---------------------- | ---------------------------------------- |
-| UI Framework           | Flutter 3.x                              |
+| Area                   | Technology                                                |
+| ---------------------- | --------------------------------------------------------- |
+| UI Framework           | Flutter 3.x                                               |
 | Auth                   | Firebase Authentication (Google Sign-In + email/password) |
-| Backend                | Firestore                                |
-| Local Cache (optional) | SharedPreferences (Linux local-only); Hive (v1.2) |
-| State Management       | Riverpod                                 |
-| Navigation             | GoRouter                                 |
-| Audio                  | just_audio                               |
-| Notifications          | flutter_local_notifications              |
-| Logging                | debugPrint (MVP); logger (post-MVP)      |
-| Architecture           | MVVM (Model–View–ViewModel)              |
+| Backend                | Firestore                                                 |
+| Local Cache (optional) | SharedPreferences (Linux local-only); Hive (v1.2)         |
+| State Management       | Riverpod                                                  |
+| Navigation             | GoRouter                                                  |
+| Audio                  | just_audio                                                |
+| Notifications          | flutter_local_notifications                               |
+| Logging                | debugPrint (MVP); logger (post-MVP)                       |
+| Architecture           | MVVM (Model–View–ViewModel)                               |
 
 ---
 
@@ -115,9 +115,7 @@ class PomodoroTask {
   int longBreakInterval; // how many pomodoros between long breaks
 
   String startSound;
-  String endPomodoroSound;
   String startBreakSound;
-  String endBreakSound;
   String finishTaskSound;
 
   DateTime createdAt;
@@ -132,9 +130,7 @@ class PomodoroTask {
     required this.totalPomodoros,
     required this.longBreakInterval,
     required this.startSound,
-    required this.endPomodoroSound,
     required this.startBreakSound,
-    required this.endBreakSound,
     required this.finishTaskSound,
     required this.createdAt,
     required this.updatedAt,
@@ -181,9 +177,7 @@ class TaskRunItem {
   int longBreakInterval;
 
   String startSound;
-  String endPomodoroSound;
   String startBreakSound;
-  String endBreakSound;
   String finishTaskSound;
 }
 ```
@@ -290,17 +284,18 @@ Scheduled start behavior
 
 Configurable sound events in the current MVP:
 
-| Event            | Sound           |
-| ---------------- | --------------- |
-| Pomodoro start   | startSound      |
-| Break start      | startBreakSound |
-| End of each task | finishTaskSound |
+| Event            | Sound                          |
+| ---------------- | ------------------------------ |
+| Pomodoro start   | startSound                     |
+| Break start      | startBreakSound                |
+| End of each task | finishTaskSound                |
 | End of group     | finishTaskSound (same for now) |
 
 Behavior notes:
 
 - The end-of-task sound plays on each task completion and must not pause or block the automatic transition.
 - Only the final task of the group triggers the stop behavior (see section 12).
+- To avoid overlapping audio, there are no separate sounds for pomodoro end or break end in this MVP.
 
 Allowed formats:
 

@@ -39,6 +39,7 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
 
   // Create a new task with defaults.
   void createNew() {
+    final now = DateTime.now();
     state = PomodoroTask(
       id: _uuid.v4(),
       name: "",
@@ -50,6 +51,8 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
       startSound: const SelectedSound.builtIn('default_chime'),
       startBreakSound: const SelectedSound.builtIn('default_chime_break'),
       finishTaskSound: const SelectedSound.builtIn('default_chime_finish'),
+      createdAt: now,
+      updatedAt: now,
     );
   }
 
@@ -74,7 +77,13 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
         session.taskId == state!.id) {
       return false;
     }
-    final sanitized = await _sanitizeForSync(state!);
+    final now = DateTime.now();
+    final base = state!;
+    final withTimestamps = base.copyWith(
+      updatedAt: now,
+      createdAt: base.createdAt,
+    );
+    final sanitized = await _sanitizeForSync(withTimestamps);
     final repo = ref.read(taskRepositoryProvider);
     await repo.save(sanitized);
     return true;
