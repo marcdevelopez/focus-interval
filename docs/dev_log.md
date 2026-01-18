@@ -15,7 +15,7 @@ This document is used to:
 
 # 📍 Current status
 
-Active phase: **15 — TaskRunGroup Model & Repository**
+Active phase: **16 — Task List Redesign + Group Creation**
 Last update: **18/01/2026**
 
 ---
