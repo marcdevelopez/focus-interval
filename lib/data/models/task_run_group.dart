@@ -4,6 +4,14 @@ import 'selected_sound.dart';
 
 enum TaskRunStatus { scheduled, running, completed, canceled }
 
+int _readInt(Map<String, dynamic> map, String key, int fallback) {
+  final value = map[key];
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) return int.tryParse(value) ?? fallback;
+  return fallback;
+}
+
 class TaskRunItem {
   final String sourceTaskId;
   final String name;
@@ -43,13 +51,13 @@ class TaskRunItem {
   };
 
   factory TaskRunItem.fromMap(Map<String, dynamic> map) => TaskRunItem(
-    sourceTaskId: map['sourceTaskId'] as String,
+    sourceTaskId: map['sourceTaskId'] as String? ?? '',
     name: map['name'] as String? ?? '',
-    pomodoroMinutes: (map['pomodoroMinutes'] as num).toInt(),
-    shortBreakMinutes: (map['shortBreakMinutes'] as num).toInt(),
-    longBreakMinutes: (map['longBreakMinutes'] as num).toInt(),
-    totalPomodoros: (map['totalPomodoros'] as num).toInt(),
-    longBreakInterval: (map['longBreakInterval'] as num).toInt(),
+    pomodoroMinutes: _readInt(map, 'pomodoroMinutes', 25),
+    shortBreakMinutes: _readInt(map, 'shortBreakMinutes', 5),
+    longBreakMinutes: _readInt(map, 'longBreakMinutes', 15),
+    totalPomodoros: _readInt(map, 'totalPomodoros', 4),
+    longBreakInterval: _readInt(map, 'longBreakInterval', 4),
     startSound: SelectedSound.fromDynamic(
       map['startSound'],
       fallbackId: 'default_chime',

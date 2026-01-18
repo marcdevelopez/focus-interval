@@ -58,28 +58,42 @@ class PomodoroSession {
     'pauseReason': pauseReason,
   };
 
-  factory PomodoroSession.fromMap(Map<String, dynamic> map) => PomodoroSession(
-    taskId: map['taskId'] as String,
-    groupId: map['groupId'] as String?,
-    currentTaskId: map['currentTaskId'] as String?,
-    currentTaskIndex: (map['currentTaskIndex'] as num?)?.toInt(),
-    totalTasks: (map['totalTasks'] as num?)?.toInt(),
-    ownerDeviceId: map['ownerDeviceId'] as String,
-    status: PomodoroStatus.values.firstWhere(
-      (e) => e.name == map['status'] as String,
-    ),
-    phase: (map['phase'] as String?) == null
-        ? null
-        : PomodoroPhase.values.firstWhere(
-            (e) => e.name == map['phase'] as String,
-          ),
-    currentPomodoro: (map['currentPomodoro'] as num).toInt(),
-    totalPomodoros: (map['totalPomodoros'] as num).toInt(),
-    phaseDurationSeconds: (map['phaseDurationSeconds'] as num).toInt(),
-    remainingSeconds: (map['remainingSeconds'] as num).toInt(),
-    phaseStartedAt: (map['phaseStartedAt'] as Timestamp?)?.toDate(),
-    lastUpdatedAt: (map['lastUpdatedAt'] as Timestamp?)?.toDate(),
-    finishedAt: (map['finishedAt'] as Timestamp?)?.toDate(),
-    pauseReason: map['pauseReason'] as String?,
-  );
+  factory PomodoroSession.fromMap(Map<String, dynamic> map) {
+    final statusRaw = map['status'] as String?;
+    final phaseRaw = map['phase'] as String?;
+    return PomodoroSession(
+      taskId: map['taskId'] as String? ?? '',
+      groupId: map['groupId'] as String?,
+      currentTaskId: map['currentTaskId'] as String?,
+      currentTaskIndex: _readInt(map, 'currentTaskIndex'),
+      totalTasks: _readInt(map, 'totalTasks'),
+      ownerDeviceId: map['ownerDeviceId'] as String? ?? '',
+      status: PomodoroStatus.values.firstWhere(
+        (e) => e.name == statusRaw,
+        orElse: () => PomodoroStatus.idle,
+      ),
+      phase: phaseRaw == null
+          ? null
+          : PomodoroPhase.values.firstWhere(
+              (e) => e.name == phaseRaw,
+              orElse: () => PomodoroPhase.pomodoro,
+            ),
+      currentPomodoro: _readInt(map, 'currentPomodoro') ?? 0,
+      totalPomodoros: _readInt(map, 'totalPomodoros') ?? 0,
+      phaseDurationSeconds: _readInt(map, 'phaseDurationSeconds') ?? 0,
+      remainingSeconds: _readInt(map, 'remainingSeconds') ?? 0,
+      phaseStartedAt: (map['phaseStartedAt'] as Timestamp?)?.toDate(),
+      lastUpdatedAt: (map['lastUpdatedAt'] as Timestamp?)?.toDate(),
+      finishedAt: (map['finishedAt'] as Timestamp?)?.toDate(),
+      pauseReason: map['pauseReason'] as String?,
+    );
+  }
+
+  static int? _readInt(Map<String, dynamic> map, String key) {
+    final value = map[key];
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
 }

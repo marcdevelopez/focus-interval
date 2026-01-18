@@ -14,7 +14,7 @@ This project includes an official team roles document at:
 # 🟦 **Global Project Status**
 
 ```
-CURRENT PHASE: 16 — Task List Redesign + Group Creation
+CURRENT PHASE: 17 — Planning Flow + Conflict Management
 NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       PomodoroViewModel exposed as Notifier auto-dispose and subscribed to the machine.
       Auth strategy: Google Sign-In on iOS/Android/Web (web verified; People API enabled); email/password on macOS/Windows; Linux auth disabled (local-only).
@@ -475,7 +475,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ---
 
-# 🚀 **PHASE 16 — Task List Redesign + Group Creation**
+# [✔] **PHASE 16 — Task List Redesign + Group Creation (completed 19/01/2026)**
 
 ### ⚙️ Tasks
 

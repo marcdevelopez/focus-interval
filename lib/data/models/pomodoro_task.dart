@@ -91,15 +91,20 @@ class PomodoroTask {
     final updatedAt = _parseDateTime(map['updatedAt']) ?? createdAt;
     final order =
         (map['order'] as num?)?.toInt() ?? createdAt.millisecondsSinceEpoch;
+    final pomodoroMinutes = _readInt(map, 'pomodoroMinutes', 25);
+    final shortBreakMinutes = _readInt(map, 'shortBreakMinutes', 5);
+    final longBreakMinutes = _readInt(map, 'longBreakMinutes', 15);
+    final totalPomodoros = _readInt(map, 'totalPomodoros', 4);
+    final longBreakInterval = _readInt(map, 'longBreakInterval', 4);
 
     return PomodoroTask(
       id: map['id'] as String,
       name: map['name'] as String? ?? '',
-      pomodoroMinutes: map['pomodoroMinutes'] as int,
-      shortBreakMinutes: map['shortBreakMinutes'] as int,
-      longBreakMinutes: map['longBreakMinutes'] as int,
-      totalPomodoros: map['totalPomodoros'] as int,
-      longBreakInterval: map['longBreakInterval'] as int,
+      pomodoroMinutes: pomodoroMinutes,
+      shortBreakMinutes: shortBreakMinutes,
+      longBreakMinutes: longBreakMinutes,
+      totalPomodoros: totalPomodoros,
+      longBreakInterval: longBreakInterval,
       order: order,
       startSound: SelectedSound.fromDynamic(
         map['startSound'],
@@ -132,5 +137,13 @@ class PomodoroTask {
       return DateTime.fromMillisecondsSinceEpoch(value.toInt());
     }
     return null;
+  }
+
+  static int _readInt(Map<String, dynamic> map, String key, int fallback) {
+    final value = map[key];
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? fallback;
+    return fallback;
   }
 }

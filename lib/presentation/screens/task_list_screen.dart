@@ -305,16 +305,21 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       updatedAt: now,
     );
 
-    await ref.read(taskRunGroupRepositoryProvider).save(group);
-    if (!context.mounted) return;
-    selection.clear();
-    _showSnackBar(context, "Task group created.");
+    try {
+      await ref.read(taskRunGroupRepositoryProvider).save(group);
+      if (!context.mounted) return;
+      selection.clear();
+      _showSnackBar(context, "Task group created.");
+    } catch (e) {
+      if (!context.mounted) return;
+      _showSnackBar(context, "Failed to create task group: $e");
+    }
   }
 
   void _showSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(SnackBar(content: Text(message)));
   }
 
   Map<String, String> _buildSelectedTimeRanges(

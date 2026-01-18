@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 
 import '../models/pomodoro_task.dart';
 import 'task_repository.dart';
@@ -80,6 +81,11 @@ class LocalTaskRepository implements TaskRepository {
         for (final entry in decoded) {
           if (entry is Map) {
             final map = Map<String, dynamic>.from(entry);
+            if (map['id'] == null ||
+                (map['id'] is String && map['id'].isEmpty)) {
+              map['id'] = const Uuid().v4();
+              hasChanges = true;
+            }
             final task = PomodoroTask.fromMap(map);
             final hasCreated = map['createdAt'] != null;
             final hasUpdated = map['updatedAt'] != null;

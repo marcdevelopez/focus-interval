@@ -6,6 +6,16 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+    // Tasks scoped to the authenticated user.
+    match /users/{userId}/tasks/{taskId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Task run groups scoped to the authenticated user.
+    match /users/{userId}/taskRunGroups/{groupId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
     // TODO: add the rest of the project rules here if you have them in Firebase Console.
   }
 }

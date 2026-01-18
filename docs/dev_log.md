@@ -15,8 +15,8 @@ This document is used to:
 
 # 📍 Current status
 
-Active phase: **16 — Task List Redesign + Group Creation**
-Last update: **18/01/2026**
+Active phase: **17 — Planning Flow + Conflict Management**
+Last update: **19/01/2026**
 
 ---
 
@@ -1128,6 +1128,26 @@ _(fill in when they happen)_
 - Wire group execution to the redesigned Run Mode (Phase 18).
 
 ---
+
+# 🔹 Block 54 — Phase 16 (Task List redesign completed) — 19/01/2026
+
+### ✔ Work completed:
+
+- Validated selection, reorder, and multi-device sync across macOS, iOS, Android, and Web.
+- Fixed task run group creation by updating Firestore rules for `taskRunGroups`.
+- Added error surfacing on confirm to detect permission issues.
+
+### ⚠️ Issues found:
+
+- Firestore rules initially blocked group creation (`permission-denied`).
+
+### 🧠 Decisions made:
+
+- Phase 16 is complete once confirm creates a `TaskRunGroup` and syncs across devices.
+
+### 🎯 Next steps:
+
+- Start Phase 17: planning flow and conflict management.
 
 # 🧾 General notes
 
