@@ -442,6 +442,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 - Windows audioplayers asset path normalized to avoid assets/assets lookup; built-in sounds play again.
 - Skipped just_audio duration probe on Windows/Linux to avoid MissingPluginException during custom sound pick.
+- Linux custom sound selection and playback verified without code changes.
 
 ### 📌 Exit conditions
 

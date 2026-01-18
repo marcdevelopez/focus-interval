@@ -1039,6 +1039,26 @@ _(fill in when they happen)_
 
 ---
 
+# 🔹 Block 50 — Phase 14 (Linux custom sound validation) — 18/01/2026
+
+### ✔ Work completed:
+
+- Verified custom sound selection and playback on Linux with no code changes.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- None.
+
+### 🎯 Next steps:
+
+- None.
+
+---
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
