@@ -252,6 +252,13 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
   }
 
   Future<bool> _isDurationAcceptable(String path) async {
+    // just_audio is not available on all desktop targets (e.g., Windows), so
+    // skip the duration check there to avoid MissingPluginException.
+    if (defaultTargetPlatform == TargetPlatform.windows ||
+        defaultTargetPlatform == TargetPlatform.linux) {
+      return true;
+    }
+
     AudioPlayer? player;
     try {
       player = AudioPlayer();

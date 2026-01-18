@@ -438,6 +438,11 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Web (Chrome) local sound picking remains disabled.
 - Verified on macOS/iOS/Android; Windows/Linux pending.
 
+### Status notes (18/01/2026)
+
+- Windows audioplayers asset path normalized to avoid assets/assets lookup; built-in sounds play again.
+- Skipped just_audio duration probe on Windows/Linux to avoid MissingPluginException during custom sound pick.
+
 ### 📌 Exit conditions
 
 - All sound events are configurable (pomodoro start/end, break start/end, task finish).
