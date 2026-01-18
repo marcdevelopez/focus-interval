@@ -14,7 +14,7 @@ This project includes an official team roles document at:
 # 🟦 **Global Project Status**
 
 ```
-CURRENT PHASE: 14 — Sounds and Notifications (reopened)
+CURRENT PHASE: 15 — TaskRunGroup Model & Repository
 NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       PomodoroViewModel exposed as Notifier auto-dispose and subscribed to the machine.
       Auth strategy: Google Sign-In on iOS/Android/Web (web verified; People API enabled); email/password on macOS/Windows; Linux auth disabled (local-only).
@@ -26,7 +26,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       Phase 11 (Event audio) completed on 17/12/2025.
       Phase 12 (Connect Editor → List → Execution) completed on 17/12/2025.
       Phase 13 completed on 06/01/2026: real-device sync validated (<1s), deviceId persistence added, take over implemented, reopen transitions verified.
-      Phase 14 partially completed on 13/01/2026: Linux audio/notifications verified (reopened for sound config alignment).
+      Phase 14 completed on 18/01/2026: sounds/notifications + custom picker aligned with MVP policy.
       15/01/2026: Execution guardrails prevent concurrent runs and block editing active tasks.
       17/01/2026: Specs updated to v1.2.0 (TaskRunGroups, scheduling, Run Mode redesign).
       17/01/2026: Phase 6 reopened to add email verification gating sync.
@@ -405,7 +405,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Phase transitions, pause/resume, and finish are persisted and visible when reopening the app.
 - Reopening the app with a running session opens the execution screen automatically.
 
-# 🚀 **PHASE 14 — Sounds and Notifications**
+# [✔] **PHASE 14 — Sounds and Notifications (completed 18/01/2026)**
 
 ### ⚙️ Tasks
 
