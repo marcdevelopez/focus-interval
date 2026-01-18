@@ -446,8 +446,9 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ### 📌 Exit conditions
 
-- All sound events are configurable (pomodoro start, break start, task finish).
-- PomodoroTask migration (timestamps + new sound fields) complete across repos.
+- Start sounds are configurable (pomodoro start, break start). Task finish uses the default sound in this MVP.
+- Post-MVP: make the task finish sound configurable.
+- PomodoroTask migration (timestamps) complete across repos.
 - Custom sound selection (local file picker) works on supported platforms.
 - Final notification works on macOS/Win/Linux
 - "Task completed" modal auto-dismisses when the same task restarts remotely

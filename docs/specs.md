@@ -296,6 +296,7 @@ Behavior notes:
 - The end-of-task sound plays on each task completion and must not pause or block the automatic transition.
 - Only the final task of the group triggers the stop behavior (see section 12).
 - To avoid overlapping audio, there are no separate sounds for pomodoro end or break end in this MVP.
+- Post-MVP: make the task finish sound configurable.
 
 Allowed formats:
 
