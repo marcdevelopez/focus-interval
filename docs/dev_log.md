@@ -1018,6 +1018,27 @@ _(fill in when they happen)_
 
 ---
 
+# 🔹 Block 49 — Phase 14 (macOS custom sound picker fix) — 18/01/2026
+
+### ✔ Work completed:
+
+- Restored macOS sandbox permission for user-selected files so the local sound picker works again.
+- Added read-only access to Debug and Release entitlements to allow file selection.
+
+### ⚠️ Issues found:
+
+- macOS file picker failed after pulling changes because the user-selected file entitlement was missing.
+
+### 🧠 Decisions made:
+
+- Keep read-only access only (no write access) for security.
+
+### 🎯 Next steps:
+
+- Re-test custom sound pick + playback on macOS.
+
+---
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
