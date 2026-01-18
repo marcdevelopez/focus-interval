@@ -16,8 +16,11 @@ import '../data/services/device_info_service.dart';
 import '../data/services/notification_service.dart';
 import '../data/repositories/pomodoro_session_repository.dart';
 import '../data/repositories/firestore_pomodoro_session_repository.dart';
+import '../data/repositories/task_run_group_repository.dart';
+import '../data/repositories/firestore_task_run_group_repository.dart';
 import '../data/services/local_sound_storage.dart';
 import '../data/services/local_sound_overrides.dart';
+import '../data/services/task_run_retention_service.dart';
 
 // VIEWMODELS
 import 'viewmodels/pomodoro_view_model.dart';
@@ -106,6 +109,25 @@ final pomodoroSessionRepositoryProvider = Provider<PomodoroSessionRepository>((
     firestoreService: firestore,
     authService: auth,
     deviceId: deviceInfo.deviceId,
+  );
+});
+
+// Task run group retention settings
+final taskRunRetentionServiceProvider = Provider<TaskRunRetentionService>((_) {
+  return TaskRunRetentionService();
+});
+
+// Task run group repository
+final taskRunGroupRepositoryProvider = Provider<TaskRunGroupRepository>((ref) {
+  final authState = ref.watch(authStateProvider).value;
+  if (authState == null) return NoopTaskRunGroupRepository();
+  final firestore = ref.watch(firestoreServiceProvider);
+  final auth = ref.watch(firebaseAuthServiceProvider);
+  final retention = ref.watch(taskRunRetentionServiceProvider);
+  return FirestoreTaskRunGroupRepository(
+    firestoreService: firestore,
+    authService: auth,
+    retentionService: retention,
   );
 });
 

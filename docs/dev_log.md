@@ -1081,6 +1081,30 @@ _(fill in when they happen)_
 
 ---
 
+# 🔹 Block 52 — Phase 15 (TaskRunGroup model/repo kickoff) — 18/01/2026
+
+### ✔ Work completed:
+
+- Added `TaskRunGroup`/`TaskRunItem` models with serialization and derived totals.
+- Implemented Firestore repository for task run groups with retention pruning.
+- Added retention settings service (default 7, max 30) and providers.
+- Extended `PomodoroSession` with optional group context fields and default values in active session publish.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep group context fields optional until the run mode redesign consumes them.
+
+### 🎯 Next steps:
+
+- Wire TaskRunGroup creation flow in the Task List redesign (Phase 16).
+- Extend active session publish to include group context when available.
+
+---
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
