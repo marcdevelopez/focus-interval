@@ -1148,6 +1148,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Start Phase 17: planning flow and conflict management.
+- Smoke test Phase 16 on Windows and Linux.
 
 # 🧾 General notes
 
