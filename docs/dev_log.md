@@ -16,7 +16,7 @@ This document is used to:
 # 📍 Current status
 
 Active phase: **14 — Sounds and Notifications (reopened)**  
-Last update: **17/01/2026**
+Last update: **18/01/2026**
 
 ---
 
@@ -1000,6 +1000,21 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Test custom sound picker and playback on Windows and Linux.
+
+# 🔹 Block 48 — Phase 14 (Windows audio fix) — 18/01/2026
+
+### ✔ Work completed:
+
+- Normalized audioplayers asset paths on Windows to stop assets/assets lookup and restore built-in sound playback.
+- Skipped just_audio duration probing on Windows/Linux to prevent MissingPluginException when picking custom sounds.
+
+### 🧠 Decisions made:
+
+- Keep just_audio for duration validation on platforms where it is supported; fall back to accepting files on Windows/Linux until a native duration check is available.
+
+### 🎯 Next steps:
+
+- Re-validate custom sound selection and playback on Windows and Linux with the new guards.
 
 ---
 
