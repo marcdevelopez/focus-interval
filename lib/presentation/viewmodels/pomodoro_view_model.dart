@@ -199,6 +199,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
     final takeover = PomodoroSession(
       taskId: session.taskId,
+      groupId: session.groupId,
+      currentTaskId: session.currentTaskId ?? session.taskId,
+      currentTaskIndex: session.currentTaskIndex ?? 0,
+      totalTasks: session.totalTasks ?? 1,
       ownerDeviceId: _deviceInfo.deviceId,
       status: projected.status,
       phase: projected.phase,
@@ -277,6 +281,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
     final session = PomodoroSession(
       taskId: _currentTask!.id,
+      groupId: null,
+      currentTaskId: _currentTask!.id,
+      currentTaskIndex: 0,
+      totalTasks: 1,
       ownerDeviceId: _deviceInfo.deviceId,
       status: current.status,
       phase: current.phase,
@@ -504,6 +512,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     final now = DateTime.now();
     final baseSession = PomodoroSession(
       taskId: _currentTask!.id,
+      groupId: null,
+      currentTaskId: _currentTask!.id,
+      currentTaskIndex: 0,
+      totalTasks: 1,
       ownerDeviceId: _deviceInfo.deviceId,
       status: current.status,
       phase: current.phase,
