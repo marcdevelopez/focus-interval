@@ -94,17 +94,21 @@ class FirestoreTaskRepository implements TaskRepository {
     final normalized = Map<String, dynamic>.from(raw);
     final hasCreated = normalized['createdAt'] != null;
     final hasUpdated = normalized['updatedAt'] != null;
-    if (!hasCreated || !hasUpdated) {
+    final hasOrder = normalized['order'] != null;
+    if (!hasCreated || !hasUpdated || !hasOrder) {
       final createdAt = hasCreated
           ? normalized['createdAt']
           : now.toIso8601String();
       final updatedAt = hasUpdated ? normalized['updatedAt'] : createdAt;
+      final order = hasOrder ? normalized['order'] : now.millisecondsSinceEpoch;
       normalized['createdAt'] = createdAt;
       normalized['updatedAt'] = updatedAt;
+      normalized['order'] = order;
       unawaited(
         _taskCollection(uid).doc(docId).set({
           'createdAt': createdAt,
           'updatedAt': updatedAt,
+          'order': order,
         }, SetOptions(merge: true)),
       );
     }

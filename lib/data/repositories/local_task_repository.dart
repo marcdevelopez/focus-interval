@@ -83,9 +83,11 @@ class LocalTaskRepository implements TaskRepository {
             final task = PomodoroTask.fromMap(map);
             final hasCreated = map['createdAt'] != null;
             final hasUpdated = map['updatedAt'] != null;
-            if (!hasCreated || !hasUpdated) {
+            final hasOrder = map['order'] != null;
+            if (!hasCreated || !hasUpdated || !hasOrder) {
               map['createdAt'] = task.createdAt.toIso8601String();
               map['updatedAt'] = task.updatedAt.toIso8601String();
+              map['order'] = task.order;
               hasChanges = true;
             }
             _store[task.id] = task;

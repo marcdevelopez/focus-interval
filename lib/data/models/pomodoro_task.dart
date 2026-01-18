@@ -12,6 +12,7 @@ class PomodoroTask {
 
   final int totalPomodoros;
   final int longBreakInterval;
+  final int order;
 
   final SelectedSound startSound;
   final SelectedSound startBreakSound;
@@ -28,6 +29,7 @@ class PomodoroTask {
     required this.longBreakMinutes,
     required this.totalPomodoros,
     required this.longBreakInterval,
+    required this.order,
     required this.startSound,
     required this.startBreakSound,
     required this.finishTaskSound,
@@ -43,6 +45,7 @@ class PomodoroTask {
     int? longBreakMinutes,
     int? totalPomodoros,
     int? longBreakInterval,
+    int? order,
     SelectedSound? startSound,
     SelectedSound? startBreakSound,
     SelectedSound? finishTaskSound,
@@ -57,6 +60,7 @@ class PomodoroTask {
       longBreakMinutes: longBreakMinutes ?? this.longBreakMinutes,
       totalPomodoros: totalPomodoros ?? this.totalPomodoros,
       longBreakInterval: longBreakInterval ?? this.longBreakInterval,
+      order: order ?? this.order,
       startSound: startSound ?? this.startSound,
       startBreakSound: startBreakSound ?? this.startBreakSound,
       finishTaskSound: finishTaskSound ?? this.finishTaskSound,
@@ -73,6 +77,7 @@ class PomodoroTask {
     'longBreakMinutes': longBreakMinutes,
     'totalPomodoros': totalPomodoros,
     'longBreakInterval': longBreakInterval,
+    'order': order,
     'startSound': startSound.toMap(),
     'startBreakSound': startBreakSound.toMap(),
     'finishTaskSound': finishTaskSound.toMap(),
@@ -84,6 +89,8 @@ class PomodoroTask {
     final now = DateTime.now();
     final createdAt = _parseDateTime(map['createdAt']) ?? now;
     final updatedAt = _parseDateTime(map['updatedAt']) ?? createdAt;
+    final order =
+        (map['order'] as num?)?.toInt() ?? createdAt.millisecondsSinceEpoch;
 
     return PomodoroTask(
       id: map['id'] as String,
@@ -93,6 +100,7 @@ class PomodoroTask {
       longBreakMinutes: map['longBreakMinutes'] as int,
       totalPomodoros: map['totalPomodoros'] as int,
       longBreakInterval: map['longBreakInterval'] as int,
+      order: order,
       startSound: SelectedSound.fromDynamic(
         map['startSound'],
         fallbackId: 'default_chime',

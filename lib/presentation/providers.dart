@@ -26,6 +26,7 @@ import '../data/services/task_run_retention_service.dart';
 import 'viewmodels/pomodoro_view_model.dart';
 import 'viewmodels/task_list_view_model.dart';
 import 'viewmodels/task_editor_view_model.dart';
+import 'viewmodels/task_selection_view_model.dart';
 
 //
 // ==============================================================
@@ -168,6 +169,11 @@ final taskListProvider =
 final taskEditorProvider = NotifierProvider<TaskEditorViewModel, PomodoroTask?>(
   TaskEditorViewModel.new,
 );
+
+final taskSelectionProvider =
+    NotifierProvider.autoDispose<TaskSelectionViewModel, Set<String>>(
+      TaskSelectionViewModel.new,
+    );
 
 final localSoundStorageProvider = Provider<LocalSoundStorage>((_) {
   return createLocalSoundStorage();

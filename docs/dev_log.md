@@ -1105,6 +1105,30 @@ _(fill in when they happen)_
 
 ---
 
+# 🔹 Block 53 — Phase 16 (Task List redesign kickoff) — 18/01/2026
+
+### ✔ Work completed:
+
+- Added task ordering via `order` field with persistence/backfill in repos.
+- Implemented selection checkboxes, reorder handle-only drag, and Confirm flow.
+- Added theoretical start/end time ranges for selected tasks (Start now).
+- Snapshot creation saves a `TaskRunGroup` draft and clears selection.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep task finish sound fixed in MVP; post-MVP configurability tracked in docs.
+
+### 🎯 Next steps:
+
+- Build pre-start planning UI (Phase 17).
+- Wire group execution to the redesigned Run Mode (Phase 18).
+
+---
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

@@ -48,6 +48,7 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
       longBreakMinutes: 15,
       totalPomodoros: 4,
       longBreakInterval: 4,
+      order: now.millisecondsSinceEpoch,
       startSound: const SelectedSound.builtIn('default_chime'),
       startBreakSound: const SelectedSound.builtIn('default_chime_break'),
       finishTaskSound: const SelectedSound.builtIn('default_chime_finish'),
