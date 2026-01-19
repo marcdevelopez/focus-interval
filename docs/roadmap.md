@@ -30,15 +30,19 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       Phase 15 completed on 18/01/2026: TaskRunGroup model/repo + retention settings added.
       15/01/2026: Execution guardrails prevent concurrent runs and block editing active tasks.
       17/01/2026: Specs updated to v1.2.0 (TaskRunGroups, scheduling, Run Mode redesign).
-      17/01/2026: Phase 6 reopened to add email verification gating sync.
-      17/01/2026: Phase 10 reopened to add unique-name validation and apply-settings copy.
-      17/01/2026: Phase 13 reopened to add auto-open of running sessions on launch/login.
       17/01/2026: Local custom sound picker added (Pomodoro start/Break start); custom sounds stored per-device only; built-in options aligned to available assets; web (Chrome) local pick disabled; macOS/iOS/Android verified.
       19/01/2026: Windows validation completed for the latest implementations (no changes required).
       19/01/2026: Implemented TaskRunGroup auto-complete when running groups exceed theoreticalEndTime; device verification pending.
       19/01/2026: Phase 17 planning flow + conflict management implemented and validated on iOS/macOS/Android/Web; Windows/Linux pending.
-      Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Linux local-only tasks.
+      Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
+
+    ## 🔄 Reopened phases (must complete before moving on)
+
+    - Phase 6 — Email verification gating sync + reclaim flow for unverified accounts.
+    - Phase 6.6 — Local Mode (offline/no auth): mode selector, persistent indicator, optional import.
+    - Phase 10 — Unique-name validation + apply-settings copy (verify all edge cases).
+    - Phase 13 — Auto-open running session on launch/login.
 
 Update this on each commit if needed.
 
@@ -279,6 +283,26 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 - Remember the last email used on each device (stored locally) and allow autofill/password managers; never store the password in plain text.
 - macOS: add Google Sign-In via OAuth web flow (browser + PKCE) if the project expands beyond MVP.
+
+---
+
+# 🚀 **PHASE 6.6 — Local Mode (Offline / No Auth)**
+
+### ⚙️ Tasks
+
+- Treat local storage as a first-class backend on all platforms (not Linux-only).
+- Add explicit mode selection: Local Mode vs Account Mode.
+- Persist the selected mode locally and allow switching at any time.
+- Keep Local Mode data isolated from account data unless the user opts to import/sync.
+- When switching to Account Mode, offer a one-time import of local tasks/groups.
+- Add a persistent, unambiguous UI indicator showing the active mode.
+
+### 📌 Exit conditions
+
+- Users can work fully offline with tasks and TaskRunGroups on any platform.
+- Mode can be switched at runtime without data loss.
+- Local data can optionally be imported to the account when online.
+- UI always makes the active mode explicit (no ambiguity about sync).
 
 ---
 

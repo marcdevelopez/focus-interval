@@ -3,6 +3,8 @@
 - At the start of every session, open this file and follow its instructions.
 - Before editing dates in `docs/dev_log.md` or `docs/roadmap.md`, confirm the real date (e.g. run `date`) and use it.
 - Check `docs/roadmap.md` and `docs/dev_log.md` before touching code to keep context and consistency.
+- Always review the "Reopened phases" section in `docs/roadmap.md` before starting work.
+- If any phase is reopened in the future, add it to the "Reopened phases" list in `docs/roadmap.md` and treat it as priority work.
 - Before each commit, review whether the work requires updating either of those two files; if so, update them in the same commit.
 - When editing `docs/dev_log.md` or `docs/roadmap.md`, always use the real date of the workday to preserve traceability.
 - If you complete a phase, mark it in `docs/roadmap.md` (global status and that phase) using the real date, and update the CURRENT PHASE if needed.
