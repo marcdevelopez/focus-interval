@@ -22,6 +22,7 @@ import '../data/repositories/local_task_run_group_repository.dart';
 import '../data/services/local_sound_storage.dart';
 import '../data/services/local_sound_overrides.dart';
 import '../data/services/task_run_retention_service.dart';
+import '../data/services/task_run_notice_service.dart';
 
 // VIEWMODELS
 import 'viewmodels/pomodoro_view_model.dart';
@@ -119,6 +120,10 @@ final taskRunRetentionServiceProvider = Provider<TaskRunRetentionService>((_) {
   return TaskRunRetentionService();
 });
 
+final taskRunNoticeServiceProvider = Provider<TaskRunNoticeService>((_) {
+  return TaskRunNoticeService();
+});
+
 // Task run group repository
 final taskRunGroupRepositoryProvider = Provider<TaskRunGroupRepository>((ref) {
   final authState = ref.watch(authStateProvider).value;
@@ -126,9 +131,10 @@ final taskRunGroupRepositoryProvider = Provider<TaskRunGroupRepository>((ref) {
     final retention = ref.watch(taskRunRetentionServiceProvider);
     return LocalTaskRunGroupRepository(retentionService: retention);
   }
-  if (authState == null) return NoopTaskRunGroupRepository();
-  final firestore = ref.watch(firestoreServiceProvider);
   final auth = ref.watch(firebaseAuthServiceProvider);
+  final user = authState ?? auth.currentUser;
+  if (user == null) return NoopTaskRunGroupRepository();
+  final firestore = ref.watch(firestoreServiceProvider);
   final retention = ref.watch(taskRunRetentionServiceProvider);
   return FirestoreTaskRunGroupRepository(
     firestoreService: firestore,

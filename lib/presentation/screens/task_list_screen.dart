@@ -12,6 +12,7 @@ import '../viewmodels/task_editor_view_model.dart';
 import '../../data/models/pomodoro_session.dart';
 import '../../data/models/pomodoro_task.dart';
 import '../../data/models/task_run_group.dart';
+import '../../data/repositories/task_run_group_repository.dart';
 import '../../data/services/firebase_auth_service.dart';
 import '../../widgets/task_card.dart';
 
@@ -266,13 +267,6 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final tasks = tasksAsync.asData?.value ?? [];
     final selected = tasks.where((t) => selectedIds.contains(t.id)).toList();
     if (selected.isEmpty) return;
-    if (activeSession != null) {
-      _showSnackBar(
-        context,
-        "A task is already running. Finish or cancel it first.",
-      );
-      return;
-    }
 
     final auth = ref.read(firebaseAuthServiceProvider);
     final authSupported = auth is! StubAuthService;
@@ -281,22 +275,98 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       return;
     }
 
+    final planAction = await _showPlanActionDialog(context);
+    if (!context.mounted) return;
+    if (planAction == null) return;
     final now = DateTime.now();
+    DateTime? scheduledStart;
+    if (planAction == _PlanAction.schedule) {
+      scheduledStart = await _pickScheduleDateTime(context, initial: now);
+      if (!context.mounted) return;
+      if (scheduledStart == null) return;
+      if (scheduledStart.isBefore(now)) {
+        _showSnackBar(context, 'Scheduled time must be in the future.');
+        return;
+      }
+    } else if (activeSession != null) {
+      _showSnackBar(
+        context,
+        "A session is already active (running or paused). Finish or cancel it first.",
+      );
+      return;
+    }
+
     final items = selected.map(_mapTaskToRunItem).toList();
     final totalDurationSeconds = items.fold<int>(
       0,
       (total, item) => total + item.totalDurationSeconds,
     );
+    final start = scheduledStart ?? now;
+    final theoreticalEndTime = start.add(
+      Duration(seconds: totalDurationSeconds),
+    );
+
+    final repo = ref.read(taskRunGroupRepositoryProvider);
+    List<TaskRunGroup> existingGroups = const [];
+    try {
+      existingGroups = await _loadGroupsForConflict(repo);
+    } catch (e) {
+      if (!context.mounted) return;
+      _showSnackBar(context, "Failed to check conflicts: $e");
+      return;
+    }
+    if (!context.mounted) return;
+    final conflicts = _findConflicts(
+      existingGroups,
+      newStart: start,
+      newEnd: theoreticalEndTime,
+      includeRunningAlways: planAction == _PlanAction.startNow,
+    );
+
+    try {
+      if (conflicts.running.isNotEmpty) {
+        final resolved = await _resolveRunningConflict(
+          context,
+          conflicts.running,
+          repo,
+        );
+        if (!context.mounted) return;
+        if (!resolved) return;
+      }
+
+      if (conflicts.scheduled.isNotEmpty) {
+        final resolved = await _resolveScheduledConflict(
+          context,
+          conflicts.scheduled,
+          repo,
+        );
+        if (!context.mounted) return;
+        if (!resolved) return;
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      _showSnackBar(context, "Failed to resolve conflicts: $e");
+      return;
+    }
+
+    final noticeMinutes = await ref
+        .read(taskRunNoticeServiceProvider)
+        .getNoticeMinutes();
+    if (!context.mounted) return;
+
+    final status = planAction == _PlanAction.startNow
+        ? TaskRunStatus.running
+        : TaskRunStatus.scheduled;
 
     final group = TaskRunGroup(
       id: const Uuid().v4(),
       ownerUid: auth.currentUser?.uid ?? 'local',
       tasks: items,
       createdAt: now,
-      scheduledStartTime: null,
-      theoreticalEndTime: now.add(Duration(seconds: totalDurationSeconds)),
-      status: TaskRunStatus.scheduled,
-      noticeMinutes: null,
+      scheduledStartTime: scheduledStart,
+      theoreticalEndTime: theoreticalEndTime,
+      status: status,
+      noticeMinutes: noticeMinutes,
       totalTasks: items.length,
       totalPomodoros: items.fold<int>(
         0,
@@ -310,10 +380,186 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       await ref.read(taskRunGroupRepositoryProvider).save(group);
       if (!context.mounted) return;
       selection.clear();
-      _showSnackBar(context, "Task group created.");
+      final message = status == TaskRunStatus.running
+          ? "Task group started."
+          : "Task group scheduled.";
+      _showSnackBar(context, message);
     } catch (e) {
       if (!context.mounted) return;
       _showSnackBar(context, "Failed to create task group: $e");
+    }
+  }
+
+  Future<_PlanAction?> _showPlanActionDialog(BuildContext context) {
+    return showDialog<_PlanAction>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Plan start'),
+        content: const Text(
+          'Choose whether to start now or schedule the group.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(_PlanAction.schedule),
+            child: const Text('Schedule start'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(_PlanAction.startNow),
+            child: const Text('Start now'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<DateTime?> _pickScheduleDateTime(
+    BuildContext context, {
+    required DateTime initial,
+  }) async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (pickedDate == null) return null;
+    if (!context.mounted) return null;
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initial),
+    );
+    if (pickedTime == null) return null;
+    return DateTime(
+      pickedDate.year,
+      pickedDate.month,
+      pickedDate.day,
+      pickedTime.hour,
+      pickedTime.minute,
+    );
+  }
+
+  _GroupConflicts _findConflicts(
+    List<TaskRunGroup> groups, {
+    required DateTime newStart,
+    required DateTime newEnd,
+    required bool includeRunningAlways,
+  }) {
+    final running = <TaskRunGroup>[];
+    final scheduled = <TaskRunGroup>[];
+
+    for (final group in groups) {
+      if (group.status == TaskRunStatus.canceled ||
+          group.status == TaskRunStatus.completed) {
+        continue;
+      }
+      if (group.status == TaskRunStatus.running && includeRunningAlways) {
+        running.add(group);
+        continue;
+      }
+      final start = group.scheduledStartTime ?? group.createdAt;
+      final end = group.theoreticalEndTime.isBefore(start)
+          ? start
+          : group.theoreticalEndTime;
+      if (!_overlaps(newStart, newEnd, start, end)) continue;
+      if (group.status == TaskRunStatus.running) {
+        running.add(group);
+        continue;
+      }
+      if (group.status == TaskRunStatus.scheduled) {
+        scheduled.add(group);
+      }
+    }
+
+    return _GroupConflicts(running: running, scheduled: scheduled);
+  }
+
+  bool _overlaps(
+    DateTime aStart,
+    DateTime aEnd,
+    DateTime bStart,
+    DateTime bEnd,
+  ) {
+    final safeAEnd = aEnd.isBefore(aStart) ? aStart : aEnd;
+    final safeBEnd = bEnd.isBefore(bStart) ? bStart : bEnd;
+    return aStart.isBefore(safeBEnd) && safeAEnd.isAfter(bStart);
+  }
+
+  Future<bool> _resolveRunningConflict(
+    BuildContext context,
+    List<TaskRunGroup> runningGroups,
+    TaskRunGroupRepository repo,
+  ) async {
+    final shouldCancel = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Conflict with running group'),
+        content: const Text(
+          'A group is already running. Cancel it to continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Cancel running group'),
+          ),
+        ],
+      ),
+    );
+    if (shouldCancel != true) return false;
+    final now = DateTime.now();
+    for (final group in runningGroups) {
+      await repo.save(
+        group.copyWith(status: TaskRunStatus.canceled, updatedAt: now),
+      );
+    }
+    return true;
+  }
+
+  Future<bool> _resolveScheduledConflict(
+    BuildContext context,
+    List<TaskRunGroup> scheduledGroups,
+    TaskRunGroupRepository repo,
+  ) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Conflict with scheduled group'),
+        content: const Text(
+          'A group is already scheduled in that time range. Delete it to continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete scheduled group'),
+          ),
+        ],
+      ),
+    );
+    if (shouldDelete != true) return false;
+    for (final group in scheduledGroups) {
+      await repo.delete(group.id);
+    }
+    return true;
+  }
+
+  Future<List<TaskRunGroup>> _loadGroupsForConflict(
+    TaskRunGroupRepository repo,
+  ) async {
+    try {
+      return await repo.getAll();
+    } on StateError {
+      return [];
     }
   }
 
@@ -368,4 +614,13 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       finishTaskSound: task.finishTaskSound,
     );
   }
+}
+
+enum _PlanAction { startNow, schedule }
+
+class _GroupConflicts {
+  final List<TaskRunGroup> running;
+  final List<TaskRunGroup> scheduled;
+
+  const _GroupConflicts({required this.running, required this.scheduled});
 }

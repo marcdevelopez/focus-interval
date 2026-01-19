@@ -35,16 +35,39 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
     final uid = await _uidOrThrow();
     yield* _collection(uid).snapshots().map((snap) {
       final now = DateTime.now();
-      return snap.docs.map((doc) {
-        final normalized = _normalizeMap(
-          uid: uid,
-          docId: doc.id,
-          raw: doc.data(),
-          now: now,
-        );
-        return TaskRunGroup.fromMap(normalized);
-      }).toList();
+      return snap.docs
+          .map((doc) {
+            final normalized = _normalizeMap(
+              uid: uid,
+              docId: doc.id,
+              raw: doc.data(),
+              now: now,
+            );
+            return _tryFromMap(normalized);
+          })
+          .whereType<TaskRunGroup>()
+          .toList();
     });
+  }
+
+  @override
+  Future<List<TaskRunGroup>> getAll() async {
+    final uid = await _uidOrThrow();
+    final snap = await _collection(uid).get();
+    if (snap.docs.isEmpty) return const [];
+    final now = DateTime.now();
+    return snap.docs
+        .map((doc) {
+          final normalized = _normalizeMap(
+            uid: uid,
+            docId: doc.id,
+            raw: doc.data(),
+            now: now,
+          );
+          return _tryFromMap(normalized);
+        })
+        .whereType<TaskRunGroup>()
+        .toList();
   }
 
   @override
@@ -58,7 +81,7 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
       raw: doc.data()!,
       now: DateTime.now(),
     );
-    return TaskRunGroup.fromMap(normalized);
+    return _tryFromMap(normalized);
   }
 
   @override
@@ -85,15 +108,18 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
     if (snap.docs.isEmpty) return;
 
     final now = DateTime.now();
-    final groups = snap.docs.map((doc) {
-      final normalized = _normalizeMap(
-        uid: uid,
-        docId: doc.id,
-        raw: doc.data(),
-        now: now,
-      );
-      return TaskRunGroup.fromMap(normalized);
-    }).toList();
+    final groups = snap.docs
+        .map((doc) {
+          final normalized = _normalizeMap(
+            uid: uid,
+            docId: doc.id,
+            raw: doc.data(),
+            now: now,
+          );
+          return _tryFromMap(normalized);
+        })
+        .whereType<TaskRunGroup>()
+        .toList();
 
     final active = <TaskRunGroup>[];
     final completed = <TaskRunGroup>[];
@@ -153,6 +179,12 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
     final normalized = Map<String, dynamic>.from(raw);
     final hasCreated = normalized['createdAt'] != null;
     final hasUpdated = normalized['updatedAt'] != null;
+    final hasId =
+        normalized['id'] is String &&
+        (normalized['id'] as String).trim().isNotEmpty;
+    final hasOwner =
+        normalized['ownerUid'] is String &&
+        (normalized['ownerUid'] as String).trim().isNotEmpty;
     if (!hasCreated || !hasUpdated) {
       final createdAt = hasCreated
           ? normalized['createdAt']
@@ -167,6 +199,80 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
         }, SetOptions(merge: true)),
       );
     }
+
+    if (!hasId || !hasOwner) {
+      final id = hasId ? normalized['id'] : docId;
+      final ownerUid = hasOwner ? normalized['ownerUid'] : uid;
+      normalized['id'] = id;
+      normalized['ownerUid'] = ownerUid;
+      unawaited(
+        _collection(uid).doc(docId).set({
+          'id': id,
+          'ownerUid': ownerUid,
+        }, SetOptions(merge: true)),
+      );
+    }
+
+    final status = normalized['status'] as String?;
+    if (status == TaskRunStatus.running.name) {
+      final endTime = _resolveTheoreticalEndTime(normalized);
+      if (endTime != null && endTime.isBefore(now)) {
+        normalized['status'] = TaskRunStatus.completed.name;
+        normalized['updatedAt'] = now.toIso8601String();
+        unawaited(
+          _collection(uid).doc(docId).set({
+            'status': TaskRunStatus.completed.name,
+            'updatedAt': now.toIso8601String(),
+          }, SetOptions(merge: true)),
+        );
+      }
+    }
     return normalized;
   }
+
+  DateTime? _resolveTheoreticalEndTime(Map<String, dynamic> raw) {
+    final start =
+        _parseDateTime(raw['scheduledStartTime']) ??
+        _parseDateTime(raw['createdAt']);
+    final rawEnd = _parseDateTime(raw['theoreticalEndTime']);
+    if (start != null && rawEnd != null && rawEnd.isBefore(start)) {
+      final totalSeconds = _readInt(raw, 'totalDurationSeconds', 0);
+      if (totalSeconds > 0) {
+        return start.add(Duration(seconds: totalSeconds));
+      }
+    }
+    return rawEnd;
+  }
+
+  DateTime? _parseDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is Timestamp) return value.toDate();
+    if (value is String && value.isNotEmpty) {
+      return DateTime.tryParse(value);
+    }
+    if (value is int) {
+      return DateTime.fromMillisecondsSinceEpoch(value);
+    }
+    if (value is num) {
+      return DateTime.fromMillisecondsSinceEpoch(value.toInt());
+    }
+    return null;
+  }
+
+  TaskRunGroup? _tryFromMap(Map<String, dynamic> map) {
+    try {
+      return TaskRunGroup.fromMap(map);
+    } catch (_) {
+      return null;
+    }
+  }
+}
+
+int _readInt(Map<String, dynamic> map, String key, int fallback) {
+  final value = map[key];
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) return int.tryParse(value) ?? fallback;
+  return fallback;
 }

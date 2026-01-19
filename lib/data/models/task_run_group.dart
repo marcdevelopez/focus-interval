@@ -174,8 +174,8 @@ class TaskRunGroup {
         tasks.fold<int>(0, (total, item) => total + item.totalDurationSeconds);
 
     return TaskRunGroup(
-      id: map['id'] as String,
-      ownerUid: map['ownerUid'] as String,
+      id: map['id'] as String? ?? '',
+      ownerUid: map['ownerUid'] as String? ?? '',
       tasks: tasks,
       createdAt: createdAt,
       scheduledStartTime: _parseDateTime(map['scheduledStartTime']),

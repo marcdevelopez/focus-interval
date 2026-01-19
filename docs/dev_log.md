@@ -1184,6 +1184,62 @@ _(fill in when they happen)_
 
 - Continue Phase 17 planning flow.
 
+# 🔹 Block 57 — TaskRunGroup status normalization pending — 19/01/2026
+
+### ✔ Work completed:
+
+- Recorded the need to normalize TaskRunGroup status when running groups exceed their theoreticalEndTime.
+
+### ⚠️ Issues found:
+
+- Multiple groups can remain in `running` while their theoreticalEndTime is in the past.
+
+### 🧠 Decisions made:
+
+- Add auto-complete or reconciliation logic and verify on-device before updating specs.
+
+### 🎯 Next steps:
+
+- Implement the status normalization and confirm it on a real device.
+
+# 🔹 Block 58 — TaskRunGroup status normalization implemented — 19/01/2026
+
+### ✔ Work completed:
+
+- Implemented auto-complete normalization when running groups exceed their theoreticalEndTime (Firestore + local repo).
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep normalization server-agnostic and rely on device verification before updating specs.
+
+### 🎯 Next steps:
+
+- Verify on device and update specs/roadmap status when confirmed.
+
+# 🔹 Block 59 — Phase 17 planning flow validated — 19/01/2026
+
+### ✔ Work completed:
+
+- Planning flow + conflict management validated on iOS, macOS, Android, and Web.
+- Running groups block start-now; scheduled groups allow non-overlapping plans.
+- Overlaps prompt to cancel running or delete scheduled; timing calculations verified.
+
+### ⚠️ Issues found:
+
+- Windows and Linux validation pending for this implementation.
+
+### 🧠 Decisions made:
+
+- Keep Windows/Linux as pending validation before closing Phase 17.
+
+### 🎯 Next steps:
+
+- Validate Phase 17 behavior on Windows and Linux and update docs.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

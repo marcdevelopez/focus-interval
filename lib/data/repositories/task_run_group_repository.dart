@@ -2,6 +2,7 @@ import '../models/task_run_group.dart';
 
 abstract class TaskRunGroupRepository {
   Stream<List<TaskRunGroup>> watchAll();
+  Future<List<TaskRunGroup>> getAll();
   Future<TaskRunGroup?> getById(String id);
   Future<void> save(TaskRunGroup group);
   Future<void> delete(String id);
@@ -11,6 +12,9 @@ abstract class TaskRunGroupRepository {
 class NoopTaskRunGroupRepository implements TaskRunGroupRepository {
   @override
   Stream<List<TaskRunGroup>> watchAll() => const Stream.empty();
+
+  @override
+  Future<List<TaskRunGroup>> getAll() async => const [];
 
   @override
   Future<TaskRunGroup?> getById(String id) async => null;

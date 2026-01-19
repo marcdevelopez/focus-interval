@@ -35,6 +35,13 @@ class LocalTaskRunGroupRepository implements TaskRunGroupRepository {
   }
 
   @override
+  Future<List<TaskRunGroup>> getAll() async {
+    await _ensureLoaded();
+    await _normalizeExpiredRunningGroups(DateTime.now());
+    return _store.values.toList();
+  }
+
+  @override
   Future<TaskRunGroup?> getById(String id) async {
     await _ensureLoaded();
     return _store[id];
@@ -67,6 +74,7 @@ class LocalTaskRunGroupRepository implements TaskRunGroupRepository {
 
   Future<void> _handleListen() async {
     await _ensureLoaded();
+    await _normalizeExpiredRunningGroups(DateTime.now());
     _emit();
   }
 
@@ -93,6 +101,7 @@ class LocalTaskRunGroupRepository implements TaskRunGroupRepository {
     } catch (e) {
       debugPrint('Local task run group load failed: $e');
     }
+    await _normalizeExpiredRunningGroups(DateTime.now());
     _loaded = true;
     _emit();
   }
@@ -104,7 +113,8 @@ class LocalTaskRunGroupRepository implements TaskRunGroupRepository {
   }
 
   Future<void> _pruneInMemory({int? keepCompleted}) async {
-    final retention = keepCompleted ?? await retentionService.getRetentionCount();
+    final retention =
+        keepCompleted ?? await retentionService.getRetentionCount();
     final groups = _store.values.toList();
     if (groups.isEmpty) return;
 
@@ -136,6 +146,51 @@ class LocalTaskRunGroupRepository implements TaskRunGroupRepository {
   }
 
   void _emit() {
+    final changed = _normalizeExpiredRunningGroupsSync(DateTime.now());
+    if (changed) {
+      unawaited(_persist());
+    }
     _controller.add(_store.values.toList());
+  }
+
+  Future<void> _normalizeExpiredRunningGroups(DateTime now) async {
+    final changed = _normalizeExpiredRunningGroupsSync(now);
+    if (changed) {
+      await _persist();
+    }
+  }
+
+  bool _normalizeExpiredRunningGroupsSync(DateTime now) {
+    var changed = false;
+    for (final entry in _store.entries) {
+      final group = entry.value;
+      if (group.status != TaskRunStatus.running) continue;
+      final endTime = _resolveTheoreticalEndTime(group);
+      if (endTime != null && endTime.isBefore(now)) {
+        _store[entry.key] = group.copyWith(
+          status: TaskRunStatus.completed,
+          updatedAt: now,
+        );
+        changed = true;
+      }
+    }
+    return changed;
+  }
+
+  DateTime? _resolveTheoreticalEndTime(TaskRunGroup group) {
+    final start = group.scheduledStartTime ?? group.createdAt;
+    final end = group.theoreticalEndTime;
+    if (end.isBefore(start)) {
+      final totalSeconds =
+          group.totalDurationSeconds ??
+          group.tasks.fold<int>(
+            0,
+            (total, item) => total + item.totalDurationSeconds,
+          );
+      if (totalSeconds > 0) {
+        return start.add(Duration(seconds: totalSeconds));
+      }
+    }
+    return end;
   }
 }
