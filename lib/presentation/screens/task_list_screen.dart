@@ -80,8 +80,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
             child: ListBody(
               children: [
                 Text(
-                  'Linux desktop does not support sign-in yet, so tasks stay on '
-                  'this machine.',
+                  'Linux desktop does not support sign-in yet, so tasks and '
+                  'task groups stay on this machine.',
                 ),
                 SizedBox(height: 8),
                 Text(
@@ -275,7 +275,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     }
 
     final auth = ref.read(firebaseAuthServiceProvider);
-    if (auth.currentUser == null) {
+    final authSupported = auth is! StubAuthService;
+    if (authSupported && auth.currentUser == null) {
       _showSnackBar(context, "Sign in to create task groups.");
       return;
     }
@@ -289,7 +290,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
 
     final group = TaskRunGroup(
       id: const Uuid().v4(),
-      ownerUid: auth.currentUser!.uid,
+      ownerUid: auth.currentUser?.uid ?? 'local',
       tasks: items,
       createdAt: now,
       scheduledStartTime: null,

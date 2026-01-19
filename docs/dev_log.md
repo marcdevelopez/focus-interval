@@ -1,6 +1,6 @@
 # 📝 Focus Interval — Dev Log (MVP 1.2)
 
-Chronological history of the MVP 1.2 development using work blocks.  
+Chronological history of the MVP 1.2 development using work blocks.
 Each block represents significant progress within the same day or sprint.
 
 This document is used to:
@@ -1149,6 +1149,22 @@ _(fill in when they happen)_
 
 - Start Phase 17: planning flow and conflict management.
 - Smoke test Phase 16 on Windows and Linux.
+
+# 🔹 Block 55 — Phase 16 (Linux local TaskRunGroups) — 19/01/2026
+
+### ✔ Work completed:
+
+- Added a SharedPreferences-backed TaskRunGroup repository for Linux local-only mode.
+- Allowed task group creation without sign-in when auth is unavailable.
+- Updated specs to document local TaskRunGroups on Linux.
+
+### 🧠 Decisions made:
+
+- Keep sign-in required on platforms that support Firebase; Linux uses local-only groups.
+
+### 🎯 Next steps:
+
+- Continue Phase 17 planning flow.
 
 # 🧾 General notes
 

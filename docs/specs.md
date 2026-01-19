@@ -40,7 +40,7 @@ The app syncs with Firebase via Google Sign-In on iOS/Android/Web and email/pass
 | UI Framework           | Flutter 3.x                                               |
 | Auth                   | Firebase Authentication (Google Sign-In + email/password) |
 | Backend                | Firestore                                                 |
-| Local Cache (optional) | SharedPreferences (Linux local-only); Hive (v1.2)         |
+| Local Cache (optional) | SharedPreferences (Linux local-only tasks/groups); Hive (v1.2) |
 | State Management       | Riverpod                                                  |
 | Navigation             | GoRouter                                                  |
 | Audio                  | just_audio                                                |
@@ -321,11 +321,12 @@ Platform notes:
 
 - users/{uid}/tasks/{taskId}
 - users/{uid}/taskRunGroups/{groupId}
-- Linux: Firebase Auth/Firestore sync is unavailable; tasks are stored locally (no cloud sync).
+- Linux: Firebase Auth/Firestore sync is unavailable; tasks and TaskRunGroups are stored locally (no cloud sync).
 
 ## **8.2. Local cache (optional)**
 
-- Current: SharedPreferences-backed storage for Linux local-only tasks.
+- Current: SharedPreferences-backed storage for Linux local-only tasks and TaskRunGroups
+  (local execution works without sign-in; no cross-device sync).
 - Planned (v1.2): Hive-based cache for cross-platform offline storage.
 
 ## **8.3. Active Pomodoro session (real-time sync)**
@@ -363,7 +364,7 @@ Mandatory login (by platform)
   - Gets uid, email (and optionally name)
 - Linux:
   - Firebase Auth is unavailable; login entry point is hidden
-  - Local-only tasks; no cloud sync
+  - Local-only tasks and TaskRunGroups; no cloud sync
 
 Persistence
 

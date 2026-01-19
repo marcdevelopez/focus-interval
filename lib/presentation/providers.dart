@@ -18,6 +18,7 @@ import '../data/repositories/pomodoro_session_repository.dart';
 import '../data/repositories/firestore_pomodoro_session_repository.dart';
 import '../data/repositories/task_run_group_repository.dart';
 import '../data/repositories/firestore_task_run_group_repository.dart';
+import '../data/repositories/local_task_run_group_repository.dart';
 import '../data/services/local_sound_storage.dart';
 import '../data/services/local_sound_overrides.dart';
 import '../data/services/task_run_retention_service.dart';
@@ -121,6 +122,10 @@ final taskRunRetentionServiceProvider = Provider<TaskRunRetentionService>((_) {
 // Task run group repository
 final taskRunGroupRepositoryProvider = Provider<TaskRunGroupRepository>((ref) {
   final authState = ref.watch(authStateProvider).value;
+  if (!_supportsFirebase) {
+    final retention = ref.watch(taskRunRetentionServiceProvider);
+    return LocalTaskRunGroupRepository(retentionService: retention);
+  }
   if (authState == null) return NoopTaskRunGroupRepository();
   final firestore = ref.watch(firestoreServiceProvider);
   final auth = ref.watch(firebaseAuthServiceProvider);
