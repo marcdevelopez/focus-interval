@@ -18,7 +18,7 @@ The main goals are:
 - Sync Pomodoro execution in real time across devices (single session owner, others in mirror mode)
 - Play internal app sounds for state changes (notifications remain silent)
 
-The app syncs with Firebase via Google Sign-In on iOS/Android/Web and email/password on macOS/Windows; Linux runs in local-only mode (no Firebase Auth).
+The app syncs with Firebase via Google Sign-In on iOS/Android/Web and email/password on macOS/Windows. A first-class Local Mode (offline, no auth) is available on all platforms and can be toggled at any time.
 
 ---
 
@@ -40,7 +40,7 @@ The app syncs with Firebase via Google Sign-In on iOS/Android/Web and email/pass
 | UI Framework           | Flutter 3.x                                               |
 | Auth                   | Firebase Authentication (Google Sign-In + email/password) |
 | Backend                | Firestore                                                 |
-| Local Cache (optional) | SharedPreferences (Linux local-only tasks/groups); Hive (v1.2) |
+| Local Cache (optional) | SharedPreferences (Local Mode storage); Hive (v1.2) |
 | State Management       | Riverpod                                                  |
 | Navigation             | GoRouter                                                  |
 | Audio                  | just_audio                                                |
@@ -323,13 +323,20 @@ Platform notes:
 - users/{uid}/taskRunGroups/{groupId}
 - Linux: Firebase Auth/Firestore sync is unavailable; tasks and TaskRunGroups are stored locally (no cloud sync).
 
-## **8.2. Local cache (optional)**
+## **8.2. Local Mode (offline / no auth)**
 
-- Current: SharedPreferences-backed storage for Linux local-only tasks and TaskRunGroups
-  (local execution works without sign-in; no cross-device sync).
+- Local Mode is a first-class backend available on all platforms.
+- Users can explicitly choose between Local Mode (offline, no login) and Account Mode (synced).
+- Local data uses the exact same models (tasks, TaskRunGroups, sessions) for future compatibility.
+- Switching to Account Mode can offer a one-time import/sync of local data when online.
+- Switching back to Local Mode keeps local data separate and usable regardless of login state.
+
+## **8.3. Local cache (optional)**
+
+- Current: SharedPreferences-backed storage for Local Mode tasks and TaskRunGroups.
 - Planned (v1.2): Hive-based cache for cross-platform offline storage.
 
-## **8.3. Active Pomodoro session (real-time sync)**
+## **8.4. Active Pomodoro session (real-time sync)**
 
 users/{uid}/activeSession
 
@@ -338,7 +345,7 @@ users/{uid}/activeSession
 - Only the owner device writes; others subscribe in real time and render progress by calculating remaining time from phaseStartedAt + phaseDurationSeconds.
 - On app launch or after login, if an active session is running (pomodoroRunning/shortBreakRunning/longBreakRunning), auto-open the execution screen for that group.
 
-## **8.4. TaskRunGroup retention**
+## **8.5. TaskRunGroup retention**
 
 - Keep:
   - All scheduled
@@ -353,7 +360,7 @@ users/{uid}/activeSession
 
 # 🔐 **9. Authentication**
 
-Mandatory login (by platform)
+Account Mode (by platform)
 
 - iOS / Android / Web:
   - Button: “Continue with Google”
@@ -363,12 +370,17 @@ Mandatory login (by platform)
   - Email/password login (no Google Sign-In)
   - Gets uid, email (and optionally name)
 - Linux:
-  - Firebase Auth is unavailable; login entry point is hidden
-  - Local-only tasks and TaskRunGroups; no cloud sync
+  - Firebase Auth is unavailable; Account Mode is disabled
+  - Local Mode is the default
+
+Mode selection
+
+- Users can choose Local Mode without login on any platform.
+- Users can switch between Local Mode and Account Mode at any time.
 
 Persistence
 
-The session remains active on all devices with Firebase Auth support.
+- Account sessions remain active on all devices with Firebase Auth support.
 
 Email verification (email/password)
 
@@ -384,7 +396,7 @@ Email verification (email/password)
 - Logo
 - Google button (iOS/Android/Web)
 - Email/password form (macOS/Windows)
-- Login entry hidden on Linux (local-only mode)
+- Login entry hidden on Linux (Account Mode unavailable)
 - Text: “Sync your tasks in the cloud”
 
 ---
@@ -426,6 +438,12 @@ Item layout (left → right):
 - On press:
   - Create a TaskRunGroup snapshot
   - Navigate to the execution screen pre-start planning (see section 10.4)
+
+### **10.2.4. Mode indicator (always visible)**
+
+- The UI must clearly show whether the app is in Local Mode or Account Mode.
+- This indicator must be persistent and unambiguous (e.g., app bar badge + icon).
+- Avoid any wording that could imply cloud sync when Local Mode is active.
 
 ---
 

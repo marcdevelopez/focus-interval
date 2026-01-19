@@ -1260,6 +1260,26 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 61 — Specs/Roadmap Local Mode update — 19/01/2026
+
+### ✔ Work completed:
+
+- Updated specs to define Local Mode as a first-class backend across all platforms.
+- Added explicit mode selection and persistent UI indicator requirements.
+- Added a roadmap phase for Local Mode (offline/no auth) with import/sync expectations.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep Local Mode data isolated unless the user explicitly imports it into Account Mode.
+
+### 🎯 Next steps:
+
+- Implement Local Mode toggle and cross-platform local repositories per Phase 6.6.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
