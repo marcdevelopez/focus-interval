@@ -9,7 +9,7 @@ Cross-platform Pomodoro app (macOS / Windows / Linux / iOS / Android / Web) buil
 - [Development Log](docs/dev_log.md)
 - [Linux Dependencies](docs/linux_dependencies.md)
 - [Team Roles & Collaboration Model](docs/team_roles.md)
-- [Agent Guide (internal)](agent.md)
+- [Agent Guide (internal)](AGENTS.md)
 
 ## 🧪 Status
 

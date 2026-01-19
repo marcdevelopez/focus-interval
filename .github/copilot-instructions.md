@@ -98,7 +98,7 @@ Core business logic in [domain/pomodoro_machine.dart](../lib/domain/pomodoro_mac
 - **Specs**: [docs/specs.md](../docs/specs.md) (MVP 1.0 functional spec, 618 lines)
 - **Roadmap**: [docs/roadmap.md](../docs/roadmap.md) (19 phases, currently Phase 13—multi-device sync)
 - **DevLog**: [docs/dev_log.md](../docs/dev_log.md) (chronological work blocks with dates/decisions)
-- **Agent guide**: [agent.md](../agent.md) (workflow rules for AI agents)
+- **Agent guide**: [AGENTS.md](../AGENTS.md) (workflow rules for AI agents)
 - **Team roles**: [docs/team_roles.md](../docs/team_roles.md) (Marcos as Lead Engineer, ChatGPT as AI Architect, Codex as Implementation Engineer)
 
 ## Critical Rules
