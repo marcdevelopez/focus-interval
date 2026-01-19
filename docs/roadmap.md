@@ -33,7 +33,8 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       17/01/2026: Phase 6 reopened to add email verification gating sync.
       17/01/2026: Phase 10 reopened to add unique-name validation and apply-settings copy.
       17/01/2026: Phase 13 reopened to add auto-open of running sessions on launch/login.
-      17/01/2026: Local custom sound picker added (Pomodoro start/Break start); custom sounds stored per-device only; built-in options aligned to available assets; web (Chrome) local pick disabled; macOS/iOS/Android verified, Windows/Linux pending.
+      17/01/2026: Local custom sound picker added (Pomodoro start/Break start); custom sounds stored per-device only; built-in options aligned to available assets; web (Chrome) local pick disabled; macOS/iOS/Android verified.
+      19/01/2026: Windows validation completed for the latest implementations (no changes required).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Linux local-only tasks.
 ```
 

@@ -1166,6 +1166,24 @@ _(fill in when they happen)_
 
 - Continue Phase 17 planning flow.
 
+# 🔹 Block 56 — Windows validation (latest implementations) — 19/01/2026
+
+### ✔ Work completed:
+
+- Verified the latest implementations on Windows with no additional changes required.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep the Windows configuration unchanged after validation.
+
+### 🎯 Next steps:
+
+- Continue Phase 17 planning flow.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
