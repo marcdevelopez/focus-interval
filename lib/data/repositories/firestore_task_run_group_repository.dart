@@ -232,8 +232,9 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
 
   DateTime? _resolveTheoreticalEndTime(Map<String, dynamic> raw) {
     final start =
-        _parseDateTime(raw['scheduledStartTime']) ??
-        _parseDateTime(raw['createdAt']);
+      _parseDateTime(raw['actualStartTime']) ??
+      _parseDateTime(raw['scheduledStartTime']) ??
+      _parseDateTime(raw['createdAt']);
     final rawEnd = _parseDateTime(raw['theoreticalEndTime']);
     if (start != null && rawEnd != null && rawEnd.isBefore(start)) {
       final totalSeconds = _readInt(raw, 'totalDurationSeconds', 0);

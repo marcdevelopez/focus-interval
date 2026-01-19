@@ -93,6 +93,7 @@ class TaskRunGroup {
   final List<TaskRunItem> tasks;
   final DateTime createdAt;
   final DateTime? scheduledStartTime;
+  final DateTime? actualStartTime;
   final DateTime theoreticalEndTime;
   final TaskRunStatus status;
   final int? noticeMinutes;
@@ -107,6 +108,7 @@ class TaskRunGroup {
     required this.tasks,
     required this.createdAt,
     required this.scheduledStartTime,
+    required this.actualStartTime,
     required this.theoreticalEndTime,
     required this.status,
     required this.noticeMinutes,
@@ -122,6 +124,7 @@ class TaskRunGroup {
     List<TaskRunItem>? tasks,
     DateTime? createdAt,
     DateTime? scheduledStartTime,
+    DateTime? actualStartTime,
     DateTime? theoreticalEndTime,
     TaskRunStatus? status,
     int? noticeMinutes,
@@ -136,6 +139,7 @@ class TaskRunGroup {
       tasks: tasks ?? this.tasks,
       createdAt: createdAt ?? this.createdAt,
       scheduledStartTime: scheduledStartTime ?? this.scheduledStartTime,
+      actualStartTime: actualStartTime ?? this.actualStartTime,
       theoreticalEndTime: theoreticalEndTime ?? this.theoreticalEndTime,
       status: status ?? this.status,
       noticeMinutes: noticeMinutes ?? this.noticeMinutes,
@@ -152,6 +156,7 @@ class TaskRunGroup {
     'tasks': tasks.map((task) => task.toMap()).toList(),
     'createdAt': createdAt.toIso8601String(),
     'scheduledStartTime': scheduledStartTime?.toIso8601String(),
+    'actualStartTime': actualStartTime?.toIso8601String(),
     'theoreticalEndTime': theoreticalEndTime.toIso8601String(),
     'status': status.name,
     'noticeMinutes': noticeMinutes,
@@ -179,6 +184,7 @@ class TaskRunGroup {
       tasks: tasks,
       createdAt: createdAt,
       scheduledStartTime: _parseDateTime(map['scheduledStartTime']),
+        actualStartTime: _parseDateTime(map['actualStartTime']),
       theoreticalEndTime:
           _parseDateTime(map['theoreticalEndTime']) ?? createdAt,
       status: TaskRunStatus.values.firstWhere(

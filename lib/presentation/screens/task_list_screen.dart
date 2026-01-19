@@ -278,13 +278,13 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final planAction = await _showPlanActionDialog(context);
     if (!context.mounted) return;
     if (planAction == null) return;
-    final now = DateTime.now();
+    final planCapturedAt = DateTime.now();
     DateTime? scheduledStart;
     if (planAction == _PlanAction.schedule) {
-      scheduledStart = await _pickScheduleDateTime(context, initial: now);
+      scheduledStart = await _pickScheduleDateTime(context, initial: planCapturedAt);
       if (!context.mounted) return;
       if (scheduledStart == null) return;
-      if (scheduledStart.isBefore(now)) {
+      if (scheduledStart.isBefore(planCapturedAt)) {
         _showSnackBar(context, 'Scheduled time must be in the future.');
         return;
       }
@@ -301,10 +301,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       0,
       (total, item) => total + item.totalDurationSeconds,
     );
-    final start = scheduledStart ?? now;
-    final theoreticalEndTime = start.add(
-      Duration(seconds: totalDurationSeconds),
-    );
+    final conflictStart = scheduledStart ?? planCapturedAt;
+    final conflictEnd = conflictStart.add(Duration(seconds: totalDurationSeconds));
 
     final repo = ref.read(taskRunGroupRepositoryProvider);
     List<TaskRunGroup> existingGroups = const [];
@@ -318,8 +316,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     if (!context.mounted) return;
     final conflicts = _findConflicts(
       existingGroups,
-      newStart: start,
-      newEnd: theoreticalEndTime,
+        newStart: conflictStart,
+        newEnd: conflictEnd,
       includeRunningAlways: planAction == _PlanAction.startNow,
     );
 
@@ -358,13 +356,19 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         ? TaskRunStatus.running
         : TaskRunStatus.scheduled;
 
+    final recalculatedStart = scheduledStart ?? DateTime.now();
+    final recalculatedEnd = recalculatedStart.add(
+      Duration(seconds: totalDurationSeconds),
+    );
+
     final group = TaskRunGroup(
       id: const Uuid().v4(),
       ownerUid: auth.currentUser?.uid ?? 'local',
       tasks: items,
-      createdAt: now,
+      createdAt: planCapturedAt,
       scheduledStartTime: scheduledStart,
-      theoreticalEndTime: theoreticalEndTime,
+      actualStartTime: status == TaskRunStatus.running ? recalculatedStart : null,
+      theoreticalEndTime: recalculatedEnd,
       status: status,
       noticeMinutes: noticeMinutes,
       totalTasks: items.length,
@@ -373,7 +377,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         (total, item) => total + item.totalPomodoros,
       ),
       totalDurationSeconds: totalDurationSeconds,
-      updatedAt: now,
+      updatedAt: DateTime.now(),
     );
 
     try {
@@ -460,7 +464,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         running.add(group);
         continue;
       }
-      final start = group.scheduledStartTime ?? group.createdAt;
+        final start =
+          group.actualStartTime ?? group.scheduledStartTime ?? group.createdAt;
       final end = group.theoreticalEndTime.isBefore(start)
           ? start
           : group.theoreticalEndTime;

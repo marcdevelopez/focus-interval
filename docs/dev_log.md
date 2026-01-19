@@ -1240,6 +1240,26 @@ _(fill in when they happen)_
 
 - Validate Phase 17 behavior on Windows and Linux and update docs.
 
+# 🔹 Block 60 — TaskRunGroup actual start tracking — 19/01/2026
+
+### ✔ Work completed:
+
+- Added `actualStartTime` to TaskRunGroup and persisted it for running groups.
+- Recalculated `theoreticalEndTime` from the real start moment after conflict dialogs.
+- Conflict checks and end-time normalization now prefer `actualStartTime` over `createdAt`.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep `createdAt` as the flow-start timestamp, and use `actualStartTime` for execution timing.
+
+### 🎯 Next steps:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
