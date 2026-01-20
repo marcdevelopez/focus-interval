@@ -12,6 +12,9 @@ import '../domain/pomodoro_machine.dart';
 class TimerDisplay extends StatefulWidget {
   final PomodoroState state;
 
+  /// Optional custom center content (for Run Mode redesign).
+  final Widget? centerContent;
+
   /// Use this to force a specific final color.
   /// If null, alternates green/gold based on even/odd pomodoro.
   final Color? finishColorOverride;
@@ -20,6 +23,7 @@ class TimerDisplay extends StatefulWidget {
     super.key,
     required this.state,
     this.finishColorOverride,
+    this.centerContent,
   });
 
   @override
@@ -211,17 +215,19 @@ class _TimerDisplayState extends State<TimerDisplay>
                     color: _phaseColor(),
                     status: s.status,
                   ),
-                  child: _CenterContent(
-                    timeText: (s.status == PomodoroStatus.finished)
-                        ? "00:00"
-                        : _formatMMSS(_displayRemainingSeconds()),
-                    phaseText: _phaseLabel(),
-                    pomodoroText:
-                        (s.status == PomodoroStatus.finished ||
-                            s.totalPomodoros == 0)
-                        ? ""
-                        : "${s.currentPomodoro}/${s.totalPomodoros}",
-                  ),
+                  child:
+                      widget.centerContent ??
+                      _CenterContent(
+                        timeText: (s.status == PomodoroStatus.finished)
+                            ? "00:00"
+                            : _formatMMSS(_displayRemainingSeconds()),
+                        phaseText: _phaseLabel(),
+                        pomodoroText:
+                            (s.status == PomodoroStatus.finished ||
+                                s.totalPomodoros == 0)
+                            ? ""
+                            : "${s.currentPomodoro}/${s.totalPomodoros}",
+                      ),
                 ),
               );
             },
@@ -359,10 +365,7 @@ class _TimerPainter extends CustomPainter {
         ..shader = ui.Gradient.radial(
           markerCenter,
           markerRadius,
-          [
-            Colors.transparent,
-            Colors.black.withValues(alpha: 0.35),
-          ],
+          [Colors.transparent, Colors.black.withValues(alpha: 0.35)],
           [0.6, 1.0],
         );
       canvas.drawCircle(markerCenter, markerRadius, ringShadowPaint);
@@ -370,7 +373,12 @@ class _TimerPainter extends CustomPainter {
       final innerColor = const ui.Color.fromARGB(255, 200, 199, 199);
       final innerRadius = markerRadius * 0.55;
       final innerShadowPaint = Paint()
-        ..color = const ui.Color.fromARGB(255, 188, 188, 188).withValues(alpha: 1)
+        ..color = const ui.Color.fromARGB(
+          255,
+          188,
+          188,
+          188,
+        ).withValues(alpha: 1)
         ..maskFilter = ui.MaskFilter.blur(
           ui.BlurStyle.normal,
           strokeWidth * 0.15,

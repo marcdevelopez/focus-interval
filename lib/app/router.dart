@@ -6,8 +6,7 @@ import '../presentation/screens/task_list_screen.dart';
 import '../presentation/screens/task_editor_screen.dart';
 import '../presentation/screens/timer_screen.dart';
 
-final GlobalKey<NavigatorState> rootNavigatorKey =
-    GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
 GoRouter buildRouter() {
   return GoRouter(
@@ -39,7 +38,7 @@ GoRouter buildRouter() {
         path: '/timer/:id',
         pageBuilder: (context, state) {
           final id = state.pathParameters['id']!;
-          return _fadeScale(TimerScreen(taskId: id));
+          return _fadeScale(TimerScreen(groupId: id));
         },
       ),
     ],

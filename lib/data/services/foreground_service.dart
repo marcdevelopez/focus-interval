@@ -4,8 +4,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class ForegroundService {
-  static const MethodChannel _channel =
-      MethodChannel('focus_interval/foreground_service');
+  static const MethodChannel _channel = MethodChannel(
+    'focus_interval/foreground_service',
+  );
+
+  static bool _started = false;
 
   static bool get isSupported => !kIsWeb && Platform.isAndroid;
 
@@ -15,10 +18,12 @@ class ForegroundService {
   }) async {
     if (!isSupported) return;
     try {
-      await _channel.invokeMethod('start', {
-        'title': title,
-        'text': text,
-      });
+      if (_started) {
+        await _channel.invokeMethod('update', {'title': title, 'text': text});
+        return;
+      }
+      await _channel.invokeMethod('start', {'title': title, 'text': text});
+      _started = true;
     } catch (e) {
       debugPrint('Foreground service start failed: $e');
     }
@@ -30,10 +35,7 @@ class ForegroundService {
   }) async {
     if (!isSupported) return;
     try {
-      await _channel.invokeMethod('update', {
-        'title': title,
-        'text': text,
-      });
+      await _channel.invokeMethod('update', {'title': title, 'text': text});
     } catch (e) {
       debugPrint('Foreground service update failed: $e');
     }
@@ -43,6 +45,7 @@ class ForegroundService {
     if (!isSupported) return;
     try {
       await _channel.invokeMethod('stop');
+      _started = false;
     } catch (e) {
       debugPrint('Foreground service stop failed: $e');
     }

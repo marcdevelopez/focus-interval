@@ -85,6 +85,17 @@ class TaskRunItem {
     }
     return total;
   }
+
+  int get finalBreakSeconds {
+    final isLongBreak = totalPomodoros % longBreakInterval == 0;
+    final breakMinutes = isLongBreak ? longBreakMinutes : shortBreakMinutes;
+    return breakMinutes * 60;
+  }
+
+  int durationSeconds({required bool includeFinalBreak}) {
+    if (!includeFinalBreak) return totalDurationSeconds;
+    return totalDurationSeconds + finalBreakSeconds;
+  }
 }
 
 class TaskRunGroup {
@@ -174,9 +185,14 @@ class TaskRunGroup {
     final totalPomodoros =
         (map['totalPomodoros'] as num?)?.toInt() ??
         tasks.fold<int>(0, (total, item) => total + item.totalPomodoros);
+    final computedTotalDurationSeconds =
+        groupDurationSecondsWithFinalBreaks(tasks);
+    final storedTotalDurationSeconds =
+        (map['totalDurationSeconds'] as num?)?.toInt();
     final totalDurationSeconds =
-        (map['totalDurationSeconds'] as num?)?.toInt() ??
-        tasks.fold<int>(0, (total, item) => total + item.totalDurationSeconds);
+        computedTotalDurationSeconds > 0
+            ? computedTotalDurationSeconds
+            : storedTotalDurationSeconds;
 
     return TaskRunGroup(
       id: map['id'] as String? ?? '',
@@ -222,4 +238,14 @@ class TaskRunGroup {
     }
     return null;
   }
+}
+
+int groupDurationSecondsWithFinalBreaks(List<TaskRunItem> tasks) {
+  var total = 0;
+  for (var index = 0; index < tasks.length; index += 1) {
+    total += tasks[index].durationSeconds(
+      includeFinalBreak: index < tasks.length - 1,
+    );
+  }
+  return total;
 }

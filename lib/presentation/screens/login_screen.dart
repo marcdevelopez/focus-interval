@@ -6,6 +6,14 @@ import 'package:go_router/go_router.dart';
 
 import '../providers.dart';
 import '../../data/services/firebase_auth_service.dart';
+import '../../data/services/app_mode_service.dart';
+import '../../data/services/local_import_service.dart';
+import '../../data/repositories/local_task_repository.dart';
+import '../../data/repositories/local_task_run_group_repository.dart';
+import '../../data/repositories/firestore_task_repository.dart';
+import '../../data/repositories/firestore_task_run_group_repository.dart';
+
+enum _LoginImportChoice { useAccount, importLocal, cancel }
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -25,6 +33,105 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         defaultTargetPlatform == TargetPlatform.iOS;
   }
 
+  Future<void> _handlePostLogin() async {
+    final auth = ref.read(firebaseAuthServiceProvider);
+    final appMode = ref.read(appModeProvider);
+    final modeController = ref.read(appModeProvider.notifier);
+    final user = auth.currentUser;
+    if (user == null) return;
+
+    if (appMode == AppMode.account) {
+      if (mounted) context.go('/tasks');
+      return;
+    }
+
+    final retention = ref.read(taskRunRetentionServiceProvider);
+    final importService = LocalImportService(
+      localTasks: LocalTaskRepository(),
+      localGroups: LocalTaskRunGroupRepository(retentionService: retention),
+      remoteTasks: FirestoreTaskRepository(
+        firestoreService: ref.read(firestoreServiceProvider),
+        authService: auth,
+      ),
+      remoteGroups: FirestoreTaskRunGroupRepository(
+        firestoreService: ref.read(firestoreServiceProvider),
+        authService: auth,
+        retentionService: retention,
+      ),
+    );
+
+    final hasLocalData = await importService.hasLocalData();
+    if (!mounted) return;
+
+    if (!hasLocalData) {
+      await modeController.setAccount();
+      if (mounted) context.go('/tasks');
+      return;
+    }
+
+    final choice = await showDialog<_LoginImportChoice>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Use this account?'),
+          content: Text(
+            'Signed in as ${user.email ?? user.uid}. Local Mode data stays on this device unless you import it. Importing will overwrite cloud items with the same IDs.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(_LoginImportChoice.useAccount),
+              child: const Text('Use account (no import)'),
+            ),
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(_LoginImportChoice.importLocal),
+              child: const Text('Import local data'),
+            ),
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(_LoginImportChoice.cancel),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || choice == null) return;
+
+    switch (choice) {
+      case _LoginImportChoice.useAccount:
+        await modeController.setAccount();
+        if (mounted) context.go('/tasks');
+        break;
+      case _LoginImportChoice.importLocal:
+        try {
+          final summary = await importService.importAll();
+          await modeController.setAccount();
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Imported ${summary.tasksImported} tasks and ${summary.groupsImported} groups to this account.',
+              ),
+            ),
+          );
+          context.go('/tasks');
+        } catch (e) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Import failed: $e')));
+        }
+        break;
+      case _LoginImportChoice.cancel:
+        await auth.signOut();
+        if (mounted) context.go('/tasks');
+        break;
+    }
+  }
+
   @override
   void dispose() {
     _emailCtrl.dispose();
@@ -40,12 +147,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         email: _emailCtrl.text.trim(),
         password: _passCtrl.text,
       );
-      if (mounted) context.go('/tasks');
+      await _handlePostLogin();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Sign-in error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Sign-in error: $e')));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -59,12 +166,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         email: _emailCtrl.text.trim(),
         password: _passCtrl.text,
       );
-      if (mounted) context.go('/tasks');
+      await _handlePostLogin();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Sign-up error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Sign-up error: $e')));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -75,12 +182,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final auth = ref.read(firebaseAuthServiceProvider);
     try {
       await auth.signInWithGoogle();
-      if (mounted) context.go('/tasks');
+      await _handlePostLogin();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Google sign-in error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Google sign-in error: $e')));
     } finally {
       if (mounted) setState(() => _loading = false);
     }

@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,6 +12,7 @@ import '../../data/models/pomodoro_task.dart';
 import '../../data/models/task_run_group.dart';
 import '../../data/repositories/task_run_group_repository.dart';
 import '../../data/services/firebase_auth_service.dart';
+import '../../data/services/app_mode_service.dart';
 import '../../widgets/task_card.dart';
 
 class TaskListScreen extends ConsumerStatefulWidget {
@@ -27,8 +26,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   static const String _linuxSyncNoticeKey = 'linux_sync_notice_seen';
   final _timeFormat = DateFormat('HH:mm');
   bool _syncNoticeChecked = false;
-  Timer? _clockTimer;
-  DateTime _now = DateTime.now();
+  DateTime _planningAnchor = DateTime.now();
+  String _planningAnchorKey = '';
 
   @override
   void initState() {
@@ -36,15 +35,10 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _maybeShowLinuxSyncNotice();
     });
-    _clockTimer = Timer.periodic(
-      const Duration(minutes: 1),
-      (_) => setState(() => _now = DateTime.now()),
-    );
   }
 
   @override
   void dispose() {
-    _clockTimer?.cancel();
     super.dispose();
   }
 
@@ -103,11 +97,66 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     );
   }
 
+  Future<void> _showModeSwitchDialog({
+    required bool authSupported,
+    required bool signedIn,
+  }) async {
+    if (!authSupported) return;
+    final appMode = ref.read(appModeProvider);
+    final controller = ref.read(appModeProvider.notifier);
+    final result = await showDialog<AppMode>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Choose app mode'),
+          content: const Text(
+            'Local Mode is device-only. Account Mode syncs data to the current user.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(AppMode.local),
+              child: const Text('Local mode'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(AppMode.account),
+              child: const Text('Account mode'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || result == null) return;
+    if (result == appMode) return;
+
+    if (result == AppMode.local) {
+      await controller.setLocal();
+      return;
+    }
+
+    if (!signedIn) {
+      if (mounted) context.go('/login');
+      return;
+    }
+
+    await controller.setAccount();
+  }
+
+  Future<void> _handleLogout() async {
+    final auth = ref.read(firebaseAuthServiceProvider);
+    final controller = ref.read(appModeProvider.notifier);
+    await auth.signOut();
+    await controller.setLocal();
+    ref.invalidate(taskListProvider);
+  }
+
   @override
   Widget build(BuildContext context) {
     final tasksAsync = ref.watch(taskListProvider);
     final auth = ref.watch(firebaseAuthServiceProvider);
     final authSupported = auth is! StubAuthService;
+    final appMode = ref.watch(appModeProvider);
+    final signedIn = auth.currentUser != null;
     final activeSession = ref.watch(activePomodoroSessionProvider);
     final selectedIds = ref.watch(taskSelectionProvider);
     final selection = ref.read(taskSelectionProvider.notifier);
@@ -118,7 +167,34 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         backgroundColor: Colors.black,
         title: const Text("Your tasks"),
         actions: [
-          if (authSupported && auth.currentUser != null) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Center(
+              child: Chip(
+                label: Text(
+                  appMode.label,
+                  style: const TextStyle(fontSize: 11),
+                ),
+                avatar: Icon(
+                  appMode == AppMode.local ? Icons.phone_iphone : Icons.cloud,
+                  size: 16,
+                ),
+                backgroundColor: appMode == AppMode.local
+                    ? Colors.grey[850]
+                    : Colors.blue[900],
+              ),
+            ),
+          ),
+          if (authSupported)
+            IconButton(
+              icon: const Icon(Icons.swap_horiz),
+              tooltip: 'Switch mode',
+              onPressed: () => _showModeSwitchDialog(
+                authSupported: authSupported,
+                signedIn: signedIn,
+              ),
+            ),
+          if (authSupported && appMode == AppMode.account && signedIn) ...[
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
               child: Center(
@@ -130,14 +206,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
             ),
             IconButton(
               icon: const Icon(Icons.logout),
-              onPressed: () async {
-                await auth.signOut();
-                // Clear the in-memory list and navigate to login
-                ref.invalidate(taskListProvider);
-                if (context.mounted) context.go('/login');
-              },
+              onPressed: _handleLogout,
             ),
-          ] else if (authSupported)
+          ] else if (authSupported && appMode == AppMode.account)
             IconButton(
               icon: const Icon(Icons.person),
               onPressed: () => context.go('/login'),
@@ -178,8 +249,33 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
           child: Text("Error: $e", style: const TextStyle(color: Colors.red)),
         ),
         data: (tasks) {
-          selection.syncWithIds(tasks.map((t) => t.id));
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            selection.syncWithIds(tasks.map((t) => t.id));
+          });
           if (tasks.isEmpty) {
+            if (appMode == AppMode.account && !signedIn) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Sign in to use Account Mode. Your local data remains separate.',
+                        style: TextStyle(color: Colors.white54),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () => context.go('/login'),
+                        child: const Text('Sign in'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
             return const Center(
               child: Text(
                 "Your tasks will appear here",
@@ -187,7 +283,16 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
               ),
             );
           }
-          final ranges = _buildSelectedTimeRanges(tasks, selectedIds, _now);
+          final planningKey = _buildPlanningAnchorKey(tasks, selectedIds);
+          if (planningKey != _planningAnchorKey) {
+            _planningAnchorKey = planningKey;
+            _planningAnchor = DateTime.now();
+          }
+          final ranges = _buildSelectedTimeRanges(
+            tasks,
+            selectedIds,
+            _planningAnchor,
+          );
 
           return ReorderableListView.builder(
             buildDefaultDragHandles: false,
@@ -281,7 +386,10 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final planCapturedAt = DateTime.now();
     DateTime? scheduledStart;
     if (planAction == _PlanAction.schedule) {
-      scheduledStart = await _pickScheduleDateTime(context, initial: planCapturedAt);
+      scheduledStart = await _pickScheduleDateTime(
+        context,
+        initial: planCapturedAt,
+      );
       if (!context.mounted) return;
       if (scheduledStart == null) return;
       if (scheduledStart.isBefore(planCapturedAt)) {
@@ -289,20 +397,23 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         return;
       }
     } else if (activeSession != null) {
-      _showSnackBar(
-        context,
-        "A session is already active (running or paused). Finish or cancel it first.",
-      );
-      return;
+      final shouldBlock = await _shouldBlockForActiveSession(activeSession);
+      if (!context.mounted) return;
+      if (shouldBlock) {
+        _showSnackBar(
+          context,
+          "A session is already active (running or paused). Finish or cancel it first.",
+        );
+        return;
+      }
     }
 
     final items = selected.map(_mapTaskToRunItem).toList();
-    final totalDurationSeconds = items.fold<int>(
-      0,
-      (total, item) => total + item.totalDurationSeconds,
-    );
+    final totalDurationSeconds = groupDurationSecondsWithFinalBreaks(items);
     final conflictStart = scheduledStart ?? planCapturedAt;
-    final conflictEnd = conflictStart.add(Duration(seconds: totalDurationSeconds));
+    final conflictEnd = conflictStart.add(
+      Duration(seconds: totalDurationSeconds),
+    );
 
     final repo = ref.read(taskRunGroupRepositoryProvider);
     List<TaskRunGroup> existingGroups = const [];
@@ -316,8 +427,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     if (!context.mounted) return;
     final conflicts = _findConflicts(
       existingGroups,
-        newStart: conflictStart,
-        newEnd: conflictEnd,
+      newStart: conflictStart,
+      newEnd: conflictEnd,
       includeRunningAlways: planAction == _PlanAction.startNow,
     );
 
@@ -367,7 +478,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       tasks: items,
       createdAt: planCapturedAt,
       scheduledStartTime: scheduledStart,
-      actualStartTime: status == TaskRunStatus.running ? recalculatedStart : null,
+      actualStartTime: null,
       theoreticalEndTime: recalculatedEnd,
       status: status,
       noticeMinutes: noticeMinutes,
@@ -388,6 +499,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
           ? "Task group started."
           : "Task group scheduled.";
       _showSnackBar(context, message);
+      if (status == TaskRunStatus.running) {
+        context.go("/timer/${group.id}");
+      }
     } catch (e) {
       if (!context.mounted) return;
       _showSnackBar(context, "Failed to create task group: $e");
@@ -464,7 +578,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         running.add(group);
         continue;
       }
-        final start =
+      final start =
           group.actualStartTime ?? group.scheduledStartTime ?? group.createdAt;
       final end = group.theoreticalEndTime.isBefore(start)
           ? start
@@ -574,16 +688,33 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     messenger.showSnackBar(SnackBar(content: Text(message)));
   }
 
+  String _buildPlanningAnchorKey(
+    List<PomodoroTask> tasks,
+    Set<String> selectedIds,
+  ) {
+    final buffer = StringBuffer();
+    for (final task in tasks) {
+      if (!selectedIds.contains(task.id)) continue;
+      buffer.write(task.id);
+      buffer.write('|');
+    }
+    return buffer.toString();
+  }
+
   Map<String, String> _buildSelectedTimeRanges(
     List<PomodoroTask> tasks,
     Set<String> selectedIds,
     DateTime start,
   ) {
     final ranges = <String, String>{};
+    final selectedTasks =
+        tasks.where((task) => selectedIds.contains(task.id)).toList();
     var cursor = start;
-    for (final task in tasks) {
-      if (!selectedIds.contains(task.id)) continue;
-      final duration = _taskDurationSeconds(task);
+    for (var index = 0; index < selectedTasks.length; index += 1) {
+      final task = selectedTasks[index];
+      final includeFinalBreak = index < selectedTasks.length - 1;
+      final duration =
+          _taskDurationSeconds(task, includeFinalBreak: includeFinalBreak);
       final end = cursor.add(Duration(seconds: duration));
       ranges[task.id] =
           "${_timeFormat.format(cursor)}–${_timeFormat.format(end)}";
@@ -592,16 +723,42 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     return ranges;
   }
 
-  int _taskDurationSeconds(PomodoroTask task) {
+  Future<bool> _shouldBlockForActiveSession(
+    PomodoroSession activeSession,
+  ) async {
+    final sessionRepo = ref.read(pomodoroSessionRepositoryProvider);
+    final groupId = activeSession.groupId;
+    if (groupId == null || groupId.isEmpty) {
+      await sessionRepo.clearSession();
+      return false;
+    }
+
+    final groupRepo = ref.read(taskRunGroupRepositoryProvider);
+    final group = await groupRepo.getById(groupId);
+    if (group == null || group.status != TaskRunStatus.running) {
+      await sessionRepo.clearSession();
+      return false;
+    }
+    return true;
+  }
+
+  int _taskDurationSeconds(
+    PomodoroTask task, {
+    required bool includeFinalBreak,
+  }) {
     final pomodoroSeconds = task.pomodoroMinutes * 60;
     final shortBreakSeconds = task.shortBreakMinutes * 60;
     final longBreakSeconds = task.longBreakMinutes * 60;
     var total = task.totalPomodoros * pomodoroSeconds;
-    if (task.totalPomodoros <= 1) return total;
-    for (var index = 1; index < task.totalPomodoros; index += 1) {
-      final isLongBreak = index % task.longBreakInterval == 0;
-      total += isLongBreak ? longBreakSeconds : shortBreakSeconds;
+    if (task.totalPomodoros > 1) {
+      for (var index = 1; index < task.totalPomodoros; index += 1) {
+        final isLongBreak = index % task.longBreakInterval == 0;
+        total += isLongBreak ? longBreakSeconds : shortBreakSeconds;
+      }
     }
+    if (!includeFinalBreak) return total;
+    final isLongBreak = task.totalPomodoros % task.longBreakInterval == 0;
+    total += isLongBreak ? longBreakSeconds : shortBreakSeconds;
     return total;
   }
 

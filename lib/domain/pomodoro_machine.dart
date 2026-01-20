@@ -21,11 +21,7 @@ extension PomodoroStatusX on PomodoroStatus {
 }
 
 /// Current cycle type (for UI/sounds).
-enum PomodoroPhase {
-  pomodoro,
-  shortBreak,
-  longBreak,
-}
+enum PomodoroPhase { pomodoro, shortBreak, longBreak }
 
 /// Immutable state emitted by the machine.
 /// The UI/ViewModel should listen to changes of this state.
@@ -80,13 +76,13 @@ class PomodoroState {
   }
 
   static PomodoroState idle() => const PomodoroState(
-        status: PomodoroStatus.idle,
-        phase: null,
-        currentPomodoro: 0,
-        totalPomodoros: 0,
-        totalSeconds: 0,
-        remainingSeconds: 0,
-      );
+    status: PomodoroStatus.idle,
+    phase: null,
+    currentPomodoro: 0,
+    totalPomodoros: 0,
+    totalSeconds: 0,
+    remainingSeconds: 0,
+  );
 }
 
 /// Event callbacks so the ViewModel can trigger sounds,
@@ -141,13 +137,15 @@ class PomodoroMachine {
   int _longBreakSeconds = 15 * 60;
   int _totalPomodoros = 1;
   int _longBreakInterval = 4;
+  bool _allowFinalBreak = false;
+  bool _pendingFinalBreak = false;
 
   // Store previous state for pause/resume.
   PomodoroStatus? _prePauseStatus;
   PomodoroPhase? _prePausePhase;
 
   PomodoroMachine({PomodoroCallbacks? callbacks})
-      : callbacks = callbacks ?? const PomodoroCallbacks();
+    : callbacks = callbacks ?? const PomodoroCallbacks();
 
   /// Configure the CURRENT task.
   /// All values are minutes except total/interval.
@@ -157,6 +155,7 @@ class PomodoroMachine {
     required int longBreakMinutes,
     required int totalPomodoros,
     required int longBreakInterval,
+    bool allowFinalBreak = false,
   }) {
     if (pomodoroMinutes <= 0 ||
         shortBreakMinutes <= 0 ||
@@ -171,31 +170,38 @@ class PomodoroMachine {
     _longBreakSeconds = longBreakMinutes * 60;
     _totalPomodoros = totalPomodoros;
     _longBreakInterval = longBreakInterval;
+    _allowFinalBreak = allowFinalBreak;
+    _pendingFinalBreak = false;
 
     // Reset to idle with configuration ready.
-    _emit(PomodoroState(
-      status: PomodoroStatus.idle,
-      phase: null,
-      currentPomodoro: 0,
-      totalPomodoros: _totalPomodoros,
-      totalSeconds: _pomodoroSeconds,
-      remainingSeconds: _pomodoroSeconds,
-    ));
+    _emit(
+      PomodoroState(
+        status: PomodoroStatus.idle,
+        phase: null,
+        currentPomodoro: 0,
+        totalPomodoros: _totalPomodoros,
+        totalSeconds: _pomodoroSeconds,
+        remainingSeconds: _pomodoroSeconds,
+      ),
+    );
   }
 
   /// Start the task from zero.
   /// If already running, fully restart.
   void startTask() {
     _cancelTimer();
+    _pendingFinalBreak = false;
 
-    _emit(PomodoroState(
-      status: PomodoroStatus.pomodoroRunning,
-      phase: PomodoroPhase.pomodoro,
-      currentPomodoro: 1,
-      totalPomodoros: _totalPomodoros,
-      totalSeconds: _pomodoroSeconds,
-      remainingSeconds: _pomodoroSeconds,
-    ));
+    _emit(
+      PomodoroState(
+        status: PomodoroStatus.pomodoroRunning,
+        phase: PomodoroPhase.pomodoro,
+        currentPomodoro: 1,
+        totalPomodoros: _totalPomodoros,
+        totalSeconds: _pomodoroSeconds,
+        remainingSeconds: _pomodoroSeconds,
+      ),
+    );
 
     callbacks.onPomodoroStart?.call(_state);
     _startTimer();
@@ -221,10 +227,7 @@ class PomodoroMachine {
     final restoredStatus = _prePauseStatus ?? PomodoroStatus.pomodoroRunning;
     final restoredPhase = _prePausePhase ?? PomodoroPhase.pomodoro;
 
-    _emit(_state.copyWith(
-      status: restoredStatus,
-      phase: restoredPhase,
-    ));
+    _emit(_state.copyWith(status: restoredStatus, phase: restoredPhase));
 
     _startTimer();
   }
@@ -232,14 +235,17 @@ class PomodoroMachine {
   /// Cancel the task and return to idle.
   void cancel() {
     _cancelTimer();
-    _emit(PomodoroState(
-      status: PomodoroStatus.idle,
-      phase: null,
-      currentPomodoro: 0,
-      totalPomodoros: _totalPomodoros,
-      totalSeconds: _pomodoroSeconds,
-      remainingSeconds: _pomodoroSeconds,
-    ));
+    _pendingFinalBreak = false;
+    _emit(
+      PomodoroState(
+        status: PomodoroStatus.idle,
+        phase: null,
+        currentPomodoro: 0,
+        totalPomodoros: _totalPomodoros,
+        totalSeconds: _pomodoroSeconds,
+        remainingSeconds: _pomodoroSeconds,
+      ),
+    );
   }
 
   /// Restore state from a remote session (mirror/takeover).
@@ -254,15 +260,18 @@ class PomodoroMachine {
     _cancelTimer();
     _prePauseStatus = null;
     _prePausePhase = null;
+    _pendingFinalBreak = false;
 
-    _emit(PomodoroState(
-      status: status,
-      phase: phase,
-      currentPomodoro: currentPomodoro,
-      totalPomodoros: totalPomodoros,
-      totalSeconds: totalSeconds,
-      remainingSeconds: remainingSeconds,
-    ));
+    _emit(
+      PomodoroState(
+        status: status,
+        phase: phase,
+        currentPomodoro: currentPomodoro,
+        totalPomodoros: totalPomodoros,
+        totalSeconds: totalSeconds,
+        remainingSeconds: remainingSeconds,
+      ),
+    );
 
     if (status == PomodoroStatus.paused) {
       _prePausePhase = phase;
@@ -302,25 +311,37 @@ class PomodoroMachine {
       case PomodoroPhase.pomodoro:
         callbacks.onPomodoroEnd?.call(_state);
 
-        final isLastPomodoro =
-            _state.currentPomodoro >= _state.totalPomodoros;
+        final isLastPomodoro = _state.currentPomodoro >= _state.totalPomodoros;
 
         if (isLastPomodoro) {
+          if (_allowFinalBreak) {
+            _pendingFinalBreak = true;
+            final shouldLongBreak =
+                (_state.currentPomodoro % _longBreakInterval == 0);
+            if (shouldLongBreak) {
+              _startLongBreak();
+            } else {
+              _startShortBreak();
+            }
+            return;
+          }
+
           // Strict task completion (mandatory MVP behavior).
-          _emit(_state.copyWith(
-            status: PomodoroStatus.finished,
-            phase: null,
-            totalSeconds: 0,
-            remainingSeconds: 0,
-          ));
+          _emit(
+            _state.copyWith(
+              status: PomodoroStatus.finished,
+              phase: null,
+              totalSeconds: 0,
+              remainingSeconds: 0,
+            ),
+          );
           callbacks.onTaskFinished?.call(_state);
           return; // Do not start a break.
         }
 
         // Decide short or long break.
         final nextPomodoroIndex = _state.currentPomodoro;
-        final shouldLongBreak =
-            (nextPomodoroIndex % _longBreakInterval == 0);
+        final shouldLongBreak = (nextPomodoroIndex % _longBreakInterval == 0);
 
         if (shouldLongBreak) {
           _startLongBreak();
@@ -331,11 +352,37 @@ class PomodoroMachine {
 
       case PomodoroPhase.shortBreak:
         callbacks.onBreakEnd?.call(_state);
+        if (_pendingFinalBreak) {
+          _pendingFinalBreak = false;
+          _emit(
+            _state.copyWith(
+              status: PomodoroStatus.finished,
+              phase: null,
+              totalSeconds: 0,
+              remainingSeconds: 0,
+            ),
+          );
+          callbacks.onTaskFinished?.call(_state);
+          return;
+        }
         _startNextPomodoro();
         break;
 
       case PomodoroPhase.longBreak:
         callbacks.onBreakEnd?.call(_state);
+        if (_pendingFinalBreak) {
+          _pendingFinalBreak = false;
+          _emit(
+            _state.copyWith(
+              status: PomodoroStatus.finished,
+              phase: null,
+              totalSeconds: 0,
+              remainingSeconds: 0,
+            ),
+          );
+          callbacks.onTaskFinished?.call(_state);
+          return;
+        }
         _startNextPomodoro();
         break;
 
@@ -345,36 +392,42 @@ class PomodoroMachine {
   }
 
   void _startShortBreak() {
-    _emit(_state.copyWith(
-      status: PomodoroStatus.shortBreakRunning,
-      phase: PomodoroPhase.shortBreak,
-      totalSeconds: _shortBreakSeconds,
-      remainingSeconds: _shortBreakSeconds,
-    ));
+    _emit(
+      _state.copyWith(
+        status: PomodoroStatus.shortBreakRunning,
+        phase: PomodoroPhase.shortBreak,
+        totalSeconds: _shortBreakSeconds,
+        remainingSeconds: _shortBreakSeconds,
+      ),
+    );
     callbacks.onBreakStart?.call(_state);
     _startTimer();
   }
 
   void _startLongBreak() {
-    _emit(_state.copyWith(
-      status: PomodoroStatus.longBreakRunning,
-      phase: PomodoroPhase.longBreak,
-      totalSeconds: _longBreakSeconds,
-      remainingSeconds: _longBreakSeconds,
-    ));
+    _emit(
+      _state.copyWith(
+        status: PomodoroStatus.longBreakRunning,
+        phase: PomodoroPhase.longBreak,
+        totalSeconds: _longBreakSeconds,
+        remainingSeconds: _longBreakSeconds,
+      ),
+    );
     callbacks.onBreakStart?.call(_state);
     _startTimer();
   }
 
   void _startNextPomodoro() {
     final nextIndex = _state.currentPomodoro + 1;
-    _emit(_state.copyWith(
-      status: PomodoroStatus.pomodoroRunning,
-      phase: PomodoroPhase.pomodoro,
-      currentPomodoro: nextIndex,
-      totalSeconds: _pomodoroSeconds,
-      remainingSeconds: _pomodoroSeconds,
-    ));
+    _emit(
+      _state.copyWith(
+        status: PomodoroStatus.pomodoroRunning,
+        phase: PomodoroPhase.pomodoro,
+        currentPomodoro: nextIndex,
+        totalSeconds: _pomodoroSeconds,
+        remainingSeconds: _pomodoroSeconds,
+      ),
+    );
     callbacks.onPomodoroStart?.call(_state);
     _startTimer();
   }

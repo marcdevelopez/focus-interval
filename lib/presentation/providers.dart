@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/pomodoro_machine.dart';
 import '../data/models/pomodoro_task.dart';
 import '../data/models/pomodoro_session.dart';
+import '../data/models/task_run_group.dart';
 import '../data/repositories/task_repository.dart';
 import '../data/repositories/local_task_repository.dart';
 import '../data/services/firebase_auth_service.dart';
@@ -23,6 +24,7 @@ import '../data/services/local_sound_storage.dart';
 import '../data/services/local_sound_overrides.dart';
 import '../data/services/task_run_retention_service.dart';
 import '../data/services/task_run_notice_service.dart';
+import '../data/services/app_mode_service.dart';
 
 // VIEWMODELS
 import 'viewmodels/pomodoro_view_model.dart';
@@ -38,11 +40,42 @@ final authStateProvider = StreamProvider<User?>(
   (ref) => ref.watch(firebaseAuthServiceProvider).authStateChanges,
 );
 
+final appModeServiceProvider = Provider<AppModeService>((_) {
+  throw UnimplementedError('AppModeService must be initialized in main.dart');
+});
+
+class AppModeController extends Notifier<AppMode> {
+  late AppModeService _service;
+
+  @override
+  AppMode build() {
+    _service = ref.watch(appModeServiceProvider);
+    return _service.readMode();
+  }
+
+  Future<void> setMode(AppMode mode) async {
+    if (state == mode) return;
+    state = mode;
+    await _service.saveMode(mode);
+  }
+
+  Future<void> setLocal() => setMode(AppMode.local);
+
+  Future<void> setAccount() => setMode(AppMode.account);
+}
+
+final appModeProvider = NotifierProvider<AppModeController, AppMode>(
+  AppModeController.new,
+);
+
 final taskRepositoryProvider = Provider<TaskRepository>((ref) {
+  final appMode = ref.watch(appModeProvider);
   final authState = ref.watch(authStateProvider).value;
-  if (authState != null) return ref.watch(firestoreTaskRepositoryProvider);
-  if (!_supportsFirebase) return LocalTaskRepository();
-  return InMemoryTaskRepository();
+  if (appMode == AppMode.local) {
+    return LocalTaskRepository();
+  }
+  if (authState == null) return NoopTaskRepository();
+  return ref.watch(firestoreTaskRepositoryProvider);
 });
 
 //
@@ -101,6 +134,10 @@ final deviceInfoServiceProvider = Provider<DeviceInfoService>((_) {
 final pomodoroSessionRepositoryProvider = Provider<PomodoroSessionRepository>((
   ref,
 ) {
+  final appMode = ref.watch(appModeProvider);
+  if (appMode == AppMode.local) {
+    return NoopPomodoroSessionRepository();
+  }
   final authState = ref.watch(authStateProvider).value;
   final firestore = ref.watch(firestoreServiceProvider);
   final auth = ref.watch(firebaseAuthServiceProvider);
@@ -126,11 +163,12 @@ final taskRunNoticeServiceProvider = Provider<TaskRunNoticeService>((_) {
 
 // Task run group repository
 final taskRunGroupRepositoryProvider = Provider<TaskRunGroupRepository>((ref) {
-  final authState = ref.watch(authStateProvider).value;
-  if (!_supportsFirebase) {
+  final appMode = ref.watch(appModeProvider);
+  if (appMode == AppMode.local) {
     final retention = ref.watch(taskRunRetentionServiceProvider);
     return LocalTaskRunGroupRepository(retentionService: retention);
   }
+  final authState = ref.watch(authStateProvider).value;
   final auth = ref.watch(firebaseAuthServiceProvider);
   final user = authState ?? auth.currentUser;
   if (user == null) return NoopTaskRunGroupRepository();
@@ -141,6 +179,11 @@ final taskRunGroupRepositoryProvider = Provider<TaskRunGroupRepository>((ref) {
     authService: auth,
     retentionService: retention,
   );
+});
+
+final taskRunGroupStreamProvider = StreamProvider<List<TaskRunGroup>>((ref) {
+  final repo = ref.watch(taskRunGroupRepositoryProvider);
+  return repo.watchAll();
 });
 
 // Active session stream (used for global execution guards).

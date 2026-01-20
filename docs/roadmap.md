@@ -34,6 +34,8 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       19/01/2026: Windows validation completed for the latest implementations (no changes required).
       19/01/2026: Implemented TaskRunGroup auto-complete when running groups exceed theoreticalEndTime; device verification pending.
       19/01/2026: Phase 17 planning flow + conflict management implemented and validated on iOS/macOS/Android/Web; Windows/Linux pending.
+      20/01/2026: Local vs Account scope guard implemented with explicit import dialog (no implicit sync).
+      20/01/2026: Run Mode time ranges anchored to actualStartTime with final breaks and pause offsets; task transitions stabilized.
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
@@ -540,7 +542,8 @@ These subphases should also appear in **dev_log.md** as they are completed.
   before starting the TimerScreen redesign.
 - Redesign timer UI: current time inside circle, status boxes, next box, contextual list.
 - Show time ranges in status boxes and in each contextual task list item.
-- Apply golden-green color for the "Next" status box when the current pomodoro is the last in the task.
+- Apply golden-green color for the "Next" status box only when the current pomodoro is the last in the **last task** (end of group).
+- During a break, if this is the last break of a task and more tasks remain, "Next" must show End of task (no next-task details).
 - Rotate needle counterclockwise for countdown and keep idle preview consistent.
 - Define idle preview needle behavior (consistent position or motion) for pre-start planning state.
 - Implement automatic transitions between tasks with no modal.

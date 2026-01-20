@@ -160,7 +160,7 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
         tasks.fold<int>(0, (total, item) => total + item.totalPomodoros);
     final totalDurationSeconds =
         group.totalDurationSeconds ??
-        tasks.fold<int>(0, (total, item) => total + item.totalDurationSeconds);
+        groupDurationSecondsWithFinalBreaks(tasks);
 
     return group.copyWith(
       totalTasks: totalTasks,
@@ -231,12 +231,10 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
   }
 
   DateTime? _resolveTheoreticalEndTime(Map<String, dynamic> raw) {
-    final start =
-      _parseDateTime(raw['actualStartTime']) ??
-      _parseDateTime(raw['scheduledStartTime']) ??
-      _parseDateTime(raw['createdAt']);
+    final start = _parseDateTime(raw['actualStartTime']);
+    if (start == null) return null;
     final rawEnd = _parseDateTime(raw['theoreticalEndTime']);
-    if (start != null && rawEnd != null && rawEnd.isBefore(start)) {
+    if (rawEnd != null && rawEnd.isBefore(start)) {
       final totalSeconds = _readInt(raw, 'totalDurationSeconds', 0);
       if (totalSeconds > 0) {
         return start.add(Duration(seconds: totalSeconds));

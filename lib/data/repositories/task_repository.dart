@@ -10,18 +10,35 @@ abstract class TaskRepository {
   Stream<List<PomodoroTask>> watchAll();
 }
 
+class NoopTaskRepository implements TaskRepository {
+  @override
+  Future<List<PomodoroTask>> getAll() async => const [];
+
+  @override
+  Future<PomodoroTask?> getById(String id) async => null;
+
+  @override
+  Future<void> save(PomodoroTask task) async {}
+
+  @override
+  Future<void> delete(String id) async {}
+
+  @override
+  Stream<List<PomodoroTask>> watchAll() => const Stream.empty();
+}
+
 /// Temporary implementation (local MVP)
 class InMemoryTaskRepository implements TaskRepository {
   final Map<String, PomodoroTask> _store = {};
   final StreamController<List<PomodoroTask>> _controller;
 
   InMemoryTaskRepository()
-      : _controller = StreamController<List<PomodoroTask>>.broadcast(
-          sync: true,
-          onListen: () {
-            // Emit the current state as soon as someone subscribes.
-          },
-        ) {
+    : _controller = StreamController<List<PomodoroTask>>.broadcast(
+        sync: true,
+        onListen: () {
+          // Emit the current state as soon as someone subscribes.
+        },
+      ) {
     _controller.onListen = _emit;
   }
 

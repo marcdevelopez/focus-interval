@@ -16,7 +16,7 @@ This document is used to:
 # 📍 Current status
 
 Active phase: **17 — Planning Flow + Conflict Management**
-Last update: **19/01/2026**
+Last update: **20/01/2026**
 
 ---
 
@@ -1279,6 +1279,104 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Implement Local Mode toggle and cross-platform local repositories per Phase 6.6.
+
+# 🔹 Block 62 — Local/Account scope guard + explicit import — 20/01/2026
+
+### ✔ Work completed:
+
+- Added AppMode persistence (Local vs Account) and enforced repository scoping by mode.
+- Prevented implicit sync by requiring an explicit post-login choice (use account vs import local data).
+- Implemented a one-time import flow for local tasks and task groups into the current UID.
+- Updated Task List UI with a mode indicator and explicit mode switch action.
+- Ensured logout returns to Local Mode without auto-import or auto-sync.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Local Mode is device-scoped only; Account Mode is UID-scoped only.
+- Import is user-confirmed and targeted to the current UID (no implicit merge).
+
+### 🎯 Next steps:
+
+- Finish Phase 6.6 UX: mode selector entry in Settings and import conflict options.
+
+# 🔹 Block 63 — Phase 18 (Run Mode redesign kickoff) — 20/01/2026
+
+### ✔ Work completed:
+
+- TimerScreen now loads TaskRunGroups (groupId) and removes single-task loading.
+- Added Run Mode center stack (current time, remaining time, status/next boxes) inside the circle.
+- Added contextual task list (prev/current/next) with projected time ranges.
+- Added planned-groups indicator placeholder in Run Mode header.
+- Updated group completion modal with summary totals.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Run Mode remains group-only; no single-task execution path.
+- Planned Groups screen is deferred (indicator only) until Phase 19.
+
+### 🎯 Next steps:
+
+- Finish Phase 18: align visuals to specs (golden-green next box, idle preview), refine ranges on pause/resume.
+
+# 🔹 Block 64 — Run Mode status clarification — 20/01/2026
+
+### ✔ Work completed:
+
+- Clarified Run Mode "Next" status rules in specs: end-of-group only on last pomodoro of last task.
+- Added explicit rule for last pomodoro of a task with remaining tasks: show next task's first pomodoro (no break between tasks).
+
+### ⚠️ Issues found:
+
+- App closed during the transition after the last pomodoro of a task when more tasks remain (repro on Android).
+
+### 🎯 Next steps:
+
+- Align TimerScreen logic with the clarified spec and fix the crash during task transitions.
+
+# 🔹 Block 65 — Run Mode next-box wording — 20/01/2026
+
+### ✔ Work completed:
+
+- Updated specs to show "End of task" during the last break of a task when more tasks remain.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Update TimerScreen logic to match the new wording rule.
+
+# 🔹 Block 66 — Run Mode timing consistency fix — 20/01/2026
+
+### ✔ Work completed:
+
+- Anchored all HH:mm ranges to TaskRunGroup.actualStartTime + accumulated durations + pause offsets.
+- Included final breaks in task/group duration calculations and end-of-task projections.
+- Unified TimerScreen/TaskList ranges with the group timeline (placeholders before actual start).
+- Stabilized task transitions by publishing completed sessions only at group end.
+- Repository normalization now derives theoreticalEndTime from actualStartTime + totalDurationSeconds only.
+
+### ⚠️ Issues found:
+
+- Task ranges were recalculated from per-task starts and missed final breaks, causing drift and flicker at task boundaries.
+
+### 🧠 Decisions made:
+
+- Single source of truth for ranges is group.actualStartTime with accumulated durations and pause offsets.
+- Pre-start states show placeholders instead of inferred timestamps.
+
+### 🎯 Next steps:
+
+- Re-run multi-task scenarios on device to validate timing consistency end-to-end.
 
 # 🧾 General notes
 

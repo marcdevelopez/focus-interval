@@ -3,10 +3,12 @@ import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/app.dart';
 import 'data/services/device_info_service.dart';
 import 'data/services/notification_service.dart';
+import 'data/services/app_mode_service.dart';
 import 'firebase_options.dart';
 import 'presentation/providers.dart';
 
@@ -15,11 +17,13 @@ Future<void> main() async {
   await _initFirebase();
   final deviceInfo = await _loadDeviceInfo();
   final notifications = await _initNotifications();
+  final appModeService = await _initAppModeService();
   runApp(
     ProviderScope(
       overrides: [
         deviceInfoServiceProvider.overrideWithValue(deviceInfo),
         notificationServiceProvider.overrideWithValue(notifications),
+        appModeServiceProvider.overrideWithValue(appModeService),
       ],
       child: const FocusIntervalApp(),
     ),
@@ -31,9 +35,7 @@ Future<void> _initFirebase() async {
     // Linux desktop doesn't register Firebase plugins here yet; skip init to avoid channel errors.
     return;
   }
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 }
 
 Future<DeviceInfoService> _loadDeviceInfo() async {
@@ -60,6 +62,11 @@ Future<NotificationService> _initNotifications() async {
     }
   }
   return NotificationService.init();
+}
+
+Future<AppModeService> _initAppModeService() async {
+  final prefs = await SharedPreferences.getInstance();
+  return AppModeService(prefs);
 }
 
 bool get _isLinux => !kIsWeb && defaultTargetPlatform == TargetPlatform.linux;

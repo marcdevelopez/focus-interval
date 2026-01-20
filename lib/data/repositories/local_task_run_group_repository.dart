@@ -178,16 +178,13 @@ class LocalTaskRunGroupRepository implements TaskRunGroupRepository {
   }
 
   DateTime? _resolveTheoreticalEndTime(TaskRunGroup group) {
-    final start =
-        group.actualStartTime ?? group.scheduledStartTime ?? group.createdAt;
+    final start = group.actualStartTime;
+    if (start == null) return null;
     final end = group.theoreticalEndTime;
     if (end.isBefore(start)) {
       final totalSeconds =
           group.totalDurationSeconds ??
-          group.tasks.fold<int>(
-            0,
-            (total, item) => total + item.totalDurationSeconds,
-          );
+          groupDurationSecondsWithFinalBreaks(group.tasks);
       if (totalSeconds > 0) {
         return start.add(Duration(seconds: totalSeconds));
       }

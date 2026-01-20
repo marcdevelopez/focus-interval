@@ -40,7 +40,7 @@ The app syncs with Firebase via Google Sign-In on iOS/Android/Web and email/pass
 | UI Framework           | Flutter 3.x                                               |
 | Auth                   | Firebase Authentication (Google Sign-In + email/password) |
 | Backend                | Firestore                                                 |
-| Local Cache (optional) | SharedPreferences (Local Mode storage); Hive (v1.2) |
+| Local Cache (optional) | SharedPreferences (Local Mode storage); Hive (v1.2)       |
 | State Management       | Riverpod                                                  |
 | Navigation             | GoRouter                                                  |
 | Audio                  | just_audio                                                |
@@ -328,8 +328,12 @@ Platform notes:
 - Local Mode is a first-class backend available on all platforms.
 - Users can explicitly choose between Local Mode (offline, no login) and Account Mode (synced).
 - Local data uses the exact same models (tasks, TaskRunGroups, sessions) for future compatibility.
-- Switching to Account Mode can offer a one-time import/sync of local data when online.
+- Local Mode scope is strictly device-local; Account Mode scope is strictly user:{uid}.
+- There is no implicit sync between scopes.
+- Switching to Account Mode can offer a one-time import of local data only after explicit user confirmation.
+- Import targets the currently signed-in UID and overwrites by ID (no merge) in MVP 1.2.
 - Switching back to Local Mode keeps local data separate and usable regardless of login state.
+- Logout returns to Local Mode without auto-import or auto-sync.
 
 ## **8.3. Local cache (optional)**
 
@@ -525,14 +529,14 @@ Pomodoro running
   - Text: Pomodoro Y de X
   - Time range: HH:mm–HH:mm
 - Next status:
-  - If another break follows:
+  - If this is the last pomodoro of the **last task** in the group:
+    - Golden-green border/text, black background
+    - Text: Fin de grupo
+    - End time: HH:mm
+  - Otherwise (the task continues after a break):
     - Blue border/text, black background
     - Text: Descanso: N min
     - Time range: HH:mm–HH:mm
-  - If it is the last pomodoro of the task:
-    - Golden-green border/text, black background
-    - Text: Fin de tarea
-    - End time: HH:mm
 
 Break running
 
@@ -541,9 +545,16 @@ Break running
   - Text: Descanso: N min
   - Time range: HH:mm–HH:mm
 - Next status:
-  - Red border/text, black background
-  - Text: Siguiente: Pomodoro Y de X
-  - Time range: HH:mm–HH:mm
+  - If this is the last break of a task **and there are more tasks**:
+    - Golden-green border/text, black background
+    - Text: Fin de tarea
+    - End time: HH:mm
+  - Otherwise:
+    - Red border/text, black background
+    - Text: Siguiente: Pomodoro Y de X
+    - Time range: HH:mm–HH:mm
+
+Note: There is **no break between tasks**. When a task finishes and there are more tasks in the group, the next task starts immediately.
 
 Rule: the upper box always matches the current executing phase.
 

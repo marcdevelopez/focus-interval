@@ -26,13 +26,16 @@ class PomodoroForegroundService : Service() {
     const val EXTRA_TITLE = "extra_title"
     const val EXTRA_TEXT = "extra_text"
 
+    @Volatile
+    private var isRunning: Boolean = false
+
     fun start(context: Context, title: String, text: String) {
       val intent = Intent(context, PomodoroForegroundService::class.java).apply {
         action = ACTION_START
         putExtra(EXTRA_TITLE, title)
         putExtra(EXTRA_TEXT, text)
       }
-      ContextCompat.startForegroundService(context, intent)
+      context.startService(intent)
     }
 
     fun update(context: Context, title: String, text: String) {
@@ -41,7 +44,7 @@ class PomodoroForegroundService : Service() {
         putExtra(EXTRA_TITLE, title)
         putExtra(EXTRA_TEXT, text)
       }
-      ContextCompat.startForegroundService(context, intent)
+      context.startService(intent)
     }
 
     fun stop(context: Context) {
@@ -75,6 +78,7 @@ class PomodoroForegroundService : Service() {
   }
 
   override fun onDestroy() {
+    isRunning = false
     releaseWakeLock()
     super.onDestroy()
   }
@@ -90,6 +94,7 @@ class PomodoroForegroundService : Service() {
     if (!isForeground) {
       startForeground(NOTIFICATION_ID, notification)
       isForeground = true
+      isRunning = true
       acquireWakeLock()
     } else {
       val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -107,6 +112,7 @@ class PomodoroForegroundService : Service() {
       }
       isForeground = false
     }
+    isRunning = false
     releaseWakeLock()
     stopSelf()
   }
