@@ -16,7 +16,7 @@ This document is used to:
 # 📍 Current status
 
 Active phase: **17 — Planning Flow + Conflict Management**
-Last update: **20/01/2026**
+Last update: **21/01/2026**
 
 ---
 
@@ -1377,6 +1377,27 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Re-run multi-task scenarios on device to validate timing consistency end-to-end.
+
+# 🔹 Block 67 — Groups Hub documentation update — 21/01/2026
+
+### ✔ Work completed:
+
+- Renamed "Planned Groups" to "Groups Hub" across specs and roadmap for the canonical screen name.
+- Defined post-completion navigation to Groups Hub after the user dismisses the completion modal.
+- Added Groups Hub actions for running completed groups again and direct access to the Task List screen.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- "Groups Hub" is the final screen name.
+- Post-completion navigation is only triggered after explicit modal dismissal (no time-based auto-navigation).
+
+### 🎯 Next steps:
+
+- None.
 
 # 🧾 General notes
 

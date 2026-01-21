@@ -248,6 +248,7 @@ class PomodoroSession {
 - When the last task completes:
   - The group ends (status = completed).
   - Final modal + final animation are shown (see section 12).
+  - After the user explicitly dismisses the completion modal, auto-navigate to the Groups Hub screen (no time-based auto-navigation).
 
 ## **6.4. Scheduling and conflict rules**
 
@@ -271,7 +272,7 @@ Rules
   - Show conflict
   - Options: delete the existing schedule, or cancel the new schedule
 
-These conflict checks apply to both Comenzar ahora and Planificar comienzo.
+These conflict checks apply to both Start now and Schedule start.
 
 Scheduled start behavior
 
@@ -483,15 +484,15 @@ The execution screen shows an analog-style circular timer with a dynamic layout 
 
 ### **10.4.1. Pre-start planning (before the timer begins)**
 
-- The user chooses when to run the group after tapping “Confirmar”.
+- The user chooses when to run the group after tapping "Confirm".
 - Show a date + time picker (default: current date/time).
 - Two explicit actions:
-  - Comenzar ahora → start immediately
-  - Planificar comienzo → schedule the start time
+  - Start now -> start immediately
+  - Schedule start -> schedule the start time
 - Conflicts are validated for both actions (see section 6.4)
 - If a schedule is set:
   - Recalculate theoretical start/end times using the selected start time
-  - Save as scheduled and add to Planned Groups
+  - Save as scheduled and add to Groups Hub
   - Send the pre-alert noticeMinutes before the scheduled start
   - At the scheduled time, auto-open the execution screen and auto-start the group
   - The timer remains stopped until the scheduled start
@@ -499,7 +500,7 @@ The execution screen shows an analog-style circular timer with a dynamic layout 
 ### **10.4.2. Header**
 
 - Back button + title (Focus Interval)
-- Access to Planned Groups screen (show a visual indicator when pending groups exist)
+- Access to Groups Hub screen (show a visual indicator when pending groups exist)
 
 ### **10.4.3. Circle core elements**
 
@@ -585,9 +586,10 @@ The list rebuilds automatically when tasks change.
 
 ### **10.4.6. Transitions**
 
-- Task completion → auto-transition to next task
+- Task completion -> auto-transition to next task
 - No modal between tasks
-- Group completion → modal + final animation (see section 12)
+- Group completion -> modal + final animation (see section 12)
+- After the user explicitly dismisses the completion modal, auto-navigate to the Groups Hub screen (do not remain in an idle Execution screen)
 - Status boxes and contextual list update automatically (including time ranges after pause/resume); no extra confirmations or animations in the MVP
 
 ### **10.4.7. Mandatory visual improvements for the timer**
@@ -616,9 +618,14 @@ The MM:SS timer must not shift horizontally:
 
 ---
 
-## **10.5. Planned Groups screen**
+## **10.5. Groups Hub screen**
 
-Purpose: manage scheduled and running groups (not tasks). Note: this screen is independent from the task list/editor.
+Purpose: central view to track scheduled, running, and completed TaskRunGroups. It is the default landing screen after group completion. Note: this screen is independent from the task list/editor, but it provides a direct path to the Task List screen.
+
+Entry points
+
+- Run Mode header
+- Auto-navigation after group completion (see sections 10.4.6 and 12)
 
 List fields per group
 
@@ -626,13 +633,15 @@ List fields per group
 - Theoretical end time
 - Number of tasks
 - Total duration
-- Pre-alert setting (e.g., “Aviso 5 min antes”)
+- Pre-alert setting (e.g., "Notice 5 min before")
 
 Actions
 
-- Tap → light detail view (summary)
+- Tap -> light detail view (summary)
 - Cancel planning
 - Start now (only if no conflicts)
+- Run again (completed groups): duplicate the group snapshot into a new TaskRunGroup and open the pre-start planning flow
+- Go to Task List screen (Task Library) to create/edit tasks and build new groups
 
 History
 
@@ -736,7 +745,7 @@ When the timer completes the last pomodoro of the last task:
 1. The app must stop automatically.
 2. It must play the final sound (same as task finish for now).
 3. It must show a modal popup with:
-   - “Tasks Group completed”
+   - "Tasks Group completed"
    - Optional summary: total tasks, pomodoros, total time
 4. It must send a system notification.
 5. The state machine transitions to finished.
@@ -744,7 +753,8 @@ When the timer completes the last pomodoro of the last task:
    - Stop animation
    - Keep the hand in its final position (360°)
    - Change the circle color to green or gold
-   - Show “TASKS GROUP COMPLETED” in the center
+   - Show "TASKS GROUP COMPLETED" in the center
+7. After the user explicitly dismisses the completion modal, navigate to the Groups Hub screen (do not remain in an idle Execution screen and do not use a time-based auto-dismiss).
 
 ✔ No popup between tasks
 

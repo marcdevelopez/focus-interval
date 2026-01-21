@@ -549,29 +549,32 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Implement automatic transitions between tasks with no modal.
 - Update group completion modal and final animation, including an optional summary
   (total tasks, pomodoros, total time).
-- Add a planned-groups indicator in the Run Mode header when pending groups exist.
+- Add a Groups Hub indicator in the Run Mode header when pending groups exist.
 - On resume, recalculate projected start/end times for status boxes and the contextual task list.
 
 ### 📌 Exit conditions
 
 - Full group execution works end-to-end with correct UI and transitions.
 - Completion modal includes the optional summary data.
-- Header shows a visual indicator when planned groups are pending.
+- Header shows a visual indicator when pending groups exist (Groups Hub).
 - Status boxes and contextual task list show time ranges.
 
 ---
 
-# 🚀 **PHASE 19 — Planned Groups Screen**
+# 🚀 **PHASE 19 — Groups Hub Screen**
 
 ### ⚙️ Tasks
 
-- Create Planned Groups screen accessible from Run Mode header.
+- Create Groups Hub screen accessible from Run Mode header.
 - List scheduled/running/last N completed groups with required fields.
 - Actions: view summary, cancel schedule, start now (if no conflict).
+- Add "Run again" for completed groups to duplicate the snapshot into a new TaskRunGroup and open planning.
+- Provide direct navigation to the Task List screen (Task Library).
+- Auto-navigate to Groups Hub after group completion (only after the user dismisses the completion modal).
 
 ### 📌 Exit conditions
 
-- Planned Groups screen manages group lifecycle reliably.
+- Groups Hub screen manages group lifecycle reliably and serves as the post-completion landing view.
 
 ---
 
