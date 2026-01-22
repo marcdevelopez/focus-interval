@@ -16,7 +16,7 @@ This document is used to:
 # 📍 Current status
 
 Active phase: **17 — Planning Flow + Conflict Management**
-Last update: **21/01/2026**
+Last update: **22/01/2026**
 
 ---
 
@@ -1398,6 +1398,39 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - None.
+
+# 🔹 Block 68 — macOS run failed (signing) — 21/01/2026
+
+### ⚠️ Issues found:
+
+- `flutter run` failed on macOS: no Mac App Development provisioning profiles found for `com.marcdevelopez.focusinterval` and automatic signing is disabled.
+
+### 🧠 Notes:
+
+- Xcodebuild suggests enabling automatic signing or passing `-allowProvisioningUpdates`.
+
+### 🎯 Next steps:
+
+- Configure signing for the macOS Runner target (or enable automatic signing) before running on macOS.
+
+# 🔹 Block 69 — macOS signing resolved — 22/01/2026
+
+### ✔ Work completed:
+
+- Apple Developer Program activated for the team and the Bundle ID `com.marcdevelopez.focusinterval` is now owned by the team.
+- Automatic signing can now register the Bundle ID and generate the macOS development profile.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep `com.marcdevelopez.focusinterval` as the canonical Bundle ID for macOS.
+
+### 🎯 Next steps:
+
+- Re-run `flutter run -d macos` to confirm the build now succeeds.
 
 # 🧾 General notes
 
