@@ -34,6 +34,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       19/01/2026: Windows validation completed for the latest implementations (no changes required).
       19/01/2026: Implemented TaskRunGroup auto-complete when running groups exceed theoreticalEndTime; device verification pending.
       19/01/2026: Phase 17 planning flow + conflict management implemented and validated on iOS/macOS/Android/Web; Windows/Linux pending.
+      Scheduled auto-start lifecycle (scheduled -> running -> completed) and resume/launch catch-up pending.
       20/01/2026: Local vs Account scope guard implemented with explicit import dialog (no implicit sync).
       20/01/2026: Run Mode time ranges anchored to actualStartTime with final breaks and pause offsets; task transitions stabilized.
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
@@ -45,6 +46,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
     - Phase 6.6 — Local Mode (offline/no auth): mode selector, persistent indicator, optional import.
     - Phase 10 — Unique-name validation + apply-settings copy (verify all edge cases).
     - Phase 13 — Auto-open running session on launch/login.
+    - Phase 17 — Scheduled auto-start lifecycle + resume/launch catch-up.
 
 Update this on each commit if needed.
 
@@ -523,14 +525,17 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ### ⚙️ Tasks
 
-- Add “Start now” vs “Planificar comienzo” flow with date/time picker.
+- Add “Start now” vs “Schedule start” flow with date/time picker.
 - Compute and persist `scheduledStartTime` + `theoreticalEndTime`.
 - Enforce overlap rules and resolution choices (delete existing vs cancel new).
 - Add per-group `noticeMinutes` with global/default fallback.
+- Auto-start scheduled groups at scheduledStartTime (status -> running, actualStartTime set, theoreticalEndTime recalculated).
+- If the app was inactive at scheduledStartTime, auto-start on next launch/resume when no conflict exists.
 
 ### 📌 Exit conditions
 
 - Scheduled groups can be created without conflicts; conflicts are resolved via UI.
+- Scheduled groups auto-start and transition to running at the scheduled time (or on next resume if missed).
 
 ---
 

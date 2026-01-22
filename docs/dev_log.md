@@ -1495,6 +1495,26 @@ _(fill in when they happen)_
 - Verified on macOS and Chrome.
 - Windows and Linux pending.
 
+# 🔹 Block 73 — Scheduled group lifecycle clarified — 22/01/2026
+
+### ✔ Work completed:
+
+- Clarified the scheduled group lifecycle in specs and roadmap (scheduled -> running -> completed).
+- Documented auto-start requirements at scheduledStartTime and catch-up on next launch/resume.
+- Added Phase 17 reminder for scheduled auto-start and resume/launch catch-up.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- ScheduledStartTime remains historical; actualStartTime is set when the group actually starts.
+
+### 🎯 Next steps:
+
+- Implement the scheduled auto-start + resume/launch catch-up behavior.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

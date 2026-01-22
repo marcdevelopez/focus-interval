@@ -185,6 +185,7 @@ class TaskRunItem {
 Notes:
 
 - theoreticalEndTime is calculated when the group is scheduled or started, using scheduledStartTime (if set) or now (for immediate start). Recalculate if the start time changes.
+- Expected lifecycle: scheduled -> running -> completed (or canceled). A scheduled group must transition to running at scheduledStartTime.
 - Editing a PomodoroTask after group creation does not affect a running or scheduled group.
 
 ## **5.3. PomodoroSession model (live sync)**
@@ -277,7 +278,15 @@ These conflict checks apply to both Start now and Schedule start.
 Scheduled start behavior
 
 - Send the pre-alert noticeMinutes before scheduledStartTime.
-- At scheduledStartTime, automatically start the group and open the execution screen.
+- At scheduledStartTime:
+  - Set status = running.
+  - Set actualStartTime = now.
+  - Recalculate theoreticalEndTime = actualStartTime + totalDurationSeconds.
+  - Automatically open the execution screen and start the group.
+- If the app was inactive at scheduledStartTime:
+  - On next launch/resume, if scheduledStartTime <= now and there is no active conflict,
+    auto-start immediately using actualStartTime = now.
+  - scheduledStartTime remains as historical data and is not overwritten.
 
 ---
 
@@ -494,7 +503,14 @@ The execution screen shows an analog-style circular timer with a dynamic layout 
   - Recalculate theoretical start/end times using the selected start time
   - Save as scheduled and add to Groups Hub
   - Send the pre-alert noticeMinutes before the scheduled start
-  - At the scheduled time, auto-open the execution screen and auto-start the group
+  - At the scheduled time:
+    - Set status = running
+    - Set actualStartTime = now
+    - Recalculate theoreticalEndTime = actualStartTime + totalDurationSeconds
+    - Auto-open the execution screen and auto-start the group
+  - If the app was inactive at scheduledStartTime:
+    - On next launch/resume, if scheduledStartTime <= now and there is no active conflict,
+      auto-start immediately using actualStartTime = now (scheduledStartTime remains unchanged)
   - The timer remains stopped until the scheduled start
 
 ### **10.4.2. Header**
