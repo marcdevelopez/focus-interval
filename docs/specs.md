@@ -358,6 +358,8 @@ users/{uid}/activeSession
 - Must include groupId, currentTaskId, currentTaskIndex, and totalTasks.
 - Only the owner device writes; others subscribe in real time and render progress by calculating remaining time from phaseStartedAt + phaseDurationSeconds.
 - On app launch or after login, if an active session is running (pomodoroRunning/shortBreakRunning/longBreakRunning), auto-open the execution screen for that group.
+- Auto-open must apply on the owner device and on mirror devices (mirror mode with optional take over).
+- If auto-open cannot occur (missing group data, blocked navigation, or explicit suppression), the user must see a clear entry point to the running group from the initial screen and from Groups Hub.
 
 ## **8.5. TaskRunGroup retention**
 
@@ -458,6 +460,14 @@ Item layout (left → right):
 - The UI must clearly show whether the app is in Local Mode or Account Mode.
 - This indicator must be persistent and unambiguous (e.g., app bar badge + icon).
 - Avoid any wording that could imply cloud sync when Local Mode is active.
+
+### **10.2.5. Running group entry point**
+
+- If a TaskRunGroup is running or paused, show a persistent banner/CTA on the Task List screen:
+  - Label includes the running group name and status.
+  - Primary action: "Open Run Mode" (Execution Screen).
+  - Secondary action: "View in Groups Hub".
+- This entry point is required when auto-open is suppressed or cannot occur.
 
 ---
 
@@ -631,6 +641,7 @@ The MM:SS timer must not shift horizontally:
 - activeSession includes: groupId, currentTaskId, currentTaskIndex, totalTasks.
 - Remaining time is calculated from phaseStartedAt + phaseDurationSeconds.
 - Mirror devices render task names/durations from the TaskRunGroup snapshot (by groupId), not from the editable task list.
+- When auto-open is triggered from launch/resume, open TimerScreen in mirror mode if the session belongs to another device.
 
 ---
 
@@ -642,6 +653,7 @@ Entry points
 
 - Run Mode header
 - Auto-navigation after group completion (see sections 10.4.6 and 12)
+- Task List banner when a group is running or paused (see section 10.2.5)
 
 List fields per group
 
@@ -656,6 +668,7 @@ Actions
 - Tap -> light detail view (summary)
 - Cancel planning
 - Start now (only if no conflicts)
+- Open Run Mode for running/paused groups
 - Run again (completed groups): duplicate the group snapshot into a new TaskRunGroup and open the pre-start planning flow
 - Go to Task List screen (Task Library) to create/edit tasks and build new groups
 
@@ -683,6 +696,14 @@ B. Minimum window size
 C. Responsive clock
 
 - Always centered
+
+---
+
+## **10.7. Transient feedback (SnackBars)**
+
+- SnackBars must not cover bottom-aligned actions or primary controls.
+- Keep SnackBars standard (default behavior/animation).
+- Place bottom actions in `Scaffold.bottomNavigationBar` or `persistentFooterButtons` so SnackBars appear above them.
 - Never clipped or distorted
 - Text remains legible at minimum size
 - Internal vertical stack (current time, countdown, status boxes) stays inside the circle
@@ -725,7 +746,7 @@ I. Button clarity and usability
 
 ---
 
-# ⚙️ **10.7. Settings / Preferences**
+# ⚙️ **10.8. Settings / Preferences**
 
 Entry point
 

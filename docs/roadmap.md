@@ -429,6 +429,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Handle conflicts: if an active session exists, allow “Take over” (overwrite `ownerDeviceId`) or respect the remote session.
 - Clear `activeSession` on finish or cancel.
 - On app launch/login, auto-open TimerScreen if an active session is running.
+- If auto-open cannot occur, a fallback entry point must exist (implemented in Phase 19).
 
 ### 📌 Exit conditions
 
@@ -436,6 +437,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Only the owner writes; others show live changes.
 - Phase transitions, pause/resume, and finish are persisted and visible when reopening the app.
 - Reopening the app with a running session opens the execution screen automatically.
+- If auto-open is suppressed or blocked, the user can reach the running group via the Task List banner or Groups Hub (implemented in Phase 19).
 
 # [✔] **PHASE 14 — Sounds and Notifications (completed 18/01/2026)**
 
@@ -573,6 +575,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Create Groups Hub screen accessible from Run Mode header.
 - List scheduled/running/last N completed groups with required fields.
 - Actions: view summary, cancel schedule, start now (if no conflict).
+- Add running-group entry points (Task List banner + Groups Hub "Open Run Mode" action).
 - Add "Run again" for completed groups to duplicate the snapshot into a new TaskRunGroup and open planning.
 - Provide direct navigation to the Task List screen (Task Library).
 - Auto-navigate to Groups Hub after group completion (only after the user dismisses the completion modal).

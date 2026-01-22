@@ -206,18 +206,16 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 child: _ContextualTaskList(vm: vm),
               ),
-
-            // Dynamic buttons
-            SafeArea(
-              top: false,
-              minimum: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: _ControlsBar(
-                state: state,
-                vm: vm,
-                taskLoaded: _taskLoaded,
-              ),
-            ),
           ],
+        ),
+        bottomNavigationBar: SafeArea(
+          top: false,
+          minimum: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: _ControlsBar(
+            state: state,
+            vm: vm,
+            taskLoaded: _taskLoaded,
+          ),
         ),
       ),
     );

@@ -1515,6 +1515,63 @@ _(fill in when they happen)_
 
 - Implement the scheduled auto-start + resume/launch catch-up behavior.
 
+# 🔹 Block 74 — Active group discovery clarified — 22/01/2026
+
+### ✔ Work completed:
+
+- Clarified that running sessions auto-open Run Mode on launch/login (owner or mirror).
+- Added fallback UX: Task List banner + Groups Hub entry point when auto-open is blocked.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Auto-open remains the default for running sessions; fallback entry points are mandatory for discoverability.
+
+### 🎯 Next steps:
+
+- Implement the Task List banner and Groups Hub "Open Run Mode" action.
+
+# 🔹 Block 75 — Roadmap order clarified for active group entry points — 22/01/2026
+
+### ✔ Work completed:
+
+- Moved the running-group entry point implementation to Phase 19 (Groups Hub) for clearer sequencing.
+- Kept auto-open on launch/login in Phase 13 and documented the fallback entry point as Phase 19 work.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Entry points for running groups are implemented alongside Groups Hub to keep navigation scalable.
+
+### 🎯 Next steps:
+
+- Implement the Phase 19 entry points when the Groups Hub screen is built.
+
+# 🔹 Block 76 — SnackBar layout safety — 22/01/2026
+
+### ✔ Work completed:
+
+- Moved bottom action controls to `bottomNavigationBar` so SnackBars no longer cover them.
+- Reverted to standard SnackBar behavior and animation (no custom floating margin).
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- SnackBars must never cover bottom-aligned actions; solve via layout, not custom margins.
+
+### 🎯 Next steps:
+
+- Validate SnackBar positioning on desktop and mobile screens with bottom actions.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
