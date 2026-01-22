@@ -16,7 +16,7 @@ This document is used to:
 # 📍 Current status
 
 Active phase: **17 — Planning Flow + Conflict Management**
-Last update: **22/01/2026**
+Last update: **23/01/2026**
 
 ---
 
@@ -1571,6 +1571,87 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Validate SnackBar positioning on desktop and mobile screens with bottom actions.
+
+# 🔹 Block 77 — Custom sound path visibility — 22/01/2026
+
+### ✔ Work completed:
+
+- Updated the sound selector to show custom file name (with extension) and full local path/URI.
+- Kept the dropdown selection concise while exposing the full path below the field.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Display full local path/URI for custom sounds to improve transparency and debugging.
+
+### 🎯 Next steps:
+
+- Verify on macOS/iOS/Android that the displayed path matches the selected file.
+
+# 🔹 Block 78 — Android custom sound path corrected — 22/01/2026
+
+### ✔ Work completed:
+
+- Persisted the original selected path/URI alongside the copied playback path.
+- Persisted the original picker file name for reliable display labels.
+- On Android, displayPath now uses the picker identifier (content://) and never falls back to the cache path.
+- Updated the sound selector to control the selected value and hide the path line when no original path/URI is available.
+- Applied local sound overrides when building TaskRunGroup items so custom audio plays.
+
+### ⚠️ Issues found:
+
+- Android previously showed the app sandbox copy path instead of the user-selected file path.
+
+### 🧠 Decisions made:
+
+- Keep playback using the imported app-local file, but always display the original selection path/URI.
+
+### 🎯 Next steps:
+
+- Re-verify on Android and confirm behavior for content URI selections.
+
+# 🔹 Block 79 — Revert custom sound display to filename-only — 23/01/2026
+
+### ✔ Work completed:
+
+- Removed custom path/URI display from the Task Editor sound selector.
+- Restored custom sound label to filename-only (“Custom: <file>”).
+- Rolled back display-path persistence to avoid showing incorrect paths.
+
+### ⚠️ Issues found:
+
+- Displaying original Android paths was unreliable and caused confusing labels.
+
+### 🧠 Decisions made:
+
+- Keep the UI to filename-only to preserve correctness and avoid exposing cache paths.
+
+### 🎯 Next steps:
+
+- Re-test custom sound selection on Android to confirm name and playback are correct.
+
+# 🔹 Block 80 — Restore custom filename display + playback — 23/01/2026
+
+### ✔ Work completed:
+
+- Persisted the original file name (displayName) for custom sounds.
+- Updated the selector to prefer the stored filename while keeping filename-only UI.
+- Applied local sound overrides when creating TaskRunGroup items so custom audio plays.
+
+### ⚠️ Issues found:
+
+- Filename display requires re-selecting the custom file to capture displayName.
+
+### 🧠 Decisions made:
+
+- Keep filename-only UI, but store original file name for correct labeling.
+
+### 🎯 Next steps:
+
+- Re-select a custom sound on Android and verify the filename and playback.
 
 # 🧾 General notes
 

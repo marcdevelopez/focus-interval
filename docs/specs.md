@@ -494,6 +494,7 @@ Behavior:
 - "Apply settings to remaining tasks" copies the current task configuration to all remaining tasks in the list (after the current task).
 - Applies to all task settings except Name (pomodoro duration, short break duration, long break duration, total pomodoros, long break interval, sound selections).
 - Task names are always unique within the list; block Save/Apply and show a validation error if the edited name duplicates another task name.
+- If a custom local sound is selected, show the file name (with extension) in the selector.
 
 ---
 

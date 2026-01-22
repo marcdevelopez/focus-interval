@@ -9,10 +9,12 @@ import '../providers.dart';
 import '../viewmodels/task_editor_view_model.dart';
 import '../../data/models/pomodoro_session.dart';
 import '../../data/models/pomodoro_task.dart';
+import '../../data/models/selected_sound.dart';
 import '../../data/models/task_run_group.dart';
 import '../../data/repositories/task_run_group_repository.dart';
 import '../../data/services/firebase_auth_service.dart';
 import '../../data/services/app_mode_service.dart';
+import '../../data/services/local_sound_overrides.dart';
 import '../../widgets/task_card.dart';
 
 class TaskListScreen extends ConsumerStatefulWidget {
@@ -408,7 +410,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       }
     }
 
-    final items = selected.map(_mapTaskToRunItem).toList();
+    final items = await _buildRunItemsWithOverrides(selected);
     final totalDurationSeconds = groupDurationSecondsWithFinalBreaks(items);
     final conflictStart = scheduledStart ?? planCapturedAt;
     final conflictEnd = conflictStart.add(
@@ -762,7 +764,44 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     return total;
   }
 
-  TaskRunItem _mapTaskToRunItem(PomodoroTask task) {
+  Future<List<TaskRunItem>> _buildRunItemsWithOverrides(
+    List<PomodoroTask> tasks,
+  ) async {
+    final overrides = ref.read(localSoundOverridesProvider);
+    final items = <TaskRunItem>[];
+    for (final task in tasks) {
+      var startSound = task.startSound;
+      var breakSound = task.startBreakSound;
+      final startOverride = await overrides.getOverride(
+        task.id,
+        SoundSlot.pomodoroStart,
+      );
+      final breakOverride = await overrides.getOverride(
+        task.id,
+        SoundSlot.breakStart,
+      );
+      if (startOverride != null) {
+        startSound = startOverride.sound;
+      }
+      if (breakOverride != null) {
+        breakSound = breakOverride.sound;
+      }
+      items.add(
+        _mapTaskToRunItem(
+          task,
+          startSound: startSound,
+          startBreakSound: breakSound,
+        ),
+      );
+    }
+    return items;
+  }
+
+  TaskRunItem _mapTaskToRunItem(
+    PomodoroTask task, {
+    SelectedSound? startSound,
+    SelectedSound? startBreakSound,
+  }) {
     return TaskRunItem(
       sourceTaskId: task.id,
       name: task.name,
@@ -771,8 +810,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       longBreakMinutes: task.longBreakMinutes,
       totalPomodoros: task.totalPomodoros,
       longBreakInterval: task.longBreakInterval,
-      startSound: task.startSound,
-      startBreakSound: task.startBreakSound,
+      startSound: startSound ?? task.startSound,
+      startBreakSound: startBreakSound ?? task.startBreakSound,
       finishTaskSound: task.finishTaskSound,
     );
   }

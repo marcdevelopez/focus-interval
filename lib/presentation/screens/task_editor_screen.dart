@@ -85,6 +85,11 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   @override
   Widget build(BuildContext context) {
     final task = ref.watch(taskEditorProvider);
+    final editor = ref.read(taskEditorProvider.notifier);
+    final pomodoroDisplayName =
+        editor.customDisplayName(SoundPickTarget.pomodoroStart);
+    final breakDisplayName =
+        editor.customDisplayName(SoundPickTarget.breakStart);
     _maybeSyncControllers(task);
     const pomodoroSounds = [
       SoundOption('default_chime', 'Chime (pomodoro start)'),
@@ -185,6 +190,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               label: "Pomodoro start",
               value: task.startSound,
               options: pomodoroSounds,
+              customDisplayName: pomodoroDisplayName,
               onPickLocal: () async {
                 final result = await ref
                     .read(taskEditorProvider.notifier)
@@ -212,6 +218,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               label: "Break start",
               value: task.startBreakSound,
               options: breakSounds,
+              customDisplayName: breakDisplayName,
               onPickLocal: () async {
                 final result = await ref
                     .read(taskEditorProvider.notifier)

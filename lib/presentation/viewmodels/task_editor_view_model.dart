@@ -30,6 +30,7 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
   final _uuid = const Uuid();
 
   late LocalSoundOverrides _soundOverrides;
+  final Map<SoundSlot, String?> _customDisplayNames = {};
 
   @override
   PomodoroTask? build() {
@@ -99,7 +100,8 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
       task.id,
       SoundSlot.breakStart,
     );
-
+    _syncDisplayName(SoundSlot.pomodoroStart, startOverride);
+    _syncDisplayName(SoundSlot.breakStart, breakOverride);
     return task.copyWith(
       startSound: startOverride?.sound ?? task.startSound,
       startBreakSound: breakOverride?.sound ?? task.startBreakSound,
@@ -151,6 +153,7 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
     if (task == null) return;
     final slot = _slotForTarget(target);
     await _soundOverrides.clearOverride(task.id, slot);
+    _customDisplayNames.remove(slot);
   }
 
   SoundSlot _slotForTarget(SoundPickTarget target) {
@@ -158,6 +161,23 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
       SoundPickTarget.pomodoroStart => SoundSlot.pomodoroStart,
       SoundPickTarget.breakStart => SoundSlot.breakStart,
     };
+  }
+
+  String? customDisplayName(SoundPickTarget target) {
+    return _customDisplayNames[_slotForTarget(target)];
+  }
+
+  void _syncDisplayName(SoundSlot slot, LocalSoundOverride? override) {
+    if (override?.sound.type == SoundType.custom) {
+      final name = override?.displayName;
+      if (name == null || name.trim().isEmpty) {
+        _customDisplayNames.remove(slot);
+      } else {
+        _customDisplayNames[slot] = name;
+      }
+    } else {
+      _customDisplayNames.remove(slot);
+    }
   }
 
   Future<SoundPickResult> pickLocalSound(SoundPickTarget target) async {
@@ -192,6 +212,7 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
       );
     }
 
+    final displayName = file.name.trim().isNotEmpty ? file.name.trim() : null;
     final extension = (file.extension ?? '').toLowerCase();
     const allowed = ['mp3', 'wav', 'm4a'];
     if (!allowed.contains(extension)) {
@@ -242,7 +263,13 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
         slot: slot,
         sound: custom,
         fallbackBuiltInId: fallbackBuiltInId,
+        displayName: displayName,
       );
+      if (displayName != null && displayName.trim().isNotEmpty) {
+        _customDisplayNames[slot] = displayName;
+      } else {
+        _customDisplayNames.remove(slot);
+      }
     }
 
     return SoundPickResult(sound: custom);

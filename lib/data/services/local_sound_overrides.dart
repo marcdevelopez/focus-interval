@@ -16,22 +16,26 @@ extension SoundSlotX on SoundSlot {
 class LocalSoundOverride {
   final SelectedSound sound;
   final String fallbackBuiltInId;
+  final String? displayName;
 
   const LocalSoundOverride({
     required this.sound,
     required this.fallbackBuiltInId,
+    this.displayName,
   });
 
   Map<String, dynamic> toMap() => {
     'type': sound.type.name,
     'value': sound.value,
     'fallback': fallbackBuiltInId,
+    if (displayName != null) 'displayName': displayName,
   };
 
   static LocalSoundOverride? fromMap(Map<String, dynamic> map) {
     final rawType = map['type'];
     final rawValue = map['value'];
     final rawFallback = map['fallback'];
+    final rawDisplayName = map['displayName'];
     if (rawType is! String || rawValue is! String || rawFallback is! String) {
       return null;
     }
@@ -44,6 +48,10 @@ class LocalSoundOverride {
     return LocalSoundOverride(
       sound: SelectedSound.custom(rawValue),
       fallbackBuiltInId: rawFallback,
+      displayName:
+          rawDisplayName is String && rawDisplayName.trim().isNotEmpty
+              ? rawDisplayName
+              : null,
     );
   }
 }
@@ -69,6 +77,7 @@ class LocalSoundOverrides {
     required SoundSlot slot,
     required SelectedSound sound,
     required String fallbackBuiltInId,
+    String? displayName,
   }) async {
     if (sound.type != SoundType.custom) {
       await clearOverride(taskId, slot);
@@ -77,6 +86,7 @@ class LocalSoundOverrides {
     final override = LocalSoundOverride(
       sound: sound,
       fallbackBuiltInId: fallbackBuiltInId,
+      displayName: displayName,
     );
     final prefs = await _prefs;
     await prefs.setString(_key(taskId, slot), jsonEncode(override.toMap()));

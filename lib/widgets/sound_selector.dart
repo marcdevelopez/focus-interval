@@ -17,6 +17,7 @@ class SoundSelector extends StatelessWidget {
   final List<SoundOption> options;
   final ValueChanged<SelectedSound> onChanged;
   final VoidCallback? onPickLocal;
+  final String? customDisplayName;
 
   const SoundSelector({
     super.key,
@@ -25,11 +26,17 @@ class SoundSelector extends StatelessWidget {
     required this.options,
     required this.onChanged,
     this.onPickLocal,
+    this.customDisplayName,
   });
 
   @override
   Widget build(BuildContext context) {
     final hasCustom = value.type == SoundType.custom;
+    final customName = hasCustom
+        ? (customDisplayName != null && customDisplayName!.trim().isNotEmpty
+            ? customDisplayName!.trim()
+            : _basename(value.value))
+        : '';
 
     final items = <DropdownMenuItem<String>>[
       if (onPickLocal != null)
@@ -43,7 +50,12 @@ class SoundSelector extends StatelessWidget {
       if (hasCustom)
         DropdownMenuItem<String>(
           value: _customCurrentId,
-          child: Text('Custom: ${_basename(value.value)}'),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Custom: $customName'),
+            ],
+          ),
         ),
     ];
 
