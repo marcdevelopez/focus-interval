@@ -1471,6 +1471,30 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 72 — Desktop clock update when out of focus — 22/01/2026
+
+### ✔ Work completed:
+
+- Kept the Run Mode system clock timer active on desktop and web when the app loses focus.
+- Preserved the existing pause behavior for mobile background states.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Desktop/web should keep updating the HH:mm clock while out of focus; mobile can pause in background.
+
+### 🎯 Next steps:
+
+- Verify the clock continues updating while the window is unfocused on Windows and Linux when possible.
+
+### ✅ Validation (22/01/2026)
+
+- Verified on macOS and Chrome.
+- Windows and Linux pending.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

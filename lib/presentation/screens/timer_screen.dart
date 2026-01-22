@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -103,11 +104,29 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       vm.handleAppResumed();
       return;
     }
-    _stopClockTimer();
+    final keepClockActive = _keepClockActiveOutOfFocus();
+    if (state == AppLifecycleState.detached ||
+        (!keepClockActive &&
+            (state == AppLifecycleState.inactive ||
+                state == AppLifecycleState.paused))) {
+      _stopClockTimer();
+    }
     if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
       vm.handleAppPaused();
+    }
+  }
+
+  bool _keepClockActiveOutOfFocus() {
+    if (kIsWeb) return true;
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.macOS:
+      case TargetPlatform.windows:
+      case TargetPlatform.linux:
+        return true;
+      default:
+        return false;
     }
   }
 
