@@ -716,58 +716,24 @@ class _ContextualTaskList extends StatelessWidget {
     final timeFormat = DateFormat('HH:mm');
     final prev = vm.previousItem;
     final next = vm.nextItem;
-    final baseStart = vm.groupTimelineStart;
-    if (baseStart == null) {
-      final items = <_ContextItemData>[];
-      if (prev != null) {
-        items.add(
-          _ContextItemData(
-            label: prev.name,
-            range: '--:--',
-            isCurrent: false,
-          ),
-        );
-      }
-      items.add(
-        _ContextItemData(
-          label: currentItem.name,
-          range: '--:--',
-          isCurrent: true,
-        ),
-      );
-      if (next != null) {
-        items.add(
-          _ContextItemData(
-            label: next.name,
-            range: '--:--',
-            isCurrent: false,
-          ),
-        );
-      }
-      return _ContextualTaskListBody(items: items);
+    final prevIndex = vm.currentTaskIndex - 1;
+    final nextIndex = vm.currentTaskIndex + 1;
+    final prevRange = prevIndex >= 0 ? vm.taskRangeForIndex(prevIndex) : null;
+    final currentRange = vm.taskRangeForIndex(vm.currentTaskIndex);
+    final nextRange =
+        nextIndex < group.tasks.length ? vm.taskRangeForIndex(nextIndex) : null;
+
+    String formatRange(TaskTimeRange? range) {
+      if (range == null) return '--:--';
+      return '${timeFormat.format(range.start)}–${timeFormat.format(range.end)}';
     }
-    final currentStart = _startForIndex(group, vm.currentTaskIndex, baseStart);
-    final lastIndex = group.tasks.length - 1;
-    final currentEnd = currentStart.add(
-      Duration(
-        seconds: _taskDurationSeconds(
-          currentItem,
-          includeFinalBreak: vm.currentTaskIndex < lastIndex,
-        ),
-      ),
-    );
 
     final items = <_ContextItemData>[];
     if (prev != null) {
-      final prevEnd = currentStart;
-      final prevStart = prevEnd.subtract(
-        Duration(seconds: _taskDurationSeconds(prev, includeFinalBreak: true)),
-      );
       items.add(
         _ContextItemData(
           label: prev.name,
-          range:
-              '${timeFormat.format(prevStart)}–${timeFormat.format(prevEnd)}',
+          range: formatRange(prevRange),
           isCurrent: false,
         ),
       );
@@ -776,27 +742,16 @@ class _ContextualTaskList extends StatelessWidget {
     items.add(
       _ContextItemData(
         label: currentItem.name,
-        range:
-            '${timeFormat.format(currentStart)}–${timeFormat.format(currentEnd)}',
+        range: formatRange(currentRange),
         isCurrent: true,
       ),
     );
 
     if (next != null) {
-      final nextStart = currentEnd;
-      final nextEnd = nextStart.add(
-        Duration(
-          seconds: _taskDurationSeconds(
-            next,
-            includeFinalBreak: vm.currentTaskIndex + 1 < lastIndex,
-          ),
-        ),
-      );
       items.add(
         _ContextItemData(
           label: next.name,
-          range:
-              '${timeFormat.format(nextStart)}–${timeFormat.format(nextEnd)}',
+          range: formatRange(nextRange),
           isCurrent: false,
         ),
       );
@@ -805,27 +760,6 @@ class _ContextualTaskList extends StatelessWidget {
     return _ContextualTaskListBody(items: items);
   }
 
-  DateTime _startForIndex(TaskRunGroup group, int index, DateTime baseStart) {
-    var cursor = baseStart;
-    for (var i = 0; i < index && i < group.tasks.length; i += 1) {
-      cursor = cursor.add(
-        Duration(
-          seconds: _taskDurationSeconds(
-            group.tasks[i],
-            includeFinalBreak: i < group.tasks.length - 1,
-          ),
-        ),
-      );
-    }
-    return cursor;
-  }
-
-  int _taskDurationSeconds(
-    TaskRunItem item, {
-    required bool includeFinalBreak,
-  }) {
-    return item.durationSeconds(includeFinalBreak: includeFinalBreak);
-  }
 }
 
 class _ContextItemData {

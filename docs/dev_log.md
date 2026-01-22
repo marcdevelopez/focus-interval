@@ -1430,7 +1430,46 @@ _(fill in when they happen)_
 
 ### 🎯 Next steps:
 
-- Re-run `flutter run -d macos` to confirm the build now succeeds.
+- Re-run `flutter run -d macos` to confirm the build now succeeds. (Completed 22/01/2026)
+
+# 🔹 Block 70 — Pause/Resume timeline fix — 22/01/2026
+
+### ✔ Work completed:
+
+- Fixed TaskRunGroup time ranges so Pause/Resume only affects the current and future tasks.
+- Preserved historical ranges for completed tasks by freezing their recorded time ranges.
+- Updated Run Mode contextual list to use stable per-task ranges.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Do not shift completed task ranges after a pause; only the active task and future tasks are extended.
+
+### 🎯 Next steps:
+
+- Re-test the Pause/Resume scenario to confirm time ranges stay stable for completed tasks. (Completed 22/01/2026)
+
+# 🔹 Block 71 — Pause/Resume timeline fix validated — 22/01/2026
+
+### ✔ Work completed:
+
+- Verified Pause/Resume timeline behavior on macOS, iOS, Android, and Chrome.
+- Confirmed completed task ranges remain stable while the active task and future tasks extend with pause time.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep the per-task range freezing behavior as the canonical rule for group timelines.
+
+### 🎯 Next steps:
+
+- None.
 
 # 🧾 General notes
 
