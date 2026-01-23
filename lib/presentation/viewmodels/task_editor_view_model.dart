@@ -9,6 +9,7 @@ import '../../data/models/pomodoro_task.dart';
 import '../../data/models/pomodoro_session.dart';
 import '../../data/models/selected_sound.dart';
 import '../../domain/pomodoro_machine.dart';
+import '../../domain/validators.dart';
 import '../providers.dart';
 import '../../data/services/local_sound_overrides.dart';
 
@@ -69,6 +70,15 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
 
   void update(PomodoroTask task) {
     state = task;
+  }
+
+  BreakDurationGuidance? breakGuidanceFor(PomodoroTask? task) {
+    if (task == null) return null;
+    return buildBreakDurationGuidance(
+      pomodoroMinutes: task.pomodoroMinutes,
+      shortBreakMinutes: task.shortBreakMinutes,
+      longBreakMinutes: task.longBreakMinutes,
+    );
   }
 
   Future<bool> save() async {

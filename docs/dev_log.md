@@ -1753,6 +1753,47 @@ _(fill in when they happen)_
 
 - Verify the warning shows once per browser and only in Local mode on web.
 
+# 🔹 Block 86 — Break duration validation + guidance — 23/01/2026
+
+### ✔ Work completed:
+
+- Added shared break-duration guidance logic (optimal ranges + hard limit checks).
+- Integrated hard validation (breaks cannot exceed pomodoro duration).
+- Added soft warnings for suboptimal ranges with a confirm dialog.
+- Added helper text and color cues on break inputs.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Use a hybrid validation approach: hard block for invalid breaks, soft warning for suboptimal ranges.
+
+### 🎯 Next steps:
+
+- Validate the new warnings on create/edit flows and during Apply settings (when implemented).
+
+# 🔹 Block 87 — Break validation tests — 23/01/2026
+
+### ✔ Work completed:
+
+- Added unit tests for break-duration guidance and ranges.
+- Added TaskEditorViewModel tests for guidance and status flags.
+- Ran full `flutter test` suite successfully.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep tests focused on validation logic; widget/integration tests can follow once editor keys are added.
+
+### 🎯 Next steps:
+
+- Add widget tests after adding stable editor field keys (if needed).
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

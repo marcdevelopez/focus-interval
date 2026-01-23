@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers.dart';
 import '../viewmodels/task_editor_view_model.dart';
 import '../../data/models/pomodoro_task.dart';
+import '../../domain/validators.dart';
 import '../../widgets/sound_selector.dart';
 
 class TaskEditorScreen extends ConsumerStatefulWidget {
@@ -106,6 +107,16 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         editor.customDisplayName(SoundPickTarget.pomodoroStart);
     final breakDisplayName =
         editor.customDisplayName(SoundPickTarget.breakStart);
+    final guidance = editor.breakGuidanceFor(task);
+    final shortStatus =
+        guidance?.shortStatus ?? BreakDurationStatus.optimal;
+    final longStatus = guidance?.longStatus ?? BreakDurationStatus.optimal;
+    final shortHelper = guidance == null
+        ? null
+        : 'Optimal range: ${guidance.shortRange.label} min';
+    final longHelper = guidance == null
+        ? null
+        : 'Optimal range: ${guidance.longRange.label} min';
     _maybeSyncControllers(task);
     const pomodoroSounds = [
       SoundOption('default_chime', 'Chime (pomodoro start)'),
@@ -135,7 +146,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
           TextButton(
             onPressed: () async {
               if (!_formKey.currentState!.validate()) return;
-              if (!_validateBusinessRules()) return;
+              if (!await _validateBusinessRules()) return;
 
               final saved = await ref.read(taskEditorProvider.notifier).save();
               if (!context.mounted) return;
@@ -192,6 +203,15 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                 color: Colors.blueAccent,
                 stroke: 1,
               ),
+              helperText: shortHelper,
+              helperColor: _statusHelperColor(shortStatus),
+              borderColor: _statusBorderColor(shortStatus, focused: false),
+              focusedBorderColor: _statusBorderColor(shortStatus, focused: true),
+              additionalValidator: (value) => _breakMaxValidator(
+                value: value,
+                pomodoroMinutes: task.pomodoroMinutes,
+                label: 'Short break',
+              ),
             ),
             _numberField(
               label: "Long break (min)",
@@ -201,6 +221,15 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                 value: task.longBreakMinutes.toString(),
                 color: Colors.blueAccent,
                 stroke: 3,
+              ),
+              helperText: longHelper,
+              helperColor: _statusHelperColor(longStatus),
+              borderColor: _statusBorderColor(longStatus, focused: false),
+              focusedBorderColor: _statusBorderColor(longStatus, focused: true),
+              additionalValidator: (value) => _breakMaxValidator(
+                value: value,
+                pomodoroMinutes: task.pomodoroMinutes,
+                label: 'Long break',
               ),
             ),
             const SizedBox(height: 12),
@@ -326,7 +355,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     });
   }
 
-  bool _validateBusinessRules() {
+  Future<bool> _validateBusinessRules() async {
     final task = ref.read(taskEditorProvider);
     if (task == null) return false;
     if (task.longBreakInterval > task.totalPomodoros) {
@@ -337,7 +366,101 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       );
       return false;
     }
-    return true;
+    final guidance =
+        ref.read(taskEditorProvider.notifier).breakGuidanceFor(task);
+    if (guidance == null) return true;
+    if (guidance.hasHardViolation) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "Breaks cannot be longer than the pomodoro duration "
+            "(${task.pomodoroMinutes} min max).",
+          ),
+        ),
+      );
+      return false;
+    }
+    if (!guidance.hasSoftWarning) return true;
+    final shouldContinue = await _showBreakWarningDialog(task, guidance);
+    return shouldContinue;
+  }
+
+  Future<bool> _showBreakWarningDialog(
+    PomodoroTask task,
+    BreakDurationGuidance guidance,
+  ) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Break durations are outside the optimal range'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: [
+                Text(
+                  'For a ${task.pomodoroMinutes} min pomodoro, recommended '
+                  'ranges are:',
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Short break: ${guidance.shortRange.label} min '
+                  '(current: ${task.shortBreakMinutes} min)',
+                ),
+                Text(
+                  'Long break: ${guidance.longRange.label} min '
+                  '(current: ${task.longBreakMinutes} min)',
+                ),
+                const SizedBox(height: 8),
+                const Text('Do you want to save anyway?'),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Adjust'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Save anyway'),
+            ),
+          ],
+        );
+      },
+    );
+    return result ?? false;
+  }
+
+  String? _breakMaxValidator({
+    required int value,
+    required int pomodoroMinutes,
+    required String label,
+  }) {
+    if (pomodoroMinutes <= 0) return null;
+    if (value > pomodoroMinutes) {
+      return '$label cannot exceed pomodoro duration '
+          '($pomodoroMinutes min max).';
+    }
+    return null;
+  }
+
+  Color _statusHelperColor(BreakDurationStatus status) {
+    return switch (status) {
+      BreakDurationStatus.optimal => Colors.greenAccent,
+      BreakDurationStatus.suboptimal => Colors.orangeAccent,
+      BreakDurationStatus.invalid => Colors.redAccent,
+    };
+  }
+
+  Color _statusBorderColor(
+    BreakDurationStatus status, {
+    required bool focused,
+  }) {
+    if (status == BreakDurationStatus.optimal) {
+      return focused ? Colors.white54 : Colors.white24;
+    }
+    final base = _statusHelperColor(status);
+    return focused ? base : base.withValues(alpha: 0.6);
   }
 
   Widget _textField({
@@ -372,6 +495,11 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     required TextEditingController controller,
     required ValueChanged<int> onChanged,
     Widget? suffix,
+    String? helperText,
+    Color? helperColor,
+    Color? borderColor,
+    Color? focusedBorderColor,
+    String? Function(int value)? additionalValidator,
   }) {
     return TextFormField(
       controller: controller,
@@ -383,11 +511,16 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         labelStyle: const TextStyle(color: Colors.white54),
         filled: true,
         fillColor: Colors.white10,
-        enabledBorder: const UnderlineInputBorder(
-          borderSide: BorderSide(color: Colors.white24),
+        enabledBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: borderColor ?? Colors.white24),
         ),
-        focusedBorder: const UnderlineInputBorder(
-          borderSide: BorderSide(color: Colors.white54),
+        focusedBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: focusedBorderColor ?? Colors.white54),
+        ),
+        helperText: helperText,
+        helperStyle: TextStyle(
+          color: helperColor ?? Colors.white38,
+          fontSize: 11,
         ),
         suffixIcon: suffix == null
             ? null
@@ -412,6 +545,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         if (value == null || value <= 0) {
           return "Enter a valid number";
         }
+        final extraError = additionalValidator?.call(value);
+        if (extraError != null) return extraError;
         return null;
       },
       onChanged: (v) {

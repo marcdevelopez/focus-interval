@@ -532,6 +532,12 @@ Behavior:
 - Applies to all task settings except Name (pomodoro duration, short break duration, long break duration, total pomodoros, long break interval, sound selections).
 - Task names are always unique within the list; block Save/Apply and show a validation error if the edited name duplicates another task name.
 - Task name is required (non-empty). Persisting a task with an empty name is not allowed.
+- Break durations must not exceed the pomodoro duration; block Save/Apply and show a clear error if they do.
+- Show dynamic guidance for break durations based on the pomodoro length:
+  - Short break optimal range: 15–25% of pomodoro duration.
+  - Long break optimal range: 40–60% of pomodoro duration.
+- If break durations are outside the optimal range but still valid, show a warning with recommended ranges and allow the user to continue or adjust.
+- Display helper text and visual cues (green = optimal, amber = outside range, red = invalid) on break inputs.
 - If a custom local sound is selected, show the file name (with extension) in the selector.
 
 ---
