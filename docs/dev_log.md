@@ -1653,6 +1653,29 @@ _(fill in when they happen)_
 
 - Re-select a custom sound on Android and verify the filename and playback.
 
+# 🔹 Block 81 — Task list item UX overhaul — 23/01/2026
+
+### ✔ Work completed:
+
+- Replaced checkbox selection with a highlighted card style and long-press context menu (edit/delete + confirm).
+- Redesign task list items with three stat cards, dot-grid interval visualization, and a dedicated time-range row.
+- Restored custom sound filenames in the list using local sound overrides; default labels rendered in muted text.
+- Added a note in the editor clarifying custom sounds are stored locally.
+- Updated specs to document the new task item layout and behavior.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep selection feedback via subtle background/border instead of checkboxes.
+- Use dot-grid columns that scale to fit narrow widths.
+
+### 🎯 Next steps:
+
+- Validate the new layout on narrow mobile screens.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

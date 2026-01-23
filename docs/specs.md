@@ -423,16 +423,53 @@ Email verification (email/password)
 
 - Manual ordering via drag & drop
 - Order is persisted after reordering
-- Selection by checkbox (tasks to include in the group)
+- Selection by tapping the item (no checkbox)
+- Selected state: subtle brighter card background + light border highlight
+- Long-press on a task shows a contextual menu:
+  - Edit
+  - Delete (requires confirmation)
+- Edit/Delete icons are not visible in the list row
+- Reorder handle (≡) is the only draggable area
 
-Item layout (left → right):
+Item layout (top → bottom):
 
-1. Checkbox (no special colors)
-2. Task title
-3. Theoretical time (start/end) for selected tasks
-4. Edit icon (pencil, light gray)
-5. Delete icon (trash, red)
-6. Reorder handle (≡, neutral gray) — only this area is draggable
+1. **Title row**
+   - Task name (up to 2 lines, ellipsized)
+   - No time range in this row
+
+2. **Stats row (three cards, equal width when possible)**
+   - All cards have the same height and rounded corners
+   - If space is tight, the card that shrinks is the **dot grid card**
+   - **Card 1 (Pomodoros + Pomodoro minutes):**
+     - Total pomodoros (number)
+     - Red outlined circle showing **pomodoro minutes**
+   - **Card 2 (Break minutes):**
+     - Short break minutes in a blue **thin** ring
+     - Long break minutes in a blue **thick** ring
+     - Order: short → long
+   - **Card 3 (Long-break interval dots):**
+     - Red dots = number of consecutive pomodoros before a long break
+     - Blue dot = the long break
+     - Dots are arranged in **columns** to fit narrow widths
+     - Dot size may shrink to ensure all dots fit inside the card
+     - If the interval is **1**, the red and blue dots are centered at the same height
+     - Otherwise, the blue dot is aligned with the **lowest** red dot (bottom row)
+       and uses its own column if there is space; if not, it sits below the last red column
+
+3. **Time range row (only when selected)**
+   - Label: **Time range**
+   - Two chips: start time and end time (theoretical schedule preview)
+
+4. **Sounds row**
+   - Two entries: **Pomodoro start** and **Break start**
+   - Each entry shows a sound icon tinted:
+     - Red for pomodoro start
+     - Blue for break start
+   - Show the custom filename (with extension) when available
+   - If no custom sound is set, show a default label:
+     - "Default chime"
+     - "Default break chime"
+   - Default labels use a muted (low-contrast) text color
 
 ### **10.2.2. Theoretical schedule preview**
 

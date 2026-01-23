@@ -296,6 +296,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
             _planningAnchor,
           );
 
+          final soundOverrides = ref.read(localSoundOverridesProvider);
+
           return ReorderableListView.builder(
             buildDefaultDragHandles: false,
             padding: const EdgeInsets.all(12),
@@ -310,8 +312,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
               return TaskCard(
                 key: ValueKey(t.id),
                 task: t,
+                soundOverrides: soundOverrides,
                 selected: selectedIds.contains(t.id),
-                onSelected: (_) => selection.toggle(t.id),
                 onTap: () => selection.toggle(t.id),
                 timeRange: ranges[t.id],
                 reorderHandle: ReorderableDragStartListener(
@@ -344,7 +346,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                     );
                     return;
                   }
-                  context.push("/tasks/edit/${t.id}");
+                  await context.push("/tasks/edit/${t.id}");
+                  if (!mounted) return;
+                  setState(() {});
                 },
                 onDelete: () {
                   if (activeSession != null && activeSession.taskId == t.id) {
@@ -354,7 +358,10 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                     );
                     return;
                   }
-                  ref.read(taskListProvider.notifier).deleteTask(t.id);
+                  _confirmDeleteTask(context, t).then((shouldDelete) {
+                    if (!shouldDelete) return;
+                    ref.read(taskListProvider.notifier).deleteTask(t.id);
+                  });
                 },
               );
             },
@@ -682,6 +689,33 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     } on StateError {
       return [];
     }
+  }
+
+  Future<bool> _confirmDeleteTask(
+    BuildContext context,
+    PomodoroTask task,
+  ) async {
+    final title = task.name.isEmpty ? '(Untitled)' : task.name;
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete task?'),
+        content: Text(
+          'Delete "$title"? This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    return shouldDelete ?? false;
   }
 
   void _showSnackBar(BuildContext context, String message) {

@@ -185,6 +185,11 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               "Sounds",
               style: TextStyle(color: Colors.white70, fontSize: 16),
             ),
+            const SizedBox(height: 4),
+            const Text(
+              "Custom sounds are stored on this device only.",
+              style: TextStyle(color: Colors.white54, fontSize: 12),
+            ),
             const SizedBox(height: 8),
             SoundSelector(
               label: "Pomodoro start",
