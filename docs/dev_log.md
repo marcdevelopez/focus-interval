@@ -1794,6 +1794,25 @@ _(fill in when they happen)_
 
 - Add widget tests after adding stable editor field keys (if needed).
 
+# 🔹 Block 88 — Long break interval validation loosened — 23/01/2026
+
+### ✔ Work completed:
+
+- Removed the Task Editor validation that blocked longBreakInterval > totalPomodoros.
+- Kept the minimum constraint (>= 1) via numeric field validation.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Treat longBreakInterval as an independent cadence; tasks may never reach a long break if the interval is larger than the total.
+
+### 🎯 Next steps:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

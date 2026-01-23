@@ -358,14 +358,6 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   Future<bool> _validateBusinessRules() async {
     final task = ref.read(taskEditorProvider);
     if (task == null) return false;
-    if (task.longBreakInterval > task.totalPomodoros) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Long break interval cannot exceed total pomodoros."),
-        ),
-      );
-      return false;
-    }
     final guidance =
         ref.read(taskEditorProvider.notifier).breakGuidanceFor(task);
     if (guidance == null) return true;
