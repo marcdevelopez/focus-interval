@@ -1715,6 +1715,25 @@ _(fill in when they happen)_
 
 - If the issue reoccurs, add hard validation to block empty task names and consider cleanup.
 
+# 🔹 Block 84 — Local mode task group guard fix (Android) — 23/01/2026
+
+### ✔ Work completed:
+
+- Fixed task group creation guard to only require sign-in in Account mode.
+- Restored Local mode task group creation on Android while keeping Account mode checks.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep Local mode fully functional regardless of auth availability on the platform.
+
+### 🎯 Next steps:
+
+- Re-verify task group creation in Local and Account modes on Android.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

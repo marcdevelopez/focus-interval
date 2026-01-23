@@ -434,9 +434,12 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final selected = tasks.where((t) => selectedIds.contains(t.id)).toList();
     if (selected.isEmpty) return;
 
+    final appMode = ref.read(appModeProvider);
     final auth = ref.read(firebaseAuthServiceProvider);
     final authSupported = auth is! StubAuthService;
-    if (authSupported && auth.currentUser == null) {
+    if (appMode == AppMode.account &&
+        authSupported &&
+        auth.currentUser == null) {
       _showSnackBar(context, "Sign in to create task groups.");
       return;
     }
