@@ -542,7 +542,7 @@ class TaskCard extends StatelessWidget {
   }
 
   Future<void> _showContextMenu(BuildContext context) async {
-    final overlayState = Overlay.of(context);
+    final overlayState = Overlay.maybeOf(context);
     if (overlayState == null) return;
     final overlay = overlayState.context.findRenderObject() as RenderBox?;
     final box = context.findRenderObject() as RenderBox?;
