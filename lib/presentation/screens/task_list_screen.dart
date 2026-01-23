@@ -162,65 +162,117 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final activeSession = ref.watch(activePomodoroSessionProvider);
     final selectedIds = ref.watch(taskSelectionProvider);
     final selection = ref.read(taskSelectionProvider.notifier);
+    final isCompact = MediaQuery.of(context).size.width < 360;
+    final modeLabel = isCompact
+        ? (appMode == AppMode.local ? 'Local' : 'Account')
+        : appMode.label;
 
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text("Your tasks"),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Center(
-              child: Chip(
-                label: Text(
-                  appMode.label,
-                  style: const TextStyle(fontSize: 11),
-                ),
-                avatar: Icon(
-                  appMode == AppMode.local ? Icons.phone_iphone : Icons.cloud,
-                  size: 16,
-                ),
-                backgroundColor: appMode == AppMode.local
-                    ? Colors.grey[850]
-                    : Colors.blue[900],
+        toolbarHeight: isCompact ? 108 : 92,
+        titleSpacing: 12,
+        title: Padding(
+          padding: const EdgeInsets.only(top: 6, bottom: 2),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: authSupported
+                        ? () => _showModeSwitchDialog(
+                              authSupported: authSupported,
+                              signedIn: signedIn,
+                            )
+                        : null,
+                    child: Chip(
+                      label: Text(
+                        modeLabel,
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                      labelPadding: isCompact
+                          ? const EdgeInsets.symmetric(horizontal: 4)
+                          : null,
+                      padding: isCompact
+                          ? const EdgeInsets.symmetric(horizontal: 4)
+                          : null,
+                      avatar: Icon(
+                        appMode == AppMode.local
+                            ? Icons.phone_iphone
+                            : Icons.cloud,
+                        size: 16,
+                      ),
+                      backgroundColor: appMode == AppMode.local
+                          ? Colors.grey[850]
+                          : Colors.blue[900],
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ],
               ),
-            ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      "Your tasks",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (authSupported && appMode == AppMode.account && signedIn) ...[
+                    InkWell(
+                      onTap: () => _showModeSwitchDialog(
+                        authSupported: authSupported,
+                        signedIn: signedIn,
+                      ),
+                      child: ConstrainedBox(
+                        constraints:
+                            BoxConstraints(maxWidth: isCompact ? 84 : 160),
+                        child: Text(
+                          auth.currentUser!.email ?? '',
+                          style: const TextStyle(fontSize: 12),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    IconButton(
+                      icon: const Icon(Icons.logout),
+                      constraints:
+                          const BoxConstraints.tightFor(width: 36, height: 36),
+                      padding: EdgeInsets.zero,
+                      onPressed: _handleLogout,
+                    ),
+                  ] else if (authSupported && appMode == AppMode.account)
+                    IconButton(
+                      icon: const Icon(Icons.person),
+                      constraints:
+                          const BoxConstraints.tightFor(width: 36, height: 36),
+                      padding: EdgeInsets.zero,
+                      onPressed: () => context.go('/login'),
+                    ),
+                  if (!authSupported)
+                    IconButton(
+                      icon: const Icon(Icons.info_outline),
+                      constraints:
+                          const BoxConstraints.tightFor(width: 36, height: 36),
+                      padding: EdgeInsets.zero,
+                      onPressed: _handleSyncInfoTap,
+                    ),
+                ],
+              ),
+            ],
           ),
-          if (authSupported)
-            IconButton(
-              icon: const Icon(Icons.swap_horiz),
-              tooltip: 'Switch mode',
-              onPressed: () => _showModeSwitchDialog(
-                authSupported: authSupported,
-                signedIn: signedIn,
-              ),
-            ),
-          if (authSupported && appMode == AppMode.account && signedIn) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Center(
-                child: Text(
-                  auth.currentUser!.email ?? '',
-                  style: const TextStyle(fontSize: 12),
-                ),
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: _handleLogout,
-            ),
-          ] else if (authSupported && appMode == AppMode.account)
-            IconButton(
-              icon: const Icon(Icons.person),
-              onPressed: () => context.go('/login'),
-            ),
-          if (!authSupported)
-            IconButton(
-              icon: const Icon(Icons.info_outline),
-              onPressed: _handleSyncInfoTap,
-            ),
-        ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {

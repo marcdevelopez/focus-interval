@@ -1676,6 +1676,26 @@ _(fill in when they happen)_
 
 - Validate the new layout on narrow mobile screens.
 
+# 🔹 Block 82 — Task List AppBar layout fix — 23/01/2026
+
+### ✔ Work completed:
+
+- Reworked Task List AppBar to avoid overflow and keep logout visible on mobile.
+- Made Account/Local mode chip and email act as the mode switch trigger.
+- Moved account email + logout to the right of the “Your tasks” line.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Remove the dedicated switch icon to reduce header width on narrow screens.
+
+### 🎯 Next steps:
+
+- Re-check header layout on the smallest device widths.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

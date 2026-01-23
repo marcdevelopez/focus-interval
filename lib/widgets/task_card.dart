@@ -287,7 +287,7 @@ class TaskCard extends StatelessWidget {
 
   Widget _statCard({required Widget child}) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 40),
+      height: 42,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       alignment: Alignment.center,
       decoration: BoxDecoration(
