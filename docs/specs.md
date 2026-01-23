@@ -538,6 +538,12 @@ Behavior:
   - Long break optimal range: 40–60% of pomodoro duration.
 - If break durations are outside the optimal range but still valid, show a warning with recommended ranges and allow the user to continue or adjust.
 - Display helper text and visual cues (green = optimal, amber = outside range, red = invalid) on break inputs.
+- Long break interval guidance:
+  - Optimal value: 4 pomodoros (green).
+  - Acceptable range: 3–6 pomodoros (amber).
+  - Outside range: 1–2 or 7+ pomodoros (orange) with a warning message.
+  - Always allow values >= 1; if the interval exceeds total pomodoros, show a note that only short breaks will occur.
+  - Provide an info tooltip explaining how the long break interval works.
 - If a custom local sound is selected, show the file name (with extension) in the selector.
 
 ---
