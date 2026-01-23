@@ -111,12 +111,21 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     final shortStatus =
         guidance?.shortStatus ?? BreakDurationStatus.optimal;
     final longStatus = guidance?.longStatus ?? BreakDurationStatus.optimal;
+    final intervalGuidance = task == null
+        ? null
+        : buildLongBreakIntervalGuidance(
+            interval: task.longBreakInterval,
+            totalPomodoros: task.totalPomodoros,
+          );
     final shortHelper = guidance == null
         ? null
         : 'Optimal range: ${guidance.shortRange.label} min';
     final longHelper = guidance == null
         ? null
         : 'Optimal range: ${guidance.longRange.label} min';
+    final intervalHelper = intervalGuidance?.helperText;
+    final intervalStatus =
+        intervalGuidance?.status ?? LongBreakIntervalStatus.optimal;
     _maybeSyncControllers(task);
     const pomodoroSounds = [
       SoundOption('default_chime', 'Chime (pomodoro start)'),
@@ -237,7 +246,19 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               label: "Pomodoros per long break",
               controller: _longBreakIntervalCtrl,
               onChanged: (v) => _update(task.copyWith(longBreakInterval: v)),
-              suffix: _intervalDotsCard(task.longBreakInterval),
+              suffix: _intervalSuffix(task.longBreakInterval),
+              suffixMaxWidth: 140,
+              helperText: intervalHelper,
+              helperColor: _intervalHelperColor(intervalStatus),
+              borderColor: _intervalBorderColor(
+                intervalStatus,
+                focused: false,
+              ),
+              focusedBorderColor: _intervalBorderColor(
+                intervalStatus,
+                focused: true,
+              ),
+              helperMaxLines: 2,
             ),
             const SizedBox(height: 24),
             const Text(
@@ -455,6 +476,45 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     return focused ? base : base.withValues(alpha: 0.6);
   }
 
+  Future<void> _showLongBreakInfoDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Long break interval'),
+          content: const Text(
+            'The long break interval defines how many pomodoros you complete '
+            'before taking a long break (15-30 min). If it is greater than the '
+            'total pomodoros for the task, you will only take short breaks '
+            '(5 min).',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Color _intervalHelperColor(LongBreakIntervalStatus status) {
+    return switch (status) {
+      LongBreakIntervalStatus.optimal => Colors.greenAccent,
+      LongBreakIntervalStatus.acceptable => Colors.amberAccent,
+      LongBreakIntervalStatus.warning => Colors.orangeAccent,
+    };
+  }
+
+  Color _intervalBorderColor(
+    LongBreakIntervalStatus status, {
+    required bool focused,
+  }) {
+    final base = _intervalHelperColor(status);
+    return focused ? base : base.withValues(alpha: 0.6);
+  }
+
   Widget _textField({
     required String label,
     required TextEditingController controller,
@@ -492,6 +552,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     Color? borderColor,
     Color? focusedBorderColor,
     String? Function(int value)? additionalValidator,
+    double suffixMaxWidth = 84,
+    int? helperMaxLines,
   }) {
     return TextFormField(
       controller: controller,
@@ -514,12 +576,13 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
           color: helperColor ?? Colors.white38,
           fontSize: 11,
         ),
+        helperMaxLines: helperMaxLines,
         suffixIcon: suffix == null
             ? null
             : Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 84),
+                  constraints: BoxConstraints(maxWidth: suffixMaxWidth),
                   child: Align(
                     alignment: Alignment.centerRight,
                     child: suffix,
@@ -529,7 +592,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         suffixIconConstraints: const BoxConstraints(
           minHeight: 42,
           minWidth: 28,
-          maxWidth: 84,
+          maxWidth: 140,
         ),
       ),
       validator: (v) {
@@ -586,6 +649,24 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         border: Border.all(color: Colors.white12, width: 1),
       ),
       child: _intervalDots(interval),
+    );
+  }
+
+  Widget _intervalSuffix(int interval) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _intervalDotsCard(interval),
+        const SizedBox(width: 6),
+        IconButton(
+          icon: const Icon(Icons.info_outline, size: 18),
+          color: Colors.white54,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+          tooltip: 'Long break interval info',
+          onPressed: _showLongBreakInfoDialog,
+        ),
+      ],
     );
   }
 

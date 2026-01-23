@@ -1813,6 +1813,65 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 89 — Long break interval guidance — 23/01/2026
+
+### ✔ Work completed:
+
+- Added research-based helper guidance and color cues for longBreakInterval.
+- Added info dialog explaining the long break interval behavior.
+- Added a note when the interval exceeds total pomodoros.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep long break interval fully flexible while educating users with guidance.
+
+### 🎯 Next steps:
+
+- Verify helper text and info dialog on mobile and web.
+
+# 🔹 Block 90 — Long break interval tests — 23/01/2026
+
+### ✔ Work completed:
+
+- Added validator tests for long break interval guidance and edge cases.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep interval guidance logic in shared validators for testability.
+
+### 🎯 Next steps:
+
+- Run `flutter test` after any UI copy changes.
+
+# 🔹 Block 91 — Long break interval copy shortened — 23/01/2026
+
+### ✔ Work completed:
+
+- Shortened longBreakInterval helper copy to fit small screens.
+- Kept warnings and notes while reducing line length.
+- Updated related validator tests.
+- Ran `flutter test` successfully.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep helper copy concise and rely on the info dialog for full context.
+
+### 🎯 Next steps:
+
+- Re-check the helper text on the smallest mobile widths.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

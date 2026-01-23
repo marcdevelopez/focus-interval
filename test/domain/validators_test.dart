@@ -69,4 +69,63 @@ void main() {
       expect(guidance.hasHardViolation, false);
     });
   });
+
+  group('LongBreakIntervalGuidance', () {
+    test('marks 4 pomodoros as optimal', () {
+      final guidance = buildLongBreakIntervalGuidance(
+        interval: 4,
+        totalPomodoros: 4,
+      );
+
+      expect(guidance.status, LongBreakIntervalStatus.optimal);
+      expect(
+        guidance.helperText,
+        contains('Recommended: Classic cadence'),
+      );
+      expect(guidance.exceedsTotalPomodoros, false);
+    });
+
+    test('marks 3-6 pomodoros as acceptable (excluding 4)', () {
+      final guidance = buildLongBreakIntervalGuidance(
+        interval: 5,
+        totalPomodoros: 8,
+      );
+
+      expect(guidance.status, LongBreakIntervalStatus.acceptable);
+      expect(guidance.helperText, contains('Acceptable: 3-6 works'));
+    });
+
+    test('marks 1-2 pomodoros as warning', () {
+      final guidance = buildLongBreakIntervalGuidance(
+        interval: 2,
+        totalPomodoros: 6,
+      );
+
+      expect(guidance.status, LongBreakIntervalStatus.warning);
+      expect(guidance.helperText, contains('Too frequent'));
+    });
+
+    test('marks 7+ pomodoros as warning', () {
+      final guidance = buildLongBreakIntervalGuidance(
+        interval: 7,
+        totalPomodoros: 10,
+      );
+
+      expect(guidance.status, LongBreakIntervalStatus.warning);
+      expect(guidance.helperText, contains('Too long'));
+    });
+
+    test('adds note when interval exceeds total pomodoros', () {
+      final guidance = buildLongBreakIntervalGuidance(
+        interval: 6,
+        totalPomodoros: 4,
+      );
+
+      expect(guidance.exceedsTotalPomodoros, true);
+      expect(
+        guidance.helperText,
+        contains('only short breaks'),
+      );
+    });
+  });
 }

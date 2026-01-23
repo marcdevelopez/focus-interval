@@ -11,6 +11,8 @@ class IntRange {
 
 enum BreakDurationStatus { optimal, suboptimal, invalid }
 
+enum LongBreakIntervalStatus { optimal, acceptable, warning }
+
 class BreakDurationGuidance {
   final int pomodoroMinutes;
   final int shortBreakMinutes;
@@ -97,4 +99,60 @@ IntRange _buildRange(
   final min = rawMin < 1 ? 1 : rawMin;
   final max = rawMax < min ? min : rawMax;
   return IntRange(min: min, max: max);
+}
+
+class LongBreakIntervalGuidance {
+  final int interval;
+  final int totalPomodoros;
+  final LongBreakIntervalStatus status;
+  final String helperText;
+  final bool exceedsTotalPomodoros;
+
+  const LongBreakIntervalGuidance({
+    required this.interval,
+    required this.totalPomodoros,
+    required this.status,
+    required this.helperText,
+    required this.exceedsTotalPomodoros,
+  });
+}
+
+LongBreakIntervalGuidance buildLongBreakIntervalGuidance({
+  required int interval,
+  required int totalPomodoros,
+}) {
+  final effectiveInterval = interval <= 0 ? 1 : interval;
+  final status = _intervalStatus(effectiveInterval);
+  var text = _intervalBaseMessage(effectiveInterval);
+  final exceedsTotal = totalPomodoros > 0 && effectiveInterval > totalPomodoros;
+  if (exceedsTotal) {
+    text = '$text\nNote: Interval > total; only short breaks.';
+  }
+
+  return LongBreakIntervalGuidance(
+    interval: effectiveInterval,
+    totalPomodoros: totalPomodoros,
+    status: status,
+    helperText: text,
+    exceedsTotalPomodoros: exceedsTotal,
+  );
+}
+
+LongBreakIntervalStatus _intervalStatus(int interval) {
+  if (interval == 4) return LongBreakIntervalStatus.optimal;
+  if (interval >= 3 && interval <= 6) return LongBreakIntervalStatus.acceptable;
+  return LongBreakIntervalStatus.warning;
+}
+
+String _intervalBaseMessage(int interval) {
+  if (interval == 4) {
+    return 'Recommended: Classic cadence is 4 pomodoros.';
+  }
+  if (interval >= 3 && interval <= 6) {
+    return 'Acceptable: 3-6 works; 4 is optimal.';
+  }
+  if (interval <= 2) {
+    return 'Warning: Too frequent can fragment focus. Consider 4.';
+  }
+  return 'Warning: Too long can increase fatigue. Consider 4.';
 }
