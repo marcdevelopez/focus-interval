@@ -15,6 +15,22 @@ class TaskEditorScreen extends ConsumerStatefulWidget {
   ConsumerState<TaskEditorScreen> createState() => _TaskEditorScreenState();
 }
 
+class _Dot extends StatelessWidget {
+  final Color color;
+  final double size;
+
+  const _Dot({required this.color, this.size = 4});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
+  }
+}
+
 class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
@@ -152,33 +168,47 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                   (v == null || v.trim().isEmpty) ? "Required" : null,
             ),
             const SizedBox(height: 12),
-
-            _numberField(
-              label: "Pomodoro duration (min)",
-              controller: _pomodoroCtrl,
-              onChanged: (v) => _update(task.copyWith(pomodoroMinutes: v)),
-            ),
-            _numberField(
-              label: "Short break (min)",
-              controller: _shortBreakCtrl,
-              onChanged: (v) => _update(task.copyWith(shortBreakMinutes: v)),
-            ),
-            _numberField(
-              label: "Long break (min)",
-              controller: _longBreakCtrl,
-              onChanged: (v) => _update(task.copyWith(longBreakMinutes: v)),
-            ),
-            const SizedBox(height: 12),
-
             _numberField(
               label: "Total pomodoros",
               controller: _totalPomodorosCtrl,
               onChanged: (v) => _update(task.copyWith(totalPomodoros: v)),
             ),
             _numberField(
+              label: "Pomodoro duration (min)",
+              controller: _pomodoroCtrl,
+              onChanged: (v) => _update(task.copyWith(pomodoroMinutes: v)),
+              suffix: _metricCircle(
+                value: task.pomodoroMinutes.toString(),
+                color: Colors.redAccent,
+                stroke: 2,
+              ),
+            ),
+            _numberField(
+              label: "Short break (min)",
+              controller: _shortBreakCtrl,
+              onChanged: (v) => _update(task.copyWith(shortBreakMinutes: v)),
+              suffix: _metricCircle(
+                value: task.shortBreakMinutes.toString(),
+                color: Colors.blueAccent,
+                stroke: 1,
+              ),
+            ),
+            _numberField(
+              label: "Long break (min)",
+              controller: _longBreakCtrl,
+              onChanged: (v) => _update(task.copyWith(longBreakMinutes: v)),
+              suffix: _metricCircle(
+                value: task.longBreakMinutes.toString(),
+                color: Colors.blueAccent,
+                stroke: 3,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _numberField(
               label: "Pomodoros per long break",
               controller: _longBreakIntervalCtrl,
               onChanged: (v) => _update(task.copyWith(longBreakInterval: v)),
+              suffix: _intervalDotsCard(task.longBreakInterval),
             ),
             const SizedBox(height: 24),
             const Text(
@@ -196,6 +226,11 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               value: task.startSound,
               options: pomodoroSounds,
               customDisplayName: pomodoroDisplayName,
+              leading: const Icon(
+                Icons.volume_up_rounded,
+                color: Colors.redAccent,
+                size: 16,
+              ),
               onPickLocal: () async {
                 final result = await ref
                     .read(taskEditorProvider.notifier)
@@ -224,6 +259,11 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               value: task.startBreakSound,
               options: breakSounds,
               customDisplayName: breakDisplayName,
+              leading: const Icon(
+                Icons.volume_up_rounded,
+                color: Colors.blueAccent,
+                size: 16,
+              ),
               onPickLocal: () async {
                 final result = await ref
                     .read(taskEditorProvider.notifier)
@@ -331,6 +371,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     required String label,
     required TextEditingController controller,
     required ValueChanged<int> onChanged,
+    Widget? suffix,
   }) {
     return TextFormField(
       controller: controller,
@@ -348,6 +389,23 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         focusedBorder: const UnderlineInputBorder(
           borderSide: BorderSide(color: Colors.white54),
         ),
+        suffixIcon: suffix == null
+            ? null
+            : Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 84),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: suffix,
+                  ),
+                ),
+              ),
+        suffixIconConstraints: const BoxConstraints(
+          minHeight: 42,
+          minWidth: 28,
+          maxWidth: 84,
+        ),
       ),
       validator: (v) {
         final value = int.tryParse(v ?? '');
@@ -361,6 +419,180 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         if (value == null) return;
         onChanged(value);
       },
+    );
+  }
+
+  Widget _metricCircle({
+    required String value,
+    required Color color,
+    required double stroke,
+  }) {
+    return Container(
+      width: 28,
+      height: 28,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: color, width: stroke),
+      ),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _intervalDotsCard(int interval) {
+    return Container(
+      height: 42,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white10,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white12, width: 1),
+      ),
+      child: _intervalDots(interval),
+    );
+  }
+
+  Widget _intervalDots(int interval) {
+    final redDots = interval <= 0 ? 1 : interval;
+    final totalDots = redDots + 1;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : 48.0;
+        const maxHeight = 18.0;
+        var dotSize = 5.0;
+        var spacing = 3.0;
+        const minDot = 3.0;
+
+        while (dotSize >= minDot) {
+          final rows = _rowsFor(maxHeight, dotSize, spacing, totalDots);
+          final maxCols = _maxColsFor(maxWidth, dotSize, spacing);
+          if (rows * maxCols >= totalDots) break;
+          dotSize -= 0.5;
+          spacing = dotSize <= 4 ? 2 : 3;
+        }
+
+        if (redDots == 1) {
+          return Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _Dot(color: Colors.redAccent, size: dotSize),
+                SizedBox(width: spacing),
+                _Dot(color: Colors.blueAccent, size: dotSize),
+              ],
+            ),
+          );
+        }
+
+        final rows = _rowsFor(maxHeight, dotSize, spacing, totalDots);
+        final maxCols = _maxColsFor(maxWidth, dotSize, spacing);
+        final redColsNeeded = (redDots / rows).ceil();
+        final blueSeparate = redColsNeeded < maxCols;
+        final columns = <Widget>[];
+        var remainingRed = redDots;
+        final redColumnsCount = blueSeparate ? redColsNeeded : maxCols;
+
+        for (var col = 0; col < redColumnsCount; col += 1) {
+          final isLast = col == redColumnsCount - 1;
+          final capacity = (!blueSeparate && isLast) ? rows - 1 : rows;
+          final take = remainingRed > capacity ? capacity : remainingRed;
+          remainingRed -= take;
+          columns.add(
+            _dotColumn(
+              redCount: take,
+              includeBlue: !blueSeparate && isLast,
+              dotSize: dotSize,
+              spacing: spacing,
+              height: maxHeight,
+            ),
+          );
+        }
+
+        if (blueSeparate) {
+          columns.add(
+            _dotColumn(
+              redCount: 0,
+              includeBlue: true,
+              dotSize: dotSize,
+              spacing: spacing,
+              height: maxHeight,
+            ),
+          );
+        }
+
+        return SizedBox(
+          height: maxHeight,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: _withColumnSpacing(columns, spacing + 1),
+          ),
+        );
+      },
+    );
+  }
+
+  int _rowsFor(
+    double maxHeight,
+    double dotSize,
+    double spacing,
+    int totalDots,
+  ) {
+    final rows = ((maxHeight + spacing) / (dotSize + spacing)).floor();
+    if (rows < 1) return 1;
+    return rows > totalDots ? totalDots : rows;
+  }
+
+  int _maxColsFor(double maxWidth, double dotSize, double spacing) {
+    final cols = ((maxWidth + spacing) / (dotSize + spacing)).floor();
+    return cols < 1 ? 1 : cols;
+  }
+
+  List<Widget> _withColumnSpacing(List<Widget> columns, double spacing) {
+    final spaced = <Widget>[];
+    for (var i = 0; i < columns.length; i += 1) {
+      spaced.add(columns[i]);
+      if (i < columns.length - 1) {
+        spaced.add(SizedBox(width: spacing));
+      }
+    }
+    return spaced;
+  }
+
+  Widget _dotColumn({
+    required int redCount,
+    required bool includeBlue,
+    required double dotSize,
+    required double spacing,
+    required double height,
+  }) {
+    return SizedBox(
+      width: dotSize,
+      height: height,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          for (var i = 0; i < redCount; i += 1) ...[
+            _Dot(color: Colors.redAccent, size: dotSize),
+            if (i < redCount - 1) SizedBox(height: spacing),
+          ],
+          if (includeBlue) ...[
+            if (redCount > 0) SizedBox(height: spacing),
+            _Dot(color: Colors.blueAccent, size: dotSize),
+          ],
+        ],
+      ),
     );
   }
 }

@@ -1696,6 +1696,25 @@ _(fill in when they happen)_
 
 - Re-check header layout on the smallest device widths.
 
+# 🔹 Block 83 — Untitled tasks observed — 23/01/2026
+
+### ✔ Work completed:
+
+- Noted that some tasks appeared with empty names ("Untitled") without user action.
+- Decided to monitor before adding stricter validation or migration.
+
+### ⚠️ Issues found:
+
+- Tasks with empty names can appear in the list (source unclear).
+
+### 🧠 Decisions made:
+
+- Leave current behavior for now; if it reappears, enforce non-empty names at save/repo level.
+
+### 🎯 Next steps:
+
+- If the issue reoccurs, add hard validation to block empty task names and consider cleanup.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

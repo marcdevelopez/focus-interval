@@ -18,6 +18,8 @@ class SoundSelector extends StatelessWidget {
   final ValueChanged<SelectedSound> onChanged;
   final VoidCallback? onPickLocal;
   final String? customDisplayName;
+  final Widget? leading;
+  final Widget? trailing;
 
   const SoundSelector({
     super.key,
@@ -27,6 +29,8 @@ class SoundSelector extends StatelessWidget {
     required this.onChanged,
     this.onPickLocal,
     this.customDisplayName,
+    this.leading,
+    this.trailing,
   });
 
   @override
@@ -67,9 +71,20 @@ class SoundSelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(color: Colors.white70, fontSize: 14),
+        Row(
+          children: [
+            if (leading != null) ...[
+              leading!,
+              const SizedBox(width: 6),
+            ],
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
+              ),
+            ),
+            if (trailing != null) trailing!,
+          ],
         ),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
