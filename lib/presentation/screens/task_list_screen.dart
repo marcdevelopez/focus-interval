@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,8 +27,10 @@ class TaskListScreen extends ConsumerStatefulWidget {
 
 class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   static const String _linuxSyncNoticeKey = 'linux_sync_notice_seen';
+  static const String _webLocalNoticeKey = 'web_local_notice_seen';
   final _timeFormat = DateFormat('HH:mm');
   bool _syncNoticeChecked = false;
+  bool _webLocalNoticeChecked = false;
   DateTime _planningAnchor = DateTime.now();
   String _planningAnchorKey = '';
 
@@ -36,6 +39,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _maybeShowLinuxSyncNotice();
+      _maybeShowWebLocalNotice();
     });
   }
 
@@ -99,6 +103,62 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     );
   }
 
+  Future<void> _maybeShowWebLocalNotice() async {
+    if (_webLocalNoticeChecked) return;
+    if (!kIsWeb) return;
+    final appMode = ref.read(appModeProvider);
+    if (appMode != AppMode.local) return;
+    _webLocalNoticeChecked = true;
+    final prefs = await SharedPreferences.getInstance();
+    final seen = prefs.getBool(_webLocalNoticeKey) ?? false;
+    if (seen) return;
+    if (!mounted) return;
+    await _showWebLocalNoticeDialog();
+    await prefs.setBool(_webLocalNoticeKey, true);
+  }
+
+  Future<void> _showWebLocalNoticeDialog() async {
+    final action = await showDialog<_WebLocalNoticeAction>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Local data is stored in this browser'),
+          content: const SingleChildScrollView(
+            child: ListBody(
+              children: [
+                Text(
+                  'Local mode keeps your tasks only in this browser. Clearing '
+                  'site data, using incognito, or switching devices will remove '
+                  'them.',
+                ),
+                SizedBox(height: 8),
+                Text('Sign in to sync and back up your data.'),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(_WebLocalNoticeAction.stayLocal),
+              child: const Text('Stay in local mode'),
+            ),
+            ElevatedButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(_WebLocalNoticeAction.signIn),
+              child: const Text('Sign in'),
+            ),
+          ],
+        );
+      },
+    );
+    if (!mounted) return;
+    if (action != _WebLocalNoticeAction.signIn) return;
+    final controller = ref.read(appModeProvider.notifier);
+    await controller.setAccount();
+    if (!mounted) return;
+    context.go('/login');
+  }
+
   Future<void> _showModeSwitchDialog({
     required bool authSupported,
     required bool signedIn,
@@ -133,6 +193,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
 
     if (result == AppMode.local) {
       await controller.setLocal();
+      await _maybeShowWebLocalNotice();
       return;
     }
 
@@ -149,6 +210,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final controller = ref.read(appModeProvider.notifier);
     await auth.signOut();
     await controller.setLocal();
+    await _maybeShowWebLocalNotice();
     ref.invalidate(taskListProvider);
   }
 
@@ -905,6 +967,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     );
   }
 }
+
+enum _WebLocalNoticeAction { stayLocal, signIn }
 
 enum _PlanAction { startNow, schedule }
 

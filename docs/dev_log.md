@@ -1734,6 +1734,25 @@ _(fill in when they happen)_
 
 - Re-verify task group creation in Local and Account modes on Android.
 
+# 🔹 Block 85 — Web Local mode data-loss warning — 23/01/2026
+
+### ✔ Work completed:
+
+- Added a one-time web-only warning dialog for Local mode storage limitations.
+- Included a direct Sign in action to switch to Account mode and sync.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Warn users that Local mode persists only in the current browser and can be cleared.
+
+### 🎯 Next steps:
+
+- Verify the warning shows once per browser and only in Local mode on web.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
