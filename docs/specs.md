@@ -545,6 +545,39 @@ Behavior:
   - Always allow values >= 1; if the interval exceeds total pomodoros, show a note that only short breaks will occur.
   - Provide an info tooltip explaining how the long break interval works.
 - If a custom local sound is selected, show the file name (with extension) in the selector.
+- Planned: show task weight as both total pomodoros and a derived percentage of the group total.
+- Planned: when editing the percentage, suggest the closest valid integer pomodoro count and update the displayed percentage accordingly (pomodoros are never fractional).
+
+### **10.3.x. Pomodoro integrity + task weight (planned, documentation-first)**
+
+Goal: preserve Pomodoro technique integrity across consecutive tasks while keeping flexibility for mixed configurations.
+
+Definitions:
+- **Pomodoro structural configuration**: pomodoro duration, short break duration, long break duration, long break interval.
+- **Task weight**: totalPomodoros (authoritative integer) and derived percentage of the group total.
+
+Execution modes for TaskRunGroups:
+- **Mode A — Shared Pomodoro Structure (recommended)**
+  - The group defines the structural configuration.
+  - All tasks share the same pomodoro/break durations and long-break interval.
+  - Tasks differ only by `totalPomodoros` (weight).
+- **Mode B — Per-task Pomodoro Configuration (current behavior)**
+  - Each task keeps its own structural configuration.
+  - The app shows an informational warning that Pomodoro benefits may be reduced.
+  - The user may continue without restrictions.
+
+Task weight rules:
+- Each task has an authoritative integer `totalPomodoros` and a derived percentage.
+- Percentage is always computed from integer pomodoros and rounded for display.
+- When a user edits the percentage:
+  - The system proposes the closest valid integer pomodoro counts.
+  - Exact percentages are not guaranteed.
+  - Pomodoros and breaks are never split.
+
+UI implications (documentation only):
+- Task List should display both totalPomodoros and derived percentage of the group total.
+- Task Editor should display totalPomodoros and derived percentage, with live recalculation when either value changes.
+- If a TaskRunGroup mixes structural configurations, show a clear integrity warning (education-only).
 
 ---
 

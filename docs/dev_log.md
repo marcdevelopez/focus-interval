@@ -1872,6 +1872,26 @@ _(fill in when they happen)_
 
 - Re-check the helper text on the smallest mobile widths.
 
+# 🔹 Block 92 — Pomodoro integrity + task weight specs — 23/01/2026
+
+### ✔ Work completed:
+
+- Documented Pomodoro integrity modes (shared structure vs per-task).
+- Defined task weight as integer pomodoros + derived percentage with rounding rules.
+- Added planned UI implications and warning requirements to specs.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep this as documentation-first with no behavior change yet.
+
+### 🎯 Next steps:
+
+- Implement group mode selection, integrity warning, and percentage editing when scheduled.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
