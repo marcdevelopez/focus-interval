@@ -7,7 +7,10 @@ import 'package:google_sign_in/google_sign_in.dart';
 abstract class AuthService {
   User? get currentUser;
   bool get isSignedIn;
+  bool get isEmailVerified;
+  bool get requiresEmailVerification;
   Stream<User?> get authStateChanges;
+  Stream<User?> get userChanges;
 
   Future<UserCredential> signInWithGoogle();
 
@@ -20,6 +23,12 @@ abstract class AuthService {
     required String email,
     required String password,
   });
+
+  Future<void> sendEmailVerification();
+
+  Future<void> sendPasswordResetEmail({required String email});
+
+  Future<void> reloadCurrentUser();
 
   Future<void> signOut();
 }
@@ -40,6 +49,23 @@ class FirebaseAuthService implements AuthService {
 
   @override
   Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+  @override
+  Stream<User?> get userChanges => _auth.userChanges();
+
+  @override
+  bool get isEmailVerified => _auth.currentUser?.emailVerified ?? false;
+
+  @override
+  bool get requiresEmailVerification {
+    final user = _auth.currentUser;
+    if (user == null) return false;
+    final hasPasswordProvider = user.providerData.any(
+      (provider) => provider.providerId == 'password',
+    );
+    if (!hasPasswordProvider) return false;
+    return !user.emailVerified;
+  }
 
   bool get _isGoogleSignInSupported {
     if (kIsWeb) return true;
@@ -91,6 +117,25 @@ class FirebaseAuthService implements AuthService {
   }
 
   @override
+  Future<void> sendEmailVerification() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    await user.sendEmailVerification();
+  }
+
+  @override
+  Future<void> sendPasswordResetEmail({required String email}) async {
+    await _auth.sendPasswordResetEmail(email: email);
+  }
+
+  @override
+  Future<void> reloadCurrentUser() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    await user.reload();
+  }
+
+  @override
   Future<void> signOut() async {
     await _auth.signOut();
     if (_isGoogleSignInSupported) {
@@ -108,7 +153,16 @@ class StubAuthService implements AuthService {
   bool get isSignedIn => false;
 
   @override
+  bool get isEmailVerified => false;
+
+  @override
+  bool get requiresEmailVerification => false;
+
+  @override
   Stream<User?> get authStateChanges => const Stream.empty();
+
+  @override
+  Stream<User?> get userChanges => const Stream.empty();
 
   @override
   Future<UserCredential> signInWithGoogle() {
@@ -132,6 +186,27 @@ class StubAuthService implements AuthService {
     required String email,
     required String password,
   }) {
+    throw UnsupportedError(
+      'Firebase Auth is not configured. Set credentials before using it.',
+    );
+  }
+
+  @override
+  Future<void> sendEmailVerification() async {
+    throw UnsupportedError(
+      'Firebase Auth is not configured. Set credentials before using it.',
+    );
+  }
+
+  @override
+  Future<void> sendPasswordResetEmail({required String email}) async {
+    throw UnsupportedError(
+      'Firebase Auth is not configured. Set credentials before using it.',
+    );
+  }
+
+  @override
+  Future<void> reloadCurrentUser() async {
     throw UnsupportedError(
       'Firebase Auth is not configured. Set credentials before using it.',
     );

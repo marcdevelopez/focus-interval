@@ -18,6 +18,8 @@ import '../../data/services/app_mode_service.dart';
 import '../../data/services/local_sound_overrides.dart';
 import '../../widgets/task_card.dart';
 
+enum _EmailVerificationAction { verified, resend, useLocal, signOut }
+
 class TaskListScreen extends ConsumerStatefulWidget {
   const TaskListScreen({super.key});
 
@@ -31,6 +33,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   final _timeFormat = DateFormat('HH:mm');
   bool _syncNoticeChecked = false;
   bool _webLocalNoticeChecked = false;
+  bool _verificationPromptShown = false;
   DateTime _planningAnchor = DateTime.now();
   String _planningAnchorKey = '';
 
@@ -162,6 +165,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   Future<void> _showModeSwitchDialog({
     required bool authSupported,
     required bool signedIn,
+    required bool requiresVerification,
   }) async {
     if (!authSupported) return;
     final appMode = ref.read(appModeProvider);
@@ -202,7 +206,101 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       return;
     }
 
+    if (requiresVerification) {
+      await _showEmailVerificationDialog();
+      return;
+    }
+
     await controller.setAccount();
+  }
+
+  Future<void> _showEmailVerificationDialog() async {
+    final auth = ref.read(firebaseAuthServiceProvider);
+    if (!auth.requiresEmailVerification) return;
+
+    final action = await showDialog<_EmailVerificationAction>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Verify your email to enable sync'),
+          content: Text(
+            'We need to verify ${auth.currentUser?.email ?? 'this email'} before enabling Account Mode. '
+            'Check your spam folder if it does not arrive within a few minutes.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(_EmailVerificationAction.useLocal),
+              child: const Text('Use Local Mode'),
+            ),
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(_EmailVerificationAction.signOut),
+              child: const Text('Sign out'),
+            ),
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(_EmailVerificationAction.resend),
+              child: const Text('Resend email'),
+            ),
+            ElevatedButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(_EmailVerificationAction.verified),
+              child: const Text("I've verified"),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || action == null) return;
+
+    switch (action) {
+      case _EmailVerificationAction.resend:
+        await _sendVerificationEmail();
+        break;
+      case _EmailVerificationAction.verified:
+        await auth.reloadCurrentUser();
+        ref.invalidate(authStateProvider);
+        if (auth.requiresEmailVerification && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Email still unverified. Please try again.'),
+            ),
+          );
+        }
+        break;
+      case _EmailVerificationAction.useLocal:
+        await ref.read(appModeProvider.notifier).setLocal();
+        await _maybeShowWebLocalNotice();
+        _verificationPromptShown = false;
+        break;
+      case _EmailVerificationAction.signOut:
+        await _handleLogout();
+        _verificationPromptShown = false;
+        break;
+    }
+  }
+
+  Future<void> _sendVerificationEmail() async {
+    final auth = ref.read(firebaseAuthServiceProvider);
+    try {
+      await auth.sendEmailVerification();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Verification email sent to ${auth.currentUser?.email ?? 'your email'}. '
+            'Check your spam folder if it does not arrive soon.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to send email: $e')));
+    }
   }
 
   Future<void> _handleLogout() async {
@@ -216,11 +314,28 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<bool>(emailVerificationRequiredProvider, (previous, next) {
+      if (!next) {
+        _verificationPromptShown = false;
+        return;
+      }
+      final appMode = ref.read(appModeProvider);
+      if (appMode != AppMode.account) return;
+      if (_verificationPromptShown) return;
+      _verificationPromptShown = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _showEmailVerificationDialog();
+      });
+    });
+
     final tasksAsync = ref.watch(taskListProvider);
     final auth = ref.watch(firebaseAuthServiceProvider);
     final authSupported = auth is! StubAuthService;
     final appMode = ref.watch(appModeProvider);
-    final signedIn = auth.currentUser != null;
+    final currentUser = ref.watch(currentUserProvider);
+    final signedIn = currentUser != null;
+    final requiresVerification = ref.watch(emailVerificationRequiredProvider);
     final activeSession = ref.watch(activePomodoroSessionProvider);
     final selectedIds = ref.watch(taskSelectionProvider);
     final selection = ref.read(taskSelectionProvider.notifier);
@@ -249,6 +364,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                         ? () => _showModeSwitchDialog(
                               authSupported: authSupported,
                               signedIn: signedIn,
+                              requiresVerification: requiresVerification,
                             )
                         : null,
                     child: Chip(
@@ -295,12 +411,13 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                       onTap: () => _showModeSwitchDialog(
                         authSupported: authSupported,
                         signedIn: signedIn,
+                        requiresVerification: requiresVerification,
                       ),
                       child: ConstrainedBox(
                         constraints:
                             BoxConstraints(maxWidth: isCompact ? 84 : 160),
                         child: Text(
-                          auth.currentUser!.email ?? '',
+                          currentUser.email ?? '',
                           style: const TextStyle(fontSize: 12),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -370,6 +487,11 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
             selection.syncWithIds(tasks.map((t) => t.id));
           });
           if (tasks.isEmpty) {
+            if (appMode == AppMode.account &&
+                signedIn &&
+                requiresVerification) {
+              return _buildVerificationLockedState();
+            }
             if (appMode == AppMode.account && !signedIn) {
               return Center(
                 child: Padding(
@@ -485,6 +607,37 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     );
   }
 
+  Widget _buildVerificationLockedState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Verify your email to enable Account Mode sync.',
+              style: TextStyle(color: Colors.white70),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: _showEmailVerificationDialog,
+              child: const Text('Verify email'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: () async {
+                await ref.read(appModeProvider.notifier).setLocal();
+                await _maybeShowWebLocalNotice();
+              },
+              child: const Text('Switch to Local Mode'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _handleConfirm(
     BuildContext context, {
     required AsyncValue<List<PomodoroTask>> tasksAsync,
@@ -499,10 +652,19 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final appMode = ref.read(appModeProvider);
     final auth = ref.read(firebaseAuthServiceProvider);
     final authSupported = auth is! StubAuthService;
+    final requiresVerification = ref.read(emailVerificationRequiredProvider);
     if (appMode == AppMode.account &&
         authSupported &&
         auth.currentUser == null) {
       _showSnackBar(context, "Sign in to create task groups.");
+      return;
+    }
+    if (appMode == AppMode.account &&
+        authSupported &&
+        auth.currentUser != null &&
+        requiresVerification) {
+      _showSnackBar(context, "Verify your email to create task groups.");
+      await _showEmailVerificationDialog();
       return;
     }
 

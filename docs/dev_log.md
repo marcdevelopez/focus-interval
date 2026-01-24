@@ -2224,6 +2224,66 @@ _(fill in when they happen)_
 
 - Capture Dart stack from DevTools when the freeze occurs and compare against profile/release runs.
 
+# 🔹 Block 110 — Phase 6 (Email verification gating + reclaim flow) — 24/01/2026
+
+### ✔ Work completed:
+
+- Added email verification gating for Account Mode; sync is disabled until verified.
+- Switched auth stream to `userChanges` so verification refreshes after reload.
+- Added verification UI in Login + Task List (resend email, verify, switch to Local Mode, sign out).
+- Added reclaim flow for email/password accounts (email-already-in-use handling + password reset).
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep unverified users in Local Mode and block Account Mode until verification.
+- Use explicit verification actions instead of implicit sync for unverified users.
+
+### 🎯 Next steps:
+
+- QA email verification flow on macOS/Windows (email/password) and confirm sync unlocks after verification.
+
+# 🔹 Block 111 — Fix Riverpod listen assertion on Task List — 24/01/2026
+
+### ✔ Work completed:
+
+- Moved email verification listener to `build` to satisfy Riverpod `ref.listen` constraints.
+- Restored app boot on macOS/iOS/Android/Web without the ConsumerWidget assertion.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep `ref.listen` only inside widget build for Riverpod consumer safety.
+
+### 🎯 Next steps:
+
+- Re-run app on macOS/iOS/Android/Web to confirm the Task List opens without assertions.
+
+# 🔹 Block 112 — Verification spam reminder copy — 24/01/2026
+
+### ✔ Work completed:
+
+- Added a spam-folder reminder after verification emails are sent.
+- Updated verification dialogs to mention spam if the email is delayed.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep reminders concise and only after a send action or in the verification dialog.
+
+### 🎯 Next steps:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

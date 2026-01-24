@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
@@ -14,6 +15,10 @@ import '../../data/repositories/firestore_task_repository.dart';
 import '../../data/repositories/firestore_task_run_group_repository.dart';
 
 enum _LoginImportChoice { useAccount, importLocal, cancel }
+
+enum _EmailVerificationAction { verified, resend, useLocal, signOut }
+
+enum _ReclaimAction { sendReset, cancel }
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -33,7 +38,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         defaultTargetPlatform == TargetPlatform.iOS;
   }
 
-  Future<void> _handlePostLogin() async {
+  Future<void> _handlePostLogin({bool sendVerificationEmail = false}) async {
+    final canProceed = await _ensureEmailVerified(
+      sendEmail: sendVerificationEmail,
+    );
+    if (!canProceed) return;
+
     final auth = ref.read(firebaseAuthServiceProvider);
     final appMode = ref.read(appModeProvider);
     final modeController = ref.read(appModeProvider.notifier);
@@ -132,6 +142,129 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  Future<bool> _ensureEmailVerified({required bool sendEmail}) async {
+    final auth = ref.read(firebaseAuthServiceProvider);
+    if (!auth.requiresEmailVerification) return true;
+
+    if (sendEmail) {
+      await _sendVerificationEmail();
+      if (!mounted) return false;
+    }
+
+    while (auth.requiresEmailVerification) {
+      if (!mounted) return false;
+      final action = await showDialog<_EmailVerificationAction>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Verify your email to enable sync'),
+          content: Text(
+              'We need to verify ${auth.currentUser?.email ?? 'this email'} before enabling Account Mode. '
+              'Until then, sync is disabled. Check your spam folder if it does not arrive within a few minutes.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () =>
+                    Navigator.of(context).pop(_EmailVerificationAction.useLocal),
+                child: const Text('Use Local Mode'),
+              ),
+              TextButton(
+                onPressed: () =>
+                    Navigator.of(context).pop(_EmailVerificationAction.signOut),
+                child: const Text('Sign out'),
+              ),
+              TextButton(
+                onPressed: () =>
+                    Navigator.of(context).pop(_EmailVerificationAction.resend),
+                child: const Text('Resend email'),
+              ),
+              ElevatedButton(
+                onPressed: () =>
+                    Navigator.of(context).pop(_EmailVerificationAction.verified),
+                child: const Text("I've verified"),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (!mounted || action == null) return false;
+
+      switch (action) {
+        case _EmailVerificationAction.resend:
+          await _sendVerificationEmail();
+          break;
+        case _EmailVerificationAction.verified:
+          await auth.reloadCurrentUser();
+          ref.invalidate(authStateProvider);
+          if (!auth.requiresEmailVerification) {
+            return true;
+          }
+          if (!mounted) return false;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Email still unverified. Please try again.'),
+            ),
+          );
+          break;
+        case _EmailVerificationAction.useLocal:
+          await ref.read(appModeProvider.notifier).setLocal();
+          if (!mounted) return false;
+          context.go('/tasks');
+          return false;
+        case _EmailVerificationAction.signOut:
+          await auth.signOut();
+          return false;
+      }
+    }
+    return true;
+  }
+
+  Future<void> _sendVerificationEmail() async {
+    final auth = ref.read(firebaseAuthServiceProvider);
+    try {
+      await auth.sendEmailVerification();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Verification email sent to ${auth.currentUser?.email ?? 'your email'}. '
+            'Check your spam folder if it does not arrive soon.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to send verification email: $e')),
+      );
+    }
+  }
+
+  Future<void> _sendPasswordResetEmail() async {
+    final auth = ref.read(firebaseAuthServiceProvider);
+    final email = _emailCtrl.text.trim();
+    if (email.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Enter your email first.')));
+      return;
+    }
+    try {
+      await auth.sendPasswordResetEmail(email: email);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Password reset email sent to $email.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Reset failed: $e')));
+    }
+  }
+
   @override
   void dispose() {
     _emailCtrl.dispose();
@@ -148,6 +281,46 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         password: _passCtrl.text,
       );
       await _handlePostLogin();
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      if (e.code == 'user-not-found') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No account found. Create one to continue.'),
+          ),
+        );
+      } else if (e.code == 'wrong-password') {
+        final action = await showDialog<_ReclaimAction>(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('Incorrect password'),
+              content: const Text(
+                'You can reset your password to reclaim this account.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () =>
+                      Navigator.of(context).pop(_ReclaimAction.cancel),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () =>
+                      Navigator.of(context).pop(_ReclaimAction.sendReset),
+                  child: const Text('Send reset email'),
+                ),
+              ],
+            );
+          },
+        );
+        if (action == _ReclaimAction.sendReset) {
+          await _sendPasswordResetEmail();
+        }
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Sign-in error: $e')));
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -166,7 +339,52 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         email: _emailCtrl.text.trim(),
         password: _passCtrl.text,
       );
-      await _handlePostLogin();
+      await _handlePostLogin(sendVerificationEmail: true);
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      if (e.code == 'email-already-in-use') {
+        try {
+          await auth.signInWithEmail(
+            email: _emailCtrl.text.trim(),
+            password: _passCtrl.text,
+          );
+          await _handlePostLogin();
+        } on FirebaseAuthException {
+          if (!mounted) return;
+          final action = await showDialog<_ReclaimAction>(
+            context: context,
+            builder: (context) {
+              return AlertDialog(
+                title: const Text('Account already exists'),
+                content: const Text(
+                  'This email is already registered. Sign in to verify the address, '
+                  'or reset the password to reclaim the account.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () =>
+                        Navigator.of(context).pop(_ReclaimAction.cancel),
+                    child: const Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () =>
+                        Navigator.of(context).pop(_ReclaimAction.sendReset),
+                    child: const Text('Send reset email'),
+                  ),
+                ],
+              );
+            },
+          );
+          if (!mounted) return;
+          if (action == _ReclaimAction.sendReset) {
+            await _sendPasswordResetEmail();
+          }
+        }
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Sign-up error: $e')));
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(

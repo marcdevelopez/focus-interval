@@ -37,7 +37,7 @@ import 'viewmodels/task_selection_view_model.dart';
 //  GLOBAL REPO (LOCAL MVP)
 // ==============================================================
 final authStateProvider = StreamProvider<User?>(
-  (ref) => ref.watch(firebaseAuthServiceProvider).authStateChanges,
+  (ref) => ref.watch(firebaseAuthServiceProvider).userChanges,
 );
 
 final appModeServiceProvider = Provider<AppModeService>((_) {
@@ -68,13 +68,36 @@ final appModeProvider = NotifierProvider<AppModeController, AppMode>(
   AppModeController.new,
 );
 
+final currentUserProvider = Provider<User?>((ref) {
+  final auth = ref.watch(firebaseAuthServiceProvider);
+  final authState = ref.watch(authStateProvider).value;
+  return authState ?? auth.currentUser;
+});
+
+final emailVerificationRequiredProvider = Provider<bool>((ref) {
+  final auth = ref.watch(firebaseAuthServiceProvider);
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return false;
+  return auth.requiresEmailVerification;
+});
+
+final accountSyncEnabledProvider = Provider<bool>((ref) {
+  final appMode = ref.watch(appModeProvider);
+  if (appMode != AppMode.account) return false;
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return false;
+  final auth = ref.watch(firebaseAuthServiceProvider);
+  return !auth.requiresEmailVerification;
+});
+
 final taskRepositoryProvider = Provider<TaskRepository>((ref) {
   final appMode = ref.watch(appModeProvider);
   final authState = ref.watch(authStateProvider).value;
   if (appMode == AppMode.local) {
     return LocalTaskRepository();
   }
-  if (authState == null) return NoopTaskRepository();
+  final syncEnabled = ref.watch(accountSyncEnabledProvider);
+  if (authState == null || !syncEnabled) return NoopTaskRepository();
   return ref.watch(firestoreTaskRepositoryProvider);
 });
 
@@ -142,7 +165,8 @@ final pomodoroSessionRepositoryProvider = Provider<PomodoroSessionRepository>((
   final firestore = ref.watch(firestoreServiceProvider);
   final auth = ref.watch(firebaseAuthServiceProvider);
   final deviceInfo = ref.watch(deviceInfoServiceProvider);
-  if (authState == null) {
+  final syncEnabled = ref.watch(accountSyncEnabledProvider);
+  if (authState == null || !syncEnabled) {
     return NoopPomodoroSessionRepository();
   }
   return FirestorePomodoroSessionRepository(
@@ -171,7 +195,8 @@ final taskRunGroupRepositoryProvider = Provider<TaskRunGroupRepository>((ref) {
   final authState = ref.watch(authStateProvider).value;
   final auth = ref.watch(firebaseAuthServiceProvider);
   final user = authState ?? auth.currentUser;
-  if (user == null) return NoopTaskRunGroupRepository();
+  final syncEnabled = ref.watch(accountSyncEnabledProvider);
+  if (user == null || !syncEnabled) return NoopTaskRunGroupRepository();
   final firestore = ref.watch(firestoreServiceProvider);
   final retention = ref.watch(taskRunRetentionServiceProvider);
   return FirestoreTaskRunGroupRepository(

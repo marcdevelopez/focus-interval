@@ -41,12 +41,12 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       24/01/2026: Documentation-first specs for optional GitHub Sign-In provider added.
       24/01/2026: Task Editor enforces short break < long break validation to prevent invalid configs.
       24/01/2026: Task Editor prioritizes blocking break validation over guidance (cross-field errors shown).
+      24/01/2026: Email verification gating + reclaim flow implemented (sync locked until verified).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
     ## 🔄 Reopened phases (must complete before moving on)
 
-    - Phase 6 — Email verification gating sync + reclaim flow for unverified accounts.
     - Phase 6.6 — Local Mode (offline/no auth): mode selector + import done; persistent indicator across all screens still pending.
     - Phase 10 — Unique-name validation + apply-settings copy (verify all edge cases).
     - Phase 13 — Auto-open running session on launch/login.
@@ -259,7 +259,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ---
 
-# [✔] **PHASE 6 — Configure Firebase Auth (Google on iOS/Android/Web; Email/Password on macOS/Windows; Linux auth disabled) (reopened)**
+# [✔] **PHASE 6 — Configure Firebase Auth (Google on iOS/Android/Web; Email/Password on macOS/Windows; Linux auth disabled)**
 
 ### ⚙️ Tasks
 
