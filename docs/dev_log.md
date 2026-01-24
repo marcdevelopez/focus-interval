@@ -2284,6 +2284,25 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 113 — Windows validation (email verification flow) — 25/01/2026
+
+### ✔ Work completed:
+
+- Verified email verification gating + reclaim flow on Windows (Account Mode).
+- Confirmed Linux cannot validate Firebase auth because platform support is disabled.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Treat Linux as Local Mode only until Firebase auth support is added.
+
+### 🎯 Next steps:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
