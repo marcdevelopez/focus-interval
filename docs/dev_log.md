@@ -2105,6 +2105,25 @@ _(fill in when they happen)_
 
 - Re-check dots layout at the 12-pomodoro cap on the smallest widths.
 
+# 🔹 Block 104 — Live pomodoro validation state — 24/01/2026
+
+### ✔ Work completed:
+
+- Enabled live autovalidation for the pomodoro duration field.
+- Ensured error state clears as soon as the input returns to valid range.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Use on-user-interaction validation for immediate feedback.
+
+### 🎯 Next steps:
+
+- Verify pomodoro field behavior on mobile keyboards.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

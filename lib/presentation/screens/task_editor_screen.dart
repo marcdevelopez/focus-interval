@@ -237,6 +237,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               helperMaxLines: 2,
               additionalValidator: (value) =>
                   _pomodoroRangeValidator(value),
+              autovalidateMode: AutovalidateMode.onUserInteraction,
             ),
             _numberField(
               label: "Short break (min)",
