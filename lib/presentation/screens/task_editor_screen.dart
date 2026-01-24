@@ -237,6 +237,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               label: "Total pomodoros",
               controller: _totalPomodorosCtrl,
               onChanged: (v) => _update(task.copyWith(totalPomodoros: v)),
+              suffix: _totalPomodorosSuffix(),
+              suffixMaxWidth: 32,
             ),
             _numberField(
               label: "Pomodoro duration (min)",
@@ -275,11 +277,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                 _update(task.copyWith(shortBreakMinutes: v));
                 _revalidateBreakFields();
               },
-              suffix: _metricCircle(
-                value: task.shortBreakMinutes.toString(),
-                color: Colors.blueAccent,
-                stroke: 1,
-              ),
+              suffix: _shortBreakSuffix(task.shortBreakMinutes),
               helperText: shortHelper,
               helperColor: _statusHelperColor(shortStatus),
               borderColor: _statusBorderColor(shortStatus, focused: false),
@@ -306,11 +304,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                 _update(task.copyWith(longBreakMinutes: v));
                 _revalidateBreakFields();
               },
-              suffix: _metricCircle(
-                value: task.longBreakMinutes.toString(),
-                color: Colors.blueAccent,
-                stroke: 3,
-              ),
+              suffix: _longBreakSuffix(task.longBreakMinutes),
               helperText: longHelper,
               helperColor: _statusHelperColor(longStatus),
               borderColor: _statusBorderColor(longStatus, focused: false),
@@ -649,6 +643,72 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     );
   }
 
+  Future<void> _showShortBreakInfoDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Short break duration'),
+          content: const Text(
+            'Short breaks are brief recovery pauses between pomodoros. '
+            'Common practice is 3-7 minutes for a 25-minute pomodoro, '
+            'roughly 15-25% of the work interval.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showLongBreakDurationInfoDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Long break duration'),
+          content: const Text(
+            'Long breaks are longer recovery periods after several pomodoros. '
+            'Common practice is 15-30 minutes for a 25-minute pomodoro, '
+            'roughly 40-60% of the work interval.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showTotalPomodorosInfoDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Total pomodoros'),
+          content: const Text(
+            'Total pomodoros is the number of work intervals in this task. '
+            'It determines total duration and how many breaks you will take. '
+            'Many workflows use 2-6 pomodoros per task; 4 is a classic cadence.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _showPomodoroInfoDialog() async {
     await showDialog<void>(
       context: context,
@@ -872,15 +932,54 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _intervalDotsCard(interval),
-        const SizedBox(width: 6),
-        IconButton(
-          icon: const Icon(Icons.info_outline, size: 18),
-          color: Colors.white54,
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+        _infoButton(
           tooltip: 'Long break interval info',
           onPressed: _showLongBreakInfoDialog,
+        ),
+        const SizedBox(width: 6),
+        _intervalDotsCard(interval),
+      ],
+    );
+  }
+
+  Widget _totalPomodorosSuffix() {
+    return _infoButton(
+      tooltip: 'Total pomodoros info',
+      onPressed: _showTotalPomodorosInfoDialog,
+    );
+  }
+
+  Widget _shortBreakSuffix(int minutes) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _infoButton(
+          tooltip: 'Short break info',
+          onPressed: _showShortBreakInfoDialog,
+        ),
+        const SizedBox(width: 6),
+        _metricCircle(
+          value: minutes.toString(),
+          color: Colors.blueAccent,
+          stroke: 1,
+        ),
+      ],
+    );
+  }
+
+  Widget _longBreakSuffix(int minutes) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _infoButton(
+          tooltip: 'Long break info',
+          onPressed: _showLongBreakDurationInfoDialog,
+        ),
+        const SizedBox(width: 6),
+        _metricCircle(
+          value: minutes.toString(),
+          color: Colors.blueAccent,
+          stroke: 3,
         ),
       ],
     );
@@ -890,21 +989,31 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        _infoButton(
+          tooltip: 'Pomodoro duration info',
+          onPressed: _showPomodoroInfoDialog,
+        ),
+        const SizedBox(width: 6),
         _metricCircle(
           value: minutes.toString(),
           color: Colors.redAccent,
           stroke: 2,
         ),
-        const SizedBox(width: 6),
-        IconButton(
-          icon: const Icon(Icons.info_outline, size: 18),
-          color: Colors.white54,
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints.tightFor(width: 28, height: 28),
-          tooltip: 'Pomodoro duration info',
-          onPressed: _showPomodoroInfoDialog,
-        ),
       ],
+    );
+  }
+
+  Widget _infoButton({
+    required String tooltip,
+    required VoidCallback onPressed,
+  }) {
+    return IconButton(
+      icon: const Icon(Icons.info_outline, size: 18),
+      color: Colors.white54,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+      tooltip: tooltip,
+      onPressed: onPressed,
     );
   }
 

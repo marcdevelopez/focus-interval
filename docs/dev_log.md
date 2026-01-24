@@ -2184,6 +2184,46 @@ _(fill in when they happen)_
 
 - Re-check break validation on the smallest supported widths.
 
+# 🔹 Block 108 — Task Editor info tooltips — 24/01/2026
+
+### ✔ Work completed:
+
+- Added info tooltips for short break, long break, and total pomodoros fields.
+- Reused the info icon styling to keep the editor consistent.
+- Added neutral guidance text aligned with Pomodoro best practices.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep info tooltips educational only; validation remains unchanged.
+
+### 🎯 Next steps:
+
+- Visual QA on mobile widths for the new suffix icon layouts.
+
+# 🔹 Block 109 — macOS debug freeze tracking — 24/01/2026
+
+### ✔ Work completed:
+
+- Logged recurrent macOS debug freezes (flutter run -d macos -v) where the app becomes unresponsive.
+- Captured that SIGQUIT/kill -QUIT generates a crash report but does not explain the root freeze cause.
+
+### ⚠️ Issues found:
+
+- In debug runs, the app can become unresponsive on macOS (sometimes immediately after launch).
+
+### 🧠 Decisions made:
+
+- Use DevTools pause/stack capture or flutter attach to collect Dart stacks without terminating the process.
+- Validate if the freeze reproduces in profile/release builds to rule out debug-only overhead.
+
+### 🎯 Next steps:
+
+- Capture Dart stack from DevTools when the freeze occurs and compare against profile/release runs.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
