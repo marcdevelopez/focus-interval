@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../providers.dart';
 import '../viewmodels/task_editor_view_model.dart';
 import '../../data/models/pomodoro_task.dart';
@@ -86,7 +87,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("The task no longer exists.")),
       );
-      Navigator.pop(context);
+      _exitEditor();
       return;
     }
     if (result == TaskEditorLoadResult.blockedByActiveSession) {
@@ -95,7 +96,16 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
           content: Text("Stop the running task before editing it."),
         ),
       );
-      Navigator.pop(context);
+      _exitEditor();
+    }
+  }
+
+  void _exitEditor() {
+    if (!mounted) return;
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/tasks');
     }
   }
 
@@ -175,7 +185,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                 );
                 return;
               }
-              Navigator.pop(context);
+              _exitEditor();
             },
             child: const Text("Save"),
           ),
