@@ -42,6 +42,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   late final TextEditingController _totalPomodorosCtrl;
   late final TextEditingController _longBreakIntervalCtrl;
   String? _loadedTaskId;
+  bool _intervalTouched = false;
 
   @override
   void initState() {
@@ -124,10 +125,14 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     final pomodoroGuidance = task == null
         ? null
         : buildPomodoroDurationGuidance(minutes: task.pomodoroMinutes);
-    final intervalGuidance = task == null
+    final intervalInput = _parseIntervalInput();
+    final intervalValue = task == null
+        ? null
+        : intervalInput ?? task.longBreakInterval;
+    final intervalGuidance = task == null || intervalValue == null
         ? null
         : buildLongBreakIntervalGuidance(
-            interval: task.longBreakInterval,
+            interval: intervalValue,
             totalPomodoros: task.totalPomodoros,
           );
     final shortHelper = guidance == null
@@ -142,6 +147,10 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     final intervalHelper = intervalGuidance?.helperText;
     final intervalStatus =
         intervalGuidance?.status ?? LongBreakIntervalStatus.optimal;
+    final intervalInvalid = _intervalTouched &&
+        (intervalInput == null ||
+            intervalInput < 1 ||
+            intervalInput > maxLongBreakInterval);
     _maybeSyncControllers(task);
     const pomodoroSounds = [
       SoundOption('default_chime', 'Chime (pomodoro start)'),
@@ -272,20 +281,34 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               label: "Pomodoros per long break",
               controller: _longBreakIntervalCtrl,
               onChanged: (v) => _update(task.copyWith(longBreakInterval: v)),
-              suffix: _intervalSuffix(task.longBreakInterval),
+              onTextChanged: (raw) {
+                if (!_intervalTouched) {
+                  _intervalTouched = true;
+                }
+                if (int.tryParse(raw.trim()) == null) {
+                  setState(() {});
+                }
+              },
+              suffix: _intervalSuffix(intervalValue ?? task.longBreakInterval),
               suffixMaxWidth: 140,
               helperText: intervalHelper,
-              helperColor: _intervalHelperColor(intervalStatus),
+              helperColor: _intervalHelperColor(
+                intervalStatus,
+                isInvalid: intervalInvalid,
+              ),
               borderColor: _intervalBorderColor(
                 intervalStatus,
                 focused: false,
+                isInvalid: intervalInvalid,
               ),
               focusedBorderColor: _intervalBorderColor(
                 intervalStatus,
                 focused: true,
+                isInvalid: intervalInvalid,
               ),
               helperMaxLines: 2,
               additionalValidator: _longBreakIntervalValidator,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
             ),
             const SizedBox(height: 24),
             const Text(
@@ -391,6 +414,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     _longBreakCtrl.text = task.longBreakMinutes.toString();
     _totalPomodorosCtrl.text = task.totalPomodoros.toString();
     _longBreakIntervalCtrl.text = task.longBreakInterval.toString();
+    _intervalTouched = false;
   }
 
   void _maybeSyncControllers(PomodoroTask? task) {
@@ -401,6 +425,12 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       if (_loadedTaskId == task.id) return;
       _syncControllers(task);
     });
+  }
+
+  int? _parseIntervalInput() {
+    final raw = _longBreakIntervalCtrl.text.trim();
+    if (raw.isEmpty) return null;
+    return int.tryParse(raw);
   }
 
   Future<bool> _validateBusinessRules() async {
@@ -486,7 +516,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
 
   String? _longBreakIntervalValidator(int value) {
     if (value > maxLongBreakInterval) {
-      return 'Max allowed: $maxLongBreakInterval pomodoros.';
+      return 'Max $maxLongBreakInterval pomodoros. Longer cycles '
+          'increase fatigue and reduce focus.';
     }
     return null;
   }
@@ -586,7 +617,11 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     return focused ? base : base.withValues(alpha: 0.6);
   }
 
-  Color _intervalHelperColor(LongBreakIntervalStatus status) {
+  Color _intervalHelperColor(
+    LongBreakIntervalStatus status, {
+    required bool isInvalid,
+  }) {
+    if (isInvalid) return Colors.redAccent;
     return switch (status) {
       LongBreakIntervalStatus.optimal => Colors.greenAccent,
       LongBreakIntervalStatus.acceptable => Colors.amberAccent,
@@ -597,8 +632,9 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   Color _intervalBorderColor(
     LongBreakIntervalStatus status, {
     required bool focused,
+    required bool isInvalid,
   }) {
-    final base = _intervalHelperColor(status);
+    final base = _intervalHelperColor(status, isInvalid: isInvalid);
     return focused ? base : base.withValues(alpha: 0.6);
   }
 
@@ -633,6 +669,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     required String label,
     required TextEditingController controller,
     required ValueChanged<int> onChanged,
+    ValueChanged<String>? onTextChanged,
     Widget? suffix,
     String? helperText,
     Color? helperColor,
@@ -641,12 +678,14 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     String? Function(int value)? additionalValidator,
     double suffixMaxWidth = 84,
     int? helperMaxLines,
+    AutovalidateMode? autovalidateMode,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: TextInputType.number,
       style: const TextStyle(color: Colors.white),
       cursorColor: Colors.white,
+      autovalidateMode: autovalidateMode,
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: Colors.white54),
@@ -692,6 +731,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         return null;
       },
       onChanged: (v) {
+        onTextChanged?.call(v);
         final value = int.tryParse(v);
         if (value == null) return;
         onChanged(value);
@@ -729,7 +769,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   Widget _intervalDotsCard(int interval) {
     return Container(
       height: 42,
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.white10,
         borderRadius: BorderRadius.circular(12),
@@ -790,13 +830,19 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         final maxWidth = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : 48.0;
-        const maxHeight = 18.0;
+        const maxHeight = 30.0;
         var dotSize = 5.0;
         var spacing = 3.0;
         const minDot = 3.0;
 
         while (dotSize >= minDot) {
-          final rows = _rowsFor(maxHeight, dotSize, spacing, totalDots);
+          final rows = _rowsFor(
+            maxHeight,
+            dotSize,
+            spacing,
+            totalDots,
+            maxRows: 3,
+          );
           final maxCols = _maxColsFor(maxWidth, dotSize, spacing);
           if (rows * maxCols >= totalDots) break;
           dotSize -= 0.5;
@@ -816,7 +862,13 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
           );
         }
 
-        final rows = _rowsFor(maxHeight, dotSize, spacing, totalDots);
+        final rows = _rowsFor(
+          maxHeight,
+          dotSize,
+          spacing,
+          totalDots,
+          maxRows: 3,
+        );
         final maxCols = _maxColsFor(maxWidth, dotSize, spacing);
         final redColsNeeded = (redDots / rows).ceil();
         final blueSeparate = redColsNeeded < maxCols;
@@ -867,11 +919,14 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     double maxHeight,
     double dotSize,
     double spacing,
-    int totalDots,
+    int totalDots, {
+    int? maxRows,
+  }
   ) {
     final rows = ((maxHeight + spacing) / (dotSize + spacing)).floor();
     if (rows < 1) return 1;
-    return rows > totalDots ? totalDots : rows;
+    final clampedRows = maxRows != null && rows > maxRows ? maxRows : rows;
+    return clampedRows > totalDots ? totalDots : clampedRows;
   }
 
   int _maxColsFor(double maxWidth, double dotSize, double spacing) {

@@ -2009,6 +2009,102 @@ _(fill in when they happen)_
 
 - Re-check task cards on small screens with the capped interval display.
 
+# 🔹 Block 99 — Long break interval max raised to 12 — 24/01/2026
+
+### ✔ Work completed:
+
+- Increased the hard max long break interval to 12 pomodoros.
+- Updated Task Editor validation copy to explain fatigue risk.
+- Updated specs to align with the 12-pomodoro cap.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Allow a wider upper bound (12) while keeping guidance ranges unchanged.
+
+### 🎯 Next steps:
+
+- Verify the dots layout still fits at the 12-pomodoro cap on small screens.
+
+# 🔹 Block 100 — Live interval guidance while typing — 24/01/2026
+
+### ✔ Work completed:
+
+- Added live validation + color feedback for long break interval as users type.
+- Wired interval guidance and dots to the current input value.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Trigger interval validation on user interaction for immediate UX feedback.
+
+### 🎯 Next steps:
+
+- Verify interval warnings and error text on mobile and web keyboards.
+
+# 🔹 Block 101 — Task List dots height tuning — 24/01/2026
+
+### ✔ Work completed:
+
+- Increased Task List long-break dots height to fit 3 rows per column.
+- Reduced dot column count to avoid horizontal overflow on small cards.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep stat card height unchanged; adjust dot layout height only.
+
+### 🎯 Next steps:
+
+- Confirm no overflow on the smallest supported widths.
+
+# 🔹 Block 102 — Editor dots height aligned with Task List — 24/01/2026
+
+### ✔ Work completed:
+
+- Aligned Task Editor interval dots height with Task List (3 rows per column).
+- Adjusted editor dots card padding to keep the layout consistent.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Match editor dots layout to the Task List for visual consistency.
+
+### 🎯 Next steps:
+
+- Verify the interval suffix still fits on the smallest field widths.
+
+# 🔹 Block 103 — Clamp interval dots to 3 rows — 24/01/2026
+
+### ✔ Work completed:
+
+- Capped long-break dots layout to a maximum of 3 rows per column.
+- Applied the same row cap in Task Editor and Task List for consistency.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Prefer a stable 3-row grid to prevent vertical overflow while keeping density.
+
+### 🎯 Next steps:
+
+- Re-check dots layout at the 12-pomodoro cap on the smallest widths.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

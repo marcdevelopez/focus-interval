@@ -565,9 +565,9 @@ Behavior:
 - Long break interval guidance:
   - Optimal value: 4 pomodoros (green).
   - Acceptable range: 3–6 pomodoros (amber).
-  - Outside range: 1–2 or 7–8 pomodoros (orange) with a warning message.
-  - Hard max: 8 pomodoros (block save above this value).
-  - Allow values >= 1 up to 8; if the interval exceeds total pomodoros, show a note that only short breaks will occur.
+  - Outside range: 1–2 or 7–12 pomodoros (orange) with a warning message.
+  - Hard max: 12 pomodoros (block save above this value).
+  - Allow values >= 1 up to 12; if the interval exceeds total pomodoros, show a note that only short breaks will occur.
   - Provide an info tooltip explaining how the long break interval works.
 - If a custom local sound is selected, show the file name (with extension) in the selector.
 - Planned: show task weight as both total pomodoros and a derived percentage of the group total.

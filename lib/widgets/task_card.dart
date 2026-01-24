@@ -311,13 +311,19 @@ class TaskCard extends StatelessWidget {
         final maxWidth = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : 120.0;
-        const maxHeight = 24.0;
+        const maxHeight = 30.0;
         var dotSize = 6.0;
         var spacing = 4.0;
         const minDot = 3.5;
 
         while (dotSize >= minDot) {
-          final rows = _rowsFor(maxHeight, dotSize, spacing, totalDots);
+          final rows = _rowsFor(
+            maxHeight,
+            dotSize,
+            spacing,
+            totalDots,
+            maxRows: 3,
+          );
           final maxCols = _maxColsFor(maxWidth, dotSize, spacing);
           if (rows * maxCols >= totalDots) break;
           dotSize -= 0.5;
@@ -340,7 +346,13 @@ class TaskCard extends StatelessWidget {
           );
         }
 
-        final rows = _rowsFor(maxHeight, dotSize, spacing, totalDots);
+        final rows = _rowsFor(
+          maxHeight,
+          dotSize,
+          spacing,
+          totalDots,
+          maxRows: 3,
+        );
         final maxCols = _maxColsFor(maxWidth, dotSize, spacing);
         final redColsNeeded = (redDots / rows).ceil();
         final blueSeparate = redColsNeeded < maxCols;
@@ -391,11 +403,14 @@ class TaskCard extends StatelessWidget {
     double maxHeight,
     double dotSize,
     double spacing,
-    int totalDots,
+    int totalDots, {
+    int? maxRows,
+  }
   ) {
     final rows = ((maxHeight + spacing) / (dotSize + spacing)).floor();
     if (rows < 1) return 1;
-    return rows > totalDots ? totalDots : rows;
+    final clampedRows = maxRows != null && rows > maxRows ? maxRows : rows;
+    return clampedRows > totalDots ? totalDots : clampedRows;
   }
 
   int _maxColsFor(double maxWidth, double dotSize, double spacing) {
