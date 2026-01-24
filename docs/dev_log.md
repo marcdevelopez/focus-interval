@@ -16,7 +16,7 @@ This document is used to:
 # 📍 Current status
 
 Active phase: **17 — Planning Flow + Conflict Management**
-Last update: **23/01/2026**
+Last update: **24/01/2026**
 
 ---
 
@@ -1988,6 +1988,26 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Implement a global, always-visible mode indicator and close Phase 6.6.
+
+# 🔹 Block 98 — Long break interval cap + Task List overflow fix — 24/01/2026
+
+### ✔ Work completed:
+
+- Added a hard maximum for long break interval (8) in the Task Editor validator.
+- Clamped long break interval dots in Task List and Task Editor to avoid layout overflow.
+- Updated specs to document the new upper bound.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Enforce an upper bound aligned with Pomodoro practice to prevent UI breaks.
+
+### 🎯 Next steps:
+
+- Re-check task cards on small screens with the capped interval display.
 
 # 🧾 General notes
 

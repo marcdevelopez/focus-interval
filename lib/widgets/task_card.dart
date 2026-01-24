@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../data/models/pomodoro_task.dart';
 import '../data/models/selected_sound.dart';
 import '../data/services/local_sound_overrides.dart';
+import '../domain/validators.dart';
 
 enum _TaskCardAction { edit, delete }
 
@@ -300,7 +301,10 @@ class TaskCard extends StatelessWidget {
   }
 
   Widget _breakDots(int interval) {
-    final redDots = interval <= 0 ? 1 : interval;
+    final safeInterval = interval <= 0 ? 1 : interval;
+    final redDots = safeInterval > maxLongBreakInterval
+        ? maxLongBreakInterval
+        : safeInterval;
     final totalDots = redDots + 1;
     return LayoutBuilder(
       builder: (context, constraints) {

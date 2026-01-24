@@ -285,6 +285,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                 focused: true,
               ),
               helperMaxLines: 2,
+              additionalValidator: _longBreakIntervalValidator,
             ),
             const SizedBox(height: 24),
             const Text(
@@ -479,6 +480,13 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     if (value > pomodoroMinutes) {
       return '$label cannot exceed pomodoro duration '
           '($pomodoroMinutes min max).';
+    }
+    return null;
+  }
+
+  String? _longBreakIntervalValidator(int value) {
+    if (value > maxLongBreakInterval) {
+      return 'Max allowed: $maxLongBreakInterval pomodoros.';
     }
     return null;
   }
@@ -772,7 +780,10 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   }
 
   Widget _intervalDots(int interval) {
-    final redDots = interval <= 0 ? 1 : interval;
+    final safeInterval = interval <= 0 ? 1 : interval;
+    final redDots = safeInterval > maxLongBreakInterval
+        ? maxLongBreakInterval
+        : safeInterval;
     final totalDots = redDots + 1;
     return LayoutBuilder(
       builder: (context, constraints) {

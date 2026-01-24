@@ -15,6 +15,8 @@ enum LongBreakIntervalStatus { optimal, acceptable, warning }
 
 enum PomodoroDurationStatus { optimal, creative, general, deep, warning, invalid }
 
+const int maxLongBreakInterval = 8;
+
 class BreakDurationGuidance {
   final int pomodoroMinutes;
   final int shortBreakMinutes;
