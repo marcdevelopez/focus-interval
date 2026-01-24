@@ -1912,6 +1912,26 @@ _(fill in when they happen)_
 
 - Verify pomodoro helper text fits on smallest devices.
 
+# 🔹 Block 94 — Task presets + task weight UI docs — 24/01/2026
+
+### ✔ Work completed:
+
+- Documented reusable Pomodoro configuration presets (Task Presets) in specs.
+- Documented task weight (%) placement in Task List and Task Editor.
+- Added a documentation-first roadmap subphase for these UX refinements.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep these changes documentation-only to avoid behavior changes.
+
+### 🎯 Next steps:
+
+- Implement presets and weight UI placement when scheduled.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

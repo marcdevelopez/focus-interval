@@ -435,6 +435,7 @@ Item layout (top → bottom):
 
 1. **Title row**
    - Task name (up to 2 lines, ellipsized)
+   - Derived task weight percentage in the top-right corner (does not alter the rest of the layout)
    - No time range in this row
 
 2. **Stats row (three cards, equal width when possible)**
@@ -517,6 +518,7 @@ Inputs:
 - Short break duration
 - Long break duration
 - Total pomodoros
+- Task weight (%)
 - Long break interval
 - Select sounds for each event
 
@@ -555,6 +557,7 @@ Behavior:
 - If a custom local sound is selected, show the file name (with extension) in the selector.
 - Planned: show task weight as both total pomodoros and a derived percentage of the group total.
 - Planned: when editing the percentage, suggest the closest valid integer pomodoro count and update the displayed percentage accordingly (pomodoros are never fractional).
+- Planned: display Total pomodoros and Task weight (%) on the same row directly below the task name to emphasize task weight.
 
 ### **10.3.x. Pomodoro integrity + task weight (planned, documentation-first)**
 
@@ -585,7 +588,29 @@ Task weight rules:
 UI implications (documentation only):
 - Task List should display both totalPomodoros and derived percentage of the group total.
 - Task Editor should display totalPomodoros and derived percentage, with live recalculation when either value changes.
+- Task Editor should place Total pomodoros + Task weight (%) together, above Pomodoro structural configuration and sounds.
 - If a TaskRunGroup mixes structural configurations, show a clear integrity warning (education-only).
+
+### **10.3.y. Reusable Pomodoro configurations (Task Presets) (planned, documentation-first)**
+
+Goal: separate “what I do” (task) from “how it runs” (Pomodoro configuration) while keeping full flexibility.
+
+Preset definition:
+- A **Pomodoro configuration preset** is a named, reusable bundle of:
+  - pomodoro duration
+  - short break duration
+  - long break duration
+  - long break interval
+  - sound selections
+
+Behavior:
+- Presets are selectable from the Task Editor when creating or editing a task.
+- Presets can be created, renamed, edited, and deleted from within the Task Editor context.
+- One preset can be marked as **default** and applied automatically to new tasks.
+- A task may either:
+  - reference a saved preset, or
+  - use a custom, task-specific configuration.
+- Backward compatibility: tasks without a preset behave as custom tasks using their stored values.
 
 ---
 

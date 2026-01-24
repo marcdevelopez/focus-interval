@@ -37,6 +37,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       Scheduled auto-start lifecycle (scheduled -> running -> completed) and resume/launch catch-up pending.
       20/01/2026: Local vs Account scope guard implemented with explicit import dialog (no implicit sync).
       20/01/2026: Run Mode time ranges anchored to actualStartTime with final breaks and pause offsets; task transitions stabilized.
+      24/01/2026: Documentation-first specs for Task Presets and task weight (%) UI refinements added.
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
@@ -389,6 +390,21 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Basic sound selector connected (no playback yet) and plan to implement real audio in a later phase
 - Unique name validation blocks duplicates and shows a validation error.
 - Apply settings copies the current task configuration to all remaining tasks.
+
+---
+
+# [✔] **PHASE 10.4 — UX/Product refinements (documentation-first) (completed 24/01/2026)**
+
+### ⚙️ Tasks
+
+- Define reusable Pomodoro configuration presets (create/edit/delete/default) in specs.
+- Define task weight (%) placement in Task List and Task Editor (pomodoros + % grouped).
+- Keep behavior unchanged; documentation-first only.
+
+### 📌 Exit conditions
+
+- Specs updated with presets + weight UI guidance.
+- No code changes required yet.
 
 ---
 
