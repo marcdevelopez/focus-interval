@@ -538,6 +538,14 @@ Behavior:
   - Long break optimal range: 40–60% of pomodoro duration.
 - If break durations are outside the optimal range but still valid, show a warning with recommended ranges and allow the user to continue or adjust.
 - Display helper text and visual cues (green = optimal, amber = outside range, red = invalid) on break inputs.
+- Pomodoro duration guidance:
+  - Hard range: 15–60 minutes (block outside this range).
+  - Optimal: 25 minutes (green).
+  - Creative range: 20–30 minutes (light green).
+  - General range: 31–34 minutes (light green).
+  - Deep work range: 35–45 minutes (amber).
+  - Warning: 15–19 or 46–60 minutes (orange).
+  - Provide an info tooltip explaining recommended ranges and trade-offs.
 - Long break interval guidance:
   - Optimal value: 4 pomodoros (green).
   - Acceptable range: 3–6 pomodoros (amber).

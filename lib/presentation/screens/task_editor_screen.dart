@@ -111,6 +111,9 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     final shortStatus =
         guidance?.shortStatus ?? BreakDurationStatus.optimal;
     final longStatus = guidance?.longStatus ?? BreakDurationStatus.optimal;
+    final pomodoroGuidance = task == null
+        ? null
+        : buildPomodoroDurationGuidance(minutes: task.pomodoroMinutes);
     final intervalGuidance = task == null
         ? null
         : buildLongBreakIntervalGuidance(
@@ -123,6 +126,9 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     final longHelper = guidance == null
         ? null
         : 'Optimal range: ${guidance.longRange.label} min';
+    final pomodoroHelper = pomodoroGuidance?.helperText;
+    final pomodoroStatus =
+        pomodoroGuidance?.status ?? PomodoroDurationStatus.optimal;
     final intervalHelper = intervalGuidance?.helperText;
     final intervalStatus =
         intervalGuidance?.status ?? LongBreakIntervalStatus.optimal;
@@ -197,11 +203,21 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               label: "Pomodoro duration (min)",
               controller: _pomodoroCtrl,
               onChanged: (v) => _update(task.copyWith(pomodoroMinutes: v)),
-              suffix: _metricCircle(
-                value: task.pomodoroMinutes.toString(),
-                color: Colors.redAccent,
-                stroke: 2,
+              suffix: _pomodoroSuffix(task.pomodoroMinutes),
+              suffixMaxWidth: 140,
+              helperText: pomodoroHelper,
+              helperColor: _pomodoroHelperColor(pomodoroStatus),
+              borderColor: _pomodoroBorderColor(
+                pomodoroStatus,
+                focused: false,
               ),
+              focusedBorderColor: _pomodoroBorderColor(
+                pomodoroStatus,
+                focused: true,
+              ),
+              helperMaxLines: 2,
+              additionalValidator: (value) =>
+                  _pomodoroRangeValidator(value),
             ),
             _numberField(
               label: "Short break (min)",
@@ -499,6 +515,59 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     );
   }
 
+  Future<void> _showPomodoroInfoDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Pomodoro duration'),
+          content: const Text(
+            'Pomodoro duration is the uninterrupted work time. Research '
+            'suggests optimal focus in 20-45 minute blocks. Shorter durations '
+            '(20-25) fit creative work; mid ranges (25-35) suit general tasks; '
+            'longer ranges (35-45) support deep analytical work but require '
+            'more mental effort.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String? _pomodoroRangeValidator(int value) {
+    if (value < 15) {
+      return 'Pomodoro must be at least 15 minutes.';
+    }
+    if (value > 60) {
+      return 'Pomodoro must be 60 minutes or less.';
+    }
+    return null;
+  }
+
+  Color _pomodoroHelperColor(PomodoroDurationStatus status) {
+    return switch (status) {
+      PomodoroDurationStatus.optimal => Colors.greenAccent,
+      PomodoroDurationStatus.creative => Colors.lightGreenAccent,
+      PomodoroDurationStatus.general => Colors.lightGreenAccent,
+      PomodoroDurationStatus.deep => Colors.amberAccent,
+      PomodoroDurationStatus.warning => Colors.orangeAccent,
+      PomodoroDurationStatus.invalid => Colors.redAccent,
+    };
+  }
+
+  Color _pomodoroBorderColor(
+    PomodoroDurationStatus status, {
+    required bool focused,
+  }) {
+    final base = _pomodoroHelperColor(status);
+    return focused ? base : base.withValues(alpha: 0.6);
+  }
+
   Color _intervalHelperColor(LongBreakIntervalStatus status) {
     return switch (status) {
       LongBreakIntervalStatus.optimal => Colors.greenAccent,
@@ -665,6 +734,28 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
           constraints: const BoxConstraints.tightFor(width: 28, height: 28),
           tooltip: 'Long break interval info',
           onPressed: _showLongBreakInfoDialog,
+        ),
+      ],
+    );
+  }
+
+  Widget _pomodoroSuffix(int minutes) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _metricCircle(
+          value: minutes.toString(),
+          color: Colors.redAccent,
+          stroke: 2,
+        ),
+        const SizedBox(width: 6),
+        IconButton(
+          icon: const Icon(Icons.info_outline, size: 18),
+          color: Colors.white54,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+          tooltip: 'Pomodoro duration info',
+          onPressed: _showPomodoroInfoDialog,
         ),
       ],
     );

@@ -128,4 +128,57 @@ void main() {
       );
     });
   });
+
+  group('PomodoroDurationGuidance', () {
+    test('flags invalid when below 15 minutes', () {
+      final guidance = buildPomodoroDurationGuidance(minutes: 10);
+      expect(guidance.isValid, false);
+      expect(guidance.status, PomodoroDurationStatus.invalid);
+      expect(guidance.helperText, contains('Min allowed'));
+    });
+
+    test('flags invalid when above 60 minutes', () {
+      final guidance = buildPomodoroDurationGuidance(minutes: 70);
+      expect(guidance.isValid, false);
+      expect(guidance.status, PomodoroDurationStatus.invalid);
+      expect(guidance.helperText, contains('Max allowed'));
+    });
+
+    test('marks 25 minutes as optimal', () {
+      final guidance = buildPomodoroDurationGuidance(minutes: 25);
+      expect(guidance.isValid, true);
+      expect(guidance.status, PomodoroDurationStatus.optimal);
+      expect(guidance.helperText, contains('25 min'));
+    });
+
+    test('marks 20-30 minutes as creative (excluding 25)', () {
+      final guidance = buildPomodoroDurationGuidance(minutes: 20);
+      expect(guidance.status, PomodoroDurationStatus.creative);
+      expect(guidance.helperText, contains('Creative range'));
+    });
+
+    test('marks 31-34 minutes as general', () {
+      final guidance = buildPomodoroDurationGuidance(minutes: 32);
+      expect(guidance.status, PomodoroDurationStatus.general);
+      expect(guidance.helperText, contains('General work'));
+    });
+
+    test('marks 35-45 minutes as deep', () {
+      final guidance = buildPomodoroDurationGuidance(minutes: 40);
+      expect(guidance.status, PomodoroDurationStatus.deep);
+      expect(guidance.helperText, contains('Deep work'));
+    });
+
+    test('marks 15-19 minutes as warning', () {
+      final guidance = buildPomodoroDurationGuidance(minutes: 18);
+      expect(guidance.status, PomodoroDurationStatus.warning);
+      expect(guidance.helperText, contains('Too short'));
+    });
+
+    test('marks 46-60 minutes as warning', () {
+      final guidance = buildPomodoroDurationGuidance(minutes: 50);
+      expect(guidance.status, PomodoroDurationStatus.warning);
+      expect(guidance.helperText, contains('Over 45'));
+    });
+  });
 }

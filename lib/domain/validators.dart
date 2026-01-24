@@ -13,6 +13,8 @@ enum BreakDurationStatus { optimal, suboptimal, invalid }
 
 enum LongBreakIntervalStatus { optimal, acceptable, warning }
 
+enum PomodoroDurationStatus { optimal, creative, general, deep, warning, invalid }
+
 class BreakDurationGuidance {
   final int pomodoroMinutes;
   final int shortBreakMinutes;
@@ -155,4 +157,88 @@ String _intervalBaseMessage(int interval) {
     return 'Warning: Too frequent can fragment focus. Consider 4.';
   }
   return 'Warning: Too long can increase fatigue. Consider 4.';
+}
+
+class PomodoroDurationGuidance {
+  final int minutes;
+  final PomodoroDurationStatus status;
+  final String helperText;
+  final bool isValid;
+
+  const PomodoroDurationGuidance({
+    required this.minutes,
+    required this.status,
+    required this.helperText,
+    required this.isValid,
+  });
+}
+
+PomodoroDurationGuidance buildPomodoroDurationGuidance({
+  required int minutes,
+}) {
+  final safeMinutes = minutes;
+  if (safeMinutes < 15) {
+    return PomodoroDurationGuidance(
+      minutes: safeMinutes,
+      status: PomodoroDurationStatus.invalid,
+      helperText:
+          'Error: Under 15 min is too short for flow. Min allowed: 15.',
+      isValid: false,
+    );
+  }
+  if (safeMinutes > 60) {
+    return PomodoroDurationGuidance(
+      minutes: safeMinutes,
+      status: PomodoroDurationStatus.invalid,
+      helperText:
+          'Error: Over 60 min exceeds sustained focus. Max allowed: 60.',
+      isValid: false,
+    );
+  }
+  if (safeMinutes == 25) {
+    return PomodoroDurationGuidance(
+      minutes: safeMinutes,
+      status: PomodoroDurationStatus.optimal,
+      helperText: 'Recommended: 25 min is the classic Pomodoro standard.',
+      isValid: true,
+    );
+  }
+  if (safeMinutes >= 20 && safeMinutes <= 30) {
+    return PomodoroDurationGuidance(
+      minutes: safeMinutes,
+      status: PomodoroDurationStatus.creative,
+      helperText: 'Creative range: 20-30 min fits ideation and writing.',
+      isValid: true,
+    );
+  }
+  if (safeMinutes >= 31 && safeMinutes <= 34) {
+    return PomodoroDurationGuidance(
+      minutes: safeMinutes,
+      status: PomodoroDurationStatus.general,
+      helperText: 'General work: 25-35 min is a solid range.',
+      isValid: true,
+    );
+  }
+  if (safeMinutes >= 35 && safeMinutes <= 45) {
+    return PomodoroDurationGuidance(
+      minutes: safeMinutes,
+      status: PomodoroDurationStatus.deep,
+      helperText: 'Deep work: 35-45 min can work but raises fatigue risk.',
+      isValid: true,
+    );
+  }
+  if (safeMinutes >= 15 && safeMinutes <= 19) {
+    return PomodoroDurationGuidance(
+      minutes: safeMinutes,
+      status: PomodoroDurationStatus.warning,
+      helperText: 'Warning: Too short can break flow. Try 20-25.',
+      isValid: true,
+    );
+  }
+  return PomodoroDurationGuidance(
+    minutes: safeMinutes,
+    status: PomodoroDurationStatus.warning,
+    helperText: 'Warning: Over 45 min can fatigue. Try 35-45.',
+    isValid: true,
+  );
 }

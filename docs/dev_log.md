@@ -1892,6 +1892,26 @@ _(fill in when they happen)_
 
 - Implement group mode selection, integrity warning, and percentage editing when scheduled.
 
+# 🔹 Block 93 — Pomodoro duration guidance — 23/01/2026
+
+### ✔ Work completed:
+
+- Added pomodoro duration guidance with color cues and info dialog.
+- Enforced hard validation for 15–60 minutes.
+- Added validator tests for pomodoro duration guidance.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Add a general 31–34 minute range to avoid gaps between creative and deep ranges.
+
+### 🎯 Next steps:
+
+- Verify pomodoro helper text fits on smallest devices.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
