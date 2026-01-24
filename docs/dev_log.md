@@ -2164,6 +2164,26 @@ _(fill in when they happen)_
 
 - Verify break field validation priorities on mobile and web layouts.
 
+# 🔹 Block 107 — Break validation error reset + specs alignment — 24/01/2026
+
+### ✔ Work completed:
+
+- Added explicit spec bullets for break order validation and blocking error priority.
+- Fixed break field validation to revalidate on change after a failed save attempt.
+- Allowed long break error messages to wrap to two lines to avoid truncation.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Treat break validation as fully reactive and ensure errors clear immediately.
+
+### 🎯 Next steps:
+
+- Re-check break validation on the smallest supported widths.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

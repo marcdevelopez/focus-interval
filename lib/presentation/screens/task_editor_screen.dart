@@ -35,6 +35,8 @@ class _Dot extends StatelessWidget {
 
 class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _shortBreakFieldKey = GlobalKey<FormFieldState<String>>();
+  final _longBreakFieldKey = GlobalKey<FormFieldState<String>>();
   late final TextEditingController _nameCtrl;
   late final TextEditingController _pomodoroCtrl;
   late final TextEditingController _shortBreakCtrl;
@@ -239,7 +241,10 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
             _numberField(
               label: "Pomodoro duration (min)",
               controller: _pomodoroCtrl,
-              onChanged: (v) => _update(task.copyWith(pomodoroMinutes: v)),
+              onChanged: (v) {
+                _update(task.copyWith(pomodoroMinutes: v));
+                _revalidateBreakFields();
+              },
               suffix: _pomodoroSuffix(task.pomodoroMinutes),
               suffixMaxWidth: 140,
               helperText: pomodoroHelper,
@@ -259,6 +264,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
             ),
             _numberField(
               label: "Short break (min)",
+              fieldKey: _shortBreakFieldKey,
               controller: _shortBreakCtrl,
               onChanged: (v) {
                 if (!_breaksTouched) {
@@ -267,6 +273,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                   });
                 }
                 _update(task.copyWith(shortBreakMinutes: v));
+                _revalidateBreakFields();
               },
               suffix: _metricCircle(
                 value: task.shortBreakMinutes.toString(),
@@ -288,6 +295,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
             ),
             _numberField(
               label: "Long break (min)",
+              fieldKey: _longBreakFieldKey,
               controller: _longBreakCtrl,
               onChanged: (v) {
                 if (!_breaksTouched) {
@@ -296,6 +304,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                   });
                 }
                 _update(task.copyWith(longBreakMinutes: v));
+                _revalidateBreakFields();
               },
               suffix: _metricCircle(
                 value: task.longBreakMinutes.toString(),
@@ -443,6 +452,11 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
 
   void _update(PomodoroTask updated) {
     ref.read(taskEditorProvider.notifier).update(updated);
+  }
+
+  void _revalidateBreakFields() {
+    _shortBreakFieldKey.currentState?.validate();
+    _longBreakFieldKey.currentState?.validate();
   }
 
   void _syncControllers(PomodoroTask task) {
@@ -738,6 +752,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
 
   Widget _numberField({
     required String label,
+    Key? fieldKey,
     required TextEditingController controller,
     required ValueChanged<int> onChanged,
     ValueChanged<String>? onTextChanged,
@@ -749,9 +764,11 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     String? Function(int value)? additionalValidator,
     double suffixMaxWidth = 84,
     int? helperMaxLines,
+    int errorMaxLines = 2,
     AutovalidateMode? autovalidateMode,
   }) {
     return TextFormField(
+      key: fieldKey,
       controller: controller,
       keyboardType: TextInputType.number,
       style: const TextStyle(color: Colors.white),
@@ -774,6 +791,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
           fontSize: 11,
         ),
         helperMaxLines: helperMaxLines,
+        errorMaxLines: errorMaxLines,
         suffixIcon: suffix == null
             ? null
             : Padding(
