@@ -18,7 +18,7 @@ The main goals are:
 - Sync Pomodoro execution in real time across devices (single session owner, others in mirror mode)
 - Play internal app sounds for state changes (notifications remain silent)
 
-The app syncs with Firebase via Google Sign-In on iOS/Android/Web and email/password on macOS/Windows. A first-class Local Mode (offline, no auth) is available on all platforms and can be toggled at any time.
+The app syncs with Firebase via Google Sign-In on iOS/Android/Web, email/password on macOS/Windows, and optional GitHub Sign-In where supported. A first-class Local Mode (offline, no auth) is available on all platforms and can be toggled at any time.
 
 ---
 
@@ -38,7 +38,7 @@ The app syncs with Firebase via Google Sign-In on iOS/Android/Web and email/pass
 | Area                   | Technology                                                |
 | ---------------------- | --------------------------------------------------------- |
 | UI Framework           | Flutter 3.x                                               |
-| Auth                   | Firebase Authentication (Google Sign-In + email/password) |
+| Auth                   | Firebase Authentication (Google Sign-In, optional GitHub Sign-In, email/password) |
 | Backend                | Firestore                                                 |
 | Local Cache (optional) | SharedPreferences (Local Mode storage); Hive (v1.2)       |
 | State Management       | Riverpod                                                  |
@@ -382,17 +382,30 @@ Account Mode (by platform)
   - Button: “Continue with Google”
   - Opens browser or WebView
   - Gets uid, email, displayName, photoURL
+  - Optional: “Continue with GitHub” (OAuth in browser/WebView)
+  - If GitHub is unavailable on a given platform, do not show the option
 - macOS / Windows:
   - Email/password login (no Google Sign-In)
   - Gets uid, email (and optionally name)
+  - Optional: GitHub sign-in via browser-based OAuth (if supported)
+  - If not supported, omit GitHub and keep email/password only
 - Linux:
   - Firebase Auth is unavailable; Account Mode is disabled
   - Local Mode is the default
+
+GitHub Sign-In platform constraints
+
+- Web: OAuth in browser (supported)
+- iOS / Android: OAuth in browser or WebView (supported)
+- macOS / Windows: browser-based OAuth if available; otherwise deferred/unavailable
+- Linux: unavailable (Account Mode disabled)
 
 Mode selection
 
 - Users can choose Local Mode without login on any platform.
 - Users can switch between Local Mode and Account Mode at any time.
+- GitHub login is an optional Account Mode provider that yields the same uid identity as other providers (not a separate account system).
+  - If GitHub is not supported on a platform, fall back to existing providers without changing Local Mode.
 
 Persistence
 
@@ -411,6 +424,7 @@ Email verification (email/password)
 
 - Logo
 - Google button (iOS/Android/Web)
+- GitHub button only where supported (same screen, secondary action; keep UI complexity flat)
 - Email/password form (macOS/Windows)
 - Login entry hidden on Linux (Account Mode unavailable)
 - Text: “Sync your tasks in the cloud”
