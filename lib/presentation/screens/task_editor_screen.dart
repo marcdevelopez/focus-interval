@@ -43,6 +43,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   late final TextEditingController _longBreakIntervalCtrl;
   String? _loadedTaskId;
   bool _intervalTouched = false;
+  bool _breaksTouched = false;
 
   @override
   void initState() {
@@ -119,9 +120,25 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     final breakDisplayName =
         editor.customDisplayName(SoundPickTarget.breakStart);
     final guidance = editor.breakGuidanceFor(task);
-    final shortStatus =
-        guidance?.shortStatus ?? BreakDurationStatus.optimal;
-    final longStatus = guidance?.longStatus ?? BreakDurationStatus.optimal;
+    final breakOrderInvalid = task != null &&
+        !isBreakOrderValid(
+          shortBreakMinutes: task.shortBreakMinutes,
+          longBreakMinutes: task.longBreakMinutes,
+        );
+    final shortBlocking =
+        breakOrderInvalid || (guidance?.shortExceedsPomodoro ?? false);
+    final longBlocking =
+        breakOrderInvalid || (guidance?.longExceedsPomodoro ?? false);
+    final shortStatus = shortBlocking
+        ? BreakDurationStatus.invalid
+        : (guidance?.shortStatus ?? BreakDurationStatus.optimal);
+    final longStatus = longBlocking
+        ? BreakDurationStatus.invalid
+        : (guidance?.longStatus ?? BreakDurationStatus.optimal);
+    final breakAutovalidateMode =
+        (_breaksTouched || shortBlocking || longBlocking)
+            ? AutovalidateMode.always
+            : AutovalidateMode.onUserInteraction;
     final pomodoroGuidance = task == null
         ? null
         : buildPomodoroDurationGuidance(minutes: task.pomodoroMinutes);
@@ -135,22 +152,23 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
             interval: intervalValue,
             totalPomodoros: task.totalPomodoros,
           );
-    final shortHelper = guidance == null
+    final intervalInvalid = _intervalTouched &&
+        (intervalInput == null ||
+            intervalInput < 1 ||
+            intervalInput > maxLongBreakInterval);
+    final shortHelper = guidance == null || shortBlocking
         ? null
         : 'Optimal range: ${guidance.shortRange.label} min';
-    final longHelper = guidance == null
+    final longHelper = guidance == null || longBlocking
         ? null
         : 'Optimal range: ${guidance.longRange.label} min';
     final pomodoroHelper = pomodoroGuidance?.helperText;
     final pomodoroStatus =
         pomodoroGuidance?.status ?? PomodoroDurationStatus.optimal;
-    final intervalHelper = intervalGuidance?.helperText;
+    final intervalHelper =
+        intervalInvalid ? null : intervalGuidance?.helperText;
     final intervalStatus =
         intervalGuidance?.status ?? LongBreakIntervalStatus.optimal;
-    final intervalInvalid = _intervalTouched &&
-        (intervalInput == null ||
-            intervalInput < 1 ||
-            intervalInput > maxLongBreakInterval);
     _maybeSyncControllers(task);
     const pomodoroSounds = [
       SoundOption('default_chime', 'Chime (pomodoro start)'),
@@ -242,7 +260,14 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
             _numberField(
               label: "Short break (min)",
               controller: _shortBreakCtrl,
-              onChanged: (v) => _update(task.copyWith(shortBreakMinutes: v)),
+              onChanged: (v) {
+                if (!_breaksTouched) {
+                  setState(() {
+                    _breaksTouched = true;
+                  });
+                }
+                _update(task.copyWith(shortBreakMinutes: v));
+              },
               suffix: _metricCircle(
                 value: task.shortBreakMinutes.toString(),
                 color: Colors.blueAccent,
@@ -252,16 +277,26 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               helperColor: _statusHelperColor(shortStatus),
               borderColor: _statusBorderColor(shortStatus, focused: false),
               focusedBorderColor: _statusBorderColor(shortStatus, focused: true),
-              additionalValidator: (value) => _breakMaxValidator(
+              additionalValidator: (value) => _breakFieldValidator(
                 value: value,
                 pomodoroMinutes: task.pomodoroMinutes,
                 label: 'Short break',
+                orderField: BreakOrderField.shortBreak,
+                otherController: _longBreakCtrl,
               ),
+              autovalidateMode: breakAutovalidateMode,
             ),
             _numberField(
               label: "Long break (min)",
               controller: _longBreakCtrl,
-              onChanged: (v) => _update(task.copyWith(longBreakMinutes: v)),
+              onChanged: (v) {
+                if (!_breaksTouched) {
+                  setState(() {
+                    _breaksTouched = true;
+                  });
+                }
+                _update(task.copyWith(longBreakMinutes: v));
+              },
               suffix: _metricCircle(
                 value: task.longBreakMinutes.toString(),
                 color: Colors.blueAccent,
@@ -271,11 +306,14 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               helperColor: _statusHelperColor(longStatus),
               borderColor: _statusBorderColor(longStatus, focused: false),
               focusedBorderColor: _statusBorderColor(longStatus, focused: true),
-              additionalValidator: (value) => _breakMaxValidator(
+              additionalValidator: (value) => _breakFieldValidator(
                 value: value,
                 pomodoroMinutes: task.pomodoroMinutes,
                 label: 'Long break',
+                orderField: BreakOrderField.longBreak,
+                otherController: _shortBreakCtrl,
               ),
+              autovalidateMode: breakAutovalidateMode,
             ),
             const SizedBox(height: 12),
             _numberField(
@@ -416,6 +454,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     _totalPomodorosCtrl.text = task.totalPomodoros.toString();
     _longBreakIntervalCtrl.text = task.longBreakInterval.toString();
     _intervalTouched = false;
+    _breaksTouched = false;
   }
 
   void _maybeSyncControllers(PomodoroTask? task) {
@@ -513,6 +552,37 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
           '($pomodoroMinutes min max).';
     }
     return null;
+  }
+
+  String? _breakFieldValidator({
+    required int value,
+    required int pomodoroMinutes,
+    required String label,
+    required BreakOrderField orderField,
+    required TextEditingController otherController,
+  }) {
+    final maxError = _breakMaxValidator(
+      value: value,
+      pomodoroMinutes: pomodoroMinutes,
+      label: label,
+    );
+    if (maxError != null) return maxError;
+
+    final otherValue = int.tryParse(otherController.text.trim());
+    if (otherValue == null || otherValue <= 0) return null;
+
+    final shortBreakMinutes = orderField == BreakOrderField.shortBreak
+        ? value
+        : otherValue;
+    final longBreakMinutes = orderField == BreakOrderField.longBreak
+        ? value
+        : otherValue;
+
+    return breakOrderError(
+      shortBreakMinutes: shortBreakMinutes,
+      longBreakMinutes: longBreakMinutes,
+      field: orderField,
+    );
   }
 
   String? _longBreakIntervalValidator(int value) {

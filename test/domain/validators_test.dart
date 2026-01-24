@@ -70,6 +70,39 @@ void main() {
     });
   });
 
+  group('BreakDurationOrder', () {
+    test('requires long break to be strictly longer than short break', () {
+      expect(
+        isBreakOrderValid(shortBreakMinutes: 5, longBreakMinutes: 15),
+        true,
+      );
+      expect(
+        isBreakOrderValid(shortBreakMinutes: 10, longBreakMinutes: 10),
+        false,
+      );
+      expect(
+        isBreakOrderValid(shortBreakMinutes: 12, longBreakMinutes: 10),
+        false,
+      );
+    });
+
+    test('provides field-specific errors when order is invalid', () {
+      final shortError = breakOrderError(
+        shortBreakMinutes: 10,
+        longBreakMinutes: 10,
+        field: BreakOrderField.shortBreak,
+      );
+      final longError = breakOrderError(
+        shortBreakMinutes: 10,
+        longBreakMinutes: 10,
+        field: BreakOrderField.longBreak,
+      );
+
+      expect(shortError, contains('Short break'));
+      expect(longError, contains('Long break'));
+    });
+  });
+
   group('LongBreakIntervalGuidance', () {
     test('marks 4 pomodoros as optimal', () {
       final guidance = buildLongBreakIntervalGuidance(

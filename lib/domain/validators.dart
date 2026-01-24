@@ -15,6 +15,8 @@ enum LongBreakIntervalStatus { optimal, acceptable, warning }
 
 enum PomodoroDurationStatus { optimal, creative, general, deep, warning, invalid }
 
+enum BreakOrderField { shortBreak, longBreak }
+
 const int maxLongBreakInterval = 12;
 
 class BreakDurationGuidance {
@@ -91,6 +93,33 @@ BreakDurationGuidance buildBreakDurationGuidance({
     shortExceedsPomodoro: shortExceedsPomodoro,
     longExceedsPomodoro: longExceedsPomodoro,
   );
+}
+
+bool isBreakOrderValid({
+  required int shortBreakMinutes,
+  required int longBreakMinutes,
+}) {
+  if (shortBreakMinutes <= 0 || longBreakMinutes <= 0) return true;
+  return shortBreakMinutes < longBreakMinutes;
+}
+
+String? breakOrderError({
+  required int shortBreakMinutes,
+  required int longBreakMinutes,
+  required BreakOrderField field,
+}) {
+  if (isBreakOrderValid(
+    shortBreakMinutes: shortBreakMinutes,
+    longBreakMinutes: longBreakMinutes,
+  )) {
+    return null;
+  }
+  return switch (field) {
+    BreakOrderField.shortBreak =>
+      'Short break must be shorter than long break.',
+    BreakOrderField.longBreak =>
+      'Long break must be longer than short break.',
+  };
 }
 
 IntRange _buildRange(

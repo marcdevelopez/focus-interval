@@ -2124,6 +2124,46 @@ _(fill in when they happen)_
 
 - Verify pomodoro field behavior on mobile keyboards.
 
+# 🔹 Block 105 — Break duration relationship validation — 24/01/2026
+
+### ✔ Work completed:
+
+- Enforced short break < long break validation in the Task Editor.
+- Added immediate field-level errors for short/long break conflicts.
+- Added validator tests for break-duration ordering.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Treat short >= long as a hard validation error with field-specific messaging.
+
+### 🎯 Next steps:
+
+- Re-check break fields on mobile and web keyboards for immediate feedback.
+
+# 🔹 Block 106 — Validation priority for blocking vs guidance — 24/01/2026
+
+### ✔ Work completed:
+
+- Ensured break-order conflicts trigger validation on both short/long fields immediately.
+- Suppressed optimization helper text when a blocking break validation is active.
+- Aligned break validation visuals to prioritize blocking errors over guidance.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Once a hard rule is violated, optimization guidance is hidden until resolved.
+
+### 🎯 Next steps:
+
+- Verify break field validation priorities on mobile and web layouts.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

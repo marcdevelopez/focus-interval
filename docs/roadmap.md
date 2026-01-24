@@ -39,6 +39,8 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       20/01/2026: Run Mode time ranges anchored to actualStartTime with final breaks and pause offsets; task transitions stabilized.
       24/01/2026: Documentation-first specs for Task Presets, Pomodoro integrity modes, and task weight (%) UI refinements added.
       24/01/2026: Documentation-first specs for optional GitHub Sign-In provider added.
+      24/01/2026: Task Editor enforces short break < long break validation to prevent invalid configs.
+      24/01/2026: Task Editor prioritizes blocking break validation over guidance (cross-field errors shown).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
