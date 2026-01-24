@@ -37,14 +37,15 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       Scheduled auto-start lifecycle (scheduled -> running -> completed) and resume/launch catch-up pending.
       20/01/2026: Local vs Account scope guard implemented with explicit import dialog (no implicit sync).
       20/01/2026: Run Mode time ranges anchored to actualStartTime with final breaks and pause offsets; task transitions stabilized.
-      24/01/2026: Documentation-first specs for Task Presets and task weight (%) UI refinements added.
+      24/01/2026: Documentation-first specs for Task Presets, Pomodoro integrity modes, and task weight (%) UI refinements added.
+      24/01/2026: Documentation-first specs for optional GitHub Sign-In provider added.
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
     ## 🔄 Reopened phases (must complete before moving on)
 
     - Phase 6 — Email verification gating sync + reclaim flow for unverified accounts.
-    - Phase 6.6 — Local Mode (offline/no auth): mode selector, persistent indicator, optional import.
+    - Phase 6.6 — Local Mode (offline/no auth): mode selector + import done; persistent indicator across all screens still pending.
     - Phase 10 — Unique-name validation + apply-settings copy (verify all edge cases).
     - Phase 13 — Auto-open running session on launch/login.
     - Phase 17 — Scheduled auto-start lifecycle + resume/launch catch-up.
@@ -300,14 +301,30 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Persist the selected mode locally and allow switching at any time.
 - Keep Local Mode data isolated from account data unless the user opts to import/sync.
 - When switching to Account Mode, offer a one-time import of local tasks/groups.
-- Add a persistent, unambiguous UI indicator showing the active mode.
+- Add a persistent, unambiguous UI indicator showing the active mode across all screens.
 
 ### 📌 Exit conditions
 
 - Users can work fully offline with tasks and TaskRunGroups on any platform.
 - Mode can be switched at runtime without data loss.
 - Local data can optionally be imported to the account when online.
-- UI always makes the active mode explicit (no ambiguity about sync).
+- UI always makes the active mode explicit on every screen (no ambiguity about sync).
+
+---
+
+# [✔] **PHASE 6.7 — Optional GitHub Sign-In (documentation-first) (completed 24/01/2026)**
+
+### ⚙️ Tasks
+
+- Document GitHub Sign-In as an optional Account Mode provider.
+- Document platform constraints (OAuth flows and unsupported platforms).
+- Keep Local Mode and existing providers unchanged.
+- Mark as non-blocking and platform-dependent.
+
+### 📌 Exit conditions
+
+- Specs updated with GitHub Sign-In option and platform fallbacks.
+- No code changes required yet.
 
 ---
 
@@ -399,6 +416,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 - Define reusable Pomodoro configuration presets (create/edit/delete/default) in specs.
 - Define task weight (%) placement in Task List and Task Editor (pomodoros + % grouped).
+- Define Pomodoro integrity modes (shared structure vs per-task) and warning requirements in specs.
 - Keep behavior unchanged; documentation-first only.
 
 ### 📌 Exit conditions

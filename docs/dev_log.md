@@ -1932,6 +1932,63 @@ _(fill in when they happen)_
 
 - Implement presets and weight UI placement when scheduled.
 
+# 🔹 Block 95 — GitHub Sign-In docs — 24/01/2026
+
+### ✔ Work completed:
+
+- Documented GitHub as an optional Account Mode provider.
+- Added platform constraints and fallback behavior in specs.
+- Added a documentation-first roadmap subphase for GitHub Sign-In.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep GitHub Sign-In non-blocking and platform-dependent.
+
+### 🎯 Next steps:
+
+- Revisit once platform OAuth constraints are fully validated.
+
+# 🔹 Block 96 — Roadmap alignment for Pomodoro integrity docs — 24/01/2026
+
+### ✔ Work completed:
+
+- Ensured roadmap explicitly includes Pomodoro integrity modes as documentation-first scope.
+- Updated global roadmap status note to reflect the added specs coverage.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep Pomodoro integrity coverage in Phase 10.4 (documentation-first) to avoid blocking MVP.
+
+### 🎯 Next steps:
+
+- None.
+
+# 🔹 Block 97 — Phase 6.6 status clarification — 24/01/2026
+
+### ✔ Work completed:
+
+- Marked Phase 6.6 as partially complete with a remaining requirement.
+
+### ⚠️ Issues found:
+
+- Persistent mode indicator is still missing on some screens.
+
+### 🧠 Decisions made:
+
+- Keep Phase 6.6 reopened until the mode indicator is visible on all screens.
+
+### 🎯 Next steps:
+
+- Implement a global, always-visible mode indicator and close Phase 6.6.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
