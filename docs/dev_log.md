@@ -2574,6 +2574,64 @@ _(fill in when they happen)_
 
 - QA the Auth exit path on mobile and desktop form factors.
 
+# 🔹 Block 128 — Phase 13 reopen: auto-open active session — 25/01/2026
+
+### ✔ Work completed:
+
+- Auto-opened the running/paused task group when an active session is detected on launch/login.
+- Cleared stale active sessions that reference missing or non-running groups.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Route directly to the Timer screen from the Task List when a valid active session is present.
+
+### 🎯 Next steps:
+
+- QA the auto-open path on desktop and mobile (account mode).
+
+# 🔹 Block 129 — Global auto-open listener (macOS editor fix) — 25/01/2026
+
+### ✔ Work completed:
+
+- Moved active-session auto-open logic to a root-level listener so it triggers from any screen.
+- Added debug logging and dedupe guards to prevent timer re-entry loops.
+
+### ⚠️ Issues found:
+
+- macOS did not auto-open when the user was in Task Editor because the listener was scoped to Task List.
+
+### 🧠 Decisions made:
+
+- Use a global auto-opener widget wrapping the app content to avoid per-screen listeners.
+
+### 🎯 Next steps:
+
+- Validate auto-open from Task Editor on macOS and confirm behavior on other platforms.
+
+# 🔹 Block 130 — macOS auto-open verification + retry guard — 25/01/2026
+
+### ✔ Work completed:
+
+- Verified auto-open works on macOS when launching with `flutter run` (Account Mode, remote active session).
+- Added a safe retry when the navigator context is not yet ready, preventing missed auto-open in Task Editor.
+- Confirmed auto-open now triggers from Task Editor and Task List without regressions.
+
+### ⚠️ Issues found:
+
+- Auto-open could fail in macOS release builds when the navigator context was not ready in the editor flow.
+
+### 🧠 Decisions made:
+
+- Keep a short, capped retry to wait for navigator readiness instead of adding more per-screen listeners.
+
+### 🎯 Next steps:
+
+- Verify the same behavior on a macOS release build when possible.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

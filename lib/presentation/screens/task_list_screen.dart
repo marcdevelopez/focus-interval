@@ -336,7 +336,6 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         _showEmailVerificationDialog();
       });
     });
-
     final tasksAsync = ref.watch(taskListProvider);
     final auth = ref.watch(firebaseAuthServiceProvider);
     final authSupported = auth is! StubAuthService;

@@ -46,12 +46,14 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       25/01/2026: Phase 6.6 completed with persistent Local/Account mode indicator across screens.
       25/01/2026: Phase 10 reopened items completed (unique-name validation + apply settings).
       25/01/2026: Phase 10 validation completed on Android/iOS/Web/macOS; Windows/Linux pending.
+      25/01/2026: Phase 13 reopen item completed (auto-open running session on launch/login).
+      25/01/2026: Active-session auto-open listener moved to app root (covers Task Editor/macOS).
+      25/01/2026: macOS auto-open stabilized with navigator-ready retry (release build edge case).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
     ## 🔄 Reopened phases (must complete before moving on)
 
-    - Phase 13 — Auto-open running session on launch/login.
     - Phase 17 — Scheduled auto-start lifecycle + resume/launch catch-up.
 
 Update this on each commit if needed.
@@ -456,7 +458,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ---
 
-# [✔] **PHASE 13 — Real-time Pomodoro sync (multi-device) (completed 06/01/2026) (reopened)**
+# [✔] **PHASE 13 — Real-time Pomodoro sync (multi-device) (completed 06/01/2026; reopen item completed 25/01/2026)**
 
 ### ⚙️ Tasks
 
