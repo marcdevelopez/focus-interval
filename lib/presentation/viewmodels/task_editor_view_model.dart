@@ -101,6 +101,109 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
     return true;
   }
 
+  Future<int> applySettingsToRemainingTasks({
+    List<PomodoroTask>? orderedTasks,
+  }) async {
+    final source = state;
+    if (source == null) return 0;
+    final tasks = orderedTasks == null
+        ? await _fetchOrderedTasks()
+        : _orderTasks(orderedTasks);
+    if (tasks.isEmpty) return 0;
+    final sourceIndex = tasks.indexWhere((task) => task.id == source.id);
+    if (sourceIndex == -1 || sourceIndex >= tasks.length - 1) return 0;
+
+    final remaining = tasks.sublist(sourceIndex + 1);
+    if (remaining.isEmpty) return 0;
+
+    final now = DateTime.now();
+    final repo = ref.read(taskRepositoryProvider);
+    final startOverride =
+        await _soundOverrides.getOverride(source.id, SoundSlot.pomodoroStart);
+    final breakOverride =
+        await _soundOverrides.getOverride(source.id, SoundSlot.breakStart);
+
+    for (final target in remaining) {
+      final updated = target.copyWith(
+        pomodoroMinutes: source.pomodoroMinutes,
+        shortBreakMinutes: source.shortBreakMinutes,
+        longBreakMinutes: source.longBreakMinutes,
+        totalPomodoros: source.totalPomodoros,
+        longBreakInterval: source.longBreakInterval,
+        startSound: source.startSound,
+        startBreakSound: source.startBreakSound,
+        finishTaskSound: source.finishTaskSound,
+        updatedAt: now,
+      );
+      final sanitized = await _sanitizeForSync(updated);
+      await repo.save(sanitized);
+      await _applySoundOverrideToTarget(
+        targetId: target.id,
+        slot: SoundSlot.pomodoroStart,
+        sourceSound: source.startSound,
+        sourceOverride: startOverride,
+        fallbackBuiltInId: _fallbackBuiltInFromTask(
+          source,
+          SoundSlot.pomodoroStart,
+        ),
+      );
+      await _applySoundOverrideToTarget(
+        targetId: target.id,
+        slot: SoundSlot.breakStart,
+        sourceSound: source.startBreakSound,
+        sourceOverride: breakOverride,
+        fallbackBuiltInId: _fallbackBuiltInFromTask(
+          source,
+          SoundSlot.breakStart,
+        ),
+      );
+    }
+
+    return remaining.length;
+  }
+
+  Future<void> _applySoundOverrideToTarget({
+    required String targetId,
+    required SoundSlot slot,
+    required SelectedSound sourceSound,
+    required LocalSoundOverride? sourceOverride,
+    required String fallbackBuiltInId,
+  }) async {
+    if (sourceSound.type == SoundType.custom) {
+      await _soundOverrides.setOverride(
+        taskId: targetId,
+        slot: slot,
+        sound: sourceSound,
+        fallbackBuiltInId:
+            sourceOverride?.fallbackBuiltInId ?? fallbackBuiltInId,
+        displayName: sourceOverride?.displayName,
+      );
+      return;
+    }
+    await _soundOverrides.clearOverride(targetId, slot);
+  }
+
+  Future<List<PomodoroTask>> _fetchOrderedTasks() async {
+    final asyncTasks = ref.read(taskListProvider);
+    final cached = asyncTasks.asData?.value;
+    if (cached != null) {
+      return _orderTasks(cached);
+    }
+    final repo = ref.read(taskRepositoryProvider);
+    final tasks = await repo.getAll();
+    return _orderTasks(tasks);
+  }
+
+  List<PomodoroTask> _orderTasks(List<PomodoroTask> tasks) {
+    final ordered = [...tasks];
+    ordered.sort((a, b) {
+      final order = a.order.compareTo(b.order);
+      if (order != 0) return order;
+      return a.createdAt.compareTo(b.createdAt);
+    });
+    return ordered;
+  }
+
   Future<PomodoroTask> _applyLocalOverrides(PomodoroTask task) async {
     final startOverride = await _soundOverrides.getOverride(
       task.id,

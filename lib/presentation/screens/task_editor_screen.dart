@@ -118,6 +118,11 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   Widget build(BuildContext context) {
     final task = ref.watch(taskEditorProvider);
     final editor = ref.read(taskEditorProvider.notifier);
+    final tasksAsync = ref.watch(taskListProvider);
+    final tasks = tasksAsync.asData?.value ?? const <PomodoroTask>[];
+    final orderedTasks = _orderTasks(tasks);
+    final remainingCount = _remainingCount(task, orderedTasks);
+    final canApplySettings = widget.isEditing && remainingCount > 0;
     final pomodoroDisplayName =
         editor.customDisplayName(SoundPickTarget.pomodoroStart);
     final breakDisplayName =
@@ -231,8 +236,11 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               label: "Task name",
               controller: _nameCtrl,
               onChanged: (v) => _update(task.copyWith(name: v)),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? "Required" : null,
+              validator: (v) => _nameValidator(
+                v,
+                tasks: tasks,
+                currentId: task.id,
+              ),
             ),
             const SizedBox(height: 12),
             _numberField(
@@ -438,6 +446,37 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               "A default final sound will be used to avoid confusion.",
               style: TextStyle(color: Colors.white38, fontSize: 12),
             ),
+            if (canApplySettings) ...[
+              const SizedBox(height: 24),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  if (!_formKey.currentState!.validate()) return;
+                  if (!await _validateBusinessRules(
+                    actionVerb: 'apply',
+                    primaryLabel: 'Apply anyway',
+                  )) {
+                    return;
+                  }
+                  final updated = await editor.applySettingsToRemainingTasks(
+                    orderedTasks: orderedTasks,
+                  );
+                  if (!context.mounted) return;
+                  final message = updated == 0
+                      ? 'No remaining tasks to update.'
+                      : 'Applied settings to $updated remaining tasks.';
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(message)),
+                  );
+                },
+                icon: const Icon(Icons.copy),
+                label: const Text('Apply settings to remaining tasks'),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Applies to $remainingCount remaining tasks.',
+                style: const TextStyle(color: Colors.white38, fontSize: 12),
+              ),
+            ],
           ],
         ),
       ),
@@ -481,7 +520,10 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     return int.tryParse(raw);
   }
 
-  Future<bool> _validateBusinessRules() async {
+  Future<bool> _validateBusinessRules({
+    String actionVerb = 'save',
+    String primaryLabel = 'Save anyway',
+  }) async {
     final task = ref.read(taskEditorProvider);
     if (task == null) return false;
     final guidance =
@@ -499,13 +541,19 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       return false;
     }
     if (!guidance.hasSoftWarning) return true;
-    final shouldContinue = await _showBreakWarningDialog(task, guidance);
+    final shouldContinue = await _showBreakWarningDialog(
+      task,
+      guidance,
+      actionVerb: actionVerb,
+      primaryLabel: primaryLabel,
+    );
     return shouldContinue;
   }
 
   Future<bool> _showBreakWarningDialog(
     PomodoroTask task,
     BreakDurationGuidance guidance,
+    {required String actionVerb, required String primaryLabel}
   ) async {
     final result = await showDialog<bool>(
       context: context,
@@ -529,7 +577,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                   '(current: ${task.longBreakMinutes} min)',
                 ),
                 const SizedBox(height: 8),
-                const Text('Do you want to save anyway?'),
+                Text('Do you want to $actionVerb anyway?'),
               ],
             ),
           ),
@@ -540,13 +588,52 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Save anyway'),
+              child: Text(primaryLabel),
             ),
           ],
         );
       },
     );
     return result ?? false;
+  }
+
+  String? _nameValidator(
+    String? value, {
+    required List<PomodoroTask> tasks,
+    required String currentId,
+  }) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) return 'Required';
+    if (tasks.isEmpty) return null;
+    final normalized = trimmed.toLowerCase();
+    final duplicate = tasks.any((task) {
+      if (task.id == currentId) return false;
+      final other = task.name.trim();
+      if (other.isEmpty) return false;
+      return other.toLowerCase() == normalized;
+    });
+    if (duplicate) {
+      return 'Task name already exists.';
+    }
+    return null;
+  }
+
+  List<PomodoroTask> _orderTasks(List<PomodoroTask> tasks) {
+    final ordered = [...tasks];
+    ordered.sort((a, b) {
+      final order = a.order.compareTo(b.order);
+      if (order != 0) return order;
+      return a.createdAt.compareTo(b.createdAt);
+    });
+    return ordered;
+  }
+
+  int _remainingCount(PomodoroTask? task, List<PomodoroTask> tasks) {
+    if (task == null || tasks.isEmpty) return 0;
+    final index = tasks.indexWhere((t) => t.id == task.id);
+    if (index == -1) return 0;
+    final remaining = tasks.length - index - 1;
+    return remaining < 0 ? 0 : remaining;
   }
 
   String? _breakMaxValidator({

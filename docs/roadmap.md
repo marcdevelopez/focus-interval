@@ -44,12 +44,13 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       24/01/2026: Email verification gating + reclaim flow implemented (sync locked until verified).
       25/01/2026: Windows validation completed for email verification + reclaim flow (Account Mode).
       25/01/2026: Phase 6.6 completed with persistent Local/Account mode indicator across screens.
+      25/01/2026: Phase 10 reopened items completed (unique-name validation + apply settings).
+      25/01/2026: Phase 10 validation completed on Android/iOS/Web/macOS; Windows/Linux pending.
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
     ## 🔄 Reopened phases (must complete before moving on)
 
-    - Phase 10 — Unique-name validation + apply-settings copy (verify all edge cases).
     - Phase 13 — Auto-open running session on launch/login.
     - Phase 17 — Scheduled auto-start lifecycle + resume/launch catch-up.
 
@@ -389,7 +390,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ---
 
-# [✔] **PHASE 10 — Task Editor (completed 17/12/2025) (reopened)**
+# [✔] **PHASE 10 — Task Editor (completed 17/12/2025; reopened items completed 25/01/2026)**
 
 ### ⚙️ Tasks
 

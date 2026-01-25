@@ -2515,6 +2515,46 @@ _(fill in when they happen)_
 
 - Verify the header alignment on macOS, web, and mobile.
 
+# 🔹 Block 125 — Phase 10 reopen: unique names + apply settings — 25/01/2026
+
+### ✔ Work completed:
+
+- Added unique task name validation (trim + case-insensitive) to block Save/Apply on duplicates.
+- Implemented “Apply settings to remaining tasks” button (only when editing and there are tasks after the current one).
+- Apply settings copies: pomodoro duration, short/long breaks, total pomodoros, long break interval, and sound selections.
+- Propagates local custom sound overrides to remaining tasks; clears overrides when built-in sounds are selected.
+- Applies changes in list order and shows a result snackbar with the number of tasks updated.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Apply settings uses the current editor state and respects break validation rules + warnings.
+
+### 🎯 Next steps:
+
+- Validate Apply settings UX on desktop and mobile.
+
+# 🔹 Block 126 — Phase 10 validation (Android/iOS/Web/macOS) — 25/01/2026
+
+### ✔ Work completed:
+
+- Validated Phase 10 changes on Android, iOS, Web (Chrome), and macOS: duplicate name blocking + apply settings copy.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Remaining platforms (Windows/Linux) to be validated later.
+
+### 🎯 Next steps:
+
+- Run Phase 10 checks on remaining platforms when available.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
