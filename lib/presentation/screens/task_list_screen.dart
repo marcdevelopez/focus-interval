@@ -348,14 +348,21 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final selectedIds = ref.watch(taskSelectionProvider);
     final selection = ref.read(taskSelectionProvider.notifier);
     final isCompact = MediaQuery.of(context).size.width < 360;
+    final screenWidth = MediaQuery.of(context).size.width;
     final emailLabel = currentUser?.email?.trim() ?? '';
     final accountLabel =
         signedIn && emailLabel.isNotEmpty ? emailLabel : (currentUser?.uid ?? '');
+    final maxEmailWidth = screenWidth < 360
+        ? 96.0
+        : screenWidth < 480
+        ? 140.0
+        : screenWidth < 720
+        ? 200.0
+        : 260.0;
     final showAccountLabel = authSupported &&
         appMode == AppMode.account &&
         signedIn &&
-        accountLabel.isNotEmpty &&
-        MediaQuery.of(context).size.width >= 520;
+        accountLabel.isNotEmpty;
     final showLogout =
         authSupported && appMode == AppMode.account && signedIn;
     final showLogin = authSupported && appMode == AppMode.account && !signedIn;
@@ -373,13 +380,20 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
             ? [
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
+                  child: SizedBox(
+                    height: double.infinity,
+                    child: Align(
+                      alignment: Alignment.topRight,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
                       if (showAccountLabel)
                         ConstrainedBox(
                           constraints: BoxConstraints(
-                            maxWidth: isCompact ? 140 : 220,
+                            maxWidth: maxEmailWidth,
                           ),
                           child: Text(
                             accountLabel,
@@ -392,28 +406,37 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                       if (showLogout)
                         IconButton(
                           icon: const Icon(Icons.logout),
-                          constraints:
-                              const BoxConstraints.tightFor(width: 36, height: 36),
+                          constraints: const BoxConstraints.tightFor(
+                            width: 36,
+                            height: 36,
+                          ),
                           padding: EdgeInsets.zero,
                           onPressed: _handleLogout,
                         ),
                       if (showLogin)
                         IconButton(
                           icon: const Icon(Icons.person),
-                          constraints:
-                              const BoxConstraints.tightFor(width: 36, height: 36),
+                          constraints: const BoxConstraints.tightFor(
+                            width: 36,
+                            height: 36,
+                          ),
                           padding: EdgeInsets.zero,
                           onPressed: () => context.go('/login'),
                         ),
                       if (showInfo)
                         IconButton(
                           icon: const Icon(Icons.info_outline),
-                          constraints:
-                              const BoxConstraints.tightFor(width: 36, height: 36),
+                          constraints: const BoxConstraints.tightFor(
+                            width: 36,
+                            height: 36,
+                          ),
                           padding: EdgeInsets.zero,
                           onPressed: _handleSyncInfoTap,
                         ),
                     ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ]

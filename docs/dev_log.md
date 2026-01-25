@@ -2477,6 +2477,44 @@ _(fill in when they happen)_
 
 - Re-validate on macOS and web with wide windows.
 
+# 🔹 Block 123 — Account email always visible (truncate only) — 25/01/2026
+
+### ✔ Work completed:
+
+- Kept the account email visible in the AppBar actions across screen sizes.
+- Added responsive max widths so long emails truncate without hiding the logout icon.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Always show identity when signed in; rely on truncation rather than hiding.
+
+### 🎯 Next steps:
+
+- Visual QA on the narrowest widths to confirm truncation looks clean.
+
+# 🔹 Block 124 — Task List AppBar top alignment — 25/01/2026
+
+### ✔ Work completed:
+
+- Anchored the account email + logout actions to the top-right of the AppBar.
+- Matched the vertical placement with the mode chip row for a cleaner header.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep identity controls grouped at the AppBar’s top edge across platforms.
+
+### 🎯 Next steps:
+
+- Verify the header alignment on macOS, web, and mobile.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
