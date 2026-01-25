@@ -459,7 +459,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: const Text('Authentication'),
-        actions: const [ModeIndicatorChip(compact: true)],
+        actions: const [ModeIndicatorAction(compact: true)],
       ),
       body: SafeArea(
         child: SingleChildScrollView(

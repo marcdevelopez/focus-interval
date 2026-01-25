@@ -2399,6 +2399,26 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 119 — Mode chip account identity visibility — 25/01/2026
+
+### ✔ Work completed:
+
+- Shortened mode chip labels to “Local” / “Account”.
+- Aligned active account email with the mode chip in the Task List AppBar.
+- Added an AppBar action variant that reveals the account when space is limited.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep identity visible in AppBar when possible and discoverable via chip tap otherwise.
+
+### 🎯 Next steps:
+
+- Quick visual QA on narrow mobile widths.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

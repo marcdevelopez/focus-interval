@@ -198,7 +198,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         backgroundColor: Colors.black,
         title: Text(widget.isEditing ? "Edit task" : "New task"),
         actions: [
-          const ModeIndicatorChip(compact: true),
+          const ModeIndicatorAction(compact: true),
           TextButton(
             onPressed: () async {
               if (!_formKey.currentState!.validate()) return;

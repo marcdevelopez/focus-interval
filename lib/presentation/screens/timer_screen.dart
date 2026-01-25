@@ -171,7 +171,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           backgroundColor: Colors.black,
           title: const Text("Focus Interval"),
           actions: [
-            const ModeIndicatorChip(compact: true),
+            const ModeIndicatorAction(compact: true),
             _PlannedGroupsIndicator(),
           ],
         ),

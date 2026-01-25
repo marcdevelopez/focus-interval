@@ -17,6 +17,7 @@ import '../../data/services/firebase_auth_service.dart';
 import '../../data/services/app_mode_service.dart';
 import '../../data/services/local_sound_overrides.dart';
 import '../../widgets/task_card.dart';
+import '../../widgets/mode_indicator.dart';
 
 enum _EmailVerificationAction { verified, resend, useLocal, signOut }
 
@@ -340,9 +341,13 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final selectedIds = ref.watch(taskSelectionProvider);
     final selection = ref.read(taskSelectionProvider.notifier);
     final isCompact = MediaQuery.of(context).size.width < 360;
-    final modeLabel = isCompact
-        ? (appMode == AppMode.local ? 'Local' : 'Account')
-        : appMode.label;
+    final emailLabel = currentUser?.email?.trim() ?? '';
+    final accountLabel =
+        signedIn && emailLabel.isNotEmpty ? emailLabel : (currentUser?.uid ?? '');
+    final showAccountLabel = authSupported &&
+        appMode == AppMode.account &&
+        signedIn &&
+        accountLabel.isNotEmpty;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -357,6 +362,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Row(
+                mainAxisSize: MainAxisSize.max,
                 children: [
                   InkWell(
                     borderRadius: BorderRadius.circular(16),
@@ -367,29 +373,21 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                               requiresVerification: requiresVerification,
                             )
                         : null,
-                    child: Chip(
-                      label: Text(
-                        modeLabel,
-                        style: const TextStyle(fontSize: 11),
-                      ),
-                      labelPadding: isCompact
-                          ? const EdgeInsets.symmetric(horizontal: 4)
-                          : null,
-                      padding: isCompact
-                          ? const EdgeInsets.symmetric(horizontal: 4)
-                          : null,
-                      avatar: Icon(
-                        appMode == AppMode.local
-                            ? Icons.phone_iphone
-                            : Icons.cloud,
-                        size: 16,
-                      ),
-                      backgroundColor: appMode == AppMode.local
-                          ? Colors.grey[850]
-                          : Colors.blue[900],
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
+                    child: ModeIndicatorChip(compact: isCompact),
                   ),
+                  if (showAccountLabel) ...[
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          accountLabel,
+                          style: const TextStyle(fontSize: 12),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: 6),
@@ -407,23 +405,6 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                     ),
                   ),
                   if (authSupported && appMode == AppMode.account && signedIn) ...[
-                    InkWell(
-                      onTap: () => _showModeSwitchDialog(
-                        authSupported: authSupported,
-                        signedIn: signedIn,
-                        requiresVerification: requiresVerification,
-                      ),
-                      child: ConstrainedBox(
-                        constraints:
-                            BoxConstraints(maxWidth: isCompact ? 84 : 160),
-                        child: Text(
-                          currentUser.email ?? '',
-                          style: const TextStyle(fontSize: 12),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
                     IconButton(
                       icon: const Icon(Icons.logout),
                       constraints:
