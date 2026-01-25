@@ -2322,6 +2322,26 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 115 — Break duration validation fixes — 25/01/2026
+
+### ✔ Work completed:
+
+- Fixed break validation messaging to use the current pomodoro input value.
+- Enforced breaks to be strictly shorter than the pomodoro duration.
+- Updated validator tests and specs wording to reflect the stricter rule.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Treat equal-duration breaks as invalid to preserve Pomodoro rhythm.
+
+### 🎯 Next steps:
+
+- QA Task Editor break validation on macOS/iOS/Android/Web.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

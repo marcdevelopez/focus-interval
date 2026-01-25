@@ -29,10 +29,10 @@ void main() {
       expect(guidance.longRange.max, 30);
     });
 
-    test('flags hard violations when breaks exceed pomodoro', () {
+    test('flags hard violations when breaks meet or exceed pomodoro', () {
       final guidance = buildBreakDurationGuidance(
         pomodoroMinutes: 25,
-        shortBreakMinutes: 30,
+        shortBreakMinutes: 25,
         longBreakMinutes: 26,
       );
 
@@ -47,7 +47,7 @@ void main() {
       final guidance = buildBreakDurationGuidance(
         pomodoroMinutes: 25,
         shortBreakMinutes: 2,
-        longBreakMinutes: 25,
+        longBreakMinutes: 20,
       );
 
       expect(guidance.hasHardViolation, false);

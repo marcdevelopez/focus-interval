@@ -286,7 +286,6 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               focusedBorderColor: _statusBorderColor(shortStatus, focused: true),
               additionalValidator: (value) => _breakFieldValidator(
                 value: value,
-                pomodoroMinutes: task.pomodoroMinutes,
                 label: 'Short break',
                 orderField: BreakOrderField.shortBreak,
                 otherController: _longBreakCtrl,
@@ -313,7 +312,6 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               focusedBorderColor: _statusBorderColor(longStatus, focused: true),
               additionalValidator: (value) => _breakFieldValidator(
                 value: value,
-                pomodoroMinutes: task.pomodoroMinutes,
                 label: 'Long break',
                 orderField: BreakOrderField.longBreak,
                 otherController: _shortBreakCtrl,
@@ -493,8 +491,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            "Breaks cannot be longer than the pomodoro duration "
-            "(${task.pomodoroMinutes} min max).",
+            "Breaks must be shorter than the pomodoro duration "
+            "(${task.pomodoroMinutes} min).",
           ),
         ),
       );
@@ -557,20 +555,21 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     required String label,
   }) {
     if (pomodoroMinutes <= 0) return null;
-    if (value > pomodoroMinutes) {
-      return '$label cannot exceed pomodoro duration '
-          '($pomodoroMinutes min max).';
+    if (value >= pomodoroMinutes) {
+      return '$label must be shorter than the pomodoro duration '
+          '($pomodoroMinutes min).';
     }
     return null;
   }
 
   String? _breakFieldValidator({
     required int value,
-    required int pomodoroMinutes,
     required String label,
     required BreakOrderField orderField,
     required TextEditingController otherController,
   }) {
+    final pomodoroMinutes = _currentPomodoroMinutes();
+    if (pomodoroMinutes == null) return null;
     final maxError = _breakMaxValidator(
       value: value,
       pomodoroMinutes: pomodoroMinutes,
@@ -593,6 +592,13 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       longBreakMinutes: longBreakMinutes,
       field: orderField,
     );
+  }
+
+  int? _currentPomodoroMinutes() {
+    final raw = _pomodoroCtrl.text.trim();
+    final value = int.tryParse(raw);
+    if (value == null || value <= 0) return null;
+    return value;
   }
 
   String? _longBreakIntervalValidator(int value) {

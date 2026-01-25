@@ -548,7 +548,7 @@ Behavior:
 - Applies to all task settings except Name (pomodoro duration, short break duration, long break duration, total pomodoros, long break interval, sound selections).
 - Task names are always unique within the list; block Save/Apply and show a validation error if the edited name duplicates another task name.
 - Task name is required (non-empty). Persisting a task with an empty name is not allowed.
-- Break durations must not exceed the pomodoro duration; block Save/Apply and show a clear error if they do.
+- Break durations must be shorter than the pomodoro duration; block Save/Apply and show a clear error if they are equal or longer.
 - Short break duration must be strictly less than long break duration; block Save/Apply and show errors on both fields if violated.
 - When a blocking break validation error is present, suppress optimization guidance/helper text until resolved.
 - Show dynamic guidance for break durations based on the pomodoro length:

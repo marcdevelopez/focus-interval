@@ -67,8 +67,8 @@ BreakDurationGuidance buildBreakDurationGuidance({
     maxRatio: 0.60,
   );
 
-  final shortExceedsPomodoro = shortBreakMinutes > safePomodoro;
-  final longExceedsPomodoro = longBreakMinutes > safePomodoro;
+  final shortExceedsPomodoro = shortBreakMinutes >= safePomodoro;
+  final longExceedsPomodoro = longBreakMinutes >= safePomodoro;
 
   final shortStatus = shortExceedsPomodoro
       ? BreakDurationStatus.invalid
