@@ -2381,6 +2381,24 @@ _(fill in when they happen)_
 
 - Re-test the Android physical device startup loop and confirm the app reaches the boot screen/app.
 
+# 🔹 Block 118 — Hide debug banner on boot screen — 25/01/2026
+
+### ✔ Work completed:
+
+- Disabled the debug banner on the bootstrap screen to avoid a brief debug tag flash.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep boot screen visuals consistent with the main app theme.
+
+### 🎯 Next steps:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
