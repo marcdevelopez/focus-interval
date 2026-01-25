@@ -11,16 +11,24 @@ extension AppModeX on AppMode {
 
 class AppModeService {
   static const String _prefsKey = 'app_mode_v1';
-  final SharedPreferences _prefs;
+  final SharedPreferences? _prefs;
+  AppMode? _memoryMode;
 
   AppModeService(this._prefs);
 
+  factory AppModeService.memory() => AppModeService(null);
+
   AppMode readMode() {
+    if (_prefs == null) return _memoryMode ?? AppMode.local;
     final value = _prefs.getString(_prefsKey);
     return _parse(value) ?? AppMode.local;
   }
 
   Future<void> saveMode(AppMode mode) async {
+    if (_prefs == null) {
+      _memoryMode = mode;
+      return;
+    }
     await _prefs.setString(_prefsKey, mode.name);
   }
 

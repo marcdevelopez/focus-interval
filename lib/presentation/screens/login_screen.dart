@@ -32,6 +32,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   bool _loading = false;
+  bool _passwordVisible = false;
 
   bool get _isGoogleSignInSupported {
     if (kIsWeb) return true;
@@ -483,12 +484,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const SizedBox(height: 12),
               TextField(
                 controller: _passCtrl,
-                obscureText: true,
-                decoration: const InputDecoration(
+                obscureText: !_passwordVisible,
+                decoration: InputDecoration(
                   labelText: 'Password',
-                  labelStyle: TextStyle(color: Colors.white70),
-                  enabledBorder: UnderlineInputBorder(
+                  labelStyle: const TextStyle(color: Colors.white70),
+                  enabledBorder: const UnderlineInputBorder(
                     borderSide: BorderSide(color: Colors.white24),
+                  ),
+                  suffixIcon: IconButton(
+                    tooltip:
+                        _passwordVisible ? 'Hide password' : 'Show password',
+                    icon: Icon(
+                      _passwordVisible
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      color: Colors.white54,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _passwordVisible = !_passwordVisible;
+                      });
+                    },
                   ),
                 ),
                 style: const TextStyle(color: Colors.white),

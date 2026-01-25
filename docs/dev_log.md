@@ -2342,6 +2342,45 @@ _(fill in when they happen)_
 
 - QA Task Editor break validation on macOS/iOS/Android/Web.
 
+# 🔹 Block 116 — Password visibility toggle (Login) — 25/01/2026
+
+### ✔ Work completed:
+
+- Added a show/hide password toggle to the Login screen password field.
+- Kept behavior consistent across platforms with standard eye/eye-off icons.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep visibility user-controlled with a persistent toggle, not time-based.
+
+### 🎯 Next steps:
+
+- None.
+
+# 🔹 Block 117 — Non-blocking bootstrap + safe init fallbacks — 25/01/2026
+
+### ✔ Work completed:
+
+- Avoided blocking the first frame by moving startup initialization into a bootstrap widget.
+- Added timeouts and safe fallbacks for Firebase, notifications, device info, and app mode init.
+- Falls back to stub auth/firestore when Firebase init fails or times out.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Prefer a visible boot screen over a black pre-frame hang on slow or broken devices.
+
+### 🎯 Next steps:
+
+- Re-test the Android physical device startup loop and confirm the app reaches the boot screen/app.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
