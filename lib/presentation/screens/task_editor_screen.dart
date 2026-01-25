@@ -6,6 +6,7 @@ import '../viewmodels/task_editor_view_model.dart';
 import '../../data/models/pomodoro_task.dart';
 import '../../domain/validators.dart';
 import '../../widgets/sound_selector.dart';
+import '../../widgets/mode_indicator.dart';
 
 class TaskEditorScreen extends ConsumerStatefulWidget {
   final bool isEditing;
@@ -197,6 +198,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         backgroundColor: Colors.black,
         title: Text(widget.isEditing ? "Edit task" : "New task"),
         actions: [
+          const ModeIndicatorChip(compact: true),
           TextButton(
             onPressed: () async {
               if (!_formKey.currentState!.validate()) return;

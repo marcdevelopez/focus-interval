@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../widgets/timer_display.dart';
+import '../../widgets/mode_indicator.dart';
 import '../providers.dart';
 import '../../domain/pomodoro_machine.dart';
 import '../viewmodels/pomodoro_view_model.dart';
@@ -169,7 +170,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         appBar: AppBar(
           backgroundColor: Colors.black,
           title: const Text("Focus Interval"),
-          actions: [_PlannedGroupsIndicator()],
+          actions: [
+            const ModeIndicatorChip(compact: true),
+            _PlannedGroupsIndicator(),
+          ],
         ),
         body: Column(
           children: [

@@ -2303,6 +2303,25 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 114 — Phase 6.6 completion (mode indicator across screens) — 25/01/2026
+
+### ✔ Work completed:
+
+- Added a persistent Local/Account mode indicator to Login, Task Editor, and Run Mode.
+- Confirmed mode selector + explicit import flow remain unchanged (Account Mode import on sign-in only).
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep the import prompt only when switching into Account Mode to avoid confusing Local Mode users.
+
+### 🎯 Next steps:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

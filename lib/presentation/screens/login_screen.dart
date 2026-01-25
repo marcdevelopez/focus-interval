@@ -13,6 +13,7 @@ import '../../data/repositories/local_task_repository.dart';
 import '../../data/repositories/local_task_run_group_repository.dart';
 import '../../data/repositories/firestore_task_repository.dart';
 import '../../data/repositories/firestore_task_run_group_repository.dart';
+import '../../widgets/mode_indicator.dart';
 
 enum _LoginImportChoice { useAccount, importLocal, cancel }
 
@@ -457,6 +458,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: const Text('Authentication'),
+        actions: const [ModeIndicatorChip(compact: true)],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
