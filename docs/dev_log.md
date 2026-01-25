@@ -2623,6 +2623,7 @@ _(fill in when they happen)_
 ### ⚠️ Issues found:
 
 - Auto-open could fail in macOS release builds when the navigator context was not ready in the editor flow.
+- Mixed build modes (owner on `flutter run`, macOS on release build) can still show inconsistent auto-open; matching build types (debug/debug or release/release) behaves consistently.
 
 ### 🧠 Decisions made:
 
