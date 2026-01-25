@@ -2419,6 +2419,64 @@ _(fill in when they happen)_
 
 - Quick visual QA on narrow mobile widths.
 
+# 🔹 Block 120 — Task List AppBar identity grouping — 25/01/2026
+
+### ✔ Work completed:
+
+- Grouped account email and logout icon in the AppBar next to the mode chip.
+- Kept the “Your tasks” line free of account/session icons.
+- Added overflow-safe truncation to keep the logout icon visible on narrow screens.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Surface the active account in the mode switch dialog when email is hidden.
+
+### 🎯 Next steps:
+
+- QA Task List header on small screens with long emails.
+
+# 🔹 Block 121 — Task List AppBar right alignment fix — 25/01/2026
+
+### ✔ Work completed:
+
+- Forced the Task List AppBar title to take full width so account identity aligns to the right edge.
+- Prevented the email/logout group from drifting toward the center on wide screens.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Keep AppBar content left-aligned and span full width for predictable alignment.
+
+### 🎯 Next steps:
+
+- Re-check alignment on desktop and web with very wide windows.
+
+# 🔹 Block 122 — Task List AppBar actions alignment — 25/01/2026
+
+### ✔ Work completed:
+
+- Moved account email + logout into AppBar actions to lock them to the right edge.
+- Kept the mode chip on the left and “Your tasks” line clean.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Prefer AppBar actions for reliable right alignment on wide screens.
+
+### 🎯 Next steps:
+
+- Re-validate on macOS and web with wide windows.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

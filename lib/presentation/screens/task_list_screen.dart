@@ -171,13 +171,20 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     if (!authSupported) return;
     final appMode = ref.read(appModeProvider);
     final controller = ref.read(appModeProvider.notifier);
+    final currentUser = ref.read(currentUserProvider);
+    final emailLabel = currentUser?.email?.trim() ?? '';
+    final accountLabel =
+        signedIn && emailLabel.isNotEmpty ? emailLabel : (currentUser?.uid ?? '');
     final result = await showDialog<AppMode>(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text('Choose app mode'),
-          content: const Text(
-            'Local Mode is device-only. Account Mode syncs data to the current user.',
+          content: Text(
+            signedIn && accountLabel.isNotEmpty
+                ? 'Active account: $accountLabel\n\n'
+                    'Local Mode is device-only. Account Mode syncs data to the current user.'
+                : 'Local Mode is device-only. Account Mode syncs data to the current user.',
           ),
           actions: [
             TextButton(
@@ -347,22 +354,80 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final showAccountLabel = authSupported &&
         appMode == AppMode.account &&
         signedIn &&
-        accountLabel.isNotEmpty;
+        accountLabel.isNotEmpty &&
+        MediaQuery.of(context).size.width >= 520;
+    final showLogout =
+        authSupported && appMode == AppMode.account && signedIn;
+    final showLogin = authSupported && appMode == AppMode.account && !signedIn;
+    final showInfo = !authSupported;
+    final hasTrailing = showAccountLabel || showLogout || showLogin || showInfo;
 
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
+        centerTitle: false,
         toolbarHeight: isCompact ? 108 : 92,
         titleSpacing: 12,
+        actions: hasTrailing
+            ? [
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (showAccountLabel)
+                        ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: isCompact ? 140 : 220,
+                          ),
+                          child: Text(
+                            accountLabel,
+                            style: const TextStyle(fontSize: 12),
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.right,
+                          ),
+                        ),
+                      if (showAccountLabel) const SizedBox(width: 8),
+                      if (showLogout)
+                        IconButton(
+                          icon: const Icon(Icons.logout),
+                          constraints:
+                              const BoxConstraints.tightFor(width: 36, height: 36),
+                          padding: EdgeInsets.zero,
+                          onPressed: _handleLogout,
+                        ),
+                      if (showLogin)
+                        IconButton(
+                          icon: const Icon(Icons.person),
+                          constraints:
+                              const BoxConstraints.tightFor(width: 36, height: 36),
+                          padding: EdgeInsets.zero,
+                          onPressed: () => context.go('/login'),
+                        ),
+                      if (showInfo)
+                        IconButton(
+                          icon: const Icon(Icons.info_outline),
+                          constraints:
+                              const BoxConstraints.tightFor(width: 36, height: 36),
+                          padding: EdgeInsets.zero,
+                          onPressed: _handleSyncInfoTap,
+                        ),
+                    ],
+                  ),
+                ),
+              ]
+            : null,
         title: Padding(
           padding: const EdgeInsets.only(top: 6, bottom: 2),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.max,
+          child: SizedBox(
+            width: double.infinity,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.max,
                 children: [
                   InkWell(
                     borderRadius: BorderRadius.circular(16),
@@ -375,62 +440,26 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                         : null,
                     child: ModeIndicatorChip(compact: isCompact),
                   ),
-                  if (showAccountLabel) ...[
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          accountLabel,
-                          style: const TextStyle(fontSize: 12),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                  ],
                 ],
               ),
               const SizedBox(height: 6),
-              Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      "Your tasks",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        "Your tasks",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  if (authSupported && appMode == AppMode.account && signedIn) ...[
-                    IconButton(
-                      icon: const Icon(Icons.logout),
-                      constraints:
-                          const BoxConstraints.tightFor(width: 36, height: 36),
-                      padding: EdgeInsets.zero,
-                      onPressed: _handleLogout,
-                    ),
-                  ] else if (authSupported && appMode == AppMode.account)
-                    IconButton(
-                      icon: const Icon(Icons.person),
-                      constraints:
-                          const BoxConstraints.tightFor(width: 36, height: 36),
-                      padding: EdgeInsets.zero,
-                      onPressed: () => context.go('/login'),
-                    ),
-                  if (!authSupported)
-                    IconButton(
-                      icon: const Icon(Icons.info_outline),
-                      constraints:
-                          const BoxConstraints.tightFor(width: 36, height: 36),
-                      padding: EdgeInsets.zero,
-                      onPressed: _handleSyncInfoTap,
-                    ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
