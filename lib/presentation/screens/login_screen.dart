@@ -416,9 +416,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(firebaseAuthServiceProvider);
+    final appMode = ref.watch(appModeProvider);
+    final currentUser = ref.watch(currentUserProvider);
     final authSupported = auth is! StubAuthService;
     final isGoogleDisabled = !_isGoogleSignInSupported;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final allowLocalExit = appMode == AppMode.local && currentUser == null;
 
     if (!authSupported) {
       return Scaffold(
@@ -459,7 +462,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: const Text('Authentication'),
-        actions: const [ModeIndicatorAction(compact: true)],
+        actions: [
+          ModeIndicatorAction(
+            compact: true,
+            onTap: allowLocalExit ? () => context.go('/tasks') : null,
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(

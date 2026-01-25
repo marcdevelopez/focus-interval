@@ -16,7 +16,7 @@ This document is used to:
 # 📍 Current status
 
 Active phase: **17 — Planning Flow + Conflict Management**
-Last update: **24/01/2026**
+Last update: **25/01/2026**
 
 ---
 
@@ -2554,6 +2554,25 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Run Phase 10 checks on remaining platforms when available.
+
+# 🔹 Block 127 — Auth mode chip exit to Local — 25/01/2026
+
+### ✔ Work completed:
+
+- Made the mode chip on the Authentication screen return to Local tasks when no account session exists.
+- Kept the chip behavior unchanged when a session is active.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🧠 Decisions made:
+
+- Use an explicit route change to `/tasks` instead of `Navigator.pop()`.
+
+### 🎯 Next steps:
+
+- QA the Auth exit path on mobile and desktop form factors.
 
 # 🧾 General notes
 
