@@ -2662,6 +2662,22 @@ _(fill in when they happen)_
 
 - Verify `flutter build apk --release` and `flutter build apk --split-per-abi` both succeed.
 
+# 🔹 Block 133 — Scheduled auto-start implementation (Phase 17 reopen) — 26/01/2026
+
+### ✔ Work completed:
+
+- Added a global scheduled-group auto-starter to promote due groups to running and open TimerScreen.
+- Added a scheduled auto-start handshake so TimerScreen starts the session when a scheduled group kicks in.
+- Added catch-up checks on app resume to trigger missed scheduled starts.
+
+### ⚠️ Issues found:
+
+- `flutter analyze` failed locally due to Flutter cache permission errors; needs rerun.
+
+### 🎯 Next steps:
+
+- Validate scheduled auto-start on desktop/mobile (debug/profile/release).
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

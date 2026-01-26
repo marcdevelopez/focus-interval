@@ -223,6 +223,8 @@ final activePomodoroSessionProvider = Provider<PomodoroSession?>((ref) {
   return session.status.isActiveExecution ? session : null;
 });
 
+final scheduledAutoStartGroupIdProvider = StateProvider<String?>((_) => null);
+
 //
 // ==============================================================
 //  MAIN VIEWMODEL — POMODORO

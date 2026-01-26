@@ -28,6 +28,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   String _currentClock = "";
   bool _taskLoaded = false;
   bool _finishedDialogVisible = false;
+  bool _autoStartHandled = false;
+  int _autoStartAttempts = 0;
 
   @override
   void initState() {
@@ -47,6 +49,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       switch (result) {
         case PomodoroGroupLoadResult.loaded:
           setState(() => _taskLoaded = true);
+          _maybeAutoStartScheduled();
           break;
         case PomodoroGroupLoadResult.notFound:
           ScaffoldMessenger.of(context).showSnackBar(
@@ -117,6 +120,55 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         state == AppLifecycleState.detached) {
       vm.handleAppPaused();
     }
+  }
+
+  void _maybeAutoStartScheduled() {
+    if (_autoStartHandled) return;
+    final pendingId = ref.read(scheduledAutoStartGroupIdProvider);
+    if (pendingId != widget.groupId) return;
+    _autoStartHandled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await _attemptScheduledAutoStart();
+    });
+  }
+
+  Future<void> _attemptScheduledAutoStart() async {
+    final pendingId = ref.read(scheduledAutoStartGroupIdProvider);
+    if (pendingId != widget.groupId) return;
+
+    final vm = ref.read(pomodoroViewModelProvider.notifier);
+    final group = vm.currentGroup;
+    if (group == null || group.status != TaskRunStatus.running) {
+      if (_autoStartAttempts < 3) {
+        _autoStartAttempts += 1;
+        await Future.delayed(const Duration(milliseconds: 300));
+        if (!mounted) return;
+        return _attemptScheduledAutoStart();
+      }
+      ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
+      return;
+    }
+
+    final state = ref.read(pomodoroViewModelProvider);
+    final session = ref.read(activePomodoroSessionProvider);
+    final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
+    final isRemoteOwner =
+        session != null &&
+        session.groupId == widget.groupId &&
+        session.ownerDeviceId != deviceId;
+    if (isRemoteOwner || !vm.canControlSession) {
+      ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
+      return;
+    }
+
+    if (state.status != PomodoroStatus.idle) {
+      ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
+      return;
+    }
+
+    ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
+    vm.start();
   }
 
   bool _keepClockActiveOutOfFocus() {
