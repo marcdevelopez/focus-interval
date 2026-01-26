@@ -41,12 +41,14 @@ android {
         }
     }
 
-    splits {
-        abi {
-            isEnable = gradle.startParameter.taskNames.any { it.contains("Release") }
-            reset()
-            include("armeabi-v7a", "arm64-v8a", "x86_64")
-            isUniversalApk = false
+    if (project.hasProperty("split-per-abi")) {
+        splits {
+            abi {
+                isEnable = true
+                reset()
+                include("armeabi-v7a", "arm64-v8a", "x86_64")
+                isUniversalApk = false
+            }
         }
     }
 

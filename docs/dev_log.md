@@ -2648,6 +2648,20 @@ _(fill in when they happen)_
 
 - Monitor the debug-only freeze; no release impact observed.
 
+# 🔹 Block 132 — Android release build split config fix — 26/01/2026
+
+### ✔ Work completed:
+
+- Scoped ABI split configuration to `--split-per-abi` builds to avoid release build conflicts.
+
+### ⚠️ Issues found:
+
+- `flutter build apk --release` failed when ABI splits were always enabled alongside ABI filters.
+
+### 🎯 Next steps:
+
+- Verify `flutter build apk --release` and `flutter build apk --split-per-abi` both succeed.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
