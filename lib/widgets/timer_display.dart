@@ -19,10 +19,18 @@ class TimerDisplay extends StatefulWidget {
   /// If null, alternates green/gold based on even/odd pomodoro.
   final Color? finishColorOverride;
 
+  /// Override the active ring color (used for Pre-Run Countdown mode).
+  final Color? phaseColorOverride;
+
+  /// Enable a subtle pulse on the ring.
+  final bool pulse;
+
   const TimerDisplay({
     super.key,
     required this.state,
     this.finishColorOverride,
+    this.phaseColorOverride,
+    this.pulse = false,
     this.centerContent,
   });
 
@@ -31,8 +39,9 @@ class TimerDisplay extends StatefulWidget {
 }
 
 class _TimerDisplayState extends State<TimerDisplay>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _controller;
+  late AnimationController _pulseController;
 
   PomodoroState get s => widget.state;
 
@@ -40,6 +49,14 @@ class _TimerDisplayState extends State<TimerDisplay>
   void initState() {
     super.initState();
     _controller = AnimationController(vsync: this);
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+
+    if (widget.pulse) {
+      _pulseController.repeat(reverse: true);
+    }
 
     // Initial start aligned with the current state.
     _syncControllerWithState(initial: true);
@@ -67,6 +84,15 @@ class _TimerDisplayState extends State<TimerDisplay>
         (remainingChanged && newState.status != PomodoroStatus.paused) ||
         pomodoroIndexChanged) {
       _syncControllerWithState();
+    }
+
+    if (oldWidget.pulse != widget.pulse) {
+      if (widget.pulse) {
+        _pulseController.repeat();
+      } else {
+        _pulseController.stop();
+        _pulseController.value = 0.0;
+      }
     }
   }
 
@@ -139,6 +165,9 @@ class _TimerDisplayState extends State<TimerDisplay>
   }
 
   Color _phaseColor() {
+    if (widget.phaseColorOverride != null) {
+      return widget.phaseColorOverride!;
+    }
     switch (s.status) {
       case PomodoroStatus.idle:
         if (s.totalSeconds > 0) {
@@ -189,6 +218,7 @@ class _TimerDisplayState extends State<TimerDisplay>
   @override
   void dispose() {
     _controller.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -202,9 +232,14 @@ class _TimerDisplayState extends State<TimerDisplay>
           color: Colors.black, // true black background
           alignment: Alignment.center,
           child: AnimatedBuilder(
-            animation: _controller,
+            animation: Listenable.merge([_controller, _pulseController]),
             builder: (_, __) {
               final progress = _controller.value.clamp(0, 1);
+              final pulseValue = widget.pulse
+                  ? math
+                        .sin(_pulseController.value.clamp(0.0, 1.0) * math.pi)
+                        .clamp(0.0, 1.0)
+                  : 0.0;
 
               return SizedBox(
                 width: size,
@@ -214,6 +249,7 @@ class _TimerDisplayState extends State<TimerDisplay>
                     progress: progress.toDouble(),
                     color: _phaseColor(),
                     status: s.status,
+                    pulse: pulseValue,
                   ),
                   child:
                       widget.centerContent ??
@@ -301,11 +337,13 @@ class _TimerPainter extends CustomPainter {
   final double progress; // 0..1 remaining fraction
   final Color color;
   final PomodoroStatus status;
+  final double pulse; // 0..1
 
   _TimerPainter({
     required this.progress,
     required this.color,
     required this.status,
+    required this.pulse,
   });
 
   @override
@@ -313,8 +351,9 @@ class _TimerPainter extends CustomPainter {
     final center = size.center(Offset.zero);
     final radius = size.shortestSide * 0.42;
 
+    final pulseFactor = 1 + (pulse * 0.12);
     final strokeWidth =
-        size.shortestSide * 0.06; // responsive (≈12–18px typical) era 0.06
+        size.shortestSide * 0.06 * pulseFactor; // responsive (≈12–18px typical)
     final bgStrokeWidth = strokeWidth * 0.9;
 
     // Base ring (dark gray)
@@ -327,8 +366,9 @@ class _TimerPainter extends CustomPainter {
     canvas.drawCircle(center, radius, bgPaint);
 
     // Progress
+    final pulseOpacity = 0.65 + (pulse * 0.35);
     final progressPaint = Paint()
-      ..color = color
+      ..color = color.withValues(alpha: pulseOpacity)
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
@@ -402,5 +442,6 @@ class _TimerPainter extends CustomPainter {
   bool shouldRepaint(covariant _TimerPainter oldDelegate) =>
       oldDelegate.progress != progress ||
       oldDelegate.color != color ||
-      oldDelegate.status != status;
+      oldDelegate.status != status ||
+      oldDelegate.pulse != pulse;
 }

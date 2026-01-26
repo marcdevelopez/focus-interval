@@ -25,8 +25,10 @@ class ScheduledGroupAutoStarter extends ConsumerStatefulWidget {
 class _ScheduledGroupAutoStarterState
     extends ConsumerState<ScheduledGroupAutoStarter>
     with WidgetsBindingObserver {
-  static const Duration _ownerGrace = Duration.zero;
+  static const Duration _ownerGrace = Duration(seconds: 10);
   Timer? _scheduledTimer;
+  Timer? _preAlertTimer;
+  Timer? _navRetryTimer;
   bool _autoStartInFlight = false;
   List<TaskRunGroup> _lastGroups = const [];
   int _retryAttempts = 0;
@@ -44,6 +46,8 @@ class _ScheduledGroupAutoStarterState
   @override
   void dispose() {
     _scheduledTimer?.cancel();
+    _preAlertTimer?.cancel();
+    _navRetryTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -70,16 +74,32 @@ class _ScheduledGroupAutoStarterState
   void _handleGroups(List<TaskRunGroup> groups) {
     _lastGroups = groups;
     if (_autoStartInFlight) return;
+    unawaited(_handleGroupsAsync(groups));
+  }
+
+  Future<void> _handleGroupsAsync(List<TaskRunGroup> groups) async {
+    if (_autoStartInFlight) return;
 
     final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
 
     _scheduledTimer?.cancel();
     _scheduledTimer = null;
+    _preAlertTimer?.cancel();
+    _preAlertTimer = null;
 
     if (groups.isEmpty) return;
 
     final running = groups.where((g) => g.status == TaskRunStatus.running);
     if (running.isNotEmpty) {
+      final activeSession = ref.read(activePomodoroSessionProvider);
+      if (activeSession == null) {
+        final sorted = running.toList()
+          ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+        final groupId = sorted.first.id;
+        ref.read(scheduledAutoStartGroupIdProvider.notifier).state = groupId;
+        _navigateToTimer(groupId);
+        return;
+      }
       debugPrint('Scheduled auto-start suppressed (running group active).');
       return;
     }
@@ -101,6 +121,8 @@ class _ScheduledGroupAutoStarterState
     final nextGroup = scheduled.first;
     final now = DateTime.now();
     final startTime = nextGroup.scheduledStartTime!;
+    final noticeMinutes = await _resolveNoticeMinutes(nextGroup);
+    await _schedulePreAlert(nextGroup, noticeMinutes);
     if (!startTime.isAfter(now)) {
       final scheduledBy = nextGroup.scheduledByDeviceId;
       if (scheduledBy != null && scheduledBy != deviceId) {
@@ -123,6 +145,62 @@ class _ScheduledGroupAutoStarterState
       if (!mounted) return;
       _handleGroups(_lastGroups);
     });
+  }
+
+  Future<int> _resolveNoticeMinutes(TaskRunGroup group) async {
+    final explicit = group.noticeMinutes;
+    if (explicit != null) return explicit;
+    return ref.read(taskRunNoticeServiceProvider).getNoticeMinutes();
+  }
+
+  Future<void> _schedulePreAlert(TaskRunGroup group, int noticeMinutes) async {
+    if (noticeMinutes <= 0) return;
+    final startTime = group.scheduledStartTime;
+    if (startTime == null) return;
+    final now = DateTime.now();
+    if (!now.isBefore(startTime)) return;
+
+    final preAlertStart = startTime.subtract(Duration(minutes: noticeMinutes));
+    if (now.isBefore(preAlertStart)) {
+      final delay = preAlertStart.difference(now);
+      _preAlertTimer = Timer(delay, () {
+        if (!mounted) return;
+        _handleGroups(_lastGroups);
+      });
+      return;
+    }
+
+    await _sendPreAlertIfNeeded(group, preAlertStart, noticeMinutes);
+    _navigateToTimer(group.id);
+  }
+
+  Future<void> _sendPreAlertIfNeeded(
+    TaskRunGroup group,
+    DateTime preAlertStart,
+    int noticeMinutes,
+  ) async {
+    final groupRepo = ref.read(taskRunGroupRepositoryProvider);
+    final latest = await groupRepo.getById(group.id) ?? group;
+    if (latest.status != TaskRunStatus.scheduled) return;
+    final sentAt = latest.noticeSentAt;
+    if (sentAt != null && sentAt.isAfter(preAlertStart)) {
+      return;
+    }
+    final now = DateTime.now();
+    final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
+    final updated = latest.copyWith(
+      noticeSentAt: now,
+      noticeSentByDeviceId: deviceId,
+      updatedAt: now,
+    );
+    await groupRepo.save(updated);
+
+    final name = updated.tasks.isNotEmpty
+        ? updated.tasks.first.name
+        : 'Task group';
+    await ref
+        .read(notificationServiceProvider)
+        .notifyGroupPreAlert(groupName: name, minutes: noticeMinutes);
   }
 
   Future<void> _autoStartGroup(String groupId) async {
@@ -189,8 +267,8 @@ class _ScheduledGroupAutoStarterState
       _retryAttempts = 0;
       return;
     }
-    _scheduledTimer?.cancel();
-    _scheduledTimer = Timer(const Duration(milliseconds: 250), () {
+    _navRetryTimer?.cancel();
+    _navRetryTimer = Timer(const Duration(milliseconds: 250), () {
       if (!mounted) return;
       _navigateToTimer(groupId);
     });

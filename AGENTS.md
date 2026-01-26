@@ -10,6 +10,7 @@
 - When editing `docs/dev_log.md` or `docs/roadmap.md`, always use the real date of the workday to preserve traceability.
 - If you complete a phase, mark it in `docs/roadmap.md` (global status and that phase) using the real date, and update the CURRENT PHASE if needed.
 - Before moving to the next phase, review the roadmap: if earlier phases are done but not marked, mark them with dates and align `docs/dev_log.md` and the global roadmap status.
+- When starting a new feature, create a new branch before modifying any code. Validate the feature with tests on that branch, then push it to origin and open a PR on GitHub. The user performs the PR and merge in GitHub; after merge, pull the updated main locally.
 - Do not commit if there are errors/build breaks or known unresolved bugs; confirm the change works (at least compiles/analyzer) before committing. For incomplete work, use a separate branch or stash instead of main.
 - Keep all documentation, UI strings, and code comments in English to maintain a single language across the project.
 - If Android release signing is discussed, confirm the release keystore is backed up; remind the user if not.

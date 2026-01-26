@@ -12,6 +12,7 @@ import '../providers.dart';
 import '../../domain/pomodoro_machine.dart';
 import '../viewmodels/pomodoro_view_model.dart';
 import '../../data/models/task_run_group.dart';
+import '../../data/services/task_run_notice_service.dart';
 
 class TimerScreen extends ConsumerStatefulWidget {
   final String groupId;
@@ -25,11 +26,14 @@ class TimerScreen extends ConsumerStatefulWidget {
 class _TimerScreenState extends ConsumerState<TimerScreen>
     with WidgetsBindingObserver {
   Timer? _clockTimer;
+  Timer? _preRunTimer;
   String _currentClock = "";
   bool _taskLoaded = false;
   bool _finishedDialogVisible = false;
   bool _autoStartHandled = false;
   int _autoStartAttempts = 0;
+  _PreRunInfo? _preRunInfo;
+  int _preRunRemainingSeconds = 0;
 
   @override
   void initState() {
@@ -49,6 +53,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       switch (result) {
         case PomodoroGroupLoadResult.loaded:
           setState(() => _taskLoaded = true);
+          _syncPreRunInfo(
+            ref.read(pomodoroViewModelProvider.notifier).currentGroup,
+          );
           _maybeAutoStartScheduled();
           break;
         case PomodoroGroupLoadResult.notFound:
@@ -93,9 +100,15 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _clockTimer = null;
   }
 
+  void _stopPreRunTimer() {
+    _preRunTimer?.cancel();
+    _preRunTimer = null;
+  }
+
   @override
   void dispose() {
     _stopClockTimer();
+    _stopPreRunTimer();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -138,6 +151,12 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     if (pendingId != widget.groupId) return;
 
     final vm = ref.read(pomodoroViewModelProvider.notifier);
+    final groupRepo = ref.read(taskRunGroupRepositoryProvider);
+    final latest = await groupRepo.getById(widget.groupId);
+    if (latest != null) {
+      vm.updateGroup(latest);
+      _syncPreRunInfo(latest);
+    }
     final group = vm.currentGroup;
     if (group == null || group.status != TaskRunStatus.running) {
       if (_autoStartAttempts < 3) {
@@ -186,7 +205,42 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   @override
   Widget build(BuildContext context) {
     final vm = ref.read(pomodoroViewModelProvider.notifier);
-    // Listen for pomodoro completion
+    ref.listen<AsyncValue<List<TaskRunGroup>>>(taskRunGroupStreamProvider, (
+      previous,
+      next,
+    ) {
+      final groups = next.value ?? const [];
+      final updated = groups.where((g) => g.id == widget.groupId).toList();
+      if (updated.isEmpty) return;
+      final group = updated.first;
+      vm.updateGroup(group);
+      _syncPreRunInfo(group);
+
+      final state = ref.read(pomodoroViewModelProvider);
+      final session = ref.read(activePomodoroSessionProvider);
+      final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
+      final isRemoteOwner =
+          session != null &&
+          session.groupId == widget.groupId &&
+          session.ownerDeviceId != deviceId;
+      final hasActiveSession = session != null && session.groupId == group.id;
+      final scheduledBy = group.scheduledByDeviceId;
+      if (group.status == TaskRunStatus.running &&
+          state.status == PomodoroStatus.idle &&
+          !isRemoteOwner &&
+          !hasActiveSession &&
+          vm.canControlSession &&
+          (scheduledBy == null || scheduledBy == deviceId)) {
+        vm.start();
+      }
+
+      if ((group.status == TaskRunStatus.canceled ||
+              group.status == TaskRunStatus.completed) &&
+          state.status.isActiveExecution) {
+        vm.applyRemoteCancellation();
+      }
+    });
+
     ref.listen<PomodoroState>(pomodoroViewModelProvider, (previous, next) {
       final wasFinished = previous?.status == PomodoroStatus.finished;
       final nowFinished = next.status == PomodoroStatus.finished;
@@ -206,7 +260,18 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     });
 
     final state = ref.watch(pomodoroViewModelProvider);
+    final preRunInfo = _preRunInfo;
+    final isPreRun = preRunInfo != null && _taskLoaded;
     final shouldBlockExit = state.status.isActiveExecution;
+
+    if (isPreRun) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _ensurePreRunTimer(preRunInfo);
+      });
+    } else {
+      _stopPreRunTimer();
+    }
 
     return PopScope(
       canPop: !shouldBlockExit,
@@ -230,18 +295,29 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         body: Column(
           children: [
             const SizedBox(height: 12),
-
-            // Premium clock or initial loader while loading the task
             Expanded(
               child: Center(
                 child: _taskLoaded
                     ? TimerDisplay(
-                        state: state,
-                        centerContent: _RunModeCenterContent(
-                          currentClock: _currentClock,
-                          state: state,
-                          vm: vm,
-                        ),
+                        state: isPreRun ? _preRunState(preRunInfo) : state,
+                        phaseColorOverride: isPreRun
+                            ? _PreRunCenterContent.preRunColor
+                            : null,
+                        pulse: isPreRun && _preRunRemainingSeconds <= 60,
+                        centerContent: isPreRun
+                            ? _PreRunCenterContent(
+                                currentClock: _currentClock,
+                                remainingSeconds: _preRunRemainingSeconds,
+                                firstPomodoroMinutes:
+                                    preRunInfo.firstPomodoroMinutes,
+                                preRunStart: preRunInfo.start,
+                                scheduledStart: preRunInfo.end,
+                              )
+                            : _RunModeCenterContent(
+                                currentClock: _currentClock,
+                                state: state,
+                                vm: vm,
+                              ),
                       )
                     : Column(
                         mainAxisSize: MainAxisSize.min,
@@ -256,11 +332,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                       ),
               ),
             ),
-
             if (_taskLoaded)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: _ContextualTaskList(vm: vm),
+                child: _ContextualTaskList(vm: vm, preRunInfo: preRunInfo),
               ),
           ],
         ),
@@ -271,9 +346,120 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
             state: state,
             vm: vm,
             taskLoaded: _taskLoaded,
+            isPreRun: isPreRun,
           ),
         ),
       ),
+    );
+  }
+
+  PomodoroState _preRunState(_PreRunInfo? info) {
+    if (info == null) return PomodoroState.idle();
+    return PomodoroState(
+      status: PomodoroStatus.pomodoroRunning,
+      phase: PomodoroPhase.pomodoro,
+      currentPomodoro: 1,
+      totalPomodoros: 1,
+      totalSeconds: info.totalSeconds,
+      remainingSeconds: _preRunRemainingSeconds,
+    );
+  }
+
+  void _ensurePreRunTimer(_PreRunInfo info) {
+    if (_preRunTimer != null) return;
+    _preRunRemainingSeconds = info.remainingSeconds;
+    _preRunTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      final now = DateTime.now();
+      final remaining = info.end.difference(now).inSeconds;
+      final clamped = remaining < 0 ? 0 : remaining;
+      if (clamped == _preRunRemainingSeconds) return;
+      setState(() {
+        _preRunRemainingSeconds = clamped;
+      });
+      if (clamped == 0) {
+        unawaited(_handlePreRunCountdownFinished());
+      }
+    });
+  }
+
+  Future<void> _handlePreRunCountdownFinished() async {
+    final vm = ref.read(pomodoroViewModelProvider.notifier);
+    final group = vm.currentGroup;
+    if (group == null) return;
+
+    final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
+    final scheduledBy = group.scheduledByDeviceId;
+    if (scheduledBy != null && scheduledBy != deviceId) {
+      return;
+    }
+
+    final session = ref.read(activePomodoroSessionProvider);
+    final isRemoteOwner =
+        session != null &&
+        session.groupId == group.id &&
+        session.ownerDeviceId != deviceId;
+    if (isRemoteOwner || !vm.canControlSession) return;
+
+    if (group.status != TaskRunStatus.running) {
+      ref.read(scheduledAutoStartGroupIdProvider.notifier).state = group.id;
+      await _attemptScheduledAutoStart();
+      return;
+    }
+
+    final state = ref.read(pomodoroViewModelProvider);
+    if (state.status == PomodoroStatus.idle) {
+      vm.start();
+    }
+  }
+
+  void _syncPreRunInfo(TaskRunGroup? group) {
+    final info = _computePreRunInfo(group);
+    final changed =
+        (info == null && _preRunInfo != null) ||
+        (info != null &&
+            (_preRunInfo == null ||
+                info.start != _preRunInfo!.start ||
+                info.end != _preRunInfo!.end));
+    _preRunInfo = info;
+    if (info == null) {
+      _preRunRemainingSeconds = 0;
+      _stopPreRunTimer();
+    } else {
+      _preRunRemainingSeconds = info.remainingSeconds;
+      if (changed) {
+        _stopPreRunTimer();
+      }
+    }
+    if (changed && mounted) {
+      setState(() {});
+    }
+  }
+
+  _PreRunInfo? _computePreRunInfo(TaskRunGroup? group) {
+    if (group == null) return null;
+    if (group.status != TaskRunStatus.scheduled) return null;
+    final scheduledStart = group.scheduledStartTime;
+    if (scheduledStart == null) return null;
+    final noticeMinutes =
+        group.noticeMinutes ?? TaskRunNoticeService.defaultNoticeMinutes;
+    if (noticeMinutes <= 0) return null;
+    final now = DateTime.now();
+    final start = scheduledStart.subtract(Duration(minutes: noticeMinutes));
+    if (now.isBefore(start)) return null;
+    if (!now.isBefore(scheduledStart)) return null;
+    final totalSeconds = noticeMinutes * 60;
+    final remainingSeconds = scheduledStart.difference(now).inSeconds;
+    final firstPomodoroMinutes = group.tasks.isNotEmpty
+        ? group.tasks.first.pomodoroMinutes
+        : 0;
+    return _PreRunInfo(
+      start: start,
+      end: scheduledStart,
+      totalSeconds: totalSeconds,
+      remainingSeconds: remainingSeconds < 0 ? 0 : remainingSeconds,
+      plannedStart: scheduledStart,
+      firstPomodoroMinutes: firstPomodoroMinutes,
     );
   }
 
@@ -449,11 +635,13 @@ class _ControlsBar extends StatelessWidget {
   final PomodoroState state;
   final PomodoroViewModel vm;
   final bool taskLoaded;
+  final bool isPreRun;
 
   const _ControlsBar({
     required this.state,
     required this.vm,
     required this.taskLoaded,
+    required this.isPreRun,
   });
 
   @override
@@ -468,6 +656,16 @@ class _ControlsBar extends StatelessWidget {
         state.status == PomodoroStatus.finished && vm.isGroupCompleted;
     final canTakeOver = vm.canTakeOver;
     final controlsEnabled = vm.canControlSession;
+
+    if (isPreRun) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _btn("Pause", null),
+          _btn("Cancel", controlsEnabled ? vm.cancel : null),
+        ],
+      );
+    }
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -564,6 +762,145 @@ class _PlannedGroupsIndicator extends ConsumerWidget {
         ],
       ),
     );
+  }
+}
+
+class _PreRunCenterContent extends StatelessWidget {
+  static const preRunColor = Color(0xFFFFB300);
+  static const pomodoroColor = Color(0xFFE53935);
+  static final _timeFormat = DateFormat('HH:mm');
+
+  final String currentClock;
+  final int remainingSeconds;
+  final int firstPomodoroMinutes;
+  final DateTime preRunStart;
+  final DateTime scheduledStart;
+
+  const _PreRunCenterContent({
+    required this.currentClock,
+    required this.remainingSeconds,
+    required this.firstPomodoroMinutes,
+    required this.preRunStart,
+    required this.scheduledStart,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final countdown = _formatCountdown(remainingSeconds);
+    final pomodoroStart = _timeFormat.format(scheduledStart);
+    final focusMode = remainingSeconds <= 10;
+
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Hora actual (desaparece en focusMode)
+          AnimatedOpacity(
+            opacity: focusMode ? 0.0 : 1.0,
+            duration: const Duration(milliseconds: 1000),
+            curve: Curves.easeOut,
+            child: IgnorePointer(
+              ignoring: focusMode,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  border: Border.all(color: Colors.white54),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  currentClock,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // Group starts in (desaparece en focusMode)
+          AnimatedOpacity(
+            opacity: focusMode ? 0.0 : 1.0,
+            duration: const Duration(milliseconds: 1000),
+            curve: Curves.easeOut,
+            child: const Text(
+              'Group starts in',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.6,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // 🔹 CONTADOR — SIEMPRE VISIBLE Y EN SU LUGAR CORRECTO
+          AnimatedScale(
+            scale: focusMode ? 2.4 : 1.0,
+            duration: const Duration(milliseconds: 1100),
+            curve: Curves.easeOutCubic,
+            child: Text(
+              countdown,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 36,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.4,
+                fontFeatures: [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          // Status boxes (desaparecen en focusMode)
+          AnimatedOpacity(
+            opacity: focusMode ? 0.0 : 1.0,
+            duration: const Duration(milliseconds: 1000),
+            curve: Curves.easeOut,
+            child: IgnorePointer(
+              ignoring: focusMode,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _StatusBox(
+                    label: 'Preparing session',
+                    range: null,
+                    color: preRunColor,
+                  ),
+                  const SizedBox(height: 10),
+                  _StatusBox(
+                    label: 'Starts at $pomodoroStart',
+                    range: null,
+                    color: pomodoroColor,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatCountdown(int seconds) {
+    if (seconds <= 60) {
+      return seconds.toString().padLeft(2, '0');
+    }
+    final m = (seconds ~/ 60).toString().padLeft(2, '0');
+    final s = (seconds % 60).toString().padLeft(2, '0');
+    return '$m:$s';
   }
 }
 
@@ -777,8 +1114,9 @@ class _StatusBox extends StatelessWidget {
 
 class _ContextualTaskList extends StatelessWidget {
   final PomodoroViewModel vm;
+  final _PreRunInfo? preRunInfo;
 
-  const _ContextualTaskList({required this.vm});
+  const _ContextualTaskList({required this.vm, required this.preRunInfo});
 
   @override
   Widget build(BuildContext context) {
@@ -787,19 +1125,38 @@ class _ContextualTaskList extends StatelessWidget {
     if (group == null || currentItem == null) return const SizedBox.shrink();
 
     final timeFormat = DateFormat('HH:mm');
+
+    String formatRange(TaskTimeRange? range) {
+      if (range == null) return '--:--';
+      return '${timeFormat.format(range.start)}–${timeFormat.format(range.end)}';
+    }
+
+    if (preRunInfo != null) {
+      final plannedStart = preRunInfo!.plannedStart;
+      final items = <_ContextItemData>[];
+      for (var i = 0; i < group.tasks.length && items.length < 2; i += 1) {
+        final range = _plannedRangeForIndex(group, i, plannedStart);
+        items.add(
+          _ContextItemData(
+            label: group.tasks[i].name,
+            range: formatRange(range),
+            isCurrent: false,
+            muted: true,
+          ),
+        );
+      }
+      return _ContextualTaskListBody(items: items);
+    }
+
     final prev = vm.previousItem;
     final next = vm.nextItem;
     final prevIndex = vm.currentTaskIndex - 1;
     final nextIndex = vm.currentTaskIndex + 1;
     final prevRange = prevIndex >= 0 ? vm.taskRangeForIndex(prevIndex) : null;
     final currentRange = vm.taskRangeForIndex(vm.currentTaskIndex);
-    final nextRange =
-        nextIndex < group.tasks.length ? vm.taskRangeForIndex(nextIndex) : null;
-
-    String formatRange(TaskTimeRange? range) {
-      if (range == null) return '--:--';
-      return '${timeFormat.format(range.start)}–${timeFormat.format(range.end)}';
-    }
+    final nextRange = nextIndex < group.tasks.length
+        ? vm.taskRangeForIndex(nextIndex)
+        : null;
 
     final items = <_ContextItemData>[];
     if (prev != null) {
@@ -833,17 +1190,59 @@ class _ContextualTaskList extends StatelessWidget {
     return _ContextualTaskListBody(items: items);
   }
 
+  TaskTimeRange? _plannedRangeForIndex(
+    TaskRunGroup group,
+    int index,
+    DateTime plannedStart,
+  ) {
+    if (index < 0 || index >= group.tasks.length) return null;
+    var cursor = plannedStart;
+    final lastIndex = group.tasks.length - 1;
+    for (var i = 0; i < index; i += 1) {
+      cursor = cursor.add(
+        Duration(
+          seconds: group.tasks[i].durationSeconds(
+            includeFinalBreak: i < lastIndex,
+          ),
+        ),
+      );
+    }
+    final duration = group.tasks[index].durationSeconds(
+      includeFinalBreak: index < lastIndex,
+    );
+    return TaskTimeRange(cursor, cursor.add(Duration(seconds: duration)));
+  }
+}
+
+class _PreRunInfo {
+  final DateTime start;
+  final DateTime end;
+  final int totalSeconds;
+  final int remainingSeconds;
+  final DateTime plannedStart;
+  final int firstPomodoroMinutes;
+
+  const _PreRunInfo({
+    required this.start,
+    required this.end,
+    required this.totalSeconds,
+    required this.remainingSeconds,
+    required this.plannedStart,
+    required this.firstPomodoroMinutes,
+  });
 }
 
 class _ContextItemData {
   final String label;
   final String range;
   final bool isCurrent;
+  final bool muted;
 
   const _ContextItemData({
     required this.label,
     required this.range,
     required this.isCurrent,
+    this.muted = false,
   });
 }
 
@@ -865,7 +1264,11 @@ class _ContextualTaskListBody extends StatelessWidget {
                 color: Colors.black,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: item.isCurrent ? Colors.white70 : Colors.white24,
+                  color: item.muted
+                      ? Colors.white24
+                      : item.isCurrent
+                      ? Colors.white70
+                      : Colors.white24,
                 ),
               ),
               child: Row(
@@ -874,7 +1277,11 @@ class _ContextualTaskListBody extends StatelessWidget {
                     child: Text(
                       item.label,
                       style: TextStyle(
-                        color: item.isCurrent ? Colors.white : Colors.white60,
+                        color: item.muted
+                            ? Colors.white38
+                            : item.isCurrent
+                            ? Colors.white
+                            : Colors.white60,
                         fontWeight: item.isCurrent
                             ? FontWeight.w600
                             : FontWeight.w500,
@@ -883,7 +1290,10 @@ class _ContextualTaskListBody extends StatelessWidget {
                   ),
                   Text(
                     item.range,
-                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+                    style: TextStyle(
+                      color: item.muted ? Colors.white38 : Colors.white54,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),

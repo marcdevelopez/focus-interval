@@ -185,7 +185,9 @@ class TaskRunItem {
 Notes:
 
 - theoreticalEndTime is calculated when the group is scheduled or started, using scheduledStartTime (if set) or now (for immediate start). Recalculate if the start time changes.
-- Expected lifecycle: scheduled -> running -> completed (or canceled). A scheduled group must transition to running at scheduledStartTime.
+- Expected lifecycle: scheduled -> running -> completed (or canceled).
+- Conceptual pre-run state: scheduled -> preparing -> running (preparing is UI-only and does not change the model).
+- A scheduled group must transition to running at scheduledStartTime.
 - Editing a PomodoroTask after group creation does not affect a running or scheduled group.
 
 ## **5.3. PomodoroSession model (live sync)**
@@ -278,6 +280,8 @@ These conflict checks apply to both Start now and Schedule start.
 Scheduled start behavior
 
 - Send the pre-alert noticeMinutes before scheduledStartTime.
+- If the app is open during the pre-alert window, show the Pre-Run Countdown Mode (see section 10.4.1.a).
+- If the app is closed during the pre-alert window, send a silent notification.
 - At scheduledStartTime:
   - Set status = running.
   - Set actualStartTime = now.
@@ -655,6 +659,8 @@ The execution screen shows an analog-style circular timer with a dynamic layout 
   - Recalculate theoretical start/end times using the selected start time
   - Save as scheduled and add to Groups Hub
   - Send the pre-alert noticeMinutes before the scheduled start
+  - If the app is open during the pre-alert window, automatically open Run Mode in Pre-Run Countdown Mode
+  - If the app is closed during the pre-alert window, send a silent notification only
   - At the scheduled time:
     - Set status = running
     - Set actualStartTime = now
@@ -666,6 +672,60 @@ The execution screen shows an analog-style circular timer with a dynamic layout 
     - On next launch/resume, if scheduledStartTime <= now and there is no active conflict,
       auto-start immediately using actualStartTime = now (scheduledStartTime remains unchanged)
   - The timer remains stopped until the scheduled start
+
+### **10.4.1.a. Pre-Run Countdown Mode (scheduled groups only)**
+
+Purpose: reduce anxiety and provide context before a scheduled group starts.
+
+Trigger
+
+- Active only within the pre-alert window:
+  - from scheduledStartTime - noticeMinutes
+  - until scheduledStartTime
+- If noticeMinutes = 0, Pre-Run Countdown Mode is skipped entirely.
+- If the app opens after scheduledStartTime, it goes directly to standard Run Mode.
+
+UI (reuses Run Mode layout)
+
+- Same large circle and layout as Run Mode.
+- Neutral/amber color (not red or blue).
+- Center content (vertical order):
+  1. Current time (HH:mm)
+  2. Countdown label: "Group starts in"
+  3. Countdown value: "04:32" (last 60 seconds use SS only)
+  4. Current status box: "Preparing session" (amber, no range)
+  5. Next status box: "Starts at HH:mm" (red, no range)
+
+Contextual list
+
+- Shows the same list component as Run Mode.
+- Do not show a "Preparing session" item here.
+- Show upcoming tasks with their planned time ranges.
+- All items are rendered in a neutral/muted visual state to reinforce that execution has not started.
+- Once the group starts, the list transitions automatically to standard Run Mode with no layout changes.
+
+Interactions
+
+- Cancel schedule is available.
+- Pause is visible but disabled (group has not started yet).
+- Start now is not available in this mode.
+
+Transition at scheduled start
+
+- Countdown reaches zero -> smooth color shift (amber -> red).
+- Standard Run Mode begins immediately.
+- Normal start sound plays.
+
+Last 60 seconds
+
+- Countdown switches from MM:SS to SS only.
+- Subtle visual pulse on the circle (no sound).
+- Ring pulse uses a visible but gentle “breathing” stroke-width change, synced to a 1Hz rhythm.
+
+Last 10 seconds
+
+- Countdown number scales up quickly (≈1–1.5s) to a large, near-full-circle size.
+- The scale completes early and stays stable until it reaches 0.
 
 ### **10.4.2. Header**
 
@@ -913,6 +973,7 @@ Content
 - Notification when the group ends
 - Scheduled groups:
   - Send a pre-alert based on noticeMinutes
+  - If the app is open, Pre-Run Countdown Mode is shown but the notification is still sent
 - Notifications are silent; audio comes from the app sounds
 - Desktop adapters: Windows/Linux use `local_notifier`; other platforms use `flutter_local_notifications`.
 

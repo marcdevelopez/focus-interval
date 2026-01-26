@@ -105,6 +105,8 @@ class TaskRunGroup {
   final DateTime createdAt;
   final DateTime? scheduledStartTime;
   final String? scheduledByDeviceId;
+  final DateTime? noticeSentAt;
+  final String? noticeSentByDeviceId;
   final DateTime? actualStartTime;
   final DateTime theoreticalEndTime;
   final TaskRunStatus status;
@@ -121,6 +123,8 @@ class TaskRunGroup {
     required this.createdAt,
     required this.scheduledStartTime,
     this.scheduledByDeviceId,
+    this.noticeSentAt,
+    this.noticeSentByDeviceId,
     required this.actualStartTime,
     required this.theoreticalEndTime,
     required this.status,
@@ -138,6 +142,8 @@ class TaskRunGroup {
     DateTime? createdAt,
     DateTime? scheduledStartTime,
     String? scheduledByDeviceId,
+    DateTime? noticeSentAt,
+    String? noticeSentByDeviceId,
     DateTime? actualStartTime,
     DateTime? theoreticalEndTime,
     TaskRunStatus? status,
@@ -154,6 +160,8 @@ class TaskRunGroup {
       createdAt: createdAt ?? this.createdAt,
       scheduledStartTime: scheduledStartTime ?? this.scheduledStartTime,
       scheduledByDeviceId: scheduledByDeviceId ?? this.scheduledByDeviceId,
+      noticeSentAt: noticeSentAt ?? this.noticeSentAt,
+      noticeSentByDeviceId: noticeSentByDeviceId ?? this.noticeSentByDeviceId,
       actualStartTime: actualStartTime ?? this.actualStartTime,
       theoreticalEndTime: theoreticalEndTime ?? this.theoreticalEndTime,
       status: status ?? this.status,
@@ -172,6 +180,8 @@ class TaskRunGroup {
     'createdAt': createdAt.toIso8601String(),
     'scheduledStartTime': scheduledStartTime?.toIso8601String(),
     'scheduledByDeviceId': scheduledByDeviceId,
+    'noticeSentAt': noticeSentAt?.toIso8601String(),
+    'noticeSentByDeviceId': noticeSentByDeviceId,
     'actualStartTime': actualStartTime?.toIso8601String(),
     'theoreticalEndTime': theoreticalEndTime.toIso8601String(),
     'status': status.name,
@@ -206,6 +216,8 @@ class TaskRunGroup {
       createdAt: createdAt,
       scheduledStartTime: _parseDateTime(map['scheduledStartTime']),
       scheduledByDeviceId: map['scheduledByDeviceId'] as String?,
+      noticeSentAt: _parseDateTime(map['noticeSentAt']),
+      noticeSentByDeviceId: map['noticeSentByDeviceId'] as String?,
       actualStartTime: _parseDateTime(map['actualStartTime']),
       theoreticalEndTime:
           _parseDateTime(map['theoreticalEndTime']) ?? createdAt,

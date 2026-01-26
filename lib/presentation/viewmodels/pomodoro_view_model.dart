@@ -240,6 +240,17 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   void cancel() {
     if (!_controlsEnabled) return;
+    _resetLocalSessionState();
+    _sessionRepo.clearSession();
+    unawaited(_markGroupCanceled());
+  }
+
+  void applyRemoteCancellation() {
+    _resetLocalSessionState();
+    _sessionRepo.clearSession();
+  }
+
+  void _resetLocalSessionState() {
     _finishedAt = null;
     _lastHeartbeatAt = null;
     _pauseReason = null;
@@ -248,9 +259,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _timelinePhaseStartedAt = null;
     _machine.cancel();
     _localPhaseStartedAt = null;
-    _sessionRepo.clearSession();
-    _groupCompleted = false; // Reset group completion flag on cancel
-    unawaited(_markGroupCanceled());
+    _groupCompleted = false;
   }
 
   Future<void> _markGroupRunningIfNeeded({DateTime? startOverride}) async {
@@ -410,8 +419,8 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     final phaseDuration = _phaseDurationForState(current);
     final phaseStartedAt =
         _isRunning(current.status) || current.status == PomodoroStatus.paused
-            ? _localPhaseStartedAt
-            : null;
+        ? _localPhaseStartedAt
+        : null;
 
     final session = PomodoroSession(
       taskId: taskId,
@@ -609,6 +618,11 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   TaskRunItem? get currentItem => _currentItem;
 
+  void updateGroup(TaskRunGroup group) {
+    if (_currentGroup?.id != group.id) return;
+    _currentGroup = group;
+  }
+
   TaskRunItem? get previousItem {
     final group = _currentGroup;
     if (group == null || _currentTaskIndex <= 0) return null;
@@ -634,10 +648,9 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       ) ??
       0;
 
-  int get totalGroupDurationSeconds =>
-      _currentGroup == null
-          ? 0
-          : groupDurationSecondsWithFinalBreaks(_currentGroup!.tasks);
+  int get totalGroupDurationSeconds => _currentGroup == null
+      ? 0
+      : groupDurationSecondsWithFinalBreaks(_currentGroup!.tasks);
 
   DateTime? get phaseStartedAt {
     if (_remoteOwnerId != null && _remoteOwnerId != _deviceInfo.deviceId) {
@@ -732,8 +745,9 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     final phaseStart = phaseStartedAt;
     if (phaseStart == null) return actualStart;
     final activeOffsetSeconds = _activeSecondsBeforeCurrentPhase();
-    final expectedPhaseStart =
-        actualStart.add(Duration(seconds: activeOffsetSeconds));
+    final expectedPhaseStart = actualStart.add(
+      Duration(seconds: activeOffsetSeconds),
+    );
     final pauseOffset = phaseStart.difference(expectedPhaseStart).inSeconds;
     return actualStart.add(Duration(seconds: pauseOffset));
   }
@@ -753,10 +767,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     return total;
   }
 
-  int _activeSecondsBeforePhaseInTask(
-    TaskRunItem item,
-    PomodoroState state,
-  ) {
+  int _activeSecondsBeforePhaseInTask(TaskRunItem item, PomodoroState state) {
     if (state.phase == null || state.currentPomodoro <= 0) return 0;
     final pomodoroSeconds = item.pomodoroMinutes * 60;
     final shortBreakSeconds = item.shortBreakMinutes * 60;
@@ -797,8 +808,9 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     final actualStart = group?.actualStartTime;
     final phaseStart = phaseStartedAt;
     if (group == null || actualStart == null || phaseStart == null) return 0;
-    final expectedPhaseStart =
-        actualStart.add(Duration(seconds: _activeSecondsBeforeCurrentPhase()));
+    final expectedPhaseStart = actualStart.add(
+      Duration(seconds: _activeSecondsBeforeCurrentPhase()),
+    );
     final offset = phaseStart.difference(expectedPhaseStart).inSeconds;
     return offset < 0 ? 0 : offset;
   }
@@ -807,11 +819,15 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (_currentGroup == null) return 0;
     final taskStart = _currentTaskStartedAt;
     if (taskStart == null) return 0;
-    final expectedTaskStart = _expectedTaskStart(_currentGroup!, _currentTaskIndex);
+    final expectedTaskStart = _expectedTaskStart(
+      _currentGroup!,
+      _currentTaskIndex,
+    );
     if (expectedTaskStart == null) return 0;
     final pauseBeforeTask = taskStart.difference(expectedTaskStart).inSeconds;
     final totalPause = _totalPausedSecondsSoFar();
-    final pauseSinceTask = totalPause - (pauseBeforeTask < 0 ? 0 : pauseBeforeTask);
+    final pauseSinceTask =
+        totalPause - (pauseBeforeTask < 0 ? 0 : pauseBeforeTask);
     return pauseSinceTask < 0 ? 0 : pauseSinceTask;
   }
 
@@ -820,8 +836,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (group == null) return;
     final index = _currentTaskIndex;
     if (_completedTaskRanges.containsKey(index)) return;
-    final start =
-        _currentTaskStartedAt ?? _expectedTaskStart(group, index);
+    final start = _currentTaskStartedAt ?? _expectedTaskStart(group, index);
     if (start == null) return;
     _completedTaskRanges[index] = TaskTimeRange(start, DateTime.now());
   }
@@ -1065,7 +1080,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
             : PomodoroPhase.shortBreak;
         phaseDuration = _phaseDurationForPhase(phase);
         if (phaseDuration <= 0) {
-          return _stateFromSession(session, remaining: session.remainingSeconds);
+          return _stateFromSession(
+            session,
+            remaining: session.remainingSeconds,
+          );
         }
         continue;
       }
