@@ -1024,6 +1024,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (phaseDuration <= 0) {
       phaseDuration = session.phaseDurationSeconds;
     }
+    if (phaseDuration <= 0) {
+      // Defensive fallback to avoid infinite projection loops.
+      return _stateFromSession(session, remaining: session.remainingSeconds);
+    }
 
     while (true) {
       if (elapsed < phaseDuration) {
@@ -1060,12 +1064,18 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
             ? PomodoroPhase.longBreak
             : PomodoroPhase.shortBreak;
         phaseDuration = _phaseDurationForPhase(phase);
+        if (phaseDuration <= 0) {
+          return _stateFromSession(session, remaining: session.remainingSeconds);
+        }
         continue;
       }
 
       currentPomodoro += 1;
       phase = PomodoroPhase.pomodoro;
       phaseDuration = _phaseDurationForPhase(phase);
+      if (phaseDuration <= 0) {
+        return _stateFromSession(session, remaining: session.remainingSeconds);
+      }
     }
   }
 

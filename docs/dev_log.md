@@ -16,7 +16,7 @@ This document is used to:
 # 📍 Current status
 
 Active phase: **17 — Planning Flow + Conflict Management**
-Last update: **25/01/2026**
+Last update: **26/01/2026**
 
 ---
 
@@ -2632,6 +2632,21 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Verify the same behavior on a macOS release build when possible.
+
+# 🔹 Block 131 — macOS debug vs profile/release behavior — 26/01/2026
+
+### ✔ Work completed:
+
+- Verified macOS profile build runs correctly without the freeze seen in debug.
+- Documented that the freeze only reproduces in macOS debug (`flutter run`) when a remote session is active.
+
+### ⚠️ Issues found:
+
+- macOS debug (flutter run) can freeze with a remote session; release/profile builds do not.
+
+### 🎯 Next steps:
+
+- Monitor the debug-only freeze; no release impact observed.
 
 # 🧾 General notes
 
