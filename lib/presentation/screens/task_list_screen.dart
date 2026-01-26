@@ -173,8 +173,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final controller = ref.read(appModeProvider.notifier);
     final currentUser = ref.read(currentUserProvider);
     final emailLabel = currentUser?.email?.trim() ?? '';
-    final accountLabel =
-        signedIn && emailLabel.isNotEmpty ? emailLabel : (currentUser?.uid ?? '');
+    final accountLabel = signedIn && emailLabel.isNotEmpty
+        ? emailLabel
+        : (currentUser?.uid ?? '');
     final result = await showDialog<AppMode>(
       context: context,
       builder: (context) {
@@ -183,7 +184,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
           content: Text(
             signedIn && accountLabel.isNotEmpty
                 ? 'Active account: $accountLabel\n\n'
-                    'Local Mode is device-only. Account Mode syncs data to the current user.'
+                      'Local Mode is device-only. Account Mode syncs data to the current user.'
                 : 'Local Mode is device-only. Account Mode syncs data to the current user.',
           ),
           actions: [
@@ -349,8 +350,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final isCompact = MediaQuery.of(context).size.width < 360;
     final screenWidth = MediaQuery.of(context).size.width;
     final emailLabel = currentUser?.email?.trim() ?? '';
-    final accountLabel =
-        signedIn && emailLabel.isNotEmpty ? emailLabel : (currentUser?.uid ?? '');
+    final accountLabel = signedIn && emailLabel.isNotEmpty
+        ? emailLabel
+        : (currentUser?.uid ?? '');
     final maxEmailWidth = screenWidth < 360
         ? 96.0
         : screenWidth < 480
@@ -358,12 +360,12 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         : screenWidth < 720
         ? 200.0
         : 260.0;
-    final showAccountLabel = authSupported &&
+    final showAccountLabel =
+        authSupported &&
         appMode == AppMode.account &&
         signedIn &&
         accountLabel.isNotEmpty;
-    final showLogout =
-        authSupported && appMode == AppMode.account && signedIn;
+    final showLogout = authSupported && appMode == AppMode.account && signedIn;
     final showLogin = authSupported && appMode == AppMode.account && !signedIn;
     final showInfo = !authSupported;
     final hasTrailing = showAccountLabel || showLogout || showLogin || showInfo;
@@ -389,50 +391,50 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                      if (showAccountLabel)
-                        ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxWidth: maxEmailWidth,
-                          ),
-                          child: Text(
-                            accountLabel,
-                            style: const TextStyle(fontSize: 12),
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.right,
-                          ),
-                        ),
-                      if (showAccountLabel) const SizedBox(width: 8),
-                      if (showLogout)
-                        IconButton(
-                          icon: const Icon(Icons.logout),
-                          constraints: const BoxConstraints.tightFor(
-                            width: 36,
-                            height: 36,
-                          ),
-                          padding: EdgeInsets.zero,
-                          onPressed: _handleLogout,
-                        ),
-                      if (showLogin)
-                        IconButton(
-                          icon: const Icon(Icons.person),
-                          constraints: const BoxConstraints.tightFor(
-                            width: 36,
-                            height: 36,
-                          ),
-                          padding: EdgeInsets.zero,
-                          onPressed: () => context.go('/login'),
-                        ),
-                      if (showInfo)
-                        IconButton(
-                          icon: const Icon(Icons.info_outline),
-                          constraints: const BoxConstraints.tightFor(
-                            width: 36,
-                            height: 36,
-                          ),
-                          padding: EdgeInsets.zero,
-                          onPressed: _handleSyncInfoTap,
-                        ),
-                    ],
+                            if (showAccountLabel)
+                              ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxWidth: maxEmailWidth,
+                                ),
+                                child: Text(
+                                  accountLabel,
+                                  style: const TextStyle(fontSize: 12),
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.right,
+                                ),
+                              ),
+                            if (showAccountLabel) const SizedBox(width: 8),
+                            if (showLogout)
+                              IconButton(
+                                icon: const Icon(Icons.logout),
+                                constraints: const BoxConstraints.tightFor(
+                                  width: 36,
+                                  height: 36,
+                                ),
+                                padding: EdgeInsets.zero,
+                                onPressed: _handleLogout,
+                              ),
+                            if (showLogin)
+                              IconButton(
+                                icon: const Icon(Icons.person),
+                                constraints: const BoxConstraints.tightFor(
+                                  width: 36,
+                                  height: 36,
+                                ),
+                                padding: EdgeInsets.zero,
+                                onPressed: () => context.go('/login'),
+                              ),
+                            if (showInfo)
+                              IconButton(
+                                icon: const Icon(Icons.info_outline),
+                                constraints: const BoxConstraints.tightFor(
+                                  width: 36,
+                                  height: 36,
+                                ),
+                                padding: EdgeInsets.zero,
+                                onPressed: _handleSyncInfoTap,
+                              ),
+                          ],
                         ),
                       ),
                     ),
@@ -450,21 +452,21 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
               children: [
                 Row(
                   mainAxisSize: MainAxisSize.max,
-                children: [
-                  InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: authSupported
-                        ? () => _showModeSwitchDialog(
+                  children: [
+                    InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: authSupported
+                          ? () => _showModeSwitchDialog(
                               authSupported: authSupported,
                               signedIn: signedIn,
                               requiresVerification: requiresVerification,
                             )
-                        : null,
-                    child: ModeIndicatorChip(compact: isCompact),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
+                          : null,
+                      child: ModeIndicatorChip(compact: isCompact),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
                 Row(
                   children: [
                     const Expanded(
@@ -786,6 +788,10 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final status = planAction == _PlanAction.startNow
         ? TaskRunStatus.running
         : TaskRunStatus.scheduled;
+    final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
+    final scheduledByDeviceId = status == TaskRunStatus.scheduled
+        ? deviceId
+        : null;
 
     final recalculatedStart = scheduledStart ?? DateTime.now();
     final recalculatedEnd = recalculatedStart.add(
@@ -798,6 +804,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       tasks: items,
       createdAt: planCapturedAt,
       scheduledStartTime: scheduledStart,
+      scheduledByDeviceId: scheduledByDeviceId,
       actualStartTime: null,
       theoreticalEndTime: recalculatedEnd,
       status: status,
@@ -1011,9 +1018,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete task?'),
-        content: Text(
-          'Delete "$title"? This cannot be undone.',
-        ),
+        content: Text('Delete "$title"? This cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -1054,14 +1059,17 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     DateTime start,
   ) {
     final ranges = <String, String>{};
-    final selectedTasks =
-        tasks.where((task) => selectedIds.contains(task.id)).toList();
+    final selectedTasks = tasks
+        .where((task) => selectedIds.contains(task.id))
+        .toList();
     var cursor = start;
     for (var index = 0; index < selectedTasks.length; index += 1) {
       final task = selectedTasks[index];
       final includeFinalBreak = index < selectedTasks.length - 1;
-      final duration =
-          _taskDurationSeconds(task, includeFinalBreak: includeFinalBreak);
+      final duration = _taskDurationSeconds(
+        task,
+        includeFinalBreak: includeFinalBreak,
+      );
       final end = cursor.add(Duration(seconds: duration));
       ranges[task.id] =
           "${_timeFormat.format(cursor)}–${_timeFormat.format(end)}";

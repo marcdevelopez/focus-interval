@@ -2678,6 +2678,35 @@ _(fill in when they happen)_
 
 - Validate scheduled auto-start on desktop/mobile (debug/profile/release).
 
+# 🔹 Block 134 — Scheduled auto-start ownership fix — 26/01/2026
+
+### ✔ Work completed:
+
+- Added `scheduledByDeviceId` to TaskRunGroup and persisted it in storage.
+- Scheduled auto-start now allows any device to claim immediately at scheduled time.
+- Recorded the scheduling device when creating scheduled groups.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Re-test scheduled auto-start ownership on two devices with the same account.
+
+# 🔹 Block 135 — Scheduled auto-start validation (release) — 26/01/2026
+
+### ✔ Work completed:
+
+- Validated scheduled auto-start in release on macOS and Android.
+- Scheduling device: Android (app closed). Claim device: macOS (app open, signed in).
+- macOS became owner immediately with Pause/Cancel enabled.
+- Android opened later in mirror mode with controls disabled until take over.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

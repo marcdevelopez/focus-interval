@@ -35,18 +35,18 @@ The app syncs with Firebase via Google Sign-In on iOS/Android/Web, email/passwor
 
 # 🔥 **3. Core technologies**
 
-| Area                   | Technology                                                |
-| ---------------------- | --------------------------------------------------------- |
-| UI Framework           | Flutter 3.x                                               |
+| Area                   | Technology                                                                        |
+| ---------------------- | --------------------------------------------------------------------------------- |
+| UI Framework           | Flutter 3.x                                                                       |
 | Auth                   | Firebase Authentication (Google Sign-In, optional GitHub Sign-In, email/password) |
-| Backend                | Firestore                                                 |
-| Local Cache (optional) | SharedPreferences (Local Mode storage); Hive (v1.2)       |
-| State Management       | Riverpod                                                  |
-| Navigation             | GoRouter                                                  |
-| Audio                  | just_audio                                                |
-| Notifications          | flutter_local_notifications                               |
-| Logging                | debugPrint (MVP); logger (post-MVP)                       |
-| Architecture           | MVVM (Model–View–ViewModel)                               |
+| Backend                | Firestore                                                                         |
+| Local Cache (optional) | SharedPreferences (Local Mode storage); Hive (v1.2)                               |
+| State Management       | Riverpod                                                                          |
+| Navigation             | GoRouter                                                                          |
+| Audio                  | just_audio                                                                        |
+| Notifications          | flutter_local_notifications                                                       |
+| Logging                | debugPrint (MVP); logger (post-MVP)                                               |
+| Architecture           | MVVM (Model–View–ViewModel)                                                       |
 
 ---
 
@@ -283,6 +283,8 @@ Scheduled start behavior
   - Set actualStartTime = now.
   - Recalculate theoreticalEndTime = actualStartTime + totalDurationSeconds.
   - Automatically open the execution screen and start the group.
+  - Ownership is claimed by the first device that starts the session.
+  - If the scheduling device is not active, another signed-in device may claim and become owner immediately.
 - If the app was inactive at scheduledStartTime:
   - On next launch/resume, if scheduledStartTime <= now and there is no active conflict,
     auto-start immediately using actualStartTime = now.
@@ -581,10 +583,12 @@ Behavior:
 Goal: preserve Pomodoro technique integrity across consecutive tasks while keeping flexibility for mixed configurations.
 
 Definitions:
+
 - **Pomodoro structural configuration**: pomodoro duration, short break duration, long break duration, long break interval.
 - **Task weight**: totalPomodoros (authoritative integer) and derived percentage of the group total.
 
 Execution modes for TaskRunGroups:
+
 - **Mode A — Shared Pomodoro Structure (recommended)**
   - The group defines the structural configuration.
   - All tasks share the same pomodoro/break durations and long-break interval.
@@ -595,6 +599,7 @@ Execution modes for TaskRunGroups:
   - The user may continue without restrictions.
 
 Task weight rules:
+
 - Each task has an authoritative integer `totalPomodoros` and a derived percentage.
 - Percentage is always computed from integer pomodoros and rounded for display.
 - When a user edits the percentage:
@@ -603,6 +608,7 @@ Task weight rules:
   - Pomodoros and breaks are never split.
 
 UI implications (documentation only):
+
 - Task List should display both totalPomodoros and derived percentage of the group total.
 - Task Editor should display totalPomodoros and derived percentage, with live recalculation when either value changes.
 - Task Editor should place Total pomodoros + Task weight (%) together, above Pomodoro structural configuration and sounds.
@@ -613,6 +619,7 @@ UI implications (documentation only):
 Goal: separate “what I do” (task) from “how it runs” (Pomodoro configuration) while keeping full flexibility.
 
 Preset definition:
+
 - A **Pomodoro configuration preset** is a named, reusable bundle of:
   - pomodoro duration
   - short break duration
@@ -621,6 +628,7 @@ Preset definition:
   - sound selections
 
 Behavior:
+
 - Presets are selectable from the Task Editor when creating or editing a task.
 - Presets can be created, renamed, edited, and deleted from within the Task Editor context.
 - One preset can be marked as **default** and applied automatically to new tasks.
@@ -652,6 +660,8 @@ The execution screen shows an analog-style circular timer with a dynamic layout 
     - Set actualStartTime = now
     - Recalculate theoreticalEndTime = actualStartTime + totalDurationSeconds
     - Auto-open the execution screen and auto-start the group
+    - Ownership is claimed by the first device that starts the session
+    - If the scheduling device is not active, another signed-in device may claim immediately
   - If the app was inactive at scheduledStartTime:
     - On next launch/resume, if scheduledStartTime <= now and there is no active conflict,
       auto-start immediately using actualStartTime = now (scheduledStartTime remains unchanged)
@@ -776,6 +786,7 @@ The MM:SS timer must not shift horizontally:
 - Remaining time is calculated from phaseStartedAt + phaseDurationSeconds.
 - Mirror devices render task names/durations from the TaskRunGroup snapshot (by groupId), not from the editable task list.
 - When auto-open is triggered from launch/resume, open TimerScreen in mirror mode if the session belongs to another device.
+- After a scheduled auto-start, the first device that starts the session becomes the owner; other devices open in mirror mode until they take over.
 
 ---
 

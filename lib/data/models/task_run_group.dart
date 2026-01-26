@@ -104,6 +104,7 @@ class TaskRunGroup {
   final List<TaskRunItem> tasks;
   final DateTime createdAt;
   final DateTime? scheduledStartTime;
+  final String? scheduledByDeviceId;
   final DateTime? actualStartTime;
   final DateTime theoreticalEndTime;
   final TaskRunStatus status;
@@ -119,6 +120,7 @@ class TaskRunGroup {
     required this.tasks,
     required this.createdAt,
     required this.scheduledStartTime,
+    this.scheduledByDeviceId,
     required this.actualStartTime,
     required this.theoreticalEndTime,
     required this.status,
@@ -135,6 +137,7 @@ class TaskRunGroup {
     List<TaskRunItem>? tasks,
     DateTime? createdAt,
     DateTime? scheduledStartTime,
+    String? scheduledByDeviceId,
     DateTime? actualStartTime,
     DateTime? theoreticalEndTime,
     TaskRunStatus? status,
@@ -150,6 +153,7 @@ class TaskRunGroup {
       tasks: tasks ?? this.tasks,
       createdAt: createdAt ?? this.createdAt,
       scheduledStartTime: scheduledStartTime ?? this.scheduledStartTime,
+      scheduledByDeviceId: scheduledByDeviceId ?? this.scheduledByDeviceId,
       actualStartTime: actualStartTime ?? this.actualStartTime,
       theoreticalEndTime: theoreticalEndTime ?? this.theoreticalEndTime,
       status: status ?? this.status,
@@ -167,6 +171,7 @@ class TaskRunGroup {
     'tasks': tasks.map((task) => task.toMap()).toList(),
     'createdAt': createdAt.toIso8601String(),
     'scheduledStartTime': scheduledStartTime?.toIso8601String(),
+    'scheduledByDeviceId': scheduledByDeviceId,
     'actualStartTime': actualStartTime?.toIso8601String(),
     'theoreticalEndTime': theoreticalEndTime.toIso8601String(),
     'status': status.name,
@@ -185,14 +190,14 @@ class TaskRunGroup {
     final totalPomodoros =
         (map['totalPomodoros'] as num?)?.toInt() ??
         tasks.fold<int>(0, (total, item) => total + item.totalPomodoros);
-    final computedTotalDurationSeconds =
-        groupDurationSecondsWithFinalBreaks(tasks);
-    final storedTotalDurationSeconds =
-        (map['totalDurationSeconds'] as num?)?.toInt();
-    final totalDurationSeconds =
-        computedTotalDurationSeconds > 0
-            ? computedTotalDurationSeconds
-            : storedTotalDurationSeconds;
+    final computedTotalDurationSeconds = groupDurationSecondsWithFinalBreaks(
+      tasks,
+    );
+    final storedTotalDurationSeconds = (map['totalDurationSeconds'] as num?)
+        ?.toInt();
+    final totalDurationSeconds = computedTotalDurationSeconds > 0
+        ? computedTotalDurationSeconds
+        : storedTotalDurationSeconds;
 
     return TaskRunGroup(
       id: map['id'] as String? ?? '',
@@ -200,7 +205,8 @@ class TaskRunGroup {
       tasks: tasks,
       createdAt: createdAt,
       scheduledStartTime: _parseDateTime(map['scheduledStartTime']),
-        actualStartTime: _parseDateTime(map['actualStartTime']),
+      scheduledByDeviceId: map['scheduledByDeviceId'] as String?,
+      actualStartTime: _parseDateTime(map['actualStartTime']),
       theoreticalEndTime:
           _parseDateTime(map['theoreticalEndTime']) ?? createdAt,
       status: TaskRunStatus.values.firstWhere(

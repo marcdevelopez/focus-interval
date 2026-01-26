@@ -25,6 +25,7 @@ class ScheduledGroupAutoStarter extends ConsumerStatefulWidget {
 class _ScheduledGroupAutoStarterState
     extends ConsumerState<ScheduledGroupAutoStarter>
     with WidgetsBindingObserver {
+  static const Duration _ownerGrace = Duration.zero;
   Timer? _scheduledTimer;
   bool _autoStartInFlight = false;
   List<TaskRunGroup> _lastGroups = const [];
@@ -70,6 +71,8 @@ class _ScheduledGroupAutoStarterState
     _lastGroups = groups;
     if (_autoStartInFlight) return;
 
+    final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
+
     _scheduledTimer?.cancel();
     _scheduledTimer = null;
 
@@ -99,6 +102,18 @@ class _ScheduledGroupAutoStarterState
     final now = DateTime.now();
     final startTime = nextGroup.scheduledStartTime!;
     if (!startTime.isAfter(now)) {
+      final scheduledBy = nextGroup.scheduledByDeviceId;
+      if (scheduledBy != null && scheduledBy != deviceId) {
+        final graceUntil = startTime.add(_ownerGrace);
+        if (now.isBefore(graceUntil)) {
+          final delay = graceUntil.difference(now);
+          _scheduledTimer = Timer(delay, () {
+            if (!mounted) return;
+            _handleGroups(_lastGroups);
+          });
+          return;
+        }
+      }
       unawaited(_autoStartGroup(nextGroup.id));
       return;
     }
@@ -114,6 +129,7 @@ class _ScheduledGroupAutoStarterState
     if (_autoStartInFlight) return;
     _autoStartInFlight = true;
     try {
+      final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
       final groupRepo = ref.read(taskRunGroupRepositoryProvider);
       final latest = await groupRepo.getById(groupId);
       if (latest == null) return;
@@ -123,6 +139,11 @@ class _ScheduledGroupAutoStarterState
 
       final now = DateTime.now();
       if (scheduledStart.isAfter(now)) return;
+      final scheduledBy = latest.scheduledByDeviceId;
+      if (scheduledBy != null && scheduledBy != deviceId) {
+        final graceUntil = scheduledStart.add(_ownerGrace);
+        if (now.isBefore(graceUntil)) return;
+      }
 
       final totalSeconds =
           latest.totalDurationSeconds ??
