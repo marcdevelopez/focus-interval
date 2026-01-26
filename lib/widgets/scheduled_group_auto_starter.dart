@@ -56,13 +56,13 @@ class _ScheduledGroupAutoStarterState
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AsyncValue<List<TaskRunGroup>>>(
-      taskRunGroupStreamProvider,
-      (previous, next) {
-        final groups = next.value ?? const [];
-        _handleGroups(groups);
-      },
-    );
+    ref.listen<AsyncValue<List<TaskRunGroup>>>(taskRunGroupStreamProvider, (
+      previous,
+      next,
+    ) {
+      final groups = next.value ?? const [];
+      _handleGroups(groups);
+    });
     return widget.child;
   }
 
@@ -81,17 +81,17 @@ class _ScheduledGroupAutoStarterState
       return;
     }
 
-    final scheduled = groups
-        .where(
-          (g) =>
-              g.status == TaskRunStatus.scheduled &&
-              g.scheduledStartTime != null,
-        )
-        .toList()
-      ..sort(
-        (a, b) =>
-            a.scheduledStartTime!.compareTo(b.scheduledStartTime!),
-      );
+    final scheduled =
+        groups
+            .where(
+              (g) =>
+                  g.status == TaskRunStatus.scheduled &&
+                  g.scheduledStartTime != null,
+            )
+            .toList()
+          ..sort(
+            (a, b) => a.scheduledStartTime!.compareTo(b.scheduledStartTime!),
+          );
 
     if (scheduled.isEmpty) return;
 
@@ -124,11 +124,14 @@ class _ScheduledGroupAutoStarterState
       final now = DateTime.now();
       if (scheduledStart.isAfter(now)) return;
 
+      final totalSeconds =
+          latest.totalDurationSeconds ??
+          groupDurationSecondsWithFinalBreaks(latest.tasks);
+
       final updated = latest.copyWith(
         status: TaskRunStatus.running,
         actualStartTime: now,
-        theoreticalEndTime:
-            now.add(Duration(seconds: latest.totalDurationSeconds)),
+        theoreticalEndTime: now.add(Duration(seconds: totalSeconds)),
         updatedAt: now,
       );
       await groupRepo.save(updated);
