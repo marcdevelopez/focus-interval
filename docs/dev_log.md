@@ -2707,6 +2707,75 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 136 — Pre-alert + Pre-Run Countdown Mode — 26/01/2026
+
+### ✔ Work completed:
+
+- Added Pre-Run Countdown Mode behavior to specs (scheduled -> preparing -> running).
+- Implemented pre-alert notifications with de-duplication across devices.
+- Auto-opened Run Mode during the pre-alert window when the app is open.
+- Added Pre-Run UI (amber circle, countdown, preparing/next boxes, contextual list).
+- Disabled pause and start controls during pre-run; kept cancel available.
+- Added subtle pulse in the last 60 seconds of pre-run countdown.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 137 — Pre-Run visual refinements — 26/01/2026
+
+### ✔ Work completed:
+
+- Strengthened the Pre-Run ring pulse for the last 60 seconds (visible breathing stroke).
+- Synced pulse cadence to ~1Hz to match the per-second color rhythm.
+- Updated the last-10-seconds countdown scale to complete quickly and hold at full size.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 138 — Debug-only macOS freeze (multi-run) — 27/01/2026
+
+### ✔ Work completed:
+
+- Confirmed the Pre-Run idempotent auto-start fix resolves the UI flicker.
+- Removed temporary debug traces after verification.
+
+### ⚠️ Issues found:
+
+- macOS debug can freeze when multiple `flutter run` sessions are active (e.g., macOS + Android). UI only repaints after window resize.
+- Not reproducible in release/profile; treated as Flutter desktop debug/tooling limitation.
+
+### 🎯 Next steps:
+
+- None (monitor only).
+
+# 🔹 Block 139 — macOS debug frame ping (local) — 27/01/2026
+
+### ✔ Work completed:
+
+- Added a debug-only frame ping on macOS to force scheduled frames once per second.
+- Intended to mitigate intermittent UI freeze in debug desktop runs.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Validate in macOS debug with no other devices running.
+
+# 🔹 Block 140 — Enforce take over on missing session — 27/01/2026
+
+### ✔ Work completed:
+
+- Require an active session before auto-starting a running group.
+- Prevent silent ownership changes when a running group lacks `activeSession`.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

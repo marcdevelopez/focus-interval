@@ -1,15 +1,297 @@
 # 🧭 Agent Guide — Focus Interval
 
-- At the start of every session, open this file and follow its instructions.
-- Before editing dates in `docs/dev_log.md` or `docs/roadmap.md`, confirm the real date (e.g. run `date`) and use it.
-- Check `docs/roadmap.md` and `docs/dev_log.md` before touching code to keep context and consistency.
-- Always review the "Reopened phases" section in `docs/roadmap.md` before starting work.
-- If any phase is reopened in the future, add it to the "Reopened phases" list in `docs/roadmap.md` and treat it as priority work.
-- Before each commit, review whether your work requires updating `docs/roadmap.md` or `docs/dev_log.md`; if so, include those updates in the same commit.
-- Update `docs/roadmap.md` and `docs/dev_log.md` whenever any phase changes status, even for partial/step-level progress.
-- When editing `docs/dev_log.md` or `docs/roadmap.md`, always use the real date of the workday to preserve traceability.
-- If you complete a phase, mark it in `docs/roadmap.md` (global status and that phase) using the real date, and update the CURRENT PHASE if needed.
-- Before moving to the next phase, review the roadmap: if earlier phases are done but not marked, mark them with dates and align `docs/dev_log.md` and the global roadmap status.
-- Do not commit if there are errors/build breaks or known unresolved bugs; confirm the change works (at least compiles/analyzer) before committing. For incomplete work, use a separate branch or stash instead of main.
-- Keep all documentation, UI strings, and code comments in English to maintain a single language across the project.
-- If Android release signing is discussed, confirm the release keystore is backed up; remind the user if not.
+This file defines **non-negotiable engineering rules** for developing Focus Interval.
+Every human or AI agent must read and follow this document **before touching code**.
+
+The purpose of this guide is to ensure the project remains:
+
+- Scalable
+- Modular
+- Predictable
+- Safe to evolve
+- Free of architectural regressions and hard-to-debug errors
+
+This file is authoritative.
+
+---
+
+## 1️⃣ Mandatory workflow (always)
+
+At the start of **every session**:
+
+1. Open and read:
+   - `docs/specs.md`
+   - `docs/roadmap.md`
+   - `docs/dev_log.md`
+2. Confirm the **current real date** (e.g. `date` in terminal).
+3. Verify:
+   - CURRENT PHASE in `docs/roadmap.md`
+   - Any **Reopened phases**
+4. If a phase is reopened and not listed, **add it immediately** to:
+   - 🔄 Reopened phases
+5. Do **not** start coding until context is fully aligned.
+
+---
+
+## 2️⃣ Documentation-first rule (hard rule)
+
+Code **must never lead documentation**.
+
+Before implementing or modifying behavior:
+
+- Specs must already define it **or**
+- Specs must be updated **first**
+
+This includes:
+
+- New flows
+- Edge cases
+- Error handling
+- Platform-specific behavior
+- Performance optimizations
+- Sync logic
+- UX decisions that affect state
+
+If documentation and code diverge → **documentation wins**.
+
+---
+
+## 3️⃣ Architecture invariants (must never be violated)
+
+### 🧱 Layer boundaries (strict)
+
+presentation/ → UI only
+viewmodels/ → UI state & orchestration
+domain/ → pure logic (no Flutter, no Firebase)
+data/ → persistence & external services
+
+Forbidden:
+
+- UI calling repositories directly
+- Domain logic importing Flutter, Riverpod, Firebase, or platform code
+- Services depending on UI state
+
+Allowed (current project reality):
+
+- ViewModels may use **timers only for projection/rendering** (never authoritative decisions).
+- UI may include **minimal platform guards** when there is no viable service-level alternative.
+
+If unsure where code belongs → **stop and ask**.
+
+### 🧠 Single source of truth (authoritative vs derived)
+
+Authoritative logic lives in one place only:
+
+- Pomodoro flow & rules → `PomodoroMachine`
+- Execution orchestration → `PomodoroViewModel`
+- Persistence & sync → repositories / Firestore
+- Active execution authority → Firestore `activeSession` owner
+
+Derived logic is allowed when it is:
+
+- Read-only
+- Deterministic
+- Based exclusively on authoritative data
+
+Forbidden duplication:
+
+- Authoritative time ownership
+- State transitions
+- Conflict rules
+- Scheduling decisions
+
+If logic is _derived_, document it clearly as such.
+
+---
+
+## 4️⃣ State & time rules (authoritative vs derived)
+
+### ⏱️ Time handling
+
+- The **authoritative timeline** is owned by:
+  - `PomodoroMachine`
+  - Firestore timestamps (for sync)
+- ViewModels may **project** time from authoritative sources.
+- UI may:
+  - Render system time
+  - Render projections
+  - Animate progress
+  - Show previews
+
+UI must never:
+
+- Decide state transitions
+- Own authoritative timers
+- Persist time decisions
+
+Local timers, tickers, or `DateTime.now()` are allowed **only for rendering or projection**, never as the source of truth.
+
+---
+
+### 🔁 Deterministic state transitions
+
+All **authoritative** state transitions must be:
+
+- Explicit
+- Reproducible
+- Traceable
+
+Derived transitions (UI reactions, animations, projections) do not require logging.
+
+Whenever authoritative behavior changes, update:
+
+- `docs/dev_log.md`
+- `docs/roadmap.md` if phase scope is affected
+
+---
+
+## 5️⃣ Multi-device & sync rules
+
+- Exactly one device is the **authoritative owner** of `activeSession`.
+- Owner:
+  - Writes authoritative state
+- Mirror devices:
+  - Never mutate authoritative state
+  - Project progress from timestamps
+  - May request explicit take-over only under defined rules
+
+Ownership changes:
+
+- Must be explicit
+- Must be logged
+- Must be justified by documented thresholds
+
+No implicit ownership inference is allowed.
+
+---
+
+## 6️⃣ Local Mode vs Account Mode (scope safety)
+
+Local and Account scopes are **intentionally isolated**.
+
+Rules:
+
+- No implicit sync
+- No silent merges
+- No shared authority
+- No background imports
+
+Import from Local → Account:
+
+- Explicit user confirmation only
+- Overwrite-by-ID (MVP rule)
+
+Any change to scope behavior must be documented in `specs.md` first.
+
+---
+
+## 7️⃣ Platform discipline
+
+Platform differences **must be isolated** inside:
+
+- Services
+- Adapters
+- Guards
+
+Never:
+
+- Assume plugin availability
+- Crash when a platform feature is missing
+
+Fallback behavior:
+
+- Must be silent
+- Must log in debug
+- Must preserve UX consistency
+
+Minimal UI guards are permitted **only when no service-level alternative exists**.
+
+---
+
+## 8️⃣ Feature development protocol
+
+For every new feature or fix:
+
+1. Create a **new branch**
+2. Implement **only one logical change**
+3. Ensure:
+   - App compiles
+   - Analyzer passes
+   - No known bugs remain
+4. Update:
+   - `docs/dev_log.md` (same real date)
+   - `docs/roadmap.md` if phase status changes
+5. Commit code + docs **together**
+6. Open PR
+7. Merge only after review
+
+Never commit:
+
+- Broken builds
+- Half-implemented features
+- “Temporary” hacks
+- Debug-only logic without guards
+
+---
+
+## 9️⃣ Regressions & reopen rule
+
+If a change:
+
+- Breaks an earlier phase
+- Alters a completed behavior
+- Requires revisiting past decisions
+
+Then:
+
+1. Reopen the phase in `docs/roadmap.md`
+2. Treat it as **priority work**
+3. Do not continue forward until resolved
+
+Skipping this step creates hidden technical debt.
+
+---
+
+## 🔟 Language & consistency
+
+- All code, comments, UI strings, and docs are **English only**
+- Naming must be:
+  - Explicit
+  - Consistent
+  - Stable over time
+
+Renaming core concepts requires:
+
+- Spec update
+- Global refactor
+- Explicit justification
+
+---
+
+## 1️⃣1️⃣ Release & safety checks
+
+Before any release discussion:
+
+- Confirm Android keystore is backed up
+- Confirm Firebase project access
+- Confirm bundle IDs are consistent
+- Confirm platform stubs exist where features are unsupported
+
+If unsure → **stop and verify**
+
+---
+
+## 1️⃣2️⃣ Guiding principle
+
+> **Focus Interval must remain predictable.**
+>
+> Predictable code scales.
+> Predictable state syncs.
+> Predictable systems survive growth.
+
+If a change makes the system harder to reason about,
+**it is the wrong change**, even if it works today.
+
+---
+
+End of AGENTS.md

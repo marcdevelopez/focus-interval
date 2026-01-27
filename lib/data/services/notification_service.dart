@@ -14,8 +14,9 @@ class NotificationService {
   bool _permissionsRequested = false;
   bool _permissionsGranted = true;
 
-  static const MethodChannel _macosChannel =
-      MethodChannel('focus_interval/macos_notifications');
+  static const MethodChannel _macosChannel = MethodChannel(
+    'focus_interval/macos_notifications',
+  );
 
   NotificationService._(this._backend, {required this.enabled});
 
@@ -70,22 +71,25 @@ class NotificationService {
     if (!await _ensurePermissions()) return;
     final title = taskName.isNotEmpty ? taskName : 'Pomodoro completed';
     final body = 'Pomodoro $currentPomodoro of $totalPomodoros finished.';
-    await _backend.show(
-      id: _consumeId(),
-      title: title,
-      body: body,
-    );
+    await _backend.show(id: _consumeId(), title: title, body: body);
   }
 
   Future<void> notifyTaskFinished({required String taskName}) async {
     if (!await _ensurePermissions()) return;
     final title = taskName.isNotEmpty ? taskName : 'Task completed';
     const body = 'All pomodoros are done.';
-    await _backend.show(
-      id: _consumeId(),
-      title: title,
-      body: body,
-    );
+    await _backend.show(id: _consumeId(), title: title, body: body);
+  }
+
+  Future<void> notifyGroupPreAlert({
+    required String groupName,
+    required int minutes,
+  }) async {
+    if (!await _ensurePermissions()) return;
+    final title = groupName.isNotEmpty ? groupName : 'Upcoming group';
+    final minuteLabel = minutes == 1 ? '1 minute' : '$minutes minutes';
+    final body = 'Group starts in $minuteLabel.';
+    await _backend.show(id: _consumeId(), title: title, body: body);
   }
 
   int _consumeId() {
@@ -179,15 +183,18 @@ class _FlutterLocalNotificationsBackend implements _NotificationBackend {
     }
     final android = await _plugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.requestNotificationsPermission();
     final ios = await _plugin
         .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>()
+          IOSFlutterLocalNotificationsPlugin
+        >()
         ?.requestPermissions(alert: true, badge: true, sound: false);
     final macos = await _plugin
         .resolvePlatformSpecificImplementation<
-            MacOSFlutterLocalNotificationsPlugin>()
+          MacOSFlutterLocalNotificationsPlugin
+        >()
         ?.requestPermissions(alert: true, badge: true, sound: false);
     return (android ?? true) && (ios ?? true) && (macos ?? true);
   }
@@ -202,18 +209,14 @@ class _FlutterLocalNotificationsBackend implements _NotificationBackend {
       await _showMacOSNotification(title: title, body: body);
       return;
     }
-    await _plugin.show(
-      id,
-      title,
-      body,
-      _details(),
-    );
+    await _plugin.show(id, title, body, _details());
   }
 
   Future<void> _createAndroidChannel() async {
     final androidPlugin = _plugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     if (androidPlugin == null) return;
     const channel = AndroidNotificationChannel(
       _androidSilentChannelId,
@@ -241,9 +244,7 @@ class _FlutterLocalNotificationsBackend implements _NotificationBackend {
       presentList: true,
       presentSound: false,
     );
-    const linux = LinuxNotificationDetails(
-      defaultActionName: 'Open',
-    );
+    const linux = LinuxNotificationDetails(defaultActionName: 'Open');
     return const NotificationDetails(
       android: android,
       iOS: darwin,
@@ -254,8 +255,9 @@ class _FlutterLocalNotificationsBackend implements _NotificationBackend {
 
   Future<bool> _requestMacOSPermissions() async {
     try {
-      final granted =
-          await _macosChannel.invokeMethod<bool>('requestPermission');
+      final granted = await _macosChannel.invokeMethod<bool>(
+        'requestPermission',
+      );
       return granted ?? false;
     } catch (e) {
       debugPrint('macOS permission request failed: $e');
