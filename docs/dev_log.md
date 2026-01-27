@@ -2734,6 +2734,37 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 138 — Debug-only macOS freeze (multi-run) — 27/01/2026
+
+### ✔ Work completed:
+
+- Confirmed the Pre-Run idempotent auto-start fix resolves the UI flicker.
+- Removed temporary debug traces after verification.
+
+### ⚠️ Issues found:
+
+- macOS debug can freeze when multiple `flutter run` sessions are active (e.g., macOS + Android). UI only repaints after window resize.
+- Not reproducible in release/profile; treated as Flutter desktop debug/tooling limitation.
+
+### 🎯 Next steps:
+
+- None (monitor only).
+
+# 🔹 Block 139 — macOS debug frame ping (local) — 27/01/2026
+
+### ✔ Work completed:
+
+- Added a debug-only frame ping on macOS to force scheduled frames once per second.
+- Intended to mitigate intermittent UI freeze in debug desktop runs.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Validate in macOS debug with no other devices running.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

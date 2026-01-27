@@ -27,11 +27,14 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     with WidgetsBindingObserver {
   Timer? _clockTimer;
   Timer? _preRunTimer;
+  Timer? _debugFrameTimer;
   String _currentClock = "";
   bool _taskLoaded = false;
   bool _finishedDialogVisible = false;
   bool _autoStartHandled = false;
   int _autoStartAttempts = 0;
+  bool _runningAutoStartHandled = false;
+  String? _runningAutoStartGroupId;
   _PreRunInfo? _preRunInfo;
   int _preRunRemainingSeconds = 0;
 
@@ -42,6 +45,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
     // Current system time (updates every second)
     _startClockTimer();
+    _startDebugFramePing();
 
     // Load group by ID
     Future.microtask(() async {
@@ -100,6 +104,20 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _clockTimer = null;
   }
 
+  void _startDebugFramePing() {
+    if (!kDebugMode || defaultTargetPlatform != TargetPlatform.macOS) return;
+    _debugFrameTimer?.cancel();
+    _debugFrameTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {});
+    });
+  }
+
+  void _stopDebugFramePing() {
+    _debugFrameTimer?.cancel();
+    _debugFrameTimer = null;
+  }
+
   void _stopPreRunTimer() {
     _preRunTimer?.cancel();
     _preRunTimer = null;
@@ -109,6 +127,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   void dispose() {
     _stopClockTimer();
     _stopPreRunTimer();
+    _stopDebugFramePing();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -213,6 +232,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       final updated = groups.where((g) => g.id == widget.groupId).toList();
       if (updated.isEmpty) return;
       final group = updated.first;
+      if (group.status != TaskRunStatus.running) {
+        _runningAutoStartHandled = false;
+        _runningAutoStartGroupId = null;
+      }
       vm.updateGroup(group);
       _syncPreRunInfo(group);
 
@@ -231,7 +254,12 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           !hasActiveSession &&
           vm.canControlSession &&
           (scheduledBy == null || scheduledBy == deviceId)) {
-        vm.start();
+        if (_runningAutoStartHandled && _runningAutoStartGroupId == group.id) {
+        } else {
+          _runningAutoStartHandled = true;
+          _runningAutoStartGroupId = group.id;
+          vm.start();
+        }
       }
 
       if ((group.status == TaskRunStatus.canceled ||
