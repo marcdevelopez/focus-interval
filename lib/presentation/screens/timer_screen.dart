@@ -251,7 +251,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       if (group.status == TaskRunStatus.running &&
           state.status == PomodoroStatus.idle &&
           !isRemoteOwner &&
-          !hasActiveSession &&
+          hasActiveSession &&
           vm.canControlSession &&
           (scheduledBy == null || scheduledBy == deviceId)) {
         if (_runningAutoStartHandled && _runningAutoStartGroupId == group.id) {

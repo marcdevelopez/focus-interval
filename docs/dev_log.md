@@ -2765,6 +2765,17 @@ _(fill in when they happen)_
 
 - Validate in macOS debug with no other devices running.
 
+# 🔹 Block 140 — Enforce take over on missing session — 27/01/2026
+
+### ✔ Work completed:
+
+- Require an active session before auto-starting a running group.
+- Prevent silent ownership changes when a running group lacks `activeSession`.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
