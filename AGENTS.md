@@ -222,8 +222,9 @@ For every new feature or fix:
 2. Implement **only one logical change**
 3. Ensure:
    - App compiles
-   - Analyzer passes
+   - Analyzer passes (run `flutter analyze`)
    - No known bugs remain
+   - Change is verified (manual or automated) before commit/push
 4. Update:
    - `docs/dev_log.md` (same real date)
    - `docs/roadmap.md` if phase status changes

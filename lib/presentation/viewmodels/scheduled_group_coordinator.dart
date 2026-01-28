@@ -29,6 +29,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
   bool _autoStartInFlight = false;
   bool _initialized = false;
   bool _disposed = false;
+  final Map<String, DateTime> _scheduledNotices = {};
   List<TaskRunGroup> _lastGroups = const [];
 
   @override
@@ -64,6 +65,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     _disposed = true;
     _scheduledTimer?.cancel();
     _preAlertTimer?.cancel();
+    _scheduledNotices.clear();
   }
 
   void _emitOpenTimer(String groupId) {
@@ -88,6 +90,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     _scheduledTimer = null;
     _preAlertTimer?.cancel();
     _preAlertTimer = null;
+    await _pruneScheduledNotices(groups);
 
     if (groups.isEmpty) return;
 
@@ -164,6 +167,11 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
 
     final preAlertStart = startTime.subtract(Duration(minutes: noticeMinutes));
     if (now.isBefore(preAlertStart)) {
+    await _scheduleLocalPreAlert(
+      group: group,
+      preAlertStart: preAlertStart,
+      noticeMinutes: noticeMinutes,
+    );
       final delay = preAlertStart.difference(now);
       _preAlertTimer = Timer(delay, () {
         if (_disposed) return;
@@ -172,14 +180,14 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       return;
     }
 
-    await _sendPreAlertIfNeeded(group, preAlertStart, noticeMinutes);
+    await _cancelLocalPreAlert(group.id);
+    await _markPreAlertSentIfNeeded(group, preAlertStart);
     _emitOpenTimer(group.id);
   }
 
-  Future<void> _sendPreAlertIfNeeded(
+  Future<void> _markPreAlertSentIfNeeded(
     TaskRunGroup group,
     DateTime preAlertStart,
-    int noticeMinutes,
   ) async {
     final groupRepo = ref.read(taskRunGroupRepositoryProvider);
     final latest = await groupRepo.getById(group.id) ?? group;
@@ -196,20 +204,6 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       updatedAt: now,
     );
     await groupRepo.save(updated);
-
-    final name = updated.tasks.isNotEmpty
-        ? updated.tasks.first.name
-        : 'Task group';
-    final scheduledStart =
-        updated.scheduledStartTime ?? group.scheduledStartTime;
-    final remainingSeconds = scheduledStart != null
-        ? scheduledStart.difference(now).inSeconds
-        : noticeMinutes * 60;
-    final clampedRemaining = remainingSeconds < 0 ? 0 : remainingSeconds;
-    await ref.read(notificationServiceProvider).notifyGroupPreAlert(
-          groupName: name,
-          remainingSeconds: clampedRemaining,
-        );
   }
 
   Future<void> _autoStartGroup(String groupId) async {
@@ -245,11 +239,71 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       await groupRepo.save(updated);
 
       ref.read(scheduledAutoStartGroupIdProvider.notifier).state = groupId;
+      await _cancelLocalPreAlert(groupId);
       _emitOpenTimer(groupId);
     } catch (e) {
       debugPrint('Scheduled auto-start failed: $e');
     } finally {
       _autoStartInFlight = false;
+    }
+  }
+
+  Future<void> _scheduleLocalPreAlert({
+    required TaskRunGroup group,
+    required DateTime preAlertStart,
+    required int noticeMinutes,
+  }) async {
+    final scheduledBy = group.scheduledByDeviceId;
+    if (scheduledBy != null) {
+      final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
+      if (scheduledBy != deviceId) return;
+    }
+    final lastScheduled = _scheduledNotices[group.id];
+    if (lastScheduled != null && lastScheduled == preAlertStart) {
+      return;
+    }
+    final name = group.tasks.isNotEmpty ? group.tasks.first.name : 'Task group';
+    final ok = await ref
+        .read(notificationServiceProvider)
+        .scheduleGroupPreAlert(
+          groupId: group.id,
+          groupName: name,
+          scheduledFor: preAlertStart,
+          remainingSeconds: noticeMinutes * 60,
+        );
+    if (ok) {
+      _scheduledNotices[group.id] = preAlertStart;
+    }
+  }
+
+  Future<void> _cancelLocalPreAlert(String groupId) async {
+    if (!_scheduledNotices.containsKey(groupId)) return;
+    await ref.read(notificationServiceProvider).cancelGroupPreAlert(groupId);
+    _scheduledNotices.remove(groupId);
+  }
+
+  Future<void> _pruneScheduledNotices(List<TaskRunGroup> groups) async {
+    if (_scheduledNotices.isEmpty) return;
+    final scheduledIds = groups
+        .where(
+          (g) => g.status == TaskRunStatus.scheduled && g.scheduledStartTime != null,
+        )
+        .map((g) => g.id)
+        .toSet();
+    final now = DateTime.now();
+    final toRemove = <String>[];
+    for (final entry in _scheduledNotices.entries) {
+      if (!scheduledIds.contains(entry.key)) {
+        toRemove.add(entry.key);
+        continue;
+      }
+      if (!entry.value.isAfter(now)) {
+        toRemove.add(entry.key);
+      }
+    }
+    for (final groupId in toRemove) {
+      await ref.read(notificationServiceProvider).cancelGroupPreAlert(groupId);
+      _scheduledNotices.remove(groupId);
     }
   }
 }

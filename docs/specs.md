@@ -281,6 +281,9 @@ These conflict checks apply to both Start now and Schedule start.
 Scheduled start behavior
 
 - Send the pre-alert noticeMinutes before scheduledStartTime.
+- On supported platforms, schedule the pre-alert notification at planning time
+  so it can fire even when the app is closed.
+- Android uses AlarmManager to schedule the pre-alert so it can fire with the app closed.
 - If the app is open during the pre-alert window, show the Pre-Run Countdown Mode (see section 10.4.1.a).
 - If the app is closed during the pre-alert window, send a silent notification.
 - At scheduledStartTime:
@@ -662,6 +665,7 @@ The execution screen shows an analog-style circular timer with a dynamic layout 
   - Send the pre-alert noticeMinutes before the scheduled start
   - If the app is open during the pre-alert window, automatically open Run Mode in Pre-Run Countdown Mode
   - If the app is closed during the pre-alert window, send a silent notification only
+  - If the app is open during the pre-alert window, suppress any scheduled notification to avoid duplicate alerts
   - At the scheduled time:
     - Set status = running
     - Set actualStartTime = now

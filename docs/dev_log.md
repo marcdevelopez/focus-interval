@@ -2822,6 +2822,96 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 145 — Native pre-alert scheduling (best-effort) — 28/01/2026
+
+### ✔ Work completed:
+
+- Added native scheduling for pre-alert notifications on Android/iOS/macOS.
+- Kept Windows/Linux/Web as best-effort (in-app) only.
+- Added timezone dependency for UTC-based scheduled notifications.
+- Added Android exact alarm permission + exact schedule mode request.
+- Fallback to inexact scheduling when exact alarms are not granted on Android.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 146 — Schedule pre-alert at planning time — 28/01/2026
+
+### ✔ Work completed:
+
+- Schedule pre-alert notifications immediately after saving a scheduled group.
+- Suppress in-app pre-alert notifications when the app is open and mark noticeSentAt instead.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 147 — Android scheduling without POST_NOTIFICATIONS gating — 28/01/2026
+
+### ✔ Work completed:
+
+- Allow Android pre-alert scheduling even when notification permission is not yet granted.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 148 — Pre-run auto-start listener fix — 28/01/2026
+
+### ✔ Work completed:
+
+- Listen for scheduled auto-start id changes while TimerScreen is open.
+- Ensure pre-run transitions to running without requiring a reopen.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 149 — Android AlarmManager pre-alert scheduling — 28/01/2026
+
+### ✔ Work completed:
+
+- Added Android AlarmManager scheduling for pre-alert notifications.
+- Added background callback to display notifications when the app is closed.
+- Initialized AlarmManager on Android startup and added boot permission.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 150 — Alarm callback + async context fixes — 28/01/2026
+
+### ✔ Work completed:
+
+- Removed invalid DartPluginRegistrant call in the Android alarm callback.
+- Added a mounted check after pre-alert scheduling to satisfy analyzer guidance.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 151 — Android AlarmManager manifest wiring — 28/01/2026
+
+### ✔ Work completed:
+
+- Added AlarmManager service and receivers to Android manifest.
+- Wired BOOT_COMPLETED receiver for rescheduling.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 152 — Android pre-alert timing observation — 28/01/2026
+
+### ✔ Work completed:
+
+- Verified pre-alert notification fires on Android emulator and physical device.
+
+### ⚠️ Issues found:
+
+- Alarm delivery can be delayed by tens of seconds on Android (device-dependent).
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
