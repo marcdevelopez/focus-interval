@@ -31,6 +31,12 @@ class _ScheduledGroupAutoStarterState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final action = ref.read(scheduledGroupCoordinatorProvider);
+      if (action == null) return;
+      _navigateToTimer(action.groupId);
+      ref.read(scheduledGroupCoordinatorProvider.notifier).clearAction();
+    });
   }
 
   @override
@@ -56,7 +62,6 @@ class _ScheduledGroupAutoStarterState
         _navigateToTimer(next.groupId);
         ref.read(scheduledGroupCoordinatorProvider.notifier).clearAction();
       },
-      fireImmediately: true,
     );
     return widget.child;
   }
