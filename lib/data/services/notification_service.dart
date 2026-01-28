@@ -4,6 +4,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
+import 'android_pre_alert_alarm.dart';
 import 'notification_backends/local_notifier_backend.dart'
     if (dart.library.html) 'notification_backends/local_notifier_backend_stub.dart';
 import 'notification_backends/web_notification_backend_stub.dart'
@@ -105,6 +106,14 @@ class NotificationService {
     final title = groupName.isNotEmpty ? groupName : 'Upcoming group';
     final body = _formatGroupPreAlertBody(remainingSeconds);
     final id = _notificationIdForGroup(groupId);
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      return AndroidPreAlertAlarm.schedule(
+        id: id,
+        scheduledFor: scheduledFor,
+        title: title,
+        body: body,
+      );
+    }
     return _backend.schedule(
       id: id,
       title: title,
@@ -115,6 +124,10 @@ class NotificationService {
 
   Future<void> cancelGroupPreAlert(String groupId) async {
     final id = _notificationIdForGroup(groupId);
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      await AndroidPreAlertAlarm.cancel(id);
+      return;
+    }
     await _backend.cancel(id);
   }
 

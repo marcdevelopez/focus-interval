@@ -2857,6 +2857,29 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 148 — Pre-run auto-start listener fix — 28/01/2026
+
+### ✔ Work completed:
+
+- Listen for scheduled auto-start id changes while TimerScreen is open.
+- Ensure pre-run transitions to running without requiring a reopen.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 149 — Android AlarmManager pre-alert scheduling — 28/01/2026
+
+### ✔ Work completed:
+
+- Added Android AlarmManager scheduling for pre-alert notifications.
+- Added background callback to display notifications when the app is closed.
+- Initialized AlarmManager on Android startup and added boot permission.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

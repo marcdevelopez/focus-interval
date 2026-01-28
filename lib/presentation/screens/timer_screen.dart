@@ -287,6 +287,12 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       }
     });
 
+    ref.listen<String?>(scheduledAutoStartGroupIdProvider, (previous, next) {
+      if (next == widget.groupId) {
+        _maybeAutoStartScheduled();
+      }
+    });
+
     final state = ref.watch(pomodoroViewModelProvider);
     final preRunInfo = _preRunInfo;
     final isPreRun = preRunInfo != null && _taskLoaded;

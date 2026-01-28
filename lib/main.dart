@@ -9,6 +9,7 @@ import 'app/app.dart';
 import 'data/services/device_info_service.dart';
 import 'data/services/notification_service.dart';
 import 'data/services/app_mode_service.dart';
+import 'data/services/android_pre_alert_alarm.dart';
 import 'data/services/firebase_auth_service.dart';
 import 'data/services/firestore_service.dart';
 import 'firebase_options.dart';
@@ -108,6 +109,7 @@ Future<_BootstrapResult> _bootstrap() async {
   final firebaseReady = await _initFirebaseSafe();
   final deviceInfo = await _loadDeviceInfoSafe();
   final notifications = await _initNotificationsSafe();
+  await AndroidPreAlertAlarm.initialize();
   final appModeService = await _initAppModeServiceSafe();
 
   return _BootstrapResult(

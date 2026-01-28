@@ -283,6 +283,7 @@ Scheduled start behavior
 - Send the pre-alert noticeMinutes before scheduledStartTime.
 - On supported platforms, schedule the pre-alert notification at planning time
   so it can fire even when the app is closed.
+- Android uses AlarmManager to schedule the pre-alert so it can fire with the app closed.
 - If the app is open during the pre-alert window, show the Pre-Run Countdown Mode (see section 10.4.1.a).
 - If the app is closed during the pre-alert window, send a silent notification.
 - At scheduledStartTime:
