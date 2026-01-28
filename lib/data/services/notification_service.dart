@@ -300,6 +300,17 @@ class _FlutterLocalNotificationsBackend implements _NotificationBackend {
     required DateTime scheduledFor,
   }) async {
     try {
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        final androidPlugin = _plugin
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >();
+        final granted = await androidPlugin?.requestExactAlarmsPermission();
+        if (granted == false) {
+          debugPrint('Exact alarm permission not granted.');
+          return false;
+        }
+      }
       final scheduledUtc = scheduledFor.toUtc();
       await _plugin.zonedSchedule(
         id,
@@ -307,7 +318,7 @@ class _FlutterLocalNotificationsBackend implements _NotificationBackend {
         body,
         tz.TZDateTime.from(scheduledUtc, tz.UTC),
         _details(),
-        androidAllowWhileIdle: true,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
       );

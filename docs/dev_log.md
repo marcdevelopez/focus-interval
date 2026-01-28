@@ -2829,6 +2829,7 @@ _(fill in when they happen)_
 - Added native scheduling for pre-alert notifications on Android/iOS/macOS.
 - Kept Windows/Linux/Web as best-effort (in-app) only.
 - Added timezone dependency for UTC-based scheduled notifications.
+- Added Android exact alarm permission + exact schedule mode request.
 
 ### ⚠️ Issues found:
 
