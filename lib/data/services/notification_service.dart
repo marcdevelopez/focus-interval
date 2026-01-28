@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 
 import 'notification_backends/local_notifier_backend.dart'
     if (dart.library.html) 'notification_backends/local_notifier_backend_stub.dart';
@@ -91,6 +93,31 @@ class NotificationService {
     await _backend.show(id: _consumeId(), title: title, body: body);
   }
 
+  Future<bool> scheduleGroupPreAlert({
+    required String groupId,
+    required String groupName,
+    required DateTime scheduledFor,
+    required int remainingSeconds,
+  }) async {
+    if (!await _ensurePermissions()) return false;
+    final now = DateTime.now();
+    if (!scheduledFor.isAfter(now)) return false;
+    final title = groupName.isNotEmpty ? groupName : 'Upcoming group';
+    final body = _formatGroupPreAlertBody(remainingSeconds);
+    final id = _notificationIdForGroup(groupId);
+    return _backend.schedule(
+      id: id,
+      title: title,
+      body: body,
+      scheduledFor: scheduledFor,
+    );
+  }
+
+  Future<void> cancelGroupPreAlert(String groupId) async {
+    final id = _notificationIdForGroup(groupId);
+    await _backend.cancel(id);
+  }
+
   String _formatGroupPreAlertBody(int remainingSeconds) {
     if (remainingSeconds <= 0) {
       return 'Starting soon.';
@@ -110,6 +137,21 @@ class NotificationService {
     return 'Group starts in $minutes:$secondLabel.';
   }
 
+  int _notificationIdForGroup(String groupId) {
+    const int offset = 0x20000000;
+    return offset + _stableHash(groupId);
+  }
+
+  int _stableHash(String value) {
+    const int fnvPrime = 0x01000193;
+    int hash = 0x811c9dc5;
+    for (final codeUnit in value.codeUnits) {
+      hash ^= codeUnit;
+      hash = (hash * fnvPrime) & 0xffffffff;
+    }
+    return hash & 0x0fffffff;
+  }
+
   int _consumeId() {
     _nextId = (_nextId + 1) % 100000;
     return _nextId;
@@ -125,6 +167,13 @@ abstract class _NotificationBackend {
     required String title,
     required String body,
   });
+  Future<bool> schedule({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime scheduledFor,
+  });
+  Future<void> cancel(int id);
 }
 
 class _SilentNotificationBackend implements _NotificationBackend {
@@ -143,12 +192,24 @@ class _SilentNotificationBackend implements _NotificationBackend {
     required String title,
     required String body,
   }) async {}
+
+  @override
+  Future<bool> schedule({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime scheduledFor,
+  }) async => false;
+
+  @override
+  Future<void> cancel(int id) async {}
 }
 
 class _FlutterLocalNotificationsBackend implements _NotificationBackend {
   final FlutterLocalNotificationsPlugin _plugin;
   final MethodChannel _macosChannel;
   String _initError = '';
+  static bool _tzInitialized = false;
 
   // Use a dedicated silent channel because Android 8+ channel sound is immutable.
   static const String _androidSilentChannelId = 'pomodoro_updates_silent';
@@ -167,6 +228,7 @@ class _FlutterLocalNotificationsBackend implements _NotificationBackend {
   @override
   Future<bool> init() async {
     try {
+      _ensureTimeZones();
       const android = AndroidInitializationSettings('@mipmap/ic_launcher');
       const darwin = DarwinInitializationSettings(
         requestAlertPermission: false,
@@ -228,6 +290,41 @@ class _FlutterLocalNotificationsBackend implements _NotificationBackend {
       return;
     }
     await _plugin.show(id, title, body, _details());
+  }
+
+  @override
+  Future<bool> schedule({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime scheduledFor,
+  }) async {
+    try {
+      final scheduledUtc = scheduledFor.toUtc();
+      await _plugin.zonedSchedule(
+        id,
+        title,
+        body,
+        tz.TZDateTime.from(scheduledUtc, tz.UTC),
+        _details(),
+        androidAllowWhileIdle: true,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+      return true;
+    } catch (e) {
+      debugPrint('Notification schedule failed: $e');
+      return false;
+    }
+  }
+
+  @override
+  Future<void> cancel(int id) async {
+    try {
+      await _plugin.cancel(id);
+    } catch (e) {
+      debugPrint('Notification cancel failed: $e');
+    }
   }
 
   Future<void> _createAndroidChannel() async {
@@ -296,6 +393,12 @@ class _FlutterLocalNotificationsBackend implements _NotificationBackend {
       debugPrint('macOS notification failed: $e');
     }
   }
+
+  void _ensureTimeZones() {
+    if (_tzInitialized) return;
+    tz.initializeTimeZones();
+    _tzInitialized = true;
+  }
 }
 
 class _WebNotificationBackend implements _NotificationBackend {
@@ -320,6 +423,19 @@ class _WebNotificationBackend implements _NotificationBackend {
   }) {
     return _backend.show(title: title, body: body);
   }
+
+  @override
+  Future<bool> schedule({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime scheduledFor,
+  }) async {
+    return false;
+  }
+
+  @override
+  Future<void> cancel(int id) async {}
 }
 
 class _LocalNotifierBackend implements _NotificationBackend {
@@ -355,4 +471,17 @@ class _LocalNotifierBackend implements _NotificationBackend {
       debugPrint('Desktop notification failed: $e');
     }
   }
+
+  @override
+  Future<bool> schedule({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime scheduledFor,
+  }) async {
+    return false;
+  }
+
+  @override
+  Future<void> cancel(int id) async {}
 }

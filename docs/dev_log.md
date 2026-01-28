@@ -2822,6 +2822,18 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 145 — Native pre-alert scheduling (best-effort) — 28/01/2026
+
+### ✔ Work completed:
+
+- Added native scheduling for pre-alert notifications on Android/iOS/macOS.
+- Kept Windows/Linux/Web as best-effort (in-app) only.
+- Added timezone dependency for UTC-based scheduled notifications.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
