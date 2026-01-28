@@ -2836,6 +2836,17 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 146 — Schedule pre-alert at planning time — 28/01/2026
+
+### ✔ Work completed:
+
+- Schedule pre-alert notifications immediately after saving a scheduled group.
+- Suppress in-app pre-alert notifications when the app is open and mark noticeSentAt instead.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

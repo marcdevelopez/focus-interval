@@ -181,14 +181,13 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     }
 
     await _cancelLocalPreAlert(group.id);
-    await _sendPreAlertIfNeeded(group, preAlertStart, noticeMinutes);
+    await _markPreAlertSentIfNeeded(group, preAlertStart);
     _emitOpenTimer(group.id);
   }
 
-  Future<void> _sendPreAlertIfNeeded(
+  Future<void> _markPreAlertSentIfNeeded(
     TaskRunGroup group,
     DateTime preAlertStart,
-    int noticeMinutes,
   ) async {
     final groupRepo = ref.read(taskRunGroupRepositoryProvider);
     final latest = await groupRepo.getById(group.id) ?? group;
@@ -205,20 +204,6 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       updatedAt: now,
     );
     await groupRepo.save(updated);
-
-    final name = updated.tasks.isNotEmpty
-        ? updated.tasks.first.name
-        : 'Task group';
-    final scheduledStart =
-        updated.scheduledStartTime ?? group.scheduledStartTime;
-    final remainingSeconds = scheduledStart != null
-        ? scheduledStart.difference(now).inSeconds
-        : noticeMinutes * 60;
-    final clampedRemaining = remainingSeconds < 0 ? 0 : remainingSeconds;
-    await ref.read(notificationServiceProvider).notifyGroupPreAlert(
-          groupName: name,
-          remainingSeconds: clampedRemaining,
-        );
   }
 
   Future<void> _autoStartGroup(String groupId) async {

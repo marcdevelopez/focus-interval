@@ -826,6 +826,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
           ? "Task group started."
           : "Task group scheduled.";
       _showSnackBar(context, message);
+      if (status == TaskRunStatus.scheduled) {
+        await _schedulePreAlertIfNeeded(group);
+      }
       if (status == TaskRunStatus.running) {
         context.go("/timer/${group.id}");
       }
@@ -833,6 +836,29 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       if (!context.mounted) return;
       _showSnackBar(context, "Failed to create task group: $e");
     }
+  }
+
+  Future<void> _schedulePreAlertIfNeeded(TaskRunGroup group) async {
+    final scheduledStart = group.scheduledStartTime;
+    if (scheduledStart == null) return;
+    final scheduledBy = group.scheduledByDeviceId;
+    if (scheduledBy != null) {
+      final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
+      if (scheduledBy != deviceId) return;
+    }
+    final noticeMinutes = group.noticeMinutes ?? 0;
+    if (noticeMinutes <= 0) return;
+    final preAlertStart =
+        scheduledStart.subtract(Duration(minutes: noticeMinutes));
+    final now = DateTime.now();
+    if (!preAlertStart.isAfter(now)) return;
+    final name = group.tasks.isNotEmpty ? group.tasks.first.name : 'Task group';
+    await ref.read(notificationServiceProvider).scheduleGroupPreAlert(
+          groupId: group.id,
+          groupName: name,
+          scheduledFor: preAlertStart,
+          remainingSeconds: noticeMinutes * 60,
+        );
   }
 
   Future<_PlanAction?> _showPlanActionDialog(BuildContext context) {
