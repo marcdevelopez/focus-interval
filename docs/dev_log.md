@@ -2847,6 +2847,16 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 147 — Android scheduling without POST_NOTIFICATIONS gating — 28/01/2026
+
+### ✔ Work completed:
+
+- Allow Android pre-alert scheduling even when notification permission is not yet granted.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

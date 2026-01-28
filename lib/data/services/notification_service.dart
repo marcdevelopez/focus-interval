@@ -99,7 +99,7 @@ class NotificationService {
     required DateTime scheduledFor,
     required int remainingSeconds,
   }) async {
-    if (!await _ensurePermissions()) return false;
+    if (!enabled) return false;
     final now = DateTime.now();
     if (!scheduledFor.isAfter(now)) return false;
     final title = groupName.isNotEmpty ? groupName : 'Upcoming group';
