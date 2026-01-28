@@ -30,6 +30,7 @@ At the start of **every session**:
 4. If a phase is reopened and not listed, **add it immediately** to:
    - 🔄 Reopened phases
 5. Do **not** start coding until context is fully aligned.
+6. Ensure you are **not on `main`**; create a new branch before any code/doc changes.
 
 ---
 
@@ -217,6 +218,7 @@ Minimal UI guards are permitted **only when no service-level alternative exists*
 For every new feature or fix:
 
 1. Create a **new branch**
+   - Never work directly on `main` (release branch).
 2. Implement **only one logical change**
 3. Ensure:
    - App compiles

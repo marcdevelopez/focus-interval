@@ -2800,6 +2800,16 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 143 — AGENTS main-branch safeguard — 28/01/2026
+
+### ✔ Work completed:
+
+- Added an explicit rule: never work directly on `main`; always branch first.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
