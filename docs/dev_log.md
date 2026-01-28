@@ -2880,6 +2880,38 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 150 — Alarm callback + async context fixes — 28/01/2026
+
+### ✔ Work completed:
+
+- Removed invalid DartPluginRegistrant call in the Android alarm callback.
+- Added a mounted check after pre-alert scheduling to satisfy analyzer guidance.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 151 — Android AlarmManager manifest wiring — 28/01/2026
+
+### ✔ Work completed:
+
+- Added AlarmManager service and receivers to Android manifest.
+- Wired BOOT_COMPLETED receiver for rescheduling.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 152 — Android pre-alert timing observation — 28/01/2026
+
+### ✔ Work completed:
+
+- Verified pre-alert notification fires on Android emulator and physical device.
+
+### ⚠️ Issues found:
+
+- Alarm delivery can be delayed by tens of seconds on Android (device-dependent).
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

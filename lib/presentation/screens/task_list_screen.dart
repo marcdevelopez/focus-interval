@@ -829,6 +829,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       if (status == TaskRunStatus.scheduled) {
         await _schedulePreAlertIfNeeded(group);
       }
+      if (!context.mounted) return;
       if (status == TaskRunStatus.running) {
         context.go("/timer/${group.id}");
       }

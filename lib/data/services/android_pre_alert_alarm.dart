@@ -57,7 +57,6 @@ class AndroidPreAlertAlarm {
 @pragma('vm:entry-point')
 Future<void> _preAlertAlarmCallback() async {
   WidgetsFlutterBinding.ensureInitialized();
-  DartPluginRegistrant.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
   final raw = prefs.getString(_payloadKey);
   if (raw == null) return;
