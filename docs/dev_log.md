@@ -2810,6 +2810,18 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 144 — Scheduled group coordinator refactor — 28/01/2026
+
+### ✔ Work completed:
+
+- Moved scheduled-group auto-start orchestration into a dedicated ViewModel coordinator.
+- Reduced ScheduledGroupAutoStarter to a navigation-only host.
+- Updated specs architecture tree to include the coordinator file.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
