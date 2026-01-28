@@ -198,9 +198,18 @@ class _ScheduledGroupAutoStarterState
     final name = updated.tasks.isNotEmpty
         ? updated.tasks.first.name
         : 'Task group';
+    final scheduledStart =
+        updated.scheduledStartTime ?? group.scheduledStartTime;
+    final remainingSeconds = scheduledStart != null
+        ? scheduledStart.difference(now).inSeconds
+        : noticeMinutes * 60;
+    final clampedRemaining = remainingSeconds < 0 ? 0 : remainingSeconds;
     await ref
         .read(notificationServiceProvider)
-        .notifyGroupPreAlert(groupName: name, minutes: noticeMinutes);
+        .notifyGroupPreAlert(
+          groupName: name,
+          remainingSeconds: clampedRemaining,
+        );
   }
 
   Future<void> _autoStartGroup(String groupId) async {

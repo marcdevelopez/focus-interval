@@ -67,7 +67,7 @@ data/ → persistence & external services
 
 Forbidden:
 
-- UI calling repositories directly
+- UI screens calling repositories directly
 - Domain logic importing Flutter, Riverpod, Firebase, or platform code
 - Services depending on UI state
 
@@ -75,6 +75,9 @@ Allowed (current project reality):
 
 - ViewModels may use **timers only for projection/rendering** (never authoritative decisions).
 - UI may include **minimal platform guards** when there is no viable service-level alternative.
+- App-level orchestration widgets may read repositories/providers for lifecycle or
+  navigation control, but must not implement domain rules and should be migrated
+  to ViewModel/service when feasible.
 
 If unsure where code belongs → **stop and ask**.
 
@@ -85,7 +88,8 @@ Authoritative logic lives in one place only:
 - Pomodoro flow & rules → `PomodoroMachine`
 - Execution orchestration → `PomodoroViewModel`
 - Persistence & sync → repositories / Firestore
-- Active execution authority → Firestore `activeSession` owner
+- Active execution authority (Account Mode) → Firestore `activeSession` owner
+- Active execution authority (Local Mode) → local session owner (device-local)
 
 Derived logic is allowed when it is:
 

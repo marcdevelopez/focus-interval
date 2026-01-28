@@ -45,7 +45,7 @@ GoRouter buildRouter() {
   );
 }
 
-/// Animaciones reutilizables
+/// Reusable transitions
 CustomTransitionPage _fade(Widget child) {
   return CustomTransitionPage(
     child: child,
