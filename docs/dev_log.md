@@ -2912,6 +2912,17 @@ _(fill in when they happen)_
 
 - Alarm delivery can be delayed by tens of seconds on Android (device-dependent).
 
+# 🔹 Block 153 — Reopened phases recorded — 28/01/2026
+
+### ✔ Work completed:
+
+- Reopened Phase 10.4 (Presets + weight UI + integrity warnings).
+- Reopened Phase 6.7 (GitHub Sign-In, optional).
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

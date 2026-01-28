@@ -57,6 +57,8 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 
     ## 🔄 Reopened phases (must complete before moving on)
 
+    - Phase 6.7 — GitHub Sign-In (optional, platform-dependent).
+    - Phase 10.4 — Presets + weight UI + integrity warnings.
     - Phase 17 — Scheduled auto-start lifecycle + resume/launch catch-up.
 
 Update this on each commit if needed.
