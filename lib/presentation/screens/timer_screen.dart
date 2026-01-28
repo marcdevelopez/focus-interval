@@ -822,7 +822,7 @@ class _PreRunCenterContent extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Hora actual (desaparece en focusMode)
+          // Current time (hidden in focusMode)
           AnimatedOpacity(
             opacity: focusMode ? 0.0 : 1.0,
             duration: const Duration(milliseconds: 1000),
@@ -853,7 +853,7 @@ class _PreRunCenterContent extends StatelessWidget {
 
           const SizedBox(height: 10),
 
-          // Group starts in (desaparece en focusMode)
+          // Group starts in (hidden in focusMode)
           AnimatedOpacity(
             opacity: focusMode ? 0.0 : 1.0,
             duration: const Duration(milliseconds: 1000),
@@ -872,7 +872,7 @@ class _PreRunCenterContent extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          // 🔹 CONTADOR — SIEMPRE VISIBLE Y EN SU LUGAR CORRECTO
+          // Countdown - always visible and correctly positioned
           AnimatedScale(
             scale: focusMode ? 2.4 : 1.0,
             duration: const Duration(milliseconds: 1100),
@@ -892,7 +892,7 @@ class _PreRunCenterContent extends StatelessWidget {
 
           const SizedBox(height: 18),
 
-          // Status boxes (desaparecen en focusMode)
+          // Status boxes (hidden in focusMode)
           AnimatedOpacity(
             opacity: focusMode ? 0.0 : 1.0,
             duration: const Duration(milliseconds: 1000),

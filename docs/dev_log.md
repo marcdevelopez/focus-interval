@@ -16,7 +16,7 @@ This document is used to:
 # 📍 Current status
 
 Active phase: **17 — Planning Flow + Conflict Management**
-Last update: **26/01/2026**
+Last update: **28/01/2026**
 
 ---
 
@@ -2771,6 +2771,40 @@ _(fill in when they happen)_
 
 - Require an active session before auto-starting a running group.
 - Prevent silent ownership changes when a running group lacks `activeSession`.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 141 — Pre-Run notification remaining time fix — 28/01/2026
+
+### ✔ Work completed:
+
+- Updated Pre-Run notification text to use the real remaining time to start.
+- Preserved minute-only wording when the remaining time is an exact minute.
+- Added seconds formatting for late pre-alerts inside the notice window.
+
+### ⚠️ Issues found:
+
+- Pre-Run notification body showed the static noticeMinutes value instead of actual remaining time.
+
+# 🔹 Block 142 — English-only code comments + AGENTS clarification — 28/01/2026
+
+### ✔ Work completed:
+
+- Translated remaining Spanish code comments to English in TimerScreen and Router.
+- Clarified AGENTS rules for app-level orchestration access to repositories.
+- Updated AGENTS authority wording for Account vs Local Mode sessions.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 143 — AGENTS main-branch safeguard — 28/01/2026
+
+### ✔ Work completed:
+
+- Added an explicit rule: never work directly on `main`; always branch first.
 
 ### ⚠️ Issues found:
 

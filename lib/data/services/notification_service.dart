@@ -83,13 +83,31 @@ class NotificationService {
 
   Future<void> notifyGroupPreAlert({
     required String groupName,
-    required int minutes,
+    required int remainingSeconds,
   }) async {
     if (!await _ensurePermissions()) return;
     final title = groupName.isNotEmpty ? groupName : 'Upcoming group';
-    final minuteLabel = minutes == 1 ? '1 minute' : '$minutes minutes';
-    final body = 'Group starts in $minuteLabel.';
+    final body = _formatGroupPreAlertBody(remainingSeconds);
     await _backend.show(id: _consumeId(), title: title, body: body);
+  }
+
+  String _formatGroupPreAlertBody(int remainingSeconds) {
+    if (remainingSeconds <= 0) {
+      return 'Starting soon.';
+    }
+    final minutes = remainingSeconds ~/ 60;
+    final seconds = remainingSeconds % 60;
+    if (minutes <= 0) {
+      final secondLabel =
+          remainingSeconds == 1 ? '1 second' : '$remainingSeconds seconds';
+      return 'Group starts in $secondLabel.';
+    }
+    if (seconds == 0) {
+      final minuteLabel = minutes == 1 ? '1 minute' : '$minutes minutes';
+      return 'Group starts in $minuteLabel.';
+    }
+    final secondLabel = seconds.toString().padLeft(2, '0');
+    return 'Group starts in $minutes:$secondLabel.';
   }
 
   int _consumeId() {

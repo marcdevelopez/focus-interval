@@ -30,6 +30,7 @@ At the start of **every session**:
 4. If a phase is reopened and not listed, **add it immediately** to:
    - 🔄 Reopened phases
 5. Do **not** start coding until context is fully aligned.
+6. Ensure you are **not on `main`**; create a new branch before any code/doc changes.
 
 ---
 
@@ -67,7 +68,7 @@ data/ → persistence & external services
 
 Forbidden:
 
-- UI calling repositories directly
+- UI screens calling repositories directly
 - Domain logic importing Flutter, Riverpod, Firebase, or platform code
 - Services depending on UI state
 
@@ -75,6 +76,9 @@ Allowed (current project reality):
 
 - ViewModels may use **timers only for projection/rendering** (never authoritative decisions).
 - UI may include **minimal platform guards** when there is no viable service-level alternative.
+- App-level orchestration widgets may read repositories/providers for lifecycle or
+  navigation control, but must not implement domain rules and should be migrated
+  to ViewModel/service when feasible.
 
 If unsure where code belongs → **stop and ask**.
 
@@ -85,7 +89,8 @@ Authoritative logic lives in one place only:
 - Pomodoro flow & rules → `PomodoroMachine`
 - Execution orchestration → `PomodoroViewModel`
 - Persistence & sync → repositories / Firestore
-- Active execution authority → Firestore `activeSession` owner
+- Active execution authority (Account Mode) → Firestore `activeSession` owner
+- Active execution authority (Local Mode) → local session owner (device-local)
 
 Derived logic is allowed when it is:
 
@@ -213,6 +218,7 @@ Minimal UI guards are permitted **only when no service-level alternative exists*
 For every new feature or fix:
 
 1. Create a **new branch**
+   - Never work directly on `main` (release branch).
 2. Implement **only one logical change**
 3. Ensure:
    - App compiles
