@@ -85,7 +85,8 @@ lib/
 │   ├─ viewmodels/
 │   │   ├─ pomodoro_view_model.dart
 │   │   ├─ task_editor_view_model.dart
-│   │   └─ task_list_view_model.dart
+│   │   ├─ task_list_view_model.dart
+│   │   └─ scheduled_group_coordinator.dart
 │   ├─ providers.dart
 │   └─ flutter_riverpod.dart
 ├─ widgets/
