@@ -300,6 +300,8 @@ class _FlutterLocalNotificationsBackend implements _NotificationBackend {
     required DateTime scheduledFor,
   }) async {
     try {
+      AndroidScheduleMode scheduleMode =
+          AndroidScheduleMode.exactAllowWhileIdle;
       if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
         final androidPlugin = _plugin
             .resolvePlatformSpecificImplementation<
@@ -307,8 +309,8 @@ class _FlutterLocalNotificationsBackend implements _NotificationBackend {
             >();
         final granted = await androidPlugin?.requestExactAlarmsPermission();
         if (granted == false) {
-          debugPrint('Exact alarm permission not granted.');
-          return false;
+          debugPrint('Exact alarm permission not granted. Using inexact mode.');
+          scheduleMode = AndroidScheduleMode.inexactAllowWhileIdle;
         }
       }
       final scheduledUtc = scheduledFor.toUtc();
@@ -318,7 +320,7 @@ class _FlutterLocalNotificationsBackend implements _NotificationBackend {
         body,
         tz.TZDateTime.from(scheduledUtc, tz.UTC),
         _details(),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: scheduleMode,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
       );

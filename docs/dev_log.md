@@ -2830,6 +2830,7 @@ _(fill in when they happen)_
 - Kept Windows/Linux/Web as best-effort (in-app) only.
 - Added timezone dependency for UTC-based scheduled notifications.
 - Added Android exact alarm permission + exact schedule mode request.
+- Fallback to inexact scheduling when exact alarms are not granted on Android.
 
 ### ⚠️ Issues found:
 
