@@ -21,6 +21,8 @@ enum _EmailVerificationAction { verified, resend, useLocal, signOut }
 
 enum _ReclaimAction { sendReset, cancel }
 
+enum _LinkProviderChoice { google, email, cancel }
+
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -413,6 +415,261 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  Future<void> _signInGitHub() async {
+    setState(() => _loading = true);
+    final auth = ref.read(firebaseAuthServiceProvider);
+    try {
+      await auth.signInWithGitHub();
+      await _handlePostLogin();
+    } on FirebaseAuthException catch (e) {
+      final handled = await _tryResolveProviderConflict(e);
+      if (handled) return;
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('GitHub sign-in error: $e')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('GitHub sign-in error: $e')));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<bool> _tryResolveProviderConflict(
+    FirebaseAuthException exception,
+  ) async {
+    if (exception.code != 'account-exists-with-different-credential') {
+      return false;
+    }
+    final email = exception.email;
+    final pending = exception.credential;
+    if (email == null) {
+      final action = await _chooseLinkProvider();
+      if (action == _LinkProviderChoice.google) {
+        return _linkViaGoogle(pending);
+      }
+      if (action == _LinkProviderChoice.email) {
+        return _linkViaEmail(emailOverride: null, pending: pending);
+      }
+      return true;
+    }
+
+    final action = await _chooseLinkProvider();
+    if (action == _LinkProviderChoice.google) {
+      return _linkViaGoogle(pending);
+    }
+    if (action == _LinkProviderChoice.email) {
+      return _linkViaEmail(emailOverride: email, pending: pending);
+    }
+    return true;
+  }
+
+  Future<bool> _linkViaGoogle(AuthCredential? pending) async {
+    final confirm = await _confirmLinkDialog(
+      title: 'Account already exists',
+      message:
+          'This email is already registered with Google. Sign in with Google to link GitHub.',
+      confirmLabel: 'Continue with Google',
+    );
+    if (confirm != true) return true;
+    final auth = ref.read(firebaseAuthServiceProvider);
+    setState(() => _loading = true);
+    try {
+      await auth.signInWithGoogle();
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return true;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Google sign-in error: ${e.message ?? e.code}')),
+      );
+      return true;
+    }
+    try {
+      if (pending != null) {
+        await auth.linkWithCredential(pending);
+      } else {
+        await auth.linkWithGitHubProvider();
+      }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return true;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Linking failed: ${e.message ?? e.code}')),
+      );
+      return true;
+    }
+    await _handlePostLogin();
+    return true;
+  }
+
+  Future<bool> _linkViaEmail({
+    required String? emailOverride,
+    required AuthCredential? pending,
+  }) async {
+    final email = emailOverride ?? await _promptEmail();
+    if (email == null) return true;
+    final password = await _promptPassword(email);
+    if (password == null) return true;
+    final auth = ref.read(firebaseAuthServiceProvider);
+    setState(() => _loading = true);
+    try {
+      await auth.signInWithEmail(email: email, password: password);
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return true;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Email sign-in error: ${e.message ?? e.code}')),
+      );
+      return true;
+    }
+    try {
+      if (pending != null) {
+        await auth.linkWithCredential(pending);
+      } else {
+        await auth.linkWithGitHubProvider();
+      }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return true;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Linking failed: ${e.message ?? e.code}')),
+      );
+      return true;
+    }
+    await _handlePostLogin();
+    return true;
+  }
+
+  Future<String?> _promptEmail() async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Sign in to link GitHub'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: 'Email'),
+          keyboardType: TextInputType.emailAddress,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(null),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(controller.text),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (!mounted) return null;
+    if (result != null && result.trim().isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Email is required.')));
+      return null;
+    }
+    return result?.trim();
+  }
+
+  Future<_LinkProviderChoice> _chooseLinkProvider() async {
+    final result = await showDialog<_LinkProviderChoice>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Account already exists'),
+        content: const Text(
+          'This email is already registered with another provider. Choose how to sign in to link GitHub.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () =>
+                Navigator.of(context).pop(_LinkProviderChoice.cancel),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () =>
+                Navigator.of(context).pop(_LinkProviderChoice.email),
+            child: const Text('Email'),
+          ),
+          TextButton(
+            onPressed: () =>
+                Navigator.of(context).pop(_LinkProviderChoice.google),
+            child: const Text('Google'),
+          ),
+        ],
+      ),
+    );
+    return result ?? _LinkProviderChoice.cancel;
+  }
+
+  Future<bool?> _confirmLinkDialog({
+    required String title,
+    required String message,
+    required String confirmLabel,
+  }) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(confirmLabel),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<String?> _promptPassword(String email) async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Sign in to link GitHub'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(email),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Password'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(null),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(controller.text),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (!mounted) return null;
+    if (result != null && result.trim().isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Password is required.')));
+      return null;
+    }
+    return result;
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(firebaseAuthServiceProvider);
@@ -420,6 +677,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final currentUser = ref.watch(currentUserProvider);
     final authSupported = auth is! StubAuthService;
     final isGoogleDisabled = !_isGoogleSignInSupported;
+    final isGitHubSupported = auth.isGitHubSignInSupported;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final allowLocalExit = appMode == AppMode.local && currentUser == null;
 
@@ -533,6 +791,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 icon: const Icon(Icons.login),
                 label: const Text('Continue with Google'),
               ),
+              if (isGitHubSupported) ...[
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _loading ? null : _signInGitHub,
+                  icon: const Icon(Icons.code),
+                  label: const Text('Continue with GitHub'),
+                ),
+              ],
               if (isGoogleDisabled)
                 const Padding(
                   padding: EdgeInsets.only(top: 8.0),

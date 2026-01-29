@@ -2923,6 +2923,92 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 154 — GitHub Sign-In (Phase 6.7) implementation — 28/01/2026
+
+### ✔ Work completed:
+
+- Added GitHub sign-in support via FirebaseAuth (web popup, Android/iOS provider).
+- Hid GitHub button on unsupported platforms (macOS/Windows/Linux).
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 155 — Desktop GitHub OAuth docs (Phase 6.7b) — 28/01/2026
+
+### ✔ Work completed:
+
+- Documented manual GitHub OAuth flow for macOS/Windows with backend code exchange.
+- Added roadmap reopened subphase 6.7b for desktop GitHub OAuth.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 156 — GitHub OAuth deep link guard — 28/01/2026
+
+### ✔ Work completed:
+
+- Added a GoRouter redirect guard for Firebase Auth deep links on iOS.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 157 — iOS bundle ID alignment — 28/01/2026
+
+### ✔ Work completed:
+
+- Updated iOS bundle identifier to match Firebase GoogleService-Info.plist.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 158 — GitHub account linking flow — 29/01/2026
+
+### ✔ Work completed:
+
+- Added provider-conflict handling for GitHub sign-in.
+- Implemented linking flow for Google and email/password accounts.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 159 — GitHub linking fallback without pending credential — 29/01/2026
+
+### ✔ Work completed:
+
+- Added linkWithProvider flow for GitHub when pending credential is unavailable.
+- Added guard for empty sign-in methods and clearer guidance.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 160 — Linking provider chooser — 29/01/2026
+
+### ✔ Work completed:
+
+- Added explicit provider selection when sign-in methods are unavailable.
+- Added email entry prompt for linking when the email is not provided.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 161 — Remove deprecated email method lookup — 29/01/2026
+
+### ✔ Work completed:
+
+- Removed fetchSignInMethodsForEmail usage to avoid deprecated API and email enumeration risk.
+- Linking flow now relies on explicit user choice of original provider.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

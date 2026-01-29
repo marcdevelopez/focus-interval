@@ -407,7 +407,7 @@ GitHub Sign-In platform constraints
 
 - Web: OAuth in browser (supported)
 - iOS / Android: OAuth in browser or WebView (supported)
-- macOS / Windows: browser-based OAuth if available; otherwise deferred/unavailable
+- macOS / Windows: browser-based OAuth requires a backend code exchange (manual GitHub OAuth flow)
 - Linux: unavailable (Account Mode disabled)
 
 Mode selection
@@ -416,6 +416,18 @@ Mode selection
 - Users can switch between Local Mode and Account Mode at any time.
 - GitHub login is an optional Account Mode provider that yields the same uid identity as other providers (not a separate account system).
   - If GitHub is not supported on a platform, fall back to existing providers without changing Local Mode.
+- If the user tries to sign in with a provider and the email already exists under a different provider, the app must guide the user to sign in with the original provider and then link the new provider (account linking).
+
+Desktop GitHub OAuth (manual backend flow)
+
+- Required on macOS/Windows because FirebaseAuth `signInWithProvider` is not supported on macOS and is not reliable on Windows.
+- Flow:
+  1) App opens system browser to GitHub OAuth authorize URL.
+  2) GitHub redirects to the app (custom scheme or universal link) with `code`.
+  3) App sends `code` to a backend endpoint.
+  4) Backend exchanges `code` for `access_token` using the GitHub client secret.
+  5) App signs in to Firebase with `GithubAuthProvider.credential(accessToken)`.
+- The backend is required to keep the client secret secure (never ship it in the app).
 
 Persistence
 
@@ -438,6 +450,7 @@ Email verification (email/password)
 - Email/password form (macOS/Windows)
 - Login entry hidden on Linux (Account Mode unavailable)
 - Text: “Sync your tasks in the cloud”
+- If a provider conflict occurs (account exists with different credential), prompt the user to sign in with the original provider and link the new provider.
 
 ---
 
