@@ -3158,6 +3158,17 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 176 — Local Mode pause warning UX refinement — 29/01/2026
+
+### ✔ Work completed:
+
+- Updated specs to require a contextual pause info dialog and discreet info affordance (no layout shift).
+- Replaced the persistent pause banner with a lightweight dialog + on-demand info entry point.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

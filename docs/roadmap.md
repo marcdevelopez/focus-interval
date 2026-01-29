@@ -56,7 +56,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       26/01/2026: Release validation — scheduled by Android (app closed), macOS open claimed owner; Android opened later in mirror mode.
       29/01/2026: Desktop GitHub device flow validated on macOS/Windows.
       29/01/2026: Local Mode running-group resume projects from actualStartTime when no session (no pause reconstruction).
-      29/01/2026: Local Mode pause warning added on the Execution screen.
+      29/01/2026: Local Mode pause warning refined to contextual dialog + info affordance (no layout shift).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 

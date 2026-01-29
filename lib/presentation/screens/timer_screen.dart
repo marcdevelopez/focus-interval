@@ -299,8 +299,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final preRunInfo = _preRunInfo;
     final isPreRun = preRunInfo != null && _taskLoaded;
     final shouldBlockExit = state.status.isActiveExecution;
-    final showLocalPauseWarning =
-        appMode == AppMode.local && state.status == PomodoroStatus.paused;
+    final isLocalMode = appMode == AppMode.local;
 
     if (isPreRun) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -383,17 +382,72 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (showLocalPauseWarning) const _LocalPauseWarning(),
-              if (showLocalPauseWarning) const SizedBox(height: 8),
               _ControlsBar(
                 state: state,
                 vm: vm,
                 taskLoaded: _taskLoaded,
                 isPreRun: isPreRun,
+                isLocalMode: isLocalMode,
+                onPauseRequested: () {
+                  _handlePauseWithLocalInfo(vm, isLocalMode);
+                },
+                onLocalPauseInfo: () {
+                  _showLocalPauseInfoDialog(context);
+                },
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Future<void> _handlePauseWithLocalInfo(
+    PomodoroViewModel vm,
+    bool isLocalMode,
+  ) async {
+    if (isLocalMode) {
+      vm.pause();
+      if (!mounted) return;
+      await _showLocalPauseInfoDialog(context);
+      return;
+    }
+    vm.pause();
+  }
+
+  Future<void> _showLocalPauseInfoDialog(BuildContext context) {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black54,
+      builder: (_) => AlertDialog(
+        backgroundColor: Colors.black.withValues(alpha: 0.75),
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        titlePadding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
+        contentPadding: const EdgeInsets.fromLTRB(18, 12, 18, 8),
+        actionsPadding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+        title: Row(
+          children: const [
+            Icon(Icons.info_outline, color: Color(0xFFFFC107), size: 18),
+            SizedBox(width: 8),
+            Text(
+              "Local Mode pause",
+              style: TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+        content: const Text(
+          "If the app is closed while paused, this pause won't be restored. "
+          "When you reopen the app, the timer will resume from the original start time.",
+          style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.35),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("Got it"),
+          ),
+        ],
       ),
     );
   }
@@ -676,45 +730,23 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   }
 }
 
-class _LocalPauseWarning extends StatelessWidget {
-  const _LocalPauseWarning();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1400),
-        border: Border.all(color: const Color(0xFFFFC107)),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: const [
-          Icon(Icons.info_outline, color: Color(0xFFFFC107), size: 18),
-          SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              "Local Mode: if you close the app while paused, the pause won't be restored. The timer will resume from the original start time when you reopen.",
-              style: TextStyle(color: Color(0xFFFFECB3), fontSize: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ControlsBar extends StatelessWidget {
   final PomodoroState state;
   final PomodoroViewModel vm;
   final bool taskLoaded;
   final bool isPreRun;
+  final bool isLocalMode;
+  final VoidCallback onPauseRequested;
+  final VoidCallback onLocalPauseInfo;
 
   const _ControlsBar({
     required this.state,
     required this.vm,
     required this.taskLoaded,
     required this.isPreRun,
+    required this.isLocalMode,
+    required this.onPauseRequested,
+    required this.onLocalPauseInfo,
   });
 
   @override
@@ -729,6 +761,8 @@ class _ControlsBar extends StatelessWidget {
         state.status == PomodoroStatus.finished && vm.isGroupCompleted;
     final canTakeOver = vm.canTakeOver;
     final controlsEnabled = vm.canControlSession;
+    final showLocalPauseInfo =
+        isLocalMode && state.status == PomodoroStatus.paused;
 
     if (isPreRun) {
       return Row(
@@ -748,10 +782,41 @@ class _ControlsBar extends StatelessWidget {
           _btn("Start", taskLoaded && controlsEnabled ? vm.start : null),
         if (isFinished)
           _btn("Start again", taskLoaded && controlsEnabled ? vm.start : null),
-        if (isRunning) _btn("Pause", controlsEnabled ? vm.pause : null),
-        if (isPaused) _btn("Resume", controlsEnabled ? vm.resume : null),
+        if (isRunning)
+          _btn("Pause", controlsEnabled ? onPauseRequested : null),
+        if (isPaused)
+          _buildResumeControl(
+            context,
+            controlsEnabled,
+            showLocalPauseInfo: showLocalPauseInfo,
+          ),
         if (!isIdle && !isFinished)
           _btn("Cancel", controlsEnabled ? vm.cancel : null),
+      ],
+    );
+  }
+
+  Widget _buildResumeControl(
+    BuildContext context,
+    bool controlsEnabled, {
+    required bool showLocalPauseInfo,
+  }) {
+    final resumeButton = _btn("Resume", controlsEnabled ? vm.resume : null);
+    if (!showLocalPauseInfo) return resumeButton;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        resumeButton,
+        const SizedBox(width: 8),
+        IconButton(
+          tooltip: "Local Mode pause info",
+          onPressed: onLocalPauseInfo,
+          icon: const Icon(Icons.info_outline, size: 18),
+          color: Colors.white60,
+          padding: const EdgeInsets.all(6),
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+        ),
       ],
     );
   }
