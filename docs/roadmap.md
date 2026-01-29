@@ -54,13 +54,12 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       26/01/2026: Scheduled auto-start + resume/launch catch-up implemented (validation pending).
       26/01/2026: Scheduled auto-start allows any device to claim immediately at scheduled time.
       26/01/2026: Release validation — scheduled by Android (app closed), macOS open claimed owner; Android opened later in mirror mode.
+      29/01/2026: Desktop GitHub device flow validated on macOS/Windows.
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
     ## 🔄 Reopened phases (must complete before moving on)
 
-    - Phase 6.7 — GitHub Sign-In (optional, platform-dependent).
-    - Phase 6.7b — Desktop GitHub OAuth (device flow).
     - Phase 10.4 — Presets + weight UI + integrity warnings.
     - Phase 17 — Scheduled auto-start lifecycle + resume/launch catch-up.
 

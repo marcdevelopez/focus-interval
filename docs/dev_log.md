@@ -3126,6 +3126,16 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 173 — Desktop GitHub device flow validation — 29/01/2026
+
+### ✔ Work completed:
+
+- Confirmed GitHub Device Flow works on macOS and Windows.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
