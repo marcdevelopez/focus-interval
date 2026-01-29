@@ -418,16 +418,18 @@ Mode selection
   - If GitHub is not supported on a platform, fall back to existing providers without changing Local Mode.
 - If the user tries to sign in with a provider and the email already exists under a different provider, the app must guide the user to sign in with the original provider and then link the new provider (account linking).
 
-Desktop GitHub OAuth (manual backend flow)
+Desktop GitHub OAuth (device flow)
 
 - Required on macOS/Windows because FirebaseAuth `signInWithProvider` is not supported on macOS and is not reliable on Windows.
 - Flow:
-  1) App opens system browser to GitHub OAuth authorize URL.
-  2) GitHub redirects to the app (custom scheme or universal link) with `code`.
-  3) App sends `code` to a backend endpoint.
-  4) Backend exchanges `code` for `access_token` using the GitHub client secret.
+  1) App requests a device code from GitHub.
+  2) App opens the verification URL in the system browser and shows the user code.
+  3) User enters the code in GitHub.
+  4) App polls GitHub until an access token is issued.
   5) App signs in to Firebase with `GithubAuthProvider.credential(accessToken)`.
-- The backend is required to keep the client secret secure (never ship it in the app).
+- No backend is required (device flow does not need a client secret).
+- Desktop app configuration:
+  - `GITHUB_OAUTH_CLIENT_ID` (dart-define)
 
 Persistence
 

@@ -35,6 +35,18 @@ Flutter · Firebase Auth · Firestore · Riverpod · GoRouter · just_audio · f
 - Run with a fixed port: `flutter run -d chrome --web-port=5001`.
 - Ensure `http://localhost:5001` is listed in Google OAuth Authorized JavaScript origins.
 
+## GitHub OAuth (desktop)
+
+- Desktop uses **GitHub Device Flow** (no backend).
+- Create `.env.local` (not committed) **in the project root** on each machine where you run desktop builds:
+  - macOS:
+    - `export GITHUB_OAUTH_CLIENT_ID="<Firebase GitHub Client ID (principal)>"`
+  - Windows (PowerShell):
+    - `$env:GITHUB_OAUTH_CLIENT_ID="<Firebase GitHub Client ID (principal)>"`
+- Run:
+  - `./scripts/run_macos.sh`
+  - `powershell -ExecutionPolicy Bypass -File .\scripts\run_windows.ps1`
+
 ## 📦 Android builds
 
 Lightweight release APKs (split ABI):

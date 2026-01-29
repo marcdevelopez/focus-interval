@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../providers.dart';
 import '../../data/services/firebase_auth_service.dart';
+import '../../data/services/github_oauth_models.dart';
 import '../../data/services/app_mode_service.dart';
 import '../../data/services/local_import_service.dart';
 import '../../data/repositories/local_task_repository.dart';
@@ -419,7 +420,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _loading = true);
     final auth = ref.read(firebaseAuthServiceProvider);
     try {
-      await auth.signInWithGitHub();
+      if (auth.isGitHubDesktopOAuthSupported) {
+        await _signInGitHubDesktop();
+      } else {
+        await auth.signInWithGitHub();
+      }
       await _handlePostLogin();
     } on FirebaseAuthException catch (e) {
       final handled = await _tryResolveProviderConflict(e);
@@ -436,6 +441,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _signInGitHubDesktop() async {
+    final auth = ref.read(firebaseAuthServiceProvider);
+    final flow = await auth.startGitHubDeviceFlow();
+    if (!mounted) return;
+    final proceed = await _showDeviceCodeDialog(flow);
+    if (proceed != true) return;
+    await auth.completeGitHubDeviceFlow(flow);
   }
 
   Future<bool> _tryResolveProviderConflict(
@@ -468,6 +482,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<bool> _linkViaGoogle(AuthCredential? pending) async {
+    if (!_isGoogleSignInSupported) {
+      if (!mounted) return true;
+      await _showInfoDialog(
+        title: 'Google account already exists',
+        message:
+            'This email is already registered with Google, and Google sign-in is not available on desktop.\n\n'
+            'To link GitHub:\n'
+            '1) Open the web or mobile app.\n'
+            '2) Sign in with Google.\n'
+            '3) Tap "Continue with GitHub" to link.\n'
+            '4) Return here and sign in with GitHub again.',
+      );
+      return true;
+    }
     final confirm = await _confirmLinkDialog(
       title: 'Account already exists',
       message:
@@ -489,6 +517,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       if (pending != null) {
         await auth.linkWithCredential(pending);
+      } else if (auth.isGitHubDesktopOAuthSupported) {
+        await _linkGitHubDesktopFlow(auth);
       } else {
         await auth.linkWithGitHubProvider();
       }
@@ -525,6 +555,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       if (pending != null) {
         await auth.linkWithCredential(pending);
+      } else if (auth.isGitHubDesktopOAuthSupported) {
+        await _linkGitHubDesktopFlow(auth);
       } else {
         await auth.linkWithGitHubProvider();
       }
@@ -537,6 +569,71 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
     await _handlePostLogin();
     return true;
+  }
+
+  Future<void> _showInfoDialog({
+    required String title,
+    required String message,
+  }) {
+    return showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _linkGitHubDesktopFlow(AuthService auth) async {
+    final flow = await auth.startGitHubDeviceFlow();
+    if (!mounted) return;
+    final proceed = await _showDeviceCodeDialog(flow);
+    if (proceed != true) return;
+    await auth.linkWithGitHubDeviceFlow(flow);
+  }
+
+  Future<bool?> _showDeviceCodeDialog(GitHubDeviceFlowData flow) {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Link GitHub'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Enter this code in your browser:'),
+            const SizedBox(height: 8),
+            SelectableText(
+              flow.userCode,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text('Verification URL: ${flow.verificationUri}'),
+            const SizedBox(height: 8),
+            const Text(
+              'Complete authorization in the browser, then continue here.',
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<String?> _promptEmail() async {
@@ -677,7 +774,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final currentUser = ref.watch(currentUserProvider);
     final authSupported = auth is! StubAuthService;
     final isGoogleDisabled = !_isGoogleSignInSupported;
-    final isGitHubSupported = auth.isGitHubSignInSupported;
+    final isGitHubSupported =
+        auth.isGitHubSignInSupported || auth.isGitHubDesktopOAuthSupported;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final allowLocalExit = appMode == AppMode.local && currentUser == null;
 
