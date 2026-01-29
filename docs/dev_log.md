@@ -3169,6 +3169,17 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 177 — Android Gradle toolchain bump — 29/01/2026
+
+### ✔ Work completed:
+
+- Updated Android Gradle Plugin to 8.9.1 to satisfy androidx AAR metadata requirements.
+- Bumped Gradle wrapper to 8.12.1.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

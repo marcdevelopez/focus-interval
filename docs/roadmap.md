@@ -57,6 +57,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       29/01/2026: Desktop GitHub device flow validated on macOS/Windows.
       29/01/2026: Local Mode running-group resume projects from actualStartTime when no session (no pause reconstruction).
       29/01/2026: Local Mode pause warning refined to contextual dialog + info affordance (no layout shift).
+      29/01/2026: Android Gradle Plugin bumped to 8.9.1 (Gradle wrapper 8.12.1) to satisfy androidx metadata requirements.
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
