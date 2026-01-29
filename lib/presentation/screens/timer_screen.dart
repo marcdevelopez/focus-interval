@@ -13,6 +13,7 @@ import '../../domain/pomodoro_machine.dart';
 import '../viewmodels/pomodoro_view_model.dart';
 import '../../data/models/task_run_group.dart';
 import '../../data/services/task_run_notice_service.dart';
+import '../../data/services/app_mode_service.dart';
 
 class TimerScreen extends ConsumerStatefulWidget {
   final String groupId;
@@ -294,9 +295,12 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     });
 
     final state = ref.watch(pomodoroViewModelProvider);
+    final appMode = ref.watch(appModeProvider);
     final preRunInfo = _preRunInfo;
     final isPreRun = preRunInfo != null && _taskLoaded;
     final shouldBlockExit = state.status.isActiveExecution;
+    final showLocalPauseWarning =
+        appMode == AppMode.local && state.status == PomodoroStatus.paused;
 
     if (isPreRun) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -376,11 +380,18 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         bottomNavigationBar: SafeArea(
           top: false,
           minimum: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: _ControlsBar(
-            state: state,
-            vm: vm,
-            taskLoaded: _taskLoaded,
-            isPreRun: isPreRun,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (showLocalPauseWarning) const _LocalPauseWarning(),
+              if (showLocalPauseWarning) const SizedBox(height: 8),
+              _ControlsBar(
+                state: state,
+                vm: vm,
+                taskLoaded: _taskLoaded,
+                isPreRun: isPreRun,
+              ),
+            ],
           ),
         ),
       ),
@@ -662,6 +673,34 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final minutes = (seconds % 3600) ~/ 60;
     if (hours > 0) return "${hours}h ${minutes.toString().padLeft(2, '0')}m";
     return "${minutes}m";
+  }
+}
+
+class _LocalPauseWarning extends StatelessWidget {
+  const _LocalPauseWarning();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1400),
+        border: Border.all(color: const Color(0xFFFFC107)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: const [
+          Icon(Icons.info_outline, color: Color(0xFFFFC107), size: 18),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              "Local Mode: if you close the app while paused, the pause won't be restored. The timer will resume from the original start time when you reopen.",
+              style: TextStyle(color: Color(0xFFFFECB3), fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
