@@ -348,6 +348,8 @@ Platform notes:
 - Local Mode is a first-class backend available on all platforms.
 - Users can explicitly choose between Local Mode (offline, no login) and Account Mode (synced).
 - Local data uses the exact same models (tasks, TaskRunGroups, sessions) for future compatibility.
+- MVP note: Local Mode does not persist active PomodoroSession yet. If the app relaunches while a group is running, the UI projects progress from TaskRunGroup.actualStartTime (no pause reconstruction).
+- UX note: When a session is paused in Local Mode, the Execution screen shows an explicit warning that closing the app will not preserve the pause; on reopen the timer resumes from the original start time.
 - Local Mode scope is strictly device-local; Account Mode scope is strictly user:{uid}.
 - There is no implicit sync between scopes.
 - Switching to Account Mode can offer a one-time import of local data only after explicit user confirmation.

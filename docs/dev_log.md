@@ -3136,6 +3136,28 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 174 — Local Mode running resume projection — 29/01/2026
+
+### ✔ Work completed:
+
+- Documented Local Mode resume projection from actualStartTime (no pause reconstruction).
+- Hydrated running group state on launch when no session exists to prevent timer resets.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 175 — Local Mode pause warning — 29/01/2026
+
+### ✔ Work completed:
+
+- Added an explicit pause warning on the Execution screen for Local Mode.
+- Documented the Local Mode pause warning behavior in specs.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

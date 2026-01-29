@@ -13,6 +13,7 @@ import '../../data/repositories/task_run_group_repository.dart';
 import '../../data/services/device_info_service.dart';
 import '../../data/services/notification_service.dart';
 import '../../data/services/foreground_service.dart';
+import '../../data/services/app_mode_service.dart';
 
 enum PomodoroGroupLoadResult { loaded, notFound, blockedByActiveSession }
 
@@ -21,6 +22,18 @@ class TaskTimeRange {
   final DateTime end;
 
   const TaskTimeRange(this.start, this.end);
+}
+
+class _GroupResumeProjection {
+  final int taskIndex;
+  final PomodoroState state;
+  final DateTime taskStartedAt;
+
+  const _GroupResumeProjection({
+    required this.taskIndex,
+    required this.state,
+    required this.taskStartedAt,
+  });
 }
 
 class PomodoroViewModel extends Notifier<PomodoroState> {
@@ -99,9 +112,21 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _groupCompleted = false;
     _completedTaskRanges.clear();
     _timelinePhaseStartedAt = null;
-    _currentTaskIndex = _resolveTaskIndex(group, session);
-    _currentItem = _resolveTaskItem(group, _currentTaskIndex);
-    _currentTaskStartedAt = _resolveTaskStart(group, session);
+    final now = DateTime.now();
+    final projection = _projectFromGroupTimelineIfNeeded(
+      group,
+      session,
+      now,
+    );
+    if (projection != null) {
+      _currentTaskIndex = projection.taskIndex;
+      _currentItem = _resolveTaskItem(group, _currentTaskIndex);
+      _currentTaskStartedAt = projection.taskStartedAt;
+    } else {
+      _currentTaskIndex = _resolveTaskIndex(group, session);
+      _currentItem = _resolveTaskItem(group, _currentTaskIndex);
+      _currentTaskStartedAt = _resolveTaskStart(group, session);
+    }
 
     if (_currentItem == null) {
       return PomodoroGroupLoadResult.notFound;
@@ -109,6 +134,9 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
     configureFromItem(_currentItem!);
     _subscribeToRemoteSession();
+    if (projection != null) {
+      _applyProjectedState(projection.state, now: now);
+    }
     unawaited(_notificationService.requestPermissions());
     return PomodoroGroupLoadResult.loaded;
   }
@@ -177,6 +205,116 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       return session.phaseStartedAt ?? group.actualStartTime;
     }
     return group.actualStartTime ?? group.createdAt;
+  }
+
+  _GroupResumeProjection? _projectFromGroupTimelineIfNeeded(
+    TaskRunGroup group,
+    PomodoroSession? session,
+    DateTime now,
+  ) {
+    if (session != null) return null;
+    if (ref.read(appModeProvider) != AppMode.local) return null;
+    if (group.status != TaskRunStatus.running) return null;
+    final actualStart = group.actualStartTime;
+    if (actualStart == null) return null;
+    if (group.tasks.isEmpty) return null;
+
+    var elapsed = now.difference(actualStart).inSeconds;
+    if (elapsed < 0) return null;
+
+    var offset = 0;
+    final lastIndex = group.tasks.length - 1;
+    for (var index = 0; index < group.tasks.length; index += 1) {
+      final item = group.tasks[index];
+      final includeFinalBreak = index < lastIndex;
+      final taskDuration = item.durationSeconds(
+        includeFinalBreak: includeFinalBreak,
+      );
+      if (elapsed < offset + taskDuration) {
+        final elapsedInTask = elapsed - offset;
+        final projected = _projectStateWithinTask(
+          item: item,
+          elapsedSeconds: elapsedInTask,
+          includeFinalBreak: includeFinalBreak,
+        );
+        if (projected == null) return null;
+        return _GroupResumeProjection(
+          taskIndex: index,
+          state: projected,
+          taskStartedAt: actualStart.add(Duration(seconds: offset)),
+        );
+      }
+      offset += taskDuration;
+    }
+    return null;
+  }
+
+  PomodoroState? _projectStateWithinTask({
+    required TaskRunItem item,
+    required int elapsedSeconds,
+    required bool includeFinalBreak,
+  }) {
+    var elapsed = elapsedSeconds;
+    if (elapsed < 0) elapsed = 0;
+    final pomodoroSeconds = item.pomodoroMinutes * 60;
+    final shortBreakSeconds = item.shortBreakMinutes * 60;
+    final longBreakSeconds = item.longBreakMinutes * 60;
+
+    for (var pomodoroIndex = 1;
+        pomodoroIndex <= item.totalPomodoros;
+        pomodoroIndex += 1) {
+      if (elapsed < pomodoroSeconds) {
+        return PomodoroState(
+          status: PomodoroStatus.pomodoroRunning,
+          phase: PomodoroPhase.pomodoro,
+          currentPomodoro: pomodoroIndex,
+          totalPomodoros: item.totalPomodoros,
+          totalSeconds: pomodoroSeconds,
+          remainingSeconds: pomodoroSeconds - elapsed,
+        );
+      }
+      elapsed -= pomodoroSeconds;
+
+      final isLastPomodoro = pomodoroIndex == item.totalPomodoros;
+      final hasBreak = !isLastPomodoro || includeFinalBreak;
+      if (!hasBreak) {
+        return PomodoroState(
+          status: PomodoroStatus.finished,
+          phase: null,
+          currentPomodoro: item.totalPomodoros,
+          totalPomodoros: item.totalPomodoros,
+          totalSeconds: 0,
+          remainingSeconds: 0,
+        );
+      }
+
+      final isLongBreak = pomodoroIndex % item.longBreakInterval == 0;
+      final breakSeconds = isLongBreak ? longBreakSeconds : shortBreakSeconds;
+      if (elapsed < breakSeconds) {
+        return PomodoroState(
+          status: isLongBreak
+              ? PomodoroStatus.longBreakRunning
+              : PomodoroStatus.shortBreakRunning,
+          phase: isLongBreak
+              ? PomodoroPhase.longBreak
+              : PomodoroPhase.shortBreak,
+          currentPomodoro: pomodoroIndex,
+          totalPomodoros: item.totalPomodoros,
+          totalSeconds: breakSeconds,
+          remainingSeconds: breakSeconds - elapsed,
+        );
+      }
+      elapsed -= breakSeconds;
+    }
+
+    return PomodoroState(
+      status: PomodoroStatus.finished,
+      phase: null,
+      currentPomodoro: item.totalPomodoros,
+      totalPomodoros: item.totalPomodoros,
+      totalSeconds: 0,
+      remainingSeconds: 0,
+    );
   }
 
   void _handleTaskFinished() {
