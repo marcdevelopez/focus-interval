@@ -9,10 +9,14 @@ abstract class AuthService {
   bool get isSignedIn;
   bool get isEmailVerified;
   bool get requiresEmailVerification;
+  bool get isGitHubSignInSupported;
   Stream<User?> get authStateChanges;
   Stream<User?> get userChanges;
 
   Future<UserCredential> signInWithGoogle();
+  Future<UserCredential> signInWithGitHub();
+  Future<UserCredential> linkWithCredential(AuthCredential credential);
+  Future<UserCredential> linkWithGitHubProvider();
 
   Future<UserCredential> signInWithEmail({
     required String email,
@@ -57,6 +61,13 @@ class FirebaseAuthService implements AuthService {
   bool get isEmailVerified => _auth.currentUser?.emailVerified ?? false;
 
   @override
+  bool get isGitHubSignInSupported {
+    if (kIsWeb) return true;
+    return defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
+  }
+
+  @override
   bool get requiresEmailVerification {
     final user = _auth.currentUser;
     if (user == null) return false;
@@ -95,6 +106,43 @@ class FirebaseAuthService implements AuthService {
       idToken: auth.idToken,
     );
     return _auth.signInWithCredential(credential);
+  }
+
+  @override
+  Future<UserCredential> signInWithGitHub() async {
+    if (!isGitHubSignInSupported) {
+      throw UnsupportedError(
+        'GitHub Sign-In is not available on this platform.',
+      );
+    }
+
+    final provider = GithubAuthProvider();
+    if (kIsWeb) {
+      return _auth.signInWithPopup(provider);
+    }
+    return _auth.signInWithProvider(provider);
+  }
+
+  @override
+  Future<UserCredential> linkWithCredential(AuthCredential credential) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw StateError('No authenticated user to link credentials.');
+    }
+    return user.linkWithCredential(credential);
+  }
+
+  @override
+  Future<UserCredential> linkWithGitHubProvider() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw StateError('No authenticated user to link credentials.');
+    }
+    final provider = GithubAuthProvider();
+    if (kIsWeb) {
+      return user.linkWithPopup(provider);
+    }
+    return user.linkWithProvider(provider);
   }
 
   @override
@@ -159,6 +207,9 @@ class StubAuthService implements AuthService {
   bool get requiresEmailVerification => false;
 
   @override
+  bool get isGitHubSignInSupported => false;
+
+  @override
   Stream<User?> get authStateChanges => const Stream.empty();
 
   @override
@@ -166,6 +217,27 @@ class StubAuthService implements AuthService {
 
   @override
   Future<UserCredential> signInWithGoogle() {
+    throw UnsupportedError(
+      'Firebase Auth is not configured. Set credentials before using it.',
+    );
+  }
+
+  @override
+  Future<UserCredential> signInWithGitHub() {
+    throw UnsupportedError(
+      'Firebase Auth is not configured. Set credentials before using it.',
+    );
+  }
+
+  @override
+  Future<UserCredential> linkWithCredential(AuthCredential credential) {
+    throw UnsupportedError(
+      'Firebase Auth is not configured. Set credentials before using it.',
+    );
+  }
+
+  @override
+  Future<UserCredential> linkWithGitHubProvider() {
     throw UnsupportedError(
       'Firebase Auth is not configured. Set credentials before using it.',
     );

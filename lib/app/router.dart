@@ -12,6 +12,14 @@ GoRouter buildRouter() {
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: '/tasks',
+    redirect: (context, state) {
+      final uri = state.uri;
+      if (uri.scheme.startsWith('com.googleusercontent.apps') &&
+          uri.host == 'firebaseauth') {
+        return '/login';
+      }
+      return null;
+    },
     routes: [
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
 
