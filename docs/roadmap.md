@@ -40,7 +40,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       24/01/2026: Documentation-first specs for Task Presets, Pomodoro integrity modes, and task weight (%) UI refinements added.
       24/01/2026: Documentation-first specs for optional GitHub Sign-In provider added.
       28/01/2026: Desktop GitHub OAuth (manual backend exchange) documented for macOS/Windows.
-      29/01/2026: Desktop GitHub OAuth to use loopback redirect + Cloud Functions backend (planned).
+      29/01/2026: Desktop GitHub OAuth switched to GitHub Device Flow (no backend).
       24/01/2026: Task Editor enforces short break < long break validation to prevent invalid configs.
       24/01/2026: Task Editor prioritizes blocking break validation over guidance (cross-field errors shown).
       24/01/2026: Email verification gating + reclaim flow implemented (sync locked until verified).
@@ -55,13 +55,12 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       26/01/2026: Scheduled auto-start allows any device to claim immediately at scheduled time.
       26/01/2026: Release validation — scheduled by Android (app closed), macOS open claimed owner; Android opened later in mirror mode.
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
-      29/01/2026: Functions config deprecation notice — migrate to .env before March 2026.
 ```
 
     ## 🔄 Reopened phases (must complete before moving on)
 
     - Phase 6.7 — GitHub Sign-In (optional, platform-dependent).
-    - Phase 6.7b — Desktop GitHub OAuth (manual backend exchange).
+    - Phase 6.7b — Desktop GitHub OAuth (device flow).
     - Phase 10.4 — Presets + weight UI + integrity warnings.
     - Phase 17 — Scheduled auto-start lifecycle + resume/launch catch-up.
 

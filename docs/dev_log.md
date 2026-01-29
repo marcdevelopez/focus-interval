@@ -3084,6 +3084,48 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 169 — Switch desktop GitHub OAuth to device flow — 29/01/2026
+
+### ✔ Work completed:
+
+- Replaced loopback + Cloud Functions plan with GitHub Device Flow.
+- Removed backend requirement from desktop GitHub OAuth.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 170 — Remove desktop backend artifacts — 29/01/2026
+
+### ✔ Work completed:
+
+- Removed Cloud Functions backend files and deployment notes.
+- Simplified desktop run scripts to require only GitHub client id.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 171 — Desktop linking guidance for Google-only accounts — 29/01/2026
+
+### ✔ Work completed:
+
+- Added desktop guidance when Google linking is required but unsupported on macOS/Windows.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 172 — Clarified desktop linking instructions — 29/01/2026
+
+### ✔ Work completed:
+
+- Expanded the Google linking dialog with explicit step-by-step instructions.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

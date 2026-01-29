@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart'
 import 'package:google_sign_in/google_sign_in.dart';
 
 import 'github_oauth_config.dart';
+import 'github_oauth_models.dart';
 import 'github_oauth_service.dart';
 
 /// Authentication service.
@@ -22,6 +23,9 @@ abstract class AuthService {
   Future<UserCredential> signInWithGitHub();
   Future<UserCredential> linkWithCredential(AuthCredential credential);
   Future<UserCredential> linkWithGitHubProvider();
+  Future<GitHubDeviceFlowData> startGitHubDeviceFlow();
+  Future<UserCredential> completeGitHubDeviceFlow(GitHubDeviceFlowData flow);
+  Future<UserCredential> linkWithGitHubDeviceFlow(GitHubDeviceFlowData flow);
 
   Future<UserCredential> signInWithEmail({
     required String email,
@@ -124,22 +128,10 @@ class FirebaseAuthService implements AuthService {
 
   @override
   Future<UserCredential> signInWithGitHub() async {
-    if (!isGitHubSignInSupported && !isGitHubDesktopOAuthSupported) {
+    if (!isGitHubSignInSupported) {
       throw UnsupportedError(
         'GitHub Sign-In is not available on this platform.',
       );
-    }
-
-    if (isGitHubDesktopOAuthSupported) {
-      final clientId = GitHubOAuthConfig.desktopClientId;
-      final exchange = Uri.parse(GitHubOAuthConfig.exchangeEndpoint);
-      final oauth = GitHubOAuthService(
-        clientId: clientId,
-        exchangeEndpoint: exchange,
-      );
-      final token = await oauth.authenticateWithLoopback();
-      final credential = GithubAuthProvider.credential(token);
-      return _auth.signInWithCredential(credential);
     }
 
     final provider = GithubAuthProvider();
@@ -165,23 +157,53 @@ class FirebaseAuthService implements AuthService {
       throw StateError('No authenticated user to link credentials.');
     }
 
-    if (isGitHubDesktopOAuthSupported) {
-      final clientId = GitHubOAuthConfig.desktopClientId;
-      final exchange = Uri.parse(GitHubOAuthConfig.exchangeEndpoint);
-      final oauth = GitHubOAuthService(
-        clientId: clientId,
-        exchangeEndpoint: exchange,
-      );
-      final token = await oauth.authenticateWithLoopback();
-      final credential = GithubAuthProvider.credential(token);
-      return user.linkWithCredential(credential);
-    }
-
     final provider = GithubAuthProvider();
     if (kIsWeb) {
       return user.linkWithPopup(provider);
     }
     return user.linkWithProvider(provider);
+  }
+
+  @override
+  Future<GitHubDeviceFlowData> startGitHubDeviceFlow() async {
+    if (!isGitHubDesktopOAuthSupported) {
+      throw UnsupportedError('GitHub device flow is not supported here.');
+    }
+    final clientId = GitHubOAuthConfig.desktopClientId;
+    final oauth = GitHubOAuthService(clientId: clientId);
+    return oauth.startDeviceFlow();
+  }
+
+  @override
+  Future<UserCredential> completeGitHubDeviceFlow(
+    GitHubDeviceFlowData flow,
+  ) async {
+    if (!isGitHubDesktopOAuthSupported) {
+      throw UnsupportedError('GitHub device flow is not supported here.');
+    }
+    final clientId = GitHubOAuthConfig.desktopClientId;
+    final oauth = GitHubOAuthService(clientId: clientId);
+    final token = await oauth.pollForAccessToken(flow);
+    final credential = GithubAuthProvider.credential(token);
+    return _auth.signInWithCredential(credential);
+  }
+
+  @override
+  Future<UserCredential> linkWithGitHubDeviceFlow(
+    GitHubDeviceFlowData flow,
+  ) async {
+    if (!isGitHubDesktopOAuthSupported) {
+      throw UnsupportedError('GitHub device flow is not supported here.');
+    }
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw StateError('No authenticated user to link credentials.');
+    }
+    final clientId = GitHubOAuthConfig.desktopClientId;
+    final oauth = GitHubOAuthService(clientId: clientId);
+    final token = await oauth.pollForAccessToken(flow);
+    final credential = GithubAuthProvider.credential(token);
+    return user.linkWithCredential(credential);
   }
 
   @override
@@ -250,6 +272,27 @@ class StubAuthService implements AuthService {
 
   @override
   bool get isGitHubDesktopOAuthSupported => false;
+
+  @override
+  Future<GitHubDeviceFlowData> startGitHubDeviceFlow() {
+    throw UnsupportedError(
+      'Firebase Auth is not configured. Set credentials before using it.',
+    );
+  }
+
+  @override
+  Future<UserCredential> completeGitHubDeviceFlow(GitHubDeviceFlowData flow) {
+    throw UnsupportedError(
+      'Firebase Auth is not configured. Set credentials before using it.',
+    );
+  }
+
+  @override
+  Future<UserCredential> linkWithGitHubDeviceFlow(GitHubDeviceFlowData flow) {
+    throw UnsupportedError(
+      'Firebase Auth is not configured. Set credentials before using it.',
+    );
+  }
 
   @override
   Stream<User?> get authStateChanges => const Stream.empty();

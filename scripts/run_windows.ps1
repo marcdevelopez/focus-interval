@@ -16,11 +16,6 @@ if (-not $env:GITHUB_OAUTH_CLIENT_ID) {
   exit 1
 }
 
-if (-not $env:GITHUB_OAUTH_EXCHANGE_ENDPOINT) {
-  $env:GITHUB_OAUTH_EXCHANGE_ENDPOINT = "https://us-central1-focus-interval.cloudfunctions.net/githubExchange"
-}
-
 flutter run -d windows `
   --dart-define=GITHUB_OAUTH_CLIENT_ID="$env:GITHUB_OAUTH_CLIENT_ID" `
-  --dart-define=GITHUB_OAUTH_EXCHANGE_ENDPOINT="$env:GITHUB_OAUTH_EXCHANGE_ENDPOINT" `
   -v

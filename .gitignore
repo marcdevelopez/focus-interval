@@ -46,10 +46,6 @@ app.*.map.json
 
 /android/build/
 
-# Firebase Functions
-functions/node_modules/
-functions/.firebase/
-
 # Private docs
 docs/nuevas-funcionalidades/
 

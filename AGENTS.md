@@ -283,7 +283,6 @@ Before any release discussion:
 - Confirm Firebase project access
 - Confirm bundle IDs are consistent
 - Confirm platform stubs exist where features are unsupported
-- Migrate Firebase Functions config from `functions.config()` to `.env` before **March 2026** deprecation (remove this note once completed).
 
 If unsure → **stop and verify**
 

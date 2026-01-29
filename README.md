@@ -37,22 +37,15 @@ Flutter · Firebase Auth · Firestore · Riverpod · GoRouter · just_audio · f
 
 ## GitHub OAuth (desktop)
 
-Desktop GitHub sign-in uses a loopback redirect and a Cloud Function.
-
-- GitHub OAuth App (desktop) callback: `http://127.0.0.1:51289/oauth`
+- Desktop uses **GitHub Device Flow** (no backend).
 - Create `.env.local` (not committed) **in the project root** on each machine where you run desktop builds:
   - macOS:
-    - `export GITHUB_OAUTH_CLIENT_ID="<desktop client id>"`
-    - `export GITHUB_OAUTH_EXCHANGE_ENDPOINT="https://us-central1-focus-interval.cloudfunctions.net/githubExchange"`
+    - `export GITHUB_OAUTH_CLIENT_ID="<Firebase GitHub Client ID (principal)>"`
   - Windows (PowerShell):
-    - `$env:GITHUB_OAUTH_CLIENT_ID="<desktop client id>"`
-    - `$env:GITHUB_OAUTH_EXCHANGE_ENDPOINT="https://us-central1-focus-interval.cloudfunctions.net/githubExchange"`
+    - `$env:GITHUB_OAUTH_CLIENT_ID="<Firebase GitHub Client ID (principal)>"`
 - Run:
   - `./scripts/run_macos.sh`
   - `powershell -ExecutionPolicy Bypass -File .\scripts\run_windows.ps1`
-- Configure the function:
-  - `firebase functions:config:set github.client_id="<id>" github.client_secret="<secret>"`
-  - Deploy: `firebase deploy --only functions:githubExchange`
 
 ## 📦 Android builds
 
