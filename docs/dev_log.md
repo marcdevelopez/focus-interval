@@ -16,7 +16,7 @@ This document is used to:
 # 📍 Current status
 
 Active phase: **17 — Planning Flow + Conflict Management**
-Last update: **28/01/2026**
+Last update: **29/01/2026**
 
 ---
 
@@ -3004,6 +3004,81 @@ _(fill in when they happen)_
 
 - Removed fetchSignInMethodsForEmail usage to avoid deprecated API and email enumeration risk.
 - Linking flow now relies on explicit user choice of original provider.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 162 — Desktop GitHub OAuth (loopback + Cloud Functions) spec update — 29/01/2026
+
+### ✔ Work completed:
+
+- Specified desktop loopback redirect for GitHub OAuth.
+- Selected Firebase Cloud Functions as the backend exchange service.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 163 — GitHub OAuth backend + desktop loopback flow — 29/01/2026
+
+### ✔ Work completed:
+
+- Added Firebase Cloud Function to exchange GitHub OAuth code for access token.
+- Added desktop loopback OAuth flow for macOS/Windows.
+- Added GitHub OAuth config via dart-define for desktop client id and exchange endpoint.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 164 — Desktop loopback fixed port + dedicated OAuth app — 29/01/2026
+
+### ✔ Work completed:
+
+- Fixed the desktop loopback port to 51289 to match a GitHub OAuth callback.
+- Documented need for a dedicated GitHub OAuth app for desktop.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 165 — Desktop GitHub OAuth setup notes — 29/01/2026
+
+### ✔ Work completed:
+
+- Documented desktop GitHub OAuth runtime flags and function config in README.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 166 — Update Functions runtime to Node 20 — 29/01/2026
+
+### ✔ Work completed:
+
+- Updated Firebase Functions runtime to Node.js 20.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 167 — Functions config deprecation reminder — 29/01/2026
+
+### ✔ Work completed:
+
+- Recorded March 2026 deprecation of `functions.config()` and need to migrate to `.env`.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 168 — Desktop run scripts — 29/01/2026
+
+### ✔ Work completed:
+
+- Added macOS and Windows run scripts for GitHub desktop OAuth.
+- Clarified `.env.local` usage per machine in README.
 
 ### ⚠️ Issues found:
 

@@ -1,6 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:google_sign_in/google_sign_in.dart';
+
+import 'github_oauth_config.dart';
+import 'github_oauth_service.dart';
 
 /// Authentication service.
 /// Implements Google Sign-In for Android/iOS/Web and email/password everywhere.
@@ -10,6 +14,7 @@ abstract class AuthService {
   bool get isEmailVerified;
   bool get requiresEmailVerification;
   bool get isGitHubSignInSupported;
+  bool get isGitHubDesktopOAuthSupported;
   Stream<User?> get authStateChanges;
   Stream<User?> get userChanges;
 
@@ -67,6 +72,15 @@ class FirebaseAuthService implements AuthService {
         defaultTargetPlatform == TargetPlatform.iOS;
   }
 
+  bool get _isDesktop {
+    return defaultTargetPlatform == TargetPlatform.macOS ||
+        defaultTargetPlatform == TargetPlatform.windows;
+  }
+
+  @override
+  bool get isGitHubDesktopOAuthSupported =>
+      _isDesktop && GitHubOAuthConfig.desktopClientId.isNotEmpty;
+
   @override
   bool get requiresEmailVerification {
     final user = _auth.currentUser;
@@ -110,10 +124,22 @@ class FirebaseAuthService implements AuthService {
 
   @override
   Future<UserCredential> signInWithGitHub() async {
-    if (!isGitHubSignInSupported) {
+    if (!isGitHubSignInSupported && !isGitHubDesktopOAuthSupported) {
       throw UnsupportedError(
         'GitHub Sign-In is not available on this platform.',
       );
+    }
+
+    if (isGitHubDesktopOAuthSupported) {
+      final clientId = GitHubOAuthConfig.desktopClientId;
+      final exchange = Uri.parse(GitHubOAuthConfig.exchangeEndpoint);
+      final oauth = GitHubOAuthService(
+        clientId: clientId,
+        exchangeEndpoint: exchange,
+      );
+      final token = await oauth.authenticateWithLoopback();
+      final credential = GithubAuthProvider.credential(token);
+      return _auth.signInWithCredential(credential);
     }
 
     final provider = GithubAuthProvider();
@@ -138,6 +164,19 @@ class FirebaseAuthService implements AuthService {
     if (user == null) {
       throw StateError('No authenticated user to link credentials.');
     }
+
+    if (isGitHubDesktopOAuthSupported) {
+      final clientId = GitHubOAuthConfig.desktopClientId;
+      final exchange = Uri.parse(GitHubOAuthConfig.exchangeEndpoint);
+      final oauth = GitHubOAuthService(
+        clientId: clientId,
+        exchangeEndpoint: exchange,
+      );
+      final token = await oauth.authenticateWithLoopback();
+      final credential = GithubAuthProvider.credential(token);
+      return user.linkWithCredential(credential);
+    }
+
     final provider = GithubAuthProvider();
     if (kIsWeb) {
       return user.linkWithPopup(provider);
@@ -208,6 +247,9 @@ class StubAuthService implements AuthService {
 
   @override
   bool get isGitHubSignInSupported => false;
+
+  @override
+  bool get isGitHubDesktopOAuthSupported => false;
 
   @override
   Stream<User?> get authStateChanges => const Stream.empty();

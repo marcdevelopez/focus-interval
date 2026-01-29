@@ -422,12 +422,17 @@ Desktop GitHub OAuth (manual backend flow)
 
 - Required on macOS/Windows because FirebaseAuth `signInWithProvider` is not supported on macOS and is not reliable on Windows.
 - Flow:
-  1) App opens system browser to GitHub OAuth authorize URL.
-  2) GitHub redirects to the app (custom scheme or universal link) with `code`.
-  3) App sends `code` to a backend endpoint.
+  1) App opens system browser to GitHub OAuth authorize URL (desktop client).
+  2) GitHub redirects to a local loopback URL (desktop): `http://127.0.0.1:51289/oauth`.
+  3) App captures `code` from the loopback callback and sends it to a backend endpoint.
   4) Backend exchanges `code` for `access_token` using the GitHub client secret.
   5) App signs in to Firebase with `GithubAuthProvider.credential(accessToken)`.
 - The backend is required to keep the client secret secure (never ship it in the app).
+- Backend implementation: Firebase Cloud Functions inside the repo.
+- Desktop app configuration:
+  - `GITHUB_OAUTH_CLIENT_ID` (dart-define)
+  - `GITHUB_OAUTH_EXCHANGE_ENDPOINT` (dart-define, defaults to the Cloud Function URL)
+  - Requires a dedicated GitHub OAuth App whose callback URL is exactly `http://127.0.0.1:51289/oauth`.
 
 Persistence
 

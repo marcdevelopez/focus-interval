@@ -50,6 +50,8 @@ dependencies:
   local_notifier: ^0.1.5
   file_picker: ^8.1.2
   path_provider: ^2.1.4
+  http: ^1.2.2
+  url_launcher: ^6.3.0
 
   # dependency_overrides:
 

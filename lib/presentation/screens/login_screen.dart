@@ -677,7 +677,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final currentUser = ref.watch(currentUserProvider);
     final authSupported = auth is! StubAuthService;
     final isGoogleDisabled = !_isGoogleSignInSupported;
-    final isGitHubSupported = auth.isGitHubSignInSupported;
+    final isGitHubSupported =
+        auth.isGitHubSignInSupported || auth.isGitHubDesktopOAuthSupported;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final allowLocalExit = appMode == AppMode.local && currentUser == null;
 
