@@ -328,19 +328,20 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ---
 
-# [✔] **PHASE 6.7 — Optional GitHub Sign-In (documentation-first) (completed 24/01/2026)**
+# [✔] **PHASE 6.7 — Optional GitHub Sign-In (Device Flow implemented) (completed 29/01/2026)**
 
 ### ⚙️ Tasks
 
 - Document GitHub Sign-In as an optional Account Mode provider.
 - Document platform constraints (OAuth flows and unsupported platforms).
+- Implement desktop GitHub Device Flow (no backend) for macOS/Windows.
 - Keep Local Mode and existing providers unchanged.
 - Mark as non-blocking and platform-dependent.
 
 ### 📌 Exit conditions
 
 - Specs updated with GitHub Sign-In option and platform fallbacks.
-- No code changes required yet.
+- Desktop GitHub Device Flow implemented and validated on macOS/Windows.
 
 ---
 

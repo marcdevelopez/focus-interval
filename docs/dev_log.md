@@ -3223,6 +3223,16 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 182 — Phase 6.7 roadmap updated for Device Flow — 31/01/2026
+
+### ✔ Work completed:
+
+- Updated Phase 6.7 in the roadmap to reflect the implemented GitHub Device Flow and completion date.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
