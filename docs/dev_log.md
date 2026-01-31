@@ -16,7 +16,7 @@ This document is used to:
 # 📍 Current status
 
 Active phase: **17 — Planning Flow + Conflict Management**
-Last update: **29/01/2026**
+Last update: **31/01/2026**
 
 ---
 
@@ -3175,6 +3175,27 @@ _(fill in when they happen)_
 
 - Updated Android Gradle Plugin to 8.9.1 to satisfy androidx AAR metadata requirements.
 - Bumped Gradle wrapper to 8.12.1.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 178 — Web notification policy clarification — 31/01/2026
+
+### ✔ Work completed:
+
+- Clarified web notification behavior and silent best-effort policy in specs.
+- Aligned pre-alert notification rules with background scheduling limits (Android/iOS/macOS only) and open-app suppression.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 179 — Task Editor validation rules clarified — 31/01/2026
+
+### ✔ Work completed:
+
+- Documented Task Editor unique-name normalization (trim + case-insensitive) and whitespace-only invalid names in specs.
 
 ### ⚠️ Issues found:
 
