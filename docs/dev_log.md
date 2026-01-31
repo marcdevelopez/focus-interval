@@ -15,7 +15,7 @@ This document is used to:
 
 # 📍 Current status
 
-Active phase: **17 — Planning Flow + Conflict Management**
+Active phase: **18 — Run Mode Redesign for TaskRunGroups**
 Last update: **31/01/2026**
 
 ---
@@ -3228,6 +3228,17 @@ _(fill in when they happen)_
 ### ✔ Work completed:
 
 - Updated Phase 6.7 in the roadmap to reflect the implemented GitHub Device Flow and completion date.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 183 — Phase 17 Windows/Linux validation — 31/01/2026
+
+### ✔ Work completed:
+
+- Validated scheduled planning flow, conflict handling, auto-start, and catch-up on Windows/Linux.
+- Marked Phase 17 as completed in the roadmap and removed it from reopened phases.
 
 ### ⚠️ Issues found:
 
