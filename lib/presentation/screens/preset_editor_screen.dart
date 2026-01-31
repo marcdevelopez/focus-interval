@@ -176,11 +176,22 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
             onPressed: () async {
               if (!_formKey.currentState!.validate()) return;
               if (!await _validateBusinessRules()) return;
-              final saved = await ref
+              final result = await ref
                   .read(presetEditorProvider.notifier)
                   .save();
               if (!context.mounted) return;
-              if (!saved) return;
+              if (!result.success) {
+                final message =
+                    result.message ?? 'Failed to save preset. Please try again.';
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(SnackBar(content: Text(message)));
+                return;
+              }
+              if (result.message != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(result.message!)),
+                );
+              }
               _exitEditor();
             },
             child: const Text("Save"),

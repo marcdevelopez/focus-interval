@@ -707,9 +707,13 @@ Preset definition:
 
 Behavior:
 
+- The app ships with a built-in default preset named **Classic Pomodoro**.
+- The system guarantees at least one preset always exists; users cannot end up with zero presets.
+- Presets are seeded on first read:
+  - If no presets exist, auto-create **Classic Pomodoro** and mark it as default.
 - Presets are selectable from the Task Editor when creating or editing a task.
 - Presets can be created, renamed, edited, and deleted from within the Task Editor context.
-- One preset can be marked as **default** and applied automatically to new tasks.
+- One preset is always marked as **default** and applied automatically to new tasks.
 - A task may either:
   - reference a saved preset, or
   - use a custom, task-specific configuration.
@@ -724,6 +728,10 @@ Preset UI (Task Editor)
   - Default toggle (star) → marks as global default (only one default at a time)
 - "Save as new preset" appears only in Custom mode after changes.
 - Selecting a preset overrides the fields below; editing any structural field detaches to Custom.
+- Preset save failures must show explicit user feedback (no silent failures), including
+  sync-disabled and permission errors.
+- If deleting a preset would leave zero presets, automatically recreate **Classic Pomodoro**
+  and mark it as the default.
 
 Preset UI (Settings)
 
@@ -737,6 +745,9 @@ Storage & sync
 
 - Account Mode: `users/{uid}/pomodoroPresets/{presetId}` in Firestore.
 - Local Mode: presets stored locally (SharedPreferences in MVP; Hive planned).
+- Account Mode + sync disabled: presets stored in an account-scoped local cache (keyed by uid).
+- When sync becomes enabled (email verified), automatically push account-local presets to
+  Firestore once (no user prompt).
 - Custom sound selections remain local-only:
   - Firestore stores built-in references for presets
   - Local overrides store the custom file path + display name per preset
@@ -1064,6 +1075,7 @@ Entry point
 - A standard Settings/Preferences entry must be discoverable without guidance.
 - Primary access: a top-right gear icon on the Task List screen.
 - Desktop: also expose Settings/Preferences in the app menu.
+- Settings must remain accessible in Local Mode (at least Manage Presets and Preferences).
 
 Content
 

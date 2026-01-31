@@ -370,7 +370,6 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final showLogout = authSupported && appMode == AppMode.account && signedIn;
     final showLogin = authSupported && appMode == AppMode.account && !signedIn;
     final showInfo = !authSupported;
-    final hasTrailing = showAccountLabel || showLogout || showLogin || showInfo;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -379,80 +378,78 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         centerTitle: false,
         toolbarHeight: isCompact ? 108 : 92,
         titleSpacing: 12,
-        actions: hasTrailing
-            ? [
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: SizedBox(
-                    height: double.infinity,
-                    child: Align(
-                      alignment: Alignment.topRight,
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.settings),
-                                  constraints: const BoxConstraints.tightFor(
-                                    width: 36,
-                                    height: 36,
-                                  ),
-                                  padding: EdgeInsets.zero,
-                                  onPressed: () => context.push('/settings'),
-                                ),
-                                if (showAccountLabel)
-                                  ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      maxWidth: maxEmailWidth,
-                                    ),
-                                child: Text(
-                                  accountLabel,
-                                  style: const TextStyle(fontSize: 12),
-                                  overflow: TextOverflow.ellipsis,
-                                  textAlign: TextAlign.right,
-                                ),
-                              ),
-                            if (showAccountLabel) const SizedBox(width: 8),
-                            if (showLogout)
-                              IconButton(
-                                icon: const Icon(Icons.logout),
-                                constraints: const BoxConstraints.tightFor(
-                                  width: 36,
-                                  height: 36,
-                                ),
-                                padding: EdgeInsets.zero,
-                                onPressed: _handleLogout,
-                              ),
-                            if (showLogin)
-                              IconButton(
-                                icon: const Icon(Icons.person),
-                                constraints: const BoxConstraints.tightFor(
-                                  width: 36,
-                                  height: 36,
-                                ),
-                                padding: EdgeInsets.zero,
-                                onPressed: () => context.go('/login'),
-                              ),
-                            if (showInfo)
-                              IconButton(
-                                icon: const Icon(Icons.info_outline),
-                                constraints: const BoxConstraints.tightFor(
-                                  width: 36,
-                                  height: 36,
-                                ),
-                                padding: EdgeInsets.zero,
-                                onPressed: _handleSyncInfoTap,
-                              ),
-                          ],
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: SizedBox(
+              height: double.infinity,
+              child: Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.settings),
+                        constraints: const BoxConstraints.tightFor(
+                          width: 36,
+                          height: 36,
                         ),
+                        padding: EdgeInsets.zero,
+                        onPressed: () => context.push('/settings'),
                       ),
-                    ),
+                      if (showAccountLabel)
+                        ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: maxEmailWidth,
+                          ),
+                          child: Text(
+                            accountLabel,
+                            style: const TextStyle(fontSize: 12),
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.right,
+                          ),
+                        ),
+                      if (showAccountLabel) const SizedBox(width: 8),
+                      if (showLogout)
+                        IconButton(
+                          icon: const Icon(Icons.logout),
+                          constraints: const BoxConstraints.tightFor(
+                            width: 36,
+                            height: 36,
+                          ),
+                          padding: EdgeInsets.zero,
+                          onPressed: _handleLogout,
+                        ),
+                      if (showLogin)
+                        IconButton(
+                          icon: const Icon(Icons.person),
+                          constraints: const BoxConstraints.tightFor(
+                            width: 36,
+                            height: 36,
+                          ),
+                          padding: EdgeInsets.zero,
+                          onPressed: () => context.go('/login'),
+                        ),
+                      if (showInfo)
+                        IconButton(
+                          icon: const Icon(Icons.info_outline),
+                          constraints: const BoxConstraints.tightFor(
+                            width: 36,
+                            height: 36,
+                          ),
+                          padding: EdgeInsets.zero,
+                          onPressed: _handleSyncInfoTap,
+                        ),
+                    ],
                   ),
                 ),
-              ]
-            : null,
+              ),
+            ),
+          ),
+        ],
         title: Padding(
           padding: const EdgeInsets.only(top: 6, bottom: 2),
           child: SizedBox(
@@ -499,8 +496,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          ref.read(taskEditorProvider.notifier).createNew();
+        onPressed: () async {
+          await ref.read(taskEditorProvider.notifier).createNew();
+          if (!context.mounted) return;
           context.push("/tasks/new");
         },
         child: const Icon(Icons.add),

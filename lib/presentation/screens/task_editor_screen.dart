@@ -152,7 +152,10 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     final selectedPreset =
         task == null ? null : _findPreset(presets, task.presetId);
     if (task != null && task.presetId != null && selectedPreset == null) {
-      editor.detachPreset();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        editor.detachPreset();
+      });
     }
     final pomodoroDisplayName =
         editor.customDisplayName(SoundPickTarget.pomodoroStart);

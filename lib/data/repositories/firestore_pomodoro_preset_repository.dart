@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:uuid/uuid.dart';
 
 import '../models/pomodoro_preset.dart';
 import '../services/firebase_auth_service.dart';
@@ -10,6 +11,8 @@ import 'pomodoro_preset_repository.dart';
 class FirestorePomodoroPresetRepository implements PomodoroPresetRepository {
   final FirestoreService firestoreService;
   final AuthService authService;
+  final _uuid = const Uuid();
+  bool _seeded = false;
 
   FirestorePomodoroPresetRepository({
     required this.firestoreService,
@@ -32,7 +35,11 @@ class FirestorePomodoroPresetRepository implements PomodoroPresetRepository {
     final uid = await _uidOrThrow();
     final snap = await _presetCollection(uid).get();
     final now = DateTime.now();
-    return snap.docs.map((doc) {
+    if (snap.docs.isEmpty) {
+      final seeded = await _seedDefault(uid, now: now);
+      return [seeded];
+    }
+    final presets = snap.docs.map((doc) {
       final normalized = _normalizePresetMap(
         uid: uid,
         docId: doc.id,
@@ -41,6 +48,7 @@ class FirestorePomodoroPresetRepository implements PomodoroPresetRepository {
       );
       return PomodoroPreset.fromMap(normalized);
     }).toList();
+    return _ensureDefaultFlag(uid, presets);
   }
 
   @override
@@ -67,6 +75,7 @@ class FirestorePomodoroPresetRepository implements PomodoroPresetRepository {
   Future<void> delete(String id) async {
     final uid = await _uidOrThrow();
     await _presetCollection(uid).doc(id).delete();
+    await _ensureDefaultExists(uid);
   }
 
   @override
@@ -74,7 +83,16 @@ class FirestorePomodoroPresetRepository implements PomodoroPresetRepository {
     final uid = await _uidOrThrow();
     yield* _presetCollection(uid).snapshots().map((snap) {
       final now = DateTime.now();
-      return snap.docs.map((doc) {
+      if (snap.docs.isEmpty && !_seeded) {
+        _seeded = true;
+        final seeded = PomodoroPreset.classicDefault(
+          id: _uuid.v4(),
+          now: now,
+        );
+        unawaited(_presetCollection(uid).doc(seeded.id).set(seeded.toMap()));
+        return [seeded];
+      }
+      final presets = snap.docs.map((doc) {
         final normalized = _normalizePresetMap(
           uid: uid,
           docId: doc.id,
@@ -83,6 +101,7 @@ class FirestorePomodoroPresetRepository implements PomodoroPresetRepository {
         );
         return PomodoroPreset.fromMap(normalized);
       }).toList();
+      return _ensureDefaultFlag(uid, presets);
     });
   }
 
@@ -116,5 +135,55 @@ class FirestorePomodoroPresetRepository implements PomodoroPresetRepository {
       );
     }
     return normalized;
+  }
+
+  Future<PomodoroPreset> _seedDefault(
+    String uid, {
+    required DateTime now,
+  }) async {
+    final preset = PomodoroPreset.classicDefault(
+      id: _uuid.v4(),
+      now: now,
+    );
+    await _presetCollection(uid).doc(preset.id).set(preset.toMap());
+    return preset;
+  }
+
+  Future<void> _ensureDefaultExists(String uid) async {
+    final snap = await _presetCollection(uid).get();
+    if (snap.docs.isEmpty) {
+      await _seedDefault(uid, now: DateTime.now());
+      return;
+    }
+    final presets = snap.docs.map((doc) {
+      final normalized = _normalizePresetMap(
+        uid: uid,
+        docId: doc.id,
+        raw: doc.data(),
+        now: DateTime.now(),
+      );
+      return PomodoroPreset.fromMap(normalized);
+    }).toList();
+    _ensureDefaultFlag(uid, presets);
+  }
+
+  List<PomodoroPreset> _ensureDefaultFlag(
+    String uid,
+    List<PomodoroPreset> presets,
+  ) {
+    if (presets.isEmpty) return presets;
+    final hasDefault = presets.any((preset) => preset.isDefault);
+    if (hasDefault) return presets;
+    final first = presets.first;
+    final updated = [
+      first.copyWith(isDefault: true),
+      ...presets.skip(1),
+    ];
+    unawaited(
+      _presetCollection(uid)
+          .doc(first.id)
+          .set(updated.first.toMap()),
+    );
+    return updated;
   }
 }

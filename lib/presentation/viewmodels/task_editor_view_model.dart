@@ -43,9 +43,9 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
   }
 
   // Create a new task with defaults.
-  void createNew() {
+  Future<void> createNew() async {
     final now = DateTime.now();
-    final preset = _defaultPreset();
+    final preset = await _fetchDefaultPreset();
     if (preset != null) {
       state = PomodoroTask(
         id: _uuid.v4(),
@@ -96,11 +96,14 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
     state = task;
   }
 
-  PomodoroPreset? _defaultPreset() {
-    final presets = ref.read(presetListProvider).value;
-    if (presets == null || presets.isEmpty) return null;
+  Future<PomodoroPreset?> _fetchDefaultPreset() async {
     try {
-      return presets.firstWhere((preset) => preset.isDefault);
+      final presets = await ref.read(presetRepositoryProvider).getAll();
+      if (presets.isEmpty) return null;
+      for (final preset in presets) {
+        if (preset.isDefault) return preset;
+      }
+      return presets.first;
     } catch (_) {
       return null;
     }

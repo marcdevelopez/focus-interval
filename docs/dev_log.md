@@ -3317,6 +3317,43 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 190 — Preset save errors + Settings visibility fixes — 31/01/2026
+
+### ✔ Work completed:
+
+- Added Firestore rules for `users/{uid}/pomodoroPresets` to unblock Account Mode preset CRUD.
+- Exposed Settings gear in Local Mode to keep Settings accessible across modes.
+- Added explicit error feedback for preset save failures (sync disabled, permission errors).
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 191 — Built-in default preset decision — 31/01/2026
+
+### ✔ Work completed:
+
+- Defined built-in default preset (Classic Pomodoro) and invariant that at least one preset always exists.
+- Added seeding rules for Local Mode, Account Mode, and Account Mode with sync disabled.
+- Documented account-local preset cache and one-time auto-push on sync enable.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 192 — Implement Classic Pomodoro default seeding — 31/01/2026
+
+### ✔ Work completed:
+
+- Implemented Classic Pomodoro built-in default preset seeding across Local, Account, and sync-disabled scopes.
+- Enforced “at least one preset” invariant on delete and ensured a default always exists.
+- Added account-local preset cache for sync-disabled Account Mode and auto-push to Firestore on sync enable.
+- New tasks now default to the preset instead of implicit custom values.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
