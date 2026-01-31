@@ -2,73 +2,63 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'selected_sound.dart';
 
-class PomodoroTask {
-  static const Object _unset = Object();
+class PomodoroPreset {
   final String id;
   final String name;
 
   final int pomodoroMinutes;
   final int shortBreakMinutes;
   final int longBreakMinutes;
-
-  final int totalPomodoros;
   final int longBreakInterval;
-  final int order;
-  final String? presetId;
 
   final SelectedSound startSound;
   final SelectedSound startBreakSound;
   final SelectedSound finishTaskSound;
 
+  final bool isDefault;
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  PomodoroTask({
+  PomodoroPreset({
     required this.id,
     required this.name,
     required this.pomodoroMinutes,
     required this.shortBreakMinutes,
     required this.longBreakMinutes,
-    required this.totalPomodoros,
     required this.longBreakInterval,
-    required this.order,
-    this.presetId,
     required this.startSound,
     required this.startBreakSound,
     required this.finishTaskSound,
+    required this.isDefault,
     required this.createdAt,
     required this.updatedAt,
   });
 
-  PomodoroTask copyWith({
+  PomodoroPreset copyWith({
     String? id,
     String? name,
     int? pomodoroMinutes,
     int? shortBreakMinutes,
     int? longBreakMinutes,
-    int? totalPomodoros,
     int? longBreakInterval,
-    int? order,
-    Object? presetId = _unset,
     SelectedSound? startSound,
     SelectedSound? startBreakSound,
     SelectedSound? finishTaskSound,
+    bool? isDefault,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
-    return PomodoroTask(
+    return PomodoroPreset(
       id: id ?? this.id,
       name: name ?? this.name,
       pomodoroMinutes: pomodoroMinutes ?? this.pomodoroMinutes,
       shortBreakMinutes: shortBreakMinutes ?? this.shortBreakMinutes,
       longBreakMinutes: longBreakMinutes ?? this.longBreakMinutes,
-      totalPomodoros: totalPomodoros ?? this.totalPomodoros,
       longBreakInterval: longBreakInterval ?? this.longBreakInterval,
-      order: order ?? this.order,
-      presetId: identical(presetId, _unset) ? this.presetId : presetId as String?,
       startSound: startSound ?? this.startSound,
       startBreakSound: startBreakSound ?? this.startBreakSound,
       finishTaskSound: finishTaskSound ?? this.finishTaskSound,
+      isDefault: isDefault ?? this.isDefault,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -80,41 +70,32 @@ class PomodoroTask {
     'pomodoroMinutes': pomodoroMinutes,
     'shortBreakMinutes': shortBreakMinutes,
     'longBreakMinutes': longBreakMinutes,
-    'totalPomodoros': totalPomodoros,
     'longBreakInterval': longBreakInterval,
-    'order': order,
-    'presetId': presetId,
     'startSound': startSound.toMap(),
     'startBreakSound': startBreakSound.toMap(),
     'finishTaskSound': finishTaskSound.toMap(),
+    'isDefault': isDefault,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
   };
 
-  factory PomodoroTask.fromMap(Map<String, dynamic> map) {
+  factory PomodoroPreset.fromMap(Map<String, dynamic> map) {
     final now = DateTime.now();
     final createdAt = _parseDateTime(map['createdAt']) ?? now;
     final updatedAt = _parseDateTime(map['updatedAt']) ?? createdAt;
-    final order =
-        (map['order'] as num?)?.toInt() ?? createdAt.millisecondsSinceEpoch;
     final pomodoroMinutes = _readInt(map, 'pomodoroMinutes', 25);
     final shortBreakMinutes = _readInt(map, 'shortBreakMinutes', 5);
     final longBreakMinutes = _readInt(map, 'longBreakMinutes', 15);
-    final totalPomodoros = _readInt(map, 'totalPomodoros', 4);
     final longBreakInterval = _readInt(map, 'longBreakInterval', 4);
-    final rawPresetId = map['presetId'];
-    final presetId = rawPresetId is String ? rawPresetId : null;
+    final isDefault = map['isDefault'] == true;
 
-    return PomodoroTask(
+    return PomodoroPreset(
       id: map['id'] as String,
       name: map['name'] as String? ?? '',
       pomodoroMinutes: pomodoroMinutes,
       shortBreakMinutes: shortBreakMinutes,
       longBreakMinutes: longBreakMinutes,
-      totalPomodoros: totalPomodoros,
       longBreakInterval: longBreakInterval,
-      order: order,
-      presetId: presetId?.trim().isEmpty ?? true ? null : presetId,
       startSound: SelectedSound.fromDynamic(
         map['startSound'],
         fallbackId: 'default_chime',
@@ -127,6 +108,7 @@ class PomodoroTask {
         map['finishTaskSound'],
         fallbackId: 'default_chime_finish',
       ),
+      isDefault: isDefault,
       createdAt: createdAt,
       updatedAt: updatedAt.isBefore(createdAt) ? createdAt : updatedAt,
     );

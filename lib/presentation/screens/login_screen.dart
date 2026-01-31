@@ -12,8 +12,10 @@ import '../../data/services/app_mode_service.dart';
 import '../../data/services/local_import_service.dart';
 import '../../data/repositories/local_task_repository.dart';
 import '../../data/repositories/local_task_run_group_repository.dart';
+import '../../data/repositories/local_pomodoro_preset_repository.dart';
 import '../../data/repositories/firestore_task_repository.dart';
 import '../../data/repositories/firestore_task_run_group_repository.dart';
+import '../../data/repositories/firestore_pomodoro_preset_repository.dart';
 import '../../widgets/mode_indicator.dart';
 
 enum _LoginImportChoice { useAccount, importLocal, cancel }
@@ -64,6 +66,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final importService = LocalImportService(
       localTasks: LocalTaskRepository(),
       localGroups: LocalTaskRunGroupRepository(retentionService: retention),
+      localPresets: LocalPomodoroPresetRepository(),
       remoteTasks: FirestoreTaskRepository(
         firestoreService: ref.read(firestoreServiceProvider),
         authService: auth,
@@ -72,6 +75,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         firestoreService: ref.read(firestoreServiceProvider),
         authService: auth,
         retentionService: retention,
+      ),
+      remotePresets: FirestorePomodoroPresetRepository(
+        firestoreService: ref.read(firestoreServiceProvider),
+        authService: auth,
       ),
     );
 

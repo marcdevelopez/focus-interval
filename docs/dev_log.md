@@ -3244,6 +3244,79 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 184 — Phase 10.4 implementation (presets + weight + integrity) — 31/01/2026
+
+### ✔ Work completed:
+
+- Implemented Pomodoro presets (model, local + Firestore storage, default handling).
+- Added Settings → Manage Presets UI (list, edit, delete, default, bulk delete).
+- Added Task Editor preset selector + save-as-new preset; apply settings now propagates presetId.
+- Implemented task weight (%) UI with editable percentage and round-half-up conversion.
+- Added Pomodoro integrity warning on confirm with “Ajustar grupo” shared-structure snapshot.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 185 — Specs update for “Ajustar grupo” preset fallback — 31/01/2026
+
+### ✔ Work completed:
+
+- Updated specs to propagate presetId in TaskRunGroup snapshots when “Ajustar grupo” is used.
+- Added Default Preset fallback rule for Pomodoro integrity unification.
+- Reopened Phase 10.4 tasks in the roadmap to capture the new behavior.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 186 — Adjust “Ajustar grupo” resolution rules — 31/01/2026
+
+### ✔ Work completed:
+
+- Clarified “Ajustar grupo” resolution rules (master task structure, presetId propagation, Default Preset fallback).
+- Updated Phase 10.4 exit condition wording to reflect the integrity resolution mechanism.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 187 — Implement “Ajustar grupo” preset fallback — 31/01/2026
+
+### ✔ Work completed:
+
+- Added presetId to TaskRunItem snapshots for traceability.
+- “Ajustar grupo” now propagates presetId and applies Default Preset fallback when needed.
+- Closed the Phase 10.4 reopen item in the roadmap.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 188 — Integrity warning adds “Usar Predeterminado” — 31/01/2026
+
+### ✔ Work completed:
+
+- Updated specs to include three Integrity Warning actions, including “Usar Predeterminado”.
+- Added dialog action to apply the Default Preset directly.
+- Ensured invalid master structure falls back to Default Preset automatically.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 189 — Default preset option gated by availability — 31/01/2026
+
+### ✔ Work completed:
+
+- Hid “Usar Predeterminado” when no Default Preset exists.
+- Added dialog failsafe: if Default Preset is missing at tap time, show a SnackBar and keep the dialog open.
+- Updated specs to document conditional visibility and fallback behavior.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

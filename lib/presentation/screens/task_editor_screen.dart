@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../providers.dart';
 import '../viewmodels/task_editor_view_model.dart';
 import '../../data/models/pomodoro_task.dart';
+import '../../data/models/pomodoro_preset.dart';
 import '../../domain/validators.dart';
 import '../../widgets/sound_selector.dart';
 import '../../widgets/mode_indicator.dart';
@@ -43,10 +44,14 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   late final TextEditingController _shortBreakCtrl;
   late final TextEditingController _longBreakCtrl;
   late final TextEditingController _totalPomodorosCtrl;
+  late final TextEditingController _weightPercentCtrl;
   late final TextEditingController _longBreakIntervalCtrl;
+  late final FocusNode _weightPercentFocus;
   String? _loadedTaskId;
   bool _intervalTouched = false;
   bool _breaksTouched = false;
+  bool _syncingWeight = false;
+  int _lastGroupTotal = 0;
 
   @override
   void initState() {
@@ -57,7 +62,14 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     _shortBreakCtrl = TextEditingController();
     _longBreakCtrl = TextEditingController();
     _totalPomodorosCtrl = TextEditingController();
+    _weightPercentCtrl = TextEditingController();
     _longBreakIntervalCtrl = TextEditingController();
+    _weightPercentFocus = FocusNode();
+    _weightPercentFocus.addListener(() {
+      if (!_weightPercentFocus.hasFocus) {
+        _syncWeightPercentFromTask();
+      }
+    });
 
     final initial = ref.read(taskEditorProvider);
     if (initial != null) {
@@ -78,7 +90,9 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     _shortBreakCtrl.dispose();
     _longBreakCtrl.dispose();
     _totalPomodorosCtrl.dispose();
+    _weightPercentCtrl.dispose();
     _longBreakIntervalCtrl.dispose();
+    _weightPercentFocus.dispose();
     super.dispose();
   }
 
@@ -120,9 +134,26 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     final editor = ref.read(taskEditorProvider.notifier);
     final tasksAsync = ref.watch(taskListProvider);
     final tasks = tasksAsync.asData?.value ?? const <PomodoroTask>[];
+    final presetsAsync = ref.watch(presetListProvider);
+    final presets = presetsAsync.asData?.value ?? const <PomodoroPreset>[];
     final orderedTasks = _orderTasks(tasks);
     final remainingCount = _remainingCount(task, orderedTasks);
     final canApplySettings = widget.isEditing && remainingCount > 0;
+    final groupTotalPomodoros =
+        task == null ? 0 : _groupTotalPomodoros(task, tasks);
+    _lastGroupTotal = groupTotalPomodoros;
+    final weightPercent = task == null
+        ? 0
+        : editor.weightPercent(
+            taskPomodoros: task.totalPomodoros,
+            totalPomodoros: groupTotalPomodoros,
+          );
+    _maybeSyncWeightPercent(weightPercent);
+    final selectedPreset =
+        task == null ? null : _findPreset(presets, task.presetId);
+    if (task != null && task.presetId != null && selectedPreset == null) {
+      editor.detachPreset();
+    }
     final pomodoroDisplayName =
         editor.customDisplayName(SoundPickTarget.pomodoroStart);
     final breakDisplayName =
@@ -243,18 +274,73 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            _numberField(
-              label: "Total pomodoros",
-              controller: _totalPomodorosCtrl,
-              onChanged: (v) => _update(task.copyWith(totalPomodoros: v)),
-              suffix: _totalPomodorosSuffix(),
-              suffixMaxWidth: 32,
+            _presetSelectorRow(
+              presets: presets,
+              selectedPreset: selectedPreset,
+              onPresetSelected: (preset) async {
+                if (preset == null) {
+                  editor.detachPreset();
+                  return;
+                }
+                await editor.applyPreset(preset);
+                final updated = ref.read(taskEditorProvider);
+                if (updated != null) {
+                  _syncControllers(updated);
+                }
+              },
+              onEditPreset: selectedPreset == null
+                  ? null
+                  : () => context.push(
+                        '/settings/presets/edit/${selectedPreset.id}',
+                      ),
+              onDeletePreset: selectedPreset == null
+                  ? null
+                  : () async {
+                      final confirmed = await _confirmPresetDelete(
+                        selectedPreset,
+                      );
+                      if (!confirmed) return;
+                      await ref
+                          .read(presetEditorProvider.notifier)
+                          .delete(selectedPreset.id);
+                      if (!mounted) return;
+                      editor.detachPreset();
+                    },
+              onToggleDefault: selectedPreset == null
+                  ? null
+                  : () => ref
+                      .read(presetEditorProvider.notifier)
+                      .setDefault(selectedPreset.id),
+            ),
+            if (task.presetId == null) ...[
+              const SizedBox(height: 6),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    await ref
+                        .read(presetEditorProvider.notifier)
+                        .createFromTask(task);
+                    if (!context.mounted) return;
+                    context.push('/settings/presets/new');
+                  },
+                  icon: const Icon(Icons.save_as),
+                  label: const Text('Save as new preset'),
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            _weightRow(
+              task: task,
+              groupTotalPomodoros: groupTotalPomodoros,
             ),
             _numberField(
               label: "Pomodoro duration (min)",
               controller: _pomodoroCtrl,
               onChanged: (v) {
-                _update(task.copyWith(pomodoroMinutes: v));
+                _updateWithPresetCheck(
+                  task.copyWith(pomodoroMinutes: v),
+                );
                 _revalidateBreakFields();
               },
               suffix: _pomodoroSuffix(task.pomodoroMinutes),
@@ -284,7 +370,9 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                     _breaksTouched = true;
                   });
                 }
-                _update(task.copyWith(shortBreakMinutes: v));
+                _updateWithPresetCheck(
+                  task.copyWith(shortBreakMinutes: v),
+                );
                 _revalidateBreakFields();
               },
               suffix: _shortBreakSuffix(task.shortBreakMinutes),
@@ -310,7 +398,9 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                     _breaksTouched = true;
                   });
                 }
-                _update(task.copyWith(longBreakMinutes: v));
+                _updateWithPresetCheck(
+                  task.copyWith(longBreakMinutes: v),
+                );
                 _revalidateBreakFields();
               },
               suffix: _longBreakSuffix(task.longBreakMinutes),
@@ -330,7 +420,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
             _numberField(
               label: "Pomodoros per long break",
               controller: _longBreakIntervalCtrl,
-              onChanged: (v) => _update(task.copyWith(longBreakInterval: v)),
+              onChanged: (v) =>
+                  _updateWithPresetCheck(task.copyWith(longBreakInterval: v)),
               onTextChanged: (raw) {
                 if (!_intervalTouched) {
                   _intervalTouched = true;
@@ -393,14 +484,16 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                   return;
                 }
                 if (result.sound != null) {
-                  _update(task.copyWith(startSound: result.sound));
+                  _updateWithPresetCheck(
+                    task.copyWith(startSound: result.sound),
+                  );
                 }
               },
               onChanged: (v) async {
                 await ref
                     .read(taskEditorProvider.notifier)
                     .clearLocalSoundOverride(SoundPickTarget.pomodoroStart);
-                _update(task.copyWith(startSound: v));
+                _updateWithPresetCheck(task.copyWith(startSound: v));
               },
             ),
             const SizedBox(height: 12),
@@ -426,14 +519,16 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                   return;
                 }
                 if (result.sound != null) {
-                  _update(task.copyWith(startBreakSound: result.sound));
+                  _updateWithPresetCheck(
+                    task.copyWith(startBreakSound: result.sound),
+                  );
                 }
               },
               onChanged: (v) async {
                 await ref
                     .read(taskEditorProvider.notifier)
                     .clearLocalSoundOverride(SoundPickTarget.breakStart);
-                _update(task.copyWith(startBreakSound: v));
+                _updateWithPresetCheck(task.copyWith(startBreakSound: v));
               },
             ),
             const SizedBox(height: 12),
@@ -499,6 +594,12 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     _shortBreakCtrl.text = task.shortBreakMinutes.toString();
     _longBreakCtrl.text = task.longBreakMinutes.toString();
     _totalPomodorosCtrl.text = task.totalPomodoros.toString();
+    final total = _lastGroupTotal > 0 ? _lastGroupTotal : task.totalPomodoros;
+    final percent = ref.read(taskEditorProvider.notifier).weightPercent(
+      taskPomodoros: task.totalPomodoros,
+      totalPomodoros: total,
+    );
+    _weightPercentCtrl.text = percent.toString();
     _longBreakIntervalCtrl.text = task.longBreakInterval.toString();
     _intervalTouched = false;
     _breaksTouched = false;
@@ -634,6 +735,86 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     if (index == -1) return 0;
     final remaining = tasks.length - index - 1;
     return remaining < 0 ? 0 : remaining;
+  }
+
+  int _groupTotalPomodoros(
+    PomodoroTask task,
+    List<PomodoroTask> tasks,
+  ) {
+    if (tasks.isEmpty) return task.totalPomodoros;
+    var total = 0;
+    var included = false;
+    for (final t in tasks) {
+      if (t.id == task.id) {
+        total += task.totalPomodoros;
+        included = true;
+      } else {
+        total += t.totalPomodoros;
+      }
+    }
+    return included ? total : total + task.totalPomodoros;
+  }
+
+  PomodoroPreset? _findPreset(
+    List<PomodoroPreset> presets,
+    String? presetId,
+  ) {
+    if (presetId == null || presetId.trim().isEmpty) return null;
+    for (final preset in presets) {
+      if (preset.id == presetId) return preset;
+    }
+    return null;
+  }
+
+  Future<bool> _confirmPresetDelete(PomodoroPreset preset) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Delete preset'),
+          content: Text('Delete "${preset.name}"? Tasks will keep their values.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+    return result ?? false;
+  }
+
+  void _maybeSyncWeightPercent(int percent) {
+    if (_syncingWeight) return;
+    if (_weightPercentFocus.hasFocus) return;
+    final current = _weightPercentCtrl.text.trim();
+    final target = percent.toString();
+    if (current == target) return;
+    _weightPercentCtrl.text = target;
+  }
+
+  void _syncWeightPercentFromTask() {
+    final task = ref.read(taskEditorProvider);
+    if (task == null) return;
+    final total = _lastGroupTotal > 0 ? _lastGroupTotal : task.totalPomodoros;
+    final percent = ref.read(taskEditorProvider.notifier).weightPercent(
+      taskPomodoros: task.totalPomodoros,
+      totalPomodoros: total,
+    );
+    _weightPercentCtrl.text = percent.toString();
+  }
+
+  void _updateWithPresetCheck(PomodoroTask updated) {
+    final current = ref.read(taskEditorProvider);
+    if (current != null && current.presetId != null) {
+      updated = updated.copyWith(presetId: null);
+    }
+    _update(updated);
   }
 
   String? _breakMaxValidator({
@@ -926,7 +1107,10 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       key: fieldKey,
       controller: controller,
       keyboardType: TextInputType.number,
-      style: const TextStyle(color: Colors.white),
+      style: const TextStyle(
+        color: Colors.white,
+        fontFeatures: [FontFeature.tabularFigures()],
+      ),
       cursorColor: Colors.white,
       autovalidateMode: autovalidateMode,
       decoration: InputDecoration(
@@ -1095,6 +1279,183 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
           stroke: 2,
         ),
       ],
+    );
+  }
+
+  Widget _presetSelectorRow({
+    required List<PomodoroPreset> presets,
+    required PomodoroPreset? selectedPreset,
+    required Future<void> Function(PomodoroPreset? preset) onPresetSelected,
+    VoidCallback? onEditPreset,
+    VoidCallback? onDeletePreset,
+    VoidCallback? onToggleDefault,
+  }) {
+    const customValue = '__custom__';
+    final items = <DropdownMenuItem<String>>[
+      const DropdownMenuItem(
+        value: customValue,
+        child: Text('Custom'),
+      ),
+      ...presets.map(
+        (preset) => DropdownMenuItem(
+          value: preset.id,
+          child: Text(preset.isDefault ? '★ ${preset.name}' : preset.name),
+        ),
+      ),
+    ];
+    final selectedValue = selectedPreset?.id ?? customValue;
+
+    return Row(
+      children: [
+        Expanded(
+          child: DropdownButtonFormField<String>(
+            key: ValueKey<String>(selectedValue),
+            initialValue: selectedValue,
+            dropdownColor: const Color(0xFF1A1A1A),
+            decoration: const InputDecoration(
+              labelText: 'Preset',
+              labelStyle: TextStyle(color: Colors.white54),
+              filled: true,
+              fillColor: Colors.white10,
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.white24),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.white54),
+              ),
+            ),
+            iconEnabledColor: Colors.white70,
+            style: const TextStyle(color: Colors.white),
+            items: items,
+            onChanged: (value) async {
+              if (value == null) return;
+              if (value == customValue) {
+                await onPresetSelected(null);
+                return;
+              }
+              PomodoroPreset? preset;
+              for (final entry in presets) {
+                if (entry.id == value) {
+                  preset = entry;
+                  break;
+                }
+              }
+              if (preset == null) return;
+              await onPresetSelected(preset);
+            },
+          ),
+        ),
+        if (selectedPreset != null) ...[
+          const SizedBox(width: 6),
+          _iconButton(
+            tooltip: 'Edit preset',
+            icon: Icons.edit,
+            onPressed: onEditPreset,
+          ),
+          _iconButton(
+            tooltip: 'Delete preset',
+            icon: Icons.delete_outline,
+            onPressed: onDeletePreset,
+            color: Colors.redAccent,
+          ),
+          _iconButton(
+            tooltip: 'Set default preset',
+            icon: selectedPreset.isDefault ? Icons.star : Icons.star_border,
+            onPressed: onToggleDefault,
+            color: selectedPreset.isDefault
+                ? Colors.amberAccent
+                : Colors.white54,
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _weightRow({
+    required PomodoroTask task,
+    required int groupTotalPomodoros,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: _numberField(
+            label: "Total pomodoros",
+            controller: _totalPomodorosCtrl,
+            onChanged: (v) => _update(task.copyWith(totalPomodoros: v)),
+            suffix: _totalPomodorosSuffix(),
+            suffixMaxWidth: 32,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: TextFormField(
+            controller: _weightPercentCtrl,
+            focusNode: _weightPercentFocus,
+            keyboardType: TextInputType.number,
+            style: const TextStyle(
+              color: Colors.white,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
+            cursorColor: Colors.white,
+            decoration: const InputDecoration(
+              labelText: "Task weight (%)",
+              labelStyle: TextStyle(color: Colors.white54),
+              filled: true,
+              fillColor: Colors.white10,
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.white24),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.white54),
+              ),
+            ),
+            validator: (v) {
+              final value = int.tryParse(v ?? '');
+              if (value == null || value <= 0) {
+                return "Enter a valid percent";
+              }
+              if (value > 100) return "Max 100%";
+              return null;
+            },
+            onChanged: (raw) {
+              if (_syncingWeight) return;
+              final percent = int.tryParse(raw.trim());
+              if (percent == null) return;
+              final total = groupTotalPomodoros <= 0
+                  ? task.totalPomodoros
+                  : groupTotalPomodoros;
+              _syncingWeight = true;
+              final clamped = percent < 1
+                  ? 1
+                  : (percent > 100 ? 100 : percent);
+              final newPomodoros = ref
+                  .read(taskEditorProvider.notifier)
+                  .pomodorosFromPercent(
+                    percent: clamped,
+                    totalPomodoros: total,
+                  );
+              _totalPomodorosCtrl.text = newPomodoros.toString();
+              _update(task.copyWith(totalPomodoros: newPomodoros));
+              _syncingWeight = false;
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _iconButton({
+    required String tooltip,
+    required IconData icon,
+    VoidCallback? onPressed,
+    Color? color,
+  }) {
+    return IconButton(
+      tooltip: tooltip,
+      icon: Icon(icon, size: 18, color: color ?? Colors.white70),
+      constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+      padding: EdgeInsets.zero,
+      onPressed: onPressed,
     );
   }
 

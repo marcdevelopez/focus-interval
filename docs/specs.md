@@ -17,6 +17,7 @@ The main goals are:
 - Save and sync tasks/groups in the cloud (Firestore)
 - Sync Pomodoro execution in real time across devices (single session owner, others in mirror mode)
 - Play internal app sounds for state changes (notifications remain silent; web is best-effort per browser/OS)
+ - Presets: reusable Pomodoro configurations (durations, breaks, sounds) usable across tasks
 
 The app syncs with Firebase via Google Sign-In on iOS/Android/Web, email/password on macOS/Windows, and optional GitHub Sign-In where supported. A first-class Local Mode (offline, no auth) is available on all platforms and can be toggled at any time.
 
@@ -170,6 +171,7 @@ class TaskRunGroup {
 class TaskRunItem {
   String sourceTaskId; // reference to original task
   String name;
+  String? presetId; // optional reference to the preset used for structure
 
   int pomodoroDuration;
   int shortBreakDuration;
@@ -345,6 +347,7 @@ Platform notes:
 
 - users/{uid}/tasks/{taskId}
 - users/{uid}/taskRunGroups/{groupId}
+- users/{uid}/pomodoroPresets/{presetId}
 - Linux: Firebase Auth/Firestore sync is unavailable; tasks and TaskRunGroups are stored locally (no cloud sync).
 
 ## **8.2. Local Mode (offline / no auth)**
@@ -352,12 +355,14 @@ Platform notes:
 - Local Mode is a first-class backend available on all platforms.
 - Users can explicitly choose between Local Mode (offline, no login) and Account Mode (synced).
 - Local data uses the exact same models (tasks, TaskRunGroups, sessions) for future compatibility.
+- Presets are stored locally alongside tasks (SharedPreferences in MVP; Hive planned for v1.2).
 - MVP note: Local Mode does not persist active PomodoroSession yet. If the app relaunches while a group is running, the UI projects progress from TaskRunGroup.actualStartTime (no pause reconstruction).
 - UX note: In Local Mode, pressing Pause immediately pauses and shows a lightweight, translucent informational dialog (single acknowledgement) explaining that closing the app while paused will not preserve the pause; on reopen the timer resumes from the original start time. The dialog is informational only and does not change pause behavior.
 - While paused in Local Mode, provide a discreet info affordance near Pause/Resume that can re-open the same explanation on demand. Do not add persistent banners or vertical layout shifts on the Execution screen.
 - Local Mode scope is strictly device-local; Account Mode scope is strictly user:{uid}.
 - There is no implicit sync between scopes.
-- Switching to Account Mode can offer a one-time import of local data only after explicit user confirmation.
+- Switching to Account Mode can offer a one-time import of local data (tasks, groups, presets)
+  only after explicit user confirmation.
 - Import targets the currently signed-in UID and overwrites by ID (no merge) in MVP 1.2.
 - Switching back to Local Mode keeps local data separate and usable regardless of login state.
 - Logout returns to Local Mode without auto-import or auto-sync.
@@ -537,6 +542,27 @@ Item layout (top → bottom):
 - Enabled only if at least 1 task is selected
 - On press:
   - Create a TaskRunGroup snapshot
+  - If selected tasks use mixed Pomodoro structural configurations
+    (pomodoro duration, short/long break duration, long break interval),
+    show the Pomodoro Integrity Warning before scheduling/starting:
+    - Dialog style: pure black background with amber/orange border
+    - Icon: Icons.info_outline (educational warning)
+    - Actions (three options):
+      1. **Continuar**: proceed in Mode B (per-task configurations).
+      2. **Ajustar a la primera**: force Mode A by applying the structure of
+         the first selected task to the TaskRunGroup snapshot (durations,
+         interval, sounds) while keeping each task’s totalPomodoros unchanged.
+         - If the master task has a presetId, propagate that presetId to all
+           TaskRunItem snapshots for traceability.
+      3. **Usar Predeterminado**: force Mode A by applying the globally marked
+         Default Preset to the TaskRunGroup snapshot (durations, interval,
+         sounds) and propagate its presetId.
+         - If the master task does not provide a clear structure, option 2
+           automatically applies the Default Preset as a fallback.
+         - This option is shown only when a Default Preset exists; otherwise,
+           the dialog shows only options 1 and 2.
+         - If the option is shown but the Default Preset is missing at tap
+           time, show a SnackBar and keep the dialog open.
   - Navigate to the execution screen pre-start planning (see section 10.4)
 
 ### **10.2.4. Mode indicator (always visible)**
@@ -560,11 +586,12 @@ Item layout (top → bottom):
 Inputs:
 
 - Name
+- Preset selector (Custom or saved preset)
+- Total pomodoros
+- Task weight (%)
 - Pomodoro duration (minutes)
 - Short break duration
 - Long break duration
-- Total pomodoros
-- Task weight (%)
 - Long break interval
 - Select sounds for each event
 
@@ -573,11 +600,23 @@ Buttons:
 - Save
 - Cancel
 - Apply settings to remaining tasks
+- Save as new preset (only when in Custom mode)
 
 Behavior:
 
+- Preset selector sits above duration/sound inputs (selecting a preset overrides the fields below).
+- When a preset is selected:
+  - Task links to the presetId and adopts its structural values + sounds.
+  - Editing any structural field switches the task to **Custom** (detaches from preset).
+- Inline preset actions are visible next to the selector when a preset is selected:
+  - Edit (pencil) opens the preset editor
+  - Delete removes the preset (tasks keep their current values and become Custom)
+  - Default toggle (star) marks the preset as the global default (only one default at a time)
+- "Save as new preset" appears only in **Custom** mode and saves the current configuration as a new preset.
 - "Apply settings to remaining tasks" copies the current task configuration to all remaining tasks in the list (after the current task).
 - Applies to all task settings except Name (pomodoro duration, short break duration, long break duration, total pomodoros, long break interval, sound selections).
+- If the current task uses a preset, Apply Settings propagates the **presetId** to remaining tasks (not just raw values).
+- If the current task is Custom, Apply Settings copies raw values as-is (no preset required).
 - Task names are always unique within the list after normalization:
   - Trim leading/trailing whitespace.
   - Compare case-insensitively.
@@ -587,6 +626,7 @@ Behavior:
 - Break durations must be shorter than the pomodoro duration; block Save/Apply and show a clear error if they are equal or longer.
 - Short break duration must be strictly less than long break duration; block Save/Apply and show errors on both fields if violated.
 - When a blocking break validation error is present, suppress optimization guidance/helper text until resolved.
+- Numeric inputs use tabular figures (fixed-width digits) to avoid value jitter while typing.
 - Show dynamic guidance for break durations based on the pomodoro length:
   - Short break optimal range: 15–25% of pomodoro duration.
   - Long break optimal range: 40–60% of pomodoro duration.
@@ -608,9 +648,9 @@ Behavior:
   - Allow values >= 1 up to 12; if the interval exceeds total pomodoros, show a note that only short breaks will occur.
   - Provide an info tooltip explaining how the long break interval works.
 - If a custom local sound is selected, show the file name (with extension) in the selector.
-- Planned: show task weight as both total pomodoros and a derived percentage of the group total.
-- Planned: when editing the percentage, suggest the closest valid integer pomodoro count and update the displayed percentage accordingly (pomodoros are never fractional).
-- Planned: display Total pomodoros and Task weight (%) on the same row directly below the task name to emphasize task weight.
+- Task weight shows both total pomodoros and a derived percentage of the group total.
+- Editing the percentage updates totalPomodoros to the closest integer (pomodoros are never fractional).
+- Display Total pomodoros and Task weight (%) on the same row directly below the task name to emphasize task weight.
 
 ### **10.3.x. Pomodoro integrity + task weight (planned, documentation-first)**
 
@@ -636,8 +676,12 @@ Task weight rules:
 
 - Each task has an authoritative integer `totalPomodoros` and a derived percentage.
 - Percentage is always computed from integer pomodoros and rounded for display.
+- Group total for the percentage:
+  - Task List: sum of totalPomodoros for the **currently selected** tasks (if none selected, use the full list).
+  - Task Editor: sum of totalPomodoros across the current task list (including the task being edited).
 - When a user edits the percentage:
-  - The system proposes the closest valid integer pomodoro counts.
+  - Compute: `newPomodoros = roundHalfUp((percent / 100) * totalGroupPomodoros)`
+  - `roundHalfUp` means .5 ties always round up.
   - Exact percentages are not guaranteed.
   - Pomodoros and breaks are never split.
 
@@ -670,6 +714,32 @@ Behavior:
   - reference a saved preset, or
   - use a custom, task-specific configuration.
 - Backward compatibility: tasks without a preset behave as custom tasks using their stored values.
+
+Preset UI (Task Editor)
+
+- Preset selector (dropdown) sits above structural fields; the first option is **Custom**.
+- When a preset is selected, show inline actions:
+  - Edit (pencil) → opens preset editor
+  - Delete (trash) → removes preset; affected tasks keep values and become Custom
+  - Default toggle (star) → marks as global default (only one default at a time)
+- "Save as new preset" appears only in Custom mode after changes.
+- Selecting a preset overrides the fields below; editing any structural field detaches to Custom.
+
+Preset UI (Settings)
+
+- Settings includes a **Manage Presets** screen:
+  - List all presets as cards (high contrast on dark background)
+  - Show default marker (star) on the default preset
+  - Quick actions: edit, delete, set default
+  - Bulk delete is allowed
+
+Storage & sync
+
+- Account Mode: `users/{uid}/pomodoroPresets/{presetId}` in Firestore.
+- Local Mode: presets stored locally (SharedPreferences in MVP; Hive planned).
+- Custom sound selections remain local-only:
+  - Firestore stores built-in references for presets
+  - Local overrides store the custom file path + display name per preset
 
 ---
 

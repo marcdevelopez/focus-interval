@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/models/pomodoro_preset.dart';
 import '../presentation/screens/login_screen.dart';
 import '../presentation/screens/task_list_screen.dart';
 import '../presentation/screens/task_editor_screen.dart';
 import '../presentation/screens/timer_screen.dart';
+import '../presentation/screens/settings_screen.dart';
+import '../presentation/screens/preset_list_screen.dart';
+import '../presentation/screens/preset_editor_screen.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -47,6 +51,31 @@ GoRouter buildRouter() {
         pageBuilder: (context, state) {
           final id = state.pathParameters['id']!;
           return _fadeScale(TimerScreen(groupId: id));
+        },
+      ),
+
+      GoRoute(
+        path: '/settings',
+        pageBuilder: (_, __) => _slide(const SettingsScreen()),
+      ),
+      GoRoute(
+        path: '/settings/presets',
+        pageBuilder: (_, __) => _slide(const PresetListScreen()),
+      ),
+      GoRoute(
+        path: '/settings/presets/new',
+        pageBuilder: (context, state) => _slide(
+          PresetEditorScreen(
+            isEditing: false,
+            seed: state.extra is PomodoroPreset ? state.extra as PomodoroPreset : null,
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/settings/presets/edit/:id',
+        pageBuilder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return _slide(PresetEditorScreen(isEditing: true, presetId: id));
         },
       ),
     ],

@@ -29,6 +29,7 @@ class TaskCard extends StatelessWidget {
   final Widget? reorderHandle;
   final String? timeRange;
   final LocalSoundOverrides? soundOverrides;
+  final int? weightPercent;
 
   const TaskCard({
     super.key,
@@ -40,6 +41,7 @@ class TaskCard extends StatelessWidget {
     this.reorderHandle,
     this.timeRange,
     this.soundOverrides,
+    this.weightPercent,
   });
 
   @override
@@ -68,15 +70,24 @@ class TaskCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (weightPercent != null)
+                          _weightBadge(weightPercent!),
+                      ],
                     ),
                     const SizedBox(height: 10),
                     Row(
@@ -281,6 +292,26 @@ class TaskCard extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _weightBadge(int percent) {
+    return Container(
+      margin: const EdgeInsets.only(left: 8, top: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white10,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white24, width: 1),
+      ),
+      child: Text(
+        '$percent%',
+        style: const TextStyle(
+          color: Colors.white70,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

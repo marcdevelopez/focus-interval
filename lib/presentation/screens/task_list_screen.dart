@@ -9,6 +9,7 @@ import 'package:uuid/uuid.dart';
 import '../providers.dart';
 import '../viewmodels/task_editor_view_model.dart';
 import '../../data/models/pomodoro_session.dart';
+import '../../data/models/pomodoro_preset.dart';
 import '../../data/models/pomodoro_task.dart';
 import '../../data/models/selected_sound.dart';
 import '../../data/models/task_run_group.dart';
@@ -20,6 +21,7 @@ import '../../widgets/task_card.dart';
 import '../../widgets/mode_indicator.dart';
 
 enum _EmailVerificationAction { verified, resend, useLocal, signOut }
+enum _IntegrityDecision { proceed, adjustFirst, useDefault, cancel }
 
 class TaskListScreen extends ConsumerStatefulWidget {
   const TaskListScreen({super.key});
@@ -385,17 +387,26 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                     height: double.infinity,
                     child: Align(
                       alignment: Alignment.topRight,
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 6),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            if (showAccountLabel)
-                              ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  maxWidth: maxEmailWidth,
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.settings),
+                                  constraints: const BoxConstraints.tightFor(
+                                    width: 36,
+                                    height: 36,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  onPressed: () => context.push('/settings'),
                                 ),
+                                if (showAccountLabel)
+                                  ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      maxWidth: maxEmailWidth,
+                                    ),
                                 child: Text(
                                   accountLabel,
                                   style: const TextStyle(fontSize: 12),
@@ -565,6 +576,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
             selectedIds,
             _planningAnchor,
           );
+          final weightTotal = _weightTotal(tasks, selectedIds);
 
           final soundOverrides = ref.read(localSoundOverridesProvider);
 
@@ -579,11 +591,18 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
             },
             itemBuilder: (context, i) {
               final t = tasks[i];
+              final isSelected = selectedIds.contains(t.id);
+              final weightPercent = (weightTotal == null || weightTotal == 0)
+                  ? null
+                  : ((selectedIds.isNotEmpty && !isSelected)
+                      ? null
+                      : ((t.totalPomodoros / weightTotal) * 100).round());
               return TaskCard(
                 key: ValueKey(t.id),
                 task: t,
                 soundOverrides: soundOverrides,
-                selected: selectedIds.contains(t.id),
+                weightPercent: weightPercent,
+                selected: isSelected,
                 onTap: () => selection.toggle(t.id),
                 timeRange: ranges[t.id],
                 reorderHandle: ReorderableDragStartListener(
@@ -730,7 +749,19 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       }
     }
 
-    final items = await _buildRunItemsWithOverrides(selected);
+    final integrityDecision = await _maybeShowIntegrityWarning(
+      context,
+      selected,
+    );
+    if (!context.mounted) return;
+    if (integrityDecision == _IntegrityDecision.cancel) return;
+
+    var items = await _buildRunItemsWithOverrides(selected);
+    if (integrityDecision == _IntegrityDecision.adjustFirst) {
+      items = await _applySharedStructure(items, forceDefault: false);
+    } else if (integrityDecision == _IntegrityDecision.useDefault) {
+      items = await _applySharedStructure(items, forceDefault: true);
+    }
     final totalDurationSeconds = groupDurationSecondsWithFinalBreaks(items);
     final conflictStart = scheduledStart ?? planCapturedAt;
     final conflictEnd = conflictStart.add(
@@ -1105,6 +1136,209 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     return ranges;
   }
 
+  int? _weightTotal(List<PomodoroTask> tasks, Set<String> selectedIds) {
+    if (tasks.isEmpty) return null;
+    final scoped = selectedIds.isNotEmpty
+        ? tasks.where((task) => selectedIds.contains(task.id))
+        : tasks;
+    var total = 0;
+    for (final task in scoped) {
+      total += task.totalPomodoros;
+    }
+    return total <= 0 ? null : total;
+  }
+
+  Future<_IntegrityDecision> _maybeShowIntegrityWarning(
+    BuildContext context,
+    List<PomodoroTask> selected,
+  ) async {
+    if (selected.length <= 1) return _IntegrityDecision.proceed;
+    final base = selected.first;
+    final mismatched = selected
+        .where((task) => !_matchesStructure(task, base))
+        .toList();
+    if (mismatched.isEmpty) return _IntegrityDecision.proceed;
+
+    final defaultPreset = await _loadDefaultPreset();
+    if (!context.mounted) return _IntegrityDecision.cancel;
+    final hasDefaultPreset = defaultPreset != null;
+    final rootContext = context;
+
+    final result = await showDialog<_IntegrityDecision>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.black,
+          shape: RoundedRectangleBorder(
+            side: const BorderSide(color: Colors.orangeAccent, width: 1.2),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: const [
+              Icon(Icons.info_outline, color: Colors.orangeAccent),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Pomodoro integrity warning',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: [
+                const Text(
+                  'This group mixes Pomodoro structures. Mixed durations can '
+                  'reduce the benefits of the technique.',
+                  style: TextStyle(color: Colors.white70),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Tasks with different structure:',
+                  style: TextStyle(color: Colors.white70),
+                ),
+                const SizedBox(height: 6),
+                for (final task in mismatched)
+                  Text(
+                    '• ${task.name.isEmpty ? '(Untitled)' : task.name}',
+                    style: const TextStyle(color: Colors.white60),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(_IntegrityDecision.adjustFirst),
+              child: const Text('Ajustar a la primera'),
+            ),
+            if (hasDefaultPreset)
+              TextButton(
+                onPressed: () async {
+                  final preset = await _loadDefaultPreset();
+                  if (preset == null) {
+                    if (!rootContext.mounted) return;
+                    _showSnackBar(
+                      rootContext,
+                      "No default preset found. Please set a default in Settings to use this action.",
+                    );
+                    return;
+                  }
+                  if (!context.mounted) return;
+                  Navigator.of(context).pop(_IntegrityDecision.useDefault);
+                },
+                child: const Text('Usar Predeterminado'),
+              ),
+            ElevatedButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(_IntegrityDecision.proceed),
+              child: const Text('Continuar'),
+            ),
+          ],
+        );
+      },
+    );
+    return result ?? _IntegrityDecision.cancel;
+  }
+
+  bool _matchesStructure(PomodoroTask a, PomodoroTask b) {
+    return a.pomodoroMinutes == b.pomodoroMinutes &&
+        a.shortBreakMinutes == b.shortBreakMinutes &&
+        a.longBreakMinutes == b.longBreakMinutes &&
+        a.longBreakInterval == b.longBreakInterval;
+  }
+
+  Future<List<TaskRunItem>> _applySharedStructure(
+    List<TaskRunItem> items, {
+    required bool forceDefault,
+  }) async {
+    if (items.isEmpty) return items;
+    final master = items.first;
+    final shouldUseDefault = forceDefault || !_hasClearStructure(master);
+    if (shouldUseDefault) {
+      final fallbackPreset = await _loadDefaultPreset();
+      if (fallbackPreset != null) {
+        return await _applyDefaultPreset(items, fallbackPreset);
+      }
+    }
+    return items
+        .map(
+          (item) => TaskRunItem(
+            sourceTaskId: item.sourceTaskId,
+            name: item.name,
+            presetId: master.presetId,
+            pomodoroMinutes: master.pomodoroMinutes,
+            shortBreakMinutes: master.shortBreakMinutes,
+            longBreakMinutes: master.longBreakMinutes,
+            totalPomodoros: item.totalPomodoros,
+            longBreakInterval: master.longBreakInterval,
+            startSound: master.startSound,
+            startBreakSound: master.startBreakSound,
+            finishTaskSound: master.finishTaskSound,
+          ),
+        )
+        .toList();
+  }
+
+  bool _hasClearStructure(TaskRunItem item) {
+    return item.pomodoroMinutes > 0 &&
+        item.shortBreakMinutes > 0 &&
+        item.longBreakMinutes > 0 &&
+        item.longBreakInterval > 0;
+  }
+
+  Future<PomodoroPreset?> _loadDefaultPreset() async {
+    final cached = ref.read(presetListProvider).value;
+    if (cached != null) {
+      for (final preset in cached) {
+        if (preset.isDefault) return preset;
+      }
+    }
+    final repo = ref.read(presetRepositoryProvider);
+    final all = await repo.getAll();
+    for (final preset in all) {
+      if (preset.isDefault) return preset;
+    }
+    return null;
+  }
+
+  Future<List<TaskRunItem>> _applyDefaultPreset(
+    List<TaskRunItem> items,
+    PomodoroPreset preset,
+  ) async {
+    final overrides = ref.read(localSoundOverridesProvider);
+    final presetKey = 'preset:${preset.id}';
+    final startOverride = await overrides.getOverride(
+      presetKey,
+      SoundSlot.pomodoroStart,
+    );
+    final breakOverride = await overrides.getOverride(
+      presetKey,
+      SoundSlot.breakStart,
+    );
+    final startSound = startOverride?.sound ?? preset.startSound;
+    final breakSound = breakOverride?.sound ?? preset.startBreakSound;
+
+    return items
+        .map(
+          (item) => TaskRunItem(
+            sourceTaskId: item.sourceTaskId,
+            name: item.name,
+            presetId: preset.id,
+            pomodoroMinutes: preset.pomodoroMinutes,
+            shortBreakMinutes: preset.shortBreakMinutes,
+            longBreakMinutes: preset.longBreakMinutes,
+            totalPomodoros: item.totalPomodoros,
+            longBreakInterval: preset.longBreakInterval,
+            startSound: startSound,
+            startBreakSound: breakSound,
+            finishTaskSound: preset.finishTaskSound,
+          ),
+        )
+        .toList();
+  }
+
   Future<bool> _shouldBlockForActiveSession(
     PomodoroSession activeSession,
   ) async {
@@ -1185,6 +1419,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     return TaskRunItem(
       sourceTaskId: task.id,
       name: task.name,
+      presetId: task.presetId,
       pomodoroMinutes: task.pomodoroMinutes,
       shortBreakMinutes: task.shortBreakMinutes,
       longBreakMinutes: task.longBreakMinutes,

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kIsWeb;
@@ -6,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../data/models/pomodoro_task.dart';
+import '../../data/models/pomodoro_preset.dart';
 import '../../data/models/pomodoro_session.dart';
 import '../../data/models/selected_sound.dart';
 import '../../domain/pomodoro_machine.dart';
@@ -42,6 +45,27 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
   // Create a new task with defaults.
   void createNew() {
     final now = DateTime.now();
+    final preset = _defaultPreset();
+    if (preset != null) {
+      state = PomodoroTask(
+        id: _uuid.v4(),
+        name: "",
+        pomodoroMinutes: preset.pomodoroMinutes,
+        shortBreakMinutes: preset.shortBreakMinutes,
+        longBreakMinutes: preset.longBreakMinutes,
+        totalPomodoros: 4,
+        longBreakInterval: preset.longBreakInterval,
+        order: now.millisecondsSinceEpoch,
+        presetId: preset.id,
+        startSound: preset.startSound,
+        startBreakSound: preset.startBreakSound,
+        finishTaskSound: preset.finishTaskSound,
+        createdAt: now,
+        updatedAt: now,
+      );
+      unawaited(_applyPresetOverrides(preset, taskId: state!.id));
+      return;
+    }
     state = PomodoroTask(
       id: _uuid.v4(),
       name: "",
@@ -70,6 +94,16 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
 
   void update(PomodoroTask task) {
     state = task;
+  }
+
+  PomodoroPreset? _defaultPreset() {
+    final presets = ref.read(presetListProvider).value;
+    if (presets == null || presets.isEmpty) return null;
+    try {
+      return presets.firstWhere((preset) => preset.isDefault);
+    } catch (_) {
+      return null;
+    }
   }
 
   BreakDurationGuidance? breakGuidanceFor(PomodoroTask? task) {
@@ -133,6 +167,7 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
         startSound: source.startSound,
         startBreakSound: source.startBreakSound,
         finishTaskSound: source.finishTaskSound,
+        presetId: source.presetId,
         updatedAt: now,
       );
       final sanitized = await _sanitizeForSync(updated);
@@ -160,6 +195,65 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
     }
 
     return remaining.length;
+  }
+
+  Future<void> applyPreset(PomodoroPreset preset) async {
+    final task = state;
+    if (task == null) return;
+    final updated = task.copyWith(
+      presetId: preset.id,
+      pomodoroMinutes: preset.pomodoroMinutes,
+      shortBreakMinutes: preset.shortBreakMinutes,
+      longBreakMinutes: preset.longBreakMinutes,
+      longBreakInterval: preset.longBreakInterval,
+      startSound: preset.startSound,
+      startBreakSound: preset.startBreakSound,
+      finishTaskSound: preset.finishTaskSound,
+    );
+    state = updated;
+    await _applyPresetOverrides(preset, taskId: task.id);
+    final startOverride = await _soundOverrides.getOverride(
+      task.id,
+      SoundSlot.pomodoroStart,
+    );
+    final breakOverride = await _soundOverrides.getOverride(
+      task.id,
+      SoundSlot.breakStart,
+    );
+    _syncDisplayName(SoundSlot.pomodoroStart, startOverride);
+    _syncDisplayName(SoundSlot.breakStart, breakOverride);
+  }
+
+  void detachPreset() {
+    final task = state;
+    if (task == null) return;
+    if (task.presetId == null) return;
+    state = task.copyWith(presetId: null);
+  }
+
+  int weightPercent({
+    required int taskPomodoros,
+    required int totalPomodoros,
+  }) {
+    if (totalPomodoros <= 0) return 0;
+    final raw = (taskPomodoros / totalPomodoros) * 100;
+    return raw.round();
+  }
+
+  int pomodorosFromPercent({
+    required int percent,
+    required int totalPomodoros,
+  }) {
+    if (totalPomodoros <= 0) return 1;
+    final raw = (percent / 100) * totalPomodoros;
+    final computed = _roundHalfUp(raw);
+    return computed < 1 ? 1 : computed;
+  }
+
+  int _roundHalfUp(double value) {
+    final floor = value.floorToDouble();
+    if (value - floor == 0.5) return floor.toInt() + 1;
+    return value.round();
   }
 
   Future<void> _applySoundOverrideToTarget({
@@ -218,6 +312,41 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
     return task.copyWith(
       startSound: startOverride?.sound ?? task.startSound,
       startBreakSound: breakOverride?.sound ?? task.startBreakSound,
+    );
+  }
+
+  Future<void> _applyPresetOverrides(
+    PomodoroPreset preset, {
+    required String taskId,
+  }) async {
+    final presetKey = 'preset:${preset.id}';
+    final startOverride = await _soundOverrides.getOverride(
+      presetKey,
+      SoundSlot.pomodoroStart,
+    );
+    final breakOverride = await _soundOverrides.getOverride(
+      presetKey,
+      SoundSlot.breakStart,
+    );
+    await _applySoundOverrideToTarget(
+      targetId: taskId,
+      slot: SoundSlot.pomodoroStart,
+      sourceSound: preset.startSound,
+      sourceOverride: startOverride,
+      fallbackBuiltInId: _fallbackBuiltInFromPreset(
+        preset,
+        SoundSlot.pomodoroStart,
+      ),
+    );
+    await _applySoundOverrideToTarget(
+      targetId: taskId,
+      slot: SoundSlot.breakStart,
+      sourceSound: preset.startBreakSound,
+      sourceOverride: breakOverride,
+      fallbackBuiltInId: _fallbackBuiltInFromPreset(
+        preset,
+        SoundSlot.breakStart,
+      ),
     );
   }
 
@@ -392,6 +521,19 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
     final current = switch (slot) {
       SoundSlot.pomodoroStart => task.startSound,
       SoundSlot.breakStart => task.startBreakSound,
+    };
+    if (current.type == SoundType.builtIn && current.value.isNotEmpty) {
+      return current.value;
+    }
+    return slot == SoundSlot.pomodoroStart
+        ? 'default_chime'
+        : 'default_chime_break';
+  }
+
+  String _fallbackBuiltInFromPreset(PomodoroPreset preset, SoundSlot slot) {
+    final current = switch (slot) {
+      SoundSlot.pomodoroStart => preset.startSound,
+      SoundSlot.breakStart => preset.startBreakSound,
     };
     if (current.type == SoundType.builtIn && current.value.isNotEmpty) {
       return current.value;

@@ -59,12 +59,15 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       29/01/2026: Local Mode running-group resume projects from actualStartTime when no session (no pause reconstruction).
       29/01/2026: Local Mode pause warning refined to contextual dialog + info affordance (no layout shift).
       29/01/2026: Android Gradle Plugin bumped to 8.9.1 (Gradle wrapper 8.12.1) to satisfy androidx metadata requirements.
+      31/01/2026: Phase 10.4 implemented (presets + weight UI + integrity warning + settings management).
+      31/01/2026: Phase 10.4 reopen item completed (“Ajustar grupo” presetId propagation + Default Preset fallback).
+      31/01/2026: Phase 10.4 reopen item completed (Pomodoro Integrity Warning adds “Usar Predeterminado” option).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
     ## 🔄 Reopened phases (must complete before moving on)
 
-    - Phase 10.4 — Presets + weight UI + integrity warnings.
+    - None.
 
 Update this on each commit if needed.
 
@@ -427,19 +430,28 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ---
 
-# [✔] **PHASE 10.4 — UX/Product refinements (documentation-first) (completed 24/01/2026)**
+# [✔] **PHASE 10.4 — UX/Product refinements (implemented 31/01/2026; reopen completed 31/01/2026)**
 
 ### ⚙️ Tasks
 
-- Define reusable Pomodoro configuration presets (create/edit/delete/default) in specs.
-- Define task weight (%) placement in Task List and Task Editor (pomodoros + % grouped).
-- Define Pomodoro integrity modes (shared structure vs per-task) and warning requirements in specs.
-- Keep behavior unchanged; documentation-first only.
+- Implement Pomodoro presets (create/edit/delete/default) with local + Firestore storage.
+- Add preset selector + inline edit/delete/default in Task Editor; enable “Save as new preset”.
+- Add Settings → Manage Presets screen (list, edit, delete, set default, bulk delete).
+- Implement task weight (%) UI with editable percentage (round-half-up to nearest pomodoro).
+- Add Pomodoro integrity warning on confirm with “Ajustar grupo” (shared structure snapshot).
+- Refine “Ajustar grupo” to propagate presetId and use Default Preset fallback.
+- Add Pomodoro Integrity Warning option to “Usar Predeterminado” for shared structure.
+- Update Task List card to show weight badge and keep sound labels/interval grid aligned.
 
 ### 📌 Exit conditions
 
-- Specs updated with presets + weight UI guidance.
-- No code changes required yet.
+- Presets CRUD + default work in Local and Account Mode.
+- Task weight (%) is shown and editable; total pomodoros update accordingly.
+- Integrity warning appears for mixed structures and can force shared structure.
+- Refine “Ajustar grupo” logic in TaskRunGroup to support presetId propagation
+  and use the Default Preset as an integrity resolution mechanism.
+- Pomodoro Integrity Warning includes “Usar Predeterminado” to apply the Default Preset.
+- Apply settings propagates presetId when applicable.
 
 ---
 

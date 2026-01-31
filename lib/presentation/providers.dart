@@ -6,13 +6,17 @@ import 'package:flutter_riverpod/legacy.dart' show StateProvider;
 
 import '../domain/pomodoro_machine.dart';
 import '../data/models/pomodoro_task.dart';
+import '../data/models/pomodoro_preset.dart';
 import '../data/models/pomodoro_session.dart';
 import '../data/models/task_run_group.dart';
 import '../data/repositories/task_repository.dart';
 import '../data/repositories/local_task_repository.dart';
+import '../data/repositories/pomodoro_preset_repository.dart';
+import '../data/repositories/local_pomodoro_preset_repository.dart';
 import '../data/services/firebase_auth_service.dart';
 import '../data/services/firestore_service.dart';
 import '../data/repositories/firestore_task_repository.dart';
+import '../data/repositories/firestore_pomodoro_preset_repository.dart';
 import '../data/services/sound_service.dart';
 import '../data/services/device_info_service.dart';
 import '../data/services/notification_service.dart';
@@ -32,6 +36,8 @@ import 'viewmodels/pomodoro_view_model.dart';
 import 'viewmodels/task_list_view_model.dart';
 import 'viewmodels/task_editor_view_model.dart';
 import 'viewmodels/task_selection_view_model.dart';
+import 'viewmodels/preset_list_view_model.dart';
+import 'viewmodels/preset_editor_view_model.dart';
 
 //
 // ==============================================================
@@ -102,6 +108,19 @@ final taskRepositoryProvider = Provider<TaskRepository>((ref) {
   return ref.watch(firestoreTaskRepositoryProvider);
 });
 
+final presetRepositoryProvider = Provider<PomodoroPresetRepository>((ref) {
+  final appMode = ref.watch(appModeProvider);
+  final authState = ref.watch(authStateProvider).value;
+  if (appMode == AppMode.local) {
+    return LocalPomodoroPresetRepository();
+  }
+  final syncEnabled = ref.watch(accountSyncEnabledProvider);
+  if (authState == null || !syncEnabled) {
+    return NoopPomodoroPresetRepository();
+  }
+  return ref.watch(firestorePresetRepositoryProvider);
+});
+
 //
 // ==============================================================
 //  POMODORO STATE MACHINE
@@ -136,6 +155,16 @@ final firestoreTaskRepositoryProvider = Provider<FirestoreTaskRepository>((
     authService: auth,
   );
 });
+
+final firestorePresetRepositoryProvider =
+    Provider<FirestorePomodoroPresetRepository>((ref) {
+      final firestore = ref.watch(firestoreServiceProvider);
+      final auth = ref.watch(firebaseAuthServiceProvider);
+      return FirestorePomodoroPresetRepository(
+        firestoreService: firestore,
+        authService: auth,
+      );
+    });
 
 // Sound service
 final soundServiceProvider = Provider<SoundService>((ref) {
@@ -244,6 +273,11 @@ final taskListProvider =
       TaskListViewModel.new,
     );
 
+final presetListProvider =
+    AsyncNotifierProvider<PresetListViewModel, List<PomodoroPreset>>(
+      PresetListViewModel.new,
+    );
+
 //
 // ==============================================================
 //  TASK EDITOR — Notifier<PomodoroTask?>
@@ -251,6 +285,11 @@ final taskListProvider =
 final taskEditorProvider = NotifierProvider<TaskEditorViewModel, PomodoroTask?>(
   TaskEditorViewModel.new,
 );
+
+final presetEditorProvider =
+    NotifierProvider<PresetEditorViewModel, PomodoroPreset?>(
+      PresetEditorViewModel.new,
+    );
 
 final taskSelectionProvider =
     NotifierProvider.autoDispose<TaskSelectionViewModel, Set<String>>(
