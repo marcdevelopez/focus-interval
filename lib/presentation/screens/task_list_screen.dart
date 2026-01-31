@@ -590,11 +590,11 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
             itemBuilder: (context, i) {
               final t = tasks[i];
               final isSelected = selectedIds.contains(t.id);
-              final weightPercent = (weightTotal == null || weightTotal == 0)
+              final weightPercent = (weightTotal == null || !isSelected)
                   ? null
-                  : ((selectedIds.isNotEmpty && !isSelected)
-                      ? null
-                      : ((t.totalPomodoros / weightTotal) * 100).round());
+                  : (((t.totalPomodoros * t.pomodoroMinutes) / weightTotal) *
+                          100)
+                      .round();
               return TaskCard(
                 key: ValueKey(t.id),
                 task: t,
@@ -1135,13 +1135,11 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   }
 
   int? _weightTotal(List<PomodoroTask> tasks, Set<String> selectedIds) {
-    if (tasks.isEmpty) return null;
-    final scoped = selectedIds.isNotEmpty
-        ? tasks.where((task) => selectedIds.contains(task.id))
-        : tasks;
+    if (tasks.isEmpty || selectedIds.isEmpty) return null;
+    final scoped = tasks.where((task) => selectedIds.contains(task.id));
     var total = 0;
     for (final task in scoped) {
-      total += task.totalPomodoros;
+      total += task.totalPomodoros * task.pomodoroMinutes;
     }
     return total <= 0 ? null : total;
   }

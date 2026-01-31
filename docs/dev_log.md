@@ -3354,6 +3354,30 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 193 — Task weight redistribution (work time) — 31/01/2026
+
+### ✔ Work completed:
+
+- Documented task weight (%) based on work time with proportional redistribution of other tasks.
+- Added rule to hide % badges when no tasks are selected.
+- Reopened Phase 10.4 to track the fix.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 194 — Task weight redistribution implemented — 31/01/2026
+
+### ✔ Work completed:
+
+- Implemented work-time-based weight redistribution when editing task %.
+- Preserved relative proportions of non-edited tasks and kept integer pomodoros.
+- Hid task weight % badges when no selection exists.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

@@ -648,8 +648,9 @@ Behavior:
   - Allow values >= 1 up to 12; if the interval exceeds total pomodoros, show a note that only short breaks will occur.
   - Provide an info tooltip explaining how the long break interval works.
 - If a custom local sound is selected, show the file name (with extension) in the selector.
-- Task weight shows both total pomodoros and a derived percentage of the group total.
-- Editing the percentage updates totalPomodoros to the closest integer (pomodoros are never fractional).
+- Task weight shows both total pomodoros and a derived percentage of the group total (work time).
+- Editing the percentage updates totalPomodoros to the closest integer (pomodoros are never fractional),
+  and redistributes the remaining tasks to preserve their relative proportions.
 - Display Total pomodoros and Task weight (%) on the same row directly below the task name to emphasize task weight.
 
 ### **10.3.x. Pomodoro integrity + task weight (planned, documentation-first)**
@@ -660,6 +661,7 @@ Definitions:
 
 - **Pomodoro structural configuration**: pomodoro duration, short break duration, long break duration, long break interval.
 - **Task weight**: totalPomodoros (authoritative integer) and derived percentage of the group total.
+- **Work time**: `totalPomodoros * pomodoroDuration` (breaks are excluded).
 
 Execution modes for TaskRunGroups:
 
@@ -675,19 +677,23 @@ Execution modes for TaskRunGroups:
 Task weight rules:
 
 - Each task has an authoritative integer `totalPomodoros` and a derived percentage.
-- Percentage is always computed from integer pomodoros and rounded for display.
-- Group total for the percentage:
-  - Task List: sum of totalPomodoros for the **currently selected** tasks (if none selected, use the full list).
-  - Task Editor: sum of totalPomodoros across the current task list (including the task being edited).
-- When a user edits the percentage:
-  - Compute: `newPomodoros = roundHalfUp((percent / 100) * totalGroupPomodoros)`
+- Percentage is computed from **work time** and rounded for display.
+- Group total for the percentage (work time):
+  - Task List: sum of work time for the **selected** tasks only; if none are selected, do not show percentages.
+  - Task Editor: sum of work time across the current task list (including the task being edited).
+- When a user edits the percentage of a task:
+  - The edited task is adjusted so its work time matches the requested percentage
+    of the group's total work time (closest possible).
+  - Other tasks are automatically redistributed to fill the remaining percentage,
+    preserving their **relative proportions** to each other.
+  - Redistribution adjusts `totalPomodoros` only (integer), never splitting pomodoros.
   - `roundHalfUp` means .5 ties always round up.
-  - Exact percentages are not guaranteed.
-  - Pomodoros and breaks are never split.
+  - Exact percentages are not guaranteed due to integer constraints.
 
 UI implications (documentation only):
 
 - Task List should display both totalPomodoros and derived percentage of the group total.
+- Percentages are shown only when tasks are selected; unselected tasks do not show percentages.
 - Task Editor should display totalPomodoros and derived percentage, with live recalculation when either value changes.
 - Task Editor should place Total pomodoros + Task weight (%) together, above Pomodoro structural configuration and sounds.
 - If a TaskRunGroup mixes structural configurations, show a clear integrity warning (education-only).

@@ -64,12 +64,13 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       31/01/2026: Phase 10.4 reopen item completed (Pomodoro Integrity Warning adds “Usar Predeterminado” option).
       31/01/2026: Preset saves now surface explicit errors; Settings is visible in Local Mode; Firestore rules updated for pomodoroPresets.
       31/01/2026: Phase 10.4 reopen item completed (Classic Pomodoro default seeding + account-local preset cache + auto-push on sync enable).
+      31/01/2026: Phase 10.4 reopen item completed (task weight uses work-time redistribution; hide % when no selection).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
     ## 🔄 Reopened phases (must complete before moving on)
 
-    - None.
+    (none)
 
 Update this on each commit if needed.
 
@@ -445,6 +446,8 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Add Pomodoro Integrity Warning option to “Usar Predeterminado” for shared structure.
 - Add built-in default preset seeding (Classic Pomodoro) and ensure at least one preset exists.
 - Store presets in an account-scoped local cache when sync is disabled; auto-push once when sync enables.
+- Update Task weight (%) calculation to use work time and redistribute other tasks proportionally.
+- Hide task weight (%) badges when no tasks are selected.
 - Update Task List card to show weight badge and keep sound labels/interval grid aligned.
 
 ### 📌 Exit conditions
@@ -458,6 +461,8 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Apply settings propagates presetId when applicable.
 - Built-in default preset (Classic Pomodoro) exists in every scope; deletion never leaves zero presets.
 - Account Mode sync-disabled uses account-local preset cache and auto-pushes to Firestore on enable.
+- Task weight (%) edit redistributes other tasks based on work time while preserving their ratios.
+- Task List hides % badges when no tasks are selected.
 
 ---
 

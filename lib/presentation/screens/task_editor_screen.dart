@@ -51,7 +51,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   bool _intervalTouched = false;
   bool _breaksTouched = false;
   bool _syncingWeight = false;
-  int _lastGroupTotal = 0;
+  int _lastGroupWorkMinutes = 0;
+  Map<String, int>? _pendingRedistribution;
 
   @override
   void initState() {
@@ -139,14 +140,14 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     final orderedTasks = _orderTasks(tasks);
     final remainingCount = _remainingCount(task, orderedTasks);
     final canApplySettings = widget.isEditing && remainingCount > 0;
-    final groupTotalPomodoros =
-        task == null ? 0 : _groupTotalPomodoros(task, tasks);
-    _lastGroupTotal = groupTotalPomodoros;
+    final groupTotalWorkMinutes =
+        task == null ? 0 : _groupTotalWorkMinutes(task, tasks);
+    _lastGroupWorkMinutes = groupTotalWorkMinutes;
     final weightPercent = task == null
         ? 0
         : editor.weightPercent(
-            taskPomodoros: task.totalPomodoros,
-            totalPomodoros: groupTotalPomodoros,
+            task: task,
+            totalWorkMinutes: groupTotalWorkMinutes,
           );
     _maybeSyncWeightPercent(weightPercent);
     final selectedPreset =
@@ -243,7 +244,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               if (!_formKey.currentState!.validate()) return;
               if (!await _validateBusinessRules()) return;
 
-              final saved = await ref.read(taskEditorProvider.notifier).save();
+              final saved = await editor.save();
               if (!context.mounted) return;
               if (!saved) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -254,6 +255,18 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                   ),
                 );
                 return;
+              }
+              final redistribution = _pendingRedistribution;
+              if (redistribution != null) {
+                final current = ref.read(taskEditorProvider);
+                if (current != null) {
+                  await editor.applyRedistributedPomodoros(
+                    edited: current,
+                    pomodorosById: redistribution,
+                    orderedTasks: orderedTasks,
+                  );
+                }
+                _pendingRedistribution = null;
               }
               _exitEditor();
             },
@@ -335,12 +348,13 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
             const SizedBox(height: 12),
             _weightRow(
               task: task,
-              groupTotalPomodoros: groupTotalPomodoros,
+              orderedTasks: orderedTasks,
             ),
             _numberField(
               label: "Pomodoro duration (min)",
               controller: _pomodoroCtrl,
               onChanged: (v) {
+                _pendingRedistribution = null;
                 _updateWithPresetCheck(
                   task.copyWith(pomodoroMinutes: v),
                 );
@@ -591,16 +605,19 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   }
 
   void _syncControllers(PomodoroTask task) {
+    _pendingRedistribution = null;
     _loadedTaskId = task.id;
     _nameCtrl.text = task.name;
     _pomodoroCtrl.text = task.pomodoroMinutes.toString();
     _shortBreakCtrl.text = task.shortBreakMinutes.toString();
     _longBreakCtrl.text = task.longBreakMinutes.toString();
     _totalPomodorosCtrl.text = task.totalPomodoros.toString();
-    final total = _lastGroupTotal > 0 ? _lastGroupTotal : task.totalPomodoros;
+    final total = _lastGroupWorkMinutes > 0
+        ? _lastGroupWorkMinutes
+        : (task.totalPomodoros * task.pomodoroMinutes);
     final percent = ref.read(taskEditorProvider.notifier).weightPercent(
-      taskPomodoros: task.totalPomodoros,
-      totalPomodoros: total,
+      task: task,
+      totalWorkMinutes: total,
     );
     _weightPercentCtrl.text = percent.toString();
     _longBreakIntervalCtrl.text = task.longBreakInterval.toString();
@@ -740,22 +757,26 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     return remaining < 0 ? 0 : remaining;
   }
 
-  int _groupTotalPomodoros(
+  int _groupTotalWorkMinutes(
     PomodoroTask task,
     List<PomodoroTask> tasks,
   ) {
-    if (tasks.isEmpty) return task.totalPomodoros;
+    if (tasks.isEmpty) {
+      return task.totalPomodoros * task.pomodoroMinutes;
+    }
     var total = 0;
     var included = false;
     for (final t in tasks) {
       if (t.id == task.id) {
-        total += task.totalPomodoros;
+        total += task.totalPomodoros * task.pomodoroMinutes;
         included = true;
       } else {
-        total += t.totalPomodoros;
+        total += t.totalPomodoros * t.pomodoroMinutes;
       }
     }
-    return included ? total : total + task.totalPomodoros;
+    return included
+        ? total
+        : total + (task.totalPomodoros * task.pomodoroMinutes);
   }
 
   PomodoroPreset? _findPreset(
@@ -804,10 +825,12 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   void _syncWeightPercentFromTask() {
     final task = ref.read(taskEditorProvider);
     if (task == null) return;
-    final total = _lastGroupTotal > 0 ? _lastGroupTotal : task.totalPomodoros;
+    final total = _lastGroupWorkMinutes > 0
+        ? _lastGroupWorkMinutes
+        : (task.totalPomodoros * task.pomodoroMinutes);
     final percent = ref.read(taskEditorProvider.notifier).weightPercent(
-      taskPomodoros: task.totalPomodoros,
-      totalPomodoros: total,
+      task: task,
+      totalWorkMinutes: total,
     );
     _weightPercentCtrl.text = percent.toString();
   }
@@ -1376,7 +1399,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
 
   Widget _weightRow({
     required PomodoroTask task,
-    required int groupTotalPomodoros,
+    required List<PomodoroTask> orderedTasks,
   }) {
     return Row(
       children: [
@@ -1384,7 +1407,10 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
           child: _numberField(
             label: "Total pomodoros",
             controller: _totalPomodorosCtrl,
-            onChanged: (v) => _update(task.copyWith(totalPomodoros: v)),
+            onChanged: (v) {
+              _pendingRedistribution = null;
+              _update(task.copyWith(totalPomodoros: v));
+            },
             suffix: _totalPomodorosSuffix(),
             suffixMaxWidth: 32,
           ),
@@ -1424,19 +1450,19 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               if (_syncingWeight) return;
               final percent = int.tryParse(raw.trim());
               if (percent == null) return;
-              final total = groupTotalPomodoros <= 0
-                  ? task.totalPomodoros
-                  : groupTotalPomodoros;
               _syncingWeight = true;
               final clamped = percent < 1
                   ? 1
                   : (percent > 100 ? 100 : percent);
-              final newPomodoros = ref
-                  .read(taskEditorProvider.notifier)
-                  .pomodorosFromPercent(
-                    percent: clamped,
-                    totalPomodoros: total,
-                  );
+              final editor = ref.read(taskEditorProvider.notifier);
+              final redistributed = editor.redistributeWeightPercent(
+                edited: task,
+                targetPercent: clamped,
+                tasks: orderedTasks,
+              );
+              _pendingRedistribution = redistributed;
+              final newPomodoros =
+                  redistributed[task.id] ?? task.totalPomodoros;
               _totalPomodorosCtrl.text = newPomodoros.toString();
               _update(task.copyWith(totalPomodoros: newPomodoros));
               _syncingWeight = false;
