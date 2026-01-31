@@ -3201,6 +3201,28 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 180 — Phase 18 status + Run Mode visual spec sync — 31/01/2026
+
+### ✔ Work completed:
+
+- Marked Phase 18 as in progress in the roadmap.
+- Synced Run Mode visuals in specs with Block 63 achievements (group-only Run Mode, header indicator placeholder, completion summary totals).
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 181 — Scheduled auto-start conditions clarified — 31/01/2026
+
+### ✔ Work completed:
+
+- Documented that scheduled auto-start requires at least one active/open device for the account.
+- Clarified that if all devices are closed, the group starts on the next launch/resume by any signed-in device.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

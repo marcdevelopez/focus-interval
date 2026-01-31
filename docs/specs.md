@@ -288,15 +288,17 @@ Scheduled start behavior
 - If the app is open during the pre-alert window, show the Pre-Run Countdown Mode (see section 10.4.1.a).
 - If the app is closed during the pre-alert window, send a silent notification on platforms with background scheduling (Android/iOS/macOS).
   On Windows/Linux/Web, no system notification is sent while closed.
+- Auto-start requires at least one device for the account to be active/open at or after scheduledStartTime.
+- If all devices are closed at scheduledStartTime, the group does not start until the next launch/resume
+  on any signed-in device for that account (scheduledStartTime remains unchanged).
 - At scheduledStartTime:
   - Set status = running.
   - Set actualStartTime = now.
   - Recalculate theoreticalEndTime = actualStartTime + totalDurationSeconds.
   - Automatically open the execution screen and start the group.
-  - Ownership is claimed by the first device that starts the session.
-  - If the scheduling device is not active, another signed-in device may claim and become owner immediately.
+  - Ownership is claimed by the first active device that starts the session (if multiple devices are open).
 - If the app was inactive at scheduledStartTime:
-  - On next launch/resume, if scheduledStartTime <= now and there is no active conflict,
+  - On next launch/resume of any signed-in device, if scheduledStartTime <= now and there is no active conflict,
     auto-start immediately using actualStartTime = now.
   - scheduledStartTime remains as historical data and is not overwritten.
 
@@ -674,6 +676,7 @@ Behavior:
 ## **10.4. Execution Screen (Run Mode)**
 
 The execution screen shows an analog-style circular timer with a dynamic layout tailored for TaskRunGroups.
+Run Mode is group-only: TimerScreen loads a TaskRunGroup by groupId; there is no single-task execution path.
 
 ### **10.4.1. Pre-start planning (before the timer begins)**
 
@@ -687,6 +690,8 @@ The execution screen shows an analog-style circular timer with a dynamic layout 
   - Recalculate theoretical start/end times using the selected start time
   - Save as scheduled and add to Groups Hub
   - Send the pre-alert noticeMinutes before the scheduled start
+  - Auto-start requires at least one device for the account to be open at or after the scheduled time;
+    if all devices are closed, the group waits until the next app launch/resume on any signed-in device
   - If the app is open during the pre-alert window, automatically open Run Mode in Pre-Run Countdown Mode
   - If the app is closed during the pre-alert window, send a silent system notification on platforms with background scheduling (Android/iOS/macOS).
     On Windows/Linux/Web, no system notification is sent while closed.
@@ -696,10 +701,9 @@ The execution screen shows an analog-style circular timer with a dynamic layout 
     - Set actualStartTime = now
     - Recalculate theoreticalEndTime = actualStartTime + totalDurationSeconds
     - Auto-open the execution screen and auto-start the group
-    - Ownership is claimed by the first device that starts the session
-    - If the scheduling device is not active, another signed-in device may claim immediately
+    - Ownership is claimed by the first active device that starts the session (if multiple devices are open)
   - If the app was inactive at scheduledStartTime:
-    - On next launch/resume, if scheduledStartTime <= now and there is no active conflict,
+    - On next launch/resume of any signed-in device, if scheduledStartTime <= now and there is no active conflict,
       auto-start immediately using actualStartTime = now (scheduledStartTime remains unchanged)
   - The timer remains stopped until the scheduled start
 
@@ -761,6 +765,7 @@ Last 10 seconds
 
 - Back button + title (Focus Interval)
 - Access to Groups Hub screen (show a visual indicator when pending groups exist)
+- If the Groups Hub screen is not yet available, the indicator can be a non-interactive placeholder until Phase 19.
 
 ### **10.4.3. Circle core elements**
 
@@ -849,6 +854,7 @@ The list rebuilds automatically when tasks change.
 - Task completion -> auto-transition to next task
 - No modal between tasks
 - Group completion -> modal + final animation (see section 12)
+- Completion modal includes summary totals when available (total tasks, pomodoros, total time)
 - After the user explicitly dismisses the completion modal, auto-navigate to the Groups Hub screen (do not remain in an idle Execution screen)
 - Status boxes and contextual list update automatically (including time ranges after pause/resume); no extra confirmations or animations in the MVP
 
