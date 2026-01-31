@@ -3378,6 +3378,17 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 195 — Task weight preserves total work time — 31/01/2026
+
+### ✔ Work completed:
+
+- Adjusted redistribution to keep total work time constant after % edits.
+- Diff correction now targets total work time, not remaining work.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

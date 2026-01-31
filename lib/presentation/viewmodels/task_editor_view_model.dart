@@ -255,7 +255,7 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
     }
     final others = all.where((t) => t.id != edited.id).toList();
     final totalWork = _totalWorkMinutes(all);
-    if (totalWork <= 0) {
+    if (totalWork <= 0 || others.isEmpty) {
       return {for (final task in all) task.id: task.totalPomodoros};
     }
 
@@ -267,9 +267,7 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
       0,
       (sum, task) => sum + task.pomodoroMinutes,
     );
-    final maxEditedWork = others.isEmpty
-        ? totalWork
-        : (totalWork - minOthersWork);
+    final maxEditedWork = totalWork - minOthersWork;
     final desiredWork = (totalWork * clamped) / 100.0;
     final boundedWork = desiredWork.clamp(
       minEditedWork.toDouble(),
@@ -279,31 +277,19 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
         _roundHalfUp(boundedWork / edited.pomodoroMinutes);
     if (editedPomodoros < 1) editedPomodoros = 1;
     var editedWork = editedPomodoros * edited.pomodoroMinutes;
-    if (editedWork > maxEditedWork) {
-      while (editedPomodoros > 1 && editedWork > maxEditedWork) {
-        editedPomodoros -= 1;
-        editedWork = editedPomodoros * edited.pomodoroMinutes;
-      }
+    while (editedPomodoros > 1 && editedWork > maxEditedWork) {
+      editedPomodoros -= 1;
+      editedWork = editedPomodoros * edited.pomodoroMinutes;
     }
 
     final remainingWork = totalWork - editedWork;
-    if (others.isEmpty) {
-      return {edited.id: editedPomodoros};
-    }
-
     final othersWork = _totalWorkMinutes(others);
-    if (othersWork <= 0) {
-      final result = <String, int>{edited.id: editedPomodoros};
-      for (final task in others) {
-        result[task.id] = 1;
-      }
-      return result;
-    }
-
     final targets = <String, _TargetAllocation>{};
     var sumWork = 0;
     for (final task in others) {
-      final share = _workMinutes(task) / othersWork;
+      final share = othersWork <= 0
+          ? (1 / others.length)
+          : (_workMinutes(task) / othersWork);
       final targetWork = remainingWork * share;
       final targetPomodoros = targetWork / task.pomodoroMinutes;
       var rounded = _roundHalfUp(targetPomodoros);
@@ -317,7 +303,7 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
       );
     }
 
-    var diff = remainingWork - sumWork;
+    var diff = totalWork - (editedWork + sumWork);
     if (diff != 0) {
       final allocations = targets.values.toList();
       allocations.sort((a, b) => a.fraction.compareTo(b.fraction));
