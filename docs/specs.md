@@ -16,7 +16,7 @@ The main goals are:
 - Run tasks sequentially without manual intervention
 - Save and sync tasks/groups in the cloud (Firestore)
 - Sync Pomodoro execution in real time across devices (single session owner, others in mirror mode)
-- Play internal app sounds for state changes (notifications remain silent)
+- Play internal app sounds for state changes (notifications remain silent; web is best-effort per browser/OS)
 
 The app syncs with Firebase via Google Sign-In on iOS/Android/Web, email/password on macOS/Windows, and optional GitHub Sign-In where supported. A first-class Local Mode (offline, no auth) is available on all platforms and can be toggled at any time.
 
@@ -283,9 +283,11 @@ Scheduled start behavior
 - Send the pre-alert noticeMinutes before scheduledStartTime.
 - On supported platforms, schedule the pre-alert notification at planning time
   so it can fire even when the app is closed.
+- Windows/Linux/Web: no background pre-alert scheduling in MVP; pre-alerts are best-effort and require the app to be open.
 - Android uses AlarmManager to schedule the pre-alert so it can fire with the app closed.
 - If the app is open during the pre-alert window, show the Pre-Run Countdown Mode (see section 10.4.1.a).
-- If the app is closed during the pre-alert window, send a silent notification.
+- If the app is closed during the pre-alert window, send a silent notification on platforms with background scheduling (Android/iOS/macOS).
+  On Windows/Linux/Web, no system notification is sent while closed.
 - At scheduledStartTime:
   - Set status = running.
   - Set actualStartTime = now.
@@ -574,8 +576,12 @@ Behavior:
 
 - "Apply settings to remaining tasks" copies the current task configuration to all remaining tasks in the list (after the current task).
 - Applies to all task settings except Name (pomodoro duration, short break duration, long break duration, total pomodoros, long break interval, sound selections).
-- Task names are always unique within the list; block Save/Apply and show a validation error if the edited name duplicates another task name.
-- Task name is required (non-empty). Persisting a task with an empty name is not allowed.
+- Task names are always unique within the list after normalization:
+  - Trim leading/trailing whitespace.
+  - Compare case-insensitively.
+  - When editing, allow the task to keep its own normalized name; check duplicates against other tasks only.
+  - Block Save/Apply and show a validation error if a normalized duplicate exists.
+- Task name is required and must be non-empty after trimming; whitespace-only names are invalid.
 - Break durations must be shorter than the pomodoro duration; block Save/Apply and show a clear error if they are equal or longer.
 - Short break duration must be strictly less than long break duration; block Save/Apply and show errors on both fields if violated.
 - When a blocking break validation error is present, suppress optimization guidance/helper text until resolved.
@@ -682,8 +688,9 @@ The execution screen shows an analog-style circular timer with a dynamic layout 
   - Save as scheduled and add to Groups Hub
   - Send the pre-alert noticeMinutes before the scheduled start
   - If the app is open during the pre-alert window, automatically open Run Mode in Pre-Run Countdown Mode
-  - If the app is closed during the pre-alert window, send a silent notification only
-  - If the app is open during the pre-alert window, suppress any scheduled notification to avoid duplicate alerts
+  - If the app is closed during the pre-alert window, send a silent system notification on platforms with background scheduling (Android/iOS/macOS).
+    On Windows/Linux/Web, no system notification is sent while closed.
+  - If the app is open during the pre-alert window, suppress any system notification to avoid duplicate alerts
   - At the scheduled time:
     - Set status = running
     - Set actualStartTime = now
@@ -996,8 +1003,10 @@ Content
 - Notification when the group ends
 - Scheduled groups:
   - Send a pre-alert based on noticeMinutes
-  - If the app is open, Pre-Run Countdown Mode is shown but the notification is still sent
-- Notifications are silent; audio comes from the app sounds
+  - If the app is open, Pre-Run Countdown Mode is shown and the system notification is suppressed to avoid duplicate alerts
+- Notifications are intended to be silent; audio comes from the app sounds
+  - Web: use the browser Notifications API (permission required; app must be open)
+  - Web: request silent notifications when supported, but actual sound behavior follows browser/OS rules
 - Desktop adapters: Windows/Linux use `local_notifier`; other platforms use `flutter_local_notifications`.
 
 ---
