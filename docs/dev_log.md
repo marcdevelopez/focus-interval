@@ -3212,6 +3212,17 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 181 — Scheduled auto-start conditions clarified — 31/01/2026
+
+### ✔ Work completed:
+
+- Documented that scheduled auto-start requires at least one active/open device for the account.
+- Clarified that if all devices are closed, the group starts on the next launch/resume by any signed-in device.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
