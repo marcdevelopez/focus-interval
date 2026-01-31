@@ -15,6 +15,7 @@ int _readInt(Map<String, dynamic> map, String key, int fallback) {
 class TaskRunItem {
   final String sourceTaskId;
   final String name;
+  final String? presetId;
   final int pomodoroMinutes;
   final int shortBreakMinutes;
   final int longBreakMinutes;
@@ -27,6 +28,7 @@ class TaskRunItem {
   const TaskRunItem({
     required this.sourceTaskId,
     required this.name,
+    this.presetId,
     required this.pomodoroMinutes,
     required this.shortBreakMinutes,
     required this.longBreakMinutes,
@@ -40,6 +42,7 @@ class TaskRunItem {
   Map<String, dynamic> toMap() => {
     'sourceTaskId': sourceTaskId,
     'name': name,
+    'presetId': presetId,
     'pomodoroMinutes': pomodoroMinutes,
     'shortBreakMinutes': shortBreakMinutes,
     'longBreakMinutes': longBreakMinutes,
@@ -53,6 +56,7 @@ class TaskRunItem {
   factory TaskRunItem.fromMap(Map<String, dynamic> map) => TaskRunItem(
     sourceTaskId: map['sourceTaskId'] as String? ?? '',
     name: map['name'] as String? ?? '',
+    presetId: map['presetId'] as String?,
     pomodoroMinutes: _readInt(map, 'pomodoroMinutes', 25),
     shortBreakMinutes: _readInt(map, 'shortBreakMinutes', 5),
     longBreakMinutes: _readInt(map, 'longBreakMinutes', 15),
