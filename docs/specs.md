@@ -674,6 +674,7 @@ Behavior:
 ## **10.4. Execution Screen (Run Mode)**
 
 The execution screen shows an analog-style circular timer with a dynamic layout tailored for TaskRunGroups.
+Run Mode is group-only: TimerScreen loads a TaskRunGroup by groupId; there is no single-task execution path.
 
 ### **10.4.1. Pre-start planning (before the timer begins)**
 
@@ -761,6 +762,7 @@ Last 10 seconds
 
 - Back button + title (Focus Interval)
 - Access to Groups Hub screen (show a visual indicator when pending groups exist)
+- If the Groups Hub screen is not yet available, the indicator can be a non-interactive placeholder until Phase 19.
 
 ### **10.4.3. Circle core elements**
 
@@ -849,6 +851,7 @@ The list rebuilds automatically when tasks change.
 - Task completion -> auto-transition to next task
 - No modal between tasks
 - Group completion -> modal + final animation (see section 12)
+- Completion modal includes summary totals when available (total tasks, pomodoros, total time)
 - After the user explicitly dismisses the completion modal, auto-navigate to the Groups Hub screen (do not remain in an idle Execution screen)
 - Status boxes and contextual list update automatically (including time ranges after pause/resume); no extra confirmations or animations in the MVP
 

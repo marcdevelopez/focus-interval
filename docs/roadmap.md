@@ -14,7 +14,7 @@ This project includes an official team roles document at:
 # 🟦 **Global Project Status**
 
 ```
-CURRENT PHASE: 17 — Planning Flow + Conflict Management
+CURRENT PHASE: 18 — Run Mode Redesign for TaskRunGroups (in progress; Phase 17 reopen still pending)
 NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       PomodoroViewModel exposed as Notifier auto-dispose and subscribed to the machine.
       Auth strategy: Google Sign-In on iOS/Android/Web (web verified; People API enabled); email/password on macOS/Windows; Linux auth disabled (local-only).
@@ -591,7 +591,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ---
 
-# 🚀 **PHASE 18 — Run Mode Redesign for TaskRunGroups**
+# 🚀 **PHASE 18 — Run Mode Redesign for TaskRunGroups (In progress)**
 
 ### ⚙️ Tasks
 
