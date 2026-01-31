@@ -14,7 +14,7 @@ This project includes an official team roles document at:
 # 🟦 **Global Project Status**
 
 ```
-CURRENT PHASE: 18 — Run Mode Redesign for TaskRunGroups (in progress; Phase 17 reopen still pending)
+CURRENT PHASE: 18 — Run Mode Redesign for TaskRunGroups (in progress)
 NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       PomodoroViewModel exposed as Notifier auto-dispose and subscribed to the machine.
       Auth strategy: Google Sign-In on iOS/Android/Web (web verified; People API enabled); email/password on macOS/Windows; Linux auth disabled (local-only).
@@ -33,8 +33,9 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       17/01/2026: Local custom sound picker added (Pomodoro start/Break start); custom sounds stored per-device only; built-in options aligned to available assets; web (Chrome) local pick disabled; macOS/iOS/Android verified.
       19/01/2026: Windows validation completed for the latest implementations (no changes required).
       19/01/2026: Implemented TaskRunGroup auto-complete when running groups exceed theoreticalEndTime; device verification pending.
-      19/01/2026: Phase 17 planning flow + conflict management implemented and validated on iOS/macOS/Android/Web; Windows/Linux pending.
-      Scheduled auto-start lifecycle (scheduled -> running -> completed) and resume/launch catch-up pending.
+      19/01/2026: Phase 17 planning flow + conflict management implemented and validated on iOS/macOS/Android/Web.
+      31/01/2026: Phase 17 validation completed on Windows/Linux (auto-start + catch-up).
+      Scheduled auto-start lifecycle (scheduled -> running -> completed) and resume/launch catch-up validated.
       20/01/2026: Local vs Account scope guard implemented with explicit import dialog (no implicit sync).
       20/01/2026: Run Mode time ranges anchored to actualStartTime with final breaks and pause offsets; task transitions stabilized.
       24/01/2026: Documentation-first specs for Task Presets, Pomodoro integrity modes, and task weight (%) UI refinements added.
@@ -64,7 +65,6 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
     ## 🔄 Reopened phases (must complete before moving on)
 
     - Phase 10.4 — Presets + weight UI + integrity warnings.
-    - Phase 17 — Scheduled auto-start lifecycle + resume/launch catch-up.
 
 Update this on each commit if needed.
 
@@ -574,7 +574,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ---
 
-# 🚀 **PHASE 17 — Planning Flow + Conflict Management**
+# [✔] **PHASE 17 — Planning Flow + Conflict Management (completed 31/01/2026)**
 
 ### ⚙️ Tasks
 
