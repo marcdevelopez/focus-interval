@@ -3424,6 +3424,17 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 199 — Task Editor focus + validation refresh — 01/02/2026
+
+### ✔ Work completed:
+
+- Added a stable key to Pomodoro duration field to keep focus when preset detaches.
+- Revalidated break fields after preset selection to clear stale error states.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

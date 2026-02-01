@@ -302,6 +302,10 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                 final updated = ref.read(taskEditorProvider);
                 if (updated != null) {
                   _syncControllers(updated);
+                  _revalidateBreakFieldsDeferred();
+                  if (mounted) {
+                    setState(() {});
+                  }
                 }
               },
               onEditPreset: selectedPreset == null
@@ -354,6 +358,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
             ),
             _numberField(
               label: "Pomodoro duration (min)",
+              fieldKey: const ValueKey('pomodoro_duration'),
               controller: _pomodoroCtrl,
               onChanged: (v) {
                 _pendingRedistribution = null;
@@ -604,6 +609,13 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   void _revalidateBreakFields() {
     _shortBreakFieldKey.currentState?.validate();
     _longBreakFieldKey.currentState?.validate();
+  }
+
+  void _revalidateBreakFieldsDeferred() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _revalidateBreakFields();
+    });
   }
 
   void _syncControllers(PomodoroTask task) {
