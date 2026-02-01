@@ -3446,6 +3446,17 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 201 — Preset edit feedback — 01/02/2026
+
+### ✔ Work completed:
+
+- Documented that preset edits propagate to tasks and can affect derived metrics.
+- Added a lightweight confirmation message when preset saves update tasks.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

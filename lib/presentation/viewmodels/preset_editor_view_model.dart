@@ -173,8 +173,12 @@ class PresetEditorViewModel extends Notifier<PomodoroPreset?> {
       if (sanitized.isDefault) {
         await _clearOtherDefaults(sanitized.id);
       }
-      await _propagatePresetToTasks(sanitized);
-      return PresetSaveResult.success(message: warning);
+      final updatedCount = await _propagatePresetToTasks(sanitized);
+      final updateMessage = updatedCount > 0
+          ? 'Updated $updatedCount ${updatedCount == 1 ? 'task' : 'tasks'} using this preset.'
+          : null;
+      final message = _joinMessages(updateMessage, warning);
+      return PresetSaveResult.success(message: message);
     } catch (error) {
       return PresetSaveResult.failure(_mapSaveError(error));
     }
@@ -222,10 +226,10 @@ class PresetEditorViewModel extends Notifier<PomodoroPreset?> {
     }
   }
 
-  Future<void> _propagatePresetToTasks(PomodoroPreset preset) async {
+  Future<int> _propagatePresetToTasks(PomodoroPreset preset) async {
     final taskRepo = ref.read(taskRepositoryProvider);
     final tasks = await taskRepo.getAll();
-    if (tasks.isEmpty) return;
+    if (tasks.isEmpty) return 0;
     final now = DateTime.now();
     final startOverride = await _soundOverrides.getOverride(
       _overrideKey(preset.id),
@@ -235,8 +239,10 @@ class PresetEditorViewModel extends Notifier<PomodoroPreset?> {
       _overrideKey(preset.id),
       SoundSlot.breakStart,
     );
+    var updatedCount = 0;
     for (final task in tasks) {
       if (task.presetId != preset.id) continue;
+      updatedCount += 1;
       final updated = task.copyWith(
         pomodoroMinutes: preset.pomodoroMinutes,
         shortBreakMinutes: preset.shortBreakMinutes,
@@ -269,6 +275,17 @@ class PresetEditorViewModel extends Notifier<PomodoroPreset?> {
         ),
       );
     }
+    return updatedCount;
+  }
+
+  String? _joinMessages(String? primary, String? secondary) {
+    if (primary == null || primary.trim().isEmpty) {
+      return secondary;
+    }
+    if (secondary == null || secondary.trim().isEmpty) {
+      return primary;
+    }
+    return '$primary $secondary';
   }
 
   Future<void> _detachPresetFromTasks(String presetId) async {

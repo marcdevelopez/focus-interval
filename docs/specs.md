@@ -720,6 +720,8 @@ Behavior:
 - Presets are selectable from the Task Editor when creating or editing a task.
 - Presets can be created, renamed, edited, and deleted from within the Task Editor context.
 - One preset is always marked as **default** and applied automatically to new tasks.
+- Editing a preset updates all tasks that reference that preset (durations, intervals, sounds).
+  This can change derived values such as task weight (%) and planning estimates.
 - Preset names are **unique per scope**:
   - Account Mode: unique per account.
   - Local Mode: unique per local device scope.
@@ -747,6 +749,8 @@ Preset UI (Task Editor)
 - Selecting a preset overrides the fields below; editing any structural field detaches to Custom.
 - Preset save failures must show explicit user feedback (no silent failures), including
   sync-disabled and permission errors.
+- When a preset save updates existing tasks, show a lightweight confirmation message
+  (no modal) to avoid silent behavior.
 - If deleting a preset would leave zero presets, automatically recreate **Classic Pomodoro**
   and mark it as the default.
 
