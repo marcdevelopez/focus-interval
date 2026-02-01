@@ -3389,6 +3389,17 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 196 — Task weight uses baseline work time — 31/01/2026
+
+### ✔ Work completed:
+
+- Redistribution now uses baseline task list work time (pre-edit) to avoid shrinking totals while typing.
+- Edited task is no longer merged into the baseline for total work calculations.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

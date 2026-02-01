@@ -249,14 +249,41 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
     required int targetPercent,
     required List<PomodoroTask> tasks,
   }) {
-    final all = _mergeEditedTask(edited, tasks);
-    if (all.isEmpty) {
+    if (tasks.isEmpty) {
       return {edited.id: edited.totalPomodoros};
     }
-    final others = all.where((t) => t.id != edited.id).toList();
-    final totalWork = _totalWorkMinutes(all);
+    final baselineEdited =
+        tasks.where((task) => task.id == edited.id).toList();
+    if (baselineEdited.isEmpty) {
+      final merged = _mergeEditedTask(edited, tasks);
+      return _redistributeFromBaseline(
+        edited: edited,
+        targetPercent: targetPercent,
+        baselineTasks: merged,
+      );
+    }
+    return _redistributeFromBaseline(
+      edited: edited,
+      targetPercent: targetPercent,
+      baselineTasks: tasks,
+    );
+  }
+
+  Map<String, int> _redistributeFromBaseline({
+    required PomodoroTask edited,
+    required int targetPercent,
+    required List<PomodoroTask> baselineTasks,
+  }) {
+    final others =
+        baselineTasks.where((task) => task.id != edited.id).toList();
+    final totalWork = _totalWorkMinutes(baselineTasks);
     if (totalWork <= 0 || others.isEmpty) {
-      return {for (final task in all) task.id: task.totalPomodoros};
+      return {
+        for (final task in baselineTasks)
+          task.id: task.id == edited.id
+              ? edited.totalPomodoros
+              : task.totalPomodoros,
+      };
     }
 
     final clamped = targetPercent < 1
