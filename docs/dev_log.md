@@ -3479,6 +3479,17 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 204 — Preset auth reset cache refresh — 01/02/2026
+
+### ✔ Work completed:
+
+- Invalidated preset/task providers on account login/logout to prevent stale preset access after auth changes.
+- Ensured preset list refreshes cleanly after password reset flows.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

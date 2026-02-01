@@ -321,6 +321,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     await controller.setLocal();
     await _maybeShowWebLocalNotice();
     ref.invalidate(taskListProvider);
+    ref.invalidate(presetListProvider);
+    ref.invalidate(presetEditorProvider);
   }
 
   @override
