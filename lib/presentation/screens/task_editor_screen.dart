@@ -374,11 +374,22 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                 ),
               ),
             ],
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
+            const Text(
+              "Task weight",
+              style: TextStyle(color: Colors.white70, fontSize: 16),
+            ),
+            const SizedBox(height: 6),
             _weightRow(
               task: task,
               orderedTasks: orderedTasks,
             ),
+            const SizedBox(height: 16),
+            const Text(
+              "Pomodoro configuration",
+              style: TextStyle(color: Colors.white70, fontSize: 16),
+            ),
+            const SizedBox(height: 6),
             _numberField(
               label: "Pomodoro duration (min)",
               fieldKey: const ValueKey('pomodoro_duration'),

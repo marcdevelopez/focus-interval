@@ -657,6 +657,8 @@ Behavior:
 - Editing the percentage updates totalPomodoros to the closest integer (pomodoros are never fractional),
   and redistributes the remaining tasks to preserve their relative proportions.
 - Display Total pomodoros and Task weight (%) on the same row directly below the task name to emphasize task weight.
+- Visually separate **Task weight** from **Pomodoro configuration** with section headers.
+  Pomodoro configuration sits below Task weight and above Sounds.
 
 ### **10.3.x. Pomodoro integrity + task weight (planned, documentation-first)**
 

@@ -3501,6 +3501,17 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 206 — Task Editor section grouping — 01/02/2026
+
+### ✔ Work completed:
+
+- Added section headers to separate Task weight from Pomodoro configuration in Task Editor.
+- Documented the visual grouping in specs for clarity.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
