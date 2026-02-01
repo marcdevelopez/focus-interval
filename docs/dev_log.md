@@ -3435,6 +3435,17 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 200 — Task Editor syncs preset edits — 01/02/2026
+
+### ✔ Work completed:
+
+- Synced Task Editor state to updated preset values after preset edits.
+- Prevented stale preset values from overwriting propagated task updates.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

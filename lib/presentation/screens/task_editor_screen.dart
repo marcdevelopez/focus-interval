@@ -5,6 +5,7 @@ import '../providers.dart';
 import '../viewmodels/task_editor_view_model.dart';
 import '../../data/models/pomodoro_task.dart';
 import '../../data/models/pomodoro_preset.dart';
+import '../../data/models/selected_sound.dart';
 import '../../domain/validators.dart';
 import '../../widgets/sound_selector.dart';
 import '../../widgets/mode_indicator.dart';
@@ -50,6 +51,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   String? _loadedTaskId;
   bool _intervalTouched = false;
   bool _breaksTouched = false;
+  bool _syncingPreset = false;
   bool _syncingWeight = false;
   int _lastGroupWorkMinutes = 0;
   Map<String, int>? _pendingRedistribution;
@@ -157,6 +159,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         if (!mounted) return;
         editor.detachPreset();
       });
+    } else if (task != null && selectedPreset != null) {
+      _maybeSyncTaskWithPreset(task, selectedPreset);
     }
     final pomodoroDisplayName =
         editor.customDisplayName(SoundPickTarget.pomodoroStart);
@@ -647,6 +651,42 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       if (_loadedTaskId == task.id) return;
       _syncControllers(task);
     });
+  }
+
+  void _maybeSyncTaskWithPreset(PomodoroTask task, PomodoroPreset preset) {
+    if (_syncingPreset) return;
+    if (_matchesPreset(task, preset)) return;
+    _syncingPreset = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        if (!mounted) return;
+        await ref.read(taskEditorProvider.notifier).applyPreset(preset);
+        if (!mounted) return;
+        final updated = ref.read(taskEditorProvider);
+        if (updated != null) {
+          _syncControllers(updated);
+          _revalidateBreakFieldsDeferred();
+          setState(() {});
+        }
+      } finally {
+        _syncingPreset = false;
+      }
+    });
+  }
+
+  bool _matchesPreset(PomodoroTask task, PomodoroPreset preset) {
+    return task.pomodoroMinutes == preset.pomodoroMinutes &&
+        task.shortBreakMinutes == preset.shortBreakMinutes &&
+        task.longBreakMinutes == preset.longBreakMinutes &&
+        task.longBreakInterval == preset.longBreakInterval &&
+        _soundMatches(task.startSound, preset.startSound) &&
+        _soundMatches(task.startBreakSound, preset.startBreakSound) &&
+        _soundMatches(task.finishTaskSound, preset.finishTaskSound);
+  }
+
+  bool _soundMatches(SelectedSound taskSound, SelectedSound presetSound) {
+    return taskSound.type == presetSound.type &&
+        taskSound.value == presetSound.value;
   }
 
   int? _parseIntervalInput() {
