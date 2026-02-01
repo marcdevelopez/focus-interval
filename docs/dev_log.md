@@ -3457,6 +3457,17 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 202 — Task weight precision notice — 01/02/2026
+
+### ✔ Work completed:
+
+- Documented precision limits for task weight redistribution.
+- Added a lightweight notice when requested % cannot be matched closely or no change is possible.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

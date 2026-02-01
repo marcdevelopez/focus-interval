@@ -689,6 +689,11 @@ Task weight rules:
   - Redistribution adjusts `totalPomodoros` only (integer), never splitting pomodoros.
   - `roundHalfUp` means .5 ties always round up.
   - Exact percentages are not guaranteed due to integer constraints.
+  - If the closest achievable result deviates by **≥ 10 percentage points**, or if
+    no redistribution change is possible, show a lightweight (non-modal) notice:
+    - Pomodoros are indivisible.
+    - Few total pomodoros limits precision.
+    - Suggest adding pomodoros, selecting more tasks, or trying another percentage.
 
 UI implications (documentation only):
 

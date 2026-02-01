@@ -53,6 +53,13 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   bool _breaksTouched = false;
   bool _syncingPreset = false;
   bool _syncingWeight = false;
+  static const int _weightPercentWarningThreshold = 10;
+  int? _weightPercentStartValue;
+  int? _lastRequestedWeightPercent;
+  int? _lastResultWeightPercent;
+  bool _lastRedistributionChanged = false;
+  String? _lastWeightNoticeKey;
+  bool _weightPercentEdited = false;
   int _lastGroupWorkMinutes = 0;
   Map<String, int>? _pendingRedistribution;
 
@@ -69,9 +76,15 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     _longBreakIntervalCtrl = TextEditingController();
     _weightPercentFocus = FocusNode();
     _weightPercentFocus.addListener(() {
-      if (!_weightPercentFocus.hasFocus) {
-        _syncWeightPercentFromTask();
+      if (_weightPercentFocus.hasFocus) {
+        _weightPercentStartValue =
+            int.tryParse(_weightPercentCtrl.text.trim());
+        _weightPercentEdited = false;
+        _lastWeightNoticeKey = null;
+        return;
       }
+      _maybeShowWeightPrecisionNotice();
+      _syncWeightPercentFromTask();
     });
 
     final initial = ref.read(taskEditorProvider);
@@ -833,6 +846,91 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         : total + (task.totalPomodoros * task.pomodoroMinutes);
   }
 
+  List<PomodoroTask> _mergeEditedWeightTask(
+    PomodoroTask edited,
+    List<PomodoroTask> tasks,
+  ) {
+    if (tasks.isEmpty) return [edited];
+    final merged = <PomodoroTask>[];
+    var replaced = false;
+    for (final task in tasks) {
+      if (task.id == edited.id) {
+        merged.add(edited);
+        replaced = true;
+      } else {
+        merged.add(task);
+      }
+    }
+    if (!replaced) merged.add(edited);
+    return merged;
+  }
+
+  int? _computeWeightPercentFromRedistribution(
+    PomodoroTask edited,
+    List<PomodoroTask> tasks,
+    Map<String, int> redistributed,
+  ) {
+    if (tasks.isEmpty) return null;
+    var totalWork = 0;
+    for (final task in tasks) {
+      final pomodoros = redistributed[task.id] ?? task.totalPomodoros;
+      totalWork += pomodoros * task.pomodoroMinutes;
+    }
+    if (totalWork <= 0) return null;
+    final editedPomodoros =
+        redistributed[edited.id] ?? edited.totalPomodoros;
+    final editedWork = editedPomodoros * edited.pomodoroMinutes;
+    return ((editedWork / totalWork) * 100).round();
+  }
+
+  bool _hasRedistributionChanges(
+    List<PomodoroTask> tasks,
+    Map<String, int> redistributed,
+  ) {
+    for (final task in tasks) {
+      final target = redistributed[task.id];
+      if (target != null && target != task.totalPomodoros) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void _maybeShowWeightPrecisionNotice() {
+    if (!_weightPercentEdited) return;
+    final requested = _lastRequestedWeightPercent;
+    final result = _lastResultWeightPercent;
+    if (requested == null || result == null) return;
+    if (_weightPercentStartValue != null &&
+        requested == _weightPercentStartValue &&
+        !_lastRedistributionChanged) {
+      return;
+    }
+    final diff = (requested - result).abs();
+    String? message;
+    if (!_lastRedistributionChanged) {
+      message =
+          'No change possible with current total pomodoros. Pomodoros are '
+          'indivisible—add more pomodoros or tasks for finer weights.';
+    } else if (diff >= _weightPercentWarningThreshold) {
+      message =
+          'Closest possible is $result% (requested $requested%). Pomodoros are '
+          'indivisible—add more pomodoros or tasks for finer weights.';
+    }
+    if (message == null) return;
+    final key = '$requested|$result|$_lastRedistributionChanged';
+    if (key == _lastWeightNoticeKey) return;
+    _lastWeightNoticeKey = key;
+    _showWeightNotice(message);
+    _weightPercentEdited = false;
+  }
+
+  void _showWeightNotice(String message) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(SnackBar(content: Text(message)));
+  }
+
   PomodoroPreset? _findPreset(
     List<PomodoroPreset> presets,
     String? presetId,
@@ -1514,6 +1612,18 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                 targetPercent: clamped,
                 tasks: orderedTasks,
               );
+              final mergedTasks = _mergeEditedWeightTask(task, orderedTasks);
+              _lastRequestedWeightPercent = clamped;
+              _lastResultWeightPercent = _computeWeightPercentFromRedistribution(
+                task,
+                mergedTasks,
+                redistributed,
+              );
+              _lastRedistributionChanged = _hasRedistributionChanges(
+                mergedTasks,
+                redistributed,
+              );
+              _weightPercentEdited = true;
               _pendingRedistribution = redistributed;
               final newPomodoros =
                   redistributed[task.id] ?? task.totalPomodoros;

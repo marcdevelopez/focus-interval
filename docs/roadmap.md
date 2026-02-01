@@ -71,6 +71,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 ## 🔄 Reopened phases (must complete before moving on)
 
 - Phase 10.4 — Preset integrity (single default + unique names + delete crash) — reopened 01/02/2026.
+- Phase 10.4 — Task weight precision notice — reopened 01/02/2026.
 
 Update this on each commit if needed.
 
