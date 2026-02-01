@@ -69,15 +69,13 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       01/02/2026: Preset providers now refresh on account login/logout to avoid stale auth access.
       01/02/2026: Task Editor finish sound selector aligned with preset options.
       01/02/2026: Task Editor separates Task weight from Pomodoro configuration.
+      01/02/2026: Task Editor preset selector overflow resolved (responsive ellipsis).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
 ## 🔄 Reopened phases (must complete before moving on)
 
-- Phase 10.4 — Preset integrity (single default + unique names + delete crash) — reopened 01/02/2026.
-- Phase 10.4 — Task weight precision notice — reopened 01/02/2026.
-- Phase 10.4 — Finish sound edit consistency — reopened 01/02/2026.
-- Phase 10.4 — Task Editor section grouping — reopened 01/02/2026.
+- Phase 10.4 — Preset selector overflow — reopened 01/02/2026.
 
 Update this on each commit if needed.
 

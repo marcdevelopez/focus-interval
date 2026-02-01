@@ -613,6 +613,8 @@ Behavior:
 - When a preset is selected:
   - Task links to the presetId and adopts its structural values + sounds.
   - Editing any structural field switches the task to **Custom** (detaches from preset).
+- Preset selector must be responsive on narrow screens; long preset names truncate
+  (ellipsis) without causing horizontal overflow, and preset action icons remain visible.
 - Inline preset actions are visible next to the selector when a preset is selected:
   - Edit (pencil) opens the preset editor
   - Delete removes the preset (tasks keep their current values and become Custom)

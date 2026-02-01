@@ -1489,6 +1489,12 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     VoidCallback? onToggleDefault,
   }) {
     const customValue = '__custom__';
+    final itemLabels = <String>[
+      'Custom',
+      ...presets.map(
+        (preset) => preset.isDefault ? '★ ${preset.name}' : preset.name,
+      ),
+    ];
     final items = <DropdownMenuItem<String>>[
       const DropdownMenuItem(
         value: customValue,
@@ -1522,9 +1528,21 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                 borderSide: BorderSide(color: Colors.white54),
               ),
             ),
+            isExpanded: true,
             iconEnabledColor: Colors.white70,
             style: const TextStyle(color: Colors.white),
             items: items,
+            selectedItemBuilder: (context) => itemLabels
+                .map(
+                  (label) => Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      label,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                )
+                .toList(),
             onChanged: (value) async {
               if (value == null) return;
               if (value == customValue) {

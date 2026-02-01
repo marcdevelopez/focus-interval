@@ -3512,6 +3512,17 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 207 — Preset selector overflow fix — 01/02/2026
+
+### ✔ Work completed:
+
+- Made preset selector responsive with ellipsis truncation to avoid horizontal overflow.
+- Kept preset action icons visible on narrow screens.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
