@@ -11,6 +11,7 @@ import '../../data/models/selected_sound.dart';
 import '../../domain/validators.dart';
 import '../providers.dart';
 import '../../data/services/local_sound_overrides.dart';
+import '../../data/services/app_mode_service.dart';
 
 enum PresetSoundPickTarget { pomodoroStart, breakStart }
 
@@ -19,6 +20,15 @@ class PresetSoundPickResult {
   final String? error;
 
   const PresetSoundPickResult({this.sound, this.error});
+}
+
+class PresetSaveResult {
+  final bool success;
+  final String? message;
+
+  const PresetSaveResult.success({this.message}) : success = true;
+
+  const PresetSaveResult.failure(this.message) : success = false;
 }
 
 class PresetEditorViewModel extends Notifier<PomodoroPreset?> {
@@ -128,22 +138,37 @@ class PresetEditorViewModel extends Notifier<PomodoroPreset?> {
     return _customDisplayNames[_slotForTarget(target)];
   }
 
-  Future<bool> save() async {
+  Future<PresetSaveResult> save() async {
     final preset = state;
-    if (preset == null) return false;
+    if (preset == null) {
+      return const PresetSaveResult.failure('No preset to save.');
+    }
+    final appMode = ref.read(appModeProvider);
+    final user = ref.read(currentUserProvider);
+    final syncEnabled = ref.read(accountSyncEnabledProvider);
+    if (appMode == AppMode.account && user == null) {
+      return const PresetSaveResult.failure('Sign in to save presets.');
+    }
+    final warning = (appMode == AppMode.account && !syncEnabled)
+        ? 'Sync is disabled. Verify your email to save presets to your account.'
+        : null;
     final repo = ref.read(presetRepositoryProvider);
     final now = DateTime.now();
     final withTimestamps = preset.copyWith(
       updatedAt: now,
       createdAt: preset.createdAt,
     );
-    final sanitized = await _sanitizeForSync(withTimestamps);
-    await repo.save(sanitized);
-    if (sanitized.isDefault) {
-      await _clearOtherDefaults(sanitized.id);
+    try {
+      final sanitized = await _sanitizeForSync(withTimestamps);
+      await repo.save(sanitized);
+      if (sanitized.isDefault) {
+        await _clearOtherDefaults(sanitized.id);
+      }
+      await _propagatePresetToTasks(sanitized);
+      return PresetSaveResult.success(message: warning);
+    } catch (error) {
+      return PresetSaveResult.failure(_mapSaveError(error));
     }
-    await _propagatePresetToTasks(sanitized);
-    return true;
   }
 
   Future<void> delete(String presetId) async {
@@ -151,6 +176,17 @@ class PresetEditorViewModel extends Notifier<PomodoroPreset?> {
     await repo.delete(presetId);
     await _clearPresetOverrides(presetId);
     await _detachPresetFromTasks(presetId);
+  }
+
+  String _mapSaveError(Object error) {
+    final message = error.toString();
+    if (message.contains('permission-denied')) {
+      return 'Permission denied. Please check your account permissions.';
+    }
+    if (message.contains('No authenticated user')) {
+      return 'Sign in to save presets.';
+    }
+    return 'Failed to save preset. Please try again.';
   }
 
   Future<void> setDefault(String presetId) async {

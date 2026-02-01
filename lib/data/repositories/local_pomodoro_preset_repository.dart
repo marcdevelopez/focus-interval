@@ -9,15 +9,17 @@ import '../models/pomodoro_preset.dart';
 import 'pomodoro_preset_repository.dart';
 
 class LocalPomodoroPresetRepository implements PomodoroPresetRepository {
-  static const String _prefsKey = 'local_presets_v1';
+  static const String _defaultPrefsKey = 'local_presets_v1';
 
   final Map<String, PomodoroPreset> _store = {};
   final StreamController<List<PomodoroPreset>> _controller;
+  final String _prefsKey;
   bool _loaded = false;
   Future<void>? _loadFuture;
 
-  LocalPomodoroPresetRepository()
-    : _controller = StreamController<List<PomodoroPreset>>.broadcast(
+  LocalPomodoroPresetRepository({String prefsKey = _defaultPrefsKey})
+      : _prefsKey = prefsKey,
+        _controller = StreamController<List<PomodoroPreset>>.broadcast(
         sync: true,
         onListen: () {},
       ) {
@@ -27,6 +29,7 @@ class LocalPomodoroPresetRepository implements PomodoroPresetRepository {
   @override
   Future<List<PomodoroPreset>> getAll() async {
     await _ensureLoaded();
+    await _ensureSeeded();
     return _store.values.toList();
   }
 
@@ -40,6 +43,7 @@ class LocalPomodoroPresetRepository implements PomodoroPresetRepository {
   Future<void> save(PomodoroPreset preset) async {
     await _ensureLoaded();
     _store[preset.id] = preset;
+    _ensureDefault();
     await _persist();
     _emit();
   }
@@ -48,6 +52,7 @@ class LocalPomodoroPresetRepository implements PomodoroPresetRepository {
   Future<void> delete(String id) async {
     await _ensureLoaded();
     _store.remove(id);
+    await _ensureSeeded(persist: false);
     await _persist();
     _emit();
   }
@@ -56,7 +61,10 @@ class LocalPomodoroPresetRepository implements PomodoroPresetRepository {
   Stream<List<PomodoroPreset>> watchAll() => _controller.stream;
 
   void _handleListen() {
-    _ensureLoaded().then((_) => _emit());
+    _ensureLoaded().then((_) async {
+      await _ensureSeeded();
+      _emit();
+    });
   }
 
   Future<void> _ensureLoaded() {
@@ -108,6 +116,33 @@ class LocalPomodoroPresetRepository implements PomodoroPresetRepository {
     final prefs = await SharedPreferences.getInstance();
     final payload = _store.values.map((preset) => preset.toMap()).toList();
     await prefs.setString(_prefsKey, jsonEncode(payload));
+  }
+
+  Future<void> _ensureSeeded({bool persist = true}) async {
+    var changed = false;
+    if (_store.isEmpty) {
+      final preset = PomodoroPreset.classicDefault(
+        id: const Uuid().v4(),
+        now: DateTime.now(),
+      );
+      _store[preset.id] = preset;
+      changed = true;
+    }
+    if (_ensureDefault()) {
+      changed = true;
+    }
+    if (changed && persist) {
+      await _persist();
+    }
+  }
+
+  bool _ensureDefault() {
+    if (_store.isEmpty) return false;
+    final hasDefault = _store.values.any((preset) => preset.isDefault);
+    if (hasDefault) return false;
+    final first = _store.values.first;
+    _store[first.id] = first.copyWith(isDefault: true);
+    return true;
   }
 
   void _emit() {

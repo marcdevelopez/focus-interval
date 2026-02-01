@@ -43,9 +43,9 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
   }
 
   // Create a new task with defaults.
-  void createNew() {
+  Future<void> createNew() async {
     final now = DateTime.now();
-    final preset = _defaultPreset();
+    final preset = await _fetchDefaultPreset();
     if (preset != null) {
       state = PomodoroTask(
         id: _uuid.v4(),
@@ -96,11 +96,14 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
     state = task;
   }
 
-  PomodoroPreset? _defaultPreset() {
-    final presets = ref.read(presetListProvider).value;
-    if (presets == null || presets.isEmpty) return null;
+  Future<PomodoroPreset?> _fetchDefaultPreset() async {
     try {
-      return presets.firstWhere((preset) => preset.isDefault);
+      final presets = await ref.read(presetRepositoryProvider).getAll();
+      if (presets.isEmpty) return null;
+      for (final preset in presets) {
+        if (preset.isDefault) return preset;
+      }
+      return presets.first;
     } catch (_) {
       return null;
     }
@@ -232,28 +235,196 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
   }
 
   int weightPercent({
-    required int taskPomodoros,
-    required int totalPomodoros,
+    required PomodoroTask task,
+    required int totalWorkMinutes,
   }) {
-    if (totalPomodoros <= 0) return 0;
-    final raw = (taskPomodoros / totalPomodoros) * 100;
+    if (totalWorkMinutes <= 0) return 0;
+    final taskWork = _workMinutes(task);
+    final raw = (taskWork / totalWorkMinutes) * 100;
     return raw.round();
   }
 
-  int pomodorosFromPercent({
-    required int percent,
-    required int totalPomodoros,
+  Map<String, int> redistributeWeightPercent({
+    required PomodoroTask edited,
+    required int targetPercent,
+    required List<PomodoroTask> tasks,
   }) {
-    if (totalPomodoros <= 0) return 1;
-    final raw = (percent / 100) * totalPomodoros;
-    final computed = _roundHalfUp(raw);
-    return computed < 1 ? 1 : computed;
+    if (tasks.isEmpty) {
+      return {edited.id: edited.totalPomodoros};
+    }
+    final baselineEdited =
+        tasks.where((task) => task.id == edited.id).toList();
+    if (baselineEdited.isEmpty) {
+      final merged = _mergeEditedTask(edited, tasks);
+      return _redistributeFromBaseline(
+        edited: edited,
+        targetPercent: targetPercent,
+        baselineTasks: merged,
+      );
+    }
+    return _redistributeFromBaseline(
+      edited: edited,
+      targetPercent: targetPercent,
+      baselineTasks: tasks,
+    );
+  }
+
+  Map<String, int> _redistributeFromBaseline({
+    required PomodoroTask edited,
+    required int targetPercent,
+    required List<PomodoroTask> baselineTasks,
+  }) {
+    final others =
+        baselineTasks.where((task) => task.id != edited.id).toList();
+    final totalWork = _totalWorkMinutes(baselineTasks);
+    if (totalWork <= 0 || others.isEmpty) {
+      return {
+        for (final task in baselineTasks)
+          task.id: task.id == edited.id
+              ? edited.totalPomodoros
+              : task.totalPomodoros,
+      };
+    }
+
+    final clamped = targetPercent < 1
+        ? 1
+        : (targetPercent > 100 ? 100 : targetPercent);
+    final minEditedWork = edited.pomodoroMinutes;
+    final minOthersWork = others.fold<int>(
+      0,
+      (sum, task) => sum + task.pomodoroMinutes,
+    );
+    final maxEditedWork = totalWork - minOthersWork;
+    final desiredWork = (totalWork * clamped) / 100.0;
+    final boundedWork = desiredWork.clamp(
+      minEditedWork.toDouble(),
+      maxEditedWork.toDouble(),
+    );
+    var editedPomodoros =
+        _roundHalfUp(boundedWork / edited.pomodoroMinutes);
+    if (editedPomodoros < 1) editedPomodoros = 1;
+    var editedWork = editedPomodoros * edited.pomodoroMinutes;
+    while (editedPomodoros > 1 && editedWork > maxEditedWork) {
+      editedPomodoros -= 1;
+      editedWork = editedPomodoros * edited.pomodoroMinutes;
+    }
+
+    final remainingWork = totalWork - editedWork;
+    final othersWork = _totalWorkMinutes(others);
+    final targets = <String, _TargetAllocation>{};
+    var sumWork = 0;
+    for (final task in others) {
+      final share = othersWork <= 0
+          ? (1 / others.length)
+          : (_workMinutes(task) / othersWork);
+      final targetWork = remainingWork * share;
+      final targetPomodoros = targetWork / task.pomodoroMinutes;
+      var rounded = _roundHalfUp(targetPomodoros);
+      if (rounded < 1) rounded = 1;
+      final actualWork = rounded * task.pomodoroMinutes;
+      sumWork += actualWork;
+      targets[task.id] = _TargetAllocation(
+        task: task,
+        targetPomodoros: targetPomodoros,
+        pomodoros: rounded,
+      );
+    }
+
+    var diff = totalWork - (editedWork + sumWork);
+    if (diff != 0) {
+      final allocations = targets.values.toList();
+      allocations.sort((a, b) => a.fraction.compareTo(b.fraction));
+      var guard = 0;
+      while (diff != 0 && guard < 10000) {
+        guard += 1;
+        if (diff > 0) {
+          final candidate = allocations.reversed.first;
+          candidate.pomodoros += 1;
+          diff -= candidate.task.pomodoroMinutes;
+          allocations.sort((a, b) => a.fraction.compareTo(b.fraction));
+          continue;
+        }
+        final removable = allocations
+            .where((entry) => entry.pomodoros > 1)
+            .toList();
+        if (removable.isEmpty) break;
+        removable.sort((a, b) => a.fraction.compareTo(b.fraction));
+        final candidate = removable.first;
+        candidate.pomodoros -= 1;
+        diff += candidate.task.pomodoroMinutes;
+        allocations.sort((a, b) => a.fraction.compareTo(b.fraction));
+      }
+    }
+
+    final result = <String, int>{edited.id: editedPomodoros};
+    for (final entry in targets.entries) {
+      result[entry.key] = entry.value.pomodoros;
+    }
+    return result;
+  }
+
+  Future<int> applyRedistributedPomodoros({
+    required PomodoroTask edited,
+    required Map<String, int> pomodorosById,
+    List<PomodoroTask>? orderedTasks,
+  }) async {
+    if (pomodorosById.isEmpty) return 0;
+    final tasks = orderedTasks ?? await _fetchOrderedTasks();
+    if (tasks.isEmpty) return 0;
+    final repo = ref.read(taskRepositoryProvider);
+    final now = DateTime.now();
+    var updatedCount = 0;
+    for (final task in tasks) {
+      if (task.id == edited.id) continue;
+      final targetPomodoros = pomodorosById[task.id];
+      if (targetPomodoros == null) continue;
+      if (task.totalPomodoros == targetPomodoros) continue;
+      final updated = task.copyWith(
+        totalPomodoros: targetPomodoros,
+        updatedAt: now,
+      );
+      final sanitized = await _sanitizeForSync(updated);
+      await repo.save(sanitized);
+      updatedCount += 1;
+    }
+    return updatedCount;
   }
 
   int _roundHalfUp(double value) {
     final floor = value.floorToDouble();
     if (value - floor == 0.5) return floor.toInt() + 1;
     return value.round();
+  }
+
+  int _workMinutes(PomodoroTask task) {
+    return task.totalPomodoros * task.pomodoroMinutes;
+  }
+
+  int _totalWorkMinutes(List<PomodoroTask> tasks) {
+    var total = 0;
+    for (final task in tasks) {
+      total += _workMinutes(task);
+    }
+    return total;
+  }
+
+  List<PomodoroTask> _mergeEditedTask(
+    PomodoroTask edited,
+    List<PomodoroTask> tasks,
+  ) {
+    if (tasks.isEmpty) return [edited];
+    final merged = <PomodoroTask>[];
+    var replaced = false;
+    for (final task in tasks) {
+      if (task.id == edited.id) {
+        merged.add(edited);
+        replaced = true;
+      } else {
+        merged.add(task);
+      }
+    }
+    if (!replaced) merged.add(edited);
+    return merged;
   }
 
   Future<void> _applySoundOverrideToTarget({
@@ -583,4 +754,18 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
       return null;
     }
   }
+}
+
+class _TargetAllocation {
+  _TargetAllocation({
+    required this.task,
+    required this.targetPomodoros,
+    required this.pomodoros,
+  });
+
+  final PomodoroTask task;
+  final double targetPomodoros;
+  int pomodoros;
+
+  double get fraction => targetPomodoros - pomodoros;
 }

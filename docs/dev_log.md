@@ -3317,6 +3317,89 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 190 — Preset save errors + Settings visibility fixes — 31/01/2026
+
+### ✔ Work completed:
+
+- Added Firestore rules for `users/{uid}/pomodoroPresets` to unblock Account Mode preset CRUD.
+- Exposed Settings gear in Local Mode to keep Settings accessible across modes.
+- Added explicit error feedback for preset save failures (sync disabled, permission errors).
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 191 — Built-in default preset decision — 31/01/2026
+
+### ✔ Work completed:
+
+- Defined built-in default preset (Classic Pomodoro) and invariant that at least one preset always exists.
+- Added seeding rules for Local Mode, Account Mode, and Account Mode with sync disabled.
+- Documented account-local preset cache and one-time auto-push on sync enable.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 192 — Implement Classic Pomodoro default seeding — 31/01/2026
+
+### ✔ Work completed:
+
+- Implemented Classic Pomodoro built-in default preset seeding across Local, Account, and sync-disabled scopes.
+- Enforced “at least one preset” invariant on delete and ensured a default always exists.
+- Added account-local preset cache for sync-disabled Account Mode and auto-push to Firestore on sync enable.
+- New tasks now default to the preset instead of implicit custom values.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 193 — Task weight redistribution (work time) — 31/01/2026
+
+### ✔ Work completed:
+
+- Documented task weight (%) based on work time with proportional redistribution of other tasks.
+- Added rule to hide % badges when no tasks are selected.
+- Reopened Phase 10.4 to track the fix.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 194 — Task weight redistribution implemented — 31/01/2026
+
+### ✔ Work completed:
+
+- Implemented work-time-based weight redistribution when editing task %.
+- Preserved relative proportions of non-edited tasks and kept integer pomodoros.
+- Hid task weight % badges when no selection exists.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 195 — Task weight preserves total work time — 31/01/2026
+
+### ✔ Work completed:
+
+- Adjusted redistribution to keep total work time constant after % edits.
+- Diff correction now targets total work time, not remaining work.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 196 — Task weight uses baseline work time — 31/01/2026
+
+### ✔ Work completed:
+
+- Redistribution now uses baseline task list work time (pre-edit) to avoid shrinking totals while typing.
+- Edited task is no longer merged into the baseline for total work calculations.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

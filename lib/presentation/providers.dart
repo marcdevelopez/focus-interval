@@ -111,15 +111,32 @@ final taskRepositoryProvider = Provider<TaskRepository>((ref) {
 final presetRepositoryProvider = Provider<PomodoroPresetRepository>((ref) {
   final appMode = ref.watch(appModeProvider);
   final authState = ref.watch(authStateProvider).value;
+  final user = ref.watch(currentUserProvider);
   if (appMode == AppMode.local) {
     return LocalPomodoroPresetRepository();
   }
   final syncEnabled = ref.watch(accountSyncEnabledProvider);
-  if (authState == null || !syncEnabled) {
-    return NoopPomodoroPresetRepository();
+  if (authState == null || user == null) return NoopPomodoroPresetRepository();
+  if (!syncEnabled) {
+    return LocalPomodoroPresetRepository(
+      prefsKey: 'account_presets_v1_${user.uid}',
+    );
   }
   return ref.watch(firestorePresetRepositoryProvider);
 });
+
+final accountLocalPresetRepositoryProvider =
+    Provider<LocalPomodoroPresetRepository>((ref) {
+      final user = ref.watch(currentUserProvider);
+      if (user == null) {
+        return LocalPomodoroPresetRepository(
+          prefsKey: 'account_presets_v1_unknown',
+        );
+      }
+      return LocalPomodoroPresetRepository(
+        prefsKey: 'account_presets_v1_${user.uid}',
+      );
+    });
 
 //
 // ==============================================================

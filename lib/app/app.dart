@@ -5,6 +5,7 @@ import 'router.dart';
 import 'theme.dart';
 import '../widgets/active_session_auto_opener.dart';
 import '../widgets/linux_dependency_gate.dart';
+import '../widgets/preset_sync_coordinator.dart';
 import '../widgets/scheduled_group_auto_starter.dart';
 
 class FocusIntervalApp extends StatelessWidget {
@@ -23,9 +24,10 @@ class FocusIntervalApp extends StatelessWidget {
           navigatorKey: rootNavigatorKey,
           child: content,
         );
+        final presetSyncWrapped = PresetSyncCoordinator(child: wrapped);
         final scheduledWrapped = ScheduledGroupAutoStarter(
           navigatorKey: rootNavigatorKey,
-          child: wrapped,
+          child: presetSyncWrapped,
         );
         if (!_isLinux) return scheduledWrapped;
         return LinuxDependencyGate(
