@@ -67,6 +67,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       31/01/2026: Phase 10.4 reopen item completed (task weight uses work-time redistribution; hide % when no selection).
       01/02/2026: Task List AppBar title overflow resolved (account label width capped).
       01/02/2026: Preset providers now refresh on account login/logout to avoid stale auth access.
+      01/02/2026: Task Editor finish sound selector aligned with preset options.
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
@@ -74,6 +75,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 
 - Phase 10.4 — Preset integrity (single default + unique names + delete crash) — reopened 01/02/2026.
 - Phase 10.4 — Task weight precision notice — reopened 01/02/2026.
+- Phase 10.4 — Finish sound edit consistency — reopened 01/02/2026.
 
 Update this on each commit if needed.
 

@@ -3490,6 +3490,17 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 205 — Finish sound edit consistency — 01/02/2026
+
+### ✔ Work completed:
+
+- Updated specs to allow task-level finish sound selection (aligns with presets).
+- Added Task Editor finish sound selector to match preset capabilities.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

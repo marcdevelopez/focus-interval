@@ -242,6 +242,12 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       SoundOption('default_chime_finish', 'Finish chime'),
     ];
 
+    const finishSounds = [
+      SoundOption('default_chime_finish', 'Finish chime'),
+      SoundOption('default_chime', 'Chime'),
+      SoundOption('default_chime_break', 'Break chime'),
+    ];
+
     if (task == null) {
       return const Scaffold(
         backgroundColor: Colors.black,
@@ -573,14 +579,17 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               },
             ),
             const SizedBox(height: 12),
-            Text(
-              "End of all pomodoros",
-              style: TextStyle(color: Colors.white54, fontSize: 14),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              "A default final sound will be used to avoid confusion.",
-              style: TextStyle(color: Colors.white38, fontSize: 12),
+            SoundSelector(
+              label: "Task finish",
+              value: task.finishTaskSound,
+              options: finishSounds,
+              onChanged: (v) =>
+                  _updateWithPresetCheck(task.copyWith(finishTaskSound: v)),
+              leading: const Icon(
+                Icons.volume_up_rounded,
+                color: Colors.white70,
+                size: 16,
+              ),
             ),
             if (canApplySettings) ...[
               const SizedBox(height: 24),

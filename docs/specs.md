@@ -322,7 +322,7 @@ Behavior notes:
 - The end-of-task sound plays on each task completion and must not pause or block the automatic transition.
 - Only the final task of the group triggers the stop behavior (see section 12).
 - To avoid overlapping audio, there are no separate sounds for pomodoro end or break end in this MVP.
-- Post-MVP: make the task finish sound configurable.
+- Post-MVP: add distinct sounds for pomodoro end and break end.
 
 Allowed formats:
 
@@ -333,6 +333,11 @@ Sounds can be:
 
 - Included in the app (assets)
 - Or loaded by the user (local file picker)
+
+Note:
+
+- In this MVP, custom local picks are supported for **Pomodoro start** and
+  **Break start** only; **Task finish** uses built-in choices.
 
 Platform notes:
 
@@ -593,7 +598,7 @@ Inputs:
 - Short break duration
 - Long break duration
 - Long break interval
-- Select sounds for each event
+- Select sounds for each event (Pomodoro start, Break start, Task finish)
 
 Buttons:
 
