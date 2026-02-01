@@ -355,13 +355,6 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final accountLabel = signedIn && emailLabel.isNotEmpty
         ? emailLabel
         : (currentUser?.uid ?? '');
-    final maxEmailWidth = screenWidth < 360
-        ? 96.0
-        : screenWidth < 480
-        ? 140.0
-        : screenWidth < 720
-        ? 200.0
-        : 260.0;
     final showAccountLabel =
         authSupported &&
         appMode == AppMode.account &&
@@ -370,6 +363,30 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final showLogout = authSupported && appMode == AppMode.account && signedIn;
     final showLogin = authSupported && appMode == AppMode.account && !signedIn;
     final showInfo = !authSupported;
+    final baseMaxEmailWidth = screenWidth < 360
+        ? 96.0
+        : screenWidth < 480
+        ? 140.0
+        : screenWidth < 720
+        ? 200.0
+        : 260.0;
+    const titleMinWidth = 120.0;
+    const titlePadding = 24.0;
+    const actionIconWidth = 36.0;
+    const actionRightPadding = 8.0;
+    final actionIconCount =
+        1 +
+        (showLogout ? 1 : 0) +
+        (showLogin ? 1 : 0) +
+        (showInfo ? 1 : 0);
+    final actionReservedWidth =
+        (actionIconCount * actionIconWidth) +
+        actionRightPadding +
+        (showAccountLabel ? 8.0 : 0.0);
+    final maxActionsWidth = screenWidth - titleMinWidth - titlePadding;
+    final maxEmailWidth = (maxActionsWidth - actionReservedWidth)
+        .clamp(0.0, baseMaxEmailWidth)
+        .toDouble();
 
     return Scaffold(
       backgroundColor: Colors.black,

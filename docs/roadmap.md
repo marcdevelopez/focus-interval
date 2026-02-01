@@ -65,6 +65,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       31/01/2026: Preset saves now surface explicit errors; Settings is visible in Local Mode; Firestore rules updated for pomodoroPresets.
       31/01/2026: Phase 10.4 reopen item completed (Classic Pomodoro default seeding + account-local preset cache + auto-push on sync enable).
       31/01/2026: Phase 10.4 reopen item completed (task weight uses work-time redistribution; hide % when no selection).
+      01/02/2026: Task List AppBar title overflow resolved (account label width capped).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 

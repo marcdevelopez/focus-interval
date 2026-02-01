@@ -3468,6 +3468,17 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 203 — Task list AppBar title overflow fix — 01/02/2026
+
+### ✔ Work completed:
+
+- Reserved title space in the Task List AppBar to keep “Your tasks” fully visible.
+- Dynamically constrained account label width to prevent right-side overflow.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
