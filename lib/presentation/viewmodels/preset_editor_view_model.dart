@@ -143,11 +143,19 @@ class PresetEditorViewModel extends Notifier<PomodoroPreset?> {
     if (preset == null) {
       return const PresetSaveResult.failure('No preset to save.');
     }
+    final trimmedName = preset.name.trim();
+    if (trimmedName.isEmpty) {
+      return const PresetSaveResult.failure('Preset name is required.');
+    }
     final appMode = ref.read(appModeProvider);
     final user = ref.read(currentUserProvider);
     final syncEnabled = ref.read(accountSyncEnabledProvider);
     if (appMode == AppMode.account && user == null) {
       return const PresetSaveResult.failure('Sign in to save presets.');
+    }
+    final nameError = await _ensureUniqueName(preset.id, trimmedName);
+    if (nameError != null) {
+      return PresetSaveResult.failure(nameError);
     }
     final warning = (appMode == AppMode.account && !syncEnabled)
         ? 'Sync is disabled. Verify your email to save presets to your account.'
@@ -155,6 +163,7 @@ class PresetEditorViewModel extends Notifier<PomodoroPreset?> {
     final repo = ref.read(presetRepositoryProvider);
     final now = DateTime.now();
     final withTimestamps = preset.copyWith(
+      name: trimmedName,
       updatedAt: now,
       createdAt: preset.createdAt,
     );
@@ -526,4 +535,19 @@ class PresetEditorViewModel extends Notifier<PomodoroPreset?> {
     };
     return '$base.$extension';
   }
+
+  Future<String?> _ensureUniqueName(String presetId, String name) async {
+    final repo = ref.read(presetRepositoryProvider);
+    final all = await repo.getAll();
+    final targetKey = _normalizeNameKey(name);
+    for (final preset in all) {
+      if (preset.id == presetId) continue;
+      if (_normalizeNameKey(preset.name) == targetKey) {
+        return 'Preset name already exists. Choose a unique name.';
+      }
+    }
+    return null;
+  }
+
+  String _normalizeNameKey(String name) => name.trim().toLowerCase();
 }

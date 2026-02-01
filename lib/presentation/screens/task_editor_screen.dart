@@ -316,6 +316,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                         selectedPreset,
                       );
                       if (!confirmed) return;
+                      await Future<void>.delayed(Duration.zero);
+                      if (!mounted) return;
                       await ref
                           .read(presetEditorProvider.notifier)
                           .delete(selectedPreset.id);

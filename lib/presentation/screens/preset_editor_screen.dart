@@ -37,6 +37,7 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
   bool _intervalTouched = false;
   bool _breaksTouched = false;
   String? _loadedPresetId;
+  bool _initializing = true;
 
   @override
   void initState() {
@@ -46,27 +47,9 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
     _shortBreakCtrl = TextEditingController();
     _longBreakCtrl = TextEditingController();
     _longBreakIntervalCtrl = TextEditingController();
-
-    final editor = ref.read(presetEditorProvider.notifier);
-    if (widget.isEditing && widget.presetId != null) {
-      Future.microtask(() async {
-        await editor.load(widget.presetId!);
-        if (!mounted) return;
-        final preset = ref.read(presetEditorProvider);
-        if (preset != null) {
-          _syncControllers(preset);
-        }
-      });
-    } else {
-      final existing = ref.read(presetEditorProvider);
-      if (existing == null) {
-        editor.createNew(seed: widget.seed);
-      }
-      final preset = ref.read(presetEditorProvider);
-      if (preset != null) {
-        _syncControllers(preset);
-      }
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializePreset();
+    });
   }
 
   @override
@@ -82,6 +65,12 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
   @override
   Widget build(BuildContext context) {
     final preset = ref.watch(presetEditorProvider);
+    if (_initializing) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
     final editor = ref.read(presetEditorProvider.notifier);
     final guidance = editor.breakGuidanceFor(preset);
     final breakOrderInvalid = preset != null &&
@@ -453,6 +442,28 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
     _longBreakIntervalCtrl.text = preset.longBreakInterval.toString();
     _intervalTouched = false;
     _breaksTouched = false;
+  }
+
+  Future<void> _initializePreset() async {
+    final editor = ref.read(presetEditorProvider.notifier);
+    if (widget.isEditing && widget.presetId != null) {
+      await editor.load(widget.presetId!);
+    } else {
+      final existing = ref.read(presetEditorProvider);
+      if (existing == null) {
+        editor.createNew(seed: widget.seed);
+      }
+    }
+    if (!mounted) return;
+    final preset = ref.read(presetEditorProvider);
+    if (preset != null) {
+      _syncControllers(preset);
+    }
+    if (mounted) {
+      setState(() {
+        _initializing = false;
+      });
+    }
   }
 
   void _maybeSyncControllers(PomodoroPreset? preset) {

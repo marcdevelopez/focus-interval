@@ -25,6 +25,8 @@ class PresetListScreen extends ConsumerWidget {
               if (value != 'delete_all') return;
               final confirmed = await _confirmBulkDelete(context);
               if (!confirmed) return;
+              await Future<void>.delayed(Duration.zero);
+              if (!context.mounted) return;
               final presets = ref.read(presetListProvider).value ?? const [];
               for (final preset in presets) {
                 await ref
@@ -42,7 +44,10 @@ class PresetListScreen extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/settings/presets/new'),
+        onPressed: () {
+          ref.read(presetEditorProvider.notifier).createNew();
+          context.push('/settings/presets/new');
+        },
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         child: const Icon(Icons.add),
@@ -164,6 +169,8 @@ class _PresetCard extends ConsumerWidget {
                     onPressed: () async {
                       final confirmed = await _confirmDelete(context, preset);
                       if (!confirmed) return;
+                      await Future<void>.delayed(Duration.zero);
+                      if (!context.mounted) return;
                       await ref
                           .read(presetEditorProvider.notifier)
                           .delete(preset.id);

@@ -45,13 +45,13 @@ class PresetListViewModel extends AsyncNotifier<List<PomodoroPreset>> {
             if (name != 0) return name;
             return a.createdAt.compareTo(b.createdAt);
           });
-        state = AsyncData(ordered);
+        _setStateSafely(AsyncData(ordered));
         if (!completer.isCompleted) {
           completer.complete(ordered);
         }
       },
       onError: (error, stack) {
-        state = AsyncError(error, stack);
+        _setStateSafely(AsyncError(error, stack));
         if (!completer.isCompleted) {
           completer.completeError(error, stack);
         }
@@ -59,5 +59,12 @@ class PresetListViewModel extends AsyncNotifier<List<PomodoroPreset>> {
     );
 
     return completer.future;
+  }
+
+  void _setStateSafely(AsyncValue<List<PomodoroPreset>> value) {
+    Future.microtask(() {
+      if (!ref.mounted) return;
+      state = value;
+    });
   }
 }

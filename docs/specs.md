@@ -720,6 +720,17 @@ Behavior:
 - Presets are selectable from the Task Editor when creating or editing a task.
 - Presets can be created, renamed, edited, and deleted from within the Task Editor context.
 - One preset is always marked as **default** and applied automatically to new tasks.
+- Preset names are **unique per scope**:
+  - Account Mode: unique per account.
+  - Local Mode: unique per local device scope.
+  - Comparison is case-insensitive after trimming whitespace.
+  - Saves with duplicate names are blocked with an explicit error message.
+- If multiple defaults are detected (legacy data or sync conflicts), the app
+  auto-resolves to a **single** default (most recently updated; fallback to
+  Classic Pomodoro if none) and persists the correction.
+- If duplicate preset names are detected (legacy data or sync conflicts), the app
+  auto-renames duplicates with a numeric suffix (e.g., "Focus", "Focus (2)") and
+  persists the correction.
 - A task may either:
   - reference a saved preset, or
   - use a custom, task-specific configuration.

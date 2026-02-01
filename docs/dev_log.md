@@ -16,7 +16,7 @@ This document is used to:
 # 📍 Current status
 
 Active phase: **18 — Run Mode Redesign for TaskRunGroups**
-Last update: **31/01/2026**
+Last update: **01/02/2026**
 
 ---
 
@@ -3395,6 +3395,30 @@ _(fill in when they happen)_
 
 - Redistribution now uses baseline task list work time (pre-edit) to avoid shrinking totals while typing.
 - Edited task is no longer merged into the baseline for total work calculations.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 197 — Preset integrity + delete crash fix — 01/02/2026
+
+### ✔ Work completed:
+
+- Documented preset name uniqueness per scope and auto-correction rules.
+- Normalized presets to enforce a single default and unique names (local + Firestore).
+- Added unique-name validation on preset save (explicit error on duplicates).
+- Deferred preset list state updates and delete actions to avoid build-time provider mutations.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 198 — Preset editor init fix — 01/02/2026
+
+### ✔ Work completed:
+
+- Deferred preset editor initialization to post-frame to avoid build-time provider mutations.
+- Always create a fresh preset on the new-preset route to avoid overwriting existing presets.
 
 ### ⚠️ Issues found:
 

@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/pomodoro_preset.dart';
+import '../services/preset_integrity_service.dart';
 import 'pomodoro_preset_repository.dart';
 
 class LocalPomodoroPresetRepository implements PomodoroPresetRepository {
@@ -29,7 +30,7 @@ class LocalPomodoroPresetRepository implements PomodoroPresetRepository {
   @override
   Future<List<PomodoroPreset>> getAll() async {
     await _ensureLoaded();
-    await _ensureSeeded();
+    await _ensureIntegrity();
     return _store.values.toList();
   }
 
@@ -43,7 +44,7 @@ class LocalPomodoroPresetRepository implements PomodoroPresetRepository {
   Future<void> save(PomodoroPreset preset) async {
     await _ensureLoaded();
     _store[preset.id] = preset;
-    _ensureDefault();
+    _normalizePresetsSync(DateTime.now());
     await _persist();
     _emit();
   }
@@ -52,8 +53,7 @@ class LocalPomodoroPresetRepository implements PomodoroPresetRepository {
   Future<void> delete(String id) async {
     await _ensureLoaded();
     _store.remove(id);
-    await _ensureSeeded(persist: false);
-    await _persist();
+    await _ensureIntegrity();
     _emit();
   }
 
@@ -62,7 +62,7 @@ class LocalPomodoroPresetRepository implements PomodoroPresetRepository {
 
   void _handleListen() {
     _ensureLoaded().then((_) async {
-      await _ensureSeeded();
+      await _ensureIntegrity();
       _emit();
     });
   }
@@ -118,17 +118,18 @@ class LocalPomodoroPresetRepository implements PomodoroPresetRepository {
     await prefs.setString(_prefsKey, jsonEncode(payload));
   }
 
-  Future<void> _ensureSeeded({bool persist = true}) async {
+  Future<void> _ensureIntegrity({bool persist = true}) async {
     var changed = false;
+    final now = DateTime.now();
     if (_store.isEmpty) {
       final preset = PomodoroPreset.classicDefault(
         id: const Uuid().v4(),
-        now: DateTime.now(),
+        now: now,
       );
       _store[preset.id] = preset;
       changed = true;
     }
-    if (_ensureDefault()) {
+    if (_normalizePresetsSync(now)) {
       changed = true;
     }
     if (changed && persist) {
@@ -136,12 +137,16 @@ class LocalPomodoroPresetRepository implements PomodoroPresetRepository {
     }
   }
 
-  bool _ensureDefault() {
+  bool _normalizePresetsSync(DateTime now) {
     if (_store.isEmpty) return false;
-    final hasDefault = _store.values.any((preset) => preset.isDefault);
-    if (hasDefault) return false;
-    final first = _store.values.first;
-    _store[first.id] = first.copyWith(isDefault: true);
+    final result = normalizePresets(
+      presets: _store.values.toList(),
+      now: now,
+    );
+    if (!result.changed) return false;
+    _store
+      ..clear()
+      ..addAll({for (final preset in result.presets) preset.id: preset});
     return true;
   }
 

@@ -68,9 +68,9 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
-    ## 🔄 Reopened phases (must complete before moving on)
+## 🔄 Reopened phases (must complete before moving on)
 
-    (none)
+- Phase 10.4 — Preset integrity (single default + unique names + delete crash) — reopened 01/02/2026.
 
 Update this on each commit if needed.
 
