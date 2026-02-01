@@ -3534,6 +3534,18 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 209 — Preset duplicate configuration detection — 01/02/2026
+
+### ✔ Work completed:
+
+- Detect duplicate preset configurations on new preset creation (durations, interval, sounds).
+- Added a decision dialog to use existing, rename existing, save anyway, or cancel.
+- Implemented rename flow without creating additional presets.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

@@ -744,6 +744,14 @@ Behavior:
   - Local Mode: unique per local device scope.
   - Comparison is case-insensitive after trimming whitespace.
   - Saves with duplicate names are blocked with an explicit error message.
+- Presets are also considered duplicates if their **configuration** is identical
+  (durations, interval, and sound selections), regardless of name:
+  - On **new preset** creation, detect configuration duplicates and present options:
+    - **Use existing** → cancel creation; keep the existing preset unchanged.
+    - **Rename existing** → apply the new name to the existing preset; no new preset created.
+    - **Save anyway** → explicitly create a duplicate.
+    - **Cancel** → return to editing without changes.
+  - No duplicate is created without explicit confirmation.
 - If multiple defaults are detected (legacy data or sync conflicts), the app
   auto-resolves to a **single** default (most recently updated; fallback to
   Classic Pomodoro if none) and persists the correction.

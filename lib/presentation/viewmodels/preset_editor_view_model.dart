@@ -138,6 +138,51 @@ class PresetEditorViewModel extends Notifier<PomodoroPreset?> {
     return _customDisplayNames[_slotForTarget(target)];
   }
 
+  Future<PomodoroPreset?> findDuplicatePreset(PomodoroPreset candidate) async {
+    final repo = ref.read(presetRepositoryProvider);
+    final all = await repo.getAll();
+    final candidateConfig = await _buildConfig(candidate);
+    for (final preset in all) {
+      if (preset.id == candidate.id) continue;
+      final presetConfig = await _buildConfig(preset);
+      if (_configMatches(candidateConfig, presetConfig)) {
+        return preset;
+      }
+    }
+    return null;
+  }
+
+  Future<PresetSaveResult> renamePreset({
+    required PomodoroPreset preset,
+    required String newName,
+  }) async {
+    final trimmedName = newName.trim();
+    if (trimmedName.isEmpty) {
+      return const PresetSaveResult.failure('Preset name is required.');
+    }
+    final appMode = ref.read(appModeProvider);
+    final user = ref.read(currentUserProvider);
+    final syncEnabled = ref.read(accountSyncEnabledProvider);
+    if (appMode == AppMode.account && user == null) {
+      return const PresetSaveResult.failure('Sign in to save presets.');
+    }
+    final nameError = await _ensureUniqueName(preset.id, trimmedName);
+    if (nameError != null) {
+      return PresetSaveResult.failure(nameError);
+    }
+    final warning = (appMode == AppMode.account && !syncEnabled)
+        ? 'Sync is disabled. Verify your email to save presets to your account.'
+        : null;
+    final repo = ref.read(presetRepositoryProvider);
+    final now = DateTime.now();
+    try {
+      await repo.save(preset.copyWith(name: trimmedName, updatedAt: now));
+      return PresetSaveResult.success(message: warning);
+    } catch (error) {
+      return PresetSaveResult.failure(_mapSaveError(error));
+    }
+  }
+
   Future<PresetSaveResult> save() async {
     final preset = state;
     if (preset == null) {
@@ -433,6 +478,40 @@ class PresetEditorViewModel extends Notifier<PomodoroPreset?> {
     );
   }
 
+  Future<_PresetConfig> _buildConfig(PomodoroPreset preset) async {
+    final startOverride = await _soundOverrides.getOverride(
+      _overrideKey(preset.id),
+      SoundSlot.pomodoroStart,
+    );
+    final breakOverride = await _soundOverrides.getOverride(
+      _overrideKey(preset.id),
+      SoundSlot.breakStart,
+    );
+    return _PresetConfig(
+      pomodoroMinutes: preset.pomodoroMinutes,
+      shortBreakMinutes: preset.shortBreakMinutes,
+      longBreakMinutes: preset.longBreakMinutes,
+      longBreakInterval: preset.longBreakInterval,
+      startSound: startOverride?.sound ?? preset.startSound,
+      startBreakSound: breakOverride?.sound ?? preset.startBreakSound,
+      finishTaskSound: preset.finishTaskSound,
+    );
+  }
+
+  bool _configMatches(_PresetConfig a, _PresetConfig b) {
+    return a.pomodoroMinutes == b.pomodoroMinutes &&
+        a.shortBreakMinutes == b.shortBreakMinutes &&
+        a.longBreakMinutes == b.longBreakMinutes &&
+        a.longBreakInterval == b.longBreakInterval &&
+        _soundMatches(a.startSound, b.startSound) &&
+        _soundMatches(a.startBreakSound, b.startBreakSound) &&
+        _soundMatches(a.finishTaskSound, b.finishTaskSound);
+  }
+
+  bool _soundMatches(SelectedSound a, SelectedSound b) {
+    return a.type == b.type && a.value == b.value;
+  }
+
   void _syncDisplayName(SoundSlot slot, LocalSoundOverride? override) {
     if (override?.sound.type == SoundType.custom) {
       final name = override?.displayName;
@@ -567,4 +646,24 @@ class PresetEditorViewModel extends Notifier<PomodoroPreset?> {
   }
 
   String _normalizeNameKey(String name) => name.trim().toLowerCase();
+}
+
+class _PresetConfig {
+  final int pomodoroMinutes;
+  final int shortBreakMinutes;
+  final int longBreakMinutes;
+  final int longBreakInterval;
+  final SelectedSound startSound;
+  final SelectedSound startBreakSound;
+  final SelectedSound finishTaskSound;
+
+  const _PresetConfig({
+    required this.pomodoroMinutes,
+    required this.shortBreakMinutes,
+    required this.longBreakMinutes,
+    required this.longBreakInterval,
+    required this.startSound,
+    required this.startBreakSound,
+    required this.finishTaskSound,
+  });
 }

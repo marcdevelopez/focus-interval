@@ -13,6 +13,8 @@ import '../viewmodels/preset_editor_view_model.dart';
 
 enum _UnsavedDecision { save, discard, cancel }
 
+enum _DuplicateDecision { useExisting, renameExisting, saveAnyway, cancel }
+
 class PresetEditorScreen extends ConsumerStatefulWidget {
   final bool isEditing;
   final String? presetId;
@@ -532,11 +534,103 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
     return result ?? _UnsavedDecision.cancel;
   }
 
+  Future<_DuplicateDecision> _showDuplicateDialog({
+    required PomodoroPreset duplicate,
+    required String newName,
+  }) async {
+    final trimmedNewName = newName.trim();
+    final result = await showDialog<_DuplicateDecision>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Preset already exists'),
+          content: Text(
+            'The configuration you entered matches the preset '
+            '"${duplicate.name}".',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(_DuplicateDecision.cancel),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(_DuplicateDecision.useExisting),
+              child: const Text('Use existing'),
+            ),
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(_DuplicateDecision.renameExisting),
+              child: Text(
+                trimmedNewName.isEmpty
+                    ? 'Rename existing'
+                    : 'Rename to "$trimmedNewName"',
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(_DuplicateDecision.saveAnyway),
+              child: const Text('Save anyway'),
+            ),
+          ],
+        );
+      },
+    );
+    return result ?? _DuplicateDecision.cancel;
+  }
+
   Future<bool> _handleSave() async {
     if (!_formKey.currentState!.validate()) return false;
     final messenger = ScaffoldMessenger.of(context);
     if (!await _validateBusinessRules()) return false;
-    final result = await ref.read(presetEditorProvider.notifier).save();
+    final editor = ref.read(presetEditorProvider.notifier);
+    final preset = ref.read(presetEditorProvider);
+    if (preset == null) return false;
+
+    if (!widget.isEditing) {
+      final duplicate = await editor.findDuplicatePreset(preset);
+      if (!mounted) return false;
+      if (duplicate != null) {
+        final decision = await _showDuplicateDialog(
+          duplicate: duplicate,
+          newName: preset.name,
+        );
+        if (!mounted) return false;
+        switch (decision) {
+          case _DuplicateDecision.useExisting:
+            await _discardChanges(preset);
+            if (!mounted) return false;
+            return true;
+          case _DuplicateDecision.renameExisting:
+            final renameResult = await editor.renamePreset(
+              preset: duplicate,
+              newName: preset.name,
+            );
+            if (!mounted) return false;
+            if (!renameResult.success) {
+              final message = renameResult.message ??
+                  'Failed to rename preset. Please try again.';
+              messenger.showSnackBar(SnackBar(content: Text(message)));
+              return false;
+            }
+            if (renameResult.message != null) {
+              messenger.showSnackBar(
+                SnackBar(content: Text(renameResult.message!)),
+              );
+            }
+            await _discardChanges(preset);
+            if (!mounted) return false;
+            return true;
+          case _DuplicateDecision.saveAnyway:
+            break;
+          case _DuplicateDecision.cancel:
+            return false;
+        }
+      }
+    }
+
+    final result = await editor.save();
     if (!mounted) return false;
     if (!result.success) {
       final message =

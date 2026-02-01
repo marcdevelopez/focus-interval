@@ -71,6 +71,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       01/02/2026: Task Editor separates Task weight from Pomodoro configuration.
       01/02/2026: Task Editor preset selector overflow resolved (responsive ellipsis).
       01/02/2026: Unsaved changes confirmation added for Task/Preset editors.
+      01/02/2026: Preset duplicate configuration detection with use/rename/save options.
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
