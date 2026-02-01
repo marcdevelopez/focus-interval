@@ -6,9 +6,12 @@ import '../viewmodels/task_editor_view_model.dart';
 import '../../data/models/pomodoro_task.dart';
 import '../../data/models/pomodoro_preset.dart';
 import '../../data/models/selected_sound.dart';
+import '../../data/services/local_sound_overrides.dart';
 import '../../domain/validators.dart';
 import '../../widgets/sound_selector.dart';
 import '../../widgets/mode_indicator.dart';
+
+enum _UnsavedDecision { save, discard, cancel }
 
 class TaskEditorScreen extends ConsumerStatefulWidget {
   final bool isEditing;
@@ -62,6 +65,11 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   bool _weightPercentEdited = false;
   int _lastGroupWorkMinutes = 0;
   Map<String, int>? _pendingRedistribution;
+  PomodoroTask? _initialTaskSnapshot;
+  LocalSoundOverride? _initialStartOverride;
+  LocalSoundOverride? _initialBreakOverride;
+  bool _handlingExit = false;
+  bool _allowPop = false;
 
   @override
   void initState() {
@@ -122,7 +130,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("The task no longer exists.")),
       );
-      _exitEditor();
+      _allowPopAndExit();
       return;
     }
     if (result == TaskEditorLoadResult.blockedByActiveSession) {
@@ -131,7 +139,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
           content: Text("Stop the running task before editing it."),
         ),
       );
-      _exitEditor();
+      _allowPopAndExit();
     }
   }
 
@@ -141,6 +149,211 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       context.pop();
     } else {
       context.go('/tasks');
+    }
+  }
+
+  void _allowPopAndExit() {
+    if (_allowPop) {
+      _exitEditor();
+      return;
+    }
+    setState(() {
+      _allowPop = true;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _exitEditor();
+    });
+  }
+
+  void _captureInitialSnapshot(PomodoroTask task) {
+    if (_initialTaskSnapshot != null) return;
+    _initialTaskSnapshot = task;
+    Future.microtask(() async {
+      final overrides = ref.read(localSoundOverridesProvider);
+      _initialStartOverride ??= await overrides.getOverride(
+        task.id,
+        SoundSlot.pomodoroStart,
+      );
+      _initialBreakOverride ??= await overrides.getOverride(
+        task.id,
+        SoundSlot.breakStart,
+      );
+    });
+  }
+
+  String _normalizeNumberText(String raw) {
+    final trimmed = raw.trim();
+    final value = int.tryParse(trimmed);
+    return value == null ? trimmed : value.toString();
+  }
+
+  bool _hasUnsavedChanges(PomodoroTask task) {
+    final baseline = _initialTaskSnapshot;
+    if (baseline == null || baseline.id != task.id) return false;
+    if (_nameCtrl.text.trim() != baseline.name.trim()) return true;
+    if (_normalizeNumberText(_totalPomodorosCtrl.text) !=
+        baseline.totalPomodoros.toString()) {
+      return true;
+    }
+    if (_normalizeNumberText(_pomodoroCtrl.text) !=
+        baseline.pomodoroMinutes.toString()) {
+      return true;
+    }
+    if (_normalizeNumberText(_shortBreakCtrl.text) !=
+        baseline.shortBreakMinutes.toString()) {
+      return true;
+    }
+    if (_normalizeNumberText(_longBreakCtrl.text) !=
+        baseline.longBreakMinutes.toString()) {
+      return true;
+    }
+    if (_normalizeNumberText(_longBreakIntervalCtrl.text) !=
+        baseline.longBreakInterval.toString()) {
+      return true;
+    }
+    if (task.presetId != baseline.presetId) return true;
+    if (!_soundMatches(task.startSound, baseline.startSound)) return true;
+    if (!_soundMatches(task.startBreakSound, baseline.startBreakSound)) {
+      return true;
+    }
+    if (!_soundMatches(task.finishTaskSound, baseline.finishTaskSound)) {
+      return true;
+    }
+    return false;
+  }
+
+  Future<_UnsavedDecision> _showUnsavedDialog() async {
+    final result = await showDialog<_UnsavedDecision>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Unsaved changes'),
+          content: const Text(
+            'You have unsaved changes. What would you like to do?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(_UnsavedDecision.cancel),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(_UnsavedDecision.discard),
+              child: const Text('Discard'),
+            ),
+            ElevatedButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(_UnsavedDecision.save),
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+    return result ?? _UnsavedDecision.cancel;
+  }
+
+  Future<bool> _handleSave() async {
+    if (!_formKey.currentState!.validate()) return false;
+    if (!await _validateBusinessRules()) return false;
+    final editor = ref.read(taskEditorProvider.notifier);
+    final saved = await editor.save();
+    if (!mounted) return false;
+    if (!saved) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Stop the running task before saving changes.",
+          ),
+        ),
+      );
+      return false;
+    }
+    final redistribution = _pendingRedistribution;
+    if (redistribution != null) {
+      final current = ref.read(taskEditorProvider);
+      if (current != null) {
+        await editor.applyRedistributedPomodoros(
+          edited: current,
+          pomodorosById: redistribution,
+          orderedTasks: _orderTasks(
+            (ref.read(taskListProvider).asData?.value ?? const []),
+          ),
+        );
+      }
+      _pendingRedistribution = null;
+    }
+    return true;
+  }
+
+  Future<void> _restoreOverride({
+    required LocalSoundOverrides overrides,
+    required String taskId,
+    required SoundSlot slot,
+    required LocalSoundOverride? baseline,
+  }) async {
+    if (baseline == null) {
+      await overrides.clearOverride(taskId, slot);
+      return;
+    }
+    await overrides.setOverride(
+      taskId: taskId,
+      slot: slot,
+      sound: baseline.sound,
+      fallbackBuiltInId: baseline.fallbackBuiltInId,
+      displayName: baseline.displayName,
+    );
+  }
+
+  Future<void> _discardChanges(PomodoroTask task) async {
+    final baseline = _initialTaskSnapshot;
+    if (baseline == null) return;
+    final overrides = ref.read(localSoundOverridesProvider);
+    await _restoreOverride(
+      overrides: overrides,
+      taskId: baseline.id,
+      slot: SoundSlot.pomodoroStart,
+      baseline: _initialStartOverride,
+    );
+    await _restoreOverride(
+      overrides: overrides,
+      taskId: baseline.id,
+      slot: SoundSlot.breakStart,
+      baseline: _initialBreakOverride,
+    );
+    _pendingRedistribution = null;
+    ref.read(taskEditorProvider.notifier).update(baseline);
+  }
+
+  Future<void> _handleExitRequest(PomodoroTask? task) async {
+    if (_handlingExit) return;
+    _handlingExit = true;
+    try {
+      if (task == null || !_hasUnsavedChanges(task)) {
+        _allowPopAndExit();
+        return;
+      }
+      final decision = await _showUnsavedDialog();
+      if (!mounted) return;
+      switch (decision) {
+        case _UnsavedDecision.save:
+          if (await _handleSave()) {
+            if (!mounted) return;
+            _allowPopAndExit();
+          }
+          break;
+        case _UnsavedDecision.discard:
+          await _discardChanges(task);
+          if (!mounted) return;
+          _allowPopAndExit();
+          break;
+        case _UnsavedDecision.cancel:
+          break;
+      }
+    } finally {
+      _handlingExit = false;
     }
   }
 
@@ -230,6 +443,9 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     final intervalStatus =
         intervalGuidance?.status ?? LongBreakIntervalStatus.optimal;
     _maybeSyncControllers(task);
+    if (task != null) {
+      _captureInitialSnapshot(task);
+    }
     const pomodoroSounds = [
       SoundOption('default_chime', 'Chime (pomodoro start)'),
       SoundOption('default_chime_break', 'Chime (break start)'),
@@ -255,142 +471,124 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
+    return PopScope(
+      canPop: _allowPop || !_hasUnsavedChanges(task),
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        await _handleExitRequest(task);
+      },
+      child: Scaffold(
         backgroundColor: Colors.black,
-        title: Text(widget.isEditing ? "Edit task" : "New task"),
-        actions: [
-          const ModeIndicatorAction(compact: true),
-          TextButton(
-            onPressed: () async {
-              if (!_formKey.currentState!.validate()) return;
-              if (!await _validateBusinessRules()) return;
-
-              final saved = await editor.save();
-              if (!context.mounted) return;
-              if (!saved) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      "Stop the running task before saving changes.",
-                    ),
-                  ),
-                );
-                return;
-              }
-              final redistribution = _pendingRedistribution;
-              if (redistribution != null) {
-                final current = ref.read(taskEditorProvider);
-                if (current != null) {
-                  await editor.applyRedistributedPomodoros(
-                    edited: current,
-                    pomodorosById: redistribution,
-                    orderedTasks: orderedTasks,
-                  );
-                }
-                _pendingRedistribution = null;
-              }
-              _exitEditor();
-            },
-            child: const Text("Save"),
-          ),
-        ],
-      ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _textField(
-              label: "Task name",
-              controller: _nameCtrl,
-              onChanged: (v) => _update(task.copyWith(name: v)),
-              validator: (v) => _nameValidator(
-                v,
-                tasks: tasks,
-                currentId: task.id,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _presetSelectorRow(
-              presets: presets,
-              selectedPreset: selectedPreset,
-              onPresetSelected: (preset) async {
-                if (preset == null) {
-                  editor.detachPreset();
-                  return;
-                }
-                await editor.applyPreset(preset);
-                final updated = ref.read(taskEditorProvider);
-                if (updated != null) {
-                  _syncControllers(updated);
-                  _revalidateBreakFieldsDeferred();
-                  if (mounted) {
-                    setState(() {});
-                  }
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          title: Text(widget.isEditing ? "Edit task" : "New task"),
+          actions: [
+            const ModeIndicatorAction(compact: true),
+            TextButton(
+              onPressed: () async {
+                if (await _handleSave()) {
+                  if (!context.mounted) return;
+                  _allowPopAndExit();
                 }
               },
-              onEditPreset: selectedPreset == null
-                  ? null
-                  : () => context.push(
-                        '/settings/presets/edit/${selectedPreset.id}',
-                      ),
-              onDeletePreset: selectedPreset == null
-                  ? null
-                  : () async {
-                      final confirmed = await _confirmPresetDelete(
-                        selectedPreset,
-                      );
-                      if (!confirmed) return;
-                      await Future<void>.delayed(Duration.zero);
-                      if (!mounted) return;
-                      await ref
-                          .read(presetEditorProvider.notifier)
-                          .delete(selectedPreset.id);
-                      if (!mounted) return;
-                      editor.detachPreset();
-                    },
-              onToggleDefault: selectedPreset == null
-                  ? null
-                  : () => ref
-                      .read(presetEditorProvider.notifier)
-                      .setDefault(selectedPreset.id),
+              child: const Text("Save"),
             ),
-            if (task.presetId == null) ...[
-              const SizedBox(height: 6),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    await ref
-                        .read(presetEditorProvider.notifier)
-                        .createFromTask(task);
-                    if (!context.mounted) return;
-                    context.push('/settings/presets/new');
-                  },
-                  icon: const Icon(Icons.save_as),
-                  label: const Text('Save as new preset'),
+          ],
+        ),
+        body: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _textField(
+                label: "Task name",
+                controller: _nameCtrl,
+                onChanged: (v) => _update(task.copyWith(name: v)),
+                validator: (v) => _nameValidator(
+                  v,
+                  tasks: tasks,
+                  currentId: task.id,
                 ),
               ),
-            ],
-            const SizedBox(height: 16),
-            const Text(
-              "Task weight",
-              style: TextStyle(color: Colors.white70, fontSize: 16),
-            ),
-            const SizedBox(height: 6),
-            _weightRow(
-              task: task,
-              orderedTasks: orderedTasks,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              "Pomodoro configuration",
-              style: TextStyle(color: Colors.white70, fontSize: 16),
-            ),
-            const SizedBox(height: 6),
-            _numberField(
+              const SizedBox(height: 12),
+              _presetSelectorRow(
+                presets: presets,
+                selectedPreset: selectedPreset,
+                onPresetSelected: (preset) async {
+                  if (preset == null) {
+                    editor.detachPreset();
+                    return;
+                  }
+                  await editor.applyPreset(preset);
+                  final updated = ref.read(taskEditorProvider);
+                  if (updated != null) {
+                    _syncControllers(updated);
+                    _revalidateBreakFieldsDeferred();
+                    if (mounted) {
+                      setState(() {});
+                    }
+                  }
+                },
+                onEditPreset: selectedPreset == null
+                    ? null
+                    : () => context.push(
+                          '/settings/presets/edit/${selectedPreset.id}',
+                        ),
+                onDeletePreset: selectedPreset == null
+                    ? null
+                    : () async {
+                        final confirmed = await _confirmPresetDelete(
+                          selectedPreset,
+                        );
+                        if (!confirmed) return;
+                        await Future<void>.delayed(Duration.zero);
+                        if (!mounted) return;
+                        await ref
+                            .read(presetEditorProvider.notifier)
+                            .delete(selectedPreset.id);
+                        if (!mounted) return;
+                        editor.detachPreset();
+                      },
+                onToggleDefault: selectedPreset == null
+                    ? null
+                    : () => ref
+                        .read(presetEditorProvider.notifier)
+                        .setDefault(selectedPreset.id),
+              ),
+              if (task.presetId == null) ...[
+                const SizedBox(height: 6),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      await ref
+                          .read(presetEditorProvider.notifier)
+                          .createFromTask(task);
+                      if (!context.mounted) return;
+                      context.push('/settings/presets/new');
+                    },
+                    icon: const Icon(Icons.save_as),
+                    label: const Text('Save as new preset'),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              const Text(
+                "Task weight",
+                style: TextStyle(color: Colors.white70, fontSize: 16),
+              ),
+              const SizedBox(height: 6),
+              _weightRow(
+                task: task,
+                orderedTasks: orderedTasks,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                "Pomodoro configuration",
+                style: TextStyle(color: Colors.white70, fontSize: 16),
+              ),
+              const SizedBox(height: 6),
+              _numberField(
               label: "Pomodoro duration (min)",
               fieldKey: const ValueKey('pomodoro_duration'),
               controller: _pomodoroCtrl,
@@ -634,6 +832,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               ),
             ],
           ],
+          ),
         ),
       ),
     );

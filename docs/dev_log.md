@@ -3523,6 +3523,17 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 208 — Unsaved changes confirmation — 01/02/2026
+
+### ✔ Work completed:
+
+- Added unsaved-changes confirmation dialogs for Task Editor and Preset Editor.
+- Restored local sound overrides when discarding edits to avoid leaking changes.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

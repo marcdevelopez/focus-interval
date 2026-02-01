@@ -615,6 +615,9 @@ Behavior:
   - Editing any structural field switches the task to **Custom** (detaches from preset).
 - Preset selector must be responsive on narrow screens; long preset names truncate
   (ellipsis) without causing horizontal overflow, and preset action icons remain visible.
+- If the user attempts to leave **Edit task** with unsaved changes, show a confirmation
+  dialog with options to **Save**, **Discard**, or **Cancel**. Only show this dialog
+  when there are actual form differences from the original state.
 - Inline preset actions are visible next to the selector when a preset is selected:
   - Edit (pencil) opens the preset editor
   - Delete removes the preset (tasks keep their current values and become Custom)
@@ -775,6 +778,9 @@ Preset UI (Settings)
   - Show default marker (star) on the default preset
   - Quick actions: edit, delete, set default
   - Bulk delete is allowed
+- If the user attempts to leave **Edit preset** with unsaved changes, show a confirmation
+  dialog with options to **Save**, **Discard**, or **Cancel**. Only show this dialog
+  when there are actual form differences from the original state.
 
 Storage & sync
 

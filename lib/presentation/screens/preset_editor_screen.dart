@@ -3,11 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/models/pomodoro_preset.dart';
+import '../../data/models/selected_sound.dart';
+import '../../data/services/local_sound_overrides.dart';
 import '../../domain/validators.dart';
 import '../../widgets/sound_selector.dart';
 import '../../widgets/mode_indicator.dart';
 import '../providers.dart';
 import '../viewmodels/preset_editor_view_model.dart';
+
+enum _UnsavedDecision { save, discard, cancel }
 
 class PresetEditorScreen extends ConsumerStatefulWidget {
   final bool isEditing;
@@ -38,6 +42,11 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
   bool _breaksTouched = false;
   String? _loadedPresetId;
   bool _initializing = true;
+  PomodoroPreset? _initialPresetSnapshot;
+  LocalSoundOverride? _initialStartOverride;
+  LocalSoundOverride? _initialBreakOverride;
+  bool _handlingExit = false;
+  bool _allowPop = false;
 
   @override
   void initState() {
@@ -123,6 +132,9 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
     final intervalStatus =
         intervalGuidance?.status ?? LongBreakIntervalStatus.optimal;
     _maybeSyncControllers(preset);
+    if (preset != null) {
+      _captureInitialSnapshot(preset);
+    }
 
     if (preset == null) {
       return const Scaffold(
@@ -154,88 +166,79 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
       SoundOption('default_chime_break', 'Break chime'),
     ];
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
+    return PopScope(
+      canPop: _allowPop || !_hasUnsavedChanges(preset),
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        await _handleExitRequest(preset);
+      },
+      child: Scaffold(
         backgroundColor: Colors.black,
-        title: Text(widget.isEditing ? "Edit preset" : "New preset"),
-        actions: [
-          const ModeIndicatorAction(compact: true),
-          TextButton(
-            onPressed: () async {
-              if (!_formKey.currentState!.validate()) return;
-              if (!await _validateBusinessRules()) return;
-              final result = await ref
-                  .read(presetEditorProvider.notifier)
-                  .save();
-              if (!context.mounted) return;
-              if (!result.success) {
-                final message =
-                    result.message ?? 'Failed to save preset. Please try again.';
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(SnackBar(content: Text(message)));
-                return;
-              }
-              if (result.message != null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(result.message!)),
-                );
-              }
-              _exitEditor();
-            },
-            child: const Text("Save"),
-          ),
-        ],
-      ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _textField(
-              label: "Preset name",
-              controller: _nameCtrl,
-              onChanged: (v) => _update(preset.copyWith(name: v)),
-              validator: (v) {
-                final trimmed = v?.trim() ?? '';
-                if (trimmed.isEmpty) return 'Required';
-                return null;
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          title: Text(widget.isEditing ? "Edit preset" : "New preset"),
+          actions: [
+            const ModeIndicatorAction(compact: true),
+            TextButton(
+              onPressed: () async {
+                if (await _handleSave()) {
+                  if (!context.mounted) return;
+                  _allowPopAndExit();
+                }
               },
+              child: const Text("Save"),
             ),
-            const SizedBox(height: 12),
-            SwitchListTile(
-              value: preset.isDefault,
-              onChanged: (value) =>
-                  _update(preset.copyWith(isDefault: value)),
-              activeThumbColor: Colors.amberAccent,
-              title: const Text(
-                'Set as default preset',
-                style: TextStyle(color: Colors.white70),
+          ],
+        ),
+        body: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _textField(
+                label: "Preset name",
+                controller: _nameCtrl,
+                onChanged: (v) => _update(preset.copyWith(name: v)),
+                validator: (v) {
+                  final trimmed = v?.trim() ?? '';
+                  if (trimmed.isEmpty) return 'Required';
+                  return null;
+                },
               ),
-              contentPadding: EdgeInsets.zero,
-            ),
-            const SizedBox(height: 12),
-            _numberField(
-              label: "Pomodoro duration (min)",
-              controller: _pomodoroCtrl,
-              onChanged: (v) {
-                _update(preset.copyWith(pomodoroMinutes: v));
-                _revalidateBreakFields();
-              },
-              helperText: pomodoroHelper,
-              helperColor: _pomodoroHelperColor(pomodoroStatus),
-              borderColor: _pomodoroBorderColor(
-                pomodoroStatus,
-                focused: false,
+              const SizedBox(height: 12),
+              SwitchListTile(
+                value: preset.isDefault,
+                onChanged: (value) =>
+                    _update(preset.copyWith(isDefault: value)),
+                activeThumbColor: Colors.amberAccent,
+                title: const Text(
+                  'Set as default preset',
+                  style: TextStyle(color: Colors.white70),
+                ),
+                contentPadding: EdgeInsets.zero,
               ),
-              focusedBorderColor: _pomodoroBorderColor(
-                pomodoroStatus,
-                focused: true,
+              const SizedBox(height: 12),
+              _numberField(
+                label: "Pomodoro duration (min)",
+                controller: _pomodoroCtrl,
+                onChanged: (v) {
+                  _update(preset.copyWith(pomodoroMinutes: v));
+                  _revalidateBreakFields();
+                },
+                helperText: pomodoroHelper,
+                helperColor: _pomodoroHelperColor(pomodoroStatus),
+                borderColor: _pomodoroBorderColor(
+                  pomodoroStatus,
+                  focused: false,
+                ),
+                focusedBorderColor: _pomodoroBorderColor(
+                  pomodoroStatus,
+                  focused: true,
+                ),
+                helperMaxLines: 2,
+                additionalValidator: (value) => _pomodoroRangeValidator(value),
+                autovalidateMode: AutovalidateMode.onUserInteraction,
               ),
-              helperMaxLines: 2,
-              additionalValidator: (value) => _pomodoroRangeValidator(value),
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-            ),
             _numberField(
               label: "Short break (min)",
               fieldKey: _shortBreakFieldKey,
@@ -410,6 +413,7 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
               ),
             ),
           ],
+          ),
         ),
       ),
     );
@@ -421,6 +425,197 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
       context.pop();
     } else {
       context.go('/settings/presets');
+    }
+  }
+
+  void _allowPopAndExit() {
+    if (_allowPop) {
+      _exitEditor();
+      return;
+    }
+    setState(() {
+      _allowPop = true;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _exitEditor();
+    });
+  }
+
+  void _captureInitialSnapshot(PomodoroPreset preset) {
+    if (_initialPresetSnapshot != null) return;
+    _initialPresetSnapshot = preset;
+    Future.microtask(() async {
+      final overrides = ref.read(localSoundOverridesProvider);
+      final key = 'preset:${preset.id}';
+      _initialStartOverride ??= await overrides.getOverride(
+        key,
+        SoundSlot.pomodoroStart,
+      );
+      _initialBreakOverride ??= await overrides.getOverride(
+        key,
+        SoundSlot.breakStart,
+      );
+    });
+  }
+
+  String _normalizeNumberText(String raw) {
+    final trimmed = raw.trim();
+    final value = int.tryParse(trimmed);
+    return value == null ? trimmed : value.toString();
+  }
+
+  bool _hasUnsavedChanges(PomodoroPreset preset) {
+    final baseline = _initialPresetSnapshot;
+    if (baseline == null || baseline.id != preset.id) return false;
+    if (_nameCtrl.text.trim() != baseline.name.trim()) return true;
+    if (_normalizeNumberText(_pomodoroCtrl.text) !=
+        baseline.pomodoroMinutes.toString()) {
+      return true;
+    }
+    if (_normalizeNumberText(_shortBreakCtrl.text) !=
+        baseline.shortBreakMinutes.toString()) {
+      return true;
+    }
+    if (_normalizeNumberText(_longBreakCtrl.text) !=
+        baseline.longBreakMinutes.toString()) {
+      return true;
+    }
+    if (_normalizeNumberText(_longBreakIntervalCtrl.text) !=
+        baseline.longBreakInterval.toString()) {
+      return true;
+    }
+    if (preset.isDefault != baseline.isDefault) return true;
+    if (!_soundMatches(preset.startSound, baseline.startSound)) return true;
+    if (!_soundMatches(preset.startBreakSound, baseline.startBreakSound)) {
+      return true;
+    }
+    if (!_soundMatches(preset.finishTaskSound, baseline.finishTaskSound)) {
+      return true;
+    }
+    return false;
+  }
+
+  bool _soundMatches(SelectedSound current, SelectedSound baseline) {
+    return current.type == baseline.type && current.value == baseline.value;
+  }
+
+  Future<_UnsavedDecision> _showUnsavedDialog() async {
+    final result = await showDialog<_UnsavedDecision>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Unsaved changes'),
+          content: const Text(
+            'You have unsaved changes. What would you like to do?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(_UnsavedDecision.cancel),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(_UnsavedDecision.discard),
+              child: const Text('Discard'),
+            ),
+            ElevatedButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(_UnsavedDecision.save),
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+    return result ?? _UnsavedDecision.cancel;
+  }
+
+  Future<bool> _handleSave() async {
+    if (!_formKey.currentState!.validate()) return false;
+    final messenger = ScaffoldMessenger.of(context);
+    if (!await _validateBusinessRules()) return false;
+    final result = await ref.read(presetEditorProvider.notifier).save();
+    if (!mounted) return false;
+    if (!result.success) {
+      final message =
+          result.message ?? 'Failed to save preset. Please try again.';
+      messenger.showSnackBar(SnackBar(content: Text(message)));
+      return false;
+    }
+    if (result.message != null) {
+      messenger.showSnackBar(SnackBar(content: Text(result.message!)));
+    }
+    return true;
+  }
+
+  Future<void> _restoreOverride({
+    required LocalSoundOverrides overrides,
+    required String presetKey,
+    required SoundSlot slot,
+    required LocalSoundOverride? baseline,
+  }) async {
+    if (baseline == null) {
+      await overrides.clearOverride(presetKey, slot);
+      return;
+    }
+    await overrides.setOverride(
+      taskId: presetKey,
+      slot: slot,
+      sound: baseline.sound,
+      fallbackBuiltInId: baseline.fallbackBuiltInId,
+      displayName: baseline.displayName,
+    );
+  }
+
+  Future<void> _discardChanges(PomodoroPreset preset) async {
+    final baseline = _initialPresetSnapshot;
+    if (baseline == null) return;
+    final overrides = ref.read(localSoundOverridesProvider);
+    final key = 'preset:${baseline.id}';
+    await _restoreOverride(
+      overrides: overrides,
+      presetKey: key,
+      slot: SoundSlot.pomodoroStart,
+      baseline: _initialStartOverride,
+    );
+    await _restoreOverride(
+      overrides: overrides,
+      presetKey: key,
+      slot: SoundSlot.breakStart,
+      baseline: _initialBreakOverride,
+    );
+    ref.read(presetEditorProvider.notifier).update(baseline);
+  }
+
+  Future<void> _handleExitRequest(PomodoroPreset? preset) async {
+    if (_handlingExit) return;
+    _handlingExit = true;
+    try {
+      if (preset == null || !_hasUnsavedChanges(preset)) {
+        _allowPopAndExit();
+        return;
+      }
+      final decision = await _showUnsavedDialog();
+      if (!mounted) return;
+      switch (decision) {
+        case _UnsavedDecision.save:
+          if (await _handleSave()) {
+            if (!mounted) return;
+            _allowPopAndExit();
+          }
+          break;
+        case _UnsavedDecision.discard:
+          await _discardChanges(preset);
+          if (!mounted) return;
+          _allowPopAndExit();
+          break;
+        case _UnsavedDecision.cancel:
+          break;
+      }
+    } finally {
+      _handlingExit = false;
     }
   }
 
@@ -458,6 +653,7 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
     final preset = ref.read(presetEditorProvider);
     if (preset != null) {
       _syncControllers(preset);
+      _captureInitialSnapshot(preset);
     }
     if (mounted) {
       setState(() {
