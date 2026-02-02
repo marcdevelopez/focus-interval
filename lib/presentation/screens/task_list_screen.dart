@@ -40,6 +40,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   bool _verificationPromptShown = false;
   DateTime _planningAnchor = DateTime.now();
   String _planningAnchorKey = '';
+  String? _activeBannerGroupId;
+  bool _staleActiveHandled = false;
 
   @override
   void initState() {
@@ -391,6 +393,16 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final maxEmailWidth = (maxActionsWidth - actionReservedWidth)
         .clamp(0.0, baseMaxEmailWidth)
         .toDouble();
+    final activeGroupId = activeSession?.groupId;
+    if (activeGroupId != _activeBannerGroupId) {
+      _activeBannerGroupId = activeGroupId;
+      _staleActiveHandled = false;
+    }
+    _maybeResolveStaleActiveSession(
+      context,
+      activeSession: activeSession,
+      groupsAsync: groupsAsync,
+    );
     final activeGroupBanner = _buildActiveGroupBanner(
       context,
       activeSession: activeSession,
@@ -717,6 +729,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         break;
       }
     }
+    if (group != null && group.status != TaskRunStatus.running) {
+      return null;
+    }
     final name = group?.tasks.isNotEmpty == true
         ? group!.tasks.first.name
         : 'Task group';
@@ -768,6 +783,38 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         ],
       ),
     );
+  }
+
+  void _maybeResolveStaleActiveSession(
+    BuildContext context, {
+    required PomodoroSession? activeSession,
+    required AsyncValue<List<TaskRunGroup>> groupsAsync,
+  }) {
+    if (_staleActiveHandled) return;
+    final groupId = activeSession?.groupId;
+    if (groupId == null || groupId.isEmpty) return;
+    final groups = groupsAsync.value;
+    if (groups == null) return;
+    TaskRunGroup? group;
+    for (final candidate in groups) {
+      if (candidate.id == groupId) {
+        group = candidate;
+        break;
+      }
+    }
+    if (group == null) return;
+    if (group.status == TaskRunStatus.running) return;
+
+    _staleActiveHandled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await ref.read(pomodoroSessionRepositoryProvider).clearSession();
+      if (!mounted) return;
+      final message = group.status == TaskRunStatus.completed
+          ? 'Group completed.'
+          : 'Group ended.';
+      _showSnackBar(context, message);
+    });
   }
 
   Widget _buildVerificationLockedState() {

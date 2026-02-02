@@ -90,6 +90,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       02/02/2026: Cancel running group now confirms and navigates to Groups Hub (validation pending).
       02/02/2026: Phase 18 completed (completion flow + cancel flow -> Groups Hub).
       02/02/2026: Phase 19 Groups Hub core UI implemented (sections + actions); Task List banner + Run Mode indicator now open Groups Hub (validation pending).
+      02/02/2026: Task List banner now clears stale sessions when group ends (validation pending).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 

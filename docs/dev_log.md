@@ -3794,6 +3794,17 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 231 — Task List banner stale-session handling — 02/02/2026
+
+### ✔ Work completed:
+
+- Task List banner now disappears when the group is completed/canceled and clears stale sessions.
+- Shows a brief SnackBar to confirm the group ended.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
