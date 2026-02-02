@@ -3728,7 +3728,7 @@ _(fill in when they happen)_
 
 - None.
 
-# 🔹 Block 226 — Group completion navigation scaffold — 02/02/2026
+# 🔹 Block 226 — Group completion navigation scaffold (Phase 18)— 02/02/2026
 
 ### ✔ Work completed:
 
@@ -3738,6 +3738,18 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Validate the completion flow end-to-end (modal + final state + Groups Hub landing).
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 227 — Cancel flow spec clarification — 02/02/2026
+
+### ✔ Work completed:
+
+- Documented cancel-running-group behavior: confirmation required, group marked canceled, session cleared.
+- Clarified navigation after cancel (go to Groups Hub; do not remain in Run Mode).
+- Added roadmap reminder to implement the cancel flow in Phase 18.
 
 ### ⚠️ Issues found:
 

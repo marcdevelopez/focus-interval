@@ -657,6 +657,8 @@ These subphases should also appear in **dev_log.md** as they are completed.
   - Group completion UX must end in the correct final state and navigation:
     completion modal + final center state + navigate to Groups Hub after dismiss.
   - Keep the completion summary (total tasks, pomodoros, total time) and wire it to the final flow; do not remove it.
+  - Cancel running group flow:
+    confirmation dialog + mark group canceled + clear session + navigate to Groups Hub (do not remain in Run Mode).
 
 ### 📌 Exit conditions
 
