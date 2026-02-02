@@ -91,7 +91,8 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 
 ## 🔄 Reopened phases (must complete before moving on)
 
-- None.
+- None. Outstanding items from specs sections 10.4.2 / 10.4.6 / 12 / 10.5 are tracked in Phases 18, 19, and 21 (not reopened).
+- Rule: if any previously completed phase is missing required behavior, list it here and resolve it before continuing in normal phase order.
 
 Update this on each commit if needed.
 
@@ -175,7 +176,7 @@ _(Main UI of the MVP)_
 - Implement:
   - Main circle
   - Animated progress
-  - Rotating hand (–90° → 360°)
+  - Progress head marker around the ring (no hand/needle)
   - Smooth clock-like movement
 
 - Dynamic colors per state:
@@ -642,17 +643,19 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 - Prerequisite: complete Phases 15–17 (TaskRunGroup + PomodoroSession group context)
   before starting the TimerScreen redesign.
-- Redesign timer UI: current time inside circle, status boxes, next box, contextual list.
-- Show time ranges in status boxes and in each contextual task list item.
-- Apply golden-green color for the "Next" status box only when the current pomodoro is the last in the **last task** (end of group).
-- During a break, if this is the last break of a task and more tasks remain, "Next" must show End of task (no next-task details).
-- Rotate needle counterclockwise for countdown and keep idle preview consistent.
-- Define idle preview needle behavior (consistent position or motion) for pre-start planning state.
-- Implement automatic transitions between tasks with no modal.
-- Update group completion modal and final animation, including an optional summary
-  (total tasks, pomodoros, total time).
-- Add a Groups Hub indicator in the Run Mode header when pending groups exist.
-- On resume, recalculate projected start/end times for status boxes and the contextual task list.
+- ✅ Implemented and locked (do not change without explicit approval):
+  - Run Mode layout: current time inside circle, status boxes (current/next), contextual list.
+  - Status boxes and contextual list show time ranges (HH:mm–HH:mm).
+  - "Next" box is golden-green only at the last pomodoro of the last task (end of group).
+  - During a break, if this is the last break of a task and more tasks remain, "Next" shows End of task (no next-task details).
+  - Auto-transitions between tasks are handled in PomodoroViewModel (no modal; UI only renders state).
+  - TimerDisplay visual is ring + shadowed marker dot (no needle/hand); keep base ring/shadows and red/blue/amber ring colors.
+  - Groups Hub indicator exists in the Run Mode header (placeholder until Phase 19).
+  - On resume/pause, projected time ranges are recalculated for status boxes and contextual list.
+- 🔜 Remaining (Phase 18 scope):
+  - Group completion UX must end in the correct final state and navigation:
+    completion modal + final center state + navigate to Groups Hub after dismiss.
+  - Keep the completion summary (total tasks, pomodoros, total time) and wire it to the final flow; do not remove it.
 
 ### 📌 Exit conditions
 
@@ -660,6 +663,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Completion modal includes the optional summary data.
 - Header shows a visual indicator when pending groups exist (Groups Hub).
 - Status boxes and contextual task list show time ranges.
+- TimerDisplay visual remains the approved ring + marker (no needle/hand).
 
 ---
 
@@ -709,7 +713,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Implement:
   - Full green/gold circle
   - Large “TASK COMPLETED” text
-  - Hand stopped at 360°
+  - Ring fully closed with the marker at the final position (12 o'clock)
 
 - Smooth animation
 

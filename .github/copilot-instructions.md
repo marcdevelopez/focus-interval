@@ -6,16 +6,86 @@ and override any suggestion unless explicitly stated otherwise.
 
 ## Project Overview
 
-Cross-platform Pomodoro desktop app (macOS/Windows/Linux) built with Flutter. Uses Firebase Auth (Google Sign-In + email/password on macOS), Firestore for cloud sync, and real-time multi-device session mirroring.
+Cross-platform Pomodoro app built with Flutter for macOS/Windows/Linux/iOS/Android/Web.
+Uses Firebase Auth + Firestore for cloud sync, plus a first-class Local Mode (offline, no auth).
+Google Sign-In is used on iOS/Android/Web; email/password is used on macOS/Windows;
+Linux auth is disabled (local-only). Optional GitHub Sign-In is documented; desktop uses
+GitHub Device Flow where enabled.
 
-## Architecture (MVVM + Clean Architecture)
+## Mandatory Workflow (non-negotiable, from AGENTS.md)
+
+At the start of every session:
+1. Read `docs/specs.md`, `docs/roadmap.md`, `docs/dev_log.md`.
+2. Confirm the real date (use `date`).
+3. Verify CURRENT PHASE and any Reopened phases in `docs/roadmap.md`.
+4. If a phase is reopened and not listed, add it immediately to the Reopened list.
+5. Do not start coding until context is aligned.
+6. Ensure you are not on `main`; create a new branch before any code or doc changes.
+7. If already on a branch, ensure the change matches the branch scope; otherwise finish/commit that work and create a new branch.
+
+Documentation-first rule:
+- Specs must define behavior before code changes.
+- If docs and code diverge, docs win.
+
+## Architecture & Authority (must follow)
+
+Layer boundaries (strict):
+- presentation/ → UI only
+- viewmodels/ → UI state & orchestration
+- domain/ → pure logic (no Flutter/Firebase)
+- data/ → persistence & external services
+
+Single source of truth:
+- Pomodoro flow & rules → `PomodoroMachine`
+- Execution orchestration → `PomodoroViewModel`
+- Persistence & sync → repositories / Firestore
+- Active execution authority (Account Mode) → Firestore `activeSession` owner
+- Active execution authority (Local Mode) → local session owner
+
+Time rules:
+- ViewModels may project time only from authoritative timestamps.
+- UI must never own authoritative timers or state transitions.
+- ViewModels may use timers only for projection/rendering; never for authoritative decisions.
+
+Local vs Account Mode:
+- No implicit sync, no silent merges, no shared authority.
+- Import Local → Account is explicit with overwrite-by-ID (MVP rule).
+
+Platform discipline:
+- Platform differences must be isolated in services/adapters/guards.
+- Fallback behavior is silent, logs only in debug, and preserves UX consistency.
+- Minimal UI guards are allowed only when no service-level alternative exists.
+
+Derived vs authoritative:
+- Derived logic must be read-only, deterministic, and based solely on authoritative data.
+- Do not duplicate authoritative ownership, state transitions, or conflict rules.
+
+## Current Implementation Lock-Ins (do not change without explicit approval)
+
+- TimerDisplay visuals are approved and locked: progress ring + shadowed marker dot,
+  no hand/needle, base ring/shadows preserved, ring colors red/blue/amber.
+- Run Mode status boxes and contextual list already show time ranges (HH:mm–HH:mm).
+- Auto task transitions are handled in `PomodoroViewModel` (no UI modal).
+- Groups Hub indicator exists in the TimerScreen header (placeholder until Phase 19).
+- UI polish is only allowed in Phase 23 and must be explicitly approved.
+
+## Feature Development Protocol (from AGENTS.md)
+
+- Create a new branch for every feature or fix; never work on `main`.
+- Implement only one logical change per branch.
+- Ensure the app compiles and `flutter analyze` passes before any commit.
+- Verify the change (manual or automated) before committing.
+- Update `docs/dev_log.md` (same real date) and `docs/roadmap.md` if phase status changes.
+- Commit code + docs together; never commit broken builds or temporary hacks.
+
+## Project Structure (MVVM + Clean Architecture)
 
 ```
 lib/
 ├── app/                  # Router, theme, app config
 ├── domain/               # Business logic (PomodoroMachine, validators)
 ├── data/
-│   ├── models/          # PomodoroTask, PomodoroSession
+│   ├── models/          # PomodoroTask, TaskRunGroup, PomodoroSession
 │   ├── repositories/    # Abstract + Firestore implementations
 │   └── services/        # Firebase, sound, device info
 ├── presentation/
@@ -25,98 +95,55 @@ lib/
 └── widgets/             # Reusable components (e.g., TimerDisplay)
 ```
 
-**Key Pattern**: ViewModels extend `Notifier<T>` or `AsyncNotifier<T>` (Riverpod 3.x). Use `.autoDispose` for disposable resources. All Firebase operations go through abstract repositories with both Firestore and stub implementations.
+## State Management (Riverpod)
 
-## Critical Developer Workflows
+- Lists: `AsyncNotifier<List<T>>`
+- Single objects: `Notifier<T>`
+- Streams: subscribe in `build()`, cancel in `ref.onDispose()`
+- Providers live in `presentation/providers.dart` and use `.autoDispose`
 
-### Before ANY code change
+## Auth & Sync
 
-1. **Read** [docs/roadmap.md](../docs/roadmap.md) and [docs/dev_log.md](../docs/dev_log.md) to understand current phase
-2. Check `FASE ACTUAL` status at top of roadmap
-3. Verify change aligns with active phase objectives
+- Auth strategy: Google Sign-In on iOS/Android/Web; email/password on macOS/Windows;
+  Linux auth disabled (local-only).
+- Optional GitHub Sign-In provider; desktop uses GitHub Device Flow where enabled.
+- Firestore is isolated per `uid` for all queries and writes.
 
-### After completing work
+## Navigation & Animations (GoRouter)
 
-1. Update [docs/roadmap.md](../docs/roadmap.md): Mark phase complete with **real date** (format: `DD/MM/YYYY`)
-2. Update [docs/dev_log.md](../docs/dev_log.md): Add block with date, decisions, problems, next steps
-3. **Never commit** with build errors or known bugs—use branches for WIP
-
-### Build Commands
-
-- **Debug**: `flutter run` (defaults to desktop on macOS/Windows/Linux)
-- **Android APKs**: `flutter build apk --release` (produces split APKs by ABI: armeabi-v7a, arm64-v8a, x86_64)
-  - Output: `build/app/outputs/flutter-apk/`
-  - For single universal APK: `flutter build apk --no-split-per-abi`
-  - For Play Store: `flutter build appbundle`
-- **Analyzer**: `flutter analyze` (must pass before commits)
-
-### Testing
-
-Current state: Minimal testing (placeholder in [test/widget_test.dart](../test/widget_test.dart)). Run with `flutter test`.
-
-## Project-Specific Conventions
-
-### State Management (Riverpod 3.x)
-
-- **Lists**: Use `AsyncNotifier<List<T>>` (see [TaskListViewModel](../lib/presentation/viewmodels/task_list_view_model.dart))
-- **Single objects**: Use `Notifier<T>` (see [PomodoroViewModel](../lib/presentation/viewmodels/pomodoro_view_model.dart))
-- **Streams**: Subscribe in `build()`, cancel in `ref.onDispose()` (example: `PomodoroViewModel._sub`)
-- **Providers**: Define in [presentation/providers.dart](../lib/presentation/providers.dart), always use `.autoDispose` for machine/service providers
-
-### Firebase Integration
-
-- **Auth strategy**: Google Sign-In on iOS/Android/Web/Windows/Linux; email/password on macOS
-- **User isolation**: All Firestore queries filter by `uid` (see [FirestoreTaskRepository](../lib/data/repositories/firestore_task_repository.dart))
-- **Repository pattern**: Abstract interfaces in [data/repositories/](../lib/data/repositories/), with Firestore + in-memory implementations
-- **Auth state**: `authStateProvider` (StreamProvider) determines which repository to use
-
-### PomodoroMachine (State Machine)
-
-Core business logic in [domain/pomodoro_machine.dart](../lib/domain/pomodoro_machine.dart):
-
-- **States**: `idle`, `pomodoroRunning`, `shortBreakRunning`, `longBreakRunning`, `paused`, `finished`
-- **Strict lifecycle**: Configure → Start → Auto-transitions → Finish (stops after all pomodoros)
-- **Immutable events**: Exposes `Stream<PomodoroState>` for ViewModels
-- **Validation**: Rejects configurations with <=0 values
-
-### Real-time Session Sync (Multi-device)
-
-- One device is "owner" (starts session), others are "mirrors" (read-only)
-- [FirestorePomodoroSessionRepository](../lib/data/repositories/firestore_pomodoro_session_repository.dart) manages session documents
-- [PomodoroViewModel](../lib/presentation/viewmodels/pomodoro_view_model.dart) subscribes to session stream, polls remaining seconds for mirrors
-
-### Navigation & Animations (GoRouter)
-
-[app/router.dart](../lib/app/router.dart) defines custom transitions:
-
+`lib/app/router.dart` defines custom transitions:
 - `/tasks` → Fade (350ms)
 - `/tasks/new`, `/tasks/edit/:id` → Slide right-to-left (300ms)
 - `/timer/:id` → FadeScale (350ms)
 
-### Audio
+## Audio
 
-[SoundService](../lib/data/services/sound_service.dart) uses `just_audio`. Asset paths: `assets/sounds/` (see [pubspec.yaml](../pubspec.yaml)).
+`SoundService` uses `just_audio`. Asset paths live under `assets/sounds/`.
+
+## Build & Testing
+
+- Debug: `flutter run`
+- Analyzer: `flutter analyze` (must pass before commits)
+- Tests: `flutter test` (minimal coverage currently)
 
 ## Documentation Sources
 
-- **Specs**: [docs/specs.md](../docs/specs.md) (MVP 1.0 functional spec, 618 lines)
-- **Roadmap**: [docs/roadmap.md](../docs/roadmap.md) (19 phases, currently Phase 13—multi-device sync)
-- **DevLog**: [docs/dev_log.md](../docs/dev_log.md) (chronological work blocks with dates/decisions)
-- **Agent guide**: [AGENTS.md](../AGENTS.md) (workflow rules for AI agents)
-- **Team roles**: [docs/team_roles.md](../docs/team_roles.md) (Marcos as Lead Engineer, ChatGPT as AI Architect, Codex as Implementation Engineer)
+- Specs: `docs/specs.md` (MVP 1.2.0)
+- Roadmap: `docs/roadmap.md` (24 phases, current Phase 18)
+- Dev Log: `docs/dev_log.md`
+- Agent Guide: `AGENTS.md`
 
 ## Critical Rules
 
-1. **Always** check roadmap phase before implementing features—don't skip ahead
-2. **Never** commit broken builds (run `flutter analyze` first)
-3. Use **real dates** (DD/MM/YYYY format) when updating roadmap/devlog
-4. Follow MVVM strictly: UI (Screens) → ViewModels → Repositories → Services
-5. All Firebase writes require authenticated user (`authStateProvider`)
-6. Dispose streams/timers in `ref.onDispose()` to prevent leaks
+1. Always check the roadmap phase before implementing features.
+2. Never commit broken builds.
+3. Use real dates (DD/MM/YYYY) when updating roadmap/dev_log.
+4. English only for code, comments, UI strings, and docs.
+5. Do not change locked UI elements without explicit approval.
 
-## Common Pitfalls
+## Release & Safety Checks (before any release discussion)
 
-- **Don't** use `Provider.of` or `context.read`—use `ref.watch`/`ref.read` (Riverpod)
-- **Don't** put business logic in Screens—use ViewModels
-- **Don't** directly instantiate repositories—get from providers
-- **Don't** forget to mark phases complete in roadmap after finishing work
+- Confirm Android keystore backup.
+- Confirm Firebase project access.
+- Confirm bundle IDs are consistent.
+- Confirm platform stubs exist where features are unsupported.

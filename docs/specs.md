@@ -904,13 +904,20 @@ Last 10 seconds
 ### **10.4.3. Circle core elements**
 
 1. Large circular clock (progress ring style with a visible progress segment)
-2. Animated hand / needle
-   - Short, placed on the inner edge
-   - Rotates counterclockwise (countdown)
+2. Progress ring marker (no hand/needle)
+   - A white circular marker at the leading edge of the ring
+   - Subtle inner gray core + soft shadow (matches the current approved visual)
+   - The marker and ring are the countdown indicator; do not add an analog hand/needle
+   - Countdown is rendered counterclockwise by the shrinking progress segment
 3. Colors by state
    - Red (#E53935) → Pomodoro
    - Blue (#1E88E5) → Break
+   - Amber (#FFB300) → Pre-Run Countdown (neutral)
+   - Completion uses green or gold (see section 12)
    - Progress segment uses the active state color
+4. Base ring (visual invariant)
+   - Dark gray base ring (#222222) with soft depth
+   - Ring thickness, shadows, and marker styling are locked; only minor polish in Phase 23 with explicit approval
 
 ### **10.4.4. Content inside the circle (strict vertical order)**
 
@@ -1085,7 +1092,7 @@ C. Responsive clock
 
 D. Pause and resume
 
-- Pause freezes the hand and countdown
+- Pause freezes the ring progress (marker) and countdown
 - Resume continues from exact point
 - On resume, recalculate projected start/end times used in the status boxes and contextual task list
 - No sound on pause/resume
@@ -1167,7 +1174,7 @@ When the timer completes the last pomodoro of the last task:
 5. The state machine transitions to finished.
 6. The clock screen must:
    - Stop animation
-   - Keep the hand in its final position (360°)
+   - Keep the ring fully closed with the marker at the final position (12 o'clock)
    - Change the circle color to green or gold
    - Show "TASKS GROUP COMPLETED" in the center
 7. After the user explicitly dismisses the completion modal, navigate to the Groups Hub screen (do not remain in an idle Execution screen and do not use a time-based auto-dismiss).
