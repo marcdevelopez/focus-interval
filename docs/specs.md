@@ -746,11 +746,13 @@ Behavior:
   - Saves with duplicate names are blocked with an explicit error message.
 - Presets are also considered duplicates if their **configuration** is identical
   (durations, interval, and sound selections), regardless of name:
-  - On **new preset** creation, detect configuration duplicates and present options:
-    - **Use existing** → cancel creation; keep the existing preset unchanged.
+  - On **save** (new or edit), detect configuration duplicates and present options:
+    - **Use existing / Discard changes** → cancel the save; keep the existing preset unchanged.
     - **Rename existing** → apply the new name to the existing preset; no new preset created.
-    - **Save anyway** → explicitly create a duplicate.
+    - **Save anyway** → explicitly keep/create a duplicate.
     - **Cancel** → return to editing without changes.
+  - After **Use existing** or **Rename existing**, exit to **Manage Presets** to avoid
+    returning to a stale editor state (applies to both new and edit flows).
   - No duplicate is created without explicit confirmation.
 - If multiple defaults are detected (legacy data or sync conflicts), the app
   auto-resolves to a **single** default (most recently updated; fallback to
@@ -786,6 +788,8 @@ Preset UI (Settings)
   - Show default marker (star) on the default preset
   - Quick actions: edit, delete, set default
   - Bulk delete is allowed
+- In **Edit preset**, if the preset is already the default, the default toggle is
+  **disabled** and shown as informational (to change default, pick another preset).
 - If the user attempts to leave **Edit preset** with unsaved changes, show a confirmation
   dialog with options to **Save**, **Discard**, or **Cancel**. Only show this dialog
   when there are actual form differences from the original state.

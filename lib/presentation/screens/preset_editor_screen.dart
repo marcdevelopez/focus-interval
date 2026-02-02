@@ -15,6 +15,14 @@ enum _UnsavedDecision { save, discard, cancel }
 
 enum _DuplicateDecision { useExisting, renameExisting, saveAnyway, cancel }
 
+enum _SaveOutcome { savedAndExit, blocked }
+
+class _DuplicateResolution {
+  final _DuplicateDecision decision;
+
+  const _DuplicateResolution(this.decision);
+}
+
 class PresetEditorScreen extends ConsumerStatefulWidget {
   final bool isEditing;
   final String? presetId;
@@ -183,8 +191,9 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
             const ModeIndicatorAction(compact: true),
             TextButton(
               onPressed: () async {
-                if (await _handleSave()) {
-                  if (!context.mounted) return;
+                final outcome = await _handleSave();
+                if (!context.mounted) return;
+                if (outcome == _SaveOutcome.savedAndExit) {
                   _allowPopAndExit();
                 }
               },
@@ -210,13 +219,20 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
               const SizedBox(height: 12),
               SwitchListTile(
                 value: preset.isDefault,
-                onChanged: (value) =>
-                    _update(preset.copyWith(isDefault: value)),
+                onChanged: preset.isDefault
+                    ? null
+                    : (value) => _update(preset.copyWith(isDefault: value)),
                 activeThumbColor: Colors.amberAccent,
                 title: const Text(
                   'Set as default preset',
                   style: TextStyle(color: Colors.white70),
                 ),
+                subtitle: preset.isDefault
+                    ? const Text(
+                        'Default preset (choose another preset to change it).',
+                        style: TextStyle(color: Colors.white38, fontSize: 12),
+                      )
+                    : null,
                 contentPadding: EdgeInsets.zero,
               ),
               const SizedBox(height: 12),
@@ -534,12 +550,12 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
     return result ?? _UnsavedDecision.cancel;
   }
 
-  Future<_DuplicateDecision> _showDuplicateDialog({
+  Future<_DuplicateResolution> _showDuplicateDialog({
     required PomodoroPreset duplicate,
-    required String newName,
+    required String useExistingLabel,
+    required String renameLabel,
   }) async {
-    final trimmedNewName = newName.trim();
-    final result = await showDialog<_DuplicateDecision>(
+    final result = await showDialog<_DuplicateResolution>(
       context: context,
       builder: (context) {
         return AlertDialog(
@@ -550,98 +566,124 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () =>
-                  Navigator.of(context).pop(_DuplicateDecision.cancel),
+              onPressed: () => Navigator.of(context)
+                  .pop(const _DuplicateResolution(_DuplicateDecision.cancel)),
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () =>
-                  Navigator.of(context).pop(_DuplicateDecision.useExisting),
-              child: const Text('Use existing'),
+              onPressed: () => Navigator.of(context).pop(
+                const _DuplicateResolution(_DuplicateDecision.useExisting),
+              ),
+              child: Text(useExistingLabel),
             ),
             TextButton(
-              onPressed: () =>
-                  Navigator.of(context).pop(_DuplicateDecision.renameExisting),
-              child: Text(
-                trimmedNewName.isEmpty
-                    ? 'Rename existing'
-                    : 'Rename to "$trimmedNewName"',
+              onPressed: () => Navigator.of(context).pop(
+                const _DuplicateResolution(_DuplicateDecision.renameExisting),
               ),
+              child: Text(renameLabel),
             ),
             ElevatedButton(
-              onPressed: () =>
-                  Navigator.of(context).pop(_DuplicateDecision.saveAnyway),
+              onPressed: () => Navigator.of(context).pop(
+                const _DuplicateResolution(_DuplicateDecision.saveAnyway),
+              ),
               child: const Text('Save anyway'),
             ),
           ],
         );
       },
     );
-    return result ?? _DuplicateDecision.cancel;
+    return result ?? const _DuplicateResolution(_DuplicateDecision.cancel);
   }
 
-  Future<bool> _handleSave() async {
-    if (!_formKey.currentState!.validate()) return false;
+  Future<String?> _promptRenameExisting({
+    required String initialName,
+  }) async {
+    return Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (context) => _RenamePresetScreen(
+          initialName: initialName,
+        ),
+      ),
+    );
+  }
+
+  Future<_SaveOutcome> _handleSave() async {
+    if (!_formKey.currentState!.validate()) return _SaveOutcome.blocked;
     final messenger = ScaffoldMessenger.of(context);
-    if (!await _validateBusinessRules()) return false;
+    if (!await _validateBusinessRules()) return _SaveOutcome.blocked;
     final editor = ref.read(presetEditorProvider.notifier);
     final preset = ref.read(presetEditorProvider);
-    if (preset == null) return false;
+    if (preset == null) return _SaveOutcome.blocked;
 
-    if (!widget.isEditing) {
-      final duplicate = await editor.findDuplicatePreset(preset);
-      if (!mounted) return false;
-      if (duplicate != null) {
-        final decision = await _showDuplicateDialog(
-          duplicate: duplicate,
-          newName: preset.name,
-        );
-        if (!mounted) return false;
-        switch (decision) {
-          case _DuplicateDecision.useExisting:
-            await _discardChanges(preset);
-            if (!mounted) return false;
-            return true;
-          case _DuplicateDecision.renameExisting:
-            final renameResult = await editor.renamePreset(
-              preset: duplicate,
-              newName: preset.name,
+    final duplicate = await editor.findDuplicatePreset(preset);
+    if (!mounted) return _SaveOutcome.blocked;
+    if (duplicate != null) {
+      final useExistingLabel =
+          widget.isEditing ? 'Discard changes' : 'Use existing';
+      final trimmedName = preset.name.trim();
+      final renameLabel = 'Rename "${duplicate.name}"';
+      final resolution = await _showDuplicateDialog(
+        duplicate: duplicate,
+        useExistingLabel: useExistingLabel,
+        renameLabel: renameLabel,
+      );
+      if (!mounted) return _SaveOutcome.blocked;
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return _SaveOutcome.blocked;
+      switch (resolution.decision) {
+        case _DuplicateDecision.useExisting:
+          await _discardChanges(preset);
+          if (!mounted) return _SaveOutcome.blocked;
+          return _SaveOutcome.savedAndExit;
+        case _DuplicateDecision.renameExisting:
+          final suggestedName = widget.isEditing
+              ? duplicate.name
+              : (trimmedName.isEmpty ? duplicate.name : trimmedName);
+          final renameTargetName = await _promptRenameExisting(
+            initialName: suggestedName,
+          );
+          if (!mounted) return _SaveOutcome.blocked;
+          final resolvedName = renameTargetName?.trim() ?? '';
+          if (resolvedName.isEmpty) return _SaveOutcome.blocked;
+          final renameResult = await editor.renamePreset(
+            preset: duplicate,
+            newName: resolvedName,
+          );
+          if (!mounted) return _SaveOutcome.blocked;
+          if (!renameResult.success) {
+            final message = renameResult.message ??
+                'Failed to rename preset. Please try again.';
+            messenger.showSnackBar(SnackBar(content: Text(message)));
+            return _SaveOutcome.blocked;
+          }
+          if (renameResult.message != null) {
+            messenger.showSnackBar(
+              SnackBar(content: Text(renameResult.message!)),
             );
-            if (!mounted) return false;
-            if (!renameResult.success) {
-              final message = renameResult.message ??
-                  'Failed to rename preset. Please try again.';
-              messenger.showSnackBar(SnackBar(content: Text(message)));
-              return false;
-            }
-            if (renameResult.message != null) {
-              messenger.showSnackBar(
-                SnackBar(content: Text(renameResult.message!)),
-              );
-            }
-            await _discardChanges(preset);
-            if (!mounted) return false;
-            return true;
-          case _DuplicateDecision.saveAnyway:
-            break;
-          case _DuplicateDecision.cancel:
-            return false;
-        }
+          }
+          await _discardChanges(preset);
+          if (!mounted) return _SaveOutcome.blocked;
+          return _SaveOutcome.savedAndExit;
+        case _DuplicateDecision.saveAnyway:
+          break;
+        case _DuplicateDecision.cancel:
+          return _SaveOutcome.blocked;
       }
     }
 
     final result = await editor.save();
-    if (!mounted) return false;
+    if (!mounted) return _SaveOutcome.blocked;
     if (!result.success) {
       final message =
           result.message ?? 'Failed to save preset. Please try again.';
       messenger.showSnackBar(SnackBar(content: Text(message)));
-      return false;
+      return _SaveOutcome.blocked;
     }
     if (result.message != null) {
       messenger.showSnackBar(SnackBar(content: Text(result.message!)));
     }
-    return true;
+    return _SaveOutcome.savedAndExit;
   }
 
   Future<void> _restoreOverride({
@@ -695,8 +737,9 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
       if (!mounted) return;
       switch (decision) {
         case _UnsavedDecision.save:
-          if (await _handleSave()) {
-            if (!mounted) return;
+          final outcome = await _handleSave();
+          if (!mounted) return;
+          if (outcome == _SaveOutcome.savedAndExit) {
             _allowPopAndExit();
           }
           break;
@@ -1055,6 +1098,76 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
         if (value == null) return;
         onChanged(value);
       },
+    );
+  }
+}
+
+class _RenamePresetScreen extends StatefulWidget {
+  final String initialName;
+
+  const _RenamePresetScreen({
+    required this.initialName,
+  });
+
+  @override
+  State<_RenamePresetScreen> createState() => _RenamePresetScreenState();
+}
+
+class _RenamePresetScreenState extends State<_RenamePresetScreen> {
+  late final TextEditingController _controller;
+  String? _errorText;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialName);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final name = _controller.text.trim();
+    if (name.isEmpty) {
+      setState(() {
+        _errorText = 'Preset name is required.';
+      });
+      return;
+    }
+    FocusScope.of(context).unfocus();
+    Navigator.of(context).pop(name);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        title: const Text('Rename preset'),
+        actions: [
+          TextButton(
+            onPressed: _submit,
+            child: const Text('Rename'),
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: TextField(
+          controller: _controller,
+          autofocus: true,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _submit(),
+          decoration: InputDecoration(
+            labelText: 'New preset name',
+            errorText: _errorText,
+          ),
+        ),
+      ),
     );
   }
 }

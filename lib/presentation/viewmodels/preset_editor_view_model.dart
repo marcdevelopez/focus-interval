@@ -251,12 +251,21 @@ class PresetEditorViewModel extends Notifier<PomodoroPreset?> {
     final repo = ref.read(presetRepositoryProvider);
     final all = await repo.getAll();
     final now = DateTime.now();
+    PomodoroPreset? target;
     for (final preset in all) {
-      final shouldDefault = preset.id == presetId;
-      if (preset.isDefault == shouldDefault) continue;
-      await repo.save(
-        preset.copyWith(isDefault: shouldDefault, updatedAt: now),
-      );
+      if (preset.id == presetId) {
+        target = preset;
+        break;
+      }
+    }
+    if (target == null) return;
+    if (!target.isDefault) {
+      await repo.save(target.copyWith(isDefault: true, updatedAt: now));
+    }
+    for (final preset in all) {
+      if (preset.id == presetId) continue;
+      if (!preset.isDefault) continue;
+      await repo.save(preset.copyWith(isDefault: false, updatedAt: now));
     }
   }
 

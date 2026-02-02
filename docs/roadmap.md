@@ -72,6 +72,20 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       01/02/2026: Task Editor preset selector overflow resolved (responsive ellipsis).
       01/02/2026: Unsaved changes confirmation added for Task/Preset editors.
       01/02/2026: Preset duplicate configuration detection with use/rename/save options.
+      01/02/2026: Preset duplicate configuration detection extended to edits.
+      01/02/2026: Duplicate dialog rename option enabled for preset edits.
+      01/02/2026: Duplicate rename action now prompts for a new name on edits.
+      01/02/2026: Duplicate dialog exit stabilized after rename/use-existing flows.
+      01/02/2026: Default preset star toggle stabilized; default switch disabled on default preset edit.
+      01/02/2026: Duplicate rename/use-existing now keeps editor open to avoid Android navigator assertions.
+      01/02/2026: Duplicate rename dialog transition guarded to prevent Android dialog assertions.
+      01/02/2026: Duplicate rename flow consolidated into a single dialog to avoid nested routes on Android.
+      01/02/2026: Duplicate dialog made scrollable to prevent overflow on small screens.
+      02/02/2026: Duplicate rename action stabilized on Android (unfocus + post-dialog delay) and CTA references existing preset.
+      02/02/2026: Duplicate rename now uses a dedicated prompt route to avoid Android dialog teardown asserts.
+      02/02/2026: Duplicate resolution now exits the New Preset screen after use/rename to avoid loops.
+      02/02/2026: Duplicate rename in Edit Preset now exits to Manage Presets after completion.
+      02/02/2026: Duplicate rename now exits the editor in all flows (new/edit).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 

@@ -16,7 +16,7 @@ This document is used to:
 # 📍 Current status
 
 Active phase: **18 — Run Mode Redesign for TaskRunGroups**
-Last update: **01/02/2026**
+Last update: **02/02/2026**
 
 ---
 
@@ -3541,6 +3541,165 @@ _(fill in when they happen)_
 - Detect duplicate preset configurations on new preset creation (durations, interval, sounds).
 - Added a decision dialog to use existing, rename existing, save anyway, or cancel.
 - Implemented rename flow without creating additional presets.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 210 — Preset duplicate detection on edit — 01/02/2026
+
+### ✔ Work completed:
+
+- Extended duplicate-configuration detection to preset edits (warns if another preset matches).
+- Adjusted dialog options to avoid duplicates without forcing extra presets.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 211 — Rename option on edit duplicates — 01/02/2026
+
+### ✔ Work completed:
+
+- Enabled “Rename existing” option when duplicate configurations are detected while editing.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 212 — Rename dialog prompt fix — 01/02/2026
+
+### ✔ Work completed:
+
+- Rename action now prompts for a new name when editing duplicates, avoiding self-name conflicts.
+- Dialog label references the duplicate preset being renamed.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 213 — Dialog exit stability — 01/02/2026
+
+### ✔ Work completed:
+
+- Added a short delay after duplicate dialogs before exiting to avoid framework assertions.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 214 — Default preset toggling stability — 01/02/2026
+
+### ✔ Work completed:
+
+- Default preset changes now update the target first to avoid transient no-default states.
+- Default toggle is disabled when editing the current default preset (informational only).
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 215 — Duplicate rename exit guard — 01/02/2026
+
+### ✔ Work completed:
+
+- Duplicate rename/use-existing flows no longer auto-exit the editor to avoid Android navigation assertions.
+- Save exits only on actual saves; duplicate-resolution actions keep the editor open.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 216 — Dialog transition guard — 01/02/2026
+
+### ✔ Work completed:
+
+- Added a short transition delay before opening the rename dialog to avoid Android dialog/navigation assertions.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 217 — Single-dialog rename flow — 01/02/2026
+
+### ✔ Work completed:
+
+- Merged duplicate detection and rename input into a single dialog to avoid nested route assertions on Android.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 218 — Duplicate dialog overflow fix — 01/02/2026
+
+### ✔ Work completed:
+
+- Made the duplicate dialog scrollable to avoid content overflow on smaller screens.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 219 — Duplicate rename stability (Android) — 02/02/2026
+
+### ✔ Work completed:
+
+- Rename action now unfocuses input before closing the duplicate dialog.
+- Post-dialog processing waits a frame to avoid Android dependency assertions.
+- Rename CTA references the existing preset name to avoid label confusion on new presets.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 220 — Duplicate rename flow hardening — 02/02/2026
+
+### ✔ Work completed:
+
+- Moved rename input into a dedicated full-screen prompt to avoid dialog/TextField teardown issues on Android.
+- Duplicate dialog now only selects the action; rename collects the new name on its own route.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 221 — Exit after duplicate resolution (new preset) — 02/02/2026
+
+### ✔ Work completed:
+
+- After “Use existing” or “Rename existing” during new preset creation, exit to Manage Presets.
+- Prevented looping back into the New Preset screen after duplicate resolution.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 222 — Exit after rename on edit — 02/02/2026
+
+### ✔ Work completed:
+
+- Duplicate rename in edit mode now exits to Manage Presets after completing the rename.
+- Avoids returning to the edit screen after resolving the duplicate.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 223 — Rename exits editor (all cases) — 02/02/2026
+
+### ✔ Work completed:
+
+- Duplicate “Rename existing” now exits to Manage Presets for both new and edit flows.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 224 — Duplicate rename flow validated — 02/02/2026
+
+### ✔ Work completed:
+
+- Confirmed the duplicate rename flow returns directly to Manage Presets without loops.
 
 ### ⚠️ Issues found:
 
