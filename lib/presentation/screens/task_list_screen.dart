@@ -17,6 +17,7 @@ import '../../data/repositories/task_run_group_repository.dart';
 import '../../data/services/firebase_auth_service.dart';
 import '../../data/services/app_mode_service.dart';
 import '../../data/services/local_sound_overrides.dart';
+import '../../data/services/task_run_notice_service.dart';
 import '../../domain/pomodoro_machine.dart';
 import '../../widgets/task_card.dart';
 import '../../widgets/mode_indicator.dart';
@@ -408,6 +409,12 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       activeSession: activeSession,
       groupsAsync: groupsAsync,
     );
+    final preRunBanner = activeGroupBanner == null
+        ? _buildPreRunBanner(
+            context,
+            groupsAsync: groupsAsync,
+          )
+        : null;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -563,6 +570,11 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
               child: activeGroupBanner,
+            ),
+          if (activeGroupBanner == null && preRunBanner != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+              child: preRunBanner,
             ),
           Expanded(
             child: tasksAsync.when(
@@ -785,6 +797,91 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     );
   }
 
+  Widget? _buildPreRunBanner(
+    BuildContext context, {
+    required AsyncValue<List<TaskRunGroup>> groupsAsync,
+  }) {
+    final groups = groupsAsync.value ?? const [];
+    if (groups.isEmpty) return null;
+    final now = DateTime.now();
+    TaskRunGroup? selected;
+    DateTime? startTime;
+    for (final group in groups) {
+      if (group.status != TaskRunStatus.scheduled) continue;
+      final scheduledStart = group.scheduledStartTime;
+      if (scheduledStart == null) continue;
+      final noticeMinutes =
+          group.noticeMinutes ?? TaskRunNoticeService.defaultNoticeMinutes;
+      if (noticeMinutes <= 0) continue;
+      final preRunStart = scheduledStart.subtract(
+        Duration(minutes: noticeMinutes),
+      );
+      if (now.isBefore(preRunStart) || !now.isBefore(scheduledStart)) {
+        continue;
+      }
+      if (startTime == null || scheduledStart.isBefore(startTime)) {
+        startTime = scheduledStart;
+        selected = group;
+      }
+    }
+    if (selected == null || startTime == null) return null;
+
+    final groupId = selected.id;
+    final remainingSeconds = startTime.difference(now).inSeconds;
+    final countdown = _formatCountdown(remainingSeconds);
+    final name = selected.tasks.isNotEmpty
+        ? selected.tasks.first.name
+        : 'Task group';
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        border: Border.all(
+          color: Colors.amber.shade300.withValues(alpha: 0.5),
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Pre-Run active · Starts in $countdown',
+            style: const TextStyle(
+              color: Colors.amberAccent,
+              fontSize: 12,
+              letterSpacing: 0.6,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            name,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ElevatedButton(
+                onPressed: () => context.go('/timer/$groupId'),
+                child: const Text('Open Pre-Run'),
+              ),
+              OutlinedButton(
+                onPressed: () => context.go('/groups'),
+                child: const Text('View in Groups Hub'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   void _maybeResolveStaleActiveSession(
     BuildContext context, {
     required PomodoroSession? activeSession,
@@ -806,11 +903,12 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     if (group.status == TaskRunStatus.running) return;
 
     _staleActiveHandled = true;
+    final groupStatus = group.status;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted) return;
+      if (!context.mounted) return;
       await ref.read(pomodoroSessionRepositoryProvider).clearSession();
-      if (!mounted) return;
-      final message = group.status == TaskRunStatus.completed
+      if (!context.mounted) return;
+      final message = groupStatus == TaskRunStatus.completed
           ? 'Group completed.'
           : 'Group ended.';
       _showSnackBar(context, message);
@@ -920,6 +1018,10 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       items = await _applySharedStructure(items, forceDefault: true);
     }
     final totalDurationSeconds = groupDurationSecondsWithFinalBreaks(items);
+    final noticeMinutes = await ref
+        .read(taskRunNoticeServiceProvider)
+        .getNoticeMinutes();
+    if (!context.mounted) return;
     final conflictStart = scheduledStart ?? planCapturedAt;
     final conflictEnd = conflictStart.add(
       Duration(seconds: totalDurationSeconds),
@@ -935,6 +1037,38 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       return;
     }
     if (!context.mounted) return;
+    if (planAction == _PlanAction.schedule &&
+        scheduledStart != null &&
+        noticeMinutes > 0) {
+      final preRunStart = scheduledStart.subtract(
+        Duration(minutes: noticeMinutes),
+      );
+      final now = DateTime.now();
+      if (preRunStart.isBefore(now)) {
+        _showSnackBar(
+          context,
+          "That start time is too soon to show the full pre-run countdown. "
+          "Choose a later start or reduce the pre-run notice.",
+        );
+        return;
+      }
+      final preRunConflict = _findPreRunConflict(
+        existingGroups,
+        preRunStart: preRunStart,
+        scheduledStart: scheduledStart,
+      );
+      if (preRunConflict != null) {
+        final message = preRunConflict == _PreRunConflictType.running
+            ? "That time doesn't leave enough pre-run space because another "
+                'group is still running. Choose a later start or reduce the '
+                'pre-run notice.'
+            : "That time doesn't leave enough pre-run space because another "
+                'group is scheduled earlier. Choose a later start or reduce '
+                'the pre-run notice.';
+        _showSnackBar(context, message);
+        return;
+      }
+    }
     final conflicts = _findConflicts(
       existingGroups,
       newStart: conflictStart,
@@ -967,11 +1101,6 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       _showSnackBar(context, "Failed to resolve conflicts: $e");
       return;
     }
-
-    final noticeMinutes = await ref
-        .read(taskRunNoticeServiceProvider)
-        .getNoticeMinutes();
-    if (!context.mounted) return;
 
     final status = planAction == _PlanAction.startNow
         ? TaskRunStatus.running
@@ -1138,6 +1267,32 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     return _GroupConflicts(running: running, scheduled: scheduled);
   }
 
+  _PreRunConflictType? _findPreRunConflict(
+    List<TaskRunGroup> groups, {
+    required DateTime preRunStart,
+    required DateTime scheduledStart,
+  }) {
+    for (final group in groups) {
+      if (group.status == TaskRunStatus.canceled ||
+          group.status == TaskRunStatus.completed) {
+        continue;
+      }
+      final start =
+          group.actualStartTime ?? group.scheduledStartTime ?? group.createdAt;
+      final end = group.theoreticalEndTime.isBefore(start)
+          ? start
+          : group.theoreticalEndTime;
+      if (!_overlaps(preRunStart, scheduledStart, start, end)) continue;
+      if (group.status == TaskRunStatus.running) {
+        return _PreRunConflictType.running;
+      }
+      if (group.status == TaskRunStatus.scheduled) {
+        return _PreRunConflictType.scheduled;
+      }
+    }
+    return null;
+  }
+
   bool _overlaps(
     DateTime aStart,
     DateTime aEnd,
@@ -1253,6 +1408,14 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final messenger = ScaffoldMessenger.of(context);
     messenger.clearSnackBars();
     messenger.showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  String _formatCountdown(int totalSeconds) {
+    final safeSeconds = totalSeconds < 0 ? 0 : totalSeconds;
+    final minutes = safeSeconds ~/ 60;
+    final seconds = safeSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:'
+        '${seconds.toString().padLeft(2, '0')}';
   }
 
   String _buildPlanningAnchorKey(
@@ -1590,6 +1753,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
 enum _WebLocalNoticeAction { stayLocal, signIn }
 
 enum _PlanAction { startNow, schedule }
+
+enum _PreRunConflictType { running, scheduled }
 
 class _GroupConflicts {
   final List<TaskRunGroup> running;

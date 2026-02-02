@@ -7,7 +7,6 @@ import 'package:uuid/uuid.dart';
 import '../../data/models/pomodoro_session.dart';
 import '../../data/models/task_run_group.dart';
 import '../../data/repositories/task_run_group_repository.dart';
-import '../../data/services/firebase_auth_service.dart';
 import '../../data/services/task_run_notice_service.dart';
 import '../../domain/pomodoro_machine.dart';
 import '../providers.dart';
@@ -42,6 +41,7 @@ class GroupsHubScreen extends ConsumerWidget {
           child: Text("Error: $e", style: const TextStyle(color: Colors.red)),
         ),
         data: (groups) {
+          final now = DateTime.now();
           final runningGroups = groups
               .where((g) => g.status == TaskRunStatus.running)
               .toList()
@@ -96,29 +96,40 @@ class GroupsHubScreen extends ConsumerWidget {
               if (scheduledGroups.isEmpty)
                 const _EmptySection(label: 'No scheduled groups'),
               for (final group in scheduledGroups)
-                _GroupCard(
-                  group: group,
-                  activeSession: activeSession,
-                  onTap: () => _showSummaryDialog(context, group),
-                  actions: [
-                    _GroupAction(
-                      label: 'Start now',
-                      onPressed: () => _handleStartNow(
-                        context,
-                        ref,
-                        group,
-                      ),
-                    ),
-                    _GroupAction(
-                      label: 'Cancel schedule',
-                      outlined: true,
-                      onPressed: () => _handleCancelSchedule(
-                        context,
-                        ref,
-                        group,
-                      ),
-                    ),
-                  ],
+                Builder(
+                  builder: (context) {
+                    final isPreRunActive = _isPreRunActive(group, now);
+                    return _GroupCard(
+                      group: group,
+                      activeSession: activeSession,
+                      onTap: () => _showSummaryDialog(context, group),
+                      actions: [
+                        if (isPreRunActive)
+                          _GroupAction(
+                            label: 'Open Pre-Run',
+                            onPressed: () => context.go('/timer/${group.id}'),
+                          )
+                        else
+                          _GroupAction(
+                            label: 'Start now',
+                            onPressed: () => _handleStartNow(
+                              context,
+                              ref,
+                              group,
+                            ),
+                          ),
+                        _GroupAction(
+                          label: 'Cancel schedule',
+                          outlined: true,
+                          onPressed: () => _handleCancelSchedule(
+                            context,
+                            ref,
+                            group,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               const SizedBox(height: 20),
               _SectionHeader(title: 'Completed'),
@@ -206,6 +217,7 @@ class GroupsHubScreen extends ConsumerWidget {
     List<TaskRunGroup> existing = const [];
     try {
       existing = await repo.getAll();
+      if (!context.mounted) return;
     } catch (e) {
       if (!context.mounted) return;
       _showSnackBar(context, "Failed to check conflicts: $e");
@@ -286,6 +298,9 @@ class GroupsHubScreen extends ConsumerWidget {
 
     final items = _cloneRunItems(source.tasks);
     final totalDurationSeconds = groupDurationSecondsWithFinalBreaks(items);
+    final noticeMinutes = source.noticeMinutes ??
+        await ref.read(taskRunNoticeServiceProvider).getNoticeMinutes();
+    if (!context.mounted) return;
     final conflictStart = scheduledStart ?? planCapturedAt;
     final conflictEnd = conflictStart.add(
       Duration(seconds: totalDurationSeconds),
@@ -295,10 +310,43 @@ class GroupsHubScreen extends ConsumerWidget {
     List<TaskRunGroup> existing = const [];
     try {
       existing = await repo.getAll();
+      if (!context.mounted) return;
     } catch (e) {
       if (!context.mounted) return;
       _showSnackBar(context, "Failed to check conflicts: $e");
       return;
+    }
+    if (planAction == _PlanAction.schedule &&
+        scheduledStart != null &&
+        noticeMinutes > 0) {
+      final preRunStart = scheduledStart.subtract(
+        Duration(minutes: noticeMinutes),
+      );
+      final now = DateTime.now();
+      if (preRunStart.isBefore(now)) {
+        _showSnackBar(
+          context,
+          "That start time is too soon to show the full pre-run countdown. "
+          "Choose a later start or reduce the pre-run notice.",
+        );
+        return;
+      }
+      final preRunConflict = _findPreRunConflict(
+        existing,
+        preRunStart: preRunStart,
+        scheduledStart: scheduledStart,
+      );
+      if (preRunConflict != null) {
+        final message = preRunConflict == _PreRunConflictType.running
+            ? "That time doesn't leave enough pre-run space because another "
+                'group is still running. Choose a later start or reduce the '
+                'pre-run notice.'
+            : "That time doesn't leave enough pre-run space because another "
+                'group is scheduled earlier. Choose a later start or reduce '
+                'the pre-run notice.';
+        _showSnackBar(context, message);
+        return;
+      }
     }
 
     final conflicts = _findConflicts(
@@ -342,9 +390,6 @@ class GroupsHubScreen extends ConsumerWidget {
     final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
     final scheduledByDeviceId =
         status == TaskRunStatus.scheduled ? deviceId : null;
-    final noticeMinutes = source.noticeMinutes ??
-        await ref.read(taskRunNoticeServiceProvider).getNoticeMinutes();
-
     final recalculatedStart = scheduledStart ?? DateTime.now();
     final recalculatedEnd = recalculatedStart.add(
       Duration(seconds: totalDurationSeconds),
@@ -500,6 +545,32 @@ class GroupsHubScreen extends ConsumerWidget {
     return _GroupConflicts(running: running, scheduled: scheduled);
   }
 
+  _PreRunConflictType? _findPreRunConflict(
+    List<TaskRunGroup> groups, {
+    required DateTime preRunStart,
+    required DateTime scheduledStart,
+  }) {
+    for (final group in groups) {
+      if (group.status == TaskRunStatus.canceled ||
+          group.status == TaskRunStatus.completed) {
+        continue;
+      }
+      final start =
+          group.actualStartTime ?? group.scheduledStartTime ?? group.createdAt;
+      final end = group.theoreticalEndTime.isBefore(start)
+          ? start
+          : group.theoreticalEndTime;
+      if (!_overlaps(preRunStart, scheduledStart, start, end)) continue;
+      if (group.status == TaskRunStatus.running) {
+        return _PreRunConflictType.running;
+      }
+      if (group.status == TaskRunStatus.scheduled) {
+        return _PreRunConflictType.scheduled;
+      }
+    }
+    return null;
+  }
+
   bool _overlaps(
     DateTime aStart,
     DateTime aEnd,
@@ -634,6 +705,19 @@ class GroupsHubScreen extends ConsumerWidget {
     final actual = group.actualStartTime;
     if (actual != null) return _formatTime(actual);
     return _formatTime(group.createdAt);
+  }
+
+  bool _isPreRunActive(TaskRunGroup group, DateTime now) {
+    if (group.status != TaskRunStatus.scheduled) return false;
+    final scheduledStart = group.scheduledStartTime;
+    if (scheduledStart == null) return false;
+    final noticeMinutes =
+        group.noticeMinutes ?? TaskRunNoticeService.defaultNoticeMinutes;
+    if (noticeMinutes <= 0) return false;
+    final preRunStart = scheduledStart.subtract(
+      Duration(minutes: noticeMinutes),
+    );
+    return !now.isBefore(preRunStart) && now.isBefore(scheduledStart);
   }
 
   String _formatTime(DateTime? value) {
@@ -771,7 +855,7 @@ class _GroupCard extends StatelessWidget {
             ),
             _MetaRow(
               label: 'Notice',
-              value: '${notice} min',
+              value: '$notice min',
             ),
             const SizedBox(height: 10),
             Wrap(
@@ -854,6 +938,8 @@ class _GroupAction extends StatelessWidget {
 }
 
 enum _PlanAction { startNow, schedule }
+
+enum _PreRunConflictType { running, scheduled }
 
 class _GroupConflicts {
   final List<TaskRunGroup> running;

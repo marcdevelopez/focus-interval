@@ -588,6 +588,13 @@ Item layout (top → bottom):
   - Primary action: "Open Run Mode" (Execution Screen).
   - Secondary action: "View in Groups Hub".
 - This entry point is required when auto-open is suppressed or cannot occur.
+- If a scheduled group is within the Pre-Run Countdown window (noticeMinutes),
+  show a similar banner on Task List:
+  - Label indicates the group is starting soon and shows a countdown or start time.
+  - Primary action: "Open Pre-Run" (Run Mode in Pre-Run state).
+  - Secondary action: "View in Groups Hub".
+- These entry points must not add new AppBar actions or change the AppBar layout.
+  The header stays as-is; access is provided through existing screen content.
 
 ---
 
@@ -825,6 +832,15 @@ Run Mode is group-only: TimerScreen loads a TaskRunGroup by groupId; there is no
   - Start now -> start immediately
   - Schedule start -> schedule the start time
 - Conflicts are validated for both actions (see section 6.4)
+- Scheduling must reserve the full Pre-Run Countdown window when noticeMinutes > 0:
+  - The window from scheduledStartTime - noticeMinutes to scheduledStartTime
+    is treated as blocked time.
+  - It must not overlap any running group or any previously scheduled group’s
+    execution window.
+  - If the full Pre-Run window cannot be reserved (including when it would
+    start in the past), scheduling is blocked and the user is shown a clear,
+    non-technical explanation (e.g., “That time doesn’t leave enough pre‑run
+    time. Choose a later start or reduce the pre‑run notice.”).
 - If a schedule is set:
   - Recalculate theoretical start/end times using the selected start time
   - Save as scheduled and add to Groups Hub
@@ -857,6 +873,8 @@ Trigger
   - until scheduledStartTime
 - If noticeMinutes = 0, Pre-Run Countdown Mode is skipped entirely.
 - If the app opens after scheduledStartTime, it goes directly to standard Run Mode.
+- If the user leaves the Pre-Run screen, they must be able to return via Task List
+  or Groups Hub entry points while the pre-run window is active.
 
 UI (reuses Run Mode layout)
 
@@ -1074,6 +1092,9 @@ History
 
 - Show scheduled + running + last N completed groups
 - Keep history short and finite
+- When a scheduled group is within the Pre-Run window, the card must expose a clear
+  "Open Pre-Run" action (instead of “Start now”), so the user can always return to
+  the Pre-Run view.
 
 ---
 

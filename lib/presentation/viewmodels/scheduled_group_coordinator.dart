@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/models/pomodoro_session.dart';
 import '../../data/models/task_run_group.dart';
+import '../../domain/pomodoro_machine.dart';
 import '../providers.dart';
 
 final scheduledGroupCoordinatorProvider =
@@ -26,6 +28,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
 
   Timer? _scheduledTimer;
   Timer? _preAlertTimer;
+  Timer? _runningExpiryTimer;
   bool _autoStartInFlight = false;
   bool _initialized = false;
   bool _disposed = false;
@@ -49,6 +52,13 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       final groups = next.value ?? const [];
       _handleGroups(groups);
     });
+    ref.listen<PomodoroSession?>(activePomodoroSessionProvider, (previous, next) {
+      final wasActive = previous != null;
+      final isActive = next != null;
+      if (wasActive && !isActive) {
+        _handleGroups(_lastGroups);
+      }
+    });
     final initial = ref.read(taskRunGroupStreamProvider).value ?? const [];
     _handleGroups(initial);
   }
@@ -65,6 +75,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     _disposed = true;
     _scheduledTimer?.cancel();
     _preAlertTimer?.cancel();
+    _runningExpiryTimer?.cancel();
     _scheduledNotices.clear();
   }
 
@@ -90,20 +101,57 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     _scheduledTimer = null;
     _preAlertTimer?.cancel();
     _preAlertTimer = null;
+    _runningExpiryTimer?.cancel();
+    _runningExpiryTimer = null;
     await _pruneScheduledNotices(groups);
 
     if (groups.isEmpty) return;
 
-    final running = groups.where((g) => g.status == TaskRunStatus.running);
+    final running =
+        groups.where((g) => g.status == TaskRunStatus.running).toList();
     if (running.isNotEmpty) {
       final activeSession = ref.read(activePomodoroSessionProvider);
+      final activeGroupId = activeSession?.groupId;
+      final now = DateTime.now();
+      var expired = _resolveExpiredRunningGroups(running, now);
+      if (activeSession != null &&
+          activeSession.ownerDeviceId != deviceId &&
+          activeGroupId != null) {
+        expired = expired
+            .where((group) => group.id != activeGroupId)
+            .toList();
+      }
+      if (activeSession?.status == PomodoroStatus.paused &&
+          activeGroupId != null) {
+        expired = expired
+            .where((group) => group.id != activeGroupId)
+            .toList();
+      }
+      if (expired.isNotEmpty) {
+        await _markRunningGroupsCompleted(expired, now);
+      }
       if (activeSession == null) {
-        final sorted = running.toList()
-          ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-        final groupId = sorted.first.id;
-        ref.read(scheduledAutoStartGroupIdProvider.notifier).state = groupId;
-        _emitOpenTimer(groupId);
-        return;
+        final remaining = running.where((g) => !expired.contains(g)).toList();
+        if (remaining.isNotEmpty) {
+          final sorted = remaining
+            ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+          final groupId = sorted.first.id;
+          ref.read(scheduledAutoStartGroupIdProvider.notifier).state = groupId;
+          _emitOpenTimer(groupId);
+          return;
+        }
+      } else {
+        _scheduleRunningExpiryCheck(running, now);
+        final activeGroupId = activeSession.groupId;
+        final isActiveExpired =
+            activeGroupId != null &&
+            expired.any((group) => group.id == activeGroupId);
+        final isLocalOwner = activeSession.ownerDeviceId == deviceId;
+        if (isActiveExpired &&
+            isLocalOwner &&
+            activeSession.status.isRunning) {
+          await ref.read(pomodoroSessionRepositoryProvider).clearSession();
+        }
       }
       debugPrint('Scheduled auto-start suppressed (running group active).');
       return;
@@ -158,6 +206,54 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     return ref.read(taskRunNoticeServiceProvider).getNoticeMinutes();
   }
 
+  List<TaskRunGroup> _resolveExpiredRunningGroups(
+    Iterable<TaskRunGroup> running,
+    DateTime now,
+  ) {
+    final expired = <TaskRunGroup>[];
+    for (final group in running) {
+      final endTime = _resolveTheoreticalEndTime(group);
+      if (endTime != null && !endTime.isAfter(now)) {
+        expired.add(group);
+      }
+    }
+    return expired;
+  }
+
+  DateTime? _resolveTheoreticalEndTime(TaskRunGroup group) {
+    final start = group.actualStartTime;
+    if (start == null) return null;
+    final end = group.theoreticalEndTime;
+    if (end.isBefore(start)) {
+      final totalSeconds =
+          group.totalDurationSeconds ??
+          groupDurationSecondsWithFinalBreaks(group.tasks);
+      if (totalSeconds > 0) {
+        return start.add(Duration(seconds: totalSeconds));
+      }
+    }
+    return end;
+  }
+
+  Future<void> _markRunningGroupsCompleted(
+    List<TaskRunGroup> groups,
+    DateTime now,
+  ) async {
+    if (groups.isEmpty) return;
+    final repo = ref.read(taskRunGroupRepositoryProvider);
+    for (final group in groups) {
+      final latest = await repo.getById(group.id) ?? group;
+      if (latest.status != TaskRunStatus.running) continue;
+      final endTime = _resolveTheoreticalEndTime(latest);
+      if (endTime == null || endTime.isAfter(now)) continue;
+      final updated = latest.copyWith(
+        status: TaskRunStatus.completed,
+        updatedAt: now,
+      );
+      await repo.save(updated);
+    }
+  }
+
   Future<void> _schedulePreAlert(TaskRunGroup group, int noticeMinutes) async {
     if (noticeMinutes <= 0) return;
     final startTime = group.scheduledStartTime;
@@ -167,11 +263,11 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
 
     final preAlertStart = startTime.subtract(Duration(minutes: noticeMinutes));
     if (now.isBefore(preAlertStart)) {
-    await _scheduleLocalPreAlert(
-      group: group,
-      preAlertStart: preAlertStart,
-      noticeMinutes: noticeMinutes,
-    );
+      await _scheduleLocalPreAlert(
+        group: group,
+        preAlertStart: preAlertStart,
+        noticeMinutes: noticeMinutes,
+      );
       final delay = preAlertStart.difference(now);
       _preAlertTimer = Timer(delay, () {
         if (_disposed) return;
@@ -183,6 +279,26 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     await _cancelLocalPreAlert(group.id);
     await _markPreAlertSentIfNeeded(group, preAlertStart);
     _emitOpenTimer(group.id);
+  }
+
+  void _scheduleRunningExpiryCheck(
+    List<TaskRunGroup> running,
+    DateTime now,
+  ) {
+    DateTime? nextEnd;
+    for (final group in running) {
+      final endTime = _resolveTheoreticalEndTime(group);
+      if (endTime == null || !endTime.isAfter(now)) continue;
+      if (nextEnd == null || endTime.isBefore(nextEnd)) {
+        nextEnd = endTime;
+      }
+    }
+    if (nextEnd == null) return;
+    final delay = nextEnd.difference(now);
+    _runningExpiryTimer = Timer(delay, () {
+      if (_disposed) return;
+      _handleGroups(_lastGroups);
+    });
   }
 
   Future<void> _markPreAlertSentIfNeeded(

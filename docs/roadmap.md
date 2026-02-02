@@ -91,12 +91,18 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       02/02/2026: Phase 18 completed (completion flow + cancel flow -> Groups Hub).
       02/02/2026: Phase 19 Groups Hub core UI implemented (sections + actions); Task List banner + Run Mode indicator now open Groups Hub (validation pending).
       02/02/2026: Task List banner now clears stale sessions when group ends (validation pending).
+      02/02/2026: Scheduled auto-start rechecks when active session ends; expired running groups auto-complete to unblock scheduled starts (validation pending).
+      02/02/2026: Running group expiry now clears stale active sessions (Task List banner updates; validation pending).
+      02/02/2026: Scheduling now reserves the full Pre-Run window (noticeMinutes) and blocks invalid times (validation pending).
+      02/02/2026: Pre-Run entry points added for scheduled groups (Task List banner + Groups Hub action; no AppBar changes) (validation pending).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
 ## 🔄 Reopened phases (must complete before moving on)
 
-- None. Outstanding items from specs sections 10.4.2 / 10.4.6 / 12 / 10.5 are tracked in Phases 18, 19, and 21 (not reopened).
+- Phase 17 — Scheduled auto-start stuck after prior running group ended; recheck on session end + expired running group auto-complete (validation pending).
+- Phase 17 — Scheduling must reserve full Pre-Run window (noticeMinutes) with clear user messaging (validation pending).
+- Outstanding items from specs sections 10.4.2 / 10.4.6 / 12 / 10.5 are tracked in Phases 18, 19, and 21 (not reopened).
 - Rule: if any previously completed phase is missing required behavior, list it here and resolve it before continuing in normal phase order.
 
 Update this on each commit if needed.
@@ -685,6 +691,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Add "Run again" for completed groups to duplicate the snapshot into a new TaskRunGroup and open planning.
 - Provide direct navigation to the Task List screen (Task Library).
 - Auto-navigate to Groups Hub after group completion (only after the user dismisses the completion modal).
+- Ensure Pre-Run remains accessible: Task List banner + Groups Hub "Open Pre-Run" action when within notice window.
 
 ### 📌 Exit conditions
 

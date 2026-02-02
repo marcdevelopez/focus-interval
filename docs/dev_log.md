@@ -3805,6 +3805,53 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 232 — Scheduled auto-start recheck after group completion — 02/02/2026
+
+### ✔ Work completed:
+
+- Scheduled auto-start re-evaluates when the active session ends (no active session -> re-run coordinator logic).
+- When a running group has no active session, expired running groups are auto-completed to unblock scheduled starts.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 233 — Running group expiry clears stale Task List banner — 02/02/2026
+
+### ✔ Work completed:
+
+- ScheduledGroupCoordinator now schedules expiry checks for running groups.
+- If the active running group has passed its theoretical end and is locally owned (not paused), it is auto-completed and the active session is cleared.
+- This removes stale “running” banners when the user remains on Task List.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 234 — Pre-Run window scheduling validation — 02/02/2026
+
+### ✔ Work completed:
+
+- Scheduling now reserves the full Pre-Run window (noticeMinutes) and blocks invalid times.
+- If the Pre-Run window would start in the past or overlaps a running/earlier scheduled group, scheduling is blocked with a clear user message.
+- Applied to both Task List planning flow and Groups Hub “Run again”.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 235 — Pre-Run access entry points — 02/02/2026
+
+### ✔ Work completed:
+
+- Task List now shows a Pre-Run banner when a scheduled group is within the notice window, with “Open Pre-Run”.
+- Groups Hub scheduled cards switch to “Open Pre-Run” when the pre-run window is active.
+- No AppBar changes; access is provided via existing screen content.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
