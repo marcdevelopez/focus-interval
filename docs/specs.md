@@ -255,6 +255,11 @@ class PomodoroSession {
   - The group ends (status = completed).
   - Final modal + final animation are shown (see section 12).
   - After the user explicitly dismisses the completion modal, auto-navigate to the Groups Hub screen (no time-based auto-navigation).
+- If the user cancels a running group:
+  - The group ends immediately (status = canceled).
+  - The active session is cleared.
+  - The app must not remain in an idle Run Mode state.
+  - Navigate to Groups Hub after confirmation (see section 10.4.6).
 
 ## **6.4. Scheduling and conflict rules**
 
@@ -997,7 +1002,18 @@ The list rebuilds automatically when tasks change.
 - Group completion -> modal + final animation (see section 12)
 - Completion modal includes summary totals when available (total tasks, pomodoros, total time)
 - After the user explicitly dismisses the completion modal, auto-navigate to the Groups Hub screen (do not remain in an idle Execution screen)
+- Cancel running group -> confirmation dialog + cancel group + navigate to Groups Hub
 - Status boxes and contextual list update automatically (including time ranges after pause/resume); no extra confirmations or animations in the MVP
+
+Cancel running group (Run Mode)
+
+- Action requires confirmation before canceling.
+- Confirmation copy must warn that the group will end and cannot be resumed.
+- On confirm:
+  - Stop the session immediately.
+  - Mark the group as canceled.
+  - Navigate to Groups Hub (do not remain in Run Mode).
+- The Groups Hub provides the next decision path (open Task List / start or plan a new group).
 
 ### **10.4.7. Mandatory visual improvements for the timer**
 
