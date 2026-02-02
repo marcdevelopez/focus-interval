@@ -3705,6 +3705,29 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 225 — Docs lock-in clarifications — 02/02/2026
+
+### ✔ Work completed:
+
+- Updated specs to lock TimerDisplay visuals (ring + marker, no hand/needle) and clarify color usage.
+- Updated roadmap to mark Run Mode time ranges and transitions as implemented/locked and clarify remaining items.
+- Aligned Copilot instructions with AGENTS.md, adding workflow + UI lock-ins.
+- Clarified reopened-phase rule and noted outstanding items tracked in Phases 18/19/21 (not reopened).
+
+### 🧠 Decisions made:
+
+- TimerDisplay visuals are locked; any changes require explicit approval and belong to Phase 23 polish.
+- Outstanding items in specs 10.4.2 / 10.4.6 / 12 / 10.5 map to Phases 18/19/21, not reopened phases.
+
+### 🎯 Next steps:
+
+- Finish Phase 18 group completion flow (modal + final state + navigate to Groups Hub).
+- Implement Groups Hub (Phase 19) and final animation (Phase 21).
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
