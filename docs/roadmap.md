@@ -14,7 +14,7 @@ This project includes an official team roles document at:
 # 🟦 **Global Project Status**
 
 ```
-CURRENT PHASE: 18 — Run Mode Redesign for TaskRunGroups (in progress)
+CURRENT PHASE: 19 — Groups Hub Screen (in progress)
 NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       PomodoroViewModel exposed as Notifier auto-dispose and subscribed to the machine.
       Auth strategy: Google Sign-In on iOS/Android/Web (web verified; People API enabled); email/password on macOS/Windows; Linux auth disabled (local-only).
@@ -88,6 +88,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       02/02/2026: Duplicate rename now exits the editor in all flows (new/edit).
       02/02/2026: Completion modal now navigates to Groups Hub; placeholder Groups Hub route added (validation pending).
       02/02/2026: Cancel running group now confirms and navigates to Groups Hub (validation pending).
+      02/02/2026: Phase 18 completed (completion flow + cancel flow -> Groups Hub).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
@@ -639,7 +640,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ---
 
-# 🚀 **PHASE 18 — Run Mode Redesign for TaskRunGroups (In progress)**
+# [✔] **PHASE 18 — Run Mode Redesign for TaskRunGroups (completed 02/02/2026)**
 
 ### ⚙️ Tasks
 
@@ -654,10 +655,10 @@ These subphases should also appear in **dev_log.md** as they are completed.
   - TimerDisplay visual is ring + shadowed marker dot (no needle/hand); keep base ring/shadows and red/blue/amber ring colors.
   - Groups Hub indicator exists in the Run Mode header (placeholder until Phase 19).
   - On resume/pause, projected time ranges are recalculated for status boxes and contextual list.
-- 🔜 Remaining (Phase 18 scope):
-  - Group completion UX must end in the correct final state and navigation:
+- ✅ Completed (Phase 18 scope):
+  - Group completion UX ends in the correct final state and navigation:
     completion modal + final center state + navigate to Groups Hub after dismiss.
-  - Keep the completion summary (total tasks, pomodoros, total time) and wire it to the final flow; do not remove it.
+  - Completion summary (total tasks, pomodoros, total time) remains wired to the final flow.
   - Cancel running group flow:
     confirmation dialog + mark group canceled + clear session + navigate to Groups Hub (do not remain in Run Mode).
 

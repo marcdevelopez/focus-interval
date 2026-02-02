@@ -15,7 +15,7 @@ This document is used to:
 
 # 📍 Current status
 
-Active phase: **18 — Run Mode Redesign for TaskRunGroups**
+Active phase: **19 — Groups Hub Screen**
 Last update: **02/02/2026**
 
 ---
@@ -3705,7 +3705,7 @@ _(fill in when they happen)_
 
 - None.
 
-# 🔹 Block 225 — Docs lock-in clarifications — 02/02/2026
+# 🔹 Block 225 — Docs lock-in clarifications (Phase alignment) — 02/02/2026
 
 ### ✔ Work completed:
 
@@ -3743,7 +3743,7 @@ _(fill in when they happen)_
 
 - None.
 
-# 🔹 Block 227 — Cancel flow spec clarification — 02/02/2026
+# 🔹 Block 227 — Cancel flow spec clarification (Phase 18) — 02/02/2026
 
 ### ✔ Work completed:
 
@@ -3755,13 +3755,27 @@ _(fill in when they happen)_
 
 - None.
 
-# 🔹 Block 228 — Cancel flow implementation — 02/02/2026
+# 🔹 Block 228 — Cancel flow implementation (Phase 18) — 02/02/2026
 
 ### ✔ Work completed:
 
 - Cancel now requires confirmation and warns that the group cannot be resumed.
 - On cancel, the group is marked canceled, session is cleared, and navigation goes to Groups Hub.
 - Back/exit flow uses the same cancel behavior (no idle Run Mode state).
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 229 — Phase 19 kickoff — 02/02/2026
+
+### ✔ Work completed:
+
+- Transitioned active work to Phase 19 (Groups Hub screen).
+
+### 🎯 Next steps:
+
+- Implement Groups Hub list + actions + entry points per specs (section 10.5).
 
 ### ⚠️ Issues found:
 
