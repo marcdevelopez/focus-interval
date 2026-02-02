@@ -3728,6 +3728,21 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 226 — Group completion navigation scaffold — 02/02/2026
+
+### ✔ Work completed:
+
+- Added a Groups Hub placeholder screen and `/groups` route.
+- Completion modal now navigates to Groups Hub after dismiss (no cancel on completion).
+
+### 🎯 Next steps:
+
+- Validate the completion flow end-to-end (modal + final state + Groups Hub landing).
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

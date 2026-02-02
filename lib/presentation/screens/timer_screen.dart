@@ -564,6 +564,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
   void _showFinishedDialog(BuildContext context, PomodoroViewModel vm) {
     if (_finishedDialogVisible) return;
+    final router = GoRouter.of(context);
     final totalTasks = vm.totalTasks;
     final totalPomodoros = vm.totalGroupPomodoros;
     final totalDuration = _formatDurationLong(vm.totalGroupDurationSeconds);
@@ -587,8 +588,12 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           TextButton(
             onPressed: () {
               _finishedDialogVisible = false;
-              vm.cancel();
               Navigator.of(context, rootNavigator: true).pop();
+              if (!mounted) return;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                router.go('/groups');
+              });
             },
             child: const Text("OK"),
           ),

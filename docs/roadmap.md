@@ -86,6 +86,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       02/02/2026: Duplicate resolution now exits the New Preset screen after use/rename to avoid loops.
       02/02/2026: Duplicate rename in Edit Preset now exits to Manage Presets after completion.
       02/02/2026: Duplicate rename now exits the editor in all flows (new/edit).
+      02/02/2026: Completion modal now navigates to Groups Hub; placeholder Groups Hub route added (validation pending).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 

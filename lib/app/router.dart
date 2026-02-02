@@ -6,6 +6,7 @@ import '../presentation/screens/login_screen.dart';
 import '../presentation/screens/task_list_screen.dart';
 import '../presentation/screens/task_editor_screen.dart';
 import '../presentation/screens/timer_screen.dart';
+import '../presentation/screens/groups_hub_screen.dart';
 import '../presentation/screens/settings_screen.dart';
 import '../presentation/screens/preset_list_screen.dart';
 import '../presentation/screens/preset_editor_screen.dart';
@@ -52,6 +53,11 @@ GoRouter buildRouter() {
           final id = state.pathParameters['id']!;
           return _fadeScale(TimerScreen(groupId: id));
         },
+      ),
+
+      GoRoute(
+        path: '/groups',
+        pageBuilder: (_, __) => _slide(const GroupsHubScreen()),
       ),
 
       GoRoute(
