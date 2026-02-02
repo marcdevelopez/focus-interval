@@ -3781,6 +3781,19 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 230 — Phase 19 Groups Hub core UI — 02/02/2026
+
+### ✔ Work completed:
+
+- Implemented Groups Hub screen with sections for running, scheduled, and completed groups.
+- Added actions: Open Run Mode, Start now, Cancel schedule, Run again.
+- Added Task List entry point from Groups Hub and wired Run Mode header indicator to open Groups Hub.
+- Added Task List banner for running/paused group entry point.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

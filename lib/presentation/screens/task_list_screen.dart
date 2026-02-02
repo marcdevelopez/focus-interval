@@ -17,6 +17,7 @@ import '../../data/repositories/task_run_group_repository.dart';
 import '../../data/services/firebase_auth_service.dart';
 import '../../data/services/app_mode_service.dart';
 import '../../data/services/local_sound_overrides.dart';
+import '../../domain/pomodoro_machine.dart';
 import '../../widgets/task_card.dart';
 import '../../widgets/mode_indicator.dart';
 
@@ -349,6 +350,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final signedIn = currentUser != null;
     final requiresVerification = ref.watch(emailVerificationRequiredProvider);
     final activeSession = ref.watch(activePomodoroSessionProvider);
+    final groupsAsync = ref.watch(taskRunGroupStreamProvider);
     final selectedIds = ref.watch(taskSelectionProvider);
     final selection = ref.read(taskSelectionProvider.notifier);
     final isCompact = MediaQuery.of(context).size.width < 360;
@@ -389,6 +391,11 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final maxEmailWidth = (maxActionsWidth - actionReservedWidth)
         .clamp(0.0, baseMaxEmailWidth)
         .toDouble();
+    final activeGroupBanner = _buildActiveGroupBanner(
+      context,
+      activeSession: activeSession,
+      groupsAsync: groupsAsync,
+    );
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -538,141 +545,227 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
           ),
         ),
       ),
-      body: tasksAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Text("Error: $e", style: const TextStyle(color: Colors.red)),
-        ),
-        data: (tasks) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            selection.syncWithIds(tasks.map((t) => t.id));
-          });
-          if (tasks.isEmpty) {
-            if (appMode == AppMode.account &&
-                signedIn &&
-                requiresVerification) {
-              return _buildVerificationLockedState();
-            }
-            if (appMode == AppMode.account && !signedIn) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'Sign in to use Account Mode. Your local data remains separate.',
-                        style: TextStyle(color: Colors.white54),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: () => context.go('/login'),
-                        child: const Text('Sign in'),
-                      ),
-                    ],
-                  ),
+      body: Column(
+        children: [
+          if (activeGroupBanner != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+              child: activeGroupBanner,
+            ),
+          Expanded(
+            child: tasksAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(
+                child: Text(
+                  "Error: $e",
+                  style: const TextStyle(color: Colors.red),
                 ),
-              );
-            }
-            return const Center(
-              child: Text(
-                "Your tasks will appear here",
-                style: TextStyle(color: Colors.white54),
               ),
-            );
-          }
-          final planningKey = _buildPlanningAnchorKey(tasks, selectedIds);
-          if (planningKey != _planningAnchorKey) {
-            _planningAnchorKey = planningKey;
-            _planningAnchor = DateTime.now();
-          }
-          final ranges = _buildSelectedTimeRanges(
-            tasks,
-            selectedIds,
-            _planningAnchor,
-          );
-          final weightTotal = _weightTotal(tasks, selectedIds);
-
-          final soundOverrides = ref.read(localSoundOverridesProvider);
-
-          return ReorderableListView.builder(
-            buildDefaultDragHandles: false,
-            padding: const EdgeInsets.all(12),
-            itemCount: tasks.length,
-            onReorder: (oldIndex, newIndex) {
-              ref
-                  .read(taskListProvider.notifier)
-                  .reorderTasks(oldIndex, newIndex);
-            },
-            itemBuilder: (context, i) {
-              final t = tasks[i];
-              final isSelected = selectedIds.contains(t.id);
-              final weightPercent = (weightTotal == null || !isSelected)
-                  ? null
-                  : (((t.totalPomodoros * t.pomodoroMinutes) / weightTotal) *
-                          100)
-                      .round();
-              return TaskCard(
-                key: ValueKey(t.id),
-                task: t,
-                soundOverrides: soundOverrides,
-                weightPercent: weightPercent,
-                selected: isSelected,
-                onTap: () => selection.toggle(t.id),
-                timeRange: ranges[t.id],
-                reorderHandle: ReorderableDragStartListener(
-                  index: i,
-                  child: const Padding(
-                    padding: EdgeInsets.only(left: 4),
-                    child: Icon(Icons.drag_handle, color: Colors.white38),
-                  ),
-                ),
-                onEdit: () async {
-                  if (activeSession != null && activeSession.taskId == t.id) {
-                    _showSnackBar(
-                      context,
-                      "This task is running. Stop it before editing.",
-                    );
-                    return;
-                  }
-                  final result = await ref
-                      .read(taskEditorProvider.notifier)
-                      .load(t.id);
-                  if (!context.mounted) return;
-                  if (result == TaskEditorLoadResult.notFound) {
-                    _showSnackBar(context, "Task not found.");
-                    return;
-                  }
-                  if (result == TaskEditorLoadResult.blockedByActiveSession) {
-                    _showSnackBar(
-                      context,
-                      "This task is running. Stop it before editing.",
-                    );
-                    return;
-                  }
-                  await context.push("/tasks/edit/${t.id}");
+              data: (tasks) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (!mounted) return;
-                  setState(() {});
-                },
-                onDelete: () {
-                  if (activeSession != null && activeSession.taskId == t.id) {
-                    _showSnackBar(
-                      context,
-                      "This task is running. Stop it before deleting.",
-                    );
-                    return;
+                  selection.syncWithIds(tasks.map((t) => t.id));
+                });
+                if (tasks.isEmpty) {
+                  if (appMode == AppMode.account &&
+                      signedIn &&
+                      requiresVerification) {
+                    return _buildVerificationLockedState();
                   }
-                  _confirmDeleteTask(context, t).then((shouldDelete) {
-                    if (!shouldDelete) return;
-                    ref.read(taskListProvider.notifier).deleteTask(t.id);
-                  });
-                },
-              );
-            },
-          );
-        },
+                  if (appMode == AppMode.account && !signedIn) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              'Sign in to use Account Mode. Your local data remains separate.',
+                              style: TextStyle(color: Colors.white54),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 12),
+                            ElevatedButton(
+                              onPressed: () => context.go('/login'),
+                              child: const Text('Sign in'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  return const Center(
+                    child: Text(
+                      "Your tasks will appear here",
+                      style: TextStyle(color: Colors.white54),
+                    ),
+                  );
+                }
+                final planningKey = _buildPlanningAnchorKey(tasks, selectedIds);
+                if (planningKey != _planningAnchorKey) {
+                  _planningAnchorKey = planningKey;
+                  _planningAnchor = DateTime.now();
+                }
+                final ranges = _buildSelectedTimeRanges(
+                  tasks,
+                  selectedIds,
+                  _planningAnchor,
+                );
+                final weightTotal = _weightTotal(tasks, selectedIds);
+
+                final soundOverrides = ref.read(localSoundOverridesProvider);
+
+                return ReorderableListView.builder(
+                  buildDefaultDragHandles: false,
+                  padding: const EdgeInsets.all(12),
+                  itemCount: tasks.length,
+                  onReorder: (oldIndex, newIndex) {
+                    ref
+                        .read(taskListProvider.notifier)
+                        .reorderTasks(oldIndex, newIndex);
+                  },
+                  itemBuilder: (context, i) {
+                    final t = tasks[i];
+                    final isSelected = selectedIds.contains(t.id);
+                    final weightPercent = (weightTotal == null || !isSelected)
+                        ? null
+                        : (((t.totalPomodoros * t.pomodoroMinutes) /
+                                    weightTotal) *
+                                100)
+                            .round();
+                    return TaskCard(
+                      key: ValueKey(t.id),
+                      task: t,
+                      soundOverrides: soundOverrides,
+                      weightPercent: weightPercent,
+                      selected: isSelected,
+                      onTap: () => selection.toggle(t.id),
+                      timeRange: ranges[t.id],
+                      reorderHandle: ReorderableDragStartListener(
+                        index: i,
+                        child: const Padding(
+                          padding: EdgeInsets.only(left: 4),
+                          child: Icon(Icons.drag_handle, color: Colors.white38),
+                        ),
+                      ),
+                      onEdit: () async {
+                        if (activeSession != null &&
+                            activeSession.taskId == t.id) {
+                          _showSnackBar(
+                            context,
+                            "This task is running. Stop it before editing.",
+                          );
+                          return;
+                        }
+                        final result = await ref
+                            .read(taskEditorProvider.notifier)
+                            .load(t.id);
+                        if (!context.mounted) return;
+                        if (result == TaskEditorLoadResult.notFound) {
+                          _showSnackBar(context, "Task not found.");
+                          return;
+                        }
+                        if (result ==
+                            TaskEditorLoadResult.blockedByActiveSession) {
+                          _showSnackBar(
+                            context,
+                            "This task is running. Stop it before editing.",
+                          );
+                          return;
+                        }
+                        await context.push("/tasks/edit/${t.id}");
+                        if (!mounted) return;
+                        setState(() {});
+                      },
+                      onDelete: () {
+                        if (activeSession != null &&
+                            activeSession.taskId == t.id) {
+                          _showSnackBar(
+                            context,
+                            "This task is running. Stop it before deleting.",
+                          );
+                          return;
+                        }
+                        _confirmDeleteTask(context, t).then((shouldDelete) {
+                          if (!shouldDelete) return;
+                          ref.read(taskListProvider.notifier).deleteTask(t.id);
+                        });
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget? _buildActiveGroupBanner(
+    BuildContext context, {
+    required PomodoroSession? activeSession,
+    required AsyncValue<List<TaskRunGroup>> groupsAsync,
+  }) {
+    final groupId = activeSession?.groupId;
+    if (groupId == null || groupId.isEmpty) return null;
+    final groups = groupsAsync.value ?? const [];
+    TaskRunGroup? group;
+    for (final candidate in groups) {
+      if (candidate.id == groupId) {
+        group = candidate;
+        break;
+      }
+    }
+    final name = group?.tasks.isNotEmpty == true
+        ? group!.tasks.first.name
+        : 'Task group';
+    final statusLabel =
+        activeSession?.status == PomodoroStatus.paused ? 'Paused' : 'Running';
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        border: Border.all(color: Colors.white24),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Group $statusLabel',
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 12,
+              letterSpacing: 0.6,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            name,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ElevatedButton(
+                onPressed: () => context.go('/timer/$groupId'),
+                child: const Text('Open Run Mode'),
+              ),
+              OutlinedButton(
+                onPressed: () => context.go('/groups'),
+                child: const Text('View in Groups Hub'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

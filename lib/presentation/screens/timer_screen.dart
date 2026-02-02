@@ -903,9 +903,7 @@ class _PlannedGroupsIndicator extends ConsumerWidget {
     return IconButton(
       tooltip: 'Planned groups',
       onPressed: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Planned groups screen coming soon.')),
-        );
+        context.go('/groups');
       },
       icon: Stack(
         clipBehavior: Clip.none,
