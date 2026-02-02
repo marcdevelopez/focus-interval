@@ -1,15 +1,19 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:uuid/uuid.dart';
 
 import '../models/pomodoro_preset.dart';
 import '../services/firebase_auth_service.dart';
 import '../services/firestore_service.dart';
+import '../services/preset_integrity_service.dart';
 import 'pomodoro_preset_repository.dart';
 
 class FirestorePomodoroPresetRepository implements PomodoroPresetRepository {
   final FirestoreService firestoreService;
   final AuthService authService;
+  final _uuid = const Uuid();
+  bool _seeded = false;
 
   FirestorePomodoroPresetRepository({
     required this.firestoreService,
@@ -32,7 +36,11 @@ class FirestorePomodoroPresetRepository implements PomodoroPresetRepository {
     final uid = await _uidOrThrow();
     final snap = await _presetCollection(uid).get();
     final now = DateTime.now();
-    return snap.docs.map((doc) {
+    if (snap.docs.isEmpty) {
+      final seeded = await _seedDefault(uid, now: now);
+      return [seeded];
+    }
+    final presets = snap.docs.map((doc) {
       final normalized = _normalizePresetMap(
         uid: uid,
         docId: doc.id,
@@ -41,6 +49,7 @@ class FirestorePomodoroPresetRepository implements PomodoroPresetRepository {
       );
       return PomodoroPreset.fromMap(normalized);
     }).toList();
+    return _normalizeIntegrity(uid, presets, now: now);
   }
 
   @override
@@ -67,6 +76,7 @@ class FirestorePomodoroPresetRepository implements PomodoroPresetRepository {
   Future<void> delete(String id) async {
     final uid = await _uidOrThrow();
     await _presetCollection(uid).doc(id).delete();
+    await _ensureIntegrityExists(uid);
   }
 
   @override
@@ -74,7 +84,16 @@ class FirestorePomodoroPresetRepository implements PomodoroPresetRepository {
     final uid = await _uidOrThrow();
     yield* _presetCollection(uid).snapshots().map((snap) {
       final now = DateTime.now();
-      return snap.docs.map((doc) {
+      if (snap.docs.isEmpty && !_seeded) {
+        _seeded = true;
+        final seeded = PomodoroPreset.classicDefault(
+          id: _uuid.v4(),
+          now: now,
+        );
+        unawaited(_presetCollection(uid).doc(seeded.id).set(seeded.toMap()));
+        return [seeded];
+      }
+      final presets = snap.docs.map((doc) {
         final normalized = _normalizePresetMap(
           uid: uid,
           docId: doc.id,
@@ -83,6 +102,7 @@ class FirestorePomodoroPresetRepository implements PomodoroPresetRepository {
         );
         return PomodoroPreset.fromMap(normalized);
       }).toList();
+      return _normalizeIntegrity(uid, presets, now: now);
     });
   }
 
@@ -116,5 +136,61 @@ class FirestorePomodoroPresetRepository implements PomodoroPresetRepository {
       );
     }
     return normalized;
+  }
+
+  Future<PomodoroPreset> _seedDefault(
+    String uid, {
+    required DateTime now,
+  }) async {
+    final preset = PomodoroPreset.classicDefault(
+      id: _uuid.v4(),
+      now: now,
+    );
+    await _presetCollection(uid).doc(preset.id).set(preset.toMap());
+    return preset;
+  }
+
+  Future<void> _ensureIntegrityExists(String uid) async {
+    final snap = await _presetCollection(uid).get();
+    if (snap.docs.isEmpty) {
+      await _seedDefault(uid, now: DateTime.now());
+      return;
+    }
+    final now = DateTime.now();
+    final presets = snap.docs.map((doc) {
+      final normalized = _normalizePresetMap(
+        uid: uid,
+        docId: doc.id,
+        raw: doc.data(),
+        now: now,
+      );
+      return PomodoroPreset.fromMap(normalized);
+    }).toList();
+    _normalizeIntegrity(uid, presets, now: now, persist: true);
+  }
+
+  List<PomodoroPreset> _normalizeIntegrity(
+    String uid,
+    List<PomodoroPreset> presets, {
+    required DateTime now,
+    bool persist = true,
+  }) {
+    if (presets.isEmpty) return presets;
+    final result = normalizePresets(presets: presets, now: now);
+    if (result.changed && persist) {
+      for (final updated in result.updates.values) {
+        unawaited(
+          _presetCollection(uid).doc(updated.id).set(
+            {
+              'name': updated.name,
+              'isDefault': updated.isDefault,
+              'updatedAt': updated.updatedAt.toIso8601String(),
+            },
+            SetOptions(merge: true),
+          ),
+        );
+      }
+    }
+    return result.presets;
   }
 }

@@ -11,6 +11,7 @@ import '../../data/models/selected_sound.dart';
 import '../../domain/validators.dart';
 import '../providers.dart';
 import '../../data/services/local_sound_overrides.dart';
+import '../../data/services/app_mode_service.dart';
 
 enum PresetSoundPickTarget { pomodoroStart, breakStart }
 
@@ -19,6 +20,15 @@ class PresetSoundPickResult {
   final String? error;
 
   const PresetSoundPickResult({this.sound, this.error});
+}
+
+class PresetSaveResult {
+  final bool success;
+  final String? message;
+
+  const PresetSaveResult.success({this.message}) : success = true;
+
+  const PresetSaveResult.failure(this.message) : success = false;
 }
 
 class PresetEditorViewModel extends Notifier<PomodoroPreset?> {
@@ -128,22 +138,95 @@ class PresetEditorViewModel extends Notifier<PomodoroPreset?> {
     return _customDisplayNames[_slotForTarget(target)];
   }
 
-  Future<bool> save() async {
+  Future<PomodoroPreset?> findDuplicatePreset(PomodoroPreset candidate) async {
+    final repo = ref.read(presetRepositoryProvider);
+    final all = await repo.getAll();
+    final candidateConfig = await _buildConfig(candidate);
+    for (final preset in all) {
+      if (preset.id == candidate.id) continue;
+      final presetConfig = await _buildConfig(preset);
+      if (_configMatches(candidateConfig, presetConfig)) {
+        return preset;
+      }
+    }
+    return null;
+  }
+
+  Future<PresetSaveResult> renamePreset({
+    required PomodoroPreset preset,
+    required String newName,
+  }) async {
+    final trimmedName = newName.trim();
+    if (trimmedName.isEmpty) {
+      return const PresetSaveResult.failure('Preset name is required.');
+    }
+    final appMode = ref.read(appModeProvider);
+    final user = ref.read(currentUserProvider);
+    final syncEnabled = ref.read(accountSyncEnabledProvider);
+    if (appMode == AppMode.account && user == null) {
+      return const PresetSaveResult.failure('Sign in to save presets.');
+    }
+    final nameError = await _ensureUniqueName(preset.id, trimmedName);
+    if (nameError != null) {
+      return PresetSaveResult.failure(nameError);
+    }
+    final warning = (appMode == AppMode.account && !syncEnabled)
+        ? 'Sync is disabled. Verify your email to save presets to your account.'
+        : null;
+    final repo = ref.read(presetRepositoryProvider);
+    final now = DateTime.now();
+    try {
+      await repo.save(preset.copyWith(name: trimmedName, updatedAt: now));
+      return PresetSaveResult.success(message: warning);
+    } catch (error) {
+      return PresetSaveResult.failure(_mapSaveError(error));
+    }
+  }
+
+  Future<PresetSaveResult> save() async {
     final preset = state;
-    if (preset == null) return false;
+    if (preset == null) {
+      return const PresetSaveResult.failure('No preset to save.');
+    }
+    final trimmedName = preset.name.trim();
+    if (trimmedName.isEmpty) {
+      return const PresetSaveResult.failure('Preset name is required.');
+    }
+    final appMode = ref.read(appModeProvider);
+    final user = ref.read(currentUserProvider);
+    final syncEnabled = ref.read(accountSyncEnabledProvider);
+    if (appMode == AppMode.account && user == null) {
+      return const PresetSaveResult.failure('Sign in to save presets.');
+    }
+    final nameError = await _ensureUniqueName(preset.id, trimmedName);
+    if (nameError != null) {
+      return PresetSaveResult.failure(nameError);
+    }
+    final warning = (appMode == AppMode.account && !syncEnabled)
+        ? 'Sync is disabled. Verify your email to save presets to your account.'
+        : null;
     final repo = ref.read(presetRepositoryProvider);
     final now = DateTime.now();
     final withTimestamps = preset.copyWith(
+      name: trimmedName,
       updatedAt: now,
       createdAt: preset.createdAt,
     );
-    final sanitized = await _sanitizeForSync(withTimestamps);
-    await repo.save(sanitized);
-    if (sanitized.isDefault) {
-      await _clearOtherDefaults(sanitized.id);
+    try {
+      final sanitized = await _sanitizeForSync(withTimestamps);
+      await repo.save(sanitized);
+      if (sanitized.isDefault) {
+        await _clearOtherDefaults(sanitized.id);
+      }
+      final updatedCount = await _propagatePresetToTasks(sanitized);
+      final updateMessage = updatedCount > 0
+          ? 'Updated $updatedCount ${updatedCount == 1 ? 'task' : 'tasks'} using this preset.'
+          : null;
+      final message = _joinMessages(updateMessage, warning);
+      return PresetSaveResult.success(message: message);
+    } catch (error) {
+      return PresetSaveResult.failure(_mapSaveError(error));
     }
-    await _propagatePresetToTasks(sanitized);
-    return true;
   }
 
   Future<void> delete(String presetId) async {
@@ -153,16 +236,36 @@ class PresetEditorViewModel extends Notifier<PomodoroPreset?> {
     await _detachPresetFromTasks(presetId);
   }
 
+  String _mapSaveError(Object error) {
+    final message = error.toString();
+    if (message.contains('permission-denied')) {
+      return 'Permission denied. Please check your account permissions.';
+    }
+    if (message.contains('No authenticated user')) {
+      return 'Sign in to save presets.';
+    }
+    return 'Failed to save preset. Please try again.';
+  }
+
   Future<void> setDefault(String presetId) async {
     final repo = ref.read(presetRepositoryProvider);
     final all = await repo.getAll();
     final now = DateTime.now();
+    PomodoroPreset? target;
     for (final preset in all) {
-      final shouldDefault = preset.id == presetId;
-      if (preset.isDefault == shouldDefault) continue;
-      await repo.save(
-        preset.copyWith(isDefault: shouldDefault, updatedAt: now),
-      );
+      if (preset.id == presetId) {
+        target = preset;
+        break;
+      }
+    }
+    if (target == null) return;
+    if (!target.isDefault) {
+      await repo.save(target.copyWith(isDefault: true, updatedAt: now));
+    }
+    for (final preset in all) {
+      if (preset.id == presetId) continue;
+      if (!preset.isDefault) continue;
+      await repo.save(preset.copyWith(isDefault: false, updatedAt: now));
     }
   }
 
@@ -177,10 +280,10 @@ class PresetEditorViewModel extends Notifier<PomodoroPreset?> {
     }
   }
 
-  Future<void> _propagatePresetToTasks(PomodoroPreset preset) async {
+  Future<int> _propagatePresetToTasks(PomodoroPreset preset) async {
     final taskRepo = ref.read(taskRepositoryProvider);
     final tasks = await taskRepo.getAll();
-    if (tasks.isEmpty) return;
+    if (tasks.isEmpty) return 0;
     final now = DateTime.now();
     final startOverride = await _soundOverrides.getOverride(
       _overrideKey(preset.id),
@@ -190,8 +293,10 @@ class PresetEditorViewModel extends Notifier<PomodoroPreset?> {
       _overrideKey(preset.id),
       SoundSlot.breakStart,
     );
+    var updatedCount = 0;
     for (final task in tasks) {
       if (task.presetId != preset.id) continue;
+      updatedCount += 1;
       final updated = task.copyWith(
         pomodoroMinutes: preset.pomodoroMinutes,
         shortBreakMinutes: preset.shortBreakMinutes,
@@ -224,6 +329,17 @@ class PresetEditorViewModel extends Notifier<PomodoroPreset?> {
         ),
       );
     }
+    return updatedCount;
+  }
+
+  String? _joinMessages(String? primary, String? secondary) {
+    if (primary == null || primary.trim().isEmpty) {
+      return secondary;
+    }
+    if (secondary == null || secondary.trim().isEmpty) {
+      return primary;
+    }
+    return '$primary $secondary';
   }
 
   Future<void> _detachPresetFromTasks(String presetId) async {
@@ -371,6 +487,40 @@ class PresetEditorViewModel extends Notifier<PomodoroPreset?> {
     );
   }
 
+  Future<_PresetConfig> _buildConfig(PomodoroPreset preset) async {
+    final startOverride = await _soundOverrides.getOverride(
+      _overrideKey(preset.id),
+      SoundSlot.pomodoroStart,
+    );
+    final breakOverride = await _soundOverrides.getOverride(
+      _overrideKey(preset.id),
+      SoundSlot.breakStart,
+    );
+    return _PresetConfig(
+      pomodoroMinutes: preset.pomodoroMinutes,
+      shortBreakMinutes: preset.shortBreakMinutes,
+      longBreakMinutes: preset.longBreakMinutes,
+      longBreakInterval: preset.longBreakInterval,
+      startSound: startOverride?.sound ?? preset.startSound,
+      startBreakSound: breakOverride?.sound ?? preset.startBreakSound,
+      finishTaskSound: preset.finishTaskSound,
+    );
+  }
+
+  bool _configMatches(_PresetConfig a, _PresetConfig b) {
+    return a.pomodoroMinutes == b.pomodoroMinutes &&
+        a.shortBreakMinutes == b.shortBreakMinutes &&
+        a.longBreakMinutes == b.longBreakMinutes &&
+        a.longBreakInterval == b.longBreakInterval &&
+        _soundMatches(a.startSound, b.startSound) &&
+        _soundMatches(a.startBreakSound, b.startBreakSound) &&
+        _soundMatches(a.finishTaskSound, b.finishTaskSound);
+  }
+
+  bool _soundMatches(SelectedSound a, SelectedSound b) {
+    return a.type == b.type && a.value == b.value;
+  }
+
   void _syncDisplayName(SoundSlot slot, LocalSoundOverride? override) {
     if (override?.sound.type == SoundType.custom) {
       final name = override?.displayName;
@@ -490,4 +640,39 @@ class PresetEditorViewModel extends Notifier<PomodoroPreset?> {
     };
     return '$base.$extension';
   }
+
+  Future<String?> _ensureUniqueName(String presetId, String name) async {
+    final repo = ref.read(presetRepositoryProvider);
+    final all = await repo.getAll();
+    final targetKey = _normalizeNameKey(name);
+    for (final preset in all) {
+      if (preset.id == presetId) continue;
+      if (_normalizeNameKey(preset.name) == targetKey) {
+        return 'Preset name already exists. Choose a unique name.';
+      }
+    }
+    return null;
+  }
+
+  String _normalizeNameKey(String name) => name.trim().toLowerCase();
+}
+
+class _PresetConfig {
+  final int pomodoroMinutes;
+  final int shortBreakMinutes;
+  final int longBreakMinutes;
+  final int longBreakInterval;
+  final SelectedSound startSound;
+  final SelectedSound startBreakSound;
+  final SelectedSound finishTaskSound;
+
+  const _PresetConfig({
+    required this.pomodoroMinutes,
+    required this.shortBreakMinutes,
+    required this.longBreakMinutes,
+    required this.longBreakInterval,
+    required this.startSound,
+    required this.startBreakSound,
+    required this.finishTaskSound,
+  });
 }

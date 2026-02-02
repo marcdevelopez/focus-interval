@@ -16,7 +16,7 @@ This document is used to:
 # 📍 Current status
 
 Active phase: **18 — Run Mode Redesign for TaskRunGroups**
-Last update: **31/01/2026**
+Last update: **02/02/2026**
 
 ---
 
@@ -3312,6 +3312,394 @@ _(fill in when they happen)_
 - Hid “Usar Predeterminado” when no Default Preset exists.
 - Added dialog failsafe: if Default Preset is missing at tap time, show a SnackBar and keep the dialog open.
 - Updated specs to document conditional visibility and fallback behavior.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 190 — Preset save errors + Settings visibility fixes — 31/01/2026
+
+### ✔ Work completed:
+
+- Added Firestore rules for `users/{uid}/pomodoroPresets` to unblock Account Mode preset CRUD.
+- Exposed Settings gear in Local Mode to keep Settings accessible across modes.
+- Added explicit error feedback for preset save failures (sync disabled, permission errors).
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 191 — Built-in default preset decision — 31/01/2026
+
+### ✔ Work completed:
+
+- Defined built-in default preset (Classic Pomodoro) and invariant that at least one preset always exists.
+- Added seeding rules for Local Mode, Account Mode, and Account Mode with sync disabled.
+- Documented account-local preset cache and one-time auto-push on sync enable.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 192 — Implement Classic Pomodoro default seeding — 31/01/2026
+
+### ✔ Work completed:
+
+- Implemented Classic Pomodoro built-in default preset seeding across Local, Account, and sync-disabled scopes.
+- Enforced “at least one preset” invariant on delete and ensured a default always exists.
+- Added account-local preset cache for sync-disabled Account Mode and auto-push to Firestore on sync enable.
+- New tasks now default to the preset instead of implicit custom values.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 193 — Task weight redistribution (work time) — 31/01/2026
+
+### ✔ Work completed:
+
+- Documented task weight (%) based on work time with proportional redistribution of other tasks.
+- Added rule to hide % badges when no tasks are selected.
+- Reopened Phase 10.4 to track the fix.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 194 — Task weight redistribution implemented — 31/01/2026
+
+### ✔ Work completed:
+
+- Implemented work-time-based weight redistribution when editing task %.
+- Preserved relative proportions of non-edited tasks and kept integer pomodoros.
+- Hid task weight % badges when no selection exists.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 195 — Task weight preserves total work time — 31/01/2026
+
+### ✔ Work completed:
+
+- Adjusted redistribution to keep total work time constant after % edits.
+- Diff correction now targets total work time, not remaining work.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 196 — Task weight uses baseline work time — 31/01/2026
+
+### ✔ Work completed:
+
+- Redistribution now uses baseline task list work time (pre-edit) to avoid shrinking totals while typing.
+- Edited task is no longer merged into the baseline for total work calculations.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 197 — Preset integrity + delete crash fix — 01/02/2026
+
+### ✔ Work completed:
+
+- Documented preset name uniqueness per scope and auto-correction rules.
+- Normalized presets to enforce a single default and unique names (local + Firestore).
+- Added unique-name validation on preset save (explicit error on duplicates).
+- Deferred preset list state updates and delete actions to avoid build-time provider mutations.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 198 — Preset editor init fix — 01/02/2026
+
+### ✔ Work completed:
+
+- Deferred preset editor initialization to post-frame to avoid build-time provider mutations.
+- Always create a fresh preset on the new-preset route to avoid overwriting existing presets.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 199 — Task Editor focus + validation refresh — 01/02/2026
+
+### ✔ Work completed:
+
+- Added a stable key to Pomodoro duration field to keep focus when preset detaches.
+- Revalidated break fields after preset selection to clear stale error states.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 200 — Task Editor syncs preset edits — 01/02/2026
+
+### ✔ Work completed:
+
+- Synced Task Editor state to updated preset values after preset edits.
+- Prevented stale preset values from overwriting propagated task updates.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 201 — Preset edit feedback — 01/02/2026
+
+### ✔ Work completed:
+
+- Documented that preset edits propagate to tasks and can affect derived metrics.
+- Added a lightweight confirmation message when preset saves update tasks.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 202 — Task weight precision notice — 01/02/2026
+
+### ✔ Work completed:
+
+- Documented precision limits for task weight redistribution.
+- Added a lightweight notice when requested % cannot be matched closely or no change is possible.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 203 — Task list AppBar title overflow fix — 01/02/2026
+
+### ✔ Work completed:
+
+- Reserved title space in the Task List AppBar to keep “Your tasks” fully visible.
+- Dynamically constrained account label width to prevent right-side overflow.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 204 — Preset auth reset cache refresh — 01/02/2026
+
+### ✔ Work completed:
+
+- Invalidated preset/task providers on account login/logout to prevent stale preset access after auth changes.
+- Ensured preset list refreshes cleanly after password reset flows.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 205 — Finish sound edit consistency — 01/02/2026
+
+### ✔ Work completed:
+
+- Updated specs to allow task-level finish sound selection (aligns with presets).
+- Added Task Editor finish sound selector to match preset capabilities.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 206 — Task Editor section grouping — 01/02/2026
+
+### ✔ Work completed:
+
+- Added section headers to separate Task weight from Pomodoro configuration in Task Editor.
+- Documented the visual grouping in specs for clarity.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 207 — Preset selector overflow fix — 01/02/2026
+
+### ✔ Work completed:
+
+- Made preset selector responsive with ellipsis truncation to avoid horizontal overflow.
+- Kept preset action icons visible on narrow screens.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 208 — Unsaved changes confirmation — 01/02/2026
+
+### ✔ Work completed:
+
+- Added unsaved-changes confirmation dialogs for Task Editor and Preset Editor.
+- Restored local sound overrides when discarding edits to avoid leaking changes.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 209 — Preset duplicate configuration detection — 01/02/2026
+
+### ✔ Work completed:
+
+- Detect duplicate preset configurations on new preset creation (durations, interval, sounds).
+- Added a decision dialog to use existing, rename existing, save anyway, or cancel.
+- Implemented rename flow without creating additional presets.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 210 — Preset duplicate detection on edit — 01/02/2026
+
+### ✔ Work completed:
+
+- Extended duplicate-configuration detection to preset edits (warns if another preset matches).
+- Adjusted dialog options to avoid duplicates without forcing extra presets.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 211 — Rename option on edit duplicates — 01/02/2026
+
+### ✔ Work completed:
+
+- Enabled “Rename existing” option when duplicate configurations are detected while editing.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 212 — Rename dialog prompt fix — 01/02/2026
+
+### ✔ Work completed:
+
+- Rename action now prompts for a new name when editing duplicates, avoiding self-name conflicts.
+- Dialog label references the duplicate preset being renamed.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 213 — Dialog exit stability — 01/02/2026
+
+### ✔ Work completed:
+
+- Added a short delay after duplicate dialogs before exiting to avoid framework assertions.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 214 — Default preset toggling stability — 01/02/2026
+
+### ✔ Work completed:
+
+- Default preset changes now update the target first to avoid transient no-default states.
+- Default toggle is disabled when editing the current default preset (informational only).
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 215 — Duplicate rename exit guard — 01/02/2026
+
+### ✔ Work completed:
+
+- Duplicate rename/use-existing flows no longer auto-exit the editor to avoid Android navigation assertions.
+- Save exits only on actual saves; duplicate-resolution actions keep the editor open.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 216 — Dialog transition guard — 01/02/2026
+
+### ✔ Work completed:
+
+- Added a short transition delay before opening the rename dialog to avoid Android dialog/navigation assertions.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 217 — Single-dialog rename flow — 01/02/2026
+
+### ✔ Work completed:
+
+- Merged duplicate detection and rename input into a single dialog to avoid nested route assertions on Android.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 218 — Duplicate dialog overflow fix — 01/02/2026
+
+### ✔ Work completed:
+
+- Made the duplicate dialog scrollable to avoid content overflow on smaller screens.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 219 — Duplicate rename stability (Android) — 02/02/2026
+
+### ✔ Work completed:
+
+- Rename action now unfocuses input before closing the duplicate dialog.
+- Post-dialog processing waits a frame to avoid Android dependency assertions.
+- Rename CTA references the existing preset name to avoid label confusion on new presets.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 220 — Duplicate rename flow hardening — 02/02/2026
+
+### ✔ Work completed:
+
+- Moved rename input into a dedicated full-screen prompt to avoid dialog/TextField teardown issues on Android.
+- Duplicate dialog now only selects the action; rename collects the new name on its own route.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 221 — Exit after duplicate resolution (new preset) — 02/02/2026
+
+### ✔ Work completed:
+
+- After “Use existing” or “Rename existing” during new preset creation, exit to Manage Presets.
+- Prevented looping back into the New Preset screen after duplicate resolution.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 222 — Exit after rename on edit — 02/02/2026
+
+### ✔ Work completed:
+
+- Duplicate rename in edit mode now exits to Manage Presets after completing the rename.
+- Avoids returning to the edit screen after resolving the duplicate.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 223 — Rename exits editor (all cases) — 02/02/2026
+
+### ✔ Work completed:
+
+- Duplicate “Rename existing” now exits to Manage Presets for both new and edit flows.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 224 — Duplicate rename flow validated — 02/02/2026
+
+### ✔ Work completed:
+
+- Confirmed the duplicate rename flow returns directly to Manage Presets without loops.
 
 ### ⚠️ Issues found:
 

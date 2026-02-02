@@ -16,6 +16,11 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+    // Pomodoro presets scoped to the authenticated user.
+    match /users/{userId}/pomodoroPresets/{presetId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
     // TODO: add the rest of the project rules here if you have them in Firebase Console.
   }
 }

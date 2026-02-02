@@ -62,12 +62,36 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       31/01/2026: Phase 10.4 implemented (presets + weight UI + integrity warning + settings management).
       31/01/2026: Phase 10.4 reopen item completed (“Ajustar grupo” presetId propagation + Default Preset fallback).
       31/01/2026: Phase 10.4 reopen item completed (Pomodoro Integrity Warning adds “Usar Predeterminado” option).
+      31/01/2026: Preset saves now surface explicit errors; Settings is visible in Local Mode; Firestore rules updated for pomodoroPresets.
+      31/01/2026: Phase 10.4 reopen item completed (Classic Pomodoro default seeding + account-local preset cache + auto-push on sync enable).
+      31/01/2026: Phase 10.4 reopen item completed (task weight uses work-time redistribution; hide % when no selection).
+      01/02/2026: Task List AppBar title overflow resolved (account label width capped).
+      01/02/2026: Preset providers now refresh on account login/logout to avoid stale auth access.
+      01/02/2026: Task Editor finish sound selector aligned with preset options.
+      01/02/2026: Task Editor separates Task weight from Pomodoro configuration.
+      01/02/2026: Task Editor preset selector overflow resolved (responsive ellipsis).
+      01/02/2026: Unsaved changes confirmation added for Task/Preset editors.
+      01/02/2026: Preset duplicate configuration detection with use/rename/save options.
+      01/02/2026: Preset duplicate configuration detection extended to edits.
+      01/02/2026: Duplicate dialog rename option enabled for preset edits.
+      01/02/2026: Duplicate rename action now prompts for a new name on edits.
+      01/02/2026: Duplicate dialog exit stabilized after rename/use-existing flows.
+      01/02/2026: Default preset star toggle stabilized; default switch disabled on default preset edit.
+      01/02/2026: Duplicate rename/use-existing now keeps editor open to avoid Android navigator assertions.
+      01/02/2026: Duplicate rename dialog transition guarded to prevent Android dialog assertions.
+      01/02/2026: Duplicate rename flow consolidated into a single dialog to avoid nested routes on Android.
+      01/02/2026: Duplicate dialog made scrollable to prevent overflow on small screens.
+      02/02/2026: Duplicate rename action stabilized on Android (unfocus + post-dialog delay) and CTA references existing preset.
+      02/02/2026: Duplicate rename now uses a dedicated prompt route to avoid Android dialog teardown asserts.
+      02/02/2026: Duplicate resolution now exits the New Preset screen after use/rename to avoid loops.
+      02/02/2026: Duplicate rename in Edit Preset now exits to Manage Presets after completion.
+      02/02/2026: Duplicate rename now exits the editor in all flows (new/edit).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
-    ## 🔄 Reopened phases (must complete before moving on)
+## 🔄 Reopened phases (must complete before moving on)
 
-    - None.
+- None.
 
 Update this on each commit if needed.
 
@@ -441,6 +465,10 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Add Pomodoro integrity warning on confirm with “Ajustar grupo” (shared structure snapshot).
 - Refine “Ajustar grupo” to propagate presetId and use Default Preset fallback.
 - Add Pomodoro Integrity Warning option to “Usar Predeterminado” for shared structure.
+- Add built-in default preset seeding (Classic Pomodoro) and ensure at least one preset exists.
+- Store presets in an account-scoped local cache when sync is disabled; auto-push once when sync enables.
+- Update Task weight (%) calculation to use work time and redistribute other tasks proportionally.
+- Hide task weight (%) badges when no tasks are selected.
 - Update Task List card to show weight badge and keep sound labels/interval grid aligned.
 
 ### 📌 Exit conditions
@@ -452,6 +480,10 @@ These subphases should also appear in **dev_log.md** as they are completed.
   and use the Default Preset as an integrity resolution mechanism.
 - Pomodoro Integrity Warning includes “Usar Predeterminado” to apply the Default Preset.
 - Apply settings propagates presetId when applicable.
+- Built-in default preset (Classic Pomodoro) exists in every scope; deletion never leaves zero presets.
+- Account Mode sync-disabled uses account-local preset cache and auto-pushes to Firestore on enable.
+- Task weight (%) edit redistributes other tasks based on work time while preserving their ratios.
+- Task List hides % badges when no tasks are selected.
 
 ---
 

@@ -34,6 +34,28 @@ class PomodoroPreset {
     required this.updatedAt,
   });
 
+  static PomodoroPreset classicDefault({
+    required String id,
+    DateTime? now,
+    String name = 'Classic Pomodoro',
+  }) {
+    final stamp = now ?? DateTime.now();
+    return PomodoroPreset(
+      id: id,
+      name: name,
+      pomodoroMinutes: 25,
+      shortBreakMinutes: 5,
+      longBreakMinutes: 15,
+      longBreakInterval: 4,
+      startSound: const SelectedSound.builtIn('default_chime'),
+      startBreakSound: const SelectedSound.builtIn('default_chime_break'),
+      finishTaskSound: const SelectedSound.builtIn('default_chime_finish'),
+      isDefault: true,
+      createdAt: stamp,
+      updatedAt: stamp,
+    );
+  }
+
   PomodoroPreset copyWith({
     String? id,
     String? name,

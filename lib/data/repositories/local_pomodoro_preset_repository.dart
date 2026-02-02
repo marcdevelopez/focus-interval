@@ -6,18 +6,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/pomodoro_preset.dart';
+import '../services/preset_integrity_service.dart';
 import 'pomodoro_preset_repository.dart';
 
 class LocalPomodoroPresetRepository implements PomodoroPresetRepository {
-  static const String _prefsKey = 'local_presets_v1';
+  static const String _defaultPrefsKey = 'local_presets_v1';
 
   final Map<String, PomodoroPreset> _store = {};
   final StreamController<List<PomodoroPreset>> _controller;
+  final String _prefsKey;
   bool _loaded = false;
   Future<void>? _loadFuture;
 
-  LocalPomodoroPresetRepository()
-    : _controller = StreamController<List<PomodoroPreset>>.broadcast(
+  LocalPomodoroPresetRepository({String prefsKey = _defaultPrefsKey})
+      : _prefsKey = prefsKey,
+        _controller = StreamController<List<PomodoroPreset>>.broadcast(
         sync: true,
         onListen: () {},
       ) {
@@ -27,6 +30,7 @@ class LocalPomodoroPresetRepository implements PomodoroPresetRepository {
   @override
   Future<List<PomodoroPreset>> getAll() async {
     await _ensureLoaded();
+    await _ensureIntegrity();
     return _store.values.toList();
   }
 
@@ -40,6 +44,7 @@ class LocalPomodoroPresetRepository implements PomodoroPresetRepository {
   Future<void> save(PomodoroPreset preset) async {
     await _ensureLoaded();
     _store[preset.id] = preset;
+    _normalizePresetsSync(DateTime.now());
     await _persist();
     _emit();
   }
@@ -48,7 +53,7 @@ class LocalPomodoroPresetRepository implements PomodoroPresetRepository {
   Future<void> delete(String id) async {
     await _ensureLoaded();
     _store.remove(id);
-    await _persist();
+    await _ensureIntegrity();
     _emit();
   }
 
@@ -56,7 +61,10 @@ class LocalPomodoroPresetRepository implements PomodoroPresetRepository {
   Stream<List<PomodoroPreset>> watchAll() => _controller.stream;
 
   void _handleListen() {
-    _ensureLoaded().then((_) => _emit());
+    _ensureLoaded().then((_) async {
+      await _ensureIntegrity();
+      _emit();
+    });
   }
 
   Future<void> _ensureLoaded() {
@@ -108,6 +116,38 @@ class LocalPomodoroPresetRepository implements PomodoroPresetRepository {
     final prefs = await SharedPreferences.getInstance();
     final payload = _store.values.map((preset) => preset.toMap()).toList();
     await prefs.setString(_prefsKey, jsonEncode(payload));
+  }
+
+  Future<void> _ensureIntegrity({bool persist = true}) async {
+    var changed = false;
+    final now = DateTime.now();
+    if (_store.isEmpty) {
+      final preset = PomodoroPreset.classicDefault(
+        id: const Uuid().v4(),
+        now: now,
+      );
+      _store[preset.id] = preset;
+      changed = true;
+    }
+    if (_normalizePresetsSync(now)) {
+      changed = true;
+    }
+    if (changed && persist) {
+      await _persist();
+    }
+  }
+
+  bool _normalizePresetsSync(DateTime now) {
+    if (_store.isEmpty) return false;
+    final result = normalizePresets(
+      presets: _store.values.toList(),
+      now: now,
+    );
+    if (!result.changed) return false;
+    _store
+      ..clear()
+      ..addAll({for (final preset in result.presets) preset.id: preset});
+    return true;
   }
 
   void _emit() {

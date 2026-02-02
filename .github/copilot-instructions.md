@@ -1,5 +1,9 @@
 # Focus Interval — AI Coding Agent Instructions
 
+This project is governed by AGENTS.md.
+All architectural, workflow, and authority rules defined there are mandatory
+and override any suggestion unless explicitly stated otherwise.
+
 ## Project Overview
 
 Cross-platform Pomodoro desktop app (macOS/Windows/Linux) built with Flutter. Uses Firebase Auth (Google Sign-In + email/password on macOS), Firestore for cloud sync, and real-time multi-device session mirroring.

@@ -39,6 +39,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _loading = false;
   bool _passwordVisible = false;
 
+  void _invalidateAccountProviders() {
+    ref.invalidate(taskListProvider);
+    ref.invalidate(presetListProvider);
+    ref.invalidate(presetEditorProvider);
+  }
+
   bool get _isGoogleSignInSupported {
     if (kIsWeb) return true;
     return defaultTargetPlatform == TargetPlatform.android ||
@@ -58,6 +64,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (user == null) return;
 
     if (appMode == AppMode.account) {
+      _invalidateAccountProviders();
       if (mounted) context.go('/tasks');
       return;
     }
@@ -87,6 +94,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     if (!hasLocalData) {
       await modeController.setAccount();
+      _invalidateAccountProviders();
       if (mounted) context.go('/tasks');
       return;
     }
@@ -125,12 +133,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     switch (choice) {
       case _LoginImportChoice.useAccount:
         await modeController.setAccount();
+        _invalidateAccountProviders();
         if (mounted) context.go('/tasks');
         break;
       case _LoginImportChoice.importLocal:
         try {
           final summary = await importService.importAll();
           await modeController.setAccount();
+          _invalidateAccountProviders();
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

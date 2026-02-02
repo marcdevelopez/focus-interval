@@ -321,6 +321,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     await controller.setLocal();
     await _maybeShowWebLocalNotice();
     ref.invalidate(taskListProvider);
+    ref.invalidate(presetListProvider);
+    ref.invalidate(presetEditorProvider);
   }
 
   @override
@@ -355,13 +357,6 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final accountLabel = signedIn && emailLabel.isNotEmpty
         ? emailLabel
         : (currentUser?.uid ?? '');
-    final maxEmailWidth = screenWidth < 360
-        ? 96.0
-        : screenWidth < 480
-        ? 140.0
-        : screenWidth < 720
-        ? 200.0
-        : 260.0;
     final showAccountLabel =
         authSupported &&
         appMode == AppMode.account &&
@@ -370,7 +365,30 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final showLogout = authSupported && appMode == AppMode.account && signedIn;
     final showLogin = authSupported && appMode == AppMode.account && !signedIn;
     final showInfo = !authSupported;
-    final hasTrailing = showAccountLabel || showLogout || showLogin || showInfo;
+    final baseMaxEmailWidth = screenWidth < 360
+        ? 96.0
+        : screenWidth < 480
+        ? 140.0
+        : screenWidth < 720
+        ? 200.0
+        : 260.0;
+    const titleMinWidth = 120.0;
+    const titlePadding = 24.0;
+    const actionIconWidth = 36.0;
+    const actionRightPadding = 8.0;
+    final actionIconCount =
+        1 +
+        (showLogout ? 1 : 0) +
+        (showLogin ? 1 : 0) +
+        (showInfo ? 1 : 0);
+    final actionReservedWidth =
+        (actionIconCount * actionIconWidth) +
+        actionRightPadding +
+        (showAccountLabel ? 8.0 : 0.0);
+    final maxActionsWidth = screenWidth - titleMinWidth - titlePadding;
+    final maxEmailWidth = (maxActionsWidth - actionReservedWidth)
+        .clamp(0.0, baseMaxEmailWidth)
+        .toDouble();
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -379,80 +397,78 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         centerTitle: false,
         toolbarHeight: isCompact ? 108 : 92,
         titleSpacing: 12,
-        actions: hasTrailing
-            ? [
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: SizedBox(
-                    height: double.infinity,
-                    child: Align(
-                      alignment: Alignment.topRight,
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.settings),
-                                  constraints: const BoxConstraints.tightFor(
-                                    width: 36,
-                                    height: 36,
-                                  ),
-                                  padding: EdgeInsets.zero,
-                                  onPressed: () => context.push('/settings'),
-                                ),
-                                if (showAccountLabel)
-                                  ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      maxWidth: maxEmailWidth,
-                                    ),
-                                child: Text(
-                                  accountLabel,
-                                  style: const TextStyle(fontSize: 12),
-                                  overflow: TextOverflow.ellipsis,
-                                  textAlign: TextAlign.right,
-                                ),
-                              ),
-                            if (showAccountLabel) const SizedBox(width: 8),
-                            if (showLogout)
-                              IconButton(
-                                icon: const Icon(Icons.logout),
-                                constraints: const BoxConstraints.tightFor(
-                                  width: 36,
-                                  height: 36,
-                                ),
-                                padding: EdgeInsets.zero,
-                                onPressed: _handleLogout,
-                              ),
-                            if (showLogin)
-                              IconButton(
-                                icon: const Icon(Icons.person),
-                                constraints: const BoxConstraints.tightFor(
-                                  width: 36,
-                                  height: 36,
-                                ),
-                                padding: EdgeInsets.zero,
-                                onPressed: () => context.go('/login'),
-                              ),
-                            if (showInfo)
-                              IconButton(
-                                icon: const Icon(Icons.info_outline),
-                                constraints: const BoxConstraints.tightFor(
-                                  width: 36,
-                                  height: 36,
-                                ),
-                                padding: EdgeInsets.zero,
-                                onPressed: _handleSyncInfoTap,
-                              ),
-                          ],
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: SizedBox(
+              height: double.infinity,
+              child: Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.settings),
+                        constraints: const BoxConstraints.tightFor(
+                          width: 36,
+                          height: 36,
                         ),
+                        padding: EdgeInsets.zero,
+                        onPressed: () => context.push('/settings'),
                       ),
-                    ),
+                      if (showAccountLabel)
+                        ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: maxEmailWidth,
+                          ),
+                          child: Text(
+                            accountLabel,
+                            style: const TextStyle(fontSize: 12),
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.right,
+                          ),
+                        ),
+                      if (showAccountLabel) const SizedBox(width: 8),
+                      if (showLogout)
+                        IconButton(
+                          icon: const Icon(Icons.logout),
+                          constraints: const BoxConstraints.tightFor(
+                            width: 36,
+                            height: 36,
+                          ),
+                          padding: EdgeInsets.zero,
+                          onPressed: _handleLogout,
+                        ),
+                      if (showLogin)
+                        IconButton(
+                          icon: const Icon(Icons.person),
+                          constraints: const BoxConstraints.tightFor(
+                            width: 36,
+                            height: 36,
+                          ),
+                          padding: EdgeInsets.zero,
+                          onPressed: () => context.go('/login'),
+                        ),
+                      if (showInfo)
+                        IconButton(
+                          icon: const Icon(Icons.info_outline),
+                          constraints: const BoxConstraints.tightFor(
+                            width: 36,
+                            height: 36,
+                          ),
+                          padding: EdgeInsets.zero,
+                          onPressed: _handleSyncInfoTap,
+                        ),
+                    ],
                   ),
                 ),
-              ]
-            : null,
+              ),
+            ),
+          ),
+        ],
         title: Padding(
           padding: const EdgeInsets.only(top: 6, bottom: 2),
           child: SizedBox(
@@ -499,8 +515,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          ref.read(taskEditorProvider.notifier).createNew();
+        onPressed: () async {
+          await ref.read(taskEditorProvider.notifier).createNew();
+          if (!context.mounted) return;
           context.push("/tasks/new");
         },
         child: const Icon(Icons.add),
@@ -592,11 +609,11 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
             itemBuilder: (context, i) {
               final t = tasks[i];
               final isSelected = selectedIds.contains(t.id);
-              final weightPercent = (weightTotal == null || weightTotal == 0)
+              final weightPercent = (weightTotal == null || !isSelected)
                   ? null
-                  : ((selectedIds.isNotEmpty && !isSelected)
-                      ? null
-                      : ((t.totalPomodoros / weightTotal) * 100).round());
+                  : (((t.totalPomodoros * t.pomodoroMinutes) / weightTotal) *
+                          100)
+                      .round();
               return TaskCard(
                 key: ValueKey(t.id),
                 task: t,
@@ -1137,13 +1154,11 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   }
 
   int? _weightTotal(List<PomodoroTask> tasks, Set<String> selectedIds) {
-    if (tasks.isEmpty) return null;
-    final scoped = selectedIds.isNotEmpty
-        ? tasks.where((task) => selectedIds.contains(task.id))
-        : tasks;
+    if (tasks.isEmpty || selectedIds.isEmpty) return null;
+    final scoped = tasks.where((task) => selectedIds.contains(task.id));
     var total = 0;
     for (final task in scoped) {
-      total += task.totalPomodoros;
+      total += task.totalPomodoros * task.pomodoroMinutes;
     }
     return total <= 0 ? null : total;
   }

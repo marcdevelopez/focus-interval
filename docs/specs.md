@@ -322,7 +322,7 @@ Behavior notes:
 - The end-of-task sound plays on each task completion and must not pause or block the automatic transition.
 - Only the final task of the group triggers the stop behavior (see section 12).
 - To avoid overlapping audio, there are no separate sounds for pomodoro end or break end in this MVP.
-- Post-MVP: make the task finish sound configurable.
+- Post-MVP: add distinct sounds for pomodoro end and break end.
 
 Allowed formats:
 
@@ -333,6 +333,11 @@ Sounds can be:
 
 - Included in the app (assets)
 - Or loaded by the user (local file picker)
+
+Note:
+
+- In this MVP, custom local picks are supported for **Pomodoro start** and
+  **Break start** only; **Task finish** uses built-in choices.
 
 Platform notes:
 
@@ -593,7 +598,7 @@ Inputs:
 - Short break duration
 - Long break duration
 - Long break interval
-- Select sounds for each event
+- Select sounds for each event (Pomodoro start, Break start, Task finish)
 
 Buttons:
 
@@ -608,6 +613,11 @@ Behavior:
 - When a preset is selected:
   - Task links to the presetId and adopts its structural values + sounds.
   - Editing any structural field switches the task to **Custom** (detaches from preset).
+- Preset selector must be responsive on narrow screens; long preset names truncate
+  (ellipsis) without causing horizontal overflow, and preset action icons remain visible.
+- If the user attempts to leave **Edit task** with unsaved changes, show a confirmation
+  dialog with options to **Save**, **Discard**, or **Cancel**. Only show this dialog
+  when there are actual form differences from the original state.
 - Inline preset actions are visible next to the selector when a preset is selected:
   - Edit (pencil) opens the preset editor
   - Delete removes the preset (tasks keep their current values and become Custom)
@@ -648,9 +658,12 @@ Behavior:
   - Allow values >= 1 up to 12; if the interval exceeds total pomodoros, show a note that only short breaks will occur.
   - Provide an info tooltip explaining how the long break interval works.
 - If a custom local sound is selected, show the file name (with extension) in the selector.
-- Task weight shows both total pomodoros and a derived percentage of the group total.
-- Editing the percentage updates totalPomodoros to the closest integer (pomodoros are never fractional).
+- Task weight shows both total pomodoros and a derived percentage of the group total (work time).
+- Editing the percentage updates totalPomodoros to the closest integer (pomodoros are never fractional),
+  and redistributes the remaining tasks to preserve their relative proportions.
 - Display Total pomodoros and Task weight (%) on the same row directly below the task name to emphasize task weight.
+- Visually separate **Task weight** from **Pomodoro configuration** with section headers.
+  Pomodoro configuration sits below Task weight and above Sounds.
 
 ### **10.3.x. Pomodoro integrity + task weight (planned, documentation-first)**
 
@@ -660,6 +673,7 @@ Definitions:
 
 - **Pomodoro structural configuration**: pomodoro duration, short break duration, long break duration, long break interval.
 - **Task weight**: totalPomodoros (authoritative integer) and derived percentage of the group total.
+- **Work time**: `totalPomodoros * pomodoroDuration` (breaks are excluded).
 
 Execution modes for TaskRunGroups:
 
@@ -675,19 +689,28 @@ Execution modes for TaskRunGroups:
 Task weight rules:
 
 - Each task has an authoritative integer `totalPomodoros` and a derived percentage.
-- Percentage is always computed from integer pomodoros and rounded for display.
-- Group total for the percentage:
-  - Task List: sum of totalPomodoros for the **currently selected** tasks (if none selected, use the full list).
-  - Task Editor: sum of totalPomodoros across the current task list (including the task being edited).
-- When a user edits the percentage:
-  - Compute: `newPomodoros = roundHalfUp((percent / 100) * totalGroupPomodoros)`
+- Percentage is computed from **work time** and rounded for display.
+- Group total for the percentage (work time):
+  - Task List: sum of work time for the **selected** tasks only; if none are selected, do not show percentages.
+  - Task Editor: sum of work time across the current task list (including the task being edited).
+- When a user edits the percentage of a task:
+  - The edited task is adjusted so its work time matches the requested percentage
+    of the group's total work time (closest possible).
+  - Other tasks are automatically redistributed to fill the remaining percentage,
+    preserving their **relative proportions** to each other.
+  - Redistribution adjusts `totalPomodoros` only (integer), never splitting pomodoros.
   - `roundHalfUp` means .5 ties always round up.
-  - Exact percentages are not guaranteed.
-  - Pomodoros and breaks are never split.
+  - Exact percentages are not guaranteed due to integer constraints.
+  - If the closest achievable result deviates by **≥ 10 percentage points**, or if
+    no redistribution change is possible, show a lightweight (non-modal) notice:
+    - Pomodoros are indivisible.
+    - Few total pomodoros limits precision.
+    - Suggest adding pomodoros, selecting more tasks, or trying another percentage.
 
 UI implications (documentation only):
 
 - Task List should display both totalPomodoros and derived percentage of the group total.
+- Percentages are shown only when tasks are selected; unselected tasks do not show percentages.
 - Task Editor should display totalPomodoros and derived percentage, with live recalculation when either value changes.
 - Task Editor should place Total pomodoros + Task weight (%) together, above Pomodoro structural configuration and sounds.
 - If a TaskRunGroup mixes structural configurations, show a clear integrity warning (education-only).
@@ -707,9 +730,36 @@ Preset definition:
 
 Behavior:
 
+- The app ships with a built-in default preset named **Classic Pomodoro**.
+- The system guarantees at least one preset always exists; users cannot end up with zero presets.
+- Presets are seeded on first read:
+  - If no presets exist, auto-create **Classic Pomodoro** and mark it as default.
 - Presets are selectable from the Task Editor when creating or editing a task.
 - Presets can be created, renamed, edited, and deleted from within the Task Editor context.
-- One preset can be marked as **default** and applied automatically to new tasks.
+- One preset is always marked as **default** and applied automatically to new tasks.
+- Editing a preset updates all tasks that reference that preset (durations, intervals, sounds).
+  This can change derived values such as task weight (%) and planning estimates.
+- Preset names are **unique per scope**:
+  - Account Mode: unique per account.
+  - Local Mode: unique per local device scope.
+  - Comparison is case-insensitive after trimming whitespace.
+  - Saves with duplicate names are blocked with an explicit error message.
+- Presets are also considered duplicates if their **configuration** is identical
+  (durations, interval, and sound selections), regardless of name:
+  - On **save** (new or edit), detect configuration duplicates and present options:
+    - **Use existing / Discard changes** → cancel the save; keep the existing preset unchanged.
+    - **Rename existing** → apply the new name to the existing preset; no new preset created.
+    - **Save anyway** → explicitly keep/create a duplicate.
+    - **Cancel** → return to editing without changes.
+  - After **Use existing** or **Rename existing**, exit to **Manage Presets** to avoid
+    returning to a stale editor state (applies to both new and edit flows).
+  - No duplicate is created without explicit confirmation.
+- If multiple defaults are detected (legacy data or sync conflicts), the app
+  auto-resolves to a **single** default (most recently updated; fallback to
+  Classic Pomodoro if none) and persists the correction.
+- If duplicate preset names are detected (legacy data or sync conflicts), the app
+  auto-renames duplicates with a numeric suffix (e.g., "Focus", "Focus (2)") and
+  persists the correction.
 - A task may either:
   - reference a saved preset, or
   - use a custom, task-specific configuration.
@@ -724,6 +774,12 @@ Preset UI (Task Editor)
   - Default toggle (star) → marks as global default (only one default at a time)
 - "Save as new preset" appears only in Custom mode after changes.
 - Selecting a preset overrides the fields below; editing any structural field detaches to Custom.
+- Preset save failures must show explicit user feedback (no silent failures), including
+  sync-disabled and permission errors.
+- When a preset save updates existing tasks, show a lightweight confirmation message
+  (no modal) to avoid silent behavior.
+- If deleting a preset would leave zero presets, automatically recreate **Classic Pomodoro**
+  and mark it as the default.
 
 Preset UI (Settings)
 
@@ -732,11 +788,19 @@ Preset UI (Settings)
   - Show default marker (star) on the default preset
   - Quick actions: edit, delete, set default
   - Bulk delete is allowed
+- In **Edit preset**, if the preset is already the default, the default toggle is
+  **disabled** and shown as informational (to change default, pick another preset).
+- If the user attempts to leave **Edit preset** with unsaved changes, show a confirmation
+  dialog with options to **Save**, **Discard**, or **Cancel**. Only show this dialog
+  when there are actual form differences from the original state.
 
 Storage & sync
 
 - Account Mode: `users/{uid}/pomodoroPresets/{presetId}` in Firestore.
 - Local Mode: presets stored locally (SharedPreferences in MVP; Hive planned).
+- Account Mode + sync disabled: presets stored in an account-scoped local cache (keyed by uid).
+- When sync becomes enabled (email verified), automatically push account-local presets to
+  Firestore once (no user prompt).
 - Custom sound selections remain local-only:
   - Firestore stores built-in references for presets
   - Local overrides store the custom file path + display name per preset
@@ -1064,6 +1128,7 @@ Entry point
 - A standard Settings/Preferences entry must be discoverable without guidance.
 - Primary access: a top-right gear icon on the Task List screen.
 - Desktop: also expose Settings/Preferences in the app menu.
+- Settings must remain accessible in Local Mode (at least Manage Presets and Preferences).
 
 Content
 
