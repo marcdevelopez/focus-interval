@@ -394,6 +394,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                 onLocalPauseInfo: () {
                   _showLocalPauseInfoDialog(context);
                 },
+                onCancelRequested: () {
+                  _handleCancelRequested(vm);
+                },
               ),
             ],
           ),
@@ -604,6 +607,41 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     });
   }
 
+  Future<void> _handleCancelRequested(PomodoroViewModel vm) async {
+    final confirmed = await _confirmCancelDialog();
+    if (confirmed != true) return;
+    _cancelAndNavigateToHub(vm);
+  }
+
+  Future<bool?> _confirmCancelDialog() {
+    return showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Cancel group?"),
+        content: const Text(
+          "This will end the group and it cannot be resumed. "
+          "The group will be marked as canceled.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text("Keep running"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text("Cancel group"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _cancelAndNavigateToHub(PomodoroViewModel vm) {
+    vm.cancel();
+    if (!mounted) return;
+    context.go('/groups');
+  }
+
   void _dismissFinishedDialog() {
     if (!_finishedDialogVisible) return;
     _finishedDialogVisible = false;
@@ -678,7 +716,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           title: const Text("Group running on another device"),
           content: Text(
             canTakeOver
-                ? "This group is controlled by another device. End it there or take over to stop it."
+                ? "This group is controlled by another device. "
+                    "To stop it here you must take over. Canceling ends it and it cannot be resumed."
                 : "This group is controlled by another device. End it there to stop it.",
           ),
           actions: [
@@ -697,33 +736,14 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
       if (shouldTakeOver != true) return false;
       await vm.takeOver();
-      vm.cancel();
-      return true;
+      _cancelAndNavigateToHub(vm);
+      return false;
     }
 
-    final shouldEnd = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Stop current group?"),
-        content: const Text(
-          "You have a group in progress. End it to leave this screen or keep it running.",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text("Keep running"),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text("End group and exit"),
-          ),
-        ],
-      ),
-    );
-
-    if (shouldEnd != true) return false;
-    vm.cancel();
-    return true;
+    final shouldCancel = await _confirmCancelDialog();
+    if (shouldCancel != true) return false;
+    _cancelAndNavigateToHub(vm);
+    return false;
   }
 
   String _formatDurationLong(int seconds) {
@@ -743,6 +763,7 @@ class _ControlsBar extends StatelessWidget {
   final bool isLocalMode;
   final VoidCallback onPauseRequested;
   final VoidCallback onLocalPauseInfo;
+  final VoidCallback onCancelRequested;
 
   const _ControlsBar({
     required this.state,
@@ -752,6 +773,7 @@ class _ControlsBar extends StatelessWidget {
     required this.isLocalMode,
     required this.onPauseRequested,
     required this.onLocalPauseInfo,
+    required this.onCancelRequested,
   });
 
   @override
@@ -774,7 +796,7 @@ class _ControlsBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           _btn("Pause", null),
-          _btn("Cancel", controlsEnabled ? vm.cancel : null),
+          _btn("Cancel", controlsEnabled ? onCancelRequested : null),
         ],
       );
     }
@@ -796,7 +818,7 @@ class _ControlsBar extends StatelessWidget {
             showLocalPauseInfo: showLocalPauseInfo,
           ),
         if (!isIdle && !isFinished)
-          _btn("Cancel", controlsEnabled ? vm.cancel : null),
+          _btn("Cancel", controlsEnabled ? onCancelRequested : null),
       ],
     );
   }

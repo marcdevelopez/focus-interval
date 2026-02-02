@@ -3755,6 +3755,18 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 228 — Cancel flow implementation — 02/02/2026
+
+### ✔ Work completed:
+
+- Cancel now requires confirmation and warns that the group cannot be resumed.
+- On cancel, the group is marked canceled, session is cleared, and navigation goes to Groups Hub.
+- Back/exit flow uses the same cancel behavior (no idle Run Mode state).
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
