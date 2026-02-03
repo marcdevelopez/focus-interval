@@ -3852,6 +3852,28 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 236 — Persistent Groups Hub CTA on Task List — 02/02/2026
+
+### ✔ Work completed:
+
+- Task List now exposes a direct “View Groups Hub” CTA even when no group is running or in pre-run.
+- Access remains in content area; AppBar stays unchanged.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 237 — Task List running banner (Local Mode fallback) — 02/02/2026
+
+### ✔ Work completed:
+
+- Task List now shows the running-group banner even when no active session is available (Local Mode).
+- Uses latest running TaskRunGroup as fallback so users can always return to Run Mode.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

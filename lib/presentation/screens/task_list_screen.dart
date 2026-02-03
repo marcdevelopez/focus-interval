@@ -415,6 +415,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
             groupsAsync: groupsAsync,
           )
         : null;
+    final showGroupsHubCta =
+        activeGroupBanner == null && preRunBanner == null;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -576,6 +578,18 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
               child: preRunBanner,
             ),
+          if (showGroupsHubCta)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  onPressed: () => context.go('/groups'),
+                  icon: const Icon(Icons.view_list, size: 18),
+                  label: const Text('View Groups Hub'),
+                ),
+              ),
+            ),
           Expanded(
             child: tasksAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -731,22 +745,31 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     required PomodoroSession? activeSession,
     required AsyncValue<List<TaskRunGroup>> groupsAsync,
   }) {
-    final groupId = activeSession?.groupId;
-    if (groupId == null || groupId.isEmpty) return null;
     final groups = groupsAsync.value ?? const [];
     TaskRunGroup? group;
-    for (final candidate in groups) {
-      if (candidate.id == groupId) {
-        group = candidate;
-        break;
+    if (activeSession != null) {
+      final groupId = activeSession.groupId;
+      if (groupId == null || groupId.isEmpty) return null;
+      for (final candidate in groups) {
+        if (candidate.id == groupId) {
+          group = candidate;
+          break;
+        }
       }
+      if (group != null && group.status != TaskRunStatus.running) {
+        return null;
+      }
+    } else {
+      final runningGroups =
+          groups.where((g) => g.status == TaskRunStatus.running).toList()
+            ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      if (runningGroups.isEmpty) return null;
+      group = runningGroups.first;
     }
-    if (group != null && group.status != TaskRunStatus.running) {
-      return null;
-    }
-    final name = group?.tasks.isNotEmpty == true
-        ? group!.tasks.first.name
-        : 'Task group';
+    if (group == null) return null;
+    final groupId = group.id;
+    final name =
+        group.tasks.isNotEmpty ? group.tasks.first.name : 'Task group';
     final statusLabel =
         activeSession?.status == PomodoroStatus.paused ? 'Paused' : 'Running';
 

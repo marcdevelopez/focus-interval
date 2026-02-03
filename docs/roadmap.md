@@ -95,6 +95,8 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       02/02/2026: Running group expiry now clears stale active sessions (Task List banner updates; validation pending).
       02/02/2026: Scheduling now reserves the full Pre-Run window (noticeMinutes) and blocks invalid times (validation pending).
       02/02/2026: Pre-Run entry points added for scheduled groups (Task List banner + Groups Hub action; no AppBar changes) (validation pending).
+      02/02/2026: Task List now exposes a persistent Groups Hub CTA even with no active group (validation pending).
+      02/02/2026: Task List running banner now falls back to running groups when no active session exists (Local Mode) (validation pending).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
@@ -692,6 +694,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Provide direct navigation to the Task List screen (Task Library).
 - Auto-navigate to Groups Hub after group completion (only after the user dismisses the completion modal).
 - Ensure Pre-Run remains accessible: Task List banner + Groups Hub "Open Pre-Run" action when within notice window.
+- Ensure Groups Hub is reachable from Task List even when no active/pre-run group (content CTA, no AppBar changes).
 
 ### 📌 Exit conditions
 

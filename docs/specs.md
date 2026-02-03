@@ -1070,6 +1070,8 @@ Entry points
 - Run Mode header
 - Auto-navigation after group completion (see sections 10.4.6 and 12)
 - Task List banner when a group is running or paused (see section 10.2.5)
+- Task List always exposes a direct “View Groups Hub” CTA in the content area,
+  even when no group is running or in pre-run. Do not add AppBar actions.
 
 List fields per group
 
