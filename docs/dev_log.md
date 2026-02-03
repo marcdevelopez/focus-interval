@@ -3973,6 +3973,26 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 247 — Retention preserves completed history — 03/02/2026
+
+### ✔ Work completed:
+
+- Completed groups now retain their own history cap; canceled groups are pruned separately and never evict completed history.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 248 — Classic Pomodoro uniqueness on account sync — 03/02/2026
+
+### ✔ Work completed:
+
+- Account-local preset push now skips Classic Pomodoro if the account already has it, preventing duplicate defaults across provider linking.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

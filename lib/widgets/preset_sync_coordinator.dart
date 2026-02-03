@@ -60,13 +60,26 @@ class _PresetSyncCoordinatorState
       final localRepo = ref.read(accountLocalPresetRepositoryProvider);
       final presets = await localRepo.getAll();
       final firestoreRepo = ref.read(firestorePresetRepositoryProvider);
-      for (final preset in _normalizeDefaults(presets)) {
+      final remotePresets = await firestoreRepo.getAll();
+      final hasClassicRemote =
+          remotePresets.any((preset) => _isClassicPreset(preset));
+      final presetsToPush = _normalizeDefaults(presets).where((preset) {
+        if (_isClassicPreset(preset) && hasClassicRemote) {
+          return false;
+        }
+        return true;
+      });
+      for (final preset in presetsToPush) {
         await firestoreRepo.save(preset);
       }
       await prefs.setBool(pushedKey, true);
     } finally {
       _pushing = false;
     }
+  }
+
+  bool _isClassicPreset(PomodoroPreset preset) {
+    return preset.name.trim().toLowerCase() == 'classic pomodoro';
   }
 
   List<PomodoroPreset> _normalizeDefaults(List<PomodoroPreset> presets) {

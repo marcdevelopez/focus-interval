@@ -399,7 +399,10 @@ users/{uid}/activeSession
   - All scheduled
   - The current running
   - The last N completed
-- canceled groups can be removed immediately or kept in the short history.
+- Canceled groups are retained **separately** and must **never** count against
+  completed retention.
+  - They may be removed immediately, or kept with their own small cap
+    (default = same N as completed).
 - N is finite and configurable.
 - Default: 7 completed groups (last week).
 - User-configurable up to 30.
@@ -794,6 +797,11 @@ Behavior:
 - If duplicate preset names are detected (legacy data or sync conflicts), the app
   auto-renames duplicates with a numeric suffix (e.g., "Focus", "Focus (2)") and
   persists the correction.
+- The built-in **Classic Pomodoro** preset must remain unique per scope
+  (Local or Account) and must never duplicate across provider linking or
+  account-local preset pushes.
+  - When pushing account-local presets to Firestore, skip Classic Pomodoro if
+    the account already has a Classic Pomodoro preset.
 - A task may either:
   - reference a saved preset, or
   - use a custom, task-specific configuration.
