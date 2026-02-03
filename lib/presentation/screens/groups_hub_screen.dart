@@ -669,24 +669,66 @@ class GroupsHubScreen extends ConsumerWidget {
 
   void _showSummaryDialog(BuildContext context, TaskRunGroup group) {
     final title = group.tasks.isNotEmpty ? group.tasks.first.name : 'Task group';
-    final startLabel = _formatStartLabel(group);
+    final scheduledLabel = _formatTime(group.scheduledStartTime);
+    final actualLabel = _formatTime(group.actualStartTime);
     final endLabel = _formatTime(group.theoreticalEndTime);
     final totalTasks = group.totalTasks ?? group.tasks.length;
-    final totalDuration =
-        _formatDuration(group.totalDurationSeconds ?? 0);
+    final totalDuration = _formatDuration(group.totalDurationSeconds ?? 0);
+    final totalPomodoros = group.totalPomodoros ??
+        group.tasks.fold<int>(0, (total, item) => total + item.totalPomodoros);
     final notice = group.noticeMinutes;
     final showNotice = group.scheduledStartTime != null;
     showDialog<void>(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text(title),
-        content: Text(
-          'Status: ${group.status.name}\n'
-          'Start: $startLabel\n'
-          'End: $endLabel\n'
-          'Tasks: $totalTasks\n'
-          'Total time: $totalDuration'
-          '${showNotice ? '\nNotice: ${notice ?? 0} min' : ''}',
+        backgroundColor: Colors.black,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Colors.white12, width: 1),
+        ),
+        title: const Text(
+          'Group summary',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: SizedBox(
+          width: 360,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _SummaryStatusChip(status: group.status),
+                const SizedBox(height: 16),
+                _summarySectionTitle('Timing'),
+                _summaryRow('Scheduled start', scheduledLabel),
+                _summaryRow('Actual start', actualLabel),
+                _summaryRow('End', endLabel),
+                _summaryRow('Total time', totalDuration),
+                if (showNotice)
+                  _summaryRow('Notice', '${notice ?? 0} min'),
+                const SizedBox(height: 12),
+                _summarySectionTitle('Totals'),
+                _summaryRow('Tasks', totalTasks.toString()),
+                _summaryRow('Pomodoros', totalPomodoros.toString()),
+                const SizedBox(height: 12),
+                _summarySectionTitle('Tasks'),
+                const SizedBox(height: 8),
+                for (final item in group.tasks)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _SummaryTaskCard(item: item),
+                  ),
+              ],
+            ),
+          ),
         ),
         actions: [
           TextButton(
@@ -696,16 +738,6 @@ class GroupsHubScreen extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  String _formatStartLabel(TaskRunGroup group) {
-    final scheduled = group.scheduledStartTime;
-    if (group.status == TaskRunStatus.scheduled && scheduled != null) {
-      return _formatTime(scheduled);
-    }
-    final actual = group.actualStartTime;
-    if (actual != null) return _formatTime(actual);
-    return _formatTime(group.createdAt);
   }
 
   bool _isPreRunActive(TaskRunGroup group, DateTime now) {
@@ -738,6 +770,387 @@ class GroupsHubScreen extends ConsumerWidget {
     final messenger = ScaffoldMessenger.of(context);
     messenger.clearSnackBars();
     messenger.showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+Widget _summarySectionTitle(String label) {
+  return Text(
+    label,
+    style: const TextStyle(
+      color: Colors.white70,
+      fontSize: 12,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.4,
+    ),
+  );
+}
+
+Widget _summaryRow(String label, String value) {
+  return Padding(
+    padding: const EdgeInsets.only(top: 6),
+    child: Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white54,
+              fontSize: 12,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _SummaryStatusChip extends StatelessWidget {
+  final TaskRunStatus status;
+
+  const _SummaryStatusChip({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (status) {
+      TaskRunStatus.running => Colors.greenAccent,
+      TaskRunStatus.scheduled => Colors.orangeAccent,
+      TaskRunStatus.completed => Colors.blueAccent,
+      TaskRunStatus.canceled => Colors.redAccent,
+    };
+    final label = status.name[0].toUpperCase() + status.name.substring(1);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white10,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.6), width: 1),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryTaskCard extends StatelessWidget {
+  final TaskRunItem item;
+
+  const _SummaryTaskCard({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final title = item.name.isEmpty ? '(Untitled)' : item.name;
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white10,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white12, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _summaryStatCard(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${item.totalPomodoros}',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      _summaryMetricCircle(
+                        value: '${item.pomodoroMinutes}',
+                        size: 26,
+                        stroke: 2,
+                        color: Colors.redAccent,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _summaryStatCard(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _summaryMetricCircle(
+                        value: '${item.shortBreakMinutes}',
+                        size: 24,
+                        stroke: 1,
+                        color: Colors.blueAccent,
+                      ),
+                      const SizedBox(width: 6),
+                      _summaryMetricCircle(
+                        value: '${item.longBreakMinutes}',
+                        size: 24,
+                        stroke: 3,
+                        color: Colors.blueAccent,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _summaryStatCard(
+                  child: _summaryBreakDots(item.longBreakInterval),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Widget _summaryMetricCircle({
+  required String value,
+  required double size,
+  required double stroke,
+  required Color color,
+}) {
+  return Container(
+    width: size,
+    height: size,
+    alignment: Alignment.center,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      border: Border.all(color: color, width: stroke),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.all(3),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          value,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: size * 0.42,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _summaryStatCard({required Widget child}) {
+  return Container(
+    height: 36,
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+    alignment: Alignment.center,
+    decoration: BoxDecoration(
+      color: Colors.white10,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: Colors.white12, width: 1),
+    ),
+    child: FittedBox(
+      fit: BoxFit.scaleDown,
+      child: child,
+    ),
+  );
+}
+
+Widget _summaryBreakDots(int interval) {
+  final safeInterval = interval <= 0 ? 1 : interval;
+  final redDots = safeInterval > 12 ? 12 : safeInterval;
+  final totalDots = redDots + 1;
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      final maxWidth = constraints.maxWidth.isFinite
+          ? constraints.maxWidth
+          : 90.0;
+      const maxHeight = 24.0;
+      var dotSize = 5.0;
+      var spacing = 3.0;
+      const minDot = 3.0;
+
+      while (dotSize >= minDot) {
+        final rows = _summaryRowsFor(
+          maxHeight,
+          dotSize,
+          spacing,
+          totalDots,
+          maxRows: 3,
+        );
+        final maxCols = _summaryMaxColsFor(maxWidth, dotSize, spacing);
+        if (rows * maxCols >= totalDots) break;
+        dotSize -= 0.5;
+        spacing = dotSize <= 4 ? 2 : 3;
+      }
+
+      if (redDots == 1) {
+        return SizedBox(
+          height: maxHeight,
+          child: Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _SummaryDot(color: Colors.redAccent, size: dotSize),
+                SizedBox(width: spacing),
+                _SummaryDot(color: Colors.blueAccent, size: dotSize),
+              ],
+            ),
+          ),
+        );
+      }
+
+      final rows = _summaryRowsFor(
+        maxHeight,
+        dotSize,
+        spacing,
+        totalDots,
+        maxRows: 3,
+      );
+      final maxCols = _summaryMaxColsFor(maxWidth, dotSize, spacing);
+      final redColsNeeded = (redDots / rows).ceil();
+      final blueSeparate = redColsNeeded < maxCols;
+      final columns = <Widget>[];
+      var remainingRed = redDots;
+      final redColumnsCount = blueSeparate ? redColsNeeded : maxCols;
+
+      for (var col = 0; col < redColumnsCount; col += 1) {
+        final isLast = col == redColumnsCount - 1;
+        final capacity = (!blueSeparate && isLast) ? rows - 1 : rows;
+        final take = remainingRed > capacity ? capacity : remainingRed;
+        remainingRed -= take;
+        columns.add(
+          _summaryDotColumn(
+            redCount: take,
+            includeBlue: !blueSeparate && isLast,
+            dotSize: dotSize,
+            spacing: spacing,
+            height: maxHeight,
+          ),
+        );
+      }
+
+      if (blueSeparate) {
+        columns.add(
+          _summaryDotColumn(
+            redCount: 0,
+            includeBlue: true,
+            dotSize: dotSize,
+            spacing: spacing,
+            height: maxHeight,
+          ),
+        );
+      }
+
+      return SizedBox(
+        height: maxHeight,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: _summaryWithColumnSpacing(columns, spacing + 2),
+        ),
+      );
+    },
+  );
+}
+
+int _summaryRowsFor(
+  double maxHeight,
+  double dotSize,
+  double spacing,
+  int totalDots, {
+  int? maxRows,
+}) {
+  final rows = ((maxHeight + spacing) / (dotSize + spacing)).floor();
+  if (rows < 1) return 1;
+  final clampedRows = maxRows != null && rows > maxRows ? maxRows : rows;
+  return clampedRows > totalDots ? totalDots : clampedRows;
+}
+
+int _summaryMaxColsFor(double maxWidth, double dotSize, double spacing) {
+  final cols = ((maxWidth + spacing) / (dotSize + spacing)).floor();
+  return cols < 1 ? 1 : cols;
+}
+
+List<Widget> _summaryWithColumnSpacing(List<Widget> columns, double spacing) {
+  final spaced = <Widget>[];
+  for (var i = 0; i < columns.length; i += 1) {
+    spaced.add(columns[i]);
+    if (i < columns.length - 1) {
+      spaced.add(SizedBox(width: spacing));
+    }
+  }
+  return spaced;
+}
+
+Widget _summaryDotColumn({
+  required int redCount,
+  required bool includeBlue,
+  required double dotSize,
+  required double spacing,
+  required double height,
+}) {
+  return SizedBox(
+    width: dotSize,
+    height: height,
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        for (var i = 0; i < redCount; i += 1) ...[
+          _SummaryDot(color: Colors.redAccent, size: dotSize),
+          if (i < redCount - 1) SizedBox(height: spacing),
+        ],
+        if (includeBlue) ...[
+          if (redCount > 0) SizedBox(height: spacing),
+          _SummaryDot(color: Colors.blueAccent, size: dotSize),
+        ],
+      ],
+    ),
+  );
+}
+
+class _SummaryDot extends StatelessWidget {
+  final Color color;
+  final double size;
+
+  const _SummaryDot({required this.color, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+      ),
+    );
   }
 }
 

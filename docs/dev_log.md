@@ -4013,6 +4013,16 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 251 — Groups Hub summary modal expansion — 03/02/2026
+
+### ✔ Work completed:
+
+- Expanded the Groups Hub summary modal with timing, totals, and a task-level breakdown using compact visual cards.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

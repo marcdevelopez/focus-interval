@@ -1128,11 +1128,28 @@ List fields per group
 Actions
 
 - Tap -> light detail view (summary)
-- Cancel planning
-- Start now (only if no conflicts)
-- Open Run Mode for running/paused groups
-- Run again (completed groups): duplicate the group snapshot into a new TaskRunGroup and open the pre-start planning flow
-- Go to Task List screen (Task Library) to create/edit tasks and build new groups
+  - Cancel planning
+  - Start now (only if no conflicts)
+  - Open Run Mode for running/paused groups
+  - Run again (completed groups): duplicate the group snapshot into a new TaskRunGroup and open the pre-start planning flow
+  - Go to Task List screen (Task Library) to create/edit tasks and build new groups
+
+Summary (tap on a group)
+
+- Present a compact **summary modal or sheet** with a black background and clear
+  section labels. The content must be scrollable.
+- Content (no redundancy with the card; focus on extra clarity):
+  - **Group name** (primary title inside the modal)
+  - **Status** (chip or label)
+  - **Timing**: scheduled start (if any), actual start (if available), end time,
+    total duration, notice minutes (scheduled groups only)
+  - **Totals**: total tasks, total pomodoros (if available)
+  - **Tasks list**: each task shown as a compact card with:
+    - Task name
+    - Pomodoro count + duration
+    - Short/long break durations
+    - Long-break interval dots
+  - The layout must be legible, professional, and easy to scan on mobile.
 
 History
 

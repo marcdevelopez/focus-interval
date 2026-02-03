@@ -104,6 +104,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       03/02/2026: Pomodoro Integrity Warning now lists visual options per distinct structure + Default Preset badge (validation pending).
       03/02/2026: Run Mode now auto-exits to Groups Hub when a group is canceled (validation pending).
       03/02/2026: Integrity Warning copy clarified with explicit instruction + default badge moved below cards (validation pending).
+      03/02/2026: Groups Hub summary modal expanded with timing, totals, and task breakdown (validation pending).
       03/02/2026: Completed retention no longer evicted by canceled groups (validation pending).
       03/02/2026: Classic Pomodoro default now deduped on account-local preset push (validation pending).
       03/02/2026: Run Mode cancel navigation fallback added in build (validation pending).
@@ -700,6 +701,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Create Groups Hub screen accessible from Run Mode header.
 - List scheduled/running/last N completed groups with required fields.
 - Actions: view summary, cancel schedule, start now (if no conflict).
+- Summary modal shows group timing, totals, and per-task breakdown (scrollable).
 - Add running-group entry points (Task List banner + Groups Hub "Open Run Mode" action).
 - Add "Run again" for completed groups to duplicate the snapshot into a new TaskRunGroup and open planning.
 - Provide direct navigation to the Task List screen (Task Library).
