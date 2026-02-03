@@ -376,11 +376,11 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _publishCurrentSession();
   }
 
-  void cancel() {
+  Future<void> cancel() async {
     if (!_controlsEnabled) return;
     _resetLocalSessionState();
-    _sessionRepo.clearSession();
-    unawaited(_markGroupCanceled());
+    await _markGroupCanceled();
+    await _sessionRepo.clearSession();
   }
 
   void applyRemoteCancellation() {

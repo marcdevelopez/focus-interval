@@ -663,7 +663,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   Future<void> _handleCancelRequested(PomodoroViewModel vm) async {
     final confirmed = await _confirmCancelDialog();
     if (confirmed != true) return;
-    _cancelAndNavigateToHub(vm);
+    await _cancelAndNavigateToHub(vm);
   }
 
   Future<bool?> _confirmCancelDialog() {
@@ -689,8 +689,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     );
   }
 
-  void _cancelAndNavigateToHub(PomodoroViewModel vm) {
-    vm.cancel();
+  Future<void> _cancelAndNavigateToHub(PomodoroViewModel vm) async {
+    await vm.cancel();
     if (!mounted) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -830,13 +830,13 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
       if (shouldTakeOver != true) return false;
       await vm.takeOver();
-      _cancelAndNavigateToHub(vm);
+      await _cancelAndNavigateToHub(vm);
       return false;
     }
 
     final shouldCancel = await _confirmCancelDialog();
     if (shouldCancel != true) return false;
-    _cancelAndNavigateToHub(vm);
+    await _cancelAndNavigateToHub(vm);
     return false;
   }
 

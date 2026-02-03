@@ -4063,6 +4063,16 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 256 — Cancel now marks group before clearing session — 03/02/2026
+
+### ✔ Work completed:
+
+- Cancel flow now persists the group as canceled before clearing activeSession to prevent auto-open races.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
