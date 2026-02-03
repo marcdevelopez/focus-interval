@@ -98,6 +98,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       02/02/2026: Task List now exposes a persistent Groups Hub CTA even with no active group (validation pending).
       02/02/2026: Task List running banner now falls back to running groups when no active session exists (Local Mode) (validation pending).
       02/02/2026: Groups Hub hides notice/pre-run info for “Start now” groups (scheduledStartTime == null) (validation pending).
+      03/02/2026: Auto-adjust short/long breaks on valid pomodoro changes and break edits (Task Editor + Edit Preset) (validation pending).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
@@ -105,6 +106,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 
 - Phase 17 — Scheduled auto-start stuck after prior running group ended; recheck on session end + expired running group auto-complete (validation pending).
 - Phase 17 — Scheduling must reserve full Pre-Run window (noticeMinutes) with clear user messaging (validation pending).
+- Phase 10 — Auto-adjust breaks on valid pomodoro changes and break edits (Task Editor + Edit Preset) (validation pending).
 - Outstanding items from specs sections 10.4.2 / 10.4.6 / 12 / 10.5 are tracked in Phases 18, 19, and 21 (not reopened).
 - Rule: if any previously completed phase is missing required behavior, list it here and resolve it before continuing in normal phase order.
 

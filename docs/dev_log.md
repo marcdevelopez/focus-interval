@@ -16,7 +16,7 @@ This document is used to:
 # 📍 Current status
 
 Active phase: **19 — Groups Hub Screen**
-Last update: **02/02/2026**
+Last update: **03/02/2026**
 
 ---
 
@@ -3880,6 +3880,19 @@ _(fill in when they happen)_
 
 - Notice / pre-run info is shown only for scheduled groups (scheduledStartTime != null).
 - “Start now” groups no longer display notice fields in Groups Hub cards or summary.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 239 — Auto-adjust breaks on pomodoro + break edits — 03/02/2026
+
+### ✔ Work completed:
+
+- Task Editor and Edit Preset now auto-adjust short/long breaks when a valid pomodoro change makes them invalid.
+- Editing short/long breaks now auto-adjusts the other break to keep short < long and both < pomodoro (when valid).
+- Adjustments keep values as close as possible and add an inline note (helper text) explaining the automatic change.
+- No auto-adjust when pomodoro duration is invalid.
 
 ### ⚠️ Issues found:
 

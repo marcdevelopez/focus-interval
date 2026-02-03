@@ -50,6 +50,8 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
   late final TextEditingController _longBreakIntervalCtrl;
   bool _intervalTouched = false;
   bool _breaksTouched = false;
+  bool _shortBreakAutoAdjusted = false;
+  bool _longBreakAutoAdjusted = false;
   String? _loadedPresetId;
   bool _initializing = true;
   PomodoroPreset? _initialPresetSnapshot;
@@ -128,12 +130,22 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
         (intervalInput == null ||
             intervalInput < 1 ||
             intervalInput > maxLongBreakInterval);
-    final shortHelper = guidance == null || shortBlocking
-        ? null
-        : 'Optimal range: ${guidance.shortRange.label} min';
-    final longHelper = guidance == null || longBlocking
-        ? null
-        : 'Optimal range: ${guidance.longRange.label} min';
+    final shortRangeLabel = guidance?.shortRange.label;
+    final longRangeLabel = guidance?.longRange.label;
+    final showShortHelper = guidance != null && !shortBlocking;
+    final showLongHelper = guidance != null && !longBlocking;
+    final shortHelperBase = showShortHelper && shortRangeLabel != null
+        ? 'Optimal range: $shortRangeLabel min'
+        : null;
+    final longHelperBase = showLongHelper && longRangeLabel != null
+        ? 'Optimal range: $longRangeLabel min'
+        : null;
+    final shortHelper = showShortHelper
+        ? _withAutoAdjustNote(shortHelperBase, _shortBreakAutoAdjusted)
+        : null;
+    final longHelper = showLongHelper
+        ? _withAutoAdjustNote(longHelperBase, _longBreakAutoAdjusted)
+        : null;
     final pomodoroHelper = pomodoroGuidance?.helperText;
     final pomodoroStatus =
         pomodoroGuidance?.status ?? PomodoroDurationStatus.optimal;
@@ -240,7 +252,34 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
                 label: "Pomodoro duration (min)",
                 controller: _pomodoroCtrl,
                 onChanged: (v) {
-                  _update(preset.copyWith(pomodoroMinutes: v));
+                  final pomodoroGuidance = buildPomodoroDurationGuidance(
+                    minutes: v,
+                  );
+                  if (pomodoroGuidance.isValid) {
+                    final adjustment = adjustBreakDurations(
+                      pomodoroMinutes: v,
+                      shortBreakMinutes: preset.shortBreakMinutes,
+                      longBreakMinutes: preset.longBreakMinutes,
+                    );
+                    final updated = preset.copyWith(
+                      pomodoroMinutes: v,
+                      shortBreakMinutes: adjustment.shortBreakMinutes,
+                      longBreakMinutes: adjustment.longBreakMinutes,
+                    );
+                    _update(updated);
+                    if (adjustment.anyAdjusted) {
+                      _shortBreakCtrl.text =
+                          adjustment.shortBreakMinutes.toString();
+                      _longBreakCtrl.text =
+                          adjustment.longBreakMinutes.toString();
+                      _setBreakAutoAdjustFlags(adjustment);
+                    } else {
+                      _clearBreakAutoAdjustFlags();
+                    }
+                  } else {
+                    _clearBreakAutoAdjustFlags();
+                    _update(preset.copyWith(pomodoroMinutes: v));
+                  }
                   _revalidateBreakFields();
                 },
                 helperText: pomodoroHelper,
@@ -267,7 +306,34 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
                     _breaksTouched = true;
                   });
                 }
-                _update(preset.copyWith(shortBreakMinutes: v));
+                final pomodoroGuidance = buildPomodoroDurationGuidance(
+                  minutes: preset.pomodoroMinutes,
+                );
+                if (pomodoroGuidance.isValid) {
+                  final adjustment = adjustBreakDurationsForPreferred(
+                    pomodoroMinutes: preset.pomodoroMinutes,
+                    shortBreakMinutes: v,
+                    longBreakMinutes: preset.longBreakMinutes,
+                    preferred: BreakOrderField.shortBreak,
+                  );
+                  final updated = preset.copyWith(
+                    shortBreakMinutes: adjustment.shortBreakMinutes,
+                    longBreakMinutes: adjustment.longBreakMinutes,
+                  );
+                  _update(updated);
+                  if (adjustment.anyAdjusted) {
+                    _shortBreakCtrl.text =
+                        adjustment.shortBreakMinutes.toString();
+                    _longBreakCtrl.text =
+                        adjustment.longBreakMinutes.toString();
+                    _setBreakAutoAdjustFlags(adjustment);
+                  } else {
+                    _clearBreakAutoAdjustFlags();
+                  }
+                } else {
+                  _clearBreakAutoAdjustFlags();
+                  _update(preset.copyWith(shortBreakMinutes: v));
+                }
                 _revalidateBreakFields();
               },
               helperText: shortHelper,
@@ -292,7 +358,34 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
                     _breaksTouched = true;
                   });
                 }
-                _update(preset.copyWith(longBreakMinutes: v));
+                final pomodoroGuidance = buildPomodoroDurationGuidance(
+                  minutes: preset.pomodoroMinutes,
+                );
+                if (pomodoroGuidance.isValid) {
+                  final adjustment = adjustBreakDurationsForPreferred(
+                    pomodoroMinutes: preset.pomodoroMinutes,
+                    shortBreakMinutes: preset.shortBreakMinutes,
+                    longBreakMinutes: v,
+                    preferred: BreakOrderField.longBreak,
+                  );
+                  final updated = preset.copyWith(
+                    shortBreakMinutes: adjustment.shortBreakMinutes,
+                    longBreakMinutes: adjustment.longBreakMinutes,
+                  );
+                  _update(updated);
+                  if (adjustment.anyAdjusted) {
+                    _shortBreakCtrl.text =
+                        adjustment.shortBreakMinutes.toString();
+                    _longBreakCtrl.text =
+                        adjustment.longBreakMinutes.toString();
+                    _setBreakAutoAdjustFlags(adjustment);
+                  } else {
+                    _clearBreakAutoAdjustFlags();
+                  }
+                } else {
+                  _clearBreakAutoAdjustFlags();
+                  _update(preset.copyWith(longBreakMinutes: v));
+                }
                 _revalidateBreakFields();
               },
               helperText: longHelper,
@@ -760,6 +853,28 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
     ref.read(presetEditorProvider.notifier).update(updated);
   }
 
+  void _clearBreakAutoAdjustFlags() {
+    if (!_shortBreakAutoAdjusted && !_longBreakAutoAdjusted) return;
+    setState(() {
+      _shortBreakAutoAdjusted = false;
+      _longBreakAutoAdjusted = false;
+    });
+  }
+
+  void _setBreakAutoAdjustFlags(BreakDurationAdjustment adjustment) {
+    setState(() {
+      _shortBreakAutoAdjusted = adjustment.shortAdjusted;
+      _longBreakAutoAdjusted = adjustment.longAdjusted;
+    });
+  }
+
+  String? _withAutoAdjustNote(String? base, bool adjusted) {
+    if (!adjusted) return base;
+    const note = 'Adjusted to match the new pomodoro duration.';
+    if (base == null || base.isEmpty) return note;
+    return '$note\n$base';
+  }
+
   void _revalidateBreakFields() {
     _shortBreakFieldKey.currentState?.validate();
     _longBreakFieldKey.currentState?.validate();
@@ -774,6 +889,8 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
     _longBreakIntervalCtrl.text = preset.longBreakInterval.toString();
     _intervalTouched = false;
     _breaksTouched = false;
+    _shortBreakAutoAdjusted = false;
+    _longBreakAutoAdjusted = false;
   }
 
   Future<void> _initializePreset() async {

@@ -647,6 +647,16 @@ Behavior:
 - Task name is required and must be non-empty after trimming; whitespace-only names are invalid.
 - Break durations must be shorter than the pomodoro duration; block Save/Apply and show a clear error if they are equal or longer.
 - Short break duration must be strictly less than long break duration; block Save/Apply and show errors on both fields if violated.
+- When the pomodoro duration changes to a **valid** value (15–60), if current break
+  values become invalid (break >= pomodoro or short >= long), auto-adjust them to
+  the nearest valid values. Keep the existing inline helper text visible and add a
+  brief note that the values were adjusted automatically for consistency.
+- When the user edits **short break** or **long break**, auto-adjust the other break
+  as needed to keep short < long and both < pomodoro (when pomodoro is valid).
+  Keep the values as close as possible to the user’s input and show the same
+  helper text with an automatic-adjustment note. Do not auto-adjust if pomodoro
+  is invalid.
+- If the pomodoro value is invalid, do **not** auto-adjust break durations.
 - When a blocking break validation error is present, suppress optimization guidance/helper text until resolved.
 - Numeric inputs use tabular figures (fixed-width digits) to avoid value jitter while typing.
 - Show dynamic guidance for break durations based on the pomodoro length:
@@ -805,6 +815,15 @@ Preset UI (Settings)
 - If the user attempts to leave **Edit preset** with unsaved changes, show a confirmation
   dialog with options to **Save**, **Discard**, or **Cancel**. Only show this dialog
   when there are actual form differences from the original state.
+- When the pomodoro duration changes to a **valid** value (15–60) in Edit Preset,
+  auto-adjust short/long breaks if they become invalid (break >= pomodoro or
+  short >= long), keeping the values as close as possible and showing the same
+  inline helper text with an automatic-adjustment note.
+- When the user edits **short break** or **long break** in Edit Preset, auto-adjust
+  the other break as needed to keep short < long and both < pomodoro (when pomodoro
+  is valid). Keep values close to the user’s input and show the same helper text
+  with the automatic-adjustment note. Do not auto-adjust if pomodoro is invalid.
+- If the pomodoro value is invalid, do **not** auto-adjust break durations.
 
 Storage & sync
 
