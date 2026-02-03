@@ -675,6 +675,7 @@ class GroupsHubScreen extends ConsumerWidget {
     final totalDuration =
         _formatDuration(group.totalDurationSeconds ?? 0);
     final notice = group.noticeMinutes;
+    final showNotice = group.scheduledStartTime != null;
     showDialog<void>(
       context: context,
       builder: (_) => AlertDialog(
@@ -684,8 +685,8 @@ class GroupsHubScreen extends ConsumerWidget {
           'Start: $startLabel\n'
           'End: $endLabel\n'
           'Tasks: $totalTasks\n'
-          'Total time: $totalDuration\n'
-          'Notice: ${notice ?? 0} min',
+          'Total time: $totalDuration'
+          '${showNotice ? '\nNotice: ${notice ?? 0} min' : ''}',
         ),
         actions: [
           TextButton(
@@ -800,6 +801,7 @@ class _GroupCard extends StatelessWidget {
         _formatDuration(group.totalDurationSeconds ?? 0);
     final scheduledStart = group.scheduledStartTime;
     final endTime = group.theoreticalEndTime;
+    final showNotice = group.scheduledStartTime != null;
     final notice =
         group.noticeMinutes ?? TaskRunNoticeService.defaultNoticeMinutes;
     final sessionPaused =
@@ -853,10 +855,11 @@ class _GroupCard extends StatelessWidget {
               label: 'Total time',
               value: totalDuration,
             ),
-            _MetaRow(
-              label: 'Notice',
-              value: '$notice min',
-            ),
+            if (showNotice)
+              _MetaRow(
+                label: 'Notice',
+                value: '$notice min',
+              ),
             const SizedBox(height: 10),
             Wrap(
               spacing: 8,

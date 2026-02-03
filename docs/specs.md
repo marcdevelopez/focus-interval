@@ -1079,7 +1079,8 @@ List fields per group
 - Theoretical end time
 - Number of tasks
 - Total duration
-- Pre-alert setting (e.g., "Notice 5 min before")
+- Pre-alert setting (e.g., "Notice 5 min before") — only for scheduled groups
+  (scheduledStartTime != null). Do not show notice/pre-run info for “Start now”.
 
 Actions
 

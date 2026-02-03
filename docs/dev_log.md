@@ -3874,6 +3874,17 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 238 — Groups Hub notice visibility guard — 02/02/2026
+
+### ✔ Work completed:
+
+- Notice / pre-run info is shown only for scheduled groups (scheduledStartTime != null).
+- “Start now” groups no longer display notice fields in Groups Hub cards or summary.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
