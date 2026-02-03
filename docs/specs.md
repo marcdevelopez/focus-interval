@@ -1133,6 +1133,8 @@ Actions
   - Open Run Mode for running/paused groups
   - Run again (completed groups): duplicate the group snapshot into a new TaskRunGroup and open the pre-start planning flow
   - Go to Task List screen (Task Library) to create/edit tasks and build new groups
+    - The "Go to Task List" CTA is placed at the top of the Groups Hub content
+      so it is visible without scrolling.
 
 Summary (tap on a group)
 

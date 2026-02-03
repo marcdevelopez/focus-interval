@@ -76,6 +76,12 @@ class GroupsHubScreen extends ConsumerWidget {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             children: [
+              OutlinedButton.icon(
+                onPressed: () => context.go('/tasks'),
+                icon: const Icon(Icons.library_books),
+                label: const Text('Go to Task List'),
+              ),
+              const SizedBox(height: 16),
               _SectionHeader(title: 'Running / Paused'),
               if (runningGroups.isEmpty)
                 const _EmptySection(label: 'No running groups'),
@@ -151,12 +157,6 @@ class GroupsHubScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-              const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: () => context.go('/tasks'),
-                icon: const Icon(Icons.library_books),
-                label: const Text('Go to Task List'),
-              ),
             ],
           );
         },

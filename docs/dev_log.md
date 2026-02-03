@@ -4077,6 +4077,16 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 257 — Groups Hub CTA moved to top — 03/02/2026
+
+### ✔ Work completed:
+
+- Moved the "Go to Task List" CTA to the top of Groups Hub content for immediate visibility.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
