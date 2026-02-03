@@ -677,7 +677,8 @@ class GroupsHubScreen extends ConsumerWidget {
     final totalPomodoros = group.totalPomodoros ??
         group.tasks.fold<int>(0, (total, item) => total + item.totalPomodoros);
     final notice = group.noticeMinutes;
-    final showNotice = group.scheduledStartTime != null;
+    final showScheduled = group.scheduledStartTime != null;
+    final showNotice = showScheduled;
     showDialog<void>(
       context: context,
       builder: (_) => AlertDialog(
@@ -708,7 +709,8 @@ class GroupsHubScreen extends ConsumerWidget {
                 _SummaryStatusChip(status: group.status),
                 const SizedBox(height: 16),
                 _summarySectionTitle('Timing'),
-                _summaryRow('Scheduled start', scheduledLabel),
+                if (showScheduled)
+                  _summaryRow('Scheduled start', scheduledLabel),
                 _summaryRow('Actual start', actualLabel),
                 _summaryRow('End', endLabel),
                 _summaryRow('Total time', totalDuration),

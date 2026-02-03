@@ -4023,6 +4023,16 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 252 — Groups Hub summary hides non-applicable timing rows — 03/02/2026
+
+### ✔ Work completed:
+
+- Scheduled start now appears only for scheduled groups; non-planned runs omit the row to avoid placeholder noise.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

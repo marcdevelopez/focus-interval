@@ -105,6 +105,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       03/02/2026: Run Mode now auto-exits to Groups Hub when a group is canceled (validation pending).
       03/02/2026: Integrity Warning copy clarified with explicit instruction + default badge moved below cards (validation pending).
       03/02/2026: Groups Hub summary modal expanded with timing, totals, and task breakdown (validation pending).
+      03/02/2026: Groups Hub summary hides Scheduled start for non-planned runs (validation pending).
       03/02/2026: Completed retention no longer evicted by canceled groups (validation pending).
       03/02/2026: Classic Pomodoro default now deduped on account-local preset push (validation pending).
       03/02/2026: Run Mode cancel navigation fallback added in build (validation pending).

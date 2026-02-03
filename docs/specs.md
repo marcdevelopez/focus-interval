@@ -1142,7 +1142,8 @@ Summary (tap on a group)
   - **Group name** (primary title inside the modal)
   - **Status** (chip or label)
   - **Timing**: scheduled start (if any), actual start (if available), end time,
-    total duration, notice minutes (scheduled groups only)
+    total duration, notice minutes (scheduled groups only). If the group has no
+    scheduledStartTime, omit the Scheduled start row entirely (no placeholder).
   - **Totals**: total tasks, total pomodoros (if available)
   - **Tasks list**: each task shown as a compact card with:
     - Task name
