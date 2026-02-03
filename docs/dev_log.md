@@ -4053,6 +4053,16 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 255 — Run Mode cancel navigation retry — 03/02/2026
+
+### ✔ Work completed:
+
+- Cancel navigation now uses the root navigator when available and retries briefly if the app remains in /timer after cancellation.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

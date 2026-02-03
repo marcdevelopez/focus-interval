@@ -29,6 +29,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   Timer? _clockTimer;
   Timer? _preRunTimer;
   Timer? _debugFrameTimer;
+  Timer? _cancelNavRetryTimer;
   String _currentClock = "";
   bool _taskLoaded = false;
   bool _finishedDialogVisible = false;
@@ -37,6 +38,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   bool _runningAutoStartHandled = false;
   String? _runningAutoStartGroupId;
   bool _cancelNavigationHandled = false;
+  int _cancelNavRetryAttempts = 0;
   _PreRunInfo? _preRunInfo;
   int _preRunRemainingSeconds = 0;
 
@@ -104,6 +106,11 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _debugFrameTimer = null;
   }
 
+  void _stopCancelNavRetry() {
+    _cancelNavRetryTimer?.cancel();
+    _cancelNavRetryTimer = null;
+  }
+
   void _stopPreRunTimer() {
     _preRunTimer?.cancel();
     _preRunTimer = null;
@@ -117,6 +124,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _runningAutoStartHandled = false;
     _runningAutoStartGroupId = null;
     _cancelNavigationHandled = false;
+    _cancelNavRetryAttempts = 0;
+    _stopCancelNavRetry();
     _preRunInfo = null;
     _preRunRemainingSeconds = 0;
     _stopPreRunTimer();
@@ -156,6 +165,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _stopClockTimer();
     _stopPreRunTimer();
     _stopDebugFramePing();
+    _stopCancelNavRetry();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -298,11 +308,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
       if (group.status == TaskRunStatus.canceled &&
           !_cancelNavigationHandled) {
-        _cancelNavigationHandled = true;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          context.go('/groups');
-        });
+        _navigateToGroupsHub(reason: 'group stream canceled');
       }
     });
 
@@ -325,11 +331,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       final group = vm.currentGroup;
       if (group?.status == TaskRunStatus.canceled &&
           !_cancelNavigationHandled) {
-        _cancelNavigationHandled = true;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          context.go('/groups');
-        });
+        _navigateToGroupsHub(reason: 'vm canceled');
       }
     });
 
@@ -349,11 +351,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
     if (currentGroup?.status == TaskRunStatus.canceled &&
         !_cancelNavigationHandled) {
-      _cancelNavigationHandled = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        context.go('/groups');
-      });
+      _navigateToGroupsHub(reason: 'build canceled');
     }
 
     if (isPreRun) {
@@ -695,9 +693,46 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     vm.cancel();
     if (!mounted) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _cancelNavigationHandled) return;
-      _cancelNavigationHandled = true;
-      context.go('/groups');
+      if (!mounted) return;
+      _navigateToGroupsHub(reason: 'user cancel');
+    });
+  }
+
+  void _navigateToGroupsHub({required String reason}) {
+    if (_cancelNavigationHandled) return;
+    _cancelNavigationHandled = true;
+    _cancelNavRetryAttempts = 0;
+    _attemptNavigateToGroupsHub(reason);
+  }
+
+  void _attemptNavigateToGroupsHub(String reason) {
+    if (!mounted) return;
+    final rootContext =
+        GoRouter.of(context).routerDelegate.navigatorKey.currentContext;
+    final router = rootContext != null ? GoRouter.of(rootContext) : GoRouter.of(context);
+    if (kDebugMode) {
+      debugPrint(
+        'Cancel nav: $reason (attempt $_cancelNavRetryAttempts, root=${rootContext != null})',
+      );
+    }
+    router.go('/groups');
+    _scheduleCancelNavRetry(router);
+  }
+
+  void _scheduleCancelNavRetry(GoRouter router) {
+    if (_cancelNavRetryAttempts >= 3) return;
+    _cancelNavRetryAttempts += 1;
+    _cancelNavRetryTimer?.cancel();
+    _cancelNavRetryTimer = Timer(const Duration(milliseconds: 250), () {
+      if (!mounted) return;
+      final currentPath = router.routerDelegate.currentConfiguration.uri.path;
+      if (currentPath.startsWith('/timer/')) {
+        if (kDebugMode) {
+          debugPrint('Cancel nav retry $_cancelNavRetryAttempts (still in timer)');
+        }
+        router.go('/groups');
+        _scheduleCancelNavRetry(router);
+      }
     });
   }
 
