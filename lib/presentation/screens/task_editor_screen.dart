@@ -51,11 +51,14 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   late final TextEditingController _weightPercentCtrl;
   late final TextEditingController _longBreakIntervalCtrl;
   late final FocusNode _weightPercentFocus;
+  late final FocusNode _shortBreakFocus;
+  late final FocusNode _longBreakFocus;
   String? _loadedTaskId;
   bool _intervalTouched = false;
   bool _breaksTouched = false;
   bool _shortBreakAutoAdjusted = false;
   bool _longBreakAutoAdjusted = false;
+  bool _applyingBreakAutoAdjust = false;
   bool _syncingPreset = false;
   bool _syncingWeight = false;
   static const int _weightPercentWarningThreshold = 10;
@@ -85,6 +88,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     _weightPercentCtrl = TextEditingController();
     _longBreakIntervalCtrl = TextEditingController();
     _weightPercentFocus = FocusNode();
+    _shortBreakFocus = FocusNode();
+    _longBreakFocus = FocusNode();
     _weightPercentFocus.addListener(() {
       if (_weightPercentFocus.hasFocus) {
         _weightPercentStartValue =
@@ -95,6 +100,14 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       }
       _maybeShowWeightPrecisionNotice();
       _syncWeightPercentFromTask();
+    });
+    _shortBreakFocus.addListener(() {
+      if (_shortBreakFocus.hasFocus) return;
+      _applyBreakAutoAdjust(BreakOrderField.shortBreak);
+    });
+    _longBreakFocus.addListener(() {
+      if (_longBreakFocus.hasFocus) return;
+      _applyBreakAutoAdjust(BreakOrderField.longBreak);
     });
 
     final initial = ref.read(taskEditorProvider);
@@ -119,6 +132,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     _weightPercentCtrl.dispose();
     _longBreakIntervalCtrl.dispose();
     _weightPercentFocus.dispose();
+    _shortBreakFocus.dispose();
+    _longBreakFocus.dispose();
     super.dispose();
   }
 
@@ -622,11 +637,16 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                   );
                   _updateWithPresetCheck(updated);
                   if (adjustment.anyAdjusted) {
-                    _shortBreakCtrl.text =
-                        adjustment.shortBreakMinutes.toString();
-                    _longBreakCtrl.text =
-                        adjustment.longBreakMinutes.toString();
-                    _setBreakAutoAdjustFlags(adjustment);
+                    _applyingBreakAutoAdjust = true;
+                    try {
+                      _shortBreakCtrl.text =
+                          adjustment.shortBreakMinutes.toString();
+                      _longBreakCtrl.text =
+                          adjustment.longBreakMinutes.toString();
+                      _setBreakAutoAdjustFlags(adjustment);
+                    } finally {
+                      _applyingBreakAutoAdjust = false;
+                    }
                   } else {
                     _clearBreakAutoAdjustFlags();
                   }
@@ -659,42 +679,18 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               label: "Short break (min)",
               fieldKey: _shortBreakFieldKey,
               controller: _shortBreakCtrl,
+              focusNode: _shortBreakFocus,
               onChanged: (v) {
+                if (_applyingBreakAutoAdjust) return;
                 if (!_breaksTouched) {
                   setState(() {
                     _breaksTouched = true;
                   });
                 }
-                final pomodoroGuidance = buildPomodoroDurationGuidance(
-                  minutes: task.pomodoroMinutes,
+                _clearBreakAutoAdjustFlags();
+                _updateWithPresetCheck(
+                  task.copyWith(shortBreakMinutes: v),
                 );
-                if (pomodoroGuidance.isValid) {
-                  final adjustment = adjustBreakDurationsForPreferred(
-                    pomodoroMinutes: task.pomodoroMinutes,
-                    shortBreakMinutes: v,
-                    longBreakMinutes: task.longBreakMinutes,
-                    preferred: BreakOrderField.shortBreak,
-                  );
-                  final updated = task.copyWith(
-                    shortBreakMinutes: adjustment.shortBreakMinutes,
-                    longBreakMinutes: adjustment.longBreakMinutes,
-                  );
-                  _updateWithPresetCheck(updated);
-                  if (adjustment.anyAdjusted) {
-                    _shortBreakCtrl.text =
-                        adjustment.shortBreakMinutes.toString();
-                    _longBreakCtrl.text =
-                        adjustment.longBreakMinutes.toString();
-                    _setBreakAutoAdjustFlags(adjustment);
-                  } else {
-                    _clearBreakAutoAdjustFlags();
-                  }
-                } else {
-                  _clearBreakAutoAdjustFlags();
-                  _updateWithPresetCheck(
-                    task.copyWith(shortBreakMinutes: v),
-                  );
-                }
                 _revalidateBreakFields();
               },
               suffix: _shortBreakSuffix(task.shortBreakMinutes),
@@ -714,42 +710,18 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               label: "Long break (min)",
               fieldKey: _longBreakFieldKey,
               controller: _longBreakCtrl,
+              focusNode: _longBreakFocus,
               onChanged: (v) {
+                if (_applyingBreakAutoAdjust) return;
                 if (!_breaksTouched) {
                   setState(() {
                     _breaksTouched = true;
                   });
                 }
-                final pomodoroGuidance = buildPomodoroDurationGuidance(
-                  minutes: task.pomodoroMinutes,
+                _clearBreakAutoAdjustFlags();
+                _updateWithPresetCheck(
+                  task.copyWith(longBreakMinutes: v),
                 );
-                if (pomodoroGuidance.isValid) {
-                  final adjustment = adjustBreakDurationsForPreferred(
-                    pomodoroMinutes: task.pomodoroMinutes,
-                    shortBreakMinutes: task.shortBreakMinutes,
-                    longBreakMinutes: v,
-                    preferred: BreakOrderField.longBreak,
-                  );
-                  final updated = task.copyWith(
-                    shortBreakMinutes: adjustment.shortBreakMinutes,
-                    longBreakMinutes: adjustment.longBreakMinutes,
-                  );
-                  _updateWithPresetCheck(updated);
-                  if (adjustment.anyAdjusted) {
-                    _shortBreakCtrl.text =
-                        adjustment.shortBreakMinutes.toString();
-                    _longBreakCtrl.text =
-                        adjustment.longBreakMinutes.toString();
-                    _setBreakAutoAdjustFlags(adjustment);
-                  } else {
-                    _clearBreakAutoAdjustFlags();
-                  }
-                } else {
-                  _clearBreakAutoAdjustFlags();
-                  _updateWithPresetCheck(
-                    task.copyWith(longBreakMinutes: v),
-                  );
-                }
                 _revalidateBreakFields();
               },
               suffix: _longBreakSuffix(task.longBreakMinutes),
@@ -1309,6 +1281,46 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     _update(updated);
   }
 
+  void _applyBreakAutoAdjust(BreakOrderField preferred) {
+    if (_applyingBreakAutoAdjust) return;
+    final task = ref.read(taskEditorProvider);
+    if (task == null) return;
+    final pomodoroGuidance = buildPomodoroDurationGuidance(
+      minutes: task.pomodoroMinutes,
+    );
+    if (!pomodoroGuidance.isValid) {
+      _clearBreakAutoAdjustFlags();
+      return;
+    }
+    final shortValue = int.tryParse(_shortBreakCtrl.text.trim());
+    final longValue = int.tryParse(_longBreakCtrl.text.trim());
+    if (shortValue == null || longValue == null) return;
+    final adjustment = adjustBreakDurationsForPreferred(
+      pomodoroMinutes: task.pomodoroMinutes,
+      shortBreakMinutes: shortValue,
+      longBreakMinutes: longValue,
+      preferred: preferred,
+    );
+    if (!adjustment.anyAdjusted) {
+      _clearBreakAutoAdjustFlags();
+      return;
+    }
+    _applyingBreakAutoAdjust = true;
+    try {
+      final updated = task.copyWith(
+        shortBreakMinutes: adjustment.shortBreakMinutes,
+        longBreakMinutes: adjustment.longBreakMinutes,
+      );
+      _updateWithPresetCheck(updated);
+      _shortBreakCtrl.text = adjustment.shortBreakMinutes.toString();
+      _longBreakCtrl.text = adjustment.longBreakMinutes.toString();
+      _setBreakAutoAdjustFlags(adjustment);
+      _revalidateBreakFields();
+    } finally {
+      _applyingBreakAutoAdjust = false;
+    }
+  }
+
   void _clearBreakAutoAdjustFlags() {
     if (!_shortBreakAutoAdjusted && !_longBreakAutoAdjusted) return;
     setState(() {
@@ -1604,6 +1616,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     required String label,
     Key? fieldKey,
     required TextEditingController controller,
+    FocusNode? focusNode,
     required ValueChanged<int> onChanged,
     ValueChanged<String>? onTextChanged,
     Widget? suffix,
@@ -1620,6 +1633,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     return TextFormField(
       key: fieldKey,
       controller: controller,
+      focusNode: focusNode,
       keyboardType: TextInputType.number,
       style: const TextStyle(
         color: Colors.white,

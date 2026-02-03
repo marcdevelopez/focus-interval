@@ -654,8 +654,9 @@ Behavior:
 - When the user edits **short break** or **long break**, auto-adjust the other break
   as needed to keep short < long and both < pomodoro (when pomodoro is valid).
   Keep the values as close as possible to the user’s input and show the same
-  helper text with an automatic-adjustment note. Do not auto-adjust if pomodoro
-  is invalid.
+  helper text with an automatic-adjustment note. Apply the adjustment when the
+  user finishes editing the field (e.g., on focus loss), not on each keystroke.
+  Do not auto-adjust if pomodoro is invalid.
 - If the pomodoro value is invalid, do **not** auto-adjust break durations.
 - When a blocking break validation error is present, suppress optimization guidance/helper text until resolved.
 - Numeric inputs use tabular figures (fixed-width digits) to avoid value jitter while typing.
@@ -822,7 +823,9 @@ Preset UI (Settings)
 - When the user edits **short break** or **long break** in Edit Preset, auto-adjust
   the other break as needed to keep short < long and both < pomodoro (when pomodoro
   is valid). Keep values close to the user’s input and show the same helper text
-  with the automatic-adjustment note. Do not auto-adjust if pomodoro is invalid.
+  with the automatic-adjustment note. Apply the adjustment when the user finishes
+  editing the field (e.g., on focus loss), not on each keystroke. Do not auto-adjust
+  if pomodoro is invalid.
 - If the pomodoro value is invalid, do **not** auto-adjust break durations.
 
 Storage & sync

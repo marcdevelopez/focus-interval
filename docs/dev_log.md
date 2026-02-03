@@ -3898,6 +3898,17 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 240 — Break auto-adjust deferred to edit completion — 03/02/2026
+
+### ✔ Work completed:
+
+- Break-to-break auto-adjust now applies on focus loss (edit completion) to avoid mid-typing adjustments in Task Editor and Edit Preset.
+- Added focus listeners and guards to prevent auto-adjust while typing; inline auto-adjust note remains.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
