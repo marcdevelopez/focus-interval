@@ -19,11 +19,92 @@ import '../../data/services/app_mode_service.dart';
 import '../../data/services/local_sound_overrides.dart';
 import '../../data/services/task_run_notice_service.dart';
 import '../../domain/pomodoro_machine.dart';
+import '../../domain/validators.dart';
 import '../../widgets/task_card.dart';
 import '../../widgets/mode_indicator.dart';
 
 enum _EmailVerificationAction { verified, resend, useLocal, signOut }
-enum _IntegrityDecision { proceed, adjustFirst, useDefault, cancel }
+enum _IntegritySelectionType { keepIndividual, useDefault, useStructure, cancel }
+
+class _IntegritySelection {
+  final _IntegritySelectionType type;
+  final String? masterTaskId;
+
+  const _IntegritySelection._(
+    this.type, {
+    this.masterTaskId,
+  });
+
+  const _IntegritySelection.keepIndividual()
+      : this._(_IntegritySelectionType.keepIndividual);
+
+  const _IntegritySelection.useDefault()
+      : this._(_IntegritySelectionType.useDefault);
+
+  const _IntegritySelection.cancel() : this._(_IntegritySelectionType.cancel);
+
+  const _IntegritySelection.useStructure(String taskId)
+      : this._(
+          _IntegritySelectionType.useStructure,
+          masterTaskId: taskId,
+        );
+}
+
+class _StructureKey {
+  final int pomodoroMinutes;
+  final int shortBreakMinutes;
+  final int longBreakMinutes;
+  final int longBreakInterval;
+
+  const _StructureKey({
+    required this.pomodoroMinutes,
+    required this.shortBreakMinutes,
+    required this.longBreakMinutes,
+    required this.longBreakInterval,
+  });
+
+  factory _StructureKey.fromTask(PomodoroTask task) {
+    return _StructureKey(
+      pomodoroMinutes: task.pomodoroMinutes,
+      shortBreakMinutes: task.shortBreakMinutes,
+      longBreakMinutes: task.longBreakMinutes,
+      longBreakInterval: task.longBreakInterval,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is _StructureKey &&
+        other.pomodoroMinutes == pomodoroMinutes &&
+        other.shortBreakMinutes == shortBreakMinutes &&
+        other.longBreakMinutes == longBreakMinutes &&
+        other.longBreakInterval == longBreakInterval;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        pomodoroMinutes,
+        shortBreakMinutes,
+        longBreakMinutes,
+        longBreakInterval,
+      );
+}
+
+class _StructureOption {
+  final _StructureKey key;
+  final PomodoroTask masterTask;
+  final List<PomodoroTask> tasks;
+
+  _StructureOption({
+    required this.key,
+    required this.masterTask,
+  }) : tasks = [masterTask];
+
+  void addTask(PomodoroTask task) {
+    tasks.add(task);
+  }
+}
 
 class TaskListScreen extends ConsumerStatefulWidget {
   const TaskListScreen({super.key});
@@ -1027,18 +1108,33 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       }
     }
 
-    final integrityDecision = await _maybeShowIntegrityWarning(
+    final integritySelection = await _maybeShowIntegrityWarning(
       context,
       selected,
     );
     if (!context.mounted) return;
-    if (integrityDecision == _IntegrityDecision.cancel) return;
+    if (integritySelection.type == _IntegritySelectionType.cancel) return;
 
     var items = await _buildRunItemsWithOverrides(selected);
-    if (integrityDecision == _IntegrityDecision.adjustFirst) {
-      items = await _applySharedStructure(items, forceDefault: false);
-    } else if (integrityDecision == _IntegrityDecision.useDefault) {
-      items = await _applySharedStructure(items, forceDefault: true);
+    if (integritySelection.type == _IntegritySelectionType.useStructure) {
+      final masterId = integritySelection.masterTaskId;
+      final master = masterId == null
+          ? items.first
+          : items.firstWhere(
+              (item) => item.sourceTaskId == masterId,
+              orElse: () => items.first,
+            );
+      items = await _applySharedStructure(
+        items,
+        forceDefault: false,
+        master: master,
+      );
+    } else if (integritySelection.type ==
+        _IntegritySelectionType.useDefault) {
+      items = await _applySharedStructure(
+        items,
+        forceDefault: true,
+      );
     }
     final totalDurationSeconds = groupDurationSecondsWithFinalBreaks(items);
     final noticeMinutes = await ref
@@ -1489,30 +1585,141 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     return total <= 0 ? null : total;
   }
 
-  Future<_IntegrityDecision> _maybeShowIntegrityWarning(
+  Future<_IntegritySelection> _maybeShowIntegrityWarning(
     BuildContext context,
     List<PomodoroTask> selected,
   ) async {
-    if (selected.length <= 1) return _IntegrityDecision.proceed;
+    if (selected.length <= 1) {
+      return const _IntegritySelection.keepIndividual();
+    }
     final base = selected.first;
     final mismatched = selected
         .where((task) => !_matchesStructure(task, base))
         .toList();
-    if (mismatched.isEmpty) return _IntegrityDecision.proceed;
+    if (mismatched.isEmpty) {
+      return const _IntegritySelection.keepIndividual();
+    }
 
     final defaultPreset = await _loadDefaultPreset();
-    if (!context.mounted) return _IntegrityDecision.cancel;
+    if (!context.mounted) return const _IntegritySelection.cancel();
     final hasDefaultPreset = defaultPreset != null;
-    final masterTaskName =
-        base.name.isEmpty ? '(Untitled)' : base.name;
-    final defaultPresetName = hasDefaultPreset
-        ? (defaultPreset.name.isEmpty ? '(Untitled)' : defaultPreset.name)
-        : '';
     final rootContext = context;
+    final structureOptions = _buildStructureOptions(selected);
 
-    final result = await showDialog<_IntegrityDecision>(
+    final result = await showDialog<_IntegritySelection>(
       context: context,
       builder: (context) {
+        final optionWidgets = <Widget>[];
+        for (final option in structureOptions) {
+          if (optionWidgets.isNotEmpty) {
+            optionWidgets.add(const SizedBox(height: 12));
+          }
+          optionWidgets.add(
+            _integrityOptionCard(
+              onTap: () => Navigator.of(context).pop(
+                _IntegritySelection.useStructure(option.masterTask.id),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _structurePreviewRow(
+                    pomodoroMinutes: option.key.pomodoroMinutes,
+                    shortBreakMinutes: option.key.shortBreakMinutes,
+                    longBreakMinutes: option.key.longBreakMinutes,
+                    longBreakInterval: option.key.longBreakInterval,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Used by:',
+                    style: TextStyle(
+                      color: Colors.white54,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  _taskNameChips(option.tasks),
+                ],
+              ),
+            ),
+          );
+        }
+        if (hasDefaultPreset) {
+          if (optionWidgets.isNotEmpty) {
+            optionWidgets.add(const SizedBox(height: 12));
+          }
+          optionWidgets.add(
+            _integrityOptionCard(
+              onTap: () async {
+                final preset = await _loadDefaultPreset();
+                if (preset == null) {
+                  if (!rootContext.mounted) return;
+                  _showSnackBar(
+                    rootContext,
+                    "No default preset found. Please set a default in Settings to use this action.",
+                  );
+                  return;
+                }
+                if (!context.mounted) return;
+                Navigator.of(context).pop(
+                  const _IntegritySelection.useDefault(),
+                );
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _structurePreviewRow(
+                    pomodoroMinutes: defaultPreset.pomodoroMinutes,
+                    shortBreakMinutes: defaultPreset.shortBreakMinutes,
+                    longBreakMinutes: defaultPreset.longBreakMinutes,
+                    longBreakInterval: defaultPreset.longBreakInterval,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.star,
+                        size: 14,
+                        color: Colors.amberAccent,
+                      ),
+                      const SizedBox(width: 6),
+                      const Text(
+                        'Default preset',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+        if (optionWidgets.isNotEmpty) {
+          optionWidgets.add(const SizedBox(height: 12));
+        }
+        optionWidgets.add(
+          _integrityOptionCard(
+            onTap: () => Navigator.of(context).pop(
+              const _IntegritySelection.keepIndividual(),
+            ),
+            child: const Text(
+              'Keep individual configurations',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        );
+
+        final screenWidth = MediaQuery.of(context).size.width;
+        final dialogWidth =
+            (screenWidth * 0.86).clamp(280.0, 360.0).toDouble();
         return AlertDialog(
           backgroundColor: Colors.black,
           shape: RoundedRectangleBorder(
@@ -1531,62 +1738,351 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
               ),
             ],
           ),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: [
-                const Text(
-                  'This group mixes Pomodoro structures. Mixed durations can '
-                  'reduce the benefits of the technique.',
-                  style: TextStyle(color: Colors.white70),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Tasks with different structure:',
-                  style: TextStyle(color: Colors.white70),
-                ),
-                const SizedBox(height: 6),
-                for (final task in mismatched)
-                  Text(
-                    '• ${task.name.isEmpty ? '(Untitled)' : task.name}',
-                    style: const TextStyle(color: Colors.white60),
+          content: SizedBox(
+            width: dialogWidth,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'This group mixes Pomodoro structures. Mixed durations can '
+                    'reduce the benefits of the technique. Choose the '
+                    'configuration to apply to this group.',
+                    style: TextStyle(color: Colors.white70),
                   ),
-              ],
+                  const SizedBox(height: 12),
+                  ...optionWidgets,
+                ],
+              ),
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () =>
-                  Navigator.of(context).pop(_IntegrityDecision.adjustFirst),
-              child: Text('Usar configuración de: $masterTaskName'),
-            ),
-            if (hasDefaultPreset)
-              TextButton(
-                onPressed: () async {
-                  final preset = await _loadDefaultPreset();
-                  if (preset == null) {
-                    if (!rootContext.mounted) return;
-                    _showSnackBar(
-                      rootContext,
-                      "No default preset found. Please set a default in Settings to use this action.",
-                    );
-                    return;
-                  }
-                  if (!context.mounted) return;
-                  Navigator.of(context).pop(_IntegrityDecision.useDefault);
-                },
-                child:
-                    Text('Usar preset predeterminado: $defaultPresetName'),
-              ),
-            ElevatedButton(
-              onPressed: () =>
-                  Navigator.of(context).pop(_IntegrityDecision.proceed),
-              child: const Text('Continuar con configuraciones individuales'),
-            ),
-          ],
         );
       },
     );
-    return result ?? _IntegrityDecision.cancel;
+    return result ?? const _IntegritySelection.cancel();
+  }
+
+  List<_StructureOption> _buildStructureOptions(
+    List<PomodoroTask> selected,
+  ) {
+    final options = <_StructureKey, _StructureOption>{};
+    for (final task in selected) {
+      final key = _StructureKey.fromTask(task);
+      final existing = options[key];
+      if (existing == null) {
+        options[key] = _StructureOption(
+          key: key,
+          masterTask: task,
+        );
+      } else {
+        existing.addTask(task);
+      }
+    }
+    return options.values.toList();
+  }
+
+  Widget _integrityOptionCard({
+    required VoidCallback onTap,
+    required Widget child,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white10,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.white24, width: 1),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+
+  Widget _structurePreviewRow({
+    required int pomodoroMinutes,
+    required int shortBreakMinutes,
+    required int longBreakMinutes,
+    required int longBreakInterval,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: _miniStatCard(
+            child: Center(
+              child: _miniMetricCircle(
+                value: '$pomodoroMinutes',
+                size: 26,
+                stroke: 2,
+                color: Colors.redAccent,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: _miniStatCard(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _miniMetricCircle(
+                    value: '$shortBreakMinutes',
+                    size: 24,
+                    stroke: 1,
+                    color: Colors.blueAccent,
+                  ),
+                  const SizedBox(width: 6),
+                  _miniMetricCircle(
+                    value: '$longBreakMinutes',
+                    size: 24,
+                    stroke: 3,
+                    color: Colors.blueAccent,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: _miniStatCard(
+            child: _miniBreakDots(longBreakInterval),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _taskNameChips(List<PomodoroTask> tasks) {
+    final names = tasks
+        .map((task) => task.name.isEmpty ? '(Untitled)' : task.name)
+        .toList();
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: [
+        for (final name in names)
+          Chip(
+            label: Text(name),
+            labelStyle: const TextStyle(
+              color: Colors.white70,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+            backgroundColor: Colors.white10,
+            side: const BorderSide(color: Colors.white24, width: 1),
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          ),
+      ],
+    );
+  }
+
+  Widget _miniMetricCircle({
+    required String value,
+    required double size,
+    required double stroke,
+    required Color color,
+  }) {
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: color, width: stroke),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(3),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            value,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: size * 0.42,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _miniStatCard({required Widget child}) {
+    return Container(
+      height: 36,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Colors.white10,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white12, width: 1),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _miniBreakDots(int interval) {
+    final safeInterval = interval <= 0 ? 1 : interval;
+    final redDots = safeInterval > maxLongBreakInterval
+        ? maxLongBreakInterval
+        : safeInterval;
+    final totalDots = redDots + 1;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : 90.0;
+        const maxHeight = 24.0;
+        var dotSize = 5.0;
+        var spacing = 3.0;
+        const minDot = 3.0;
+
+        while (dotSize >= minDot) {
+          final rows = _miniRowsFor(
+            maxHeight,
+            dotSize,
+            spacing,
+            totalDots,
+            maxRows: 3,
+          );
+          final maxCols = _miniMaxColsFor(maxWidth, dotSize, spacing);
+          if (rows * maxCols >= totalDots) break;
+          dotSize -= 0.5;
+          spacing = dotSize <= 4 ? 2 : 3;
+        }
+
+        if (redDots == 1) {
+          return SizedBox(
+            height: maxHeight,
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _MiniDot(color: Colors.redAccent, size: dotSize),
+                  SizedBox(width: spacing),
+                  _MiniDot(color: Colors.blueAccent, size: dotSize),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final rows = _miniRowsFor(
+          maxHeight,
+          dotSize,
+          spacing,
+          totalDots,
+          maxRows: 3,
+        );
+        final maxCols = _miniMaxColsFor(maxWidth, dotSize, spacing);
+        final redColsNeeded = (redDots / rows).ceil();
+        final blueSeparate = redColsNeeded < maxCols;
+        final columns = <Widget>[];
+        var remainingRed = redDots;
+        final redColumnsCount = blueSeparate ? redColsNeeded : maxCols;
+
+        for (var col = 0; col < redColumnsCount; col += 1) {
+          final isLast = col == redColumnsCount - 1;
+          final capacity = (!blueSeparate && isLast) ? rows - 1 : rows;
+          final take = remainingRed > capacity ? capacity : remainingRed;
+          remainingRed -= take;
+          columns.add(
+            _miniDotColumn(
+              redCount: take,
+              includeBlue: !blueSeparate && isLast,
+              dotSize: dotSize,
+              spacing: spacing,
+              height: maxHeight,
+            ),
+          );
+        }
+
+        if (blueSeparate) {
+          columns.add(
+            _miniDotColumn(
+              redCount: 0,
+              includeBlue: true,
+              dotSize: dotSize,
+              spacing: spacing,
+              height: maxHeight,
+            ),
+          );
+        }
+
+        return SizedBox(
+          height: maxHeight,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: _miniWithColumnSpacing(columns, spacing + 2),
+          ),
+        );
+      },
+    );
+  }
+
+  int _miniRowsFor(
+    double maxHeight,
+    double dotSize,
+    double spacing,
+    int totalDots, {
+    int? maxRows,
+  }) {
+    final rows = ((maxHeight + spacing) / (dotSize + spacing)).floor();
+    if (rows < 1) return 1;
+    final clampedRows = maxRows != null && rows > maxRows ? maxRows : rows;
+    return clampedRows > totalDots ? totalDots : clampedRows;
+  }
+
+  int _miniMaxColsFor(double maxWidth, double dotSize, double spacing) {
+    final cols = ((maxWidth + spacing) / (dotSize + spacing)).floor();
+    return cols < 1 ? 1 : cols;
+  }
+
+  List<Widget> _miniWithColumnSpacing(List<Widget> columns, double spacing) {
+    final spaced = <Widget>[];
+    for (var i = 0; i < columns.length; i += 1) {
+      spaced.add(columns[i]);
+      if (i < columns.length - 1) {
+        spaced.add(SizedBox(width: spacing));
+      }
+    }
+    return spaced;
+  }
+
+  Widget _miniDotColumn({
+    required int redCount,
+    required bool includeBlue,
+    required double dotSize,
+    required double spacing,
+    required double height,
+  }) {
+    return SizedBox(
+      width: dotSize,
+      height: height,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          for (var i = 0; i < redCount; i += 1) ...[
+            _MiniDot(color: Colors.redAccent, size: dotSize),
+            if (i < redCount - 1) SizedBox(height: spacing),
+          ],
+          if (includeBlue) ...[
+            if (redCount > 0) SizedBox(height: spacing),
+            _MiniDot(color: Colors.blueAccent, size: dotSize),
+          ],
+        ],
+      ),
+    );
   }
 
   bool _matchesStructure(PomodoroTask a, PomodoroTask b) {
@@ -1599,10 +2095,12 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   Future<List<TaskRunItem>> _applySharedStructure(
     List<TaskRunItem> items, {
     required bool forceDefault,
+    TaskRunItem? master,
   }) async {
     if (items.isEmpty) return items;
-    final master = items.first;
-    final shouldUseDefault = forceDefault || !_hasClearStructure(master);
+    final effectiveMaster = master ?? items.first;
+    final shouldUseDefault =
+        forceDefault || !_hasClearStructure(effectiveMaster);
     if (shouldUseDefault) {
       final fallbackPreset = await _loadDefaultPreset();
       if (fallbackPreset != null) {
@@ -1614,15 +2112,15 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
           (item) => TaskRunItem(
             sourceTaskId: item.sourceTaskId,
             name: item.name,
-            presetId: master.presetId,
-            pomodoroMinutes: master.pomodoroMinutes,
-            shortBreakMinutes: master.shortBreakMinutes,
-            longBreakMinutes: master.longBreakMinutes,
+            presetId: effectiveMaster.presetId,
+            pomodoroMinutes: effectiveMaster.pomodoroMinutes,
+            shortBreakMinutes: effectiveMaster.shortBreakMinutes,
+            longBreakMinutes: effectiveMaster.longBreakMinutes,
             totalPomodoros: item.totalPomodoros,
-            longBreakInterval: master.longBreakInterval,
-            startSound: master.startSound,
-            startBreakSound: master.startBreakSound,
-            finishTaskSound: master.finishTaskSound,
+            longBreakInterval: effectiveMaster.longBreakInterval,
+            startSound: effectiveMaster.startSound,
+            startBreakSound: effectiveMaster.startBreakSound,
+            finishTaskSound: effectiveMaster.finishTaskSound,
           ),
         )
         .toList();
@@ -1775,6 +2273,25 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       startSound: startSound ?? task.startSound,
       startBreakSound: startBreakSound ?? task.startBreakSound,
       finishTaskSound: task.finishTaskSound,
+    );
+  }
+}
+
+class _MiniDot extends StatelessWidget {
+  final Color color;
+  final double size;
+
+  const _MiniDot({required this.color, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+      ),
     );
   }
 }

@@ -101,6 +101,9 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       03/02/2026: Auto-adjust short/long breaks on valid pomodoro changes and break edits (Task Editor + Edit Preset) (validation pending).
       03/02/2026: Break auto-adjust on break edits now applies on focus loss (no per-keystroke adjustments) (validation pending).
       03/02/2026: Pomodoro Integrity Warning actions now show exact configuration source names (validation pending).
+      03/02/2026: Pomodoro Integrity Warning now lists visual options per distinct structure + Default Preset badge (validation pending).
+      03/02/2026: Run Mode now auto-exits to Groups Hub when a group is canceled (validation pending).
+      03/02/2026: Integrity Warning copy clarified with explicit instruction + default badge moved below cards (validation pending).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 

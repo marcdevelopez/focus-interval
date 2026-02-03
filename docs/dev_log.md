@@ -3920,6 +3920,59 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 242 — Integrity Warning visual options list — 03/02/2026
+
+### ✔ Work completed:
+
+- Integrity Warning now shows one selectable visual option per distinct structure (mini task cards + “Used by” chips).
+- Default preset option is visual with a star badge; “Keep individual configurations” is a visual card in the same list.
+- Option selection applies the chosen structure (or keeps individual configs) without changing execution logic.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 243 — Integrity Warning iOS layout fix — 03/02/2026
+
+### ✔ Work completed:
+
+- Constrained dialog content width to avoid IntrinsicWidth layout failures on iOS.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 244 — Cancel navigation fallback — 03/02/2026
+
+### ✔ Work completed:
+
+- Run Mode now auto-exits to Groups Hub when a group becomes canceled (local or remote), preventing idle state after cancel.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 245 — Integrity Warning copy + default badge placement — 03/02/2026
+
+### ✔ Work completed:
+
+- Added an explicit instruction in the Integrity Warning intro text.
+- Default preset option now shows mini-cards first and the star badge below.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 246 — Integrity Warning interval dots alignment — 03/02/2026
+
+### ✔ Work completed:
+
+- Mini interval dots now align from the bottom to match Task List card styling.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

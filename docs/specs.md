@@ -557,26 +557,33 @@ Item layout (top → bottom):
     show the Pomodoro Integrity Warning before scheduling/starting:
     - Dialog style: pure black background with amber/orange border
     - Icon: Icons.info_outline (educational warning)
-    - Actions (three options, with explicit wording about the applied structure):
-      1. **Continuar con configuraciones individuales**: proceed in Mode B (each
-         task keeps its own pomodoro/break/interval configuration).
-      2. **Usar configuración de: "<first task name>"**: force Mode A by applying
-         the structure of the first selected task to the TaskRunGroup snapshot
-         (durations, interval, sounds) while keeping each task’s totalPomodoros
-         unchanged.
-         - If the first task has an empty name, show "(Untitled)" as the label.
-         - If the master task has a presetId, propagate that presetId to all
-           TaskRunItem snapshots for traceability.
-      3. **Usar preset predeterminado: "<preset name>"**: force Mode A by applying
-         the globally marked Default Preset to the TaskRunGroup snapshot
-         (durations, interval, sounds) and propagate its presetId.
-         - Show the exact preset name in the action label.
-         - If the master task does not provide a clear structure, option 2
-           automatically applies the Default Preset as a fallback.
-         - This option is shown only when a Default Preset exists; otherwise,
-           the dialog shows only options 1 and 2.
-         - If the option is shown but the Default Preset is missing at tap
-           time, show a SnackBar and keep the dialog open.
+    - Intro text must include a clear instruction, e.g.:
+      “This group mixes Pomodoro structures. Mixed durations can reduce the
+      benefits of the technique. Choose the configuration to apply to this
+      group.”
+    - After the intro text, show a **scrollable list of visual options**. Each
+      option is a selectable card (button-style):
+      1. **One option per distinct structure** among the selected tasks.
+         - Structure uniqueness is based on: pomodoro duration, short break,
+           long break, long-break interval (sounds are ignored for grouping).
+         - The option displays the **same three mini-cards** as a Task List item:
+           pomodoro duration (no pomodoro count), break durations (short/long),
+           and the interval dots. Sizes can be reduced to avoid overflow.
+         - Show **"Used by:"** with task-name chips (wrapping to multiple lines).
+         - Selecting this option forces Mode A using that structure (durations,
+           interval; sounds follow the chosen task/preset per current logic),
+           while keeping each task’s totalPomodoros unchanged.
+      2. **Default preset option** (only if a Default Preset exists):
+         - Shows the same three mini-cards using the preset values.
+         - Includes a **badge with a star** and text “Default preset”.
+         - The badge appears **below** the mini-cards (cards first, badge second).
+         - Selecting it forces Mode A using the Default Preset (durations,
+           interval, sounds) and propagates its presetId.
+         - If the option is shown but the Default Preset is missing at tap time,
+           show a SnackBar and keep the dialog open.
+      3. **Keep individual configurations**:
+        - Presented as a visual card in the same list.
+        - Selecting it keeps Mode B (each task preserves its own structure).
   - Navigate to the execution screen pre-start planning (see section 10.4)
 
 ### **10.2.4. Mode indicator (always visible)**
@@ -1057,6 +1064,8 @@ Cancel running group (Run Mode)
   - Stop the session immediately.
   - Mark the group as canceled.
   - Navigate to Groups Hub (do not remain in Run Mode).
+- If a canceled status is observed while Run Mode is visible (local or remote),
+  auto-exit to Groups Hub and never remain in an idle Run Mode state.
 - The Groups Hub provides the next decision path (open Task List / start or plan a new group).
 
 ### **10.4.7. Mandatory visual improvements for the timer**

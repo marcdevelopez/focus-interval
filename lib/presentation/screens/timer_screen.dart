@@ -36,6 +36,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   int _autoStartAttempts = 0;
   bool _runningAutoStartHandled = false;
   String? _runningAutoStartGroupId;
+  bool _cancelNavigationHandled = false;
   _PreRunInfo? _preRunInfo;
   int _preRunRemainingSeconds = 0;
 
@@ -267,6 +268,15 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
               group.status == TaskRunStatus.completed) &&
           state.status.isActiveExecution) {
         vm.applyRemoteCancellation();
+      }
+
+      if (group.status == TaskRunStatus.canceled &&
+          !_cancelNavigationHandled) {
+        _cancelNavigationHandled = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          context.go('/groups');
+        });
       }
     });
 
@@ -639,6 +649,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   void _cancelAndNavigateToHub(PomodoroViewModel vm) {
     vm.cancel();
     if (!mounted) return;
+    _cancelNavigationHandled = true;
     context.go('/groups');
   }
 
