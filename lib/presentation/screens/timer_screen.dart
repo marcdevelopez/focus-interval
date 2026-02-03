@@ -49,32 +49,16 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _startClockTimer();
     _startDebugFramePing();
 
-    // Load group by ID
-    Future.microtask(() async {
-      final result = await ref
-          .read(pomodoroViewModelProvider.notifier)
-          .loadGroup(widget.groupId);
-      if (!mounted) return;
+    _loadGroup(widget.groupId);
+  }
 
-      switch (result) {
-        case PomodoroGroupLoadResult.loaded:
-          setState(() => _taskLoaded = true);
-          _syncPreRunInfo(
-            ref.read(pomodoroViewModelProvider.notifier).currentGroup,
-          );
-          _maybeAutoStartScheduled();
-          break;
-        case PomodoroGroupLoadResult.notFound:
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Selected group not found.")),
-          );
-          Navigator.pop(context);
-          break;
-        case PomodoroGroupLoadResult.blockedByActiveSession:
-          await _handleBlockedStart();
-          break;
-      }
-    });
+  @override
+  void didUpdateWidget(TimerScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.groupId != widget.groupId) {
+      _resetForGroupSwitch();
+      _loadGroup(widget.groupId);
+    }
   }
 
   void _updateClock() {
@@ -123,6 +107,48 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   void _stopPreRunTimer() {
     _preRunTimer?.cancel();
     _preRunTimer = null;
+  }
+
+  void _resetForGroupSwitch() {
+    _taskLoaded = false;
+    _finishedDialogVisible = false;
+    _autoStartHandled = false;
+    _autoStartAttempts = 0;
+    _runningAutoStartHandled = false;
+    _runningAutoStartGroupId = null;
+    _cancelNavigationHandled = false;
+    _preRunInfo = null;
+    _preRunRemainingSeconds = 0;
+    _stopPreRunTimer();
+  }
+
+  void _loadGroup(String groupId) {
+    // Load group by ID
+    Future.microtask(() async {
+      final result = await ref
+          .read(pomodoroViewModelProvider.notifier)
+          .loadGroup(groupId);
+      if (!mounted) return;
+
+      switch (result) {
+        case PomodoroGroupLoadResult.loaded:
+          setState(() => _taskLoaded = true);
+          _syncPreRunInfo(
+            ref.read(pomodoroViewModelProvider.notifier).currentGroup,
+          );
+          _maybeAutoStartScheduled();
+          break;
+        case PomodoroGroupLoadResult.notFound:
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Selected group not found.")),
+          );
+          Navigator.pop(context);
+          break;
+        case PomodoroGroupLoadResult.blockedByActiveSession:
+          await _handleBlockedStart();
+          break;
+      }
+    });
   }
 
   @override

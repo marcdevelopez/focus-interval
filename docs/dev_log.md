@@ -4043,6 +4043,16 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 254 — Run Mode navigation reset on group switch — 03/02/2026
+
+### ✔ Work completed:
+
+- TimerScreen now reloads when the groupId changes and resets cancel/auto-start flags; /timer routes use a unique page key to avoid stale state reuse.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

@@ -107,6 +107,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       03/02/2026: Groups Hub summary modal expanded with timing, totals, and task breakdown (validation pending).
       03/02/2026: Groups Hub summary hides Scheduled start for non-planned runs (validation pending).
       03/02/2026: Groups Hub cards hide Scheduled row for non-planned runs (validation pending).
+      03/02/2026: TimerScreen reloads on groupId changes; /timer routes now use page keys to prevent stale state (validation pending).
       03/02/2026: Completed retention no longer evicted by canceled groups (validation pending).
       03/02/2026: Classic Pomodoro default now deduped on account-local preset push (validation pending).
       03/02/2026: Run Mode cancel navigation fallback added in build (validation pending).
