@@ -4069,6 +4069,10 @@ _(fill in when they happen)_
 
 - Cancel flow now persists the group as canceled before clearing activeSession to prevent auto-open races.
 
+### ⭐ Impact highlight:
+
+- Resolved the long-running multi-platform bug where Run Mode stayed open after canceling a group (including Run again) due to auto-open races. This fix restores reliable post-cancel navigation and sync behavior across devices.
+
 ### ⚠️ Issues found:
 
 - None.
