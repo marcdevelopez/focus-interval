@@ -100,6 +100,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       02/02/2026: Groups Hub hides notice/pre-run info for “Start now” groups (scheduledStartTime == null) (validation pending).
       03/02/2026: Auto-adjust short/long breaks on valid pomodoro changes and break edits (Task Editor + Edit Preset) (validation pending).
       03/02/2026: Break auto-adjust on break edits now applies on focus loss (no per-keystroke adjustments) (validation pending).
+      03/02/2026: Pomodoro Integrity Warning actions now show exact configuration source names (validation pending).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 

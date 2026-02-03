@@ -557,16 +557,20 @@ Item layout (top → bottom):
     show the Pomodoro Integrity Warning before scheduling/starting:
     - Dialog style: pure black background with amber/orange border
     - Icon: Icons.info_outline (educational warning)
-    - Actions (three options):
-      1. **Continuar**: proceed in Mode B (per-task configurations).
-      2. **Ajustar a la primera**: force Mode A by applying the structure of
-         the first selected task to the TaskRunGroup snapshot (durations,
-         interval, sounds) while keeping each task’s totalPomodoros unchanged.
+    - Actions (three options, with explicit wording about the applied structure):
+      1. **Continuar con configuraciones individuales**: proceed in Mode B (each
+         task keeps its own pomodoro/break/interval configuration).
+      2. **Usar configuración de: "<first task name>"**: force Mode A by applying
+         the structure of the first selected task to the TaskRunGroup snapshot
+         (durations, interval, sounds) while keeping each task’s totalPomodoros
+         unchanged.
+         - If the first task has an empty name, show "(Untitled)" as the label.
          - If the master task has a presetId, propagate that presetId to all
            TaskRunItem snapshots for traceability.
-      3. **Usar Predeterminado**: force Mode A by applying the globally marked
-         Default Preset to the TaskRunGroup snapshot (durations, interval,
-         sounds) and propagate its presetId.
+      3. **Usar preset predeterminado: "<preset name>"**: force Mode A by applying
+         the globally marked Default Preset to the TaskRunGroup snapshot
+         (durations, interval, sounds) and propagate its presetId.
+         - Show the exact preset name in the action label.
          - If the master task does not provide a clear structure, option 2
            automatically applies the Default Preset as a fallback.
          - This option is shown only when a Default Preset exists; otherwise,

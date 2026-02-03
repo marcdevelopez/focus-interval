@@ -3909,6 +3909,17 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 241 — Pomodoro Integrity Warning clarity — 03/02/2026
+
+### ✔ Work completed:
+
+- Integrity Warning actions now spell out the exact configuration source (first task name, default preset name, or per-task configs).
+- Button labels updated to remove ambiguous wording without changing logic.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

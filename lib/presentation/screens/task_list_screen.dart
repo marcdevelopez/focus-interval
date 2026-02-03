@@ -1503,6 +1503,11 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final defaultPreset = await _loadDefaultPreset();
     if (!context.mounted) return _IntegrityDecision.cancel;
     final hasDefaultPreset = defaultPreset != null;
+    final masterTaskName =
+        base.name.isEmpty ? '(Untitled)' : base.name;
+    final defaultPresetName = hasDefaultPreset
+        ? (defaultPreset.name.isEmpty ? '(Untitled)' : defaultPreset.name)
+        : '';
     final rootContext = context;
 
     final result = await showDialog<_IntegrityDecision>(
@@ -1552,7 +1557,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
             TextButton(
               onPressed: () =>
                   Navigator.of(context).pop(_IntegrityDecision.adjustFirst),
-              child: const Text('Ajustar a la primera'),
+              child: Text('Usar configuración de: $masterTaskName'),
             ),
             if (hasDefaultPreset)
               TextButton(
@@ -1569,12 +1574,13 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                   if (!context.mounted) return;
                   Navigator.of(context).pop(_IntegrityDecision.useDefault);
                 },
-                child: const Text('Usar Predeterminado'),
+                child:
+                    Text('Usar preset predeterminado: $defaultPresetName'),
               ),
             ElevatedButton(
               onPressed: () =>
                   Navigator.of(context).pop(_IntegrityDecision.proceed),
-              child: const Text('Continuar'),
+              child: const Text('Continuar con configuraciones individuales'),
             ),
           ],
         );
