@@ -4033,6 +4033,16 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 253 — Groups Hub cards hide non-planned scheduled row — 03/02/2026
+
+### ✔ Work completed:
+
+- Scheduled row is omitted on Groups Hub cards when scheduledStartTime is null.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

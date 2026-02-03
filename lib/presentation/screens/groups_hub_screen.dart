@@ -1254,10 +1254,11 @@ class _GroupCard extends StatelessWidget {
               style: const TextStyle(color: Colors.white54, fontSize: 12),
             ),
             const SizedBox(height: 8),
-            _MetaRow(
-              label: 'Scheduled',
-              value: _formatTime(scheduledStart),
-            ),
+            if (scheduledStart != null)
+              _MetaRow(
+                label: 'Scheduled',
+                value: _formatTime(scheduledStart),
+              ),
             _MetaRow(
               label: 'Ends',
               value: _formatTime(endTime),

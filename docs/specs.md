@@ -1118,7 +1118,7 @@ Entry points
 
 List fields per group
 
-- Scheduled start time
+- Scheduled start time (only for scheduled groups; omit when scheduledStartTime is null)
 - Theoretical end time
 - Number of tasks
 - Total duration
