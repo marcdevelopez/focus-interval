@@ -3993,6 +3993,26 @@ _(fill in when they happen)_
 
 - None.
 
+# 🔹 Block 249 — Run Mode cancel navigation hardening — 03/02/2026
+
+### ✔ Work completed:
+
+- Added a secondary cancel-navigation guard (on state updates) to ensure Run Mode always exits after cancellation, even in profile timing edge cases.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 250 — Cancel navigation fallback in build — 03/02/2026
+
+### ✔ Work completed:
+
+- Added a build-time cancel fallback that auto-exits to Groups Hub when the current group is already canceled.
+
+### ⚠️ Issues found:
+
+- None.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

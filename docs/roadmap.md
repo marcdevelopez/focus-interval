@@ -106,6 +106,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       03/02/2026: Integrity Warning copy clarified with explicit instruction + default badge moved below cards (validation pending).
       03/02/2026: Completed retention no longer evicted by canceled groups (validation pending).
       03/02/2026: Classic Pomodoro default now deduped on account-local preset push (validation pending).
+      03/02/2026: Run Mode cancel navigation fallback added in build (validation pending).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 

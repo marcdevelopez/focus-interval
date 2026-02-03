@@ -296,6 +296,15 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           _dismissFinishedDialog();
         });
       }
+      final group = vm.currentGroup;
+      if (group?.status == TaskRunStatus.canceled &&
+          !_cancelNavigationHandled) {
+        _cancelNavigationHandled = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          context.go('/groups');
+        });
+      }
     });
 
     ref.listen<String?>(scheduledAutoStartGroupIdProvider, (previous, next) {
@@ -310,6 +319,16 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final isPreRun = preRunInfo != null && _taskLoaded;
     final shouldBlockExit = state.status.isActiveExecution;
     final isLocalMode = appMode == AppMode.local;
+    final currentGroup = vm.currentGroup;
+
+    if (currentGroup?.status == TaskRunStatus.canceled &&
+        !_cancelNavigationHandled) {
+      _cancelNavigationHandled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.go('/groups');
+      });
+    }
 
     if (isPreRun) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -649,8 +668,11 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   void _cancelAndNavigateToHub(PomodoroViewModel vm) {
     vm.cancel();
     if (!mounted) return;
-    _cancelNavigationHandled = true;
-    context.go('/groups');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _cancelNavigationHandled) return;
+      _cancelNavigationHandled = true;
+      context.go('/groups');
+    });
   }
 
   void _dismissFinishedDialog() {
