@@ -1256,6 +1256,8 @@ The list rebuilds automatically when tasks change.
 - Completion modal must show on both owner and mirror devices while Run Mode is visible.
 - If the app is not active and the modal cannot be shown, show it on next foreground;
   if it still cannot be presented, auto-navigate to Groups Hub to avoid an idle Run Mode state.
+- If the owner is offline, mirror devices must still show the completion modal when the
+  projected timeline reaches the final task completion (derived state; no sync write).
 - After the user explicitly dismisses the completion modal, auto-navigate to the Groups Hub screen (do not remain in an idle Execution screen)
 - Cancel running group -> confirmation dialog + cancel group + navigate to Groups Hub
 - Status boxes and contextual list update automatically (including time ranges after pause/resume); no extra confirmations or animations in the MVP
