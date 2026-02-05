@@ -11,80 +11,22 @@ This document is used to:
 - Serve as professional evidence of collaborative AI work
 - Show how the MVP 1.2 was built at an accelerated pace
 
+Formatting rules:
+
+- Append new blocks at the end of this file (chronological order).
+- Block numbers must be strictly increasing and continue from the last block.
+- Never insert new blocks above existing ones.
+
 ---
 
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **04/02/2026**
+Last update: **05/02/2026**
 
 ---
 
 # 📅 Development log
-
-# 🔹 Block 37 — Specs + roadmap enhancements (04/02/2026)
-
-### ✔ Work completed:
-
-- Updated specs for group naming rules and TaskRunGroup `name`.
-- Documented task color palette, auto-assignment, and usage across UI.
-- Added Task List summary header and per-task total time display rules.
-- Added Task Editor total time chip and color picker requirements.
-- Documented Run Mode group progress bar behavior (pause-aware).
-- Updated planning flow: Start now vs Schedule cards, total range/time scheduling with proportional redistribution.
-- Documented global sound settings (apply switch + revert behavior).
-- Clarified Mode A/B break sequencing (global long-break counter) and added integrityMode to TaskRunGroup specs.
-- Task List time row corrected: time range only for selected tasks; unselected shows total time only.
-- Scheduling by total range/time: if the planned end is earlier than requested, show a lightweight notice with “Don’t show again”.
-- Updated roadmap with new phases and reopened phase list.
-
-### 🧠 Decisions made:
-
-- Default group names use English date/time format (e.g., "Jan 1 00:00", 24h).
-- Duplicate group names auto-append a short date/time suffix.
-- Scheduling redistribution reuses task weight algorithm (roundHalfUp, min 1 pomodoro).
-
-### ⚠️ Issues found:
-
-_(none)_
-
-### 🎯 Next steps:
-
-- Implement Phase 20 items in code after review.
-
-# 🔹 Block 38 — Mode A global breaks (04/02/2026)
-
-### ✔ Work completed:
-
-- Added `integrityMode` to TaskRunGroup with serialization and default handling.
-- Implemented Mode A global long-break sequencing (PomodoroMachine offset + ViewModel timeline math).
-- Added mode-aware group/task duration utilities and updated scheduling/end-time calculations.
-- Updated Task List selected preview and TimerScreen planned ranges to respect integrity mode.
-
-### ⚠️ Issues found:
-
-Mode A global long-break sequencing not fully validated (time constraints).
-
-### 🎯 Next steps:
-
-- Validate multi-task runs with shared structure (global long-breaks) across devices.
-- Other changes in this block were verified locally.
-
-# 🔹 Block 39 — Run Mode task transition catch-up (05/02/2026)
-
-### ✔ Work completed:
-
-- Added owner-side group timeline projection on resume/hydrate to advance across tasks after background time.
-- Reused the group timeline projection helper outside Local Mode when safe.
-- Ensured corrected state publishes back to the active session after projection.
-
-### ⚠️ Issues found:
-
-- Task transitions could stall at `finished` after app suspension, leaving the next task unstarted.
-
-### 🎯 Next steps:
-
-- Validate task-to-task auto-advance after background/resume on Android/iOS/Web.
 
 # 🔹 Block 1 — Initial setup (21/11/2025)
 
@@ -4162,6 +4104,70 @@ _(fill in when they happen)_
 ### ⚠️ Issues found:
 
 - None.
+
+# 🔹 Block 259 — Specs + roadmap enhancements (04/02/2026)
+
+### ✔ Work completed:
+
+- Updated specs for group naming rules and TaskRunGroup `name`.
+- Documented task color palette, auto-assignment, and usage across UI.
+- Added Task List summary header and per-task total time display rules.
+- Added Task Editor total time chip and color picker requirements.
+- Documented Run Mode group progress bar behavior (pause-aware).
+- Updated planning flow: Start now vs Schedule cards, total range/time scheduling with proportional redistribution.
+- Documented global sound settings (apply switch + revert behavior).
+- Clarified Mode A/B break sequencing (global long-break counter) and added integrityMode to TaskRunGroup specs.
+- Task List time row corrected: time range only for selected tasks; unselected shows total time only.
+- Scheduling by total range/time: if the planned end is earlier than requested, show a lightweight notice with “Don’t show again”.
+- Updated roadmap with new phases and reopened phase list.
+
+### 🧠 Decisions made:
+
+- Default group names use English date/time format (e.g., "Jan 1 00:00", 24h).
+- Duplicate group names auto-append a short date/time suffix.
+- Scheduling redistribution reuses task weight algorithm (roundHalfUp, min 1 pomodoro).
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Implement Phase 20 items in code after review.
+
+# 🔹 Block 260 — Mode A global breaks (04/02/2026)
+
+### ✔ Work completed:
+
+- Added `integrityMode` to TaskRunGroup with serialization and default handling.
+- Implemented Mode A global long-break sequencing (PomodoroMachine offset + ViewModel timeline math).
+- Added mode-aware group/task duration utilities and updated scheduling/end-time calculations.
+- Updated Task List selected preview and TimerScreen planned ranges to respect integrity mode.
+
+### ⚠️ Issues found:
+
+Mode A global long-break sequencing not fully validated (time constraints).
+
+### 🎯 Next steps:
+
+- Validate multi-task runs with shared structure (global long-breaks) across devices.
+- Other changes in this block were verified locally.
+
+# 🔹 Block 261 — Run Mode task transition catch-up (05/02/2026)
+
+### ✔ Work completed:
+
+- Added owner-side group timeline projection on resume/hydrate to advance across tasks after background time.
+- Reused the group timeline projection helper outside Local Mode when safe.
+- Ensured corrected state publishes back to the active session after projection.
+
+### ⚠️ Issues found:
+
+- Task transitions could stall at `finished` after app suspension, leaving the next task unstarted.
+
+### 🎯 Next steps:
+
+- Validate task-to-task auto-advance after background/resume on Android/iOS/Web.
 
 # 🧾 General notes
 

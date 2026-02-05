@@ -32,6 +32,10 @@ At the start of **every session**:
 5. Do **not** start coding until context is fully aligned.
 6. Ensure you are **not on `main`**; create a new branch before any code/doc changes.
 7. If already on a branch, ensure your changes match the branch purpose/name; if not, commit the current work on that branch, then create a new branch for the unrelated change.
+8. Dev log hygiene:
+   - Append new blocks to the end of `docs/dev_log.md` in chronological order.
+   - Block numbers must be strictly increasing and continue from the last block.
+   - Update the "Last update" date whenever a new block is added.
 
 ---
 
