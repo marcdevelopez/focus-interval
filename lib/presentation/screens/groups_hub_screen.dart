@@ -210,7 +210,8 @@ class GroupsHubScreen extends ConsumerWidget {
     final repo = ref.read(taskRunGroupRepositoryProvider);
     final now = DateTime.now();
     final totalSeconds =
-        group.totalDurationSeconds ?? groupDurationSecondsWithFinalBreaks(group.tasks);
+        group.totalDurationSeconds ??
+        groupDurationSecondsByMode(group.tasks, group.integrityMode);
     final conflictStart = now;
     final conflictEnd = now.add(Duration(seconds: totalSeconds));
 
@@ -297,7 +298,10 @@ class GroupsHubScreen extends ConsumerWidget {
     }
 
     final items = _cloneRunItems(source.tasks);
-    final totalDurationSeconds = groupDurationSecondsWithFinalBreaks(items);
+    final totalDurationSeconds = groupDurationSecondsByMode(
+      items,
+      source.integrityMode,
+    );
     final noticeMinutes = source.noticeMinutes ??
         await ref.read(taskRunNoticeServiceProvider).getNoticeMinutes();
     if (!context.mounted) return;
@@ -398,6 +402,7 @@ class GroupsHubScreen extends ConsumerWidget {
     final newGroup = TaskRunGroup(
       id: const Uuid().v4(),
       ownerUid: ownerUid,
+      integrityMode: source.integrityMode,
       tasks: items,
       createdAt: planCapturedAt,
       scheduledStartTime: scheduledStart,

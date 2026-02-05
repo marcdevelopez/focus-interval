@@ -194,7 +194,7 @@ class LocalTaskRunGroupRepository implements TaskRunGroupRepository {
     if (end.isBefore(start)) {
       final totalSeconds =
           group.totalDurationSeconds ??
-          groupDurationSecondsWithFinalBreaks(group.tasks);
+          groupDurationSecondsByMode(group.tasks, group.integrityMode);
       if (totalSeconds > 0) {
         return start.add(Duration(seconds: totalSeconds));
       }

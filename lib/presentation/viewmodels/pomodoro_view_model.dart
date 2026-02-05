@@ -142,9 +142,13 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   void configureFromItem(TaskRunItem item) {
+    final group = _currentGroup;
     final allowFinalBreak =
-        _currentGroup != null &&
-        _currentTaskIndex < (_currentGroup!.tasks.length - 1);
+        group != null && _currentTaskIndex < (group.tasks.length - 1);
+    final globalPomodoroOffset =
+        group != null && group.integrityMode == TaskRunIntegrityMode.shared
+        ? _globalPomodoroOffsetForTask(group, _currentTaskIndex)
+        : 0;
     _machine.callbacks = PomodoroCallbacks(
       onPomodoroStart: (_) {
         _markPhaseStartedFromState(_machine.state);
@@ -173,9 +177,41 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       totalPomodoros: item.totalPomodoros,
       longBreakInterval: item.longBreakInterval,
       allowFinalBreak: allowFinalBreak,
+      globalPomodoroOffset: globalPomodoroOffset,
     );
 
     state = _machine.state;
+  }
+
+  int _groupTotalSeconds(TaskRunGroup group) {
+    return groupDurationSecondsByMode(group.tasks, group.integrityMode);
+  }
+
+  List<int> _taskDurationsForGroup(TaskRunGroup group) {
+    return taskDurationSecondsByMode(group.tasks, group.integrityMode);
+  }
+
+  int _taskDurationForIndex(TaskRunGroup group, int index) {
+    final durations = _taskDurationsForGroup(group);
+    if (index < 0 || index >= durations.length) return 0;
+    return durations[index];
+  }
+
+  int _globalPomodoroOffsetForTask(TaskRunGroup group, int taskIndex) {
+    if (group.integrityMode != TaskRunIntegrityMode.shared) return 0;
+    if (taskIndex <= 0) return 0;
+    var total = 0;
+    for (var index = 0; index < taskIndex && index < group.tasks.length; index += 1) {
+      total += group.tasks[index].totalPomodoros;
+    }
+    return total;
+  }
+
+  int _totalGroupPomodoros(TaskRunGroup group) {
+    return group.tasks.fold<int>(
+      0,
+      (total, item) => total + item.totalPomodoros,
+    );
   }
 
   int _resolveTaskIndex(TaskRunGroup group, PomodoroSession? session) {
@@ -223,19 +259,26 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (elapsed < 0) return null;
 
     var offset = 0;
+    var globalPomodoroOffset = 0;
     final lastIndex = group.tasks.length - 1;
+    final taskDurations = _taskDurationsForGroup(group);
+    final totalGroupPomodoros = _totalGroupPomodoros(group);
     for (var index = 0; index < group.tasks.length; index += 1) {
       final item = group.tasks[index];
-      final includeFinalBreak = index < lastIndex;
-      final taskDuration = item.durationSeconds(
-        includeFinalBreak: includeFinalBreak,
-      );
+      final taskDuration = taskDurations[index];
       if (elapsed < offset + taskDuration) {
         final elapsedInTask = elapsed - offset;
+        final includeFinalBreak =
+            group.integrityMode == TaskRunIntegrityMode.shared
+            ? globalPomodoroOffset + item.totalPomodoros < totalGroupPomodoros
+            : index < lastIndex;
         final projected = _projectStateWithinTask(
           item: item,
           elapsedSeconds: elapsedInTask,
           includeFinalBreak: includeFinalBreak,
+          integrityMode: group.integrityMode,
+          globalPomodoroOffset: globalPomodoroOffset,
+          totalGroupPomodoros: totalGroupPomodoros,
         );
         if (projected == null) return null;
         return _GroupResumeProjection(
@@ -245,6 +288,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         );
       }
       offset += taskDuration;
+      globalPomodoroOffset += item.totalPomodoros;
     }
     return null;
   }
@@ -253,12 +297,73 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     required TaskRunItem item,
     required int elapsedSeconds,
     required bool includeFinalBreak,
+    required TaskRunIntegrityMode integrityMode,
+    required int globalPomodoroOffset,
+    required int totalGroupPomodoros,
   }) {
     var elapsed = elapsedSeconds;
     if (elapsed < 0) elapsed = 0;
     final pomodoroSeconds = item.pomodoroMinutes * 60;
     final shortBreakSeconds = item.shortBreakMinutes * 60;
     final longBreakSeconds = item.longBreakMinutes * 60;
+
+    if (integrityMode == TaskRunIntegrityMode.shared) {
+      for (var pomodoroIndex = 1;
+          pomodoroIndex <= item.totalPomodoros;
+          pomodoroIndex += 1) {
+        if (elapsed < pomodoroSeconds) {
+          return PomodoroState(
+            status: PomodoroStatus.pomodoroRunning,
+            phase: PomodoroPhase.pomodoro,
+            currentPomodoro: pomodoroIndex,
+            totalPomodoros: item.totalPomodoros,
+            totalSeconds: pomodoroSeconds,
+            remainingSeconds: pomodoroSeconds - elapsed,
+          );
+        }
+        elapsed -= pomodoroSeconds;
+
+        final globalIndex = globalPomodoroOffset + pomodoroIndex;
+        final hasBreak = globalIndex < totalGroupPomodoros;
+        if (!hasBreak) {
+          return PomodoroState(
+            status: PomodoroStatus.finished,
+            phase: null,
+            currentPomodoro: item.totalPomodoros,
+            totalPomodoros: item.totalPomodoros,
+            totalSeconds: 0,
+            remainingSeconds: 0,
+          );
+        }
+
+        final isLongBreak = globalIndex % item.longBreakInterval == 0;
+        final breakSeconds = isLongBreak ? longBreakSeconds : shortBreakSeconds;
+        if (elapsed < breakSeconds) {
+          return PomodoroState(
+            status: isLongBreak
+                ? PomodoroStatus.longBreakRunning
+                : PomodoroStatus.shortBreakRunning,
+            phase: isLongBreak
+                ? PomodoroPhase.longBreak
+                : PomodoroPhase.shortBreak,
+            currentPomodoro: pomodoroIndex,
+            totalPomodoros: item.totalPomodoros,
+            totalSeconds: breakSeconds,
+            remainingSeconds: breakSeconds - elapsed,
+          );
+        }
+        elapsed -= breakSeconds;
+      }
+
+      return PomodoroState(
+        status: PomodoroStatus.finished,
+        phase: null,
+        currentPomodoro: item.totalPomodoros,
+        totalPomodoros: item.totalPomodoros,
+        totalSeconds: 0,
+        remainingSeconds: 0,
+      );
+    }
 
     for (var pomodoroIndex = 1;
         pomodoroIndex <= item.totalPomodoros;
@@ -405,7 +510,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (group == null) return;
     final now = DateTime.now();
     final start = startOverride ?? group.actualStartTime ?? now;
-    final totalSeconds = groupDurationSecondsWithFinalBreaks(group.tasks);
+    final totalSeconds = _groupTotalSeconds(group);
     final end = start.add(Duration(seconds: totalSeconds));
     final shouldUpdate =
         group.status != TaskRunStatus.running ||
@@ -788,7 +893,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   int get totalGroupDurationSeconds => _currentGroup == null
       ? 0
-      : groupDurationSecondsWithFinalBreaks(_currentGroup!.tasks);
+      : _groupTotalSeconds(_currentGroup!);
 
   DateTime? get phaseStartedAt {
     if (_remoteOwnerId != null && _remoteOwnerId != _deviceInfo.deviceId) {
@@ -808,24 +913,20 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     final baseStart = group.actualStartTime;
     if (baseStart == null) return null;
 
-    final lastIndex = group.tasks.length - 1;
+    final durations = _taskDurationsForGroup(group);
     if (index < _currentTaskIndex) {
       final cached = _completedTaskRanges[index];
       if (cached != null) return cached;
       final start = _expectedTaskStart(group, index);
       if (start == null) return null;
-      final duration = group.tasks[index].durationSeconds(
-        includeFinalBreak: index < lastIndex,
-      );
+      final duration = _taskDurationForIndex(group, index);
       return TaskTimeRange(start, start.add(Duration(seconds: duration)));
     }
 
     if (index == _currentTaskIndex) {
       final start = _currentTaskStartedAt ?? _expectedTaskStart(group, index);
       if (start == null) return null;
-      final duration = group.tasks[index].durationSeconds(
-        includeFinalBreak: index < lastIndex,
-      );
+      final duration = _taskDurationForIndex(group, index);
       final pauseSeconds = _pauseSecondsSinceCurrentTaskStart();
       return TaskTimeRange(
         start,
@@ -837,9 +938,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (currentRange == null) return null;
     var start = currentRange.end;
     for (var i = _currentTaskIndex + 1; i <= index; i += 1) {
-      final duration = group.tasks[i].durationSeconds(
-        includeFinalBreak: i < lastIndex,
-      );
+      final duration = durations[i];
       final end = start.add(Duration(seconds: duration));
       if (i == index) {
         return TaskTimeRange(start, end);
@@ -895,17 +994,26 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     final item = _currentItem;
     if (group == null || item == null) return 0;
     var total = 0;
-    final lastIndex = group.tasks.length - 1;
+    final durations = _taskDurationsForGroup(group);
     for (var index = 0; index < _currentTaskIndex; index += 1) {
-      total += group.tasks[index].durationSeconds(
-        includeFinalBreak: index < lastIndex,
-      );
+      total += durations[index];
     }
-    total += _activeSecondsBeforePhaseInTask(item, state);
+    total += _activeSecondsBeforePhaseInTask(
+      item,
+      state,
+      integrityMode: group.integrityMode,
+      globalPomodoroOffset:
+          _globalPomodoroOffsetForTask(group, _currentTaskIndex),
+    );
     return total;
   }
 
-  int _activeSecondsBeforePhaseInTask(TaskRunItem item, PomodoroState state) {
+  int _activeSecondsBeforePhaseInTask(
+    TaskRunItem item,
+    PomodoroState state, {
+    required TaskRunIntegrityMode integrityMode,
+    required int globalPomodoroOffset,
+  }) {
     if (state.phase == null || state.currentPomodoro <= 0) return 0;
     final pomodoroSeconds = item.pomodoroMinutes * 60;
     final shortBreakSeconds = item.shortBreakMinutes * 60;
@@ -914,7 +1022,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     var total = 0;
     for (var index = 1; index < currentPomodoro; index += 1) {
       total += pomodoroSeconds;
-      final isLongBreak = index % item.longBreakInterval == 0;
+      final globalIndex = integrityMode == TaskRunIntegrityMode.shared
+          ? globalPomodoroOffset + index
+          : index;
+      final isLongBreak = globalIndex % item.longBreakInterval == 0;
       total += isLongBreak ? longBreakSeconds : shortBreakSeconds;
     }
     if (state.phase == PomodoroPhase.shortBreak ||
@@ -928,13 +1039,11 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     final baseStart = group.actualStartTime;
     if (baseStart == null) return null;
     var cursor = baseStart;
-    final lastIndex = group.tasks.length - 1;
+    final durations = _taskDurationsForGroup(group);
     for (var i = 0; i < index && i < group.tasks.length; i += 1) {
       cursor = cursor.add(
         Duration(
-          seconds: group.tasks[i].durationSeconds(
-            includeFinalBreak: i < lastIndex,
-          ),
+          seconds: durations[i],
         ),
       );
     }
@@ -1170,6 +1279,12 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     PomodoroPhase phase = initialPhase;
     var currentPomodoro = session.currentPomodoro;
     final totalPomodoros = session.totalPomodoros;
+    final group = _currentGroup;
+    final sharedMode =
+        group != null && group.integrityMode == TaskRunIntegrityMode.shared;
+    final globalPomodoroOffset = sharedMode
+        ? _globalPomodoroOffsetForTask(group, _currentTaskIndex)
+        : 0;
     var phaseDuration = _phaseDurationForPhase(
       phase,
       fallback: session.phaseDurationSeconds,
@@ -1212,7 +1327,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
             _currentItem?.longBreakInterval ??
             _currentTask?.longBreakInterval ??
             1;
-        final isLongBreak = currentPomodoro % interval == 0;
+        final globalIndex = sharedMode
+            ? globalPomodoroOffset + currentPomodoro
+            : currentPomodoro;
+        final isLongBreak = globalIndex % interval == 0;
         phase = isLongBreak
             ? PomodoroPhase.longBreak
             : PomodoroPhase.shortBreak;

@@ -1453,20 +1453,19 @@ class _ContextualTaskList extends StatelessWidget {
     DateTime plannedStart,
   ) {
     if (index < 0 || index >= group.tasks.length) return null;
+    final durations = taskDurationSecondsByMode(
+      group.tasks,
+      group.integrityMode,
+    );
     var cursor = plannedStart;
-    final lastIndex = group.tasks.length - 1;
     for (var i = 0; i < index; i += 1) {
       cursor = cursor.add(
         Duration(
-          seconds: group.tasks[i].durationSeconds(
-            includeFinalBreak: i < lastIndex,
-          ),
+          seconds: durations[i],
         ),
       );
     }
-    final duration = group.tasks[index].durationSeconds(
-      includeFinalBreak: index < lastIndex,
-    );
+    final duration = durations[index];
     return TaskTimeRange(cursor, cursor.add(Duration(seconds: duration)));
   }
 }

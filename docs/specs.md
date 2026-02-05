@@ -108,6 +108,7 @@ lib/
 class PomodoroTask {
   String id;
   String name;
+  String? colorId; // palette id; auto-assigned when missing
 
   int pomodoroDuration; // minutes
   int shortBreakDuration;
@@ -126,6 +127,7 @@ class PomodoroTask {
   PomodoroTask({
     required this.id,
     required this.name,
+    this.colorId,
     required this.pomodoroDuration,
     required this.shortBreakDuration,
     required this.longBreakDuration,
@@ -148,6 +150,8 @@ A TaskRunGroup is an immutable snapshot generated when the user confirms a set o
 class TaskRunGroup {
   String id;
   String ownerUid;
+  String name; // user-visible group name (max 40 chars)
+  String integrityMode; // shared | individual (Mode A / Mode B)
 
   List<TaskRunItem> tasks; // ordered snapshots
   DateTime createdAt;
@@ -171,6 +175,7 @@ class TaskRunGroup {
 class TaskRunItem {
   String sourceTaskId; // reference to original task
   String name;
+  String? colorId; // palette id snapshot (for stable visuals in the group)
   String? presetId; // optional reference to the preset used for structure
 
   int pomodoroDuration;
@@ -192,6 +197,15 @@ Notes:
 - Conceptual pre-run state: scheduled -> preparing -> running (preparing is UI-only and does not change the model).
 - A scheduled group must transition to running at scheduledStartTime.
 - Editing a PomodoroTask after group creation does not affect a running or scheduled group.
+- TaskRunGroup names:
+  - New groups must have a name. If the user leaves the name empty, auto-generate one at confirm time using local date/time in English (e.g., "Jan 1 00:00", 24h).
+  - Names are **not** required to be unique. If the final name matches an existing group name, append a short date/time suffix to the new group name: " — dd-MM-YYYY HH:mm".
+  - Enforce a max length of 40 characters. If a suffix is added and the name exceeds 40, truncate the base name and add an ellipsis so the suffix still fits.
+  - Groups created before this feature may have no stored name. In that case, display a derived name built from task names and truncate to 40 characters (with ellipsis).
+- integrityMode:
+  - Stored on the TaskRunGroup at creation time based on the Pomodoro Integrity selection.
+  - **shared** = Mode A (Shared structure, global pomodoro counter across the group).
+  - **individual** = Mode B (Keep individual configurations, per-task counters).
 
 ## **5.3. PomodoroSession model (live sync)**
 
@@ -251,6 +265,15 @@ class PomodoroSession {
 - When a task completes:
   - If there is a next task: auto-transition to the first pomodoro of the next task.
   - No modal/popup is shown between tasks.
+- Mode-specific break behavior:
+  - **Mode A (Shared structure):** the group behaves as a **single continuous Pomodoro sequence**.
+    - Breaks occur **between all pomodoros** using the shared configuration.
+    - The long-break interval is counted **globally across tasks**.
+    - Task boundaries do **not** add extra breaks; they just switch the active task label.
+  - **Mode B (Keep individual configurations):** each task keeps its own break structure.
+    - If another task follows, execute a break after the task ends:
+      - Short break by default.
+      - Long break if that task’s pomodoro count reaches its long-break interval.
 - When the last task completes:
   - The group ends (status = completed).
   - Final modal + final animation are shown (see section 12).
@@ -483,6 +506,22 @@ Email verification (email/password)
 
 ## **10.2. Task List screen (group preparation)**
 
+### **10.2.0. Group header (visible when tasks are selected)**
+
+- As soon as at least one task is selected, show a compact header above the list:
+  - **Group name input** (max 40 characters).
+    - Optional to fill; if left empty, the system auto-generates the name on confirm (see TaskRunGroup naming rules).
+  - **Group summary bar** with:
+    - Total group time (work + breaks, using the same logic as execution).
+    - Estimated start time (local "now" captured at the moment of selection).
+    - Estimated end time (start + total group time).
+- The summary is recalculated only when the selection changes (select/deselect).
+  Reordering tasks does not change the summary because it uses only the total duration.
+- If selected tasks mix Pomodoro structural configurations, the summary is provisional.
+  After the Integrity Warning choice (Mode A or Mode B), all planning totals must
+  use the chosen mode's timing rules.
+- After a group is started or scheduled, **clear all selections** and collapse the header.
+
 ### **10.2.1. Task list**
 
 - Manual ordering via drag & drop
@@ -498,7 +537,9 @@ Email verification (email/password)
 Item layout (top → bottom):
 
 1. **Title row**
-   - Task name (up to 2 lines, ellipsized)
+   - Task name (up to 2 lines, ellipsized) inside a **color-accent chip**
+     (outline or side accent only; no solid fill).
+   - The chip uses the task's assigned palette color (see Task colors section).
    - Derived task weight percentage in the top-right corner (does not alter the rest of the layout)
    - No time range in this row
 
@@ -521,9 +562,16 @@ Item layout (top → bottom):
      - Otherwise, the blue dot is aligned with the **lowest** red dot (bottom row)
        and uses its own column if there is space; if not, it sits below the last red column
 
-3. **Time range row (only when selected)**
-   - Label: **Time range**
-   - Two chips: start time and end time (theoretical schedule preview)
+3. **Context row (time)**
+   - **When selected**:
+     - Label: **Time range**
+     - Two chips: start time and end time (theoretical schedule preview)
+     - Per-task total time is hidden (the group summary already shows totals)
+   - **When not selected**:
+     - Label: **Total time**
+     - One chip: total task duration
+     - Formula: `total = (pomodoros × pomodoroDuration) + breaks`
+       where breaks include short/long breaks between pomodoros and **exclude** the final break.
 
 4. **Sounds row**
    - Two entries: **Pomodoro start** and **Break start**
@@ -538,16 +586,26 @@ Item layout (top → bottom):
 
 ### **10.2.2. Theoretical schedule preview**
 
-- Calculated assuming “Start now” (recomputed if a scheduled start is later chosen)
+- Calculated assuming “Start now” using the **anchor time** captured at the moment
+  of selection (local "now").
 - For each selected task, show:
   - Estimated start time
   - Estimated end time
-  - Only selected tasks show theoretical times
+- Only selected tasks show theoretical times.
 - Recalculate when:
-  - Current time changes
-  - Tasks are reordered
-  - Selection changes
-  - Scheduled start time changes (planned start)
+  - Selection changes (select/deselect)
+  - A scheduled start time is chosen in planning (planned start)
+  - Tasks are reordered (update per-task ranges only; the anchor time remains the same)
+- The total duration and per-task ranges must follow the **same** timing logic as execution:
+  - **Mode A (Shared structure)**:
+    - The group behaves as a single continuous Pomodoro sequence.
+    - Long breaks are inserted using a **global** pomodoro counter across tasks.
+    - Task boundaries do **not** add extra breaks; they only switch labels.
+  - **Mode B (Keep individual configurations)**:
+    - Each task keeps its own structure.
+    - If another task follows, include a break after the task:
+      - Short by default.
+      - Long if that task’s long-break interval is reached.
 
 ### **10.2.3. Confirm action**
 
@@ -555,6 +613,8 @@ Item layout (top → bottom):
 - Enabled only if at least 1 task is selected
 - On press:
   - Create a TaskRunGroup snapshot
+  - Apply group naming rules (required name, default auto-name if empty, duplicate suffix handling, max length)
+  - Persist `integrityMode` on the group based on the Integrity Warning selection
   - If selected tasks use mixed Pomodoro structural configurations
     (pomodoro duration, short/long break duration, long break interval),
     show the Pomodoro Integrity Warning before scheduling/starting:
@@ -616,7 +676,7 @@ Item layout (top → bottom):
 
 Inputs:
 
-- Name
+- Name (with color picker)
 - Preset selector (Custom or saved preset)
 - Total pomodoros
 - Task weight (%)
@@ -636,6 +696,8 @@ Buttons:
 Behavior:
 
 - Preset selector sits above duration/sound inputs (selecting a preset overrides the fields below).
+- The Task name row includes a color-palette icon on the right. Tapping it opens the
+  fixed task color palette (see Task colors section).
 - When a preset is selected:
   - Task links to the presetId and adopts its structural values + sounds.
   - Editing any structural field switches the task to **Custom** (detaches from preset).
@@ -696,6 +758,8 @@ Behavior:
   - Provide an info tooltip explaining how the long break interval works.
 - If a custom local sound is selected, show the file name (with extension) in the selector.
 - Task weight shows both total pomodoros and a derived percentage of the group total (work time).
+- Directly below **Total pomodoros**, show a **non-editable total time chip** with
+  the task's full duration (work + breaks). This chip is always visible and updates live.
 - Editing the percentage updates totalPomodoros to the closest integer (pomodoros are never fractional),
   and redistributes the remaining tasks to preserve their relative proportions.
 - Display Total pomodoros and Task weight (%) on the same row directly below the task name to emphasize task weight.
@@ -718,10 +782,19 @@ Execution modes for TaskRunGroups:
   - The group defines the structural configuration.
   - All tasks share the same pomodoro/break durations and long-break interval.
   - Tasks differ only by `totalPomodoros` (weight).
+  - The long-break interval is counted **globally across tasks**.
 - **Mode B — Per-task Pomodoro Configuration (current behavior)**
   - Each task keeps its own structural configuration.
   - The app shows an informational warning that Pomodoro benefits may be reduced.
   - The user may continue without restrictions.
+  - For timeline calculations, if another task follows, include a break after the task:
+    - Short by default.
+    - Long if that task’s long-break interval is reached.
+
+Timing integrity
+
+- All planning totals (Task List summary, time ranges, scheduling) must use the **same**
+  break-insertion logic as execution for the chosen mode.
 
 Task weight rules:
 
@@ -751,6 +824,52 @@ UI implications (documentation only):
 - Task Editor should display totalPomodoros and derived percentage, with live recalculation when either value changes.
 - Task Editor should place Total pomodoros + Task weight (%) together, above Pomodoro structural configuration and sounds.
 - If a TaskRunGroup mixes structural configurations, show a clear integrity warning (education-only).
+
+### **10.3.z. Task colors (visual accent, documentation-first)**
+
+Purpose: provide a lightweight visual identifier for tasks across the flow without relying on color as the only signal.
+
+Rules
+
+- Each task has a `colorId` from a **fixed, cross-platform palette** (12 colors).
+- Users can choose a color in the Task Editor via the palette icon next to the Task name.
+- If the user does not choose a color, the system **auto-assigns** one on first save:
+  - Choose the **least-used** color among existing tasks in the current list.
+  - If there is a tie, pick the earliest color in the palette order.
+  - Never auto-reassign a task that already has a color.
+- The color is **accent-only**:
+  - Use it for outlines, chips, or small indicators.
+  - Do **not** use it as a solid background behind text.
+  - Task name text always uses the standard theme color for readability.
+- The color must never be the only means of conveying information.
+- Ensure legibility on both dark and light themes:
+  - No neon/high-saturation extremes.
+  - Contrast must remain WCAG AA–equivalent for text proximity.
+  - If necessary, adjust stroke opacity (not hue) for theme balance.
+
+Palette (fixed order)
+
+1. Red — `#E53935`
+2. Blue — `#1E88E5`
+3. Green — `#43A047`
+4. Amber — `#FFB300`
+5. Purple — `#8E24AA`
+6. Cyan — `#00ACC1`
+7. Teal — `#00897B`
+8. Indigo — `#3949AB`
+9. Pink — `#D81B60`
+10. Lime — `#AFB42B`
+11. Orange — `#FB8C00`
+12. Neutral Gray — `#757575`
+
+Usage locations
+
+- Task List (task name chip).
+- Run Mode group progress bar.
+- Run Mode contextual task list (below the circle).
+- Any screen where a task name is displayed in a list or summary.
+- When a TaskRunGroup snapshot is created, copy `colorId` into each TaskRunItem
+  so group visuals remain stable even if the task is later edited.
 
 ### **10.3.y. Reusable Pomodoro configurations (Task Presets) (planned, documentation-first)**
 
@@ -867,12 +986,51 @@ Run Mode is group-only: TimerScreen loads a TaskRunGroup by groupId; there is no
 
 ### **10.4.1. Pre-start planning (before the timer begins)**
 
-- The user chooses when to run the group after tapping "Confirm".
-- Show a date + time picker (default: current date/time).
-- Two explicit actions:
-  - Start now -> start immediately
-  - Schedule start -> schedule the start time
+- The user chooses when and how to run the group after tapping "Confirm".
+- Use a **two-card layout**:
+  - **Start now** card with one primary chip.
+  - **Schedule** card with two primary chips:
+    - **Schedule by total range time**
+    - **Schedule by total time**
+- Chips must be large enough for reliable taps and visually consistent across the three options.
 - Conflicts are validated for both actions (see section 6.4)
+
+Start now
+
+- Starts immediately using the current TaskRunGroup snapshot (no reweighting).
+
+Schedule by total range time
+
+- The user selects **start time** and **end time** (date + time).
+- The system recalculates the group to fit within the requested time range by
+  **redistributing totalPomodoros per task**, preserving relative **work-time**
+  proportions (same algorithm as Task weight in section 10.3.x).
+- Pomodoro and break durations are **never** changed.
+- Pomodoros are indivisible integers; minimum 1 per task.
+- If the requested range cannot be satisfied without breaking these rules, block scheduling
+  and show a clear warning.
+- If the closest valid distribution ends earlier than the requested end time due to integer
+  constraints, show the actual end time as the planned end.
+  - Show a lightweight notice explaining why the end time shifted.
+  - Include a “Don’t show again” checkbox; remember the preference per device.
+
+Schedule by total time
+
+- The user selects **start time** and **total duration** (e.g., 8h).
+- The system derives the end time and applies the **same** redistribution rules as above.
+- If the requested duration cannot be satisfied without breaking the rules, block scheduling.
+- Adjustments apply only to the TaskRunGroup snapshot; the underlying PomodoroTask values are never modified.
+ - If the derived end time is earlier than the user’s requested end time due to integer
+   constraints, show the same lightweight notice (with “Don’t show again”).
+
+Redistribution rules (shared)
+
+- Use the **same** rounding and proportional logic as Task weight:
+  - `roundHalfUp` for integer pomodoros.
+  - Minimum 1 pomodoro per task.
+  - Preserve relative proportions between tasks.
+- If the closest achievable distribution deviates excessively (≥ 10 percentage points)
+  or no redistribution is possible, show a blocking warning and do not schedule.
 - Scheduling must reserve the full Pre-Run Countdown window when noticeMinutes > 0:
   - The window from scheduledStartTime - noticeMinutes to scheduledStartTime
     is treated as blocked time.
@@ -965,6 +1123,25 @@ Last 10 seconds
 - Access to Groups Hub screen (show a visual indicator when pending groups exist)
 - If the Groups Hub screen is not yet available, the indicator can be a non-interactive placeholder until Phase 19.
 
+### **10.4.2.a. Group progress bar (above the circle)**
+
+- Add a horizontal **group progress bar** directly above the timer circle.
+- The bar is segmented by task. Each segment’s width is proportional to that task’s
+  **total duration** in the group timeline (work + breaks), using the **active integrity mode**:
+  - **Mode A (Shared structure)**: breaks are inserted across the entire group and
+    attributed to the task that just completed a pomodoro.
+  - **Mode B (Keep individual configurations)**: each task’s own break structure
+    is preserved; include the final break when another task follows.
+- Each segment uses the task’s palette color as an **accent** (outline or subtle fill).
+- The fill represents **effective executed time** only:
+  - Progress **does not advance while paused**.
+  - For running sessions, derive elapsed time from `phaseStartedAt` + `phaseDurationSeconds`.
+  - For paused sessions, use the stored `remainingSeconds` to keep progress frozen.
+  - Mirror devices compute the same value from the shared session + group snapshot.
+  - Local Mode: if a pause is lost on app close (per spec), progress recalculates from
+    `actualStartTime` and will jump accordingly on reopen.
+- In Pre-Run Countdown Mode, the bar is visible but empty (0% fill).
+
 ### **10.4.3. Circle core elements**
 
 1. Large circular clock (progress ring style with a visible progress segment)
@@ -1025,7 +1202,22 @@ Break running
     - Text: Siguiente: Pomodoro Y de X
     - Time range: HH:mm–HH:mm
 
-Note: There is **no break between tasks**. When a task finishes and there are more tasks in the group, the next task starts immediately.
+Note (mode-specific):
+
+- **Mode A (Shared structure):** 
+   - The group behaves as a single continuous Pomodoro sequence.
+   - Pomodoro and break durations, as well as the long-break interval, are shared across the entire group.
+   - The pomodoro counter is global to the group and does not reset when tasks change.
+   - Breaks are always executed between pomodoros according to the shared configuration.
+   - There is no additional or special break caused by task boundaries.
+   - When a task finishes and there are more tasks, execution continues with the next task’s pomodoro after the appropriate break.
+   - Two pomodoros must never be executed consecutively without an intervening break.
+- **Mode B (Keep individual configurations):** 
+   - Each task preserves its own pomodoro and break structure.
+   - When a task finishes and another task follows, a break is always executed before starting the next task.
+   - The break between tasks is a short break, unless the task’s own long-break interval is reached, in which case a long break is executed.
+   - No break is executed after the final pomodoro of the last task in the group.
+
 
 Rule: the upper box always matches the current executing phase.
 
@@ -1039,6 +1231,7 @@ Location: below the circle and above Pause/Cancel buttons.
   - Next task (upcoming)
 - No placeholders, no empty slots.
 - Each item shows its time range (HH:mm–HH:mm).
+- Task name is shown with the same color-accent chip used in the Task List.
 - Completed tasks keep their actual time range; current/upcoming tasks are projected.
 
 Cases
@@ -1118,6 +1311,7 @@ Entry points
 
 List fields per group
 
+- **Group name** (primary title on the card)
 - Scheduled start time (only for scheduled groups; omit when scheduledStartTime is null)
 - Theoretical end time
 - Number of tasks
@@ -1128,6 +1322,7 @@ List fields per group
 Actions
 
 - Tap -> light detail view (summary)
+  - Rename group (pencil/edit action)
   - Cancel planning
   - Start now (only if no conflicts)
   - Open Run Mode for running/paused groups
@@ -1149,6 +1344,7 @@ Summary (tap on a group)
   - **Totals**: total tasks, total pomodoros (if available)
   - **Tasks list**: each task shown as a compact card with:
     - Task name
+    - Task color accent (chip/outline)
     - Pomodoro count + duration
     - Short/long break durations
     - Long-break interval dots
@@ -1196,6 +1392,7 @@ C. Responsive clock
 D. Pause and resume
 
 - Pause freezes the ring progress (marker) and countdown
+- Pause also freezes the **group progress bar** (no fill advance)
 - Resume continues from exact point
 - On resume, recalculate projected start/end times used in the status boxes and contextual task list
 - No sound on pause/resume
@@ -1245,6 +1442,23 @@ Content
 - Language selector with system auto-detect by default (user can override).
 - Theme selector lives here; dark and light modes are both available in MVP.
 - All app-wide configuration options are centralized in this menu.
+- **Global sound configuration** (Pomodoro start, Break start, Task finish):
+  - Settings store the selected global sounds but do **not** apply them unless the
+    **Apply globally** switch is turned **ON**.
+  - When the switch turns ON, apply the global sounds to **all existing tasks** in the
+    current scope (Local or Account). Show a clear confirmation/warning before applying.
+  - Presets are **never** modified.
+  - After applying:
+    - If a task’s resulting sounds match its preset exactly, it keeps the preset link.
+    - If they differ, the task switches to **Custom** due to sound changes.
+  - New tasks:
+    - Switch ON → default to global sounds.
+    - Switch OFF → follow preset/default behavior.
+  - Provide a **Revert to previous sounds** action:
+    - Restores the sound configuration that existed **before the last switch activation**.
+    - Applies only to tasks that still exist.
+    - Tasks created after the last activation are not reverted.
+    - After revert, the switch turns OFF and a brief notice explains how to reapply.
 
 ---
 
