@@ -251,6 +251,13 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (session != null) return null;
     if (ref.read(appModeProvider) != AppMode.local) return null;
     if (group.status != TaskRunStatus.running) return null;
+    return _projectFromGroupTimeline(group, now);
+  }
+
+  _GroupResumeProjection? _projectFromGroupTimeline(
+    TaskRunGroup group,
+    DateTime now,
+  ) {
     final actualStart = group.actualStartTime;
     if (actualStart == null) return null;
     if (group.tasks.isEmpty) return null;
@@ -782,7 +789,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     }
     if (session.status == PomodoroStatus.idle) return;
     final now = DateTime.now();
-    final projected = _projectStateFromSession(session, now: now);
     final pauseReason = session.status == PomodoroStatus.paused
         ? session.pauseReason
         : null;
@@ -795,6 +801,12 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       _finishedAt = session.finishedAt;
     }
     _pauseReason = pauseReason;
+    if (session.status != PomodoroStatus.paused &&
+        _applyGroupTimelineProjection(now)) {
+      _publishCurrentSession();
+      return;
+    }
+    final projected = _projectStateFromSession(session, now: now);
     _applyProjectedState(projected, now: now);
     _publishCurrentSession();
   }
@@ -1147,6 +1159,32 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     }
   }
 
+  bool _applyGroupTimelineProjection(DateTime now) {
+    final group = _currentGroup;
+    if (group == null) return false;
+    if (group.status != TaskRunStatus.running) return false;
+    if (_remoteOwnerId != null && _remoteOwnerId != _deviceInfo.deviceId) {
+      return false;
+    }
+    if (!_controlsEnabled) return false;
+    if (state.status == PomodoroStatus.paused) return false;
+
+    final projection = _projectFromGroupTimeline(group, now);
+    if (projection == null) return false;
+
+    final sameTask = projection.taskIndex == _currentTaskIndex;
+    final sameState = _isSameState(state, projection.state);
+    if (sameTask && sameState) return false;
+
+    _currentTaskIndex = projection.taskIndex;
+    _currentItem = _resolveTaskItem(group, projection.taskIndex);
+    _currentTaskStartedAt = projection.taskStartedAt;
+    if (_currentItem == null) return false;
+    configureFromItem(_currentItem!);
+    _applyProjectedState(projection.state, now: now);
+    return true;
+  }
+
   void handleAppPaused() {
     if (_currentItem == null && _currentTask == null) return;
     if (_remoteOwnerId != null) return;
@@ -1162,6 +1200,11 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       }
       return;
     }
+    final now = DateTime.now();
+    if (_applyGroupTimelineProjection(now)) {
+      _publishCurrentSession();
+      return;
+    }
     final current = _machine.state;
     if (!_isRunning(current.status)) return;
     final phaseStartedAt = _localPhaseStartedAt;
@@ -1171,7 +1214,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     }
     final taskId = _currentItem?.sourceTaskId ?? _currentTask?.id;
     if (taskId == null) return;
-    final now = DateTime.now();
     final baseSession = PomodoroSession(
       taskId: taskId,
       groupId: _currentGroup?.id,
