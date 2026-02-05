@@ -33,6 +33,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   String _currentClock = "";
   bool _taskLoaded = false;
   bool _finishedDialogVisible = false;
+  bool _completionDialogHandled = false;
+  bool _completionDialogPending = false;
+  bool _completionNavigationHandled = false;
+  bool _appIsActive = true;
   bool _autoStartHandled = false;
   int _autoStartAttempts = 0;
   bool _runningAutoStartHandled = false;
@@ -119,6 +123,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   void _resetForGroupSwitch() {
     _taskLoaded = false;
     _finishedDialogVisible = false;
+    _completionDialogHandled = false;
+    _completionDialogPending = false;
+    _completionNavigationHandled = false;
     _autoStartHandled = false;
     _autoStartAttempts = 0;
     _runningAutoStartHandled = false;
@@ -174,8 +181,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final vm = ref.read(pomodoroViewModelProvider.notifier);
     if (state == AppLifecycleState.resumed) {
+      _appIsActive = true;
       _startClockTimer();
       vm.handleAppResumed();
+      _maybeShowPendingCompletionDialog(vm);
       return;
     }
     final keepClockActive = _keepClockActiveOutOfFocus();
@@ -188,6 +197,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
+      _appIsActive = false;
       vm.handleAppPaused();
     }
   }
@@ -306,6 +316,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         vm.applyRemoteCancellation();
       }
 
+      if (group.status == TaskRunStatus.completed) {
+        _maybeHandleGroupCompleted(vm, group);
+      }
+
       if (group.status == TaskRunStatus.canceled &&
           !_cancelNavigationHandled) {
         _navigateToGroupsHub(reason: 'group stream canceled');
@@ -315,20 +329,25 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     ref.listen<PomodoroState>(pomodoroViewModelProvider, (previous, next) {
       final wasFinished = previous?.status == PomodoroStatus.finished;
       final nowFinished = next.status == PomodoroStatus.finished;
-      if (!wasFinished && nowFinished && vm.isGroupCompleted) {
+      final group = vm.currentGroup;
+      final isGroupCompleted =
+          vm.isGroupCompleted || group?.status == TaskRunStatus.completed;
+      if (!wasFinished && nowFinished && isGroupCompleted) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           _showFinishedDialog(context, vm);
         });
         return;
       }
-      if (_finishedDialogVisible && vm.isMirrorMode && !nowFinished) {
+      if (_finishedDialogVisible &&
+          vm.isMirrorMode &&
+          !nowFinished &&
+          group?.status != TaskRunStatus.completed) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           _dismissFinishedDialog();
         });
       }
-      final group = vm.currentGroup;
       if (group?.status == TaskRunStatus.canceled &&
           !_cancelNavigationHandled) {
         _navigateToGroupsHub(reason: 'vm canceled');
@@ -618,13 +637,41 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     );
   }
 
+  void _maybeHandleGroupCompleted(PomodoroViewModel vm, TaskRunGroup group) {
+    if (_completionNavigationHandled) return;
+    if (_completionDialogHandled || _finishedDialogVisible) return;
+    if (!_appIsActive) {
+      _completionDialogPending = true;
+      return;
+    }
+    _showFinishedDialog(context, vm);
+  }
+
+  void _maybeShowPendingCompletionDialog(PomodoroViewModel vm) {
+    if (!_completionDialogPending) return;
+    final group = vm.currentGroup;
+    if (group?.status != TaskRunStatus.completed) {
+      _completionDialogPending = false;
+      return;
+    }
+    _completionDialogPending = false;
+    _showFinishedDialog(context, vm);
+  }
+
+  void _navigateToGroupsHubAfterCompletion({required String reason}) {
+    if (_completionNavigationHandled) return;
+    _completionNavigationHandled = true;
+    _cancelNavRetryAttempts = 0;
+    _attemptNavigateToGroupsHub(reason);
+  }
+
   void _showFinishedDialog(BuildContext context, PomodoroViewModel vm) {
-    if (_finishedDialogVisible) return;
-    final router = GoRouter.of(context);
+    if (_finishedDialogVisible || _completionDialogHandled) return;
     final totalTasks = vm.totalTasks;
     final totalPomodoros = vm.totalGroupPomodoros;
     final totalDuration = _formatDurationLong(vm.totalGroupDurationSeconds);
     _finishedDialogVisible = true;
+    _completionDialogHandled = true;
     showDialog(
       context: context,
       useRootNavigator: true,
@@ -648,7 +695,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
               if (!mounted) return;
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (!mounted) return;
-                router.go('/groups');
+                _navigateToGroupsHubAfterCompletion(reason: 'group completed');
               });
             },
             child: const Text("OK"),
@@ -657,6 +704,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       ),
     ).whenComplete(() {
       _finishedDialogVisible = false;
+      if (!_completionNavigationHandled) {
+        _navigateToGroupsHubAfterCompletion(reason: 'completion fallback');
+      }
     });
   }
 

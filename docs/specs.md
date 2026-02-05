@@ -1253,6 +1253,9 @@ The list rebuilds automatically when tasks change.
 - No modal between tasks
 - Group completion -> modal + final animation (see section 12)
 - Completion modal includes summary totals when available (total tasks, pomodoros, total time)
+- Completion modal must show on both owner and mirror devices while Run Mode is visible.
+- If the app is not active and the modal cannot be shown, show it on next foreground;
+  if it still cannot be presented, auto-navigate to Groups Hub to avoid an idle Run Mode state.
 - After the user explicitly dismisses the completion modal, auto-navigate to the Groups Hub screen (do not remain in an idle Execution screen)
 - Cancel running group -> confirmation dialog + cancel group + navigate to Groups Hub
 - Status boxes and contextual list update automatically (including time ranges after pause/resume); no extra confirmations or animations in the MVP
@@ -1487,6 +1490,9 @@ When the timer completes the last pomodoro of the last task:
 3. It must show a modal popup with:
    - "Tasks Group completed"
    - Optional summary: total tasks, pomodoros, total time
+   - The modal must appear on both owner and mirror devices while Run Mode is visible.
+   - If the app is not active and the modal cannot be shown, show it on next foreground;
+     if it still cannot be presented, auto-navigate to Groups Hub to avoid an idle Run Mode state.
 4. It must send a system notification.
 5. The state machine transitions to finished.
 6. The clock screen must:
