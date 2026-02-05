@@ -14,7 +14,7 @@ This project includes an official team roles document at:
 # 🟦 **Global Project Status**
 
 ```
-CURRENT PHASE: 19 — Groups Hub Screen (in progress)
+CURRENT PHASE: 20 — Responsive Updates for New Run Mode (next)
 NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       PomodoroViewModel exposed as Notifier auto-dispose and subscribed to the machine.
       Auth strategy: Google Sign-In on iOS/Android/Web (web verified; People API enabled); email/password on macOS/Windows; Linux auth disabled (local-only).
@@ -89,12 +89,41 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       02/02/2026: Completion modal now navigates to Groups Hub; placeholder Groups Hub route added (validation pending).
       02/02/2026: Cancel running group now confirms and navigates to Groups Hub (validation pending).
       02/02/2026: Phase 18 completed (completion flow + cancel flow -> Groups Hub).
+      02/02/2026: Phase 19 Groups Hub core UI implemented (sections + actions); Task List banner + Run Mode indicator now open Groups Hub (validation pending).
+      02/02/2026: Task List banner now clears stale sessions when group ends (validation pending).
+      02/02/2026: Scheduled auto-start rechecks when active session ends; expired running groups auto-complete to unblock scheduled starts (validation pending).
+      02/02/2026: Running group expiry now clears stale active sessions (Task List banner updates; validation pending).
+      02/02/2026: Scheduling now reserves the full Pre-Run window (noticeMinutes) and blocks invalid times (validation pending).
+      02/02/2026: Pre-Run entry points added for scheduled groups (Task List banner + Groups Hub action; no AppBar changes) (validation pending).
+      02/02/2026: Task List now exposes a persistent Groups Hub CTA even with no active group (validation pending).
+      02/02/2026: Task List running banner now falls back to running groups when no active session exists (Local Mode) (validation pending).
+      02/02/2026: Groups Hub hides notice/pre-run info for “Start now” groups (scheduledStartTime == null) (validation pending).
+      03/02/2026: Auto-adjust short/long breaks on valid pomodoro changes and break edits (Task Editor + Edit Preset) (validation pending).
+      03/02/2026: Break auto-adjust on break edits now applies on focus loss (no per-keystroke adjustments) (validation pending).
+      03/02/2026: Pomodoro Integrity Warning actions now show exact configuration source names (validation pending).
+      03/02/2026: Pomodoro Integrity Warning now lists visual options per distinct structure + Default Preset badge (validation pending).
+      03/02/2026: Run Mode now auto-exits to Groups Hub when a group is canceled (validation pending).
+      03/02/2026: Integrity Warning copy clarified with explicit instruction + default badge moved below cards (validation pending).
+      03/02/2026: Groups Hub summary modal expanded with timing, totals, and task breakdown (validation pending).
+      03/02/2026: Groups Hub summary hides Scheduled start for non-planned runs (validation pending).
+      03/02/2026: Groups Hub cards hide Scheduled row for non-planned runs (validation pending).
+      03/02/2026: TimerScreen reloads on groupId changes; /timer routes now use page keys to prevent stale state (validation pending).
+      03/02/2026: Cancel navigation uses root navigator and retries if still on /timer (validation pending).
+      03/02/2026: Cancel now persists canceled status before clearing activeSession (validation pending).
+      03/02/2026: Groups Hub "Go to Task List" CTA moved to top of content (validation pending).
+      03/02/2026: Completed retention no longer evicted by canceled groups (validation pending).
+      03/02/2026: Classic Pomodoro default now deduped on account-local preset push (validation pending).
+      03/02/2026: Run Mode cancel navigation fallback added in build (validation pending).
+      04/02/2026: Phase 19 validation completed (multi-platform) and phase closed.
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
 ## 🔄 Reopened phases (must complete before moving on)
 
-- None. Outstanding items from specs sections 10.4.2 / 10.4.6 / 12 / 10.5 are tracked in Phases 18, 19, and 21 (not reopened).
+- Phase 17 — Scheduled auto-start stuck after prior running group ended; recheck on session end + expired running group auto-complete (validation pending).
+- Phase 17 — Scheduling must reserve full Pre-Run window (noticeMinutes) with clear user messaging (validation pending).
+- Phase 10 — Auto-adjust breaks on valid pomodoro changes and break edits (focus-loss adjustment; Task Editor + Edit Preset) (validation pending).
+- Outstanding items from specs sections 10.4.2 / 10.4.6 / 12 / 10.5 are tracked in Phases 18, 19, and 21 (not reopened).
 - Rule: if any previously completed phase is missing required behavior, list it here and resolve it before continuing in normal phase order.
 
 Update this on each commit if needed.
@@ -672,17 +701,20 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ---
 
-# 🚀 **PHASE 19 — Groups Hub Screen**
+# ✅ **PHASE 19 — Groups Hub Screen (Complete)**
 
 ### ⚙️ Tasks
 
 - Create Groups Hub screen accessible from Run Mode header.
 - List scheduled/running/last N completed groups with required fields.
 - Actions: view summary, cancel schedule, start now (if no conflict).
+- Summary modal shows group timing, totals, and per-task breakdown (scrollable).
 - Add running-group entry points (Task List banner + Groups Hub "Open Run Mode" action).
 - Add "Run again" for completed groups to duplicate the snapshot into a new TaskRunGroup and open planning.
 - Provide direct navigation to the Task List screen (Task Library).
 - Auto-navigate to Groups Hub after group completion (only after the user dismisses the completion modal).
+- Ensure Pre-Run remains accessible: Task List banner + Groups Hub "Open Pre-Run" action when within notice window.
+- Ensure Groups Hub is reachable from Task List even when no active/pre-run group (content CTA, no AppBar changes).
 
 ### 📌 Exit conditions
 

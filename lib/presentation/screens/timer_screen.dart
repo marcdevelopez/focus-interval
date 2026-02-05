@@ -29,6 +29,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   Timer? _clockTimer;
   Timer? _preRunTimer;
   Timer? _debugFrameTimer;
+  Timer? _cancelNavRetryTimer;
   String _currentClock = "";
   bool _taskLoaded = false;
   bool _finishedDialogVisible = false;
@@ -36,6 +37,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   int _autoStartAttempts = 0;
   bool _runningAutoStartHandled = false;
   String? _runningAutoStartGroupId;
+  bool _cancelNavigationHandled = false;
+  int _cancelNavRetryAttempts = 0;
   _PreRunInfo? _preRunInfo;
   int _preRunRemainingSeconds = 0;
 
@@ -48,32 +51,16 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _startClockTimer();
     _startDebugFramePing();
 
-    // Load group by ID
-    Future.microtask(() async {
-      final result = await ref
-          .read(pomodoroViewModelProvider.notifier)
-          .loadGroup(widget.groupId);
-      if (!mounted) return;
+    _loadGroup(widget.groupId);
+  }
 
-      switch (result) {
-        case PomodoroGroupLoadResult.loaded:
-          setState(() => _taskLoaded = true);
-          _syncPreRunInfo(
-            ref.read(pomodoroViewModelProvider.notifier).currentGroup,
-          );
-          _maybeAutoStartScheduled();
-          break;
-        case PomodoroGroupLoadResult.notFound:
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Selected group not found.")),
-          );
-          Navigator.pop(context);
-          break;
-        case PomodoroGroupLoadResult.blockedByActiveSession:
-          await _handleBlockedStart();
-          break;
-      }
-    });
+  @override
+  void didUpdateWidget(TimerScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.groupId != widget.groupId) {
+      _resetForGroupSwitch();
+      _loadGroup(widget.groupId);
+    }
   }
 
   void _updateClock() {
@@ -119,9 +106,58 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _debugFrameTimer = null;
   }
 
+  void _stopCancelNavRetry() {
+    _cancelNavRetryTimer?.cancel();
+    _cancelNavRetryTimer = null;
+  }
+
   void _stopPreRunTimer() {
     _preRunTimer?.cancel();
     _preRunTimer = null;
+  }
+
+  void _resetForGroupSwitch() {
+    _taskLoaded = false;
+    _finishedDialogVisible = false;
+    _autoStartHandled = false;
+    _autoStartAttempts = 0;
+    _runningAutoStartHandled = false;
+    _runningAutoStartGroupId = null;
+    _cancelNavigationHandled = false;
+    _cancelNavRetryAttempts = 0;
+    _stopCancelNavRetry();
+    _preRunInfo = null;
+    _preRunRemainingSeconds = 0;
+    _stopPreRunTimer();
+  }
+
+  void _loadGroup(String groupId) {
+    // Load group by ID
+    Future.microtask(() async {
+      final result = await ref
+          .read(pomodoroViewModelProvider.notifier)
+          .loadGroup(groupId);
+      if (!mounted) return;
+
+      switch (result) {
+        case PomodoroGroupLoadResult.loaded:
+          setState(() => _taskLoaded = true);
+          _syncPreRunInfo(
+            ref.read(pomodoroViewModelProvider.notifier).currentGroup,
+          );
+          _maybeAutoStartScheduled();
+          break;
+        case PomodoroGroupLoadResult.notFound:
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Selected group not found.")),
+          );
+          Navigator.pop(context);
+          break;
+        case PomodoroGroupLoadResult.blockedByActiveSession:
+          await _handleBlockedStart();
+          break;
+      }
+    });
   }
 
   @override
@@ -129,6 +165,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _stopClockTimer();
     _stopPreRunTimer();
     _stopDebugFramePing();
+    _stopCancelNavRetry();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -268,6 +305,11 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           state.status.isActiveExecution) {
         vm.applyRemoteCancellation();
       }
+
+      if (group.status == TaskRunStatus.canceled &&
+          !_cancelNavigationHandled) {
+        _navigateToGroupsHub(reason: 'group stream canceled');
+      }
     });
 
     ref.listen<PomodoroState>(pomodoroViewModelProvider, (previous, next) {
@@ -286,6 +328,11 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           _dismissFinishedDialog();
         });
       }
+      final group = vm.currentGroup;
+      if (group?.status == TaskRunStatus.canceled &&
+          !_cancelNavigationHandled) {
+        _navigateToGroupsHub(reason: 'vm canceled');
+      }
     });
 
     ref.listen<String?>(scheduledAutoStartGroupIdProvider, (previous, next) {
@@ -300,6 +347,12 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final isPreRun = preRunInfo != null && _taskLoaded;
     final shouldBlockExit = state.status.isActiveExecution;
     final isLocalMode = appMode == AppMode.local;
+    final currentGroup = vm.currentGroup;
+
+    if (currentGroup?.status == TaskRunStatus.canceled &&
+        !_cancelNavigationHandled) {
+      _navigateToGroupsHub(reason: 'build canceled');
+    }
 
     if (isPreRun) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -610,7 +663,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   Future<void> _handleCancelRequested(PomodoroViewModel vm) async {
     final confirmed = await _confirmCancelDialog();
     if (confirmed != true) return;
-    _cancelAndNavigateToHub(vm);
+    await _cancelAndNavigateToHub(vm);
   }
 
   Future<bool?> _confirmCancelDialog() {
@@ -636,10 +689,51 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     );
   }
 
-  void _cancelAndNavigateToHub(PomodoroViewModel vm) {
-    vm.cancel();
+  Future<void> _cancelAndNavigateToHub(PomodoroViewModel vm) async {
+    await vm.cancel();
     if (!mounted) return;
-    context.go('/groups');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _navigateToGroupsHub(reason: 'user cancel');
+    });
+  }
+
+  void _navigateToGroupsHub({required String reason}) {
+    if (_cancelNavigationHandled) return;
+    _cancelNavigationHandled = true;
+    _cancelNavRetryAttempts = 0;
+    _attemptNavigateToGroupsHub(reason);
+  }
+
+  void _attemptNavigateToGroupsHub(String reason) {
+    if (!mounted) return;
+    final rootContext =
+        GoRouter.of(context).routerDelegate.navigatorKey.currentContext;
+    final router = rootContext != null ? GoRouter.of(rootContext) : GoRouter.of(context);
+    if (kDebugMode) {
+      debugPrint(
+        'Cancel nav: $reason (attempt $_cancelNavRetryAttempts, root=${rootContext != null})',
+      );
+    }
+    router.go('/groups');
+    _scheduleCancelNavRetry(router);
+  }
+
+  void _scheduleCancelNavRetry(GoRouter router) {
+    if (_cancelNavRetryAttempts >= 3) return;
+    _cancelNavRetryAttempts += 1;
+    _cancelNavRetryTimer?.cancel();
+    _cancelNavRetryTimer = Timer(const Duration(milliseconds: 250), () {
+      if (!mounted) return;
+      final currentPath = router.routerDelegate.currentConfiguration.uri.path;
+      if (currentPath.startsWith('/timer/')) {
+        if (kDebugMode) {
+          debugPrint('Cancel nav retry $_cancelNavRetryAttempts (still in timer)');
+        }
+        router.go('/groups');
+        _scheduleCancelNavRetry(router);
+      }
+    });
   }
 
   void _dismissFinishedDialog() {
@@ -736,13 +830,13 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
       if (shouldTakeOver != true) return false;
       await vm.takeOver();
-      _cancelAndNavigateToHub(vm);
+      await _cancelAndNavigateToHub(vm);
       return false;
     }
 
     final shouldCancel = await _confirmCancelDialog();
     if (shouldCancel != true) return false;
-    _cancelAndNavigateToHub(vm);
+    await _cancelAndNavigateToHub(vm);
     return false;
   }
 
@@ -903,9 +997,7 @@ class _PlannedGroupsIndicator extends ConsumerWidget {
     return IconButton(
       tooltip: 'Planned groups',
       onPressed: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Planned groups screen coming soon.')),
-        );
+        context.go('/groups');
       },
       icon: Stack(
         clipBehavior: Clip.none,

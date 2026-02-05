@@ -48,8 +48,13 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
   late final TextEditingController _shortBreakCtrl;
   late final TextEditingController _longBreakCtrl;
   late final TextEditingController _longBreakIntervalCtrl;
+  late final FocusNode _shortBreakFocus;
+  late final FocusNode _longBreakFocus;
   bool _intervalTouched = false;
   bool _breaksTouched = false;
+  bool _shortBreakAutoAdjusted = false;
+  bool _longBreakAutoAdjusted = false;
+  bool _applyingBreakAutoAdjust = false;
   String? _loadedPresetId;
   bool _initializing = true;
   PomodoroPreset? _initialPresetSnapshot;
@@ -66,6 +71,16 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
     _shortBreakCtrl = TextEditingController();
     _longBreakCtrl = TextEditingController();
     _longBreakIntervalCtrl = TextEditingController();
+    _shortBreakFocus = FocusNode();
+    _longBreakFocus = FocusNode();
+    _shortBreakFocus.addListener(() {
+      if (_shortBreakFocus.hasFocus) return;
+      _applyBreakAutoAdjust(BreakOrderField.shortBreak);
+    });
+    _longBreakFocus.addListener(() {
+      if (_longBreakFocus.hasFocus) return;
+      _applyBreakAutoAdjust(BreakOrderField.longBreak);
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializePreset();
     });
@@ -78,6 +93,8 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
     _shortBreakCtrl.dispose();
     _longBreakCtrl.dispose();
     _longBreakIntervalCtrl.dispose();
+    _shortBreakFocus.dispose();
+    _longBreakFocus.dispose();
     super.dispose();
   }
 
@@ -128,12 +145,22 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
         (intervalInput == null ||
             intervalInput < 1 ||
             intervalInput > maxLongBreakInterval);
-    final shortHelper = guidance == null || shortBlocking
-        ? null
-        : 'Optimal range: ${guidance.shortRange.label} min';
-    final longHelper = guidance == null || longBlocking
-        ? null
-        : 'Optimal range: ${guidance.longRange.label} min';
+    final shortRangeLabel = guidance?.shortRange.label;
+    final longRangeLabel = guidance?.longRange.label;
+    final showShortHelper = guidance != null && !shortBlocking;
+    final showLongHelper = guidance != null && !longBlocking;
+    final shortHelperBase = showShortHelper && shortRangeLabel != null
+        ? 'Optimal range: $shortRangeLabel min'
+        : null;
+    final longHelperBase = showLongHelper && longRangeLabel != null
+        ? 'Optimal range: $longRangeLabel min'
+        : null;
+    final shortHelper = showShortHelper
+        ? _withAutoAdjustNote(shortHelperBase, _shortBreakAutoAdjusted)
+        : null;
+    final longHelper = showLongHelper
+        ? _withAutoAdjustNote(longHelperBase, _longBreakAutoAdjusted)
+        : null;
     final pomodoroHelper = pomodoroGuidance?.helperText;
     final pomodoroStatus =
         pomodoroGuidance?.status ?? PomodoroDurationStatus.optimal;
@@ -240,7 +267,39 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
                 label: "Pomodoro duration (min)",
                 controller: _pomodoroCtrl,
                 onChanged: (v) {
-                  _update(preset.copyWith(pomodoroMinutes: v));
+                  final pomodoroGuidance = buildPomodoroDurationGuidance(
+                    minutes: v,
+                  );
+                  if (pomodoroGuidance.isValid) {
+                    final adjustment = adjustBreakDurations(
+                      pomodoroMinutes: v,
+                      shortBreakMinutes: preset.shortBreakMinutes,
+                      longBreakMinutes: preset.longBreakMinutes,
+                    );
+                    final updated = preset.copyWith(
+                      pomodoroMinutes: v,
+                      shortBreakMinutes: adjustment.shortBreakMinutes,
+                      longBreakMinutes: adjustment.longBreakMinutes,
+                    );
+                    _update(updated);
+                    if (adjustment.anyAdjusted) {
+                      _applyingBreakAutoAdjust = true;
+                      try {
+                        _shortBreakCtrl.text =
+                            adjustment.shortBreakMinutes.toString();
+                        _longBreakCtrl.text =
+                            adjustment.longBreakMinutes.toString();
+                        _setBreakAutoAdjustFlags(adjustment);
+                      } finally {
+                        _applyingBreakAutoAdjust = false;
+                      }
+                    } else {
+                      _clearBreakAutoAdjustFlags();
+                    }
+                  } else {
+                    _clearBreakAutoAdjustFlags();
+                    _update(preset.copyWith(pomodoroMinutes: v));
+                  }
                   _revalidateBreakFields();
                 },
                 helperText: pomodoroHelper,
@@ -257,89 +316,97 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
                 additionalValidator: (value) => _pomodoroRangeValidator(value),
                 autovalidateMode: AutovalidateMode.onUserInteraction,
               ),
-            _numberField(
-              label: "Short break (min)",
-              fieldKey: _shortBreakFieldKey,
-              controller: _shortBreakCtrl,
-              onChanged: (v) {
-                if (!_breaksTouched) {
-                  setState(() {
-                    _breaksTouched = true;
-                  });
-                }
-                _update(preset.copyWith(shortBreakMinutes: v));
-                _revalidateBreakFields();
-              },
-              helperText: shortHelper,
-              helperColor: _statusHelperColor(shortStatus),
-              borderColor: _statusBorderColor(shortStatus, focused: false),
-              focusedBorderColor: _statusBorderColor(shortStatus, focused: true),
-              additionalValidator: (value) => _breakFieldValidator(
-                value: value,
-                label: 'Short break',
-                orderField: BreakOrderField.shortBreak,
-                otherController: _longBreakCtrl,
+              _numberField(
+                label: "Short break (min)",
+                fieldKey: _shortBreakFieldKey,
+                controller: _shortBreakCtrl,
+                focusNode: _shortBreakFocus,
+                onChanged: (v) {
+                  if (_applyingBreakAutoAdjust) return;
+                  if (!_breaksTouched) {
+                    setState(() {
+                      _breaksTouched = true;
+                    });
+                  }
+                  _clearBreakAutoAdjustFlags();
+                  _update(preset.copyWith(shortBreakMinutes: v));
+                  _revalidateBreakFields();
+                },
+                helperText: shortHelper,
+                helperColor: _statusHelperColor(shortStatus),
+                borderColor: _statusBorderColor(shortStatus, focused: false),
+                focusedBorderColor:
+                    _statusBorderColor(shortStatus, focused: true),
+                additionalValidator: (value) => _breakFieldValidator(
+                  value: value,
+                  label: 'Short break',
+                  orderField: BreakOrderField.shortBreak,
+                  otherController: _longBreakCtrl,
+                ),
+                autovalidateMode: breakAutovalidateMode,
               ),
-              autovalidateMode: breakAutovalidateMode,
-            ),
-            _numberField(
-              label: "Long break (min)",
-              fieldKey: _longBreakFieldKey,
-              controller: _longBreakCtrl,
-              onChanged: (v) {
-                if (!_breaksTouched) {
-                  setState(() {
-                    _breaksTouched = true;
-                  });
-                }
-                _update(preset.copyWith(longBreakMinutes: v));
-                _revalidateBreakFields();
-              },
-              helperText: longHelper,
-              helperColor: _statusHelperColor(longStatus),
-              borderColor: _statusBorderColor(longStatus, focused: false),
-              focusedBorderColor: _statusBorderColor(longStatus, focused: true),
-              additionalValidator: (value) => _breakFieldValidator(
-                value: value,
-                label: 'Long break',
-                orderField: BreakOrderField.longBreak,
-                otherController: _shortBreakCtrl,
+              _numberField(
+                label: "Long break (min)",
+                fieldKey: _longBreakFieldKey,
+                controller: _longBreakCtrl,
+                focusNode: _longBreakFocus,
+                onChanged: (v) {
+                  if (_applyingBreakAutoAdjust) return;
+                  if (!_breaksTouched) {
+                    setState(() {
+                      _breaksTouched = true;
+                    });
+                  }
+                  _clearBreakAutoAdjustFlags();
+                  _update(preset.copyWith(longBreakMinutes: v));
+                  _revalidateBreakFields();
+                },
+                helperText: longHelper,
+                helperColor: _statusHelperColor(longStatus),
+                borderColor: _statusBorderColor(longStatus, focused: false),
+                focusedBorderColor:
+                    _statusBorderColor(longStatus, focused: true),
+                additionalValidator: (value) => _breakFieldValidator(
+                  value: value,
+                  label: 'Long break',
+                  orderField: BreakOrderField.longBreak,
+                  otherController: _shortBreakCtrl,
+                ),
+                autovalidateMode: breakAutovalidateMode,
               ),
-              autovalidateMode: breakAutovalidateMode,
-            ),
-            const SizedBox(height: 12),
-            _numberField(
-              label: "Pomodoros per long break",
-              controller: _longBreakIntervalCtrl,
-              onChanged: (v) =>
-                  _update(preset.copyWith(longBreakInterval: v)),
-              onTextChanged: (raw) {
-                if (!_intervalTouched) {
-                  _intervalTouched = true;
-                }
-                if (int.tryParse(raw.trim()) == null) {
-                  setState(() {});
-                }
-              },
-              helperText: intervalHelper,
-              helperColor: _intervalHelperColor(
-                intervalStatus,
-                isInvalid: intervalInvalid,
+              const SizedBox(height: 12),
+              _numberField(
+                label: "Pomodoros per long break",
+                controller: _longBreakIntervalCtrl,
+                onChanged: (v) =>
+                    _update(preset.copyWith(longBreakInterval: v)),
+                onTextChanged: (raw) {
+                  if (!_intervalTouched) {
+                    _intervalTouched = true;
+                  }
+                  if (int.tryParse(raw.trim()) == null) {
+                    setState(() {});
+                  }
+                },
+                helperText: intervalHelper,
+                helperColor: _intervalHelperColor(
+                  intervalStatus,
+                  isInvalid: intervalInvalid,
+                ),
+                borderColor: _intervalBorderColor(
+                  intervalStatus,
+                  focused: false,
+                  isInvalid: intervalInvalid,
+                ),
+                focusedBorderColor: _intervalBorderColor(
+                  intervalStatus,
+                  focused: true,
+                  isInvalid: intervalInvalid,
+                ),
+                helperMaxLines: 2,
+                additionalValidator: _longBreakIntervalValidator,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
               ),
-              borderColor: _intervalBorderColor(
-                intervalStatus,
-                focused: false,
-                isInvalid: intervalInvalid,
-              ),
-              focusedBorderColor: _intervalBorderColor(
-                intervalStatus,
-                focused: true,
-                isInvalid: intervalInvalid,
-              ),
-              helperMaxLines: 2,
-              additionalValidator: _longBreakIntervalValidator,
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-            ),
             const SizedBox(height: 24),
             const Text(
               "Sounds",
@@ -760,6 +827,67 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
     ref.read(presetEditorProvider.notifier).update(updated);
   }
 
+  void _applyBreakAutoAdjust(BreakOrderField preferred) {
+    if (_applyingBreakAutoAdjust) return;
+    final preset = ref.read(presetEditorProvider);
+    if (preset == null) return;
+    final pomodoroGuidance = buildPomodoroDurationGuidance(
+      minutes: preset.pomodoroMinutes,
+    );
+    if (!pomodoroGuidance.isValid) {
+      _clearBreakAutoAdjustFlags();
+      return;
+    }
+    final shortValue = int.tryParse(_shortBreakCtrl.text.trim());
+    final longValue = int.tryParse(_longBreakCtrl.text.trim());
+    if (shortValue == null || longValue == null) return;
+    final adjustment = adjustBreakDurationsForPreferred(
+      pomodoroMinutes: preset.pomodoroMinutes,
+      shortBreakMinutes: shortValue,
+      longBreakMinutes: longValue,
+      preferred: preferred,
+    );
+    if (!adjustment.anyAdjusted) {
+      _clearBreakAutoAdjustFlags();
+      return;
+    }
+    _applyingBreakAutoAdjust = true;
+    try {
+      _update(preset.copyWith(
+        shortBreakMinutes: adjustment.shortBreakMinutes,
+        longBreakMinutes: adjustment.longBreakMinutes,
+      ));
+      _shortBreakCtrl.text = adjustment.shortBreakMinutes.toString();
+      _longBreakCtrl.text = adjustment.longBreakMinutes.toString();
+      _setBreakAutoAdjustFlags(adjustment);
+      _revalidateBreakFields();
+    } finally {
+      _applyingBreakAutoAdjust = false;
+    }
+  }
+
+  void _clearBreakAutoAdjustFlags() {
+    if (!_shortBreakAutoAdjusted && !_longBreakAutoAdjusted) return;
+    setState(() {
+      _shortBreakAutoAdjusted = false;
+      _longBreakAutoAdjusted = false;
+    });
+  }
+
+  void _setBreakAutoAdjustFlags(BreakDurationAdjustment adjustment) {
+    setState(() {
+      _shortBreakAutoAdjusted = adjustment.shortAdjusted;
+      _longBreakAutoAdjusted = adjustment.longAdjusted;
+    });
+  }
+
+  String? _withAutoAdjustNote(String? base, bool adjusted) {
+    if (!adjusted) return base;
+    const note = 'Adjusted to match the new pomodoro duration.';
+    if (base == null || base.isEmpty) return note;
+    return '$note\n$base';
+  }
+
   void _revalidateBreakFields() {
     _shortBreakFieldKey.currentState?.validate();
     _longBreakFieldKey.currentState?.validate();
@@ -774,6 +902,8 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
     _longBreakIntervalCtrl.text = preset.longBreakInterval.toString();
     _intervalTouched = false;
     _breaksTouched = false;
+    _shortBreakAutoAdjusted = false;
+    _longBreakAutoAdjusted = false;
   }
 
   Future<void> _initializePreset() async {
@@ -1043,6 +1173,7 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
     required String label,
     Key? fieldKey,
     required TextEditingController controller,
+    FocusNode? focusNode,
     required ValueChanged<int> onChanged,
     ValueChanged<String>? onTextChanged,
     String? helperText,
@@ -1057,6 +1188,7 @@ class _PresetEditorScreenState extends ConsumerState<PresetEditorScreen> {
     return TextFormField(
       key: fieldKey,
       controller: controller,
+      focusNode: focusNode,
       keyboardType: TextInputType.number,
       style: const TextStyle(
         color: Colors.white,

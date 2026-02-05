@@ -51,7 +51,10 @@ GoRouter buildRouter() {
         path: '/timer/:id',
         pageBuilder: (context, state) {
           final id = state.pathParameters['id']!;
-          return _fadeScale(TimerScreen(groupId: id));
+          return _fadeScale(
+            TimerScreen(groupId: id),
+            key: state.pageKey,
+          );
         },
       ),
 
@@ -89,8 +92,9 @@ GoRouter buildRouter() {
 }
 
 /// Reusable transitions
-CustomTransitionPage _fade(Widget child) {
+CustomTransitionPage _fade(Widget child, {LocalKey? key}) {
   return CustomTransitionPage(
+    key: key,
     child: child,
     transitionsBuilder: (_, animation, __, child) {
       return FadeTransition(opacity: animation, child: child);
@@ -99,8 +103,9 @@ CustomTransitionPage _fade(Widget child) {
   );
 }
 
-CustomTransitionPage _slide(Widget child) {
+CustomTransitionPage _slide(Widget child, {LocalKey? key}) {
   return CustomTransitionPage(
+    key: key,
     child: child,
     transitionsBuilder: (_, animation, __, child) {
       return SlideTransition(
@@ -115,8 +120,9 @@ CustomTransitionPage _slide(Widget child) {
   );
 }
 
-CustomTransitionPage _fadeScale(Widget child) {
+CustomTransitionPage _fadeScale(Widget child, {LocalKey? key}) {
   return CustomTransitionPage(
+    key: key,
     child: child,
     transitionsBuilder: (_, animation, __, child) {
       return FadeTransition(

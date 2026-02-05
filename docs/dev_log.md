@@ -16,7 +16,7 @@ This document is used to:
 # 📍 Current status
 
 Active phase: **19 — Groups Hub Screen**
-Last update: **02/02/2026**
+Last update: **03/02/2026**
 
 ---
 
@@ -3776,6 +3776,324 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Implement Groups Hub list + actions + entry points per specs (section 10.5).
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 230 — Phase 19 Groups Hub core UI — 02/02/2026
+
+### ✔ Work completed:
+
+- Implemented Groups Hub screen with sections for running, scheduled, and completed groups.
+- Added actions: Open Run Mode, Start now, Cancel schedule, Run again.
+- Added Task List entry point from Groups Hub and wired Run Mode header indicator to open Groups Hub.
+- Added Task List banner for running/paused group entry point.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 231 — Task List banner stale-session handling — 02/02/2026
+
+### ✔ Work completed:
+
+- Task List banner now disappears when the group is completed/canceled and clears stale sessions.
+- Shows a brief SnackBar to confirm the group ended.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 232 — Scheduled auto-start recheck after group completion — 02/02/2026
+
+### ✔ Work completed:
+
+- Scheduled auto-start re-evaluates when the active session ends (no active session -> re-run coordinator logic).
+- When a running group has no active session, expired running groups are auto-completed to unblock scheduled starts.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 233 — Running group expiry clears stale Task List banner — 02/02/2026
+
+### ✔ Work completed:
+
+- ScheduledGroupCoordinator now schedules expiry checks for running groups.
+- If the active running group has passed its theoretical end and is locally owned (not paused), it is auto-completed and the active session is cleared.
+- This removes stale “running” banners when the user remains on Task List.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 234 — Pre-Run window scheduling validation — 02/02/2026
+
+### ✔ Work completed:
+
+- Scheduling now reserves the full Pre-Run window (noticeMinutes) and blocks invalid times.
+- If the Pre-Run window would start in the past or overlaps a running/earlier scheduled group, scheduling is blocked with a clear user message.
+- Applied to both Task List planning flow and Groups Hub “Run again”.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 235 — Pre-Run access entry points — 02/02/2026
+
+### ✔ Work completed:
+
+- Task List now shows a Pre-Run banner when a scheduled group is within the notice window, with “Open Pre-Run”.
+- Groups Hub scheduled cards switch to “Open Pre-Run” when the pre-run window is active.
+- No AppBar changes; access is provided via existing screen content.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 236 — Persistent Groups Hub CTA on Task List — 02/02/2026
+
+### ✔ Work completed:
+
+- Task List now exposes a direct “View Groups Hub” CTA even when no group is running or in pre-run.
+- Access remains in content area; AppBar stays unchanged.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 237 — Task List running banner (Local Mode fallback) — 02/02/2026
+
+### ✔ Work completed:
+
+- Task List now shows the running-group banner even when no active session is available (Local Mode).
+- Uses latest running TaskRunGroup as fallback so users can always return to Run Mode.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 238 — Groups Hub notice visibility guard — 02/02/2026
+
+### ✔ Work completed:
+
+- Notice / pre-run info is shown only for scheduled groups (scheduledStartTime != null).
+- “Start now” groups no longer display notice fields in Groups Hub cards or summary.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 239 — Auto-adjust breaks on pomodoro + break edits — 03/02/2026
+
+### ✔ Work completed:
+
+- Task Editor and Edit Preset now auto-adjust short/long breaks when a valid pomodoro change makes them invalid.
+- Editing short/long breaks now auto-adjusts the other break to keep short < long and both < pomodoro (when valid).
+- Adjustments keep values as close as possible and add an inline note (helper text) explaining the automatic change.
+- No auto-adjust when pomodoro duration is invalid.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 240 — Break auto-adjust deferred to edit completion — 03/02/2026
+
+### ✔ Work completed:
+
+- Break-to-break auto-adjust now applies on focus loss (edit completion) to avoid mid-typing adjustments in Task Editor and Edit Preset.
+- Added focus listeners and guards to prevent auto-adjust while typing; inline auto-adjust note remains.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 241 — Pomodoro Integrity Warning clarity — 03/02/2026
+
+### ✔ Work completed:
+
+- Integrity Warning actions now spell out the exact configuration source (first task name, default preset name, or per-task configs).
+- Button labels updated to remove ambiguous wording without changing logic.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 242 — Integrity Warning visual options list — 03/02/2026
+
+### ✔ Work completed:
+
+- Integrity Warning now shows one selectable visual option per distinct structure (mini task cards + “Used by” chips).
+- Default preset option is visual with a star badge; “Keep individual configurations” is a visual card in the same list.
+- Option selection applies the chosen structure (or keeps individual configs) without changing execution logic.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 243 — Integrity Warning iOS layout fix — 03/02/2026
+
+### ✔ Work completed:
+
+- Constrained dialog content width to avoid IntrinsicWidth layout failures on iOS.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 244 — Cancel navigation fallback — 03/02/2026
+
+### ✔ Work completed:
+
+- Run Mode now auto-exits to Groups Hub when a group becomes canceled (local or remote), preventing idle state after cancel.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 245 — Integrity Warning copy + default badge placement — 03/02/2026
+
+### ✔ Work completed:
+
+- Added an explicit instruction in the Integrity Warning intro text.
+- Default preset option now shows mini-cards first and the star badge below.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 246 — Integrity Warning interval dots alignment — 03/02/2026
+
+### ✔ Work completed:
+
+- Mini interval dots now align from the bottom to match Task List card styling.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 247 — Retention preserves completed history — 03/02/2026
+
+### ✔ Work completed:
+
+- Completed groups now retain their own history cap; canceled groups are pruned separately and never evict completed history.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 248 — Classic Pomodoro uniqueness on account sync — 03/02/2026
+
+### ✔ Work completed:
+
+- Account-local preset push now skips Classic Pomodoro if the account already has it, preventing duplicate defaults across provider linking.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 249 — Run Mode cancel navigation hardening — 03/02/2026
+
+### ✔ Work completed:
+
+- Added a secondary cancel-navigation guard (on state updates) to ensure Run Mode always exits after cancellation, even in profile timing edge cases.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 250 — Cancel navigation fallback in build — 03/02/2026
+
+### ✔ Work completed:
+
+- Added a build-time cancel fallback that auto-exits to Groups Hub when the current group is already canceled.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 251 — Groups Hub summary modal expansion — 03/02/2026
+
+### ✔ Work completed:
+
+- Expanded the Groups Hub summary modal with timing, totals, and a task-level breakdown using compact visual cards.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 252 — Groups Hub summary hides non-applicable timing rows — 03/02/2026
+
+### ✔ Work completed:
+
+- Scheduled start now appears only for scheduled groups; non-planned runs omit the row to avoid placeholder noise.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 253 — Groups Hub cards hide non-planned scheduled row — 03/02/2026
+
+### ✔ Work completed:
+
+- Scheduled row is omitted on Groups Hub cards when scheduledStartTime is null.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 254 — Run Mode navigation reset on group switch — 03/02/2026
+
+### ✔ Work completed:
+
+- TimerScreen now reloads when the groupId changes and resets cancel/auto-start flags; /timer routes use a unique page key to avoid stale state reuse.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 255 — Run Mode cancel navigation retry — 03/02/2026
+
+### ✔ Work completed:
+
+- Cancel navigation now uses the root navigator when available and retries briefly if the app remains in /timer after cancellation.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 256 — Cancel now marks group before clearing session — 03/02/2026
+
+### ✔ Work completed:
+
+- Cancel flow now persists the group as canceled before clearing activeSession to prevent auto-open races.
+
+### ⭐ Impact highlight:
+
+- Resolved the long-running multi-platform bug where Run Mode stayed open after canceling a group (including Run again) due to auto-open races. This fix restores reliable post-cancel navigation and sync behavior across devices.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 257 — Groups Hub CTA moved to top — 03/02/2026
+
+### ✔ Work completed:
+
+- Moved the "Go to Task List" CTA to the top of Groups Hub content for immediate visibility.
+
+### ⚠️ Issues found:
+
+- None.
+
+# 🔹 Block 258 — Phase 19 validation + close — 04/02/2026
+
+### ✔ Work completed:
+
+- Completed multi-platform validation for Phase 19 (Groups Hub + navigation entry points).
+- Confirmed Run Mode cancel/finish returns to Groups Hub and Groups Hub shows expected sections/actions.
+- Phase 19 marked complete in roadmap.
 
 ### ⚠️ Issues found:
 

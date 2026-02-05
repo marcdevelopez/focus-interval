@@ -50,6 +50,148 @@ class BreakDurationGuidance {
           longStatus == BreakDurationStatus.suboptimal);
 }
 
+class BreakDurationAdjustment {
+  final int shortBreakMinutes;
+  final int longBreakMinutes;
+  final bool shortAdjusted;
+  final bool longAdjusted;
+
+  const BreakDurationAdjustment({
+    required this.shortBreakMinutes,
+    required this.longBreakMinutes,
+    required this.shortAdjusted,
+    required this.longAdjusted,
+  });
+
+  bool get anyAdjusted => shortAdjusted || longAdjusted;
+}
+
+BreakDurationAdjustment adjustBreakDurations({
+  required int pomodoroMinutes,
+  required int shortBreakMinutes,
+  required int longBreakMinutes,
+}) {
+  final maxBreak = pomodoroMinutes - 1;
+  final safeMax = maxBreak < 1 ? 1 : maxBreak;
+  final shortOriginal = shortBreakMinutes;
+  final longOriginal = longBreakMinutes;
+
+  var shortValue = shortBreakMinutes.clamp(1, safeMax);
+  var longValue = longBreakMinutes.clamp(1, safeMax);
+
+  if (shortValue >= longValue) {
+    int? candidateShort;
+    int candidateLong = longValue;
+    if (candidateLong > 1) {
+      candidateShort = (candidateLong - 1).clamp(1, safeMax);
+    }
+
+    int candidateShortAlt = shortValue;
+    int? candidateLongAlt;
+    if (candidateShortAlt < safeMax) {
+      candidateLongAlt = (candidateShortAlt + 1).clamp(1, safeMax);
+      if (candidateLongAlt <= candidateShortAlt) {
+        candidateLongAlt = null;
+      }
+    }
+
+    if (candidateShort != null && candidateLongAlt != null) {
+      final costShort =
+          (shortOriginal - candidateShort).abs() +
+          (longOriginal - candidateLong).abs();
+      final costLong =
+          (shortOriginal - candidateShortAlt).abs() +
+          (longOriginal - candidateLongAlt).abs();
+      if (costLong < costShort) {
+        shortValue = candidateShortAlt;
+        longValue = candidateLongAlt;
+      } else {
+        shortValue = candidateShort;
+        longValue = candidateLong;
+      }
+    } else if (candidateLongAlt != null) {
+      shortValue = candidateShortAlt;
+      longValue = candidateLongAlt;
+    } else if (candidateShort != null) {
+      shortValue = candidateShort;
+      longValue = candidateLong;
+    }
+  }
+
+  if (shortValue >= longValue) {
+    if (longValue > 1) {
+      shortValue = (longValue - 1).clamp(1, safeMax);
+    } else if (shortValue < safeMax) {
+      longValue = (shortValue + 1).clamp(1, safeMax);
+    }
+  }
+
+  return BreakDurationAdjustment(
+    shortBreakMinutes: shortValue,
+    longBreakMinutes: longValue,
+    shortAdjusted: shortValue != shortOriginal,
+    longAdjusted: longValue != longOriginal,
+  );
+}
+
+BreakDurationAdjustment adjustBreakDurationsForPreferred({
+  required int pomodoroMinutes,
+  required int shortBreakMinutes,
+  required int longBreakMinutes,
+  required BreakOrderField preferred,
+}) {
+  final maxBreak = pomodoroMinutes - 1;
+  final safeMax = maxBreak < 1 ? 1 : maxBreak;
+  final shortOriginal = shortBreakMinutes;
+  final longOriginal = longBreakMinutes;
+
+  var shortValue = shortBreakMinutes.clamp(1, safeMax);
+  var longValue = longBreakMinutes.clamp(1, safeMax);
+
+  if (preferred == BreakOrderField.shortBreak) {
+    if (shortValue >= longValue) {
+      if (shortValue < safeMax) {
+        longValue = (shortValue + 1).clamp(1, safeMax);
+      } else {
+        shortValue = (safeMax - 1).clamp(1, safeMax);
+        longValue = safeMax;
+      }
+    }
+  } else {
+    if (longValue <= shortValue) {
+      if (longValue > 1) {
+        shortValue = (longValue - 1).clamp(1, safeMax);
+      } else {
+        if (safeMax >= 2) {
+          shortValue = 1;
+          longValue = 2;
+        } else {
+          shortValue = 1;
+          longValue = 1;
+        }
+      }
+    }
+  }
+
+  if (shortValue >= longValue) {
+    if (shortValue < safeMax) {
+      longValue = (shortValue + 1).clamp(1, safeMax);
+    } else if (longValue > 1) {
+      shortValue = (longValue - 1).clamp(1, safeMax);
+    } else if (safeMax >= 2) {
+      shortValue = 1;
+      longValue = 2;
+    }
+  }
+
+  return BreakDurationAdjustment(
+    shortBreakMinutes: shortValue,
+    longBreakMinutes: longValue,
+    shortAdjusted: shortValue != shortOriginal,
+    longAdjusted: longValue != longOriginal,
+  );
+}
+
 BreakDurationGuidance buildBreakDurationGuidance({
   required int pomodoroMinutes,
   required int shortBreakMinutes,

@@ -120,6 +120,7 @@ class LocalTaskRunGroupRepository implements TaskRunGroupRepository {
 
     final active = <TaskRunGroup>[];
     final completed = <TaskRunGroup>[];
+    final canceled = <TaskRunGroup>[];
 
     for (final group in groups) {
       switch (group.status) {
@@ -128,18 +129,27 @@ class LocalTaskRunGroupRepository implements TaskRunGroupRepository {
           active.add(group);
           break;
         case TaskRunStatus.completed:
-        case TaskRunStatus.canceled:
           completed.add(group);
+          break;
+        case TaskRunStatus.canceled:
+          canceled.add(group);
           break;
       }
     }
 
     completed.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    canceled.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     final keep = completed.take(retention).map((g) => g.id).toSet();
+    final keepCanceled = canceled.take(retention).map((g) => g.id).toSet();
     final activeIds = active.map((g) => g.id).toSet();
 
     for (final group in completed) {
       if (keep.contains(group.id)) continue;
+      if (activeIds.contains(group.id)) continue;
+      _store.remove(group.id);
+    }
+    for (final group in canceled) {
+      if (keepCanceled.contains(group.id)) continue;
       if (activeIds.contains(group.id)) continue;
       _store.remove(group.id);
     }

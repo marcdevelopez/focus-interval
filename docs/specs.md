@@ -399,7 +399,10 @@ users/{uid}/activeSession
   - All scheduled
   - The current running
   - The last N completed
-- canceled groups can be removed immediately or kept in the short history.
+- Canceled groups are retained **separately** and must **never** count against
+  completed retention.
+  - They may be removed immediately, or kept with their own small cap
+    (default = same N as completed).
 - N is finite and configurable.
 - Default: 7 completed groups (last week).
 - User-configurable up to 30.
@@ -557,22 +560,33 @@ Item layout (top → bottom):
     show the Pomodoro Integrity Warning before scheduling/starting:
     - Dialog style: pure black background with amber/orange border
     - Icon: Icons.info_outline (educational warning)
-    - Actions (three options):
-      1. **Continuar**: proceed in Mode B (per-task configurations).
-      2. **Ajustar a la primera**: force Mode A by applying the structure of
-         the first selected task to the TaskRunGroup snapshot (durations,
-         interval, sounds) while keeping each task’s totalPomodoros unchanged.
-         - If the master task has a presetId, propagate that presetId to all
-           TaskRunItem snapshots for traceability.
-      3. **Usar Predeterminado**: force Mode A by applying the globally marked
-         Default Preset to the TaskRunGroup snapshot (durations, interval,
-         sounds) and propagate its presetId.
-         - If the master task does not provide a clear structure, option 2
-           automatically applies the Default Preset as a fallback.
-         - This option is shown only when a Default Preset exists; otherwise,
-           the dialog shows only options 1 and 2.
-         - If the option is shown but the Default Preset is missing at tap
-           time, show a SnackBar and keep the dialog open.
+    - Intro text must include a clear instruction, e.g.:
+      “This group mixes Pomodoro structures. Mixed durations can reduce the
+      benefits of the technique. Choose the configuration to apply to this
+      group.”
+    - After the intro text, show a **scrollable list of visual options**. Each
+      option is a selectable card (button-style):
+      1. **One option per distinct structure** among the selected tasks.
+         - Structure uniqueness is based on: pomodoro duration, short break,
+           long break, long-break interval (sounds are ignored for grouping).
+         - The option displays the **same three mini-cards** as a Task List item:
+           pomodoro duration (no pomodoro count), break durations (short/long),
+           and the interval dots. Sizes can be reduced to avoid overflow.
+         - Show **"Used by:"** with task-name chips (wrapping to multiple lines).
+         - Selecting this option forces Mode A using that structure (durations,
+           interval; sounds follow the chosen task/preset per current logic),
+           while keeping each task’s totalPomodoros unchanged.
+      2. **Default preset option** (only if a Default Preset exists):
+         - Shows the same three mini-cards using the preset values.
+         - Includes a **badge with a star** and text “Default preset”.
+         - The badge appears **below** the mini-cards (cards first, badge second).
+         - Selecting it forces Mode A using the Default Preset (durations,
+           interval, sounds) and propagates its presetId.
+         - If the option is shown but the Default Preset is missing at tap time,
+           show a SnackBar and keep the dialog open.
+      3. **Keep individual configurations**:
+        - Presented as a visual card in the same list.
+        - Selecting it keeps Mode B (each task preserves its own structure).
   - Navigate to the execution screen pre-start planning (see section 10.4)
 
 ### **10.2.4. Mode indicator (always visible)**
@@ -588,6 +602,13 @@ Item layout (top → bottom):
   - Primary action: "Open Run Mode" (Execution Screen).
   - Secondary action: "View in Groups Hub".
 - This entry point is required when auto-open is suppressed or cannot occur.
+- If a scheduled group is within the Pre-Run Countdown window (noticeMinutes),
+  show a similar banner on Task List:
+  - Label indicates the group is starting soon and shows a countdown or start time.
+  - Primary action: "Open Pre-Run" (Run Mode in Pre-Run state).
+  - Secondary action: "View in Groups Hub".
+- These entry points must not add new AppBar actions or change the AppBar layout.
+  The header stays as-is; access is provided through existing screen content.
 
 ---
 
@@ -640,6 +661,17 @@ Behavior:
 - Task name is required and must be non-empty after trimming; whitespace-only names are invalid.
 - Break durations must be shorter than the pomodoro duration; block Save/Apply and show a clear error if they are equal or longer.
 - Short break duration must be strictly less than long break duration; block Save/Apply and show errors on both fields if violated.
+- When the pomodoro duration changes to a **valid** value (15–60), if current break
+  values become invalid (break >= pomodoro or short >= long), auto-adjust them to
+  the nearest valid values. Keep the existing inline helper text visible and add a
+  brief note that the values were adjusted automatically for consistency.
+- When the user edits **short break** or **long break**, auto-adjust the other break
+  as needed to keep short < long and both < pomodoro (when pomodoro is valid).
+  Keep the values as close as possible to the user’s input and show the same
+  helper text with an automatic-adjustment note. Apply the adjustment when the
+  user finishes editing the field (e.g., on focus loss), not on each keystroke.
+  Do not auto-adjust if pomodoro is invalid.
+- If the pomodoro value is invalid, do **not** auto-adjust break durations.
 - When a blocking break validation error is present, suppress optimization guidance/helper text until resolved.
 - Numeric inputs use tabular figures (fixed-width digits) to avoid value jitter while typing.
 - Show dynamic guidance for break durations based on the pomodoro length:
@@ -765,6 +797,11 @@ Behavior:
 - If duplicate preset names are detected (legacy data or sync conflicts), the app
   auto-renames duplicates with a numeric suffix (e.g., "Focus", "Focus (2)") and
   persists the correction.
+- The built-in **Classic Pomodoro** preset must remain unique per scope
+  (Local or Account) and must never duplicate across provider linking or
+  account-local preset pushes.
+  - When pushing account-local presets to Firestore, skip Classic Pomodoro if
+    the account already has a Classic Pomodoro preset.
 - A task may either:
   - reference a saved preset, or
   - use a custom, task-specific configuration.
@@ -798,6 +835,17 @@ Preset UI (Settings)
 - If the user attempts to leave **Edit preset** with unsaved changes, show a confirmation
   dialog with options to **Save**, **Discard**, or **Cancel**. Only show this dialog
   when there are actual form differences from the original state.
+- When the pomodoro duration changes to a **valid** value (15–60) in Edit Preset,
+  auto-adjust short/long breaks if they become invalid (break >= pomodoro or
+  short >= long), keeping the values as close as possible and showing the same
+  inline helper text with an automatic-adjustment note.
+- When the user edits **short break** or **long break** in Edit Preset, auto-adjust
+  the other break as needed to keep short < long and both < pomodoro (when pomodoro
+  is valid). Keep values close to the user’s input and show the same helper text
+  with the automatic-adjustment note. Apply the adjustment when the user finishes
+  editing the field (e.g., on focus loss), not on each keystroke. Do not auto-adjust
+  if pomodoro is invalid.
+- If the pomodoro value is invalid, do **not** auto-adjust break durations.
 
 Storage & sync
 
@@ -825,6 +873,15 @@ Run Mode is group-only: TimerScreen loads a TaskRunGroup by groupId; there is no
   - Start now -> start immediately
   - Schedule start -> schedule the start time
 - Conflicts are validated for both actions (see section 6.4)
+- Scheduling must reserve the full Pre-Run Countdown window when noticeMinutes > 0:
+  - The window from scheduledStartTime - noticeMinutes to scheduledStartTime
+    is treated as blocked time.
+  - It must not overlap any running group or any previously scheduled group’s
+    execution window.
+  - If the full Pre-Run window cannot be reserved (including when it would
+    start in the past), scheduling is blocked and the user is shown a clear,
+    non-technical explanation (e.g., “That time doesn’t leave enough pre‑run
+    time. Choose a later start or reduce the pre‑run notice.”).
 - If a schedule is set:
   - Recalculate theoretical start/end times using the selected start time
   - Save as scheduled and add to Groups Hub
@@ -857,6 +914,8 @@ Trigger
   - until scheduledStartTime
 - If noticeMinutes = 0, Pre-Run Countdown Mode is skipped entirely.
 - If the app opens after scheduledStartTime, it goes directly to standard Run Mode.
+- If the user leaves the Pre-Run screen, they must be able to return via Task List
+  or Groups Hub entry points while the pre-run window is active.
 
 UI (reuses Run Mode layout)
 
@@ -1013,6 +1072,8 @@ Cancel running group (Run Mode)
   - Stop the session immediately.
   - Mark the group as canceled.
   - Navigate to Groups Hub (do not remain in Run Mode).
+- If a canceled status is observed while Run Mode is visible (local or remote),
+  auto-exit to Groups Hub and never remain in an idle Run Mode state.
 - The Groups Hub provides the next decision path (open Task List / start or plan a new group).
 
 ### **10.4.7. Mandatory visual improvements for the timer**
@@ -1052,28 +1113,54 @@ Entry points
 - Run Mode header
 - Auto-navigation after group completion (see sections 10.4.6 and 12)
 - Task List banner when a group is running or paused (see section 10.2.5)
+- Task List always exposes a direct “View Groups Hub” CTA in the content area,
+  even when no group is running or in pre-run. Do not add AppBar actions.
 
 List fields per group
 
-- Scheduled start time
+- Scheduled start time (only for scheduled groups; omit when scheduledStartTime is null)
 - Theoretical end time
 - Number of tasks
 - Total duration
-- Pre-alert setting (e.g., "Notice 5 min before")
+- Pre-alert setting (e.g., "Notice 5 min before") — only for scheduled groups
+  (scheduledStartTime != null). Do not show notice/pre-run info for “Start now”.
 
 Actions
 
 - Tap -> light detail view (summary)
-- Cancel planning
-- Start now (only if no conflicts)
-- Open Run Mode for running/paused groups
-- Run again (completed groups): duplicate the group snapshot into a new TaskRunGroup and open the pre-start planning flow
-- Go to Task List screen (Task Library) to create/edit tasks and build new groups
+  - Cancel planning
+  - Start now (only if no conflicts)
+  - Open Run Mode for running/paused groups
+  - Run again (completed groups): duplicate the group snapshot into a new TaskRunGroup and open the pre-start planning flow
+  - Go to Task List screen (Task Library) to create/edit tasks and build new groups
+    - The "Go to Task List" CTA is placed at the top of the Groups Hub content
+      so it is visible without scrolling.
+
+Summary (tap on a group)
+
+- Present a compact **summary modal or sheet** with a black background and clear
+  section labels. The content must be scrollable.
+- Content (no redundancy with the card; focus on extra clarity):
+  - **Group name** (primary title inside the modal)
+  - **Status** (chip or label)
+  - **Timing**: scheduled start (if any), actual start (if available), end time,
+    total duration, notice minutes (scheduled groups only). If the group has no
+    scheduledStartTime, omit the Scheduled start row entirely (no placeholder).
+  - **Totals**: total tasks, total pomodoros (if available)
+  - **Tasks list**: each task shown as a compact card with:
+    - Task name
+    - Pomodoro count + duration
+    - Short/long break durations
+    - Long-break interval dots
+  - The layout must be legible, professional, and easy to scan on mobile.
 
 History
 
 - Show scheduled + running + last N completed groups
 - Keep history short and finite
+- When a scheduled group is within the Pre-Run window, the card must expose a clear
+  "Open Pre-Run" action (instead of “Start now”), so the user can always return to
+  the Pre-Run view.
 
 ---
 
