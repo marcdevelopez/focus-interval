@@ -876,6 +876,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   void updateGroup(TaskRunGroup group) {
     if (_currentGroup?.id != group.id) return;
     _currentGroup = group;
+    _groupCompleted = group.status == TaskRunStatus.completed;
   }
 
   TaskRunItem? get previousItem {

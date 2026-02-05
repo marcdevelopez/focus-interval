@@ -4169,6 +4169,22 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Validate task-to-task auto-advance after background/resume on Android/iOS/Web.
 
+# 🔹 Block 262 — Completion modal on owner/mirror + fallback nav (05/02/2026)
+
+### ✔ Work completed:
+
+- Ensured completion modal is triggered for both owner and mirror when group finishes.
+- Added pending modal handling on resume and fallback navigation to Groups Hub if the modal cannot be shown.
+- Synced ViewModel group completion flag with repo updates for mirror devices.
+
+### ⚠️ Issues found:
+
+- Completion modal/navigation could fail to show on mirror devices in foreground.
+
+### 🎯 Next steps:
+
+- Validate completion modal + Groups Hub navigation on owner and mirror devices.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
