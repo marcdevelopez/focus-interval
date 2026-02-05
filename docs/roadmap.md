@@ -131,6 +131,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 14 — Global sound settings (apply switch + revert) (new requirement).
 - Phase 15 — TaskRunGroup model updates (group name + task color snapshot + integrityMode) (new requirement).
 - Phase 18 — Mode-specific breaks (global long-break counter in Mode A) implemented; validation pending.
+- Phase 18 — Run Mode task transition catch-up after background/resume (validation pending).
 - Phase 18 — Group progress bar + task color accents still pending (new requirement).
 - Phase 19 — Groups Hub: group name display + rename action (new requirement).
 - Outstanding items from specs sections 10.4.2 / 10.4.6 / 12 / 10.5 are tracked in Phases 18, 19, and 25 (not reopened).

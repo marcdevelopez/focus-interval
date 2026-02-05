@@ -70,6 +70,22 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Validate multi-task runs with shared structure (global long-breaks) across devices.
 - Other changes in this block were verified locally.
 
+# 🔹 Block 39 — Run Mode task transition catch-up (05/02/2026)
+
+### ✔ Work completed:
+
+- Added owner-side group timeline projection on resume/hydrate to advance across tasks after background time.
+- Reused the group timeline projection helper outside Local Mode when safe.
+- Ensured corrected state publishes back to the active session after projection.
+
+### ⚠️ Issues found:
+
+- Task transitions could stall at `finished` after app suspension, leaving the next task unstarted.
+
+### 🎯 Next steps:
+
+- Validate task-to-task auto-advance after background/resume on Android/iOS/Web.
+
 # 🔹 Block 1 — Initial setup (21/11/2025)
 
 ### ✔ Work completed:
