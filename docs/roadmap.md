@@ -14,7 +14,7 @@ This project includes an official team roles document at:
 # 🟦 **Global Project Status**
 
 ```
-CURRENT PHASE: 20 — Responsive Updates for New Run Mode (next)
+CURRENT PHASE: 20 — Group Naming & Task Visual Identity (next)
 NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       PomodoroViewModel exposed as Notifier auto-dispose and subscribed to the machine.
       Auth strategy: Google Sign-In on iOS/Android/Web (web verified; People API enabled); email/password on macOS/Windows; Linux auth disabled (local-only).
@@ -115,6 +115,8 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       03/02/2026: Classic Pomodoro default now deduped on account-local preset push (validation pending).
       03/02/2026: Run Mode cancel navigation fallback added in build (validation pending).
       04/02/2026: Phase 19 validation completed (multi-platform) and phase closed.
+      04/02/2026: Specs/roadmap updated (group naming, task colors, group progress bar,
+                  planning by total range/total time, global sound settings) — documentation-only.
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
@@ -122,8 +124,16 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 
 - Phase 17 — Scheduled auto-start stuck after prior running group ended; recheck on session end + expired running group auto-complete (validation pending).
 - Phase 17 — Scheduling must reserve full Pre-Run window (noticeMinutes) with clear user messaging (validation pending).
+- Phase 17 — Pre-start planning redesign + schedule by total range / total time (proportional redistribution) (new requirement).
 - Phase 10 — Auto-adjust breaks on valid pomodoro changes and break edits (focus-loss adjustment; Task Editor + Edit Preset) (validation pending).
-- Outstanding items from specs sections 10.4.2 / 10.4.6 / 12 / 10.5 are tracked in Phases 18, 19, and 21 (not reopened).
+- Phase 10 — Task Editor: total time chip + task color picker (new requirement).
+- Phase 9 — Task List: group name input + group summary + per-task total time + selection reset (new requirement).
+- Phase 14 — Global sound settings (apply switch + revert) (new requirement).
+- Phase 15 — TaskRunGroup model updates (group name + task color snapshot + integrityMode) (new requirement).
+- Phase 18 — Mode-specific breaks (global long-break counter in Mode A) implemented; validation pending.
+- Phase 18 — Group progress bar + task color accents still pending (new requirement).
+- Phase 19 — Groups Hub: group name display + rename action (new requirement).
+- Outstanding items from specs sections 10.4.2 / 10.4.6 / 12 / 10.5 are tracked in Phases 18, 19, and 25 (not reopened).
 - Rule: if any previously completed phase is missing required behavior, list it here and resolve it before continuing in normal phase order.
 
 Update this on each commit if needed.
@@ -132,7 +142,7 @@ Update this on each commit if needed.
 
 # 🧩 **Roadmap Structure**
 
-Development is divided into **24 main phases**, ordered to avoid blockers, errors, and rewrites.
+Development is divided into **28 main phases**, ordered to avoid blockers, errors, and rewrites.
 
 Each phase contains:
 
@@ -722,7 +732,78 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ---
 
-# 🚀 **PHASE 20 — Responsive Updates for New Run Mode**
+# 🚀 **PHASE 20 — Group Naming & Task Visual Identity**
+
+### ⚙️ Tasks
+
+- Add `name` to TaskRunGroup (model + persistence) and enforce naming rules (default auto-name, duplicate suffix, max length).
+- Task List: show group name input and summary header when tasks are selected (total time + start/end).
+- Task List: show per-task total time when unselected; hide it when selected; clear selection after planning.
+- Task Editor: add task color picker (palette) + always-visible total time chip.
+- Task colors: fixed palette, auto-assign least-used color, persist to tasks, snapshot into TaskRunItem.
+- Groups Hub: show group name as card title and add rename action.
+
+### 📌 Exit conditions
+
+- Group names are stored, displayed consistently, and editable in Groups Hub.
+- Task colors persist and appear as accents in Task List and Groups Hub summaries.
+- Task List summary and per-task total time behave as specified; selection clears after planning.
+- Task Editor shows task color picker and total time chip.
+
+---
+
+# 🚀 **PHASE 21 — Planning Enhancements (Total Range / Total Time)**
+
+### ⚙️ Tasks
+
+- Redesign pre-start planning UI with Start now / Schedule cards and primary chips.
+- Implement **Schedule by total range time** (start + end) with proportional pomodoro redistribution.
+- Implement **Schedule by total time** (start + duration) with the same redistribution rules.
+- Use Task weight proportional logic (roundHalfUp, min 1 pomodoro, preserve proportions).
+- Block scheduling when redistribution cannot fit the requested range/time.
+- Ensure all planning totals follow the chosen Pomodoro Integrity mode.
+
+### 📌 Exit conditions
+
+- Both scheduling modes work end-to-end; invalid ranges are blocked with clear messaging.
+- Group snapshots reflect redistributed pomodoro counts; original tasks remain unchanged.
+
+---
+
+# 🚀 **PHASE 22 — Run Mode Group Progress Bar**
+
+### ⚙️ Tasks
+
+- Add a segmented group progress bar above the timer circle.
+- Segment widths reflect per-task total duration; colors match task palette accents.
+- Progress uses effective executed time (no advance while paused).
+- Mirror devices derive progress from activeSession + group snapshot.
+- Pre-Run shows the bar at 0% (no fill).
+
+### 📌 Exit conditions
+
+- Progress bar is accurate across running/paused/mirror states and does not drift.
+- Task color accents are consistent in Run Mode list and progress bar.
+
+---
+
+# 🚀 **PHASE 23 — Global Sound Settings**
+
+### ⚙️ Tasks
+
+- Add global sound configuration in Settings (Pomodoro start, Break start, Task finish).
+- Add **Apply globally** switch with confirmation and clear messaging.
+- Apply to existing tasks; preserve preset link when sounds match; otherwise switch to Custom.
+- Add **Revert to previous sounds** (restore last pre-apply snapshot and turn switch off).
+- New tasks follow global sounds only when the switch is ON.
+
+### 📌 Exit conditions
+
+- Global sound settings apply and revert reliably without modifying presets.
+
+---
+
+# 🚀 **PHASE 24 — Responsive Updates for New Run Mode**
 
 ### ⚙️ Tasks
 
@@ -743,7 +824,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ---
 
-# 🚀 **PHASE 21 — Mandatory Final Animation**
+# 🚀 **PHASE 25 — Mandatory Final Animation**
 
 ### ⚙️ Tasks
 
@@ -760,7 +841,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ---
 
-# 🚀 **PHASE 22 — Unit and Integration Tests**
+# 🚀 **PHASE 26 — Unit and Integration Tests**
 
 ### ⚙️ Tasks
 
@@ -775,7 +856,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ---
 
-# 🚀 **PHASE 23 — UI / UX Polish**
+# 🚀 **PHASE 27 — UI / UX Polish**
 
 ### ⚙️ Tasks
 
@@ -792,7 +873,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ---
 
-# 🚀 **PHASE 24 — Internal Release Preparation**
+# 🚀 **PHASE 28 — Internal Release Preparation**
 
 ### ⚙️ Tasks
 

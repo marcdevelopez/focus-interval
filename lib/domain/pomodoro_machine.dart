@@ -137,6 +137,7 @@ class PomodoroMachine {
   int _longBreakSeconds = 15 * 60;
   int _totalPomodoros = 1;
   int _longBreakInterval = 4;
+  int _globalPomodoroOffset = 0;
   bool _allowFinalBreak = false;
   bool _pendingFinalBreak = false;
 
@@ -156,6 +157,7 @@ class PomodoroMachine {
     required int totalPomodoros,
     required int longBreakInterval,
     bool allowFinalBreak = false,
+    int globalPomodoroOffset = 0,
   }) {
     if (pomodoroMinutes <= 0 ||
         shortBreakMinutes <= 0 ||
@@ -170,6 +172,7 @@ class PomodoroMachine {
     _longBreakSeconds = longBreakMinutes * 60;
     _totalPomodoros = totalPomodoros;
     _longBreakInterval = longBreakInterval;
+    _globalPomodoroOffset = globalPomodoroOffset < 0 ? 0 : globalPomodoroOffset;
     _allowFinalBreak = allowFinalBreak;
     _pendingFinalBreak = false;
 
@@ -317,7 +320,7 @@ class PomodoroMachine {
           if (_allowFinalBreak) {
             _pendingFinalBreak = true;
             final shouldLongBreak =
-                (_state.currentPomodoro % _longBreakInterval == 0);
+                _globalIndexForCurrentPomodoro() % _longBreakInterval == 0;
             if (shouldLongBreak) {
               _startLongBreak();
             } else {
@@ -340,8 +343,8 @@ class PomodoroMachine {
         }
 
         // Decide short or long break.
-        final nextPomodoroIndex = _state.currentPomodoro;
-        final shouldLongBreak = (nextPomodoroIndex % _longBreakInterval == 0);
+        final shouldLongBreak =
+            _globalIndexForCurrentPomodoro() % _longBreakInterval == 0;
 
         if (shouldLongBreak) {
           _startLongBreak();
@@ -459,6 +462,10 @@ class PomodoroMachine {
   void _cancelTimer() {
     _timer?.cancel();
     _timer = null;
+  }
+
+  int _globalIndexForCurrentPomodoro() {
+    return _globalPomodoroOffset + _state.currentPomodoro;
   }
 
   /// Full cleanup (call in ViewModel dispose).

@@ -227,7 +227,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     if (end.isBefore(start)) {
       final totalSeconds =
           group.totalDurationSeconds ??
-          groupDurationSecondsWithFinalBreaks(group.tasks);
+          groupDurationSecondsByMode(group.tasks, group.integrityMode);
       if (totalSeconds > 0) {
         return start.add(Duration(seconds: totalSeconds));
       }
@@ -344,7 +344,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
 
       final totalSeconds =
           latest.totalDurationSeconds ??
-          groupDurationSecondsWithFinalBreaks(latest.tasks);
+          groupDurationSecondsByMode(latest.tasks, latest.integrityMode);
 
       final updated = latest.copyWith(
         status: TaskRunStatus.running,

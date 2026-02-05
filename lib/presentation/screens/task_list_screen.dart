@@ -1115,28 +1115,39 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     if (!context.mounted) return;
     if (integritySelection.type == _IntegritySelectionType.cancel) return;
 
+    final hasMixedStructure = _hasMixedStructure(selected);
     var items = await _buildRunItemsWithOverrides(selected);
-    if (integritySelection.type == _IntegritySelectionType.useStructure) {
-      final masterId = integritySelection.masterTaskId;
-      final master = masterId == null
-          ? items.first
-          : items.firstWhere(
-              (item) => item.sourceTaskId == masterId,
-              orElse: () => items.first,
-            );
-      items = await _applySharedStructure(
-        items,
-        forceDefault: false,
-        master: master,
-      );
-    } else if (integritySelection.type ==
-        _IntegritySelectionType.useDefault) {
-      items = await _applySharedStructure(
-        items,
-        forceDefault: true,
-      );
+    if (hasMixedStructure) {
+      if (integritySelection.type == _IntegritySelectionType.useStructure) {
+        final masterId = integritySelection.masterTaskId;
+        final master = masterId == null
+            ? items.first
+            : items.firstWhere(
+                (item) => item.sourceTaskId == masterId,
+                orElse: () => items.first,
+              );
+        items = await _applySharedStructure(
+          items,
+          forceDefault: false,
+          master: master,
+        );
+      } else if (integritySelection.type ==
+          _IntegritySelectionType.useDefault) {
+        items = await _applySharedStructure(
+          items,
+          forceDefault: true,
+        );
+      }
     }
-    final totalDurationSeconds = groupDurationSecondsWithFinalBreaks(items);
+    final integrityMode = hasMixedStructure
+        ? (integritySelection.type == _IntegritySelectionType.keepIndividual
+            ? TaskRunIntegrityMode.individual
+            : TaskRunIntegrityMode.shared)
+        : TaskRunIntegrityMode.shared;
+    final totalDurationSeconds = groupDurationSecondsByMode(
+      items,
+      integrityMode,
+    );
     final noticeMinutes = await ref
         .read(taskRunNoticeServiceProvider)
         .getNoticeMinutes();
@@ -1237,6 +1248,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final group = TaskRunGroup(
       id: const Uuid().v4(),
       ownerUid: auth.currentUser?.uid ?? 'local',
+      integrityMode: integrityMode,
       tasks: items,
       createdAt: planCapturedAt,
       scheduledStartTime: scheduledStart,
@@ -1559,14 +1571,17 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final selectedTasks = tasks
         .where((task) => selectedIds.contains(task.id))
         .toList();
+    final integrityMode = _hasMixedStructure(selectedTasks)
+        ? TaskRunIntegrityMode.individual
+        : TaskRunIntegrityMode.shared;
+    final durations = _previewTaskDurations(
+      selectedTasks,
+      integrityMode,
+    );
     var cursor = start;
     for (var index = 0; index < selectedTasks.length; index += 1) {
       final task = selectedTasks[index];
-      final includeFinalBreak = index < selectedTasks.length - 1;
-      final duration = _taskDurationSeconds(
-        task,
-        includeFinalBreak: includeFinalBreak,
-      );
+      final duration = durations[index];
       final end = cursor.add(Duration(seconds: duration));
       ranges[task.id] =
           "${_timeFormat.format(cursor)}–${_timeFormat.format(end)}";
@@ -2092,6 +2107,15 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         a.longBreakInterval == b.longBreakInterval;
   }
 
+  bool _hasMixedStructure(List<PomodoroTask> tasks) {
+    if (tasks.length <= 1) return false;
+    final base = tasks.first;
+    for (var index = 1; index < tasks.length; index += 1) {
+      if (!_matchesStructure(tasks[index], base)) return true;
+    }
+    return false;
+  }
+
   Future<List<TaskRunItem>> _applySharedStructure(
     List<TaskRunItem> items, {
     required bool forceDefault,
@@ -2221,6 +2245,53 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final isLongBreak = task.totalPomodoros % task.longBreakInterval == 0;
     total += isLongBreak ? longBreakSeconds : shortBreakSeconds;
     return total;
+  }
+
+  List<int> _previewTaskDurations(
+    List<PomodoroTask> tasks,
+    TaskRunIntegrityMode integrityMode,
+  ) {
+    if (tasks.isEmpty) return const [];
+    if (integrityMode == TaskRunIntegrityMode.individual) {
+      return [
+        for (var index = 0; index < tasks.length; index += 1)
+          _taskDurationSeconds(
+            tasks[index],
+            includeFinalBreak: index < tasks.length - 1,
+          ),
+      ];
+    }
+
+    final master = tasks.first;
+    final pomodoroSeconds = master.pomodoroMinutes * 60;
+    final shortBreakSeconds = master.shortBreakMinutes * 60;
+    final longBreakSeconds = master.longBreakMinutes * 60;
+    final totalPomodoros = tasks.fold<int>(
+      0,
+      (total, task) => total + task.totalPomodoros,
+    );
+    if (totalPomodoros <= 0) {
+      return List<int>.filled(tasks.length, 0);
+    }
+
+    final durations = <int>[];
+    var globalIndex = 0;
+    for (final task in tasks) {
+      var taskTotal = 0;
+      for (var localIndex = 0;
+          localIndex < task.totalPomodoros;
+          localIndex += 1) {
+        globalIndex += 1;
+        taskTotal += pomodoroSeconds;
+        if (globalIndex >= totalPomodoros) {
+          continue;
+        }
+        final isLongBreak = globalIndex % master.longBreakInterval == 0;
+        taskTotal += isLongBreak ? longBreakSeconds : shortBreakSeconds;
+      }
+      durations.add(taskTotal);
+    }
+    return durations;
   }
 
   Future<List<TaskRunItem>> _buildRunItemsWithOverrides(

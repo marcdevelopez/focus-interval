@@ -170,7 +170,7 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
         tasks.fold<int>(0, (total, item) => total + item.totalPomodoros);
     final totalDurationSeconds =
         group.totalDurationSeconds ??
-        groupDurationSecondsWithFinalBreaks(tasks);
+        groupDurationSecondsByMode(tasks, group.integrityMode);
 
     return group.copyWith(
       totalTasks: totalTasks,

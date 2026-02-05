@@ -4,12 +4,25 @@ import 'selected_sound.dart';
 
 enum TaskRunStatus { scheduled, running, completed, canceled }
 
+enum TaskRunIntegrityMode { shared, individual }
+
 int _readInt(Map<String, dynamic> map, String key, int fallback) {
   final value = map[key];
   if (value is int) return value;
   if (value is num) return value.toInt();
   if (value is String) return int.tryParse(value) ?? fallback;
   return fallback;
+}
+
+TaskRunIntegrityMode _readIntegrityMode(Map<String, dynamic> map) {
+  final raw = map['integrityMode'];
+  if (raw is String && raw.isNotEmpty) {
+    return TaskRunIntegrityMode.values.firstWhere(
+      (mode) => mode.name == raw,
+      orElse: () => TaskRunIntegrityMode.individual,
+    );
+  }
+  return TaskRunIntegrityMode.individual;
 }
 
 class TaskRunItem {
@@ -105,6 +118,7 @@ class TaskRunItem {
 class TaskRunGroup {
   final String id;
   final String ownerUid;
+  final TaskRunIntegrityMode integrityMode;
   final List<TaskRunItem> tasks;
   final DateTime createdAt;
   final DateTime? scheduledStartTime;
@@ -123,6 +137,7 @@ class TaskRunGroup {
   const TaskRunGroup({
     required this.id,
     required this.ownerUid,
+    required this.integrityMode,
     required this.tasks,
     required this.createdAt,
     required this.scheduledStartTime,
@@ -151,6 +166,7 @@ class TaskRunGroup {
     DateTime? actualStartTime,
     DateTime? theoreticalEndTime,
     TaskRunStatus? status,
+    TaskRunIntegrityMode? integrityMode,
     int? noticeMinutes,
     int? totalTasks,
     int? totalPomodoros,
@@ -160,6 +176,7 @@ class TaskRunGroup {
     return TaskRunGroup(
       id: id ?? this.id,
       ownerUid: ownerUid ?? this.ownerUid,
+      integrityMode: integrityMode ?? this.integrityMode,
       tasks: tasks ?? this.tasks,
       createdAt: createdAt ?? this.createdAt,
       scheduledStartTime: scheduledStartTime ?? this.scheduledStartTime,
@@ -180,6 +197,7 @@ class TaskRunGroup {
   Map<String, dynamic> toMap() => {
     'id': id,
     'ownerUid': ownerUid,
+    'integrityMode': integrityMode.name,
     'tasks': tasks.map((task) => task.toMap()).toList(),
     'createdAt': createdAt.toIso8601String(),
     'scheduledStartTime': scheduledStartTime?.toIso8601String(),
@@ -198,14 +216,16 @@ class TaskRunGroup {
 
   factory TaskRunGroup.fromMap(Map<String, dynamic> map) {
     final tasks = _decodeTasks(map['tasks']);
+    final integrityMode = _readIntegrityMode(map);
     final createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now();
     final updatedAt = _parseDateTime(map['updatedAt']) ?? createdAt;
     final totalTasks = (map['totalTasks'] as num?)?.toInt() ?? tasks.length;
     final totalPomodoros =
         (map['totalPomodoros'] as num?)?.toInt() ??
         tasks.fold<int>(0, (total, item) => total + item.totalPomodoros);
-    final computedTotalDurationSeconds = groupDurationSecondsWithFinalBreaks(
+    final computedTotalDurationSeconds = groupDurationSecondsByMode(
       tasks,
+      integrityMode,
     );
     final storedTotalDurationSeconds = (map['totalDurationSeconds'] as num?)
         ?.toInt();
@@ -216,6 +236,7 @@ class TaskRunGroup {
     return TaskRunGroup(
       id: map['id'] as String? ?? '',
       ownerUid: map['ownerUid'] as String? ?? '',
+      integrityMode: integrityMode,
       tasks: tasks,
       createdAt: createdAt,
       scheduledStartTime: _parseDateTime(map['scheduledStartTime']),
@@ -270,4 +291,73 @@ int groupDurationSecondsWithFinalBreaks(List<TaskRunItem> tasks) {
     );
   }
   return total;
+}
+
+int groupDurationSecondsByMode(
+  List<TaskRunItem> tasks,
+  TaskRunIntegrityMode integrityMode,
+) {
+  if (tasks.isEmpty) return 0;
+  if (integrityMode == TaskRunIntegrityMode.individual) {
+    return groupDurationSecondsWithFinalBreaks(tasks);
+  }
+  final master = tasks.first;
+  final pomodoroSeconds = master.pomodoroMinutes * 60;
+  final shortBreakSeconds = master.shortBreakMinutes * 60;
+  final longBreakSeconds = master.longBreakMinutes * 60;
+  final totalPomodoros = tasks.fold<int>(
+    0,
+    (total, item) => total + item.totalPomodoros,
+  );
+  if (totalPomodoros <= 0) return 0;
+  var total = totalPomodoros * pomodoroSeconds;
+  for (var index = 1; index < totalPomodoros; index += 1) {
+    final isLongBreak = index % master.longBreakInterval == 0;
+    total += isLongBreak ? longBreakSeconds : shortBreakSeconds;
+  }
+  return total;
+}
+
+List<int> taskDurationSecondsByMode(
+  List<TaskRunItem> tasks,
+  TaskRunIntegrityMode integrityMode,
+) {
+  if (tasks.isEmpty) return const [];
+  if (integrityMode == TaskRunIntegrityMode.individual) {
+    return [
+      for (var index = 0; index < tasks.length; index += 1)
+        tasks[index].durationSeconds(
+          includeFinalBreak: index < tasks.length - 1,
+        ),
+    ];
+  }
+
+  final master = tasks.first;
+  final pomodoroSeconds = master.pomodoroMinutes * 60;
+  final shortBreakSeconds = master.shortBreakMinutes * 60;
+  final longBreakSeconds = master.longBreakMinutes * 60;
+  final totalPomodoros = tasks.fold<int>(
+    0,
+    (total, item) => total + item.totalPomodoros,
+  );
+  if (totalPomodoros <= 0) {
+    return List<int>.filled(tasks.length, 0);
+  }
+
+  final durations = <int>[];
+  var globalIndex = 0;
+  for (final task in tasks) {
+    var taskTotal = 0;
+    for (var localIndex = 0; localIndex < task.totalPomodoros; localIndex += 1) {
+      globalIndex += 1;
+      taskTotal += pomodoroSeconds;
+      if (globalIndex >= totalPomodoros) {
+        continue;
+      }
+      final isLongBreak = globalIndex % master.longBreakInterval == 0;
+      taskTotal += isLongBreak ? longBreakSeconds : shortBreakSeconds;
+    }
+    durations.add(taskTotal);
+  }
+  return durations;
 }
