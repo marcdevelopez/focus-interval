@@ -4185,6 +4185,21 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Validate completion modal + Groups Hub navigation on owner and mirror devices.
 
+# 🔹 Block 263 — Mirror completion modal without owner (05/02/2026)
+
+### ✔ Work completed:
+
+- Showed completion modal on mirror when the last task finishes, even if the owner is offline.
+- Guarded against false positives on non-last tasks.
+
+### ⚠️ Issues found:
+
+- Mirror devices could stay on the green finished timer until the owner reconnected.
+
+### 🎯 Next steps:
+
+- Validate single-task completion on mirror with owner closed (modal + Groups Hub).
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

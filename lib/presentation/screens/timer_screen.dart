@@ -332,7 +332,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       final group = vm.currentGroup;
       final isGroupCompleted =
           vm.isGroupCompleted || group?.status == TaskRunStatus.completed;
-      if (!wasFinished && nowFinished && isGroupCompleted) {
+      final isLastTask = vm.nextItem == null && vm.totalTasks > 0;
+      if (!wasFinished && nowFinished && (isGroupCompleted || isLastTask)) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           _showFinishedDialog(context, vm);
