@@ -4238,6 +4238,78 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Validate owner-offline completion across macOS/Android with Groups Hub consistency.
 
+# 🔹 Block 266 — Run Mode ownership visibility (06/02/2026)
+
+### ✔ Work completed:
+
+- Documented Run Mode ownership indicator, info sheet, and one-time education message in specs.
+- Added owner/mirror indicator in TimerScreen with on-demand ownership details.
+- Added explicit “Take ownership” action (no confirmation) for mirror devices.
+- Showed a one-time owner education SnackBar on first owner start per device.
+
+### ⚠️ Issues found:
+
+- None observed during implementation (validation pending).
+
+### 🎯 Next steps:
+
+- Validate ownership indicator + take ownership on Android/macOS.
+- Confirm the education banner shows once per device and never in Local Mode.
+
+# 🔹 Block 267 — Mirror realignment on ownership change (06/02/2026)
+
+### ✔ Work completed:
+
+- Stopped local execution state when a device becomes mirror after ownership changes.
+- Ensured mirror devices re-anchor to activeSession on owner change so pause/resume syncs globally.
+- Documented the ownership-change realignment rule in specs.
+
+### ⚠️ Issues found:
+
+- None observed during implementation (validation pending).
+
+### 🎯 Next steps:
+
+- Reproduce the original multi-owner pause/resume test across Android/Web/iOS.
+- Confirm no dual timers or jitter after ownership changes.
+
+# 🔹 Block 268 — Deterministic initial ownership (06/02/2026)
+
+### ✔ Work completed:
+
+- Set `scheduledByDeviceId` for all start-now runs to record the initiating device.
+- Updated scheduled auto-start to set `scheduledByDeviceId` when claiming a run.
+- Restricted auto-start when activeSession is null to the initiating device (Account Mode).
+- Documented the deterministic owner rule in specs and roadmap.
+
+### ⚠️ Issues found:
+
+- Ownership could previously jump because multiple devices auto-started before activeSession existed.
+
+### 🎯 Next steps:
+
+- Re-run the multi-device start scenario with Android/iOS/Web open and confirm ownership stays on the initiator.
+
+# 🔹 Block 269 — Ownership requests + approval (06/02/2026)
+
+### ✔ Work completed:
+
+- Replaced immediate “take ownership” with a request/approval flow.
+- Added owner-side request banner with Accept/Reject actions.
+- Added mirror-side pending and rejection states, including a rejection indicator.
+- Removed the redundant info icon (ownership icon is now the single entry point).
+- Documented the ownership request rules in specs and roadmap.
+
+### 🧠 Decisions made:
+
+- Ownership transfer is always explicit: no automatic takeover based on app focus or presence.
+- The owner updates ownerDeviceId on approval; mirrors never mutate execution state.
+
+### 🎯 Next steps:
+
+- Validate multi-device request → approve/reject flows on Android/iOS/Web.
+- Re-test pause/resume after approval to confirm no timer reset on ex-owner.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

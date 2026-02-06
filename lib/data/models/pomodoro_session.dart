@@ -19,6 +19,7 @@ class PomodoroSession {
   final DateTime? lastUpdatedAt;
   final DateTime? finishedAt;
   final String? pauseReason;
+  final OwnershipRequest? ownershipRequest;
 
   PomodoroSession({
     required this.taskId,
@@ -37,6 +38,7 @@ class PomodoroSession {
     required this.lastUpdatedAt,
     required this.finishedAt,
     required this.pauseReason,
+    this.ownershipRequest,
   });
 
   Map<String, dynamic> toMap() => {
@@ -56,6 +58,7 @@ class PomodoroSession {
     'lastUpdatedAt': lastUpdatedAt,
     'finishedAt': finishedAt,
     'pauseReason': pauseReason,
+    if (ownershipRequest != null) 'ownershipRequest': ownershipRequest!.toMap(),
   };
 
   factory PomodoroSession.fromMap(Map<String, dynamic> map) {
@@ -86,6 +89,9 @@ class PomodoroSession {
       lastUpdatedAt: (map['lastUpdatedAt'] as Timestamp?)?.toDate(),
       finishedAt: (map['finishedAt'] as Timestamp?)?.toDate(),
       pauseReason: map['pauseReason'] as String?,
+      ownershipRequest: OwnershipRequest.fromMap(
+        map['ownershipRequest'] as Map<String, dynamic>?,
+      ),
     );
   }
 
@@ -94,6 +100,54 @@ class PomodoroSession {
     if (value is int) return value;
     if (value is num) return value.toInt();
     if (value is String) return int.tryParse(value);
+    return null;
+  }
+}
+
+enum OwnershipRequestStatus { pending, rejected }
+
+class OwnershipRequest {
+  final String requesterDeviceId;
+  final OwnershipRequestStatus status;
+  final DateTime? requestedAt;
+  final DateTime? respondedAt;
+  final String? respondedByDeviceId;
+
+  const OwnershipRequest({
+    required this.requesterDeviceId,
+    required this.status,
+    required this.requestedAt,
+    required this.respondedAt,
+    required this.respondedByDeviceId,
+  });
+
+  Map<String, dynamic> toMap() => {
+    'requesterDeviceId': requesterDeviceId,
+    'status': status.name,
+    'requestedAt': requestedAt,
+    'respondedAt': respondedAt,
+    'respondedByDeviceId': respondedByDeviceId,
+  };
+
+  static OwnershipRequest? fromMap(Map<String, dynamic>? map) {
+    if (map == null) return null;
+    final statusRaw = map['status'] as String?;
+    final status = OwnershipRequestStatus.values.firstWhere(
+      (e) => e.name == statusRaw,
+      orElse: () => OwnershipRequestStatus.pending,
+    );
+    return OwnershipRequest(
+      requesterDeviceId: map['requesterDeviceId'] as String? ?? '',
+      status: status,
+      requestedAt: _readDateTime(map['requestedAt']),
+      respondedAt: _readDateTime(map['respondedAt']),
+      respondedByDeviceId: map['respondedByDeviceId'] as String?,
+    );
+  }
+
+  static DateTime? _readDateTime(dynamic value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
     return null;
   }
 }

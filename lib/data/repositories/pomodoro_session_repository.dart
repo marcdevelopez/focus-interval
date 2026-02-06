@@ -4,6 +4,12 @@ abstract class PomodoroSessionRepository {
   Future<void> publishSession(PomodoroSession session);
   Stream<PomodoroSession?> watchSession();
   Future<void> clearSession();
+  Future<void> requestOwnership({required String requesterDeviceId});
+  Future<void> respondToOwnershipRequest({
+    required String ownerDeviceId,
+    required String requesterDeviceId,
+    required bool approved,
+  });
 }
 
 class NoopPomodoroSessionRepository implements PomodoroSessionRepository {
@@ -15,4 +21,14 @@ class NoopPomodoroSessionRepository implements PomodoroSessionRepository {
 
   @override
   Stream<PomodoroSession?> watchSession() => Stream.value(null);
+
+  @override
+  Future<void> requestOwnership({required String requesterDeviceId}) async {}
+
+  @override
+  Future<void> respondToOwnershipRequest({
+    required String ownerDeviceId,
+    required String requesterDeviceId,
+    required bool approved,
+  }) async {}
 }

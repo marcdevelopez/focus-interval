@@ -1236,9 +1236,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         ? TaskRunStatus.running
         : TaskRunStatus.scheduled;
     final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
-    final scheduledByDeviceId = status == TaskRunStatus.scheduled
-        ? deviceId
-        : null;
+    final scheduledByDeviceId = deviceId;
 
     final recalculatedStart = scheduledStart ?? DateTime.now();
     final recalculatedEnd = recalculatedStart.add(

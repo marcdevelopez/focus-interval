@@ -502,6 +502,44 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _sessionRepo.clearSession();
   }
 
+  Future<void> requestOwnership() async {
+    final session = _latestSession;
+    if (session == null) return;
+    if (session.ownerDeviceId == _deviceInfo.deviceId) return;
+    if (_currentGroup != null && session.groupId != _currentGroup!.id) return;
+    if (_currentTask != null && session.taskId != _currentTask!.id) return;
+    if (isOwnershipRequestPendingForOther) return;
+    await _sessionRepo.requestOwnership(
+      requesterDeviceId: _deviceInfo.deviceId,
+    );
+  }
+
+  Future<void> approveOwnershipRequest() async {
+    final session = _latestSession;
+    final request = session?.ownershipRequest;
+    if (session == null || request == null) return;
+    if (session.ownerDeviceId != _deviceInfo.deviceId) return;
+    if (request.status != OwnershipRequestStatus.pending) return;
+    await _sessionRepo.respondToOwnershipRequest(
+      ownerDeviceId: _deviceInfo.deviceId,
+      requesterDeviceId: request.requesterDeviceId,
+      approved: true,
+    );
+  }
+
+  Future<void> rejectOwnershipRequest() async {
+    final session = _latestSession;
+    final request = session?.ownershipRequest;
+    if (session == null || request == null) return;
+    if (session.ownerDeviceId != _deviceInfo.deviceId) return;
+    if (request.status != OwnershipRequestStatus.pending) return;
+    await _sessionRepo.respondToOwnershipRequest(
+      ownerDeviceId: _deviceInfo.deviceId,
+      requesterDeviceId: request.requesterDeviceId,
+      approved: false,
+    );
+  }
+
   void _resetLocalSessionState() {
     _finishedAt = null;
     _lastHeartbeatAt = null;
@@ -527,11 +565,14 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         group.totalDurationSeconds != totalSeconds ||
         group.theoreticalEndTime != end;
     if (!shouldUpdate) return;
+    final shouldSetInitiator = group.status != TaskRunStatus.running;
     final updated = group.copyWith(
       status: TaskRunStatus.running,
       actualStartTime: start,
       theoreticalEndTime: end,
       totalDurationSeconds: totalSeconds,
+      scheduledByDeviceId:
+          shouldSetInitiator ? _deviceInfo.deviceId : group.scheduledByDeviceId,
       updatedAt: now,
     );
     _currentGroup = updated;
@@ -579,63 +620,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     );
     _currentGroup = updated;
     await _groupRepo.save(updated);
-  }
-
-  Future<void> takeOver() async {
-    final session = _remoteSession;
-    if (session == null || !_shouldAllowTakeover(session)) return;
-    if (_currentGroup != null) {
-      if (session.groupId != _currentGroup!.id) return;
-      _currentTaskIndex = session.currentTaskIndex ?? _currentTaskIndex;
-      _currentItem = _resolveTaskItem(_currentGroup!, _currentTaskIndex);
-    } else if (_currentTask != null && session.taskId != _currentTask!.id) {
-      return;
-    }
-
-    _mirrorTimer?.cancel();
-
-    final now = DateTime.now();
-    final projected = _projectStateFromSession(session, now: now);
-    final totalSeconds = projected.totalSeconds;
-    final normalizedRemaining = totalSeconds <= 0
-        ? 0
-        : projected.remainingSeconds.clamp(0, totalSeconds).toInt();
-    final phaseStartedAt = _isRunning(projected.status)
-        ? now.subtract(Duration(seconds: totalSeconds - normalizedRemaining))
-        : null;
-    final finishedAt = projected.status == PomodoroStatus.finished
-        ? (session.finishedAt ?? now)
-        : null;
-    final pauseReason = projected.status == PomodoroStatus.paused
-        ? session.pauseReason
-        : null;
-
-    final takeover = PomodoroSession(
-      taskId: session.taskId,
-      groupId: session.groupId,
-      currentTaskId: session.currentTaskId ?? session.taskId,
-      currentTaskIndex: session.currentTaskIndex ?? 0,
-      totalTasks: session.totalTasks ?? 1,
-      ownerDeviceId: _deviceInfo.deviceId,
-      status: projected.status,
-      phase: projected.phase,
-      currentPomodoro: projected.currentPomodoro,
-      totalPomodoros: projected.totalPomodoros,
-      phaseDurationSeconds: totalSeconds,
-      remainingSeconds: normalizedRemaining,
-      phaseStartedAt: phaseStartedAt,
-      lastUpdatedAt: now,
-      finishedAt: finishedAt,
-      pauseReason: pauseReason,
-    );
-
-    _remoteOwnerId = null;
-    _remoteSession = null;
-    _finishedAt = finishedAt;
-    _pauseReason = pauseReason;
-    _applyProjectedState(projected, now: now);
-
-    await _sessionRepo.publishSession(takeover);
   }
 
   Future<void> _play(SelectedSound sound, {SelectedSound? fallback}) =>
@@ -793,6 +777,11 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         _stopForegroundService();
         return;
       }
+      final wasOwner =
+          _remoteOwnerId == null || _remoteOwnerId == _deviceInfo.deviceId;
+      if (wasOwner) {
+        _resetLocalSessionState();
+      }
       _remoteOwnerId = session.ownerDeviceId;
       _remoteSession = session;
       _stopForegroundService();
@@ -871,18 +860,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   bool _isStale(DateTime? updatedAt, {int minutes = 5}) {
     if (updatedAt == null) return true;
     return DateTime.now().difference(updatedAt).inMinutes >= minutes;
-  }
-
-  bool _shouldAllowTakeover(PomodoroSession session) {
-    if (session.status == PomodoroStatus.finished) return true;
-    if (!_isRunning(session.status)) {
-      return _isStale(session.lastUpdatedAt, minutes: 5);
-    }
-    if (session.phaseStartedAt == null) return true;
-    final phaseEnd = session.phaseStartedAt!.add(
-      Duration(seconds: session.phaseDurationSeconds),
-    );
-    return DateTime.now().isAfter(phaseEnd.add(const Duration(seconds: 10)));
   }
 
   bool get isMirrorMode => _remoteOwnerId != null;
@@ -991,10 +968,36 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     return timelineStart.add(Duration(seconds: offsetSeconds));
   }
 
-  bool get canTakeOver {
-    final session = _remoteSession;
+  OwnershipRequest? get ownershipRequest => _latestSession?.ownershipRequest;
+
+  bool get hasPendingOwnershipRequest =>
+      ownershipRequest?.status == OwnershipRequestStatus.pending;
+
+  bool get isOwnershipRequestFromThisDevice =>
+      ownershipRequest?.requesterDeviceId == _deviceInfo.deviceId;
+
+  bool get isOwnershipRequestPendingForThisDevice =>
+      hasPendingOwnershipRequest && isOwnershipRequestFromThisDevice;
+
+  bool get isOwnershipRequestPendingForOther =>
+      hasPendingOwnershipRequest && !isOwnershipRequestFromThisDevice;
+
+  bool get isOwnershipRequestRejectedForThisDevice =>
+      ownershipRequest?.status == OwnershipRequestStatus.rejected &&
+      isOwnershipRequestFromThisDevice;
+
+  bool get canRequestOwnership {
+    final session = _latestSession;
     if (session == null) return false;
-    return _shouldAllowTakeover(session);
+    if (session.ownerDeviceId == _deviceInfo.deviceId) return false;
+    if (_currentGroup != null && session.groupId != _currentGroup!.id) {
+      return false;
+    }
+    if (_currentTask != null && session.taskId != _currentTask!.id) {
+      return false;
+    }
+    if (hasPendingOwnershipRequest) return false;
+    return true;
   }
 
   bool get hasActiveConflict =>
