@@ -412,6 +412,9 @@ users/{uid}/activeSession
 - Single document per user with the active session.
 - Must include groupId, currentTaskId, currentTaskIndex, and totalTasks.
 - Only the owner device writes; others subscribe in real time and render progress by calculating remaining time from phaseStartedAt + phaseDurationSeconds.
+- activeSession represents only an in-progress execution and must be cleared when the group reaches a terminal state (completed or canceled).
+- If a device observes an activeSession referencing a group that is not running (or missing), it must treat the session as stale and clear it.
+- If a running group has passed its theoreticalEndTime and the activeSession has not updated within the stale threshold, any device may clear the session and complete the group to prevent zombie runs.
 - On app launch or after login, if an active session is running (pomodoroRunning/shortBreakRunning/longBreakRunning), auto-open the execution screen for that group.
 - Auto-open must apply on the owner device and on mirror devices (mirror mode with optional take over).
 - If auto-open cannot occur (missing group data, blocked navigation, or explicit suppression), the user must see a clear entry point to the running group from the initial screen and from Groups Hub.

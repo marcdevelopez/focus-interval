@@ -25,6 +25,7 @@ class ScheduledGroupAction {
 
 class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
   static const Duration _ownerGrace = Duration(seconds: 10);
+  static const Duration _staleSessionGrace = Duration(seconds: 90);
 
   Timer? _scheduledTimer;
   Timer? _preAlertTimer;
@@ -104,6 +105,10 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     _runningExpiryTimer?.cancel();
     _runningExpiryTimer = null;
     await _pruneScheduledNotices(groups);
+    final clearedStale = await _clearStaleActiveSessionIfNeeded(groups);
+    if (clearedStale) {
+      return;
+    }
 
     if (groups.isEmpty) return;
 
@@ -114,15 +119,29 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       final activeGroupId = activeSession?.groupId;
       final now = DateTime.now();
       var expired = _resolveExpiredRunningGroups(running, now);
+      TaskRunGroup? activeGroup;
+      if (activeGroupId != null) {
+        for (final group in running) {
+          if (group.id == activeGroupId) {
+            activeGroup = group;
+            break;
+          }
+        }
+      }
+      final allowExpireActive = activeSession != null &&
+          activeGroup != null &&
+          _shouldExpireActiveSession(activeSession, activeGroup, now);
       if (activeSession != null &&
           activeSession.ownerDeviceId != deviceId &&
-          activeGroupId != null) {
+          activeGroupId != null &&
+          !allowExpireActive) {
         expired = expired
             .where((group) => group.id != activeGroupId)
             .toList();
       }
       if (activeSession?.status == PomodoroStatus.paused &&
-          activeGroupId != null) {
+          activeGroupId != null &&
+          !allowExpireActive) {
         expired = expired
             .where((group) => group.id != activeGroupId)
             .toList();
@@ -147,9 +166,10 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
             activeGroupId != null &&
             expired.any((group) => group.id == activeGroupId);
         final isLocalOwner = activeSession.ownerDeviceId == deviceId;
-        if (isActiveExpired &&
-            isLocalOwner &&
-            activeSession.status.isRunning) {
+        final shouldClearActive = isActiveExpired &&
+            activeSession.status.isRunning &&
+            (isLocalOwner || _isSessionStale(activeSession, now));
+        if (shouldClearActive) {
           await ref.read(pomodoroSessionRepositoryProvider).clearSession();
         }
       }
@@ -200,6 +220,40 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     });
   }
 
+  Future<bool> _clearStaleActiveSessionIfNeeded(
+    List<TaskRunGroup> groups,
+  ) async {
+    final session = ref.read(activePomodoroSessionProvider);
+    if (session == null) return false;
+    final groupId = session.groupId;
+    if (groupId == null || groupId.isEmpty) return false;
+
+    TaskRunGroup? group;
+    for (final candidate in groups) {
+      if (candidate.id == groupId) {
+        group = candidate;
+        break;
+      }
+    }
+
+    if (group == null) {
+      final repo = ref.read(taskRunGroupRepositoryProvider);
+      final latest = await repo.getById(groupId);
+      if (latest == null || latest.status != TaskRunStatus.running) {
+        await ref.read(pomodoroSessionRepositoryProvider).clearSession();
+        return true;
+      }
+      return false;
+    }
+
+    if (group.status != TaskRunStatus.running) {
+      await ref.read(pomodoroSessionRepositoryProvider).clearSession();
+      return true;
+    }
+
+    return false;
+  }
+
   Future<int> _resolveNoticeMinutes(TaskRunGroup group) async {
     final explicit = group.noticeMinutes;
     if (explicit != null) return explicit;
@@ -233,6 +287,23 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       }
     }
     return end;
+  }
+
+  bool _isSessionStale(PomodoroSession session, DateTime now) {
+    final updatedAt = session.lastUpdatedAt;
+    if (updatedAt == null) return true;
+    return now.difference(updatedAt) >= _staleSessionGrace;
+  }
+
+  bool _shouldExpireActiveSession(
+    PomodoroSession session,
+    TaskRunGroup group,
+    DateTime now,
+  ) {
+    if (!session.status.isRunning) return false;
+    final endTime = _resolveTheoreticalEndTime(group);
+    if (endTime == null || endTime.isAfter(now)) return false;
+    return _isSessionStale(session, now);
   }
 
   Future<void> _markRunningGroupsCompleted(
