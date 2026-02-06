@@ -157,6 +157,7 @@ class TaskRunGroup {
   DateTime createdAt;
 
   DateTime? scheduledStartTime; // null when "Start now"
+  String? scheduledByDeviceId; // device that initiated schedule or start
   DateTime theoreticalEndTime;  // required for overlap checks
 
   String status; // scheduled | running | completed | canceled
@@ -196,6 +197,9 @@ Notes:
 - Expected lifecycle: scheduled -> running -> completed (or canceled).
 - Conceptual pre-run state: scheduled -> preparing -> running (preparing is UI-only and does not change the model).
 - A scheduled group must transition to running at scheduledStartTime.
+- When a group transitions to running (scheduled auto-start or start now),
+  set `scheduledByDeviceId` to the initiating device. Other devices must not
+  auto-start while `activeSession` is null unless `scheduledByDeviceId` matches.
 - Editing a PomodoroTask after group creation does not affect a running or scheduled group.
 - TaskRunGroup names:
   - New groups must have a name. If the user leaves the name empty, auto-generate one at confirm time using local date/time in English (e.g., "Jan 1 00:00", 24h).
@@ -230,6 +234,16 @@ class PomodoroSession {
   DateTime lastUpdatedAt;   // serverTimestamp of the last event
   DateTime? finishedAt;     // serverTimestamp when the group reaches completed
   String? pauseReason;      // optional; "user" when paused manually
+
+  OwnershipRequest? ownershipRequest; // optional transfer request (mirror -> owner)
+}
+
+class OwnershipRequest {
+  String requesterDeviceId;
+  DateTime requestedAt;
+  String status; // pending | rejected
+  DateTime? respondedAt;
+  String? respondedByDeviceId;
 }
 ```
 
@@ -411,12 +425,15 @@ users/{uid}/activeSession
 
 - Single document per user with the active session.
 - Must include groupId, currentTaskId, currentTaskIndex, and totalTasks.
-- Only the owner device writes; others subscribe in real time and render progress by calculating remaining time from phaseStartedAt + phaseDurationSeconds.
+- Only the owner device writes authoritative execution fields; others subscribe in real time and
+  render progress by calculating remaining time from phaseStartedAt + phaseDurationSeconds.
+- Mirror devices may write a non-authoritative ownershipRequest field to request a transfer.
+  The owner must explicitly accept or reject; no heartbeat/presence checks are required.
 - activeSession represents only an in-progress execution and must be cleared when the group reaches a terminal state (completed or canceled).
 - If a device observes an activeSession referencing a group that is not running (or missing), it must treat the session as stale and clear it.
 - If a running group has passed its theoreticalEndTime and the activeSession has not updated within the stale threshold, any device may clear the session and complete the group to prevent zombie runs.
 - On app launch or after login, if an active session is running (pomodoroRunning/shortBreakRunning/longBreakRunning), auto-open the execution screen for that group.
-- Auto-open must apply on the owner device and on mirror devices (mirror mode with optional take over).
+- Auto-open must apply on the owner device and on mirror devices (mirror mode with ownership requests).
 - If auto-open cannot occur (missing group data, blocked navigation, or explicit suppression), the user must see a clear entry point to the running group from the initial screen and from Groups Hub.
 
 ## **8.5. TaskRunGroup retention**
@@ -1296,12 +1313,47 @@ The MM:SS timer must not shift horizontally:
 ### **10.4.8. Multi-device sync in TimerScreen**
 
 - If an activeSession exists, the screen connects in mirror mode and reflects the remote state.
-- Only the ownerDeviceId can start/pause/resume/cancel; others show “Take over” if stale.
+- Only the ownerDeviceId can start/pause/resume/cancel; mirror devices can request ownership from Run Mode.
 - activeSession includes: groupId, currentTaskId, currentTaskIndex, totalTasks.
 - Remaining time is calculated from phaseStartedAt + phaseDurationSeconds.
 - Mirror devices render task names/durations from the TaskRunGroup snapshot (by groupId), not from the editable task list.
 - When auto-open is triggered from launch/resume, open TimerScreen in mirror mode if the session belongs to another device.
-- After a scheduled auto-start, the first device that starts the session becomes the owner; other devices open in mirror mode until they take over.
+- After a scheduled auto-start, the first device that starts the session becomes the owner; other devices open in mirror mode until ownership is approved.
+- When ownership changes, mirror devices must discard any local projection and re-anchor exclusively to the activeSession timestamps so pause/resume stays globally consistent.
+- Initial ownership is deterministic: the device that initiates the run
+  (Start now or auto-start) must be the first owner. Other devices must not
+  auto-start while activeSession is null unless `scheduledByDeviceId` matches.
+- Ownership transfer is explicit:
+  - Mirror devices send a request (ownershipRequest) and remain in mirror while pending.
+  - The current owner must explicitly accept or reject.
+  - Rejected requests show a brief rejection state on the requester and a small
+    rejection indicator near the request control (tap for time/details). The
+    requester can re-submit at any time.
+  - Ownership changes only after approval; it is not automatic based on app focus or presence.
+
+### **10.4.9. Ownership visibility in Run Mode**
+
+- The owner/mirror rule must be visible and understandable without banners.
+- Show a persistent, compact indicator in the Run Mode header:
+  - Owner: green icon (e.g., shield/check).
+  - Mirror: eye icon (e.g., visibility).
+- The indicator itself is tappable and opens a small sheet/popover explaining:
+  - Whether this device is Owner or Mirror.
+  - Which actions are allowed or blocked.
+  - Which device currently owns the session (platform label is acceptable).
+- When the device is in mirror mode, provide an explicit “Request ownership” action
+  inside the sheet. The current owner must accept or reject.
+- On compact layouts, the control label may be shortened (e.g., “Request”) to avoid overflow.
+- The request button may include the owner icon (same as the header indicator) to
+  improve clarity; keep it compact on narrow screens.
+- Rejection feedback should be non-intrusive: show a snackbar with the rejection time
+  and require an explicit “OK” dismiss; also include the last rejection time inside the
+  ownership info sheet. Do not add persistent inline icons that force the control row
+  to overflow.
+- Show a one-time, non-blocking education message on the first owner start
+  (Start now or auto-start) per device:
+  - “This device controls the execution. Other devices will connect in view-only mode.”
+  - Include “Don’t show again” (stored locally on the device).
 
 ---
 

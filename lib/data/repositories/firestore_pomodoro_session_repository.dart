@@ -60,4 +60,93 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
     final uid = await _uidOrThrow();
     await _doc(uid).delete();
   }
+
+  @override
+  Future<void> requestOwnership({required String requesterDeviceId}) async {
+    final uid = await _uidOrThrow();
+    final docRef = _doc(uid);
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(docRef);
+      if (!snap.exists) return;
+      final data = snap.data();
+      if (data == null) return;
+      final ownerDeviceId = data['ownerDeviceId'] as String?;
+      if (ownerDeviceId == null || ownerDeviceId == requesterDeviceId) return;
+      final rawRequest = data['ownershipRequest'];
+      final requestMap = rawRequest is Map<String, dynamic>
+          ? rawRequest
+          : rawRequest is Map
+              ? Map<String, dynamic>.from(rawRequest)
+              : null;
+      final status = requestMap?['status'] as String?;
+      final requester = requestMap?['requesterDeviceId'] as String?;
+      if (status == 'pending' && requester != requesterDeviceId) {
+        return;
+      }
+      tx.set(
+        docRef,
+        {
+          'ownershipRequest': {
+            'requesterDeviceId': requesterDeviceId,
+            'status': 'pending',
+            'requestedAt': FieldValue.serverTimestamp(),
+            'respondedAt': null,
+            'respondedByDeviceId': null,
+          },
+        },
+        SetOptions(merge: true),
+      );
+    });
+  }
+
+  @override
+  Future<void> respondToOwnershipRequest({
+    required String ownerDeviceId,
+    required String requesterDeviceId,
+    required bool approved,
+  }) async {
+    final uid = await _uidOrThrow();
+    final docRef = _doc(uid);
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(docRef);
+      if (!snap.exists) return;
+      final data = snap.data();
+      if (data == null) return;
+      final currentOwner = data['ownerDeviceId'] as String?;
+      if (currentOwner != ownerDeviceId) return;
+      final rawRequest = data['ownershipRequest'];
+      final requestMap = rawRequest is Map<String, dynamic>
+          ? rawRequest
+          : rawRequest is Map
+              ? Map<String, dynamic>.from(rawRequest)
+              : null;
+      final status = requestMap?['status'] as String?;
+      final requester = requestMap?['requesterDeviceId'] as String?;
+      if (status != 'pending' || requester != requesterDeviceId) return;
+      if (approved) {
+        tx.set(
+          docRef,
+          {
+            'ownerDeviceId': requesterDeviceId,
+            'ownershipRequest': FieldValue.delete(),
+          },
+          SetOptions(merge: true),
+        );
+        return;
+      }
+      tx.set(
+        docRef,
+        {
+          'ownershipRequest': {
+            'requesterDeviceId': requesterDeviceId,
+            'status': 'rejected',
+            'requestedAt': requestMap?['requestedAt'],
+            'respondedAt': FieldValue.serverTimestamp(),
+            'respondedByDeviceId': ownerDeviceId,
+          },
+        },
+        SetOptions(merge: true),
+      );
+    });
+  }
 }

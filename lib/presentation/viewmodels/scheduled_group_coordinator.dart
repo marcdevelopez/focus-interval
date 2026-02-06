@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/pomodoro_session.dart';
 import '../../data/models/task_run_group.dart';
+import '../../data/services/app_mode_service.dart';
 import '../../domain/pomodoro_machine.dart';
 import '../providers.dart';
 
@@ -97,6 +98,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     if (_autoStartInFlight || _disposed) return;
 
     final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
+    final appMode = ref.read(appModeProvider);
 
     _scheduledTimer?.cancel();
     _scheduledTimer = null;
@@ -150,11 +152,29 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
         await _markRunningGroupsCompleted(expired, now);
       }
       if (activeSession == null) {
-        final remaining = running.where((g) => !expired.contains(g)).toList();
+        final remaining = running
+            .where((g) => !expired.contains(g))
+            .toList()
+          ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
         if (remaining.isNotEmpty) {
-          final sorted = remaining
-            ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-          final groupId = sorted.first.id;
+          TaskRunGroup? candidate;
+          if (appMode == AppMode.local) {
+            candidate = remaining.first;
+          } else {
+            for (final group in remaining) {
+              if (group.scheduledByDeviceId == deviceId) {
+                candidate = group;
+                break;
+              }
+            }
+          }
+          if (candidate == null) {
+            debugPrint(
+              'Auto-start suppressed (no initiator for this device).',
+            );
+            return;
+          }
+          final groupId = candidate.id;
           ref.read(scheduledAutoStartGroupIdProvider.notifier).state = groupId;
           _emitOpenTimer(groupId);
           return;
@@ -421,6 +441,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
         status: TaskRunStatus.running,
         actualStartTime: now,
         theoreticalEndTime: now.add(Duration(seconds: totalSeconds)),
+        scheduledByDeviceId: deviceId,
         updatedAt: now,
       );
       await groupRepo.save(updated);

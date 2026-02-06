@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../widgets/timer_display.dart';
 import '../../widgets/mode_indicator.dart';
@@ -12,6 +13,7 @@ import '../providers.dart';
 import '../../domain/pomodoro_machine.dart';
 import '../viewmodels/pomodoro_view_model.dart';
 import '../../data/models/task_run_group.dart';
+import '../../data/models/pomodoro_session.dart';
 import '../../data/services/task_run_notice_service.dart';
 import '../../data/services/app_mode_service.dart';
 
@@ -26,6 +28,7 @@ class TimerScreen extends ConsumerStatefulWidget {
 
 class _TimerScreenState extends ConsumerState<TimerScreen>
     with WidgetsBindingObserver {
+  static const String _ownerEducationKey = 'owner_education_seen_v1';
   Timer? _clockTimer;
   Timer? _preRunTimer;
   Timer? _debugFrameTimer;
@@ -45,6 +48,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   int _cancelNavRetryAttempts = 0;
   _PreRunInfo? _preRunInfo;
   int _preRunRemainingSeconds = 0;
+  bool _ownerEducationInFlight = false;
+  String? _lastOwnershipRejectionKey;
 
   @override
   void initState() {
@@ -255,6 +260,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
     ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
     vm.start();
+    unawaited(_maybeShowOwnerEducation());
   }
 
   bool _keepClockActiveOutOfFocus() {
@@ -272,6 +278,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   @override
   Widget build(BuildContext context) {
     final vm = ref.read(pomodoroViewModelProvider.notifier);
+    final deviceId = ref.watch(deviceInfoServiceProvider).deviceId;
     ref.listen<AsyncValue<List<TaskRunGroup>>>(taskRunGroupStreamProvider, (
       previous,
       next,
@@ -307,6 +314,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           _runningAutoStartHandled = true;
           _runningAutoStartGroupId = group.id;
           vm.start();
+          unawaited(_maybeShowOwnerEducation());
         }
       }
 
@@ -355,6 +363,35 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       }
     });
 
+    ref.listen<PomodoroSession?>(activePomodoroSessionProvider, (
+      previous,
+      next,
+    ) {
+      final request = next?.ownershipRequest;
+      if (request == null) return;
+      if (request.status != OwnershipRequestStatus.rejected) return;
+      if (request.requesterDeviceId != deviceId) return;
+      final respondedAt = request.respondedAt;
+      final key =
+          '${request.requesterDeviceId}-${respondedAt?.millisecondsSinceEpoch ?? 0}';
+      if (_lastOwnershipRejectionKey == key) return;
+      _lastOwnershipRejectionKey = key;
+      if (!mounted) return;
+      final time = DateFormat('HH:mm').format(respondedAt ?? DateTime.now());
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Ownership request rejected at $time'),
+          duration: const Duration(days: 1),
+          action: SnackBarAction(
+            label: 'OK',
+            onPressed: () => messenger.hideCurrentSnackBar(),
+          ),
+        ),
+      );
+    });
+
     ref.listen<String?>(scheduledAutoStartGroupIdProvider, (previous, next) {
       if (next == widget.groupId) {
         _maybeAutoStartScheduled();
@@ -368,6 +405,17 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final shouldBlockExit = state.status.isActiveExecution;
     final isLocalMode = appMode == AppMode.local;
     final currentGroup = vm.currentGroup;
+    final activeSession = ref.watch(activePomodoroSessionProvider);
+    final isSessionForGroup =
+        activeSession != null &&
+        currentGroup != null &&
+        activeSession.groupId == currentGroup.id;
+    final ownerDeviceId =
+        isSessionForGroup ? activeSession!.ownerDeviceId : deviceId;
+    final isMirror = isSessionForGroup && ownerDeviceId != deviceId;
+    final ownershipRequest = vm.ownershipRequest;
+    final hasPendingOwnershipRequest = vm.hasPendingOwnershipRequest;
+    final isPendingForSelf = vm.isOwnershipRequestPendingForThisDevice;
 
     if (currentGroup?.status == TaskRunStatus.canceled &&
         !_cancelNavigationHandled) {
@@ -398,6 +446,16 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           backgroundColor: Colors.black,
           title: const Text("Focus Interval"),
           actions: [
+            if (currentGroup != null)
+              _OwnershipIndicatorAction(
+                isMirror: isMirror,
+                onPressed: () => _showOwnershipInfoSheet(
+                  isMirror: isMirror,
+                  ownerDeviceId: ownerDeviceId,
+                  currentDeviceId: deviceId,
+                  vm: vm,
+                ),
+              ),
             const ModeIndicatorAction(compact: true),
             _PlannedGroupsIndicator(),
           ],
@@ -455,12 +513,41 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (!isMirror &&
+                  hasPendingOwnershipRequest &&
+                  ownershipRequest != null &&
+                  ownershipRequest.requesterDeviceId != deviceId)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _OwnershipRequestBanner(
+                    requesterLabel: _platformFromDeviceId(
+                      ownershipRequest.requesterDeviceId,
+                    ),
+                    onApprove: () => unawaited(vm.approveOwnershipRequest()),
+                    onReject: () => unawaited(vm.rejectOwnershipRequest()),
+                  ),
+                ),
+              if (isPendingForSelf)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    'Waiting for owner approval...',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                ),
               _ControlsBar(
                 state: state,
                 vm: vm,
                 taskLoaded: _taskLoaded,
                 isPreRun: isPreRun,
                 isLocalMode: isLocalMode,
+                onStartRequested: () {
+                  vm.start();
+                  unawaited(_maybeShowOwnerEducation());
+                },
+                onRequestOwnership: () {
+                  unawaited(vm.requestOwnership());
+                },
                 onPauseRequested: () {
                   _handlePauseWithLocalInfo(vm, isLocalMode);
                 },
@@ -711,6 +798,161 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     });
   }
 
+
+  Future<void> _maybeShowOwnerEducation() async {
+    if (_ownerEducationInFlight) return;
+    _ownerEducationInFlight = true;
+    try {
+      final appMode = ref.read(appModeProvider);
+      if (appMode != AppMode.account) return;
+      final prefs = await SharedPreferences.getInstance();
+      final seen = prefs.getBool(_ownerEducationKey) ?? false;
+      if (seen) return;
+      await prefs.setBool(_ownerEducationKey, true);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'This device controls the execution. Other devices will connect in view-only mode.',
+          ),
+          action: SnackBarAction(
+            label: "Don't show again",
+            onPressed: () {},
+          ),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } finally {
+      _ownerEducationInFlight = false;
+    }
+  }
+
+  String _platformFromDeviceId(String deviceId) {
+    final dash = deviceId.indexOf('-');
+    if (dash <= 0) return deviceId;
+    return deviceId.substring(0, dash);
+  }
+
+  String _ownerLabel(String ownerDeviceId, String currentDeviceId) {
+    final platform = _platformFromDeviceId(ownerDeviceId);
+    if (ownerDeviceId == currentDeviceId) {
+      return 'This device ($platform)';
+    }
+    return platform;
+  }
+
+  void _showOwnershipInfoSheet({
+    required bool isMirror,
+    required String ownerDeviceId,
+    required String currentDeviceId,
+    required PomodoroViewModel vm,
+  }) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.black,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        final ownerLabel = _ownerLabel(ownerDeviceId, currentDeviceId);
+        final request = vm.ownershipRequest;
+        final isPendingForSelf = vm.isOwnershipRequestPendingForThisDevice;
+        final isPendingForOther = vm.isOwnershipRequestPendingForOther;
+        final isRejectedForSelf = vm.isOwnershipRequestRejectedForThisDevice;
+        final canRequestOwnership = vm.canRequestOwnership;
+        final rejectionAt = request?.respondedAt;
+        final allowed = isMirror
+            ? 'View progress only.'
+            : 'Start, pause, resume, and cancel.';
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Session ownership',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  isMirror
+                      ? 'This device is in view-only mode.'
+                      : 'This device controls the execution.',
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Owner: $ownerLabel',
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Allowed actions',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  allowed,
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                if (isMirror && isPendingForSelf) ...[
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Waiting for owner approval.',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                ],
+                if (isMirror && isPendingForOther) ...[
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Another device is requesting ownership.',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                ],
+                if (isMirror && isRejectedForSelf && rejectionAt != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'Last request rejected at ${DateFormat('HH:mm').format(rejectionAt)}.',
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                ],
+                if (isMirror) ...[
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: canRequestOwnership
+                          ? () {
+                              Navigator.of(context).pop();
+                              unawaited(vm.requestOwnership());
+                            }
+                          : null,
+                      child: Text(
+                        isPendingForSelf
+                            ? 'Request sent'
+                            : 'Request ownership',
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _handleCancelRequested(PomodoroViewModel vm) async {
     final confirmed = await _confirmCancelDialog();
     if (confirmed != true) return;
@@ -854,22 +1096,28 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     if (!state.status.isActiveExecution) return true;
 
     if (!vm.canControlSession) {
-      final canTakeOver = vm.canTakeOver;
-      final shouldTakeOver = await showDialog<bool>(
+      final canRequestOwnership = vm.canRequestOwnership;
+      final pendingForSelf = vm.isOwnershipRequestPendingForThisDevice;
+      final pendingForOther = vm.isOwnershipRequestPendingForOther;
+      final shouldRequest = await showDialog<bool>(
         context: context,
         builder: (_) => AlertDialog(
           title: const Text("Group running on another device"),
           content: Text(
-            canTakeOver
+            pendingForSelf
+                ? "Ownership request pending. Wait for approval to stop it here."
+                : pendingForOther
+                    ? "Another device is requesting ownership. End it there to stop it."
+                    : canRequestOwnership
                 ? "This group is controlled by another device. "
-                    "To stop it here you must take over. Canceling ends it and it cannot be resumed."
+                    "To stop it here you must request ownership and wait for approval."
                 : "This group is controlled by another device. End it there to stop it.",
           ),
           actions: [
-            if (canTakeOver)
+            if (canRequestOwnership)
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text("Take over and end"),
+                child: const Text("Request ownership"),
               ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -879,9 +1127,16 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         ),
       );
 
-      if (shouldTakeOver != true) return false;
-      await vm.takeOver();
-      await _cancelAndNavigateToHub(vm);
+      if (shouldRequest != true) return false;
+      await vm.requestOwnership();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ownership request sent'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
       return false;
     }
 
@@ -906,6 +1161,8 @@ class _ControlsBar extends StatelessWidget {
   final bool taskLoaded;
   final bool isPreRun;
   final bool isLocalMode;
+  final VoidCallback onStartRequested;
+  final VoidCallback onRequestOwnership;
   final VoidCallback onPauseRequested;
   final VoidCallback onLocalPauseInfo;
   final VoidCallback onCancelRequested;
@@ -916,6 +1173,8 @@ class _ControlsBar extends StatelessWidget {
     required this.taskLoaded,
     required this.isPreRun,
     required this.isLocalMode,
+    required this.onStartRequested,
+    required this.onRequestOwnership,
     required this.onPauseRequested,
     required this.onLocalPauseInfo,
     required this.onCancelRequested,
@@ -931,40 +1190,100 @@ class _ControlsBar extends StatelessWidget {
     final isPaused = state.status == PomodoroStatus.paused;
     final isFinished =
         state.status == PomodoroStatus.finished && vm.isGroupCompleted;
-    final canTakeOver = vm.canTakeOver;
+    final canRequestOwnership = vm.canRequestOwnership;
+    final isPendingForSelf = vm.isOwnershipRequestPendingForThisDevice;
+    final isPendingForOther = vm.isOwnershipRequestPendingForOther;
     final controlsEnabled = vm.canControlSession;
     final showLocalPauseInfo =
         isLocalMode && state.status == PomodoroStatus.paused;
 
-    if (isPreRun) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _btn("Pause", null),
-          _btn("Cancel", controlsEnabled ? onCancelRequested : null),
-        ],
-      );
-    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 400;
+        if (isPreRun) {
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _btn("Pause", null, compact: isCompact),
+              _btn(
+                "Cancel",
+                controlsEnabled ? onCancelRequested : null,
+                compact: isCompact,
+              ),
+            ],
+          );
+        }
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        if (canTakeOver) _btn("Take over", () => _confirmTakeOver(context)),
-        if (isIdle)
-          _btn("Start", taskLoaded && controlsEnabled ? vm.start : null),
-        if (isFinished)
-          _btn("Start again", taskLoaded && controlsEnabled ? vm.start : null),
-        if (isRunning)
-          _btn("Pause", controlsEnabled ? onPauseRequested : null),
-        if (isPaused)
-          _buildResumeControl(
-            context,
-            controlsEnabled,
-            showLocalPauseInfo: showLocalPauseInfo,
-          ),
-        if (!isIdle && !isFinished)
-          _btn("Cancel", controlsEnabled ? onCancelRequested : null),
-      ],
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            if (vm.isMirrorMode)
+              _ownershipRequestControl(
+                context,
+                canRequestOwnership: canRequestOwnership,
+                isPendingForSelf: isPendingForSelf,
+                isPendingForOther: isPendingForOther,
+                compact: isCompact,
+              ),
+            if (isIdle)
+              _btn(
+                "Start",
+                taskLoaded && controlsEnabled ? onStartRequested : null,
+                compact: isCompact,
+              ),
+            if (isFinished)
+              _btn(
+                "Start again",
+                taskLoaded && controlsEnabled ? onStartRequested : null,
+                compact: isCompact,
+              ),
+            if (isRunning)
+              _btn(
+                "Pause",
+                controlsEnabled ? onPauseRequested : null,
+                compact: isCompact,
+              ),
+            if (isPaused)
+              _buildResumeControl(
+                context,
+                controlsEnabled,
+                showLocalPauseInfo: showLocalPauseInfo,
+                compact: isCompact,
+              ),
+            if (!isIdle && !isFinished)
+              _btn(
+                "Cancel",
+                controlsEnabled ? onCancelRequested : null,
+                compact: isCompact,
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _ownershipRequestControl(
+    BuildContext context, {
+    required bool canRequestOwnership,
+    required bool isPendingForSelf,
+    required bool isPendingForOther,
+    required bool compact,
+  }) {
+    final baseLabel = compact ? 'Request' : 'Request ownership';
+    String label = baseLabel;
+    VoidCallback? onPressed = canRequestOwnership ? onRequestOwnership : null;
+    if (isPendingForSelf) {
+      label = compact ? 'Requested' : 'Request sent';
+      onPressed = null;
+    } else if (isPendingForOther) {
+      label = compact ? 'Pending' : 'Ownership requested';
+      onPressed = null;
+    }
+    return _btn(
+      label,
+      onPressed,
+      compact: compact,
+      icon: Icons.verified,
     );
   }
 
@@ -972,8 +1291,13 @@ class _ControlsBar extends StatelessWidget {
     BuildContext context,
     bool controlsEnabled, {
     required bool showLocalPauseInfo,
+    required bool compact,
   }) {
-    final resumeButton = _btn("Resume", controlsEnabled ? vm.resume : null);
+    final resumeButton = _btn(
+      "Resume",
+      controlsEnabled ? vm.resume : null,
+      compact: compact,
+    );
     if (!showLocalPauseInfo) return resumeButton;
 
     return Row(
@@ -993,45 +1317,137 @@ class _ControlsBar extends StatelessWidget {
     );
   }
 
-  Future<void> _confirmTakeOver(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text(
-          "Take over session?",
-          style: TextStyle(color: Colors.white),
-        ),
-        content: const Text(
-          "This device will become the owner and control the active pomodoro.",
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text("Take over"),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      await vm.takeOver();
-    }
-  }
-
-  Widget _btn(String text, VoidCallback? onTap) {
+  Widget _btn(
+    String text,
+    VoidCallback? onTap, {
+    bool compact = false,
+    IconData? icon,
+  }) {
+    final child = icon == null
+        ? Text(
+            text,
+            style: TextStyle(fontSize: compact ? 12 : 14),
+          )
+        : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: compact ? 14 : 16,
+                color: Colors.white70,
+              ),
+              SizedBox(width: compact ? 4 : 6),
+              Text(
+                text,
+                style: TextStyle(fontSize: compact ? 12 : 14),
+              ),
+            ],
+          );
     return ElevatedButton(
       onPressed: onTap,
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.white12,
         foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 14 : 22,
+          vertical: compact ? 12 : 14,
+        ),
       ),
-      child: Text(text),
+      child: child,
+    );
+  }
+}
+
+class _OwnershipRequestBanner extends StatelessWidget {
+  final String requesterLabel;
+  final VoidCallback onApprove;
+  final VoidCallback onReject;
+
+  const _OwnershipRequestBanner({
+    required this.requesterLabel,
+    required this.onApprove,
+    required this.onReject,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white10,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Ownership request',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '$requesterLabel wants to control this session.',
+            style: const TextStyle(color: Colors.white70),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: onApprove,
+                  child: const Text('Accept'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: onReject,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white70,
+                    side: const BorderSide(color: Colors.white24),
+                  ),
+                  child: const Text('Reject'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OwnershipIndicatorAction extends StatelessWidget {
+  final bool isMirror;
+  final VoidCallback onPressed;
+
+  const _OwnershipIndicatorAction({
+    required this.isMirror,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = isMirror ? Icons.remove_red_eye : Icons.verified;
+    final color = isMirror ? Colors.white70 : Colors.greenAccent;
+    final tooltip = isMirror ? 'Mirror device' : 'Owner device';
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            tooltip: tooltip,
+            onPressed: onPressed,
+            icon: Icon(icon, color: color),
+          ),
+        ],
+      ),
     );
   }
 }
