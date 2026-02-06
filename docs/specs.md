@@ -1344,6 +1344,8 @@ The MM:SS timer must not shift horizontally:
 - When the device is in mirror mode, provide an explicit “Request ownership” action
   inside the sheet. The current owner must accept or reject.
 - On compact layouts, the control label may be shortened (e.g., “Request”) to avoid overflow.
+- The request button may include the owner icon (same as the header indicator) to
+  improve clarity; keep it compact on narrow screens.
 - Rejection feedback should be non-intrusive: show a brief snackbar and include the
   last rejection time inside the ownership info sheet. Do not add persistent inline icons
   that force the control row to overflow.

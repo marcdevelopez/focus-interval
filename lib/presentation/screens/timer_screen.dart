@@ -1272,7 +1272,12 @@ class _ControlsBar extends StatelessWidget {
       label = compact ? 'Pending' : 'Ownership requested';
       onPressed = null;
     }
-    return _btn(label, onPressed, compact: compact);
+    return _btn(
+      label,
+      onPressed,
+      compact: compact,
+      icon: Icons.verified,
+    );
   }
 
   Widget _buildResumeControl(
@@ -1305,7 +1310,32 @@ class _ControlsBar extends StatelessWidget {
     );
   }
 
-  Widget _btn(String text, VoidCallback? onTap, {bool compact = false}) {
+  Widget _btn(
+    String text,
+    VoidCallback? onTap, {
+    bool compact = false,
+    IconData? icon,
+  }) {
+    final child = icon == null
+        ? Text(
+            text,
+            style: TextStyle(fontSize: compact ? 12 : 14),
+          )
+        : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: compact ? 14 : 16,
+                color: Colors.white70,
+              ),
+              SizedBox(width: compact ? 4 : 6),
+              Text(
+                text,
+                style: TextStyle(fontSize: compact ? 12 : 14),
+              ),
+            ],
+          );
     return ElevatedButton(
       onPressed: onTap,
       style: ElevatedButton.styleFrom(
@@ -1316,10 +1346,7 @@ class _ControlsBar extends StatelessWidget {
           vertical: compact ? 12 : 14,
         ),
       ),
-      child: Text(
-        text,
-        style: TextStyle(fontSize: compact ? 12 : 14),
-      ),
+      child: child,
     );
   }
 }

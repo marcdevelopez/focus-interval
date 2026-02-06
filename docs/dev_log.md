@@ -4327,6 +4327,18 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Validate on narrow Android/iOS devices: Request/Pause/Cancel row fits with no overflow.
 
+# 🔹 Block 271 — Ownership request icon (06/02/2026)
+
+### ✔ Work completed:
+
+- Added the owner icon to the Request ownership control for clarity and consistency.
+- Kept the compact label + spacing to avoid overflow on narrow screens.
+- Documented the button icon guidance in specs.
+
+### 🎯 Next steps:
+
+- Quick visual pass on narrow Android/iOS to confirm no overflow regression.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
