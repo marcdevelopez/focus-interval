@@ -4339,6 +4339,17 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Quick visual pass on narrow Android/iOS to confirm no overflow regression.
 
+# 🔹 Block 272 — Ownership rejection snackbar (06/02/2026)
+
+### ✔ Work completed:
+
+- Snackbar now shows the rejection time and waits for explicit “OK” dismissal.
+- Updated specs to reflect the persistent snackbar requirement.
+
+### 🎯 Next steps:
+
+- Validate that repeated rejections replace the snackbar cleanly without UI shifts.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

@@ -1346,9 +1346,10 @@ The MM:SS timer must not shift horizontally:
 - On compact layouts, the control label may be shortened (e.g., “Request”) to avoid overflow.
 - The request button may include the owner icon (same as the header indicator) to
   improve clarity; keep it compact on narrow screens.
-- Rejection feedback should be non-intrusive: show a brief snackbar and include the
-  last rejection time inside the ownership info sheet. Do not add persistent inline icons
-  that force the control row to overflow.
+- Rejection feedback should be non-intrusive: show a snackbar with the rejection time
+  and require an explicit “OK” dismiss; also include the last rejection time inside the
+  ownership info sheet. Do not add persistent inline icons that force the control row
+  to overflow.
 - Show a one-time, non-blocking education message on the first owner start
   (Start now or auto-start) per device:
   - “This device controls the execution. Other devices will connect in view-only mode.”

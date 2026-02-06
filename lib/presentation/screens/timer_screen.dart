@@ -377,10 +377,17 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       if (_lastOwnershipRejectionKey == key) return;
       _lastOwnershipRejectionKey = key;
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Ownership request rejected'),
-          duration: Duration(seconds: 3),
+      final time = DateFormat('HH:mm').format(respondedAt ?? DateTime.now());
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Ownership request rejected at $time'),
+          duration: const Duration(days: 1),
+          action: SnackBarAction(
+            label: 'OK',
+            onPressed: () => messenger.hideCurrentSnackBar(),
+          ),
         ),
       );
     });
