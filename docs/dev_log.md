@@ -4225,6 +4225,11 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Cleared stale activeSession for expired running groups (including remote owner cases).
 - Added load-time sanitization for expired + stale sessions.
 
+### 🧠 Decisions made:
+
+- Permit non-owner cleanup only when the session is stale and the group has clearly expired, to preserve single-writer rules while eliminating zombie runs.
+- Treat activeSession as strictly ephemeral; clearing it on expired groups is required to keep Groups Hub consistent across devices.
+
 ### ⚠️ Issues found:
 
 - Remote-owned sessions could block auto-complete even after the group end time passed.
