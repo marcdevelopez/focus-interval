@@ -1186,52 +1186,72 @@ class _ControlsBar extends StatelessWidget {
     final canRequestOwnership = vm.canRequestOwnership;
     final isPendingForSelf = vm.isOwnershipRequestPendingForThisDevice;
     final isPendingForOther = vm.isOwnershipRequestPendingForOther;
-    final isRejectedForSelf = vm.isOwnershipRequestRejectedForThisDevice;
-    final rejectionAt = vm.ownershipRequest?.respondedAt;
     final controlsEnabled = vm.canControlSession;
     final showLocalPauseInfo =
         isLocalMode && state.status == PomodoroStatus.paused;
 
-    if (isPreRun) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _btn("Pause", null),
-          _btn("Cancel", controlsEnabled ? onCancelRequested : null),
-        ],
-      );
-    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 400;
+        if (isPreRun) {
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _btn("Pause", null, compact: isCompact),
+              _btn(
+                "Cancel",
+                controlsEnabled ? onCancelRequested : null,
+                compact: isCompact,
+              ),
+            ],
+          );
+        }
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        if (vm.isMirrorMode)
-          _ownershipRequestControl(
-            context,
-            canRequestOwnership: canRequestOwnership,
-            isPendingForSelf: isPendingForSelf,
-            isPendingForOther: isPendingForOther,
-            isRejectedForSelf: isRejectedForSelf,
-            rejectionAt: rejectionAt,
-          ),
-        if (isIdle)
-          _btn("Start", taskLoaded && controlsEnabled ? onStartRequested : null),
-        if (isFinished)
-          _btn(
-            "Start again",
-            taskLoaded && controlsEnabled ? onStartRequested : null,
-          ),
-        if (isRunning)
-          _btn("Pause", controlsEnabled ? onPauseRequested : null),
-        if (isPaused)
-          _buildResumeControl(
-            context,
-            controlsEnabled,
-            showLocalPauseInfo: showLocalPauseInfo,
-          ),
-        if (!isIdle && !isFinished)
-          _btn("Cancel", controlsEnabled ? onCancelRequested : null),
-      ],
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            if (vm.isMirrorMode)
+              _ownershipRequestControl(
+                context,
+                canRequestOwnership: canRequestOwnership,
+                isPendingForSelf: isPendingForSelf,
+                isPendingForOther: isPendingForOther,
+                compact: isCompact,
+              ),
+            if (isIdle)
+              _btn(
+                "Start",
+                taskLoaded && controlsEnabled ? onStartRequested : null,
+                compact: isCompact,
+              ),
+            if (isFinished)
+              _btn(
+                "Start again",
+                taskLoaded && controlsEnabled ? onStartRequested : null,
+                compact: isCompact,
+              ),
+            if (isRunning)
+              _btn(
+                "Pause",
+                controlsEnabled ? onPauseRequested : null,
+                compact: isCompact,
+              ),
+            if (isPaused)
+              _buildResumeControl(
+                context,
+                controlsEnabled,
+                showLocalPauseInfo: showLocalPauseInfo,
+                compact: isCompact,
+              ),
+            if (!isIdle && !isFinished)
+              _btn(
+                "Cancel",
+                controlsEnabled ? onCancelRequested : null,
+                compact: isCompact,
+              ),
+          ],
+        );
+      },
     );
   }
 
@@ -1240,56 +1260,32 @@ class _ControlsBar extends StatelessWidget {
     required bool canRequestOwnership,
     required bool isPendingForSelf,
     required bool isPendingForOther,
-    required bool isRejectedForSelf,
-    required DateTime? rejectionAt,
+    required bool compact,
   }) {
-    String label = 'Request ownership';
+    final baseLabel = compact ? 'Request' : 'Request ownership';
+    String label = baseLabel;
     VoidCallback? onPressed = canRequestOwnership ? onRequestOwnership : null;
     if (isPendingForSelf) {
-      label = 'Request sent';
+      label = compact ? 'Requested' : 'Request sent';
       onPressed = null;
     } else if (isPendingForOther) {
-      label = 'Ownership requested';
+      label = compact ? 'Pending' : 'Ownership requested';
       onPressed = null;
     }
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _btn(label, onPressed),
-        if (isRejectedForSelf && rejectionAt != null)
-          IconButton(
-            tooltip: 'Ownership request rejected',
-            onPressed: () {
-              final time = DateFormat('HH:mm').format(rejectionAt);
-              showDialog<void>(
-                context: context,
-                builder: (_) => AlertDialog(
-                  title: const Text('Ownership request rejected'),
-                  content: Text('Rejected at $time.'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('OK'),
-                    ),
-                  ],
-                ),
-              );
-            },
-            icon: const Icon(Icons.block, size: 18),
-            color: Colors.redAccent,
-            padding: const EdgeInsets.all(6),
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-          ),
-      ],
-    );
+    return _btn(label, onPressed, compact: compact);
   }
 
   Widget _buildResumeControl(
     BuildContext context,
     bool controlsEnabled, {
     required bool showLocalPauseInfo,
+    required bool compact,
   }) {
-    final resumeButton = _btn("Resume", controlsEnabled ? vm.resume : null);
+    final resumeButton = _btn(
+      "Resume",
+      controlsEnabled ? vm.resume : null,
+      compact: compact,
+    );
     if (!showLocalPauseInfo) return resumeButton;
 
     return Row(
@@ -1309,15 +1305,21 @@ class _ControlsBar extends StatelessWidget {
     );
   }
 
-  Widget _btn(String text, VoidCallback? onTap) {
+  Widget _btn(String text, VoidCallback? onTap, {bool compact = false}) {
     return ElevatedButton(
       onPressed: onTap,
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.white12,
         foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 14 : 22,
+          vertical: compact ? 12 : 14,
+        ),
       ),
-      child: Text(text),
+      child: Text(
+        text,
+        style: TextStyle(fontSize: compact ? 12 : 14),
+      ),
     );
   }
 }

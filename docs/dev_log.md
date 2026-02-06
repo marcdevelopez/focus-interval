@@ -4310,6 +4310,23 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Validate multi-device request → approve/reject flows on Android/iOS/Web.
 - Re-test pause/resume after approval to confirm no timer reset on ex-owner.
 
+# 🔹 Block 270 — Compact ownership controls (06/02/2026)
+
+### ✔ Work completed:
+
+- Shortened the ownership request label on compact widths to prevent control overflow.
+- Reduced control padding/font size on narrow screens.
+- Removed the inline rejection icon; rejection feedback is now snackbar + info sheet.
+- Updated specs with compact-label + rejection feedback rules.
+
+### ⚠️ Issues found:
+
+- None observed (layout regression fix).
+
+### 🎯 Next steps:
+
+- Validate on narrow Android/iOS devices: Request/Pause/Cancel row fits with no overflow.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

@@ -1343,6 +1343,10 @@ The MM:SS timer must not shift horizontally:
   - Which device currently owns the session (platform label is acceptable).
 - When the device is in mirror mode, provide an explicit “Request ownership” action
   inside the sheet. The current owner must accept or reject.
+- On compact layouts, the control label may be shortened (e.g., “Request”) to avoid overflow.
+- Rejection feedback should be non-intrusive: show a brief snackbar and include the
+  last rejection time inside the ownership info sheet. Do not add persistent inline icons
+  that force the control row to overflow.
 - Show a one-time, non-blocking education message on the first owner start
   (Start now or auto-start) per device:
   - “This device controls the execution. Other devices will connect in view-only mode.”
