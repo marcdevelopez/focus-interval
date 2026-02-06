@@ -22,7 +22,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **05/02/2026**
+Last update: **06/02/2026**
 
 ---
 
@@ -4199,6 +4199,39 @@ Mode A global long-break sequencing not fully validated (time constraints).
 ### 🎯 Next steps:
 
 - Validate single-task completion on mirror with owner closed (modal + Groups Hub).
+
+# 🔹 Block 264 — ActiveSession ownership + cleanup (06/02/2026)
+
+### ✔ Work completed:
+
+- Documented activeSession cleanup rules in specs (terminal states + stale sessions).
+- Added owner-side activeSession clearing on group completion.
+- Added stale activeSession cleanup when groups are not running (global + load guard).
+
+### ⚠️ Issues found:
+
+- Stale activeSession could block ownership for new executions and persist after completion.
+
+### 🎯 Next steps:
+
+- Validate Run again/Start now ownership transfer across macOS/Android.
+- Confirm activeSession clears on completion/cancel and Groups Hub no longer shows a running card.
+
+# 🔹 Block 265 — Stale session completion (06/02/2026)
+
+### ✔ Work completed:
+
+- Allowed auto-completion when an activeSession is stale and the group has passed theoreticalEndTime.
+- Cleared stale activeSession for expired running groups (including remote owner cases).
+- Added load-time sanitization for expired + stale sessions.
+
+### ⚠️ Issues found:
+
+- Remote-owned sessions could block auto-complete even after the group end time passed.
+
+### 🎯 Next steps:
+
+- Validate owner-offline completion across macOS/Android with Groups Hub consistency.
 
 # 🧾 General notes
 

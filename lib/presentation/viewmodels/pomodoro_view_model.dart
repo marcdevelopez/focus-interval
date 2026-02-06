@@ -38,6 +38,7 @@ class _GroupResumeProjection {
 
 class PomodoroViewModel extends Notifier<PomodoroState> {
   static const int _heartbeatIntervalSeconds = 30;
+  static const Duration _staleSessionGrace = Duration(seconds: 90);
   late PomodoroMachine _machine;
   StreamSubscription<PomodoroState>? _sub;
   late SoundService _soundService;
@@ -95,7 +96,8 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   // Load values from TaskRunGroup.
   Future<PomodoroGroupLoadResult> loadGroup(String groupId) async {
-    final session = await _readCurrentSession();
+    final rawSession = await _readCurrentSession();
+    final session = await _sanitizeActiveSession(rawSession);
     _latestSession = session;
     if (_hasActiveGroupConflict(session, groupId)) {
       return PomodoroGroupLoadResult.blockedByActiveSession;
@@ -443,8 +445,8 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     final isLastTask = _currentTaskIndex >= group.tasks.length - 1;
     if (isLastTask) {
       _groupCompleted = true;
-      _markGroupCompleted();
       _publishCurrentSession();
+      unawaited(_finalizeGroupCompletion());
       return;
     }
 
@@ -546,6 +548,24 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     );
     _currentGroup = updated;
     await _groupRepo.save(updated);
+  }
+
+  Future<void> _finalizeGroupCompletion() async {
+    await _markGroupCompleted();
+    await _clearSessionIfOwned();
+  }
+
+  Future<void> _clearSessionIfOwned() async {
+    if (!canControlSession) return;
+    final session = _latestSession;
+    final groupId = _currentGroup?.id;
+    if (groupId != null &&
+        session != null &&
+        session.groupId != null &&
+        session.groupId != groupId) {
+      return;
+    }
+    await _sessionRepo.clearSession();
   }
 
   Future<void> _markGroupCanceled() async {
@@ -1275,6 +1295,55 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     } on StateError {
       return null;
     }
+  }
+
+  Future<PomodoroSession?> _sanitizeActiveSession(
+    PomodoroSession? session,
+  ) async {
+    if (session == null || !session.status.isActiveExecution) return session;
+    final groupId = session.groupId;
+    if (groupId == null || groupId.isEmpty) return session;
+    final now = DateTime.now();
+    try {
+      final group = await _groupRepo.getById(groupId);
+      if (group == null || group.status != TaskRunStatus.running) {
+        await _sessionRepo.clearSession();
+        return null;
+      }
+      if (session.status.isRunning &&
+          _isGroupExpired(group, now) &&
+          _isSessionStaleForCleanup(session, now)) {
+        final updated = group.copyWith(
+          status: TaskRunStatus.completed,
+          updatedAt: now,
+        );
+        await _groupRepo.save(updated);
+        await _sessionRepo.clearSession();
+        return null;
+      }
+    } catch (_) {
+      return session;
+    }
+    return session;
+  }
+
+  bool _isSessionStaleForCleanup(PomodoroSession session, DateTime now) {
+    final updatedAt = session.lastUpdatedAt;
+    if (updatedAt == null) return true;
+    return now.difference(updatedAt) >= _staleSessionGrace;
+  }
+
+  bool _isGroupExpired(TaskRunGroup group, DateTime now) {
+    final start = group.actualStartTime;
+    if (start == null) return false;
+    var end = group.theoreticalEndTime;
+    if (end.isBefore(start)) {
+      final totalSeconds = _groupTotalSeconds(group);
+      if (totalSeconds > 0) {
+        end = start.add(Duration(seconds: totalSeconds));
+      }
+    }
+    return !end.isAfter(now);
   }
 
   bool _hasActiveGroupConflict(PomodoroSession? session, String? groupId) {
