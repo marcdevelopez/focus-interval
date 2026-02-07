@@ -116,10 +116,15 @@ class TaskListScreen extends ConsumerStatefulWidget {
 class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   static const String _linuxSyncNoticeKey = 'linux_sync_notice_seen';
   static const String _webLocalNoticeKey = 'web_local_notice_seen';
+  static const double _autoScrollEdgeThreshold = 56;
+  static const double _autoScrollStep = 12;
   final _timeFormat = DateFormat('HH:mm');
+  final GlobalKey _taskListViewportKey = GlobalKey();
+  final ScrollController _taskListScrollController = ScrollController();
   bool _syncNoticeChecked = false;
   bool _webLocalNoticeChecked = false;
   bool _verificationPromptShown = false;
+  bool _isReordering = false;
   DateTime _planningAnchor = DateTime.now();
   String _planningAnchorKey = '';
   String? _activeBannerGroupId;
@@ -136,7 +141,29 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
 
   @override
   void dispose() {
+    _taskListScrollController.dispose();
     super.dispose();
+  }
+
+  void _handleReorderAutoScroll(PointerMoveEvent event) {
+    if (!_isReordering) return;
+    if (!_taskListScrollController.hasClients) return;
+    final viewportContext = _taskListViewportKey.currentContext;
+    final size = viewportContext?.size;
+    if (size == null) return;
+    final dy = event.localPosition.dy;
+    final maxScroll = _taskListScrollController.position.maxScrollExtent;
+    final current = _taskListScrollController.offset;
+    double delta = 0;
+    if (dy < _autoScrollEdgeThreshold) {
+      delta = -_autoScrollStep;
+    } else if (dy > size.height - _autoScrollEdgeThreshold) {
+      delta = _autoScrollStep;
+    }
+    if (delta == 0) return;
+    final target = (current + delta).clamp(0.0, maxScroll);
+    if (target == current) return;
+    _taskListScrollController.jumpTo(target);
   }
 
   Future<void> _maybeShowLinuxSyncNotice() async {
@@ -734,84 +761,105 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
 
                 final soundOverrides = ref.read(localSoundOverridesProvider);
 
-                return ReorderableListView.builder(
-                  buildDefaultDragHandles: false,
-                  padding: const EdgeInsets.all(12),
-                  itemCount: tasks.length,
-                  onReorder: (oldIndex, newIndex) {
-                    ref
-                        .read(taskListProvider.notifier)
-                        .reorderTasks(oldIndex, newIndex);
-                  },
-                  itemBuilder: (context, i) {
-                    final t = tasks[i];
-                    final isSelected = selectedIds.contains(t.id);
-                    final weightPercent = (weightTotal == null || !isSelected)
-                        ? null
-                        : (((t.totalPomodoros * t.pomodoroMinutes) /
-                                    weightTotal) *
-                                100)
-                            .round();
-                    return TaskCard(
-                      key: ValueKey(t.id),
-                      task: t,
-                      soundOverrides: soundOverrides,
-                      weightPercent: weightPercent,
-                      selected: isSelected,
-                      onTap: () => selection.toggle(t.id),
-                      timeRange: ranges[t.id],
-                      reorderHandle: ReorderableDragStartListener(
-                        index: i,
-                        child: const Padding(
-                          padding: EdgeInsets.only(left: 4),
-                          child: Icon(Icons.drag_handle, color: Colors.white38),
-                        ),
-                      ),
-                      onEdit: () async {
-                        if (activeSession != null &&
-                            activeSession.taskId == t.id) {
-                          _showSnackBar(
-                            context,
-                            "This task is running. Stop it before editing.",
-                          );
-                          return;
-                        }
-                        final result = await ref
-                            .read(taskEditorProvider.notifier)
-                            .load(t.id);
-                        if (!context.mounted) return;
-                        if (result == TaskEditorLoadResult.notFound) {
-                          _showSnackBar(context, "Task not found.");
-                          return;
-                        }
-                        if (result ==
-                            TaskEditorLoadResult.blockedByActiveSession) {
-                          _showSnackBar(
-                            context,
-                            "This task is running. Stop it before editing.",
-                          );
-                          return;
-                        }
-                        await context.push("/tasks/edit/${t.id}");
-                        if (!mounted) return;
-                        setState(() {});
+                return Listener(
+                  key: _taskListViewportKey,
+                  behavior: HitTestBehavior.translucent,
+                  onPointerMove: _handleReorderAutoScroll,
+                  child: DragBoundary(
+                    child: ReorderableListView.builder(
+                      scrollController: _taskListScrollController,
+                      buildDefaultDragHandles: false,
+                      padding: const EdgeInsets.all(12),
+                      itemCount: tasks.length,
+                      onReorderStart: (_) => setState(() {
+                        _isReordering = true;
+                      }),
+                      onReorderEnd: (_) => setState(() {
+                        _isReordering = false;
+                      }),
+                      onReorder: (oldIndex, newIndex) {
+                        ref
+                            .read(taskListProvider.notifier)
+                            .reorderTasks(oldIndex, newIndex);
                       },
-                      onDelete: () {
-                        if (activeSession != null &&
-                            activeSession.taskId == t.id) {
-                          _showSnackBar(
-                            context,
-                            "This task is running. Stop it before deleting.",
-                          );
-                          return;
-                        }
-                        _confirmDeleteTask(context, t).then((shouldDelete) {
-                          if (!shouldDelete) return;
-                          ref.read(taskListProvider.notifier).deleteTask(t.id);
-                        });
+                      itemBuilder: (context, i) {
+                        final t = tasks[i];
+                        final isSelected = selectedIds.contains(t.id);
+                        final weightPercent =
+                            (weightTotal == null || !isSelected)
+                                ? null
+                                : (((t.totalPomodoros * t.pomodoroMinutes) /
+                                            weightTotal) *
+                                        100)
+                                    .round();
+                        return TaskCard(
+                          key: ValueKey(t.id),
+                          task: t,
+                          soundOverrides: soundOverrides,
+                          weightPercent: weightPercent,
+                          selected: isSelected,
+                          onTap: () => selection.toggle(t.id),
+                          timeRange: ranges[t.id],
+                          reorderHandle: ReorderableDragStartListener(
+                            index: i,
+                            child: const Padding(
+                              padding: EdgeInsets.only(left: 4),
+                              child: Icon(
+                                Icons.drag_handle,
+                                color: Colors.white38,
+                              ),
+                            ),
+                          ),
+                          onEdit: () async {
+                            if (activeSession != null &&
+                                activeSession.taskId == t.id) {
+                              _showSnackBar(
+                                context,
+                                "This task is running. Stop it before editing.",
+                              );
+                              return;
+                            }
+                            final result = await ref
+                                .read(taskEditorProvider.notifier)
+                                .load(t.id);
+                            if (!context.mounted) return;
+                            if (result == TaskEditorLoadResult.notFound) {
+                              _showSnackBar(context, "Task not found.");
+                              return;
+                            }
+                            if (result ==
+                                TaskEditorLoadResult.blockedByActiveSession) {
+                              _showSnackBar(
+                                context,
+                                "This task is running. Stop it before editing.",
+                              );
+                              return;
+                            }
+                            await context.push("/tasks/edit/${t.id}");
+                            if (!mounted) return;
+                            setState(() {});
+                          },
+                          onDelete: () {
+                            if (activeSession != null &&
+                                activeSession.taskId == t.id) {
+                              _showSnackBar(
+                                context,
+                                "This task is running. Stop it before deleting.",
+                              );
+                              return;
+                            }
+                            _confirmDeleteTask(context, t)
+                                .then((shouldDelete) {
+                              if (!shouldDelete) return;
+                              ref
+                                  .read(taskListProvider.notifier)
+                                  .deleteTask(t.id);
+                            });
+                          },
+                        );
                       },
-                    );
-                  },
+                    ),
+                  ),
                 );
               },
             ),

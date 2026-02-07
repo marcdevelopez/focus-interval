@@ -4470,6 +4470,38 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Set the Chrome profiling command to use the standard `--web-port=5001`.
 
+# 🔹 Block 284 — Task List drag boundary (07/02/2026)
+
+### ✔ Work completed:
+
+- Constrained the Task List reorder drag proxy to the list viewport using DragBoundary.
+- Preserved handle-only reordering and existing task list behavior.
+
+### 🎯 Next steps:
+
+- Validate drag behavior on Android/iOS/Web to confirm no overdraw above the AppBar.
+
+# 🔹 Block 285 — Task List auto-scroll (07/02/2026)
+
+### ✔ Work completed:
+
+- Added manual auto-scroll during reorder drags to allow long-list reordering.
+- Preserved the drag boundary and selection behavior.
+
+### 🎯 Next steps:
+
+- Validate auto-scroll at both edges on Android/iOS/Web.
+
+# 🔹 Block 286 — Task List auto-scroll boundary fix (07/02/2026)
+
+### ✔ Work completed:
+
+- Anchored auto-scroll edge detection to the list viewport size via a keyed listener.
+
+### 🎯 Next steps:
+
+- Re-test long-list reordering to confirm bottom-edge scroll activates.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
