@@ -877,7 +877,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         final rejectionAt = request?.respondedAt;
         final allowed = isMirror
             ? 'View progress only.'
-            : 'Start, pause, resume, and cancel.';
+            : 'Pause, resume, and cancel.';
         return SafeArea(
           top: false,
           child: Padding(

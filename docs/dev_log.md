@@ -4421,6 +4421,17 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Validate owner pause/resume flow when reopening Run Mode from Groups Hub.
 
+# 🔹 Block 279 — Ownership sheet actions copy (07/02/2026)
+
+### ✔ Work completed:
+
+- Removed “Start” from the owner allowed-actions copy in the ownership info sheet.
+- Aligned the copy with the rule that ownership applies only after a session is running.
+
+### 🎯 Next steps:
+
+- Quick visual pass to confirm the ownership sheet reads correctly in owner and mirror modes.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
