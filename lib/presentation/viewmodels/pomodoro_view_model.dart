@@ -135,12 +135,27 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     }
 
     configureFromItem(_currentItem!);
+    _primeMirrorSession(session);
     _subscribeToRemoteSession();
     if (projection != null) {
       _applyProjectedState(projection.state, now: now);
     }
     unawaited(_notificationService.requestPermissions());
     return PomodoroGroupLoadResult.loaded;
+  }
+
+  void _primeMirrorSession(PomodoroSession? session) {
+    _mirrorTimer?.cancel();
+    _remoteOwnerId = null;
+    _remoteSession = null;
+    if (session == null) return;
+    if (!session.status.isActiveExecution) return;
+    if (session.ownerDeviceId == _deviceInfo.deviceId) return;
+    if (_currentGroup != null && session.groupId != _currentGroup!.id) return;
+    if (_currentTask != null && session.taskId != _currentTask!.id) return;
+    _remoteOwnerId = session.ownerDeviceId;
+    _remoteSession = session;
+    _setMirrorSession(session);
   }
 
   void configureFromItem(TaskRunItem item) {
