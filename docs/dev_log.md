@@ -4432,6 +4432,17 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Quick visual pass to confirm the ownership sheet reads correctly in owner and mirror modes.
 
+# 🔹 Block 280 — Groups Hub AppBar cleanup (07/02/2026)
+
+### ✔ Work completed:
+
+- Removed the duplicate Task List icon action from the Groups Hub AppBar.
+- Added the compact mode indicator to the AppBar for global context.
+
+### 🎯 Next steps:
+
+- Quick visual pass to confirm the AppBar layout remains balanced on narrow screens.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
