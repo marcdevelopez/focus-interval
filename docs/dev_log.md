@@ -4398,6 +4398,17 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Quick visual pass on narrow screens to confirm the 2-button and 3-button layouts remain stable.
 
+# 🔹 Block 277 — Mirror initial state sync (07/02/2026)
+
+### ✔ Work completed:
+
+- Primed mirror state from the active session during group load to avoid idle flashes.
+- Ensured mirror controls and timer render from the remote session before the first frame.
+
+### 🎯 Next steps:
+
+- Validate on mirror devices by opening Run Mode while a group is already running.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
