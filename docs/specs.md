@@ -1350,6 +1350,13 @@ The MM:SS timer must not shift horizontally:
   and require an explicit “OK” dismiss; also include the last rejection time inside the
   ownership info sheet. Do not add persistent inline icons that force the control row
   to overflow.
+- The owner-side ownership request prompt should render as a floating overlay
+  (light modal/banner) that does not push or reflow the existing layout. It must
+  avoid overflow and should not collide with the AppBar or top widgets.
+- When a mirror device has a pending ownership request, show the pending state
+  only via the AppBar ownership indicator (e.g., amber/orange). Do not render
+  inline or overlayed body text; the ownership info sheet should include the
+  "Waiting for owner approval..." message.
 - Show a one-time, non-blocking education message on the first owner start
   (Start now or auto-start) per device:
   - “This device controls the execution. Other devices will connect in view-only mode.”

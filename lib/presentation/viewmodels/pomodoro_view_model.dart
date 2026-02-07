@@ -857,11 +857,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       status == PomodoroStatus.shortBreakRunning ||
       status == PomodoroStatus.longBreakRunning;
 
-  bool _isStale(DateTime? updatedAt, {int minutes = 5}) {
-    if (updatedAt == null) return true;
-    return DateTime.now().difference(updatedAt).inMinutes >= minutes;
-  }
-
   bool get isMirrorMode => _remoteOwnerId != null;
 
   bool get isGroupCompleted => _groupCompleted;

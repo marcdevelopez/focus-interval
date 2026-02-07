@@ -22,7 +22,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **06/02/2026**
+Last update: **07/02/2026**
 
 ---
 
@@ -4349,6 +4349,41 @@ Mode A global long-break sequencing not fully validated (time constraints).
 ### 🎯 Next steps:
 
 - Validate that repeated rejections replace the snackbar cleanly without UI shifts.
+
+# 🔹 Block 273 — Ownership request overlay (07/02/2026)
+
+### ✔ Work completed:
+
+- Moved the ownership request prompt into a floating overlay on TimerScreen.
+- Kept the pending-request status as an overlay to avoid reflowing the Run Mode layout.
+- Updated specs to require the ownership request banner to be overlayed and non-disruptive.
+
+### 🎯 Next steps:
+
+- Quick visual pass on narrow screens to confirm the overlay does not collide with controls.
+
+# 🔹 Block 274 — Analyzer cleanup (07/02/2026)
+
+### ✔ Work completed:
+
+- Removed unnecessary non-null assertions in `TimerScreen`.
+- Deleted the unused `_isStale` helper in `PomodoroViewModel`.
+
+### 🎯 Next steps:
+
+- Re-run `flutter analyze` when Flutter is available.
+
+# 🔹 Block 275 — Pending ownership AppBar indicator (07/02/2026)
+
+### ✔ Work completed:
+
+- Removed the inline pending-ownership text from Run Mode to avoid overlaying task content.
+- Added a pending-request state to the AppBar ownership indicator (amber icon).
+- Updated specs to require AppBar-only pending status and keep the waiting message in the info sheet.
+
+### 🎯 Next steps:
+
+- Quick visual check on mirror devices to confirm the AppBar indicator reads clearly.
 
 # 🧾 General notes
 
