@@ -4443,6 +4443,33 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Quick visual pass to confirm the AppBar layout remains balanced on narrow screens.
 
+# 🔹 Block 281 — DevTools memory profiling guide (07/02/2026)
+
+### ✔ Work completed:
+
+- Added a DevTools memory profiling guide with a repeatable workflow and checklist.
+- Documented expected behavior and red flags for memory regression checks.
+
+### 🎯 Next steps:
+
+- Fill the exact Flutter version the next time the checklist is executed.
+
+# 🔹 Block 282 — Memory profiling platforms (07/02/2026)
+
+### ✔ Work completed:
+
+- Added profile-mode launch commands for Windows, Linux, iOS, and Web.
+
+### 🎯 Next steps:
+
+- Confirm the iOS device requirement during the next profiling run.
+
+# 🔹 Block 283 — Chrome profiling port (07/02/2026)
+
+### ✔ Work completed:
+
+- Set the Chrome profiling command to use the standard `--web-port=5001`.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
