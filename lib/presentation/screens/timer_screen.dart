@@ -1170,6 +1170,20 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 }
 
 class _ControlsBar extends StatelessWidget {
+  static const _runModeButtonTextStyle = TextStyle(fontSize: 14);
+  static const _runModeButtonIconSize = 16.0;
+  static const _runModeButtonIconSpacing = 6.0;
+  static const _runModeButtonPadding =
+      EdgeInsets.symmetric(horizontal: 22, vertical: 14);
+  static const _runModeButtonMinHeight = 44.0;
+  static final _runModeButtonStyle = ElevatedButton.styleFrom(
+    backgroundColor: Colors.white12,
+    foregroundColor: Colors.white,
+    padding: _runModeButtonPadding,
+    minimumSize: const Size(0, _runModeButtonMinHeight),
+    textStyle: _runModeButtonTextStyle,
+  );
+
   final PomodoroState state;
   final PomodoroViewModel vm;
   final bool taskLoaded;
@@ -1211,106 +1225,85 @@ class _ControlsBar extends StatelessWidget {
     final showLocalPauseInfo =
         isLocalMode && state.status == PomodoroStatus.paused;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < 400;
-        if (isPreRun) {
-          return Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _btn("Pause", null, compact: isCompact),
-              _btn(
-                "Cancel",
-                controlsEnabled ? onCancelRequested : null,
-                compact: isCompact,
-              ),
-            ],
-          );
-        }
+    if (isPreRun) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _btn("Pause", null),
+          _btn(
+            "Cancel",
+            controlsEnabled ? onCancelRequested : null,
+          ),
+        ],
+      );
+    }
 
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            if (vm.isMirrorMode)
-              _ownershipRequestControl(
-                context,
-                canRequestOwnership: canRequestOwnership,
-                isPendingForSelf: isPendingForSelf,
-                isPendingForOther: isPendingForOther,
-                compact: isCompact,
-              ),
-            if (isIdle)
-              _btn(
-                "Start",
-                taskLoaded && controlsEnabled ? onStartRequested : null,
-                compact: isCompact,
-              ),
-            if (isFinished)
-              _btn(
-                "Start again",
-                taskLoaded && controlsEnabled ? onStartRequested : null,
-                compact: isCompact,
-              ),
-            if (isRunning)
-              _btn(
-                "Pause",
-                controlsEnabled ? onPauseRequested : null,
-                compact: isCompact,
-              ),
-            if (isPaused)
-              _buildResumeControl(
-                context,
-                controlsEnabled,
-                showLocalPauseInfo: showLocalPauseInfo,
-                compact: isCompact,
-              ),
-            if (!isIdle && !isFinished)
-              _btn(
-                "Cancel",
-                controlsEnabled ? onCancelRequested : null,
-                compact: isCompact,
-              ),
-          ],
-        );
-      },
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        if (vm.isMirrorMode)
+          _ownershipRequestControl(
+            canRequestOwnership: canRequestOwnership,
+            isPendingForSelf: isPendingForSelf,
+            isPendingForOther: isPendingForOther,
+          ),
+        if (isIdle)
+          _btn(
+            "Start",
+            taskLoaded && controlsEnabled ? onStartRequested : null,
+          ),
+        if (isFinished)
+          _btn(
+            "Start again",
+            taskLoaded && controlsEnabled ? onStartRequested : null,
+          ),
+        if (isRunning)
+          _btn(
+            "Pause",
+            controlsEnabled ? onPauseRequested : null,
+          ),
+        if (isPaused)
+          _buildResumeControl(
+            controlsEnabled,
+            showLocalPauseInfo: showLocalPauseInfo,
+          ),
+        if (!isIdle && !isFinished)
+          _btn(
+            "Cancel",
+            controlsEnabled ? onCancelRequested : null,
+          ),
+      ],
     );
   }
 
-  Widget _ownershipRequestControl(
-    BuildContext context, {
+  Widget _ownershipRequestControl({
     required bool canRequestOwnership,
     required bool isPendingForSelf,
     required bool isPendingForOther,
-    required bool compact,
   }) {
-    final baseLabel = compact ? 'Request' : 'Request ownership';
-    String label = baseLabel;
+    String label = 'Request';
     VoidCallback? onPressed = canRequestOwnership ? onRequestOwnership : null;
     if (isPendingForSelf) {
-      label = compact ? 'Requested' : 'Request sent';
+      label = 'Requested';
       onPressed = null;
     } else if (isPendingForOther) {
-      label = compact ? 'Pending' : 'Ownership requested';
+      label = 'Pending';
       onPressed = null;
     }
     return _btn(
       label,
       onPressed,
-      compact: compact,
       icon: Icons.verified,
     );
   }
 
   Widget _buildResumeControl(
-    BuildContext context,
     bool controlsEnabled, {
     required bool showLocalPauseInfo,
-    required bool compact,
   }) {
     final resumeButton = _btn(
       "Resume",
       controlsEnabled ? vm.resume : null,
-      compact: compact,
     );
     if (!showLocalPauseInfo) return resumeButton;
 
@@ -1334,39 +1327,31 @@ class _ControlsBar extends StatelessWidget {
   Widget _btn(
     String text,
     VoidCallback? onTap, {
-    bool compact = false,
     IconData? icon,
   }) {
     final child = icon == null
         ? Text(
             text,
-            style: TextStyle(fontSize: compact ? 12 : 14),
+            style: _runModeButtonTextStyle,
           )
         : Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 icon,
-                size: compact ? 14 : 16,
+                size: _runModeButtonIconSize,
                 color: Colors.white70,
               ),
-              SizedBox(width: compact ? 4 : 6),
+              const SizedBox(width: _runModeButtonIconSpacing),
               Text(
                 text,
-                style: TextStyle(fontSize: compact ? 12 : 14),
+                style: _runModeButtonTextStyle,
               ),
             ],
           );
     return ElevatedButton(
       onPressed: onTap,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.white12,
-        foregroundColor: Colors.white,
-        padding: EdgeInsets.symmetric(
-          horizontal: compact ? 14 : 22,
-          vertical: compact ? 12 : 14,
-        ),
-      ),
+      style: _runModeButtonStyle,
       child: child,
     );
   }

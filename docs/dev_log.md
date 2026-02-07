@@ -4385,6 +4385,19 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Quick visual check on mirror devices to confirm the AppBar indicator reads clearly.
 
+# 🔹 Block 276 — Run Mode control sizing (07/02/2026)
+
+### ✔ Work completed:
+
+- Restored full-size Run Mode control buttons for Pause/Cancel/Request across owner and mirror.
+- Removed compact sizing logic to keep button height and typography consistent.
+- Standardized the shared Run Mode button style and short ownership labels.
+- Updated specs to document the shared full-size control style.
+
+### 🎯 Next steps:
+
+- Quick visual pass on narrow screens to confirm the 2-button and 3-button layouts remain stable.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

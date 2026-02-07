@@ -1267,6 +1267,13 @@ Cases
 
 The list rebuilds automatically when tasks change.
 
+### **10.4.5.a. Run Mode controls (below the list)**
+
+- Primary controls: Pause/Resume, Cancel, and Request ownership (mirror only).
+- Controls must share a full-size button style (no compact sizing tied to owner/mirror state).
+- Keep labels short (e.g., "Request") and use the owner icon when applicable.
+- The layout must remain stable with 2 buttons (owner) or 3 buttons (mirror) without overlap or clipping.
+
 ### **10.4.6. Transitions**
 
 - Task completion -> auto-transition to next task
