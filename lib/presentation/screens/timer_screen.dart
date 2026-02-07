@@ -411,11 +411,17 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         currentGroup != null &&
         activeSession.groupId == currentGroup.id;
     final ownerDeviceId =
-        isSessionForGroup ? activeSession!.ownerDeviceId : deviceId;
+        isSessionForGroup ? activeSession.ownerDeviceId : deviceId;
     final isMirror = isSessionForGroup && ownerDeviceId != deviceId;
     final ownershipRequest = vm.ownershipRequest;
     final hasPendingOwnershipRequest = vm.hasPendingOwnershipRequest;
     final isPendingForSelf = vm.isOwnershipRequestPendingForThisDevice;
+    final showOwnerRequestBanner =
+        !isMirror &&
+        hasPendingOwnershipRequest &&
+        ownershipRequest != null &&
+        ownershipRequest.requesterDeviceId != deviceId;
+    final showOwnershipOverlay = showOwnerRequestBanner;
 
     if (currentGroup?.status == TaskRunStatus.canceled &&
         !_cancelNavigationHandled) {
@@ -449,6 +455,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
             if (currentGroup != null)
               _OwnershipIndicatorAction(
                 isMirror: isMirror,
+                isPendingRequest: isPendingForSelf,
                 onPressed: () => _showOwnershipInfoSheet(
                   isMirror: isMirror,
                   ownerDeviceId: ownerDeviceId,
@@ -460,50 +467,79 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
             _PlannedGroupsIndicator(),
           ],
         ),
-        body: Column(
+        body: Stack(
           children: [
-            const SizedBox(height: 12),
-            Expanded(
-              child: Center(
-                child: _taskLoaded
-                    ? TimerDisplay(
-                        state: isPreRun ? _preRunState(preRunInfo) : state,
-                        phaseColorOverride: isPreRun
-                            ? _PreRunCenterContent.preRunColor
-                            : null,
-                        pulse: isPreRun && _preRunRemainingSeconds <= 60,
-                        centerContent: isPreRun
-                            ? _PreRunCenterContent(
-                                currentClock: _currentClock,
-                                remainingSeconds: _preRunRemainingSeconds,
-                                firstPomodoroMinutes:
-                                    preRunInfo.firstPomodoroMinutes,
-                                preRunStart: preRunInfo.start,
-                                scheduledStart: preRunInfo.end,
-                              )
-                            : _RunModeCenterContent(
-                                currentClock: _currentClock,
-                                state: state,
-                                vm: vm,
+            Column(
+              children: [
+                const SizedBox(height: 12),
+                Expanded(
+                  child: Center(
+                    child: _taskLoaded
+                        ? TimerDisplay(
+                            state: isPreRun ? _preRunState(preRunInfo) : state,
+                            phaseColorOverride: isPreRun
+                                ? _PreRunCenterContent.preRunColor
+                                : null,
+                            pulse: isPreRun && _preRunRemainingSeconds <= 60,
+                            centerContent: isPreRun
+                                ? _PreRunCenterContent(
+                                    currentClock: _currentClock,
+                                    remainingSeconds: _preRunRemainingSeconds,
+                                    firstPomodoroMinutes:
+                                        preRunInfo.firstPomodoroMinutes,
+                                    preRunStart: preRunInfo.start,
+                                    scheduledStart: preRunInfo.end,
+                                  )
+                                : _RunModeCenterContent(
+                                    currentClock: _currentClock,
+                                    state: state,
+                                    vm: vm,
+                                  ),
+                          )
+                        : Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              CircularProgressIndicator(),
+                              SizedBox(height: 12),
+                              Text(
+                                "Loading group...",
+                                style: TextStyle(color: Colors.white70),
                               ),
-                      )
-                    : Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          CircularProgressIndicator(),
-                          SizedBox(height: 12),
-                          Text(
-                            "Loading group...",
-                            style: TextStyle(color: Colors.white70),
+                            ],
                           ),
-                        ],
-                      ),
-              ),
+                  ),
+                ),
+                if (_taskLoaded)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: _ContextualTaskList(vm: vm, preRunInfo: preRunInfo),
+                  ),
+              ],
             ),
-            if (_taskLoaded)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: _ContextualTaskList(vm: vm, preRunInfo: preRunInfo),
+            if (showOwnershipOverlay)
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: 0,
+                child: SafeArea(
+                  top: false,
+                  minimum: const EdgeInsets.only(bottom: 8),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (showOwnerRequestBanner)
+                        _OwnershipRequestBanner(
+                          requesterLabel: _platformFromDeviceId(
+                            ownershipRequest.requesterDeviceId,
+                          ),
+                          onApprove: () =>
+                              unawaited(vm.approveOwnershipRequest()),
+                          onReject: () =>
+                              unawaited(vm.rejectOwnershipRequest()),
+                        ),
+                    ],
+                  ),
+                ),
               ),
           ],
         ),
@@ -513,28 +549,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (!isMirror &&
-                  hasPendingOwnershipRequest &&
-                  ownershipRequest != null &&
-                  ownershipRequest.requesterDeviceId != deviceId)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _OwnershipRequestBanner(
-                    requesterLabel: _platformFromDeviceId(
-                      ownershipRequest.requesterDeviceId,
-                    ),
-                    onApprove: () => unawaited(vm.approveOwnershipRequest()),
-                    onReject: () => unawaited(vm.rejectOwnershipRequest()),
-                  ),
-                ),
-              if (isPendingForSelf)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    'Waiting for owner approval...',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                ),
               _ControlsBar(
                 state: state,
                 vm: vm,
@@ -1423,18 +1437,32 @@ class _OwnershipRequestBanner extends StatelessWidget {
 
 class _OwnershipIndicatorAction extends StatelessWidget {
   final bool isMirror;
+  final bool isPendingRequest;
   final VoidCallback onPressed;
 
   const _OwnershipIndicatorAction({
     required this.isMirror,
+    required this.isPendingRequest,
     required this.onPressed,
   });
 
   @override
   Widget build(BuildContext context) {
-    final icon = isMirror ? Icons.remove_red_eye : Icons.verified;
-    final color = isMirror ? Colors.white70 : Colors.greenAccent;
-    final tooltip = isMirror ? 'Mirror device' : 'Owner device';
+    final icon = isPendingRequest
+        ? Icons.verified
+        : isMirror
+            ? Icons.remove_red_eye
+            : Icons.verified;
+    final color = isPendingRequest
+        ? Colors.orangeAccent
+        : isMirror
+            ? Colors.white70
+            : Colors.greenAccent;
+    final tooltip = isPendingRequest
+        ? 'Ownership request pending'
+        : isMirror
+            ? 'Mirror device'
+            : 'Owner device';
 
     return Padding(
       padding: const EdgeInsets.only(right: 4),
