@@ -9,6 +9,7 @@ import '../../data/models/task_run_group.dart';
 import '../../data/repositories/task_run_group_repository.dart';
 import '../../data/services/task_run_notice_service.dart';
 import '../../domain/pomodoro_machine.dart';
+import '../../widgets/mode_indicator.dart';
 import '../providers.dart';
 
 class GroupsHubScreen extends ConsumerWidget {
@@ -28,11 +29,7 @@ class GroupsHubScreen extends ConsumerWidget {
         backgroundColor: Colors.black,
         title: const Text('Groups Hub'),
         actions: [
-          IconButton(
-            tooltip: 'Task List',
-            icon: const Icon(Icons.list_alt),
-            onPressed: () => context.go('/tasks'),
-          ),
+          const ModeIndicatorAction(compact: true),
         ],
       ),
       body: groupsAsync.when(
