@@ -4409,6 +4409,18 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Validate on mirror devices by opening Run Mode while a group is already running.
 
+# 🔹 Block 278 — Owner pause restoration (07/02/2026)
+
+### ✔ Work completed:
+
+- Primed owner Run Mode state from the active session on load to avoid idle flashes.
+- Adjusted group timeline projection to respect accumulated pause offsets.
+- Ensured owner hydration applies session state before any projection.
+
+### 🎯 Next steps:
+
+- Validate owner pause/resume flow when reopening Run Mode from Groups Hub.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
