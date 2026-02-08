@@ -1353,10 +1353,10 @@ The MM:SS timer must not shift horizontally:
 - On compact layouts, the control label may be shortened (e.g., “Request”) to avoid overflow.
 - The request button may include the owner icon (same as the header indicator) to
   improve clarity; keep it compact on narrow screens.
-- Rejection feedback should be non-intrusive: show a snackbar with the rejection time
-  and require an explicit “OK” dismiss; also include the last rejection time inside the
-  ownership info sheet. Do not add persistent inline icons that force the control row
-  to overflow.
+- Rejection feedback should be non-intrusive: show a snackbar with the rejection time,
+  a subtle rejection icon/accent (muted red/orange) for immediate clarity, and require
+  an explicit “OK” dismiss; also include the last rejection time inside the ownership
+  info sheet. Do not add persistent inline icons that force the control row to overflow.
 - The owner-side ownership request prompt should render as a floating overlay
   (light modal/banner) that does not push or reflow the existing layout. It must
   avoid overflow and should not collide with the AppBar or top widgets.

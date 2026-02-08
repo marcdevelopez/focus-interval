@@ -4513,6 +4513,17 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Quick visual pass on groups across different days to confirm formatting clarity.
 
+# 🔹 Block 288 — Ownership rejection snackbar clarity (08/02/2026)
+
+### ✔ Work completed:
+
+- Added a subtle rejection icon/accent to the ownership rejection snackbar.
+- Kept the existing dismissal flow and message while improving clarity.
+
+### 🎯 Next steps:
+
+- Confirm the snackbar remains legible on narrow layouts.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

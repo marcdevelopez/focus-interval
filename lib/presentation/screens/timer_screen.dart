@@ -379,10 +379,24 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       if (!mounted) return;
       final time = DateFormat('HH:mm').format(respondedAt ?? DateTime.now());
       final messenger = ScaffoldMessenger.of(context);
+      final rejectionColor =
+          Theme.of(context).colorScheme.error.withAlpha(217);
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
         SnackBar(
-          content: Text('Ownership request rejected at $time'),
+          content: Row(
+            children: [
+              Icon(
+                Icons.cancel_outlined,
+                color: rejectionColor,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('Ownership request rejected at $time'),
+              ),
+            ],
+          ),
           duration: const Duration(days: 1),
           action: SnackBarAction(
             label: 'OK',
