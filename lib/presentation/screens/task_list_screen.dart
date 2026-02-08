@@ -1175,19 +1175,19 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     if (!context.mounted) return;
     if (planningResult == null) return;
 
+    items = planningResult.items;
     final planOption = planningResult.option;
     final isStartNow = planOption == TaskGroupPlanOption.startNow;
-    final isSchedule = planOption == TaskGroupPlanOption.scheduleStart;
-    if (!isStartNow && !isSchedule) {
-      _showSnackBar(context, 'That planning option is not available yet.');
-      return;
-    }
+    final isSchedule = !isStartNow;
 
     final planCapturedAt = DateTime.now();
     DateTime? scheduledStart;
     if (isSchedule) {
       scheduledStart = planningResult.scheduledStart;
-      if (scheduledStart == null) return;
+      if (scheduledStart == null) {
+        _showSnackBar(context, 'Select a start time for scheduling.');
+        return;
+      }
       if (scheduledStart.isBefore(planCapturedAt)) {
         _showSnackBar(context, 'Scheduled time must be in the future.');
         return;

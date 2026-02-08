@@ -4561,6 +4561,51 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Run full manual validation after phase 2 scheduling is added.
 
+# 🔹 Block 292 — Planning flow scheduling redistribution (08/02/2026)
+
+### ✔ Work completed:
+
+- Enabled schedule by total range and total time with pomodoro redistribution.
+- Added shift notice when the computed end time is earlier than requested.
+- Returned redistributed items from the planning screen for group creation.
+
+### 🎯 Next steps:
+
+- Multi-platform validation for range/time scheduling (Android/iOS/Web).
+
+# 🔹 Block 293 — Planning redistribution validation fix (08/02/2026)
+
+### ✔ Work completed:
+
+- Adjusted redistribution to search for a fit within the requested time range.
+- Avoided false “too short” errors by fitting durations before blocking.
+
+### 🎯 Next steps:
+
+- Re-test schedule by total range/time with wide and tight windows.
+
+# 🔹 Block 294 — Planning redistribution deviation guard (08/02/2026)
+
+### ✔ Work completed:
+
+- Updated redistribution search to track time-fit and deviation-safe candidates.
+- Ensured “too short” only appears when no time-fit exists; otherwise surface skew warning.
+
+### 🎯 Next steps:
+
+- Re-test schedule by total range/time for valid windows to confirm no false blocks.
+
+# 🔹 Block 295 — Planning redistribution stabilization (08/02/2026)
+
+### ✔ Work completed:
+
+- Removed the diff-adjustment loop in redistribution to avoid skewed allocations.
+- Kept proportional rounding so binary search can find valid, deviation-safe fits.
+
+### 🎯 Next steps:
+
+- Re-test total range/time scheduling on the reported config to confirm the skew error is gone.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

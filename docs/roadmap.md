@@ -118,7 +118,9 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       04/02/2026: Specs/roadmap updated (group naming, task colors, group progress bar,
                   planning by total range/total time, global sound settings) — documentation-only.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
-                  info modal, preview). Range/total-time scheduling still pending.
+                  info modal, preview).
+      08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
+                  with redistribution + adjusted-end notice).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 

@@ -1018,9 +1018,6 @@ Run Mode is group-only: TimerScreen loads a TaskRunGroup by groupId; there is no
   - **Schedule by start time**
   - **Schedule by total range time**
   - **Schedule by total time**
-- The last two options are part of the final design. If they are not yet implemented,
-  they must render **disabled** with a visible “Coming soon” label (temporary, to be
-  removed once fully implemented).
 - A single **info icon** near the options opens an informational modal that explains
   all options. The modal:
   - Appears the first time the user opens this screen.
