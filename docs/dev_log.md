@@ -4524,6 +4524,17 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Confirm the snackbar remains legible on narrow layouts.
 
+# 🔹 Block 289 — Ownership request banner opacity (08/02/2026)
+
+### ✔ Work completed:
+
+- Switched the owner-side ownership request banner to an opaque background.
+- Preserved the existing banner layout and actions.
+
+### 🎯 Next steps:
+
+- Quick visual pass to confirm the banner remains readable over active timers.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

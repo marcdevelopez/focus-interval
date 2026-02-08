@@ -1387,7 +1387,7 @@ class _OwnershipRequestBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white10,
+        color: const Color(0xFF141414),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white24),
       ),
