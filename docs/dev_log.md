@@ -4732,6 +4732,17 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Re-test multi-device scheduled start (Web/iOS/Android) and verify no timeline reset.
 
+# 🔹 Block 307 — Auto-start owner claim (08/02/2026)
+
+### ✔ Work completed:
+
+- Added a transactional session claim to ensure only one device becomes owner at start.
+- Allowed TimerScreen to auto-start on running groups without requiring an existing activeSession.
+
+### 🎯 Next steps:
+
+- Re-test scheduled auto-start across Web + Android + iOS; verify only one owner and no Start prompt.
+
 ---
 
 # 🚀 End of file

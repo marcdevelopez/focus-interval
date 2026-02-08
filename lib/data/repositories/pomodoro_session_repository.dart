@@ -2,6 +2,7 @@ import '../models/pomodoro_session.dart';
 
 abstract class PomodoroSessionRepository {
   Future<void> publishSession(PomodoroSession session);
+  Future<bool> tryClaimSession(PomodoroSession session);
   Stream<PomodoroSession?> watchSession();
   Future<void> clearSession();
   Future<void> requestOwnership({required String requesterDeviceId});
@@ -18,6 +19,9 @@ class NoopPomodoroSessionRepository implements PomodoroSessionRepository {
 
   @override
   Future<void> publishSession(PomodoroSession session) async {}
+
+  @override
+  Future<bool> tryClaimSession(PomodoroSession session) async => true;
 
   @override
   Stream<PomodoroSession?> watchSession() => Stream.value(null);

@@ -327,11 +327,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           session != null &&
           session.groupId == widget.groupId &&
           session.ownerDeviceId != deviceId;
-      final hasActiveSession = session != null && session.groupId == group.id;
       if (group.status == TaskRunStatus.running &&
           state.status == PomodoroStatus.idle &&
           !isRemoteOwner &&
-          hasActiveSession &&
           vm.canControlSession) {
         if (_runningAutoStartHandled && _runningAutoStartGroupId == group.id) {
         } else {

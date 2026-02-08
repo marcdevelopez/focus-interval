@@ -498,23 +498,69 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   void start() {
+    unawaited(_startInternal());
+  }
+
+  Future<void> _startInternal() async {
     if (!_controlsEnabled) return;
+    final now = DateTime.now();
+    final claimed = await _ensureSessionClaimed(now);
+    if (!claimed) return;
     _finishedAt = null;
     _lastHeartbeatAt = null;
     _pauseReason = null;
     _groupCompleted = false;
     _completedTaskRanges.clear();
     _timelinePhaseStartedAt = null;
-    _currentTaskStartedAt = DateTime.now();
+    _currentTaskStartedAt = now;
     final group = _currentGroup;
     final override =
         group != null && group.status == TaskRunStatus.running
             ? group.actualStartTime
-            : DateTime.now();
+            : now;
     unawaited(_markGroupRunningIfNeeded(startOverride: override));
     _machine.startTask();
     _markPhaseStartedFromState(_machine.state);
     _publishCurrentSession();
+  }
+
+  Future<bool> _ensureSessionClaimed(DateTime now) async {
+    final session = _latestSession;
+    if (session != null) {
+      return session.ownerDeviceId == _deviceInfo.deviceId;
+    }
+    final startSession = _buildStartSession(now);
+    if (startSession == null) return false;
+    return _sessionRepo.tryClaimSession(startSession);
+  }
+
+  PomodoroSession? _buildStartSession(DateTime now) {
+    final item = _currentItem;
+    final task = _currentTask;
+    final taskId = item?.sourceTaskId ?? task?.id;
+    if (taskId == null || taskId.isEmpty) return null;
+    final pomodoroMinutes = item?.pomodoroMinutes ?? task?.pomodoroMinutes ?? 0;
+    final totalPomodoros = item?.totalPomodoros ?? task?.totalPomodoros ?? 0;
+    if (pomodoroMinutes <= 0 || totalPomodoros <= 0) return null;
+    final totalTasks = _currentGroup?.tasks.length ?? 1;
+    return PomodoroSession(
+      taskId: taskId,
+      groupId: _currentGroup?.id,
+      currentTaskId: taskId,
+      currentTaskIndex: _currentGroup != null ? _currentTaskIndex : 0,
+      totalTasks: totalTasks,
+      ownerDeviceId: _deviceInfo.deviceId,
+      status: PomodoroStatus.pomodoroRunning,
+      phase: PomodoroPhase.pomodoro,
+      currentPomodoro: 1,
+      totalPomodoros: totalPomodoros,
+      phaseDurationSeconds: pomodoroMinutes * 60,
+      remainingSeconds: pomodoroMinutes * 60,
+      phaseStartedAt: now,
+      lastUpdatedAt: now,
+      finishedAt: null,
+      pauseReason: null,
+    );
   }
 
   void pause() {
