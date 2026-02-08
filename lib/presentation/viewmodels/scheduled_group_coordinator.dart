@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/pomodoro_session.dart';
 import '../../data/models/task_run_group.dart';
-import '../../data/services/app_mode_service.dart';
 import '../../domain/pomodoro_machine.dart';
 import '../providers.dart';
 
@@ -25,7 +24,6 @@ class ScheduledGroupAction {
 }
 
 class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
-  static const Duration _ownerGrace = Duration(seconds: 10);
   static const Duration _staleSessionGrace = Duration(seconds: 90);
 
   Timer? _scheduledTimer;
@@ -98,7 +96,6 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     if (_autoStartInFlight || _disposed) return;
 
     final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
-    final appMode = ref.read(appModeProvider);
 
     _scheduledTimer?.cancel();
     _scheduledTimer = null;
@@ -151,33 +148,17 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       if (expired.isNotEmpty) {
         await _markRunningGroupsCompleted(expired, now);
       }
-      if (activeSession == null) {
-        final remaining = running
-            .where((g) => !expired.contains(g))
-            .toList()
-          ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-        if (remaining.isNotEmpty) {
-          TaskRunGroup? candidate;
-          if (appMode == AppMode.local) {
-            candidate = remaining.first;
-          } else {
-            for (final group in remaining) {
-              if (group.scheduledByDeviceId == deviceId) {
-                candidate = group;
-                break;
-              }
-            }
-          }
-          if (candidate == null) {
-            debugPrint(
-              'Auto-start suppressed (no initiator for this device).',
-            );
+        if (activeSession == null) {
+          final remaining = running
+              .where((g) => !expired.contains(g))
+              .toList()
+            ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+          if (remaining.isNotEmpty) {
+            final candidate = remaining.first;
+            final groupId = candidate.id;
+            ref.read(scheduledAutoStartGroupIdProvider.notifier).state = groupId;
+            _emitOpenTimer(groupId);
             return;
-          }
-          final groupId = candidate.id;
-          ref.read(scheduledAutoStartGroupIdProvider.notifier).state = groupId;
-          _emitOpenTimer(groupId);
-          return;
         }
       } else {
         _scheduleRunningExpiryCheck(running, now);
@@ -217,18 +198,6 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     final noticeMinutes = await _resolveNoticeMinutes(nextGroup);
     await _schedulePreAlert(nextGroup, noticeMinutes);
     if (!startTime.isAfter(now)) {
-      final scheduledBy = nextGroup.scheduledByDeviceId;
-      if (scheduledBy != null && scheduledBy != deviceId) {
-        final graceUntil = startTime.add(_ownerGrace);
-        if (now.isBefore(graceUntil)) {
-          final delay = graceUntil.difference(now);
-          _scheduledTimer = Timer(delay, () {
-            if (_disposed) return;
-            _handleGroups(_lastGroups);
-          });
-          return;
-        }
-      }
       unawaited(_autoStartGroup(nextGroup.id));
       return;
     }
@@ -427,11 +396,6 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
 
       final now = DateTime.now();
       if (scheduledStart.isAfter(now)) return;
-      final scheduledBy = latest.scheduledByDeviceId;
-      if (scheduledBy != null && scheduledBy != deviceId) {
-        final graceUntil = scheduledStart.add(_ownerGrace);
-        if (now.isBefore(graceUntil)) return;
-      }
 
       final totalSeconds =
           latest.totalDurationSeconds ??
@@ -441,7 +405,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
         status: TaskRunStatus.running,
         actualStartTime: now,
         theoreticalEndTime: now.add(Duration(seconds: totalSeconds)),
-        scheduledByDeviceId: deviceId,
+        scheduledByDeviceId: latest.scheduledByDeviceId ?? deviceId,
         updatedAt: now,
       );
       await groupRepo.save(updated);

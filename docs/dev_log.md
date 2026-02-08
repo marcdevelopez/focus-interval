@@ -4708,6 +4708,47 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Scheduled Pre-Run sometimes waits for a manual Start instead of auto-starting at the scheduled time when multiple devices are open.
 
+# 🔹 Block 305 — Pre-Run auto-start fix (08/02/2026)
+
+### ✔ Work completed:
+
+- Removed scheduledByDeviceId gating so any open device can auto-start a scheduled group.
+- Increased scheduled auto-start retry window to reduce timing races.
+- Updated specs to mark scheduledByDeviceId as metadata only for auto-start/ownership.
+
+### 🎯 Next steps:
+
+- Validate scheduled auto-start across Web + Android + iOS with multiple devices open.
+
+# 🔹 Block 306 — Pre-Run auto-start robustness (08/02/2026)
+
+### ✔ Work completed:
+
+- Added a TimerScreen fallback to mark scheduled groups as running when the countdown ends.
+- Preserved scheduled actualStartTime when Start is pressed after a scheduled run begins.
+- Avoided overwriting scheduledByDeviceId when auto-starting a scheduled group.
+
+### 🎯 Next steps:
+
+- Re-test multi-device scheduled start (Web/iOS/Android) and verify no timeline reset.
+
+# 🔹 Block 307 — Auto-start owner claim (08/02/2026)
+
+### ✔ Work completed:
+
+- Added a transactional session claim to ensure only one device becomes owner at start.
+- Allowed TimerScreen to auto-start on running groups without requiring an existing activeSession.
+
+### 🎯 Next steps:
+
+- Re-test scheduled auto-start across Web + Android + iOS; verify only one owner and no Start prompt.
+
+# 🔹 Block 308 — Owner education snackbar scope (08/02/2026)
+
+### ✔ Work completed:
+
+- Guarded the owner-education snackbar so it only appears on the true owner device.
+
 ---
 
 # 🚀 End of file

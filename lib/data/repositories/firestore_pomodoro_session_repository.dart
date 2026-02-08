@@ -43,6 +43,24 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
   }
 
   @override
+  Future<bool> tryClaimSession(PomodoroSession session) async {
+    final uid = await _uidOrThrow();
+    final docRef = _doc(uid);
+    return _db.runTransaction((tx) async {
+      final snap = await tx.get(docRef);
+      if (snap.exists && snap.data() != null) {
+        return false;
+      }
+      final data = {
+        ...session.toMap(),
+        'lastUpdatedAt': FieldValue.serverTimestamp(),
+      };
+      tx.set(docRef, data);
+      return true;
+    });
+  }
+
+  @override
   Stream<PomodoroSession?> watchSession() async* {
     final uid = authService.currentUser?.uid;
     if (uid == null) {

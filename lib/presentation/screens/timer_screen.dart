@@ -230,10 +230,36 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       _syncPreRunInfo(latest);
     }
     final group = vm.currentGroup;
-    if (group == null || group.status != TaskRunStatus.running) {
-      if (_autoStartAttempts < 3) {
+    if (group == null) {
+      ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
+      return;
+    }
+    if (group.status != TaskRunStatus.running) {
+      final scheduledStart = group.scheduledStartTime;
+      final now = DateTime.now();
+      if (group.status == TaskRunStatus.scheduled &&
+          scheduledStart != null &&
+          !scheduledStart.isAfter(now)) {
+        final totalSeconds = group.totalDurationSeconds ??
+            groupDurationSecondsByMode(group.tasks, group.integrityMode);
+        final updated = group.copyWith(
+          status: TaskRunStatus.running,
+          actualStartTime: now,
+          theoreticalEndTime: now.add(Duration(seconds: totalSeconds)),
+          totalDurationSeconds: totalSeconds,
+          updatedAt: now,
+        );
+        await groupRepo.save(updated);
+        vm.updateGroup(updated);
+      } else {
+        ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
+        return;
+      }
+    }
+    if (vm.currentGroup?.status != TaskRunStatus.running) {
+      if (_autoStartAttempts < 10) {
         _autoStartAttempts += 1;
-        await Future.delayed(const Duration(milliseconds: 300));
+        await Future.delayed(const Duration(milliseconds: 500));
         if (!mounted) return;
         return _attemptScheduledAutoStart();
       }
@@ -301,14 +327,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           session != null &&
           session.groupId == widget.groupId &&
           session.ownerDeviceId != deviceId;
-      final hasActiveSession = session != null && session.groupId == group.id;
-      final scheduledBy = group.scheduledByDeviceId;
       if (group.status == TaskRunStatus.running &&
           state.status == PomodoroStatus.idle &&
           !isRemoteOwner &&
-          hasActiveSession &&
-          vm.canControlSession &&
-          (scheduledBy == null || scheduledBy == deviceId)) {
+          vm.canControlSession) {
         if (_runningAutoStartHandled && _runningAutoStartGroupId == group.id) {
         } else {
           _runningAutoStartHandled = true;
@@ -679,10 +701,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     if (group == null) return;
 
     final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
-    final scheduledBy = group.scheduledByDeviceId;
-    if (scheduledBy != null && scheduledBy != deviceId) {
-      return;
-    }
 
     final session = ref.read(activePomodoroSessionProvider);
     final isRemoteOwner =
@@ -833,6 +851,12 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     try {
       final appMode = ref.read(appModeProvider);
       if (appMode != AppMode.account) return;
+      final session = ref.read(activePomodoroSessionProvider);
+      final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
+      final isOwner = session != null &&
+          session.ownerDeviceId == deviceId &&
+          session.status.isActiveExecution;
+      if (!isOwner) return;
       final prefs = await SharedPreferences.getInstance();
       final seen = prefs.getBool(_ownerEducationKey) ?? false;
       if (seen) return;
