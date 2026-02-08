@@ -136,6 +136,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 9 — Task List: group name input + group summary + per-task total time + selection reset (new requirement).
 - Phase 14 — Global sound settings (apply switch + revert) (new requirement).
 - Phase 15 — TaskRunGroup model updates (group name + task color snapshot + integrityMode) (new requirement).
+- Phase 6 — Account profile metadata (display name + avatar) in Firestore/Storage; Settings UI (Account Mode only); ownership UI uses Name (Platform) (new requirement).
 - Phase 18 — Mode-specific breaks (global long-break counter in Mode A) implemented; validation pending.
 - Phase 18 — Run Mode task transition catch-up after background/resume (validation pending).
 - Phase 18 — Completion modal + Groups Hub navigation must work on owner and mirror devices (validation pending).
@@ -881,6 +882,9 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Add language selector with system auto-detect + user override.
 - Add theme selector (dark/light).
 - Add retention N selector (default 7, max 30).
+- Add Account Profile section in Settings (Account Mode only): display name (optional) + avatar.
+- Compress avatar images to <= 200 KB (target max 512px) before upload to Firebase Storage.
+- Ownership UI surfaces show "{displayName} (Platform)" with fallback to "Account (Platform)".
 
 ---
 

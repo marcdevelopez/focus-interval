@@ -4689,6 +4689,13 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Documented the macOS run behavior in `README.md`.
 - Validated the GitHub sign-in conflict fix on macOS.
 
+# 🔹 Block 303 — Account profile metadata (docs) (08/02/2026)
+
+### ✔ Work completed:
+
+- Documented account display name + avatar metadata (presentation-only) and Firebase Storage usage with 200 KB client-side compression.
+- Updated roadmap to track the new Account Profile requirement and ownership label format.
+
 ---
 
 # 🚀 End of file
