@@ -11,6 +11,6 @@ if [ -z "${GITHUB_OAUTH_CLIENT_ID:-}" ]; then
   exit 1
 fi
 
-flutter run -d macos \
+flutter run -d macos --profile --devtools \
   --dart-define=GITHUB_OAUTH_CLIENT_ID="${GITHUB_OAUTH_CLIENT_ID}" \
-  -v "$@"
+  -v "$@" > macos-log.txt 2>&1
