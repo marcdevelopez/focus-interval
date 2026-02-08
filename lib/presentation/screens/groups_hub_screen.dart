@@ -11,11 +11,13 @@ import '../../data/services/task_run_notice_service.dart';
 import '../../domain/pomodoro_machine.dart';
 import '../../widgets/mode_indicator.dart';
 import '../providers.dart';
+import 'task_group_planning_screen.dart';
 
 class GroupsHubScreen extends ConsumerWidget {
   const GroupsHubScreen({super.key});
 
   static const int _completedHistoryLimit = 7;
+  static const int _canceledHistoryLimit = 7;
   static final DateFormat _timeFormat = DateFormat('HH:mm');
   static final DateFormat _dateTimeFormat = DateFormat('MMM d, HH:mm');
 
@@ -68,10 +70,18 @@ class GroupsHubScreen extends ConsumerWidget {
           final completedSlice = completedGroups
               .take(_completedHistoryLimit)
               .toList(growable: false);
+          final canceledGroups = groups
+              .where((g) => g.status == TaskRunStatus.canceled)
+              .toList()
+            ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+          final canceledSlice = canceledGroups
+              .take(_canceledHistoryLimit)
+              .toList(growable: false);
 
           if (runningGroups.isEmpty &&
               scheduledGroups.isEmpty &&
-              completedSlice.isEmpty) {
+              completedSlice.isEmpty &&
+              canceledSlice.isEmpty) {
             return const Center(
               child: Text(
                 'No groups yet.',
@@ -167,6 +177,27 @@ class GroupsHubScreen extends ConsumerWidget {
                   ],
                   now: now,
                 ),
+              const SizedBox(height: 20),
+              _SectionHeader(title: 'Canceled'),
+              if (canceledSlice.isEmpty)
+                const _EmptySection(label: 'No canceled groups yet'),
+              for (final group in canceledSlice)
+                _GroupCard(
+                  group: group,
+                  activeSession: activeSession,
+                  onTap: () => _showSummaryDialog(context, group),
+                  actions: [
+                    _GroupAction(
+                      label: 'Re-plan group',
+                      onPressed: () => _handleRunAgain(
+                        context,
+                        ref,
+                        group,
+                      ),
+                    ),
+                  ],
+                  now: now,
+                ),
             ],
           );
         },
@@ -184,7 +215,7 @@ class GroupsHubScreen extends ConsumerWidget {
       builder: (_) => AlertDialog(
         title: const Text('Cancel scheduled group?'),
         content: const Text(
-          'This will cancel the schedule and remove it from upcoming groups.',
+          'This will cancel the schedule and move the group to Canceled.',
         ),
         actions: [
           TextButton(
@@ -209,7 +240,7 @@ class GroupsHubScreen extends ConsumerWidget {
     await repo.save(updated);
     await ref.read(notificationServiceProvider).cancelGroupPreAlert(group.id);
     if (!context.mounted) return;
-    _showSnackBar(context, 'Schedule canceled.');
+    _showSnackBar(context, 'Schedule canceled. You can re-plan it from Canceled.');
   }
 
   Future<void> _handleStartNow(
@@ -283,31 +314,54 @@ class GroupsHubScreen extends ConsumerWidget {
     context.go('/timer/${group.id}');
   }
 
+  Future<TaskGroupPlanningResult?> _showPlanningScreen(
+    BuildContext context, {
+    required List<TaskRunItem> items,
+    required TaskRunIntegrityMode integrityMode,
+  }) {
+    return context.push<TaskGroupPlanningResult>(
+      '/tasks/plan',
+      extra: TaskGroupPlanningArgs(
+        items: items,
+        integrityMode: integrityMode,
+        planningAnchor: DateTime.now(),
+      ),
+    );
+  }
+
   Future<void> _handleRunAgain(
     BuildContext context,
     WidgetRef ref,
     TaskRunGroup source,
   ) async {
-    final planAction = await _showPlanActionDialog(context);
+    var items = _cloneRunItems(source.tasks);
+    final planningResult = await _showPlanningScreen(
+      context,
+      items: items,
+      integrityMode: source.integrityMode,
+    );
     if (!context.mounted) return;
-    if (planAction == null) return;
+    if (planningResult == null) return;
+
+    items = planningResult.items;
+    final planOption = planningResult.option;
+    final isStartNow = planOption == TaskGroupPlanOption.startNow;
+    final isSchedule = !isStartNow;
 
     final planCapturedAt = DateTime.now();
     DateTime? scheduledStart;
-    if (planAction == _PlanAction.schedule) {
-      scheduledStart = await _pickScheduleDateTime(
-        context,
-        initial: planCapturedAt,
-      );
-      if (!context.mounted) return;
-      if (scheduledStart == null) return;
+    if (isSchedule) {
+      scheduledStart = planningResult.scheduledStart;
+      if (scheduledStart == null) {
+        _showSnackBar(context, 'Select a start time for scheduling.');
+        return;
+      }
       if (scheduledStart.isBefore(planCapturedAt)) {
         _showSnackBar(context, 'Scheduled time must be in the future.');
         return;
       }
     }
 
-    final items = _cloneRunItems(source.tasks);
     final totalDurationSeconds = groupDurationSecondsByMode(
       items,
       source.integrityMode,
@@ -330,9 +384,7 @@ class GroupsHubScreen extends ConsumerWidget {
       _showSnackBar(context, "Failed to check conflicts: $e");
       return;
     }
-    if (planAction == _PlanAction.schedule &&
-        scheduledStart != null &&
-        noticeMinutes > 0) {
+    if (isSchedule && scheduledStart != null && noticeMinutes > 0) {
       final preRunStart = scheduledStart.subtract(
         Duration(minutes: noticeMinutes),
       );
@@ -367,7 +419,7 @@ class GroupsHubScreen extends ConsumerWidget {
       existing,
       newStart: conflictStart,
       newEnd: conflictEnd,
-      includeRunningAlways: planAction == _PlanAction.startNow,
+      includeRunningAlways: isStartNow,
     );
 
     try {
@@ -398,9 +450,8 @@ class GroupsHubScreen extends ConsumerWidget {
 
     final auth = ref.read(firebaseAuthServiceProvider);
     final ownerUid = auth.currentUser?.uid ?? 'local';
-    final status = planAction == _PlanAction.startNow
-        ? TaskRunStatus.running
-        : TaskRunStatus.scheduled;
+    final status =
+        isStartNow ? TaskRunStatus.running : TaskRunStatus.scheduled;
     final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
     final scheduledByDeviceId = deviceId;
     final recalculatedStart = scheduledStart ?? DateTime.now();
@@ -439,7 +490,7 @@ class GroupsHubScreen extends ConsumerWidget {
       }
     } catch (e) {
       if (!context.mounted) return;
-      _showSnackBar(context, "Failed to run group again: $e");
+      _showSnackBar(context, "Failed to re-plan group: $e");
     }
   }
 
@@ -467,58 +518,6 @@ class GroupsHubScreen extends ConsumerWidget {
           scheduledFor: preAlertStart,
           remainingSeconds: noticeMinutes * 60,
         );
-  }
-
-  Future<_PlanAction?> _showPlanActionDialog(BuildContext context) {
-    return showDialog<_PlanAction>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Plan start'),
-        content: const Text(
-          'Choose whether to start now or schedule the group.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(_PlanAction.schedule),
-            child: const Text('Schedule start'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(_PlanAction.startNow),
-            child: const Text('Start now'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<DateTime?> _pickScheduleDateTime(
-    BuildContext context, {
-    required DateTime initial,
-  }) async {
-    final pickedDate = await showDatePicker(
-      context: context,
-      initialDate: initial,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
-    );
-    if (pickedDate == null) return null;
-    if (!context.mounted) return null;
-    final pickedTime = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(initial),
-    );
-    if (pickedTime == null) return null;
-    return DateTime(
-      pickedDate.year,
-      pickedDate.month,
-      pickedDate.day,
-      pickedTime.hour,
-      pickedTime.minute,
-    );
   }
 
   _GroupConflicts _findConflicts(
@@ -1362,8 +1361,6 @@ class _GroupAction extends StatelessWidget {
     );
   }
 }
-
-enum _PlanAction { startNow, schedule }
 
 enum _PreRunConflictType { running, scheduled }
 
