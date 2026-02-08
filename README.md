@@ -44,7 +44,7 @@ Flutter · Firebase Auth · Firestore · Riverpod · GoRouter · just_audio · f
   - Windows (PowerShell):
     - `$env:GITHUB_OAUTH_CLIENT_ID="<Firebase GitHub Client ID (principal)>"`
 - Run:
-  - `./scripts/run_macos.sh`
+  - `./scripts/run_macos.sh` (this run --profile --devtools and print macos-log.txt in root /)
   - `powershell -ExecutionPolicy Bypass -File .\scripts\run_windows.ps1`
 
 ## 📦 Android builds

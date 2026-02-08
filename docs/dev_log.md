@@ -4666,6 +4666,28 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Update this document at the **end of each development session**
 - Use short bullet points, not long narrative
 - This allows the AI to jump in on any day and continue directly
+# 🔹 Block 301 — GitHub sign-in conflict code (08/02/2026)
+
+### ✔ Work completed:
+
+- Accepted both `account-exists-with-different-credential` and `account-exists-with-different-credentials` codes for GitHub linking on desktop.
+- Restored the provider-linking flow when Firebase returns the pluralized Windows error code.
+
+### ⚠️ Issues found:
+
+- Windows Firebase Auth returns the pluralized error code, which bypassed the linking flow.
+
+### 🎯 Next steps:
+
+- Validate GitHub sign-in on Windows when the email already exists for another provider.
+
+# 🔹 Block 302 — macOS profile run + GitHub validation (08/02/2026)
+
+### ✔ Work completed:
+
+- Updated `scripts/run_macos.sh` to run in `--profile` with `--devtools` and write logs to `macos-log.txt` for performance checks.
+- Documented the macOS run behavior in `README.md`.
+- Validated the GitHub sign-in conflict fix on macOS.
 
 ---
 
