@@ -4650,6 +4650,17 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Quick visual pass to confirm the notice stays lightweight on narrow screens.
 
+# 🔹 Block 300 — Plan Group time picker copy (08/02/2026)
+
+### ✔ Work completed:
+
+- Added explicit help text for Plan Group start/end time pickers and duration picker.
+- Clarified date and time selection intent across schedule options.
+
+### 🎯 Next steps:
+
+- Quick pass to confirm picker titles read correctly on Android/iOS/Web.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
