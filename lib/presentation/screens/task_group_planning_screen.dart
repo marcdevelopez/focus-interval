@@ -731,14 +731,6 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
     return total <= 0 ? null : total;
   }
 
-  double _totalWorkMinutes(List<TaskRunItem> items) {
-    var total = 0.0;
-    for (final item in items) {
-      total += item.totalPomodoros * item.pomodoroMinutes;
-    }
-    return total;
-  }
-
   int? _weightPercent(TaskRunItem item, {required int? weightTotal}) {
     if (weightTotal == null || weightTotal <= 0) return null;
     final work = item.totalPomodoros * item.pomodoroMinutes;
