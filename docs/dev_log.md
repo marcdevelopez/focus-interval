@@ -4696,6 +4696,18 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Documented account display name + avatar metadata (presentation-only) and Firebase Storage usage with 200 KB client-side compression.
 - Updated roadmap to track the new Account Profile requirement and ownership label format.
 
+# 🔹 Block 304 — Plan Group total duration + Pre-Run auto-start (docs) (08/02/2026)
+
+### ✔ Work completed:
+
+- Documented Plan Group total duration visibility (work + breaks).
+- Clarified Pre-Run behavior: no owner, any device can cancel, and auto-start requires no user action.
+- Updated roadmap to track the new Plan Group total duration requirement and the Pre-Run auto-start bug.
+
+### ⚠️ Issues found:
+
+- Scheduled Pre-Run sometimes waits for a manual Start instead of auto-starting at the scheduled time when multiple devices are open.
+
 ---
 
 # 🚀 End of file

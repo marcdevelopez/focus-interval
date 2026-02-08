@@ -131,6 +131,8 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 17 — Scheduled auto-start stuck after prior running group ended; recheck on session end + expired running group auto-complete (validation pending).
 - Phase 17 — Scheduling must reserve full Pre-Run window (noticeMinutes) with clear user messaging (validation pending).
 - Phase 17 — Pre-start planning redesign + schedule by total range / total time (proportional redistribution) (implemented; validation pending).
+- Phase 17 — Plan Group shows total duration (work + breaks) in the planning screen (new requirement).
+- Phase 17 — Scheduled Pre-Run must auto-start without user action when the countdown ends (bug).
 - Phase 10 — Auto-adjust breaks on valid pomodoro changes and break edits (focus-loss adjustment; Task Editor + Edit Preset) (validation pending).
 - Phase 10 — Task Editor: total time chip + task color picker (new requirement).
 - Phase 9 — Task List: group name input + group summary + per-task total time + selection reset (new requirement).

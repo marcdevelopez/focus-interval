@@ -1068,6 +1068,7 @@ Run Mode is group-only: TimerScreen loads a TaskRunGroup by groupId; there is no
 
 - The planning screen must display a **full preview** of the resulting group:
   - **Group start and end time** near the top (based on the selected option).
+  - **Total duration (work + breaks)** near the top (same timing logic as execution).
   - A **task list preview** using the **same card visuals** as Task List
     when tasks are selected.
   - Each task card shows:
@@ -1139,6 +1140,8 @@ Redistribution rules (shared)
     - Recalculate theoreticalEndTime = actualStartTime + totalDurationSeconds
     - Auto-open the execution screen and auto-start the group
     - Ownership is claimed by the first active device that starts the session (if multiple devices are open)
+    - Auto-start requires **no user action**; if multiple devices are open, exactly one
+      device must claim ownership and others enter mirror mode automatically.
   - If the app was inactive at scheduledStartTime:
     - On next launch/resume of any signed-in device, if scheduledStartTime <= now and there is no active conflict,
       auto-start immediately using actualStartTime = now (scheduledStartTime remains unchanged)
@@ -1182,6 +1185,8 @@ Interactions
 - Cancel schedule is available.
 - Pause is visible but disabled (group has not started yet).
 - Start now is not available in this mode.
+- Pre-Run has no authoritative owner; all signed-in devices are equivalent and may cancel.
+- When the countdown reaches zero, the group must auto-start without user action.
 
 Transition at scheduled start
 
