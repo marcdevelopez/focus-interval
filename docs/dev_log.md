@@ -4606,6 +4606,39 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Re-test total range/time scheduling on the reported config to confirm the skew error is gone.
 
+# 🔹 Block 296 — Planning redistribution max-fit pass (08/02/2026)
+
+### ✔ Work completed:
+
+- Added a refinement pass to maximize end time within the requested range.
+- Allows safe pomodoro swaps/increments while respecting deviation rules.
+
+### 🎯 Next steps:
+
+- Re-test total range/time for the 05:00 → 11:00 case to confirm the end time is closer to the max.
+
+# 🔹 Block 297 — Redistribution tests + domain helper (08/02/2026)
+
+### ✔ Work completed:
+
+- Moved redistribution logic into a domain helper for testability.
+- Added unit tests for range/total scheduling in individual and shared modes.
+
+### 🎯 Next steps:
+
+- Run `flutter test` to verify redistribution coverage.
+
+# 🔹 Block 298 — Additional planner coverage (08/02/2026)
+
+### ✔ Work completed:
+
+- Added start-time validation helper and tests for past/future timestamps.
+- Expanded redistribution tests to cover 3+ tasks and max-fit checks.
+
+### 🎯 Next steps:
+
+- Re-run `flutter test test/domain/task_group_planner_test.dart`.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**
