@@ -4535,6 +4535,32 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Quick visual pass to confirm the banner remains readable over active timers.
 
+# 🔹 Block 290 — Planning flow screen (phase 1) (08/02/2026)
+
+### ✔ Work completed:
+
+- Replaced the Task List “Confirm” step with a full-screen planning screen.
+- Added a single info modal (with “Don’t show again”) and an info icon for options.
+- Implemented Start now + Schedule by start time, with range/total-time options shown as “Coming soon”.
+- Added a full preview list matching Task List selected cards, plus group start/end timing.
+- Updated the Task List CTA label to “Next”.
+
+### 🎯 Next steps:
+
+- Implement redistribution scheduling for total range/time (phase 2).
+
+# 🔹 Block 291 — Plan Group info modal clarity (08/02/2026)
+
+### ✔ Work completed:
+
+- Clarified the Plan Group info modal copy with per-option explanations.
+- Removed the “Don’t show again” checkbox from the manual info icon flow.
+- Fixed the async context lint in Task List by guarding mounted before navigation.
+
+### 🎯 Next steps:
+
+- Run full manual validation after phase 2 scheduling is added.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

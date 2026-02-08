@@ -117,6 +117,8 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       04/02/2026: Phase 19 validation completed (multi-platform) and phase closed.
       04/02/2026: Specs/roadmap updated (group naming, task colors, group progress bar,
                   planning by total range/total time, global sound settings) — documentation-only.
+      08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
+                  info modal, preview). Range/total-time scheduling still pending.
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
@@ -655,7 +657,7 @@ These subphases should also appear in **dev_log.md** as they are completed.
 
 ### ⚙️ Tasks
 
-- Replace per-task “Run” button with checkboxes and a single “Confirmar” action.
+- Replace per-task “Run” button with checkboxes and a single “Next” action.
 - Implement reorder handle-only drag and drop.
 - Show theoretical start/end times per selected task (recalc on time/reorder/selection).
 - Build snapshot creation flow for TaskRunGroup.
