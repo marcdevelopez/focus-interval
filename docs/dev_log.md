@@ -4639,6 +4639,17 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Re-run `flutter test test/domain/task_group_planner_test.dart`.
 
+# 🔹 Block 299 — Inline adjusted-end notice (08/02/2026)
+
+### ✔ Work completed:
+
+- Replaced the adjusted-end dialog with an inline notice in Plan Group.
+- Added an inline “Don’t show again” toggle stored per device.
+
+### 🎯 Next steps:
+
+- Quick visual pass to confirm the notice stays lightweight on narrow screens.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

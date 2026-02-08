@@ -64,14 +64,15 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
   DateTime? _totalStart;
   Duration? _totalDuration;
   bool _infoDialogVisible = false;
-  bool _shiftNoticeVisible = false;
-  String? _lastShiftNoticeKey;
+  bool _shiftNoticeSuppressed = false;
+  bool _shiftNoticePrefLoaded = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _maybeShowInfoDialog();
+      _loadShiftNoticePreference();
     });
   }
 
@@ -160,6 +161,21 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
     });
   }
 
+  Future<void> _loadShiftNoticePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final seen = prefs.getBool(_shiftNoticeKey) ?? false;
+    if (!mounted) return;
+    setState(() {
+      _shiftNoticeSuppressed = seen;
+      _shiftNoticePrefLoaded = true;
+    });
+  }
+
+  Future<void> _setShiftNoticeSuppressed(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_shiftNoticeKey, value);
+  }
+
   Future<void> _selectScheduleStart() async {
     final picked = await _pickScheduleDateTime(
       context,
@@ -240,7 +256,6 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
   Widget build(BuildContext context) {
     final integrityMode = widget.args.integrityMode;
     final preview = _buildPlanPreview();
-    _maybeScheduleShiftNotice(preview);
 
     final startTime = preview.scheduledStart;
     final groupStartLabel =
@@ -259,6 +274,9 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
     final weightTotal = _weightTotal(preview.items);
     final previewTasks = _previewTasks(preview.items);
     final shiftLabel = _formatShiftLabel(preview.shiftSeconds);
+    final showShiftNotice = shiftLabel != null &&
+        _shiftNoticePrefLoaded &&
+        !_shiftNoticeSuppressed;
 
     return Scaffold(
       appBar: AppBar(
@@ -335,12 +353,9 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
           _sectionHeader('Group preview'),
           const SizedBox(height: 8),
           _groupTimeRow(groupStartLabel, groupEndLabel),
-          if (shiftLabel != null) ...[
+          if (showShiftNotice) ...[
             const SizedBox(height: 6),
-            Text(
-              shiftLabel,
-              style: const TextStyle(color: Colors.orangeAccent, fontSize: 12),
-            ),
+            _shiftNoticeBanner(shiftLabel),
           ],
           const SizedBox(height: 12),
           for (var index = 0; index < previewTasks.length; index += 1)
@@ -542,75 +557,6 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
   }
 
 
-  void _maybeScheduleShiftNotice(_PlanPreview preview) {
-    if (preview.shiftSeconds <= 0 || preview.targetDurationSeconds == null) {
-      return;
-    }
-    final startKey = preview.scheduledStart?.millisecondsSinceEpoch ?? 0;
-    final key = '${preview.option}-$startKey-${preview.shiftSeconds}';
-    if (_lastShiftNoticeKey == key) return;
-    _lastShiftNoticeKey = key;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showShiftNotice(preview.shiftSeconds);
-    });
-  }
-
-  Future<void> _showShiftNotice(int shiftSeconds) async {
-    if (_shiftNoticeVisible) return;
-    final prefs = await SharedPreferences.getInstance();
-    final seen = prefs.getBool(_shiftNoticeKey) ?? false;
-    if (seen || !mounted) return;
-    _shiftNoticeVisible = true;
-    var dontShowAgain = false;
-    final shiftLabel = _formatDuration(Duration(seconds: shiftSeconds));
-    await showDialog<void>(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return AlertDialog(
-              title: const Text('Adjusted end time'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'The closest valid distribution ends $shiftLabel earlier '
-                    'because pomodoros are indivisible.',
-                    style: const TextStyle(color: Colors.white70, height: 1.4),
-                  ),
-                  const SizedBox(height: 12),
-                  CheckboxListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: dontShowAgain,
-                    onChanged: (value) {
-                      setModalState(() {
-                        dontShowAgain = value ?? false;
-                      });
-                    },
-                    title: const Text("Don't show again"),
-                    controlAffinity: ListTileControlAffinity.leading,
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('OK'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    ).whenComplete(() async {
-      if (dontShowAgain) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool(_shiftNoticeKey, true);
-      }
-      _shiftNoticeVisible = false;
-    });
-  }
 
   Widget _sectionHeader(String text) {
     return Text(
@@ -639,6 +585,66 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
         ),
       ],
     );
+  }
+
+  Widget _shiftNoticeBanner(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.orangeAccent.withAlpha(24),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orangeAccent.withAlpha(80)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.info_outline,
+                size: 16,
+                color: Colors.orangeAccent,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.orangeAccent,
+                    fontSize: 12,
+                    height: 1.3,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Checkbox(
+                value: false,
+                onChanged: _handleShiftNoticeToggle,
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              const Text(
+                "Don't show again",
+                style: TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleShiftNoticeToggle(bool? value) {
+    if (value != true) return;
+    setState(() {
+      _shiftNoticeSuppressed = true;
+    });
+    _setShiftNoticeSuppressed(true);
   }
 
   Widget _groupTimeRow(String start, String end) {

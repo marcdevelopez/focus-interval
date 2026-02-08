@@ -121,6 +121,8 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
                   with redistribution + adjusted-end notice).
+      08/02/2026: Planning redistribution max-fit + inline adjusted-end notice + unit tests added
+                  (validation pending).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
@@ -128,7 +130,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 
 - Phase 17 — Scheduled auto-start stuck after prior running group ended; recheck on session end + expired running group auto-complete (validation pending).
 - Phase 17 — Scheduling must reserve full Pre-Run window (noticeMinutes) with clear user messaging (validation pending).
-- Phase 17 — Pre-start planning redesign + schedule by total range / total time (proportional redistribution) (new requirement).
+- Phase 17 — Pre-start planning redesign + schedule by total range / total time (proportional redistribution) (implemented; validation pending).
 - Phase 10 — Auto-adjust breaks on valid pomodoro changes and break edits (focus-loss adjustment; Task Editor + Edit Preset) (validation pending).
 - Phase 10 — Task Editor: total time chip + task color picker (new requirement).
 - Phase 9 — Task List: group name input + group summary + per-task total time + selection reset (new requirement).
