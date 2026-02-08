@@ -17,6 +17,16 @@ class GroupsHubScreen extends ConsumerWidget {
 
   static const int _completedHistoryLimit = 7;
   static final DateFormat _timeFormat = DateFormat('HH:mm');
+  static final DateFormat _dateTimeFormat = DateFormat('MMM d, HH:mm');
+
+  static String _formatGroupDateTime(DateTime? value, DateTime now) {
+    if (value == null) return '--:--';
+    final isToday =
+        value.year == now.year &&
+        value.month == now.month &&
+        value.day == now.day;
+    return isToday ? _timeFormat.format(value) : _dateTimeFormat.format(value);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -93,6 +103,7 @@ class GroupsHubScreen extends ConsumerWidget {
                       onPressed: () => context.go('/timer/${group.id}'),
                     ),
                   ],
+                  now: now,
                 ),
               const SizedBox(height: 20),
               _SectionHeader(title: 'Scheduled'),
@@ -131,6 +142,7 @@ class GroupsHubScreen extends ConsumerWidget {
                           ),
                         ),
                       ],
+                      now: now,
                     );
                   },
                 ),
@@ -153,6 +165,7 @@ class GroupsHubScreen extends ConsumerWidget {
                       ),
                     ),
                   ],
+                  now: now,
                 ),
             ],
           );
@@ -670,9 +683,10 @@ class GroupsHubScreen extends ConsumerWidget {
 
   void _showSummaryDialog(BuildContext context, TaskRunGroup group) {
     final title = group.tasks.isNotEmpty ? group.tasks.first.name : 'Task group';
-    final scheduledLabel = _formatTime(group.scheduledStartTime);
-    final actualLabel = _formatTime(group.actualStartTime);
-    final endLabel = _formatTime(group.theoreticalEndTime);
+    final now = DateTime.now();
+    final scheduledLabel = _formatGroupDateTime(group.scheduledStartTime, now);
+    final actualLabel = _formatGroupDateTime(group.actualStartTime, now);
+    final endLabel = _formatGroupDateTime(group.theoreticalEndTime, now);
     final totalTasks = group.totalTasks ?? group.tasks.length;
     final totalDuration = _formatDuration(group.totalDurationSeconds ?? 0);
     final totalPomodoros = group.totalPomodoros ??
@@ -754,11 +768,6 @@ class GroupsHubScreen extends ConsumerWidget {
       Duration(minutes: noticeMinutes),
     );
     return !now.isBefore(preRunStart) && now.isBefore(scheduledStart);
-  }
-
-  String _formatTime(DateTime? value) {
-    if (value == null) return '--:--';
-    return _timeFormat.format(value);
   }
 
   String _formatDuration(int seconds) {
@@ -1201,12 +1210,14 @@ class _GroupCard extends StatelessWidget {
   final PomodoroSession? activeSession;
   final VoidCallback onTap;
   final List<_GroupAction> actions;
+  final DateTime now;
 
   const _GroupCard({
     required this.group,
     required this.activeSession,
     required this.onTap,
     required this.actions,
+    required this.now,
   });
 
   @override
@@ -1258,11 +1269,11 @@ class _GroupCard extends StatelessWidget {
             if (scheduledStart != null)
               _MetaRow(
                 label: 'Scheduled',
-                value: _formatTime(scheduledStart),
+                value: GroupsHubScreen._formatGroupDateTime(scheduledStart, now),
               ),
             _MetaRow(
               label: 'Ends',
-              value: _formatTime(endTime),
+              value: GroupsHubScreen._formatGroupDateTime(endTime, now),
             ),
             _MetaRow(
               label: 'Tasks',
@@ -1289,11 +1300,6 @@ class _GroupCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatTime(DateTime? value) {
-    if (value == null) return '--:--';
-    return GroupsHubScreen._timeFormat.format(value);
   }
 
   String _formatDuration(int seconds) {

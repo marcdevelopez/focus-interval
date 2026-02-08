@@ -22,7 +22,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **07/02/2026**
+Last update: **08/02/2026**
 
 ---
 
@@ -4501,6 +4501,17 @@ Mode A global long-break sequencing not fully validated (time constraints).
 ### 🎯 Next steps:
 
 - Re-test long-list reordering to confirm bottom-edge scroll activates.
+
+# 🔹 Block 287 — Groups Hub date-aware times (08/02/2026)
+
+### ✔ Work completed:
+
+- Displayed date + time on Groups Hub cards when the group day is not today.
+- Kept time-only formatting for groups occurring today to preserve a clean layout.
+
+### 🎯 Next steps:
+
+- Quick visual pass on groups across different days to confirm formatting clarity.
 
 # 🧾 General notes
 

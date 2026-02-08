@@ -1392,6 +1392,8 @@ List fields per group
 - Total duration
 - Pre-alert setting (e.g., "Notice 5 min before") — only for scheduled groups
   (scheduledStartTime != null). Do not show notice/pre-run info for “Start now”.
+- For any time field shown on the card, display **only HH:mm** when the date is
+  today, and show **date + time** when the date is not today (scheduled or completed).
 
 Actions
 
