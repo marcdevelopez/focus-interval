@@ -30,6 +30,7 @@ class TaskCard extends StatelessWidget {
   final String? timeRange;
   final LocalSoundOverrides? soundOverrides;
   final int? weightPercent;
+  final bool enableInteraction;
 
   const TaskCard({
     super.key,
@@ -42,6 +43,7 @@ class TaskCard extends StatelessWidget {
     this.timeRange,
     this.soundOverrides,
     this.weightPercent,
+    this.enableInteraction = true,
   });
 
   @override
@@ -60,8 +62,8 @@ class TaskCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        onTap: onTap,
-        onLongPress: () => _showContextMenu(context),
+        onTap: enableInteraction ? onTap : null,
+        onLongPress: enableInteraction ? () => _showContextMenu(context) : null,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
           child: Row(

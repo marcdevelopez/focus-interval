@@ -629,45 +629,46 @@ Item layout (top → bottom):
 
 ### **10.2.3. Confirm action**
 
-- Bottom button: “Confirmar”
+- Bottom button: **“Next”**
 - Enabled only if at least 1 task is selected
-- On press:
-  - Create a TaskRunGroup snapshot
-  - Apply group naming rules (required name, default auto-name if empty, duplicate suffix handling, max length)
-  - Persist `integrityMode` on the group based on the Integrity Warning selection
-  - If selected tasks use mixed Pomodoro structural configurations
-    (pomodoro duration, short/long break duration, long break interval),
-    show the Pomodoro Integrity Warning before scheduling/starting:
-    - Dialog style: pure black background with amber/orange border
-    - Icon: Icons.info_outline (educational warning)
-    - Intro text must include a clear instruction, e.g.:
-      “This group mixes Pomodoro structures. Mixed durations can reduce the
-      benefits of the technique. Choose the configuration to apply to this
-      group.”
-    - After the intro text, show a **scrollable list of visual options**. Each
-      option is a selectable card (button-style):
-      1. **One option per distinct structure** among the selected tasks.
-         - Structure uniqueness is based on: pomodoro duration, short break,
-           long break, long-break interval (sounds are ignored for grouping).
-         - The option displays the **same three mini-cards** as a Task List item:
-           pomodoro duration (no pomodoro count), break durations (short/long),
-           and the interval dots. Sizes can be reduced to avoid overflow.
-         - Show **"Used by:"** with task-name chips (wrapping to multiple lines).
-         - Selecting this option forces Mode A using that structure (durations,
-           interval; sounds follow the chosen task/preset per current logic),
-           while keeping each task’s totalPomodoros unchanged.
-      2. **Default preset option** (only if a Default Preset exists):
-         - Shows the same three mini-cards using the preset values.
-         - Includes a **badge with a star** and text “Default preset”.
-         - The badge appears **below** the mini-cards (cards first, badge second).
-         - Selecting it forces Mode A using the Default Preset (durations,
-           interval, sounds) and propagates its presetId.
-         - If the option is shown but the Default Preset is missing at tap time,
-           show a SnackBar and keep the dialog open.
-      3. **Keep individual configurations**:
-        - Presented as a visual card in the same list.
-        - Selecting it keeps Mode B (each task preserves its own structure).
-  - Navigate to the execution screen pre-start planning (see section 10.4)
+- On press (sequence):
+  1. **Integrity Warning (if needed)**  
+     If selected tasks use mixed Pomodoro structural configurations
+     (pomodoro duration, short/long break duration, long break interval),
+     show the Pomodoro Integrity Warning before any planning decisions:
+     - Dialog style: pure black background with amber/orange border
+     - Icon: Icons.info_outline (educational warning)
+     - Intro text must include a clear instruction, e.g.:
+       “This group mixes Pomodoro structures. Mixed durations can reduce the
+       benefits of the technique. Choose the configuration to apply to this
+       group.”
+     - After the intro text, show a **scrollable list of visual options**. Each
+       option is a selectable card (button-style):
+       1. **One option per distinct structure** among the selected tasks.
+          - Structure uniqueness is based on: pomodoro duration, short break,
+            long break, long-break interval (sounds are ignored for grouping).
+          - The option displays the **same three mini-cards** as a Task List item:
+            pomodoro duration (no pomodoro count), break durations (short/long),
+            and the interval dots. Sizes can be reduced to avoid overflow.
+          - Show **"Used by:"** with task-name chips (wrapping to multiple lines).
+          - Selecting this option forces Mode A using that structure (durations,
+            interval; sounds follow the chosen task/preset per current logic),
+            while keeping each task’s totalPomodoros unchanged.
+       2. **Default preset option** (only if a Default Preset exists):
+          - Shows the same three mini-cards using the preset values.
+          - Includes a **badge with a star** and text “Default preset”.
+          - The badge appears **below** the mini-cards (cards first, badge second).
+          - Selecting it forces Mode A using the Default Preset (durations,
+            interval, sounds) and propagates its presetId.
+          - If the option is shown but the Default Preset is missing at tap time,
+            show a SnackBar and keep the dialog open.
+       3. **Keep individual configurations**:
+         - Presented as a visual card in the same list.
+         - Selecting it keeps Mode B (each task preserves its own structure).
+  2. **Navigate to the full-screen planning screen**  
+     The planning screen is where the group is reviewed and finally confirmed
+     (see section 10.4.1). The group is created only after the user confirms
+     on that screen.
 
 ### **10.2.4. Mode indicator (always visible)**
 
@@ -1006,14 +1007,38 @@ Run Mode is group-only: TimerScreen loads a TaskRunGroup by groupId; there is no
 
 ### **10.4.1. Pre-start planning (before the timer begins)**
 
-- The user chooses when and how to run the group after tapping "Confirm".
-- Use a **two-card layout**:
-  - **Start now** card with one primary chip.
-  - **Schedule** card with two primary chips:
-    - **Schedule by total range time**
-    - **Schedule by total time**
-- Chips must be large enough for reliable taps and visually consistent across the three options.
-- Conflicts are validated for both actions (see section 6.4)
+- The user chooses when and how to run the group after tapping **“Next”** in Task List.
+- The planning step is a **full-screen page** (not a modal) with:
+  - AppBar + back button (returns to Task List for edits).
+  - Clear title (e.g., “Plan group” / “Plan start”).
+  - Primary CTA: **“Confirm”** (this is when the group is created).
+  - Secondary action: **“Cancel”**.
+- Planning options (single selection; **Start now** is default):
+  - **Start now**
+  - **Schedule by start time**
+  - **Schedule by total range time**
+  - **Schedule by total time**
+- A single **info icon** near the options opens an informational modal that explains
+  all options. The modal:
+  - Appears the first time the user opens this screen.
+  - Includes a “Don’t show again” toggle (saved per-device).
+  - Remains accessible via the info icon at any time.
+  - When opened via the info icon, **do not** show the “Don’t show again” toggle.
+  - The content must clearly explain what each option does and how it affects
+    the group start and timing.
+- Conflicts are validated for all actions (see section 6.4).
+
+- The planning screen must display a **full preview** of the resulting group:
+  - **Group start and end time** near the top (based on the selected option).
+  - A **task list preview** using the **same card visuals** as Task List
+    when tasks are selected.
+  - Each task card shows:
+    - Task name + **weight %** on the right
+    - The three stat cards (pomodoros + minutes, breaks, interval dots)
+    - Time range for the task (start → end)
+    - Sounds row in the same format as Task List
+  - The preview must reflect the **Integrity Warning** choice (Mode A vs Mode B),
+    so durations, breaks, and sounds match the final group configuration.
 
 Start now
 

@@ -8,6 +8,7 @@ import '../presentation/screens/task_editor_screen.dart';
 import '../presentation/screens/timer_screen.dart';
 import '../presentation/screens/groups_hub_screen.dart';
 import '../presentation/screens/settings_screen.dart';
+import '../presentation/screens/task_group_planning_screen.dart';
 import '../presentation/screens/preset_list_screen.dart';
 import '../presentation/screens/preset_editor_screen.dart';
 
@@ -37,6 +38,17 @@ GoRouter buildRouter() {
         path: '/tasks/new',
         pageBuilder: (_, __) =>
             _slide(const TaskEditorScreen(isEditing: false)),
+      ),
+
+      GoRoute(
+        path: '/tasks/plan',
+        pageBuilder: (context, state) {
+          final args = state.extra;
+          if (args is! TaskGroupPlanningArgs) {
+            return _slide(const TaskListScreen());
+          }
+          return _slide(TaskGroupPlanningScreen(args: args));
+        },
       ),
 
       GoRoute(

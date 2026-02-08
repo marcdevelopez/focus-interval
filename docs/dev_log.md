@@ -4535,6 +4535,110 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Quick visual pass to confirm the banner remains readable over active timers.
 
+# 🔹 Block 290 — Planning flow screen (phase 1) (08/02/2026)
+
+### ✔ Work completed:
+
+- Replaced the Task List “Confirm” step with a full-screen planning screen.
+- Added a single info modal (with “Don’t show again”) and an info icon for options.
+- Implemented Start now + Schedule by start time, with range/total-time options shown as “Coming soon”.
+- Added a full preview list matching Task List selected cards, plus group start/end timing.
+- Updated the Task List CTA label to “Next”.
+
+### 🎯 Next steps:
+
+- Implement redistribution scheduling for total range/time (phase 2).
+
+# 🔹 Block 291 — Plan Group info modal clarity (08/02/2026)
+
+### ✔ Work completed:
+
+- Clarified the Plan Group info modal copy with per-option explanations.
+- Removed the “Don’t show again” checkbox from the manual info icon flow.
+- Fixed the async context lint in Task List by guarding mounted before navigation.
+
+### 🎯 Next steps:
+
+- Run full manual validation after phase 2 scheduling is added.
+
+# 🔹 Block 292 — Planning flow scheduling redistribution (08/02/2026)
+
+### ✔ Work completed:
+
+- Enabled schedule by total range and total time with pomodoro redistribution.
+- Added shift notice when the computed end time is earlier than requested.
+- Returned redistributed items from the planning screen for group creation.
+
+### 🎯 Next steps:
+
+- Multi-platform validation for range/time scheduling (Android/iOS/Web).
+
+# 🔹 Block 293 — Planning redistribution validation fix (08/02/2026)
+
+### ✔ Work completed:
+
+- Adjusted redistribution to search for a fit within the requested time range.
+- Avoided false “too short” errors by fitting durations before blocking.
+
+### 🎯 Next steps:
+
+- Re-test schedule by total range/time with wide and tight windows.
+
+# 🔹 Block 294 — Planning redistribution deviation guard (08/02/2026)
+
+### ✔ Work completed:
+
+- Updated redistribution search to track time-fit and deviation-safe candidates.
+- Ensured “too short” only appears when no time-fit exists; otherwise surface skew warning.
+
+### 🎯 Next steps:
+
+- Re-test schedule by total range/time for valid windows to confirm no false blocks.
+
+# 🔹 Block 295 — Planning redistribution stabilization (08/02/2026)
+
+### ✔ Work completed:
+
+- Removed the diff-adjustment loop in redistribution to avoid skewed allocations.
+- Kept proportional rounding so binary search can find valid, deviation-safe fits.
+
+### 🎯 Next steps:
+
+- Re-test total range/time scheduling on the reported config to confirm the skew error is gone.
+
+# 🔹 Block 296 — Planning redistribution max-fit pass (08/02/2026)
+
+### ✔ Work completed:
+
+- Added a refinement pass to maximize end time within the requested range.
+- Allows safe pomodoro swaps/increments while respecting deviation rules.
+
+### 🎯 Next steps:
+
+- Re-test total range/time for the 05:00 → 11:00 case to confirm the end time is closer to the max.
+
+# 🔹 Block 297 — Redistribution tests + domain helper (08/02/2026)
+
+### ✔ Work completed:
+
+- Moved redistribution logic into a domain helper for testability.
+- Added unit tests for range/total scheduling in individual and shared modes.
+
+### 🎯 Next steps:
+
+- Run `flutter test` to verify redistribution coverage.
+
+# 🔹 Block 298 — Additional planner coverage (08/02/2026)
+
+### ✔ Work completed:
+
+- Added start-time validation helper and tests for past/future timestamps.
+- Expanded redistribution tests to cover 3+ tasks and max-fit checks.
+
+### 🎯 Next steps:
+
+- Re-run `flutter test test/domain/task_group_planner_test.dart`.
+
 # 🧾 General notes
 
 - Update this document at the **end of each development session**

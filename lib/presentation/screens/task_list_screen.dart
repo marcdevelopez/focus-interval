@@ -22,6 +22,7 @@ import '../../domain/pomodoro_machine.dart';
 import '../../domain/validators.dart';
 import '../../widgets/task_card.dart';
 import '../../widgets/mode_indicator.dart';
+import 'task_group_planning_screen.dart';
 
 enum _EmailVerificationAction { verified, resend, useLocal, signOut }
 enum _IntegritySelectionType { keepIndividual, useDefault, useStructure, cancel }
@@ -670,7 +671,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                     tasksAsync: tasksAsync,
                     activeSession: activeSession,
                   ),
-            child: const Text('Confirmar'),
+            child: const Text('Next'),
           ),
         ),
       ),
@@ -1128,34 +1129,6 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       return;
     }
 
-    final planAction = await _showPlanActionDialog(context);
-    if (!context.mounted) return;
-    if (planAction == null) return;
-    final planCapturedAt = DateTime.now();
-    DateTime? scheduledStart;
-    if (planAction == _PlanAction.schedule) {
-      scheduledStart = await _pickScheduleDateTime(
-        context,
-        initial: planCapturedAt,
-      );
-      if (!context.mounted) return;
-      if (scheduledStart == null) return;
-      if (scheduledStart.isBefore(planCapturedAt)) {
-        _showSnackBar(context, 'Scheduled time must be in the future.');
-        return;
-      }
-    } else if (activeSession != null) {
-      final shouldBlock = await _shouldBlockForActiveSession(activeSession);
-      if (!context.mounted) return;
-      if (shouldBlock) {
-        _showSnackBar(
-          context,
-          "A session is already active (running or paused). Finish or cancel it first.",
-        );
-        return;
-      }
-    }
-
     final integritySelection = await _maybeShowIntegrityWarning(
       context,
       selected,
@@ -1192,6 +1165,44 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
             ? TaskRunIntegrityMode.individual
             : TaskRunIntegrityMode.shared)
         : TaskRunIntegrityMode.shared;
+    if (!context.mounted) return;
+
+    final planningResult = await _showPlanningScreen(
+      context,
+      items: items,
+      integrityMode: integrityMode,
+    );
+    if (!context.mounted) return;
+    if (planningResult == null) return;
+
+    items = planningResult.items;
+    final planOption = planningResult.option;
+    final isStartNow = planOption == TaskGroupPlanOption.startNow;
+    final isSchedule = !isStartNow;
+
+    final planCapturedAt = DateTime.now();
+    DateTime? scheduledStart;
+    if (isSchedule) {
+      scheduledStart = planningResult.scheduledStart;
+      if (scheduledStart == null) {
+        _showSnackBar(context, 'Select a start time for scheduling.');
+        return;
+      }
+      if (scheduledStart.isBefore(planCapturedAt)) {
+        _showSnackBar(context, 'Scheduled time must be in the future.');
+        return;
+      }
+    } else if (activeSession != null) {
+      final shouldBlock = await _shouldBlockForActiveSession(activeSession);
+      if (!context.mounted) return;
+      if (shouldBlock) {
+        _showSnackBar(
+          context,
+          "A session is already active (running or paused). Finish or cancel it first.",
+        );
+        return;
+      }
+    }
     final totalDurationSeconds = groupDurationSecondsByMode(
       items,
       integrityMode,
@@ -1215,7 +1226,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       return;
     }
     if (!context.mounted) return;
-    if (planAction == _PlanAction.schedule &&
+    if (isSchedule &&
         scheduledStart != null &&
         noticeMinutes > 0) {
       final preRunStart = scheduledStart.subtract(
@@ -1251,7 +1262,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       existingGroups,
       newStart: conflictStart,
       newEnd: conflictEnd,
-      includeRunningAlways: planAction == _PlanAction.startNow,
+      includeRunningAlways: isStartNow,
     );
 
     try {
@@ -1280,9 +1291,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       return;
     }
 
-    final status = planAction == _PlanAction.startNow
-        ? TaskRunStatus.running
-        : TaskRunStatus.scheduled;
+    final status = isStartNow ? TaskRunStatus.running : TaskRunStatus.scheduled;
     final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
     final scheduledByDeviceId = deviceId;
 
@@ -1356,55 +1365,18 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         );
   }
 
-  Future<_PlanAction?> _showPlanActionDialog(BuildContext context) {
-    return showDialog<_PlanAction>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Plan start'),
-        content: const Text(
-          'Choose whether to start now or schedule the group.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(_PlanAction.schedule),
-            child: const Text('Schedule start'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(_PlanAction.startNow),
-            child: const Text('Start now'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<DateTime?> _pickScheduleDateTime(
+  Future<TaskGroupPlanningResult?> _showPlanningScreen(
     BuildContext context, {
-    required DateTime initial,
-  }) async {
-    final pickedDate = await showDatePicker(
-      context: context,
-      initialDate: initial,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
-    );
-    if (pickedDate == null) return null;
-    if (!context.mounted) return null;
-    final pickedTime = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(initial),
-    );
-    if (pickedTime == null) return null;
-    return DateTime(
-      pickedDate.year,
-      pickedDate.month,
-      pickedDate.day,
-      pickedTime.hour,
-      pickedTime.minute,
+    required List<TaskRunItem> items,
+    required TaskRunIntegrityMode integrityMode,
+  }) {
+    return context.push<TaskGroupPlanningResult>(
+      '/tasks/plan',
+      extra: TaskGroupPlanningArgs(
+        items: items,
+        integrityMode: integrityMode,
+        planningAnchor: _planningAnchor,
+      ),
     );
   }
 
@@ -2414,8 +2386,6 @@ class _MiniDot extends StatelessWidget {
 }
 
 enum _WebLocalNoticeAction { stayLocal, signIn }
-
-enum _PlanAction { startNow, schedule }
 
 enum _PreRunConflictType { running, scheduled }
 
