@@ -1359,7 +1359,8 @@ The MM:SS timer must not shift horizontally:
   info sheet. Do not add persistent inline icons that force the control row to overflow.
 - The owner-side ownership request prompt should render as a floating overlay
   (light modal/banner) that does not push or reflow the existing layout. It must
-  avoid overflow and should not collide with the AppBar or top widgets.
+  avoid overflow and should not collide with the AppBar or top widgets. The
+  background must be opaque (no transparency) for clear legibility.
 - When a mirror device has a pending ownership request, show the pending state
   only via the AppBar ownership indicator (e.g., amber/orange). Do not render
   inline or overlayed body text; the ownership info sheet should include the
