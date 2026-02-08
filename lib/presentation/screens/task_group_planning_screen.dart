@@ -180,6 +180,8 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
     final picked = await _pickScheduleDateTime(
       context,
       initial: _scheduledStart ?? DateTime.now(),
+      dateHelpText: 'Select start date',
+      timeHelpText: 'Select start time',
     );
     if (!mounted) return;
     if (picked == null) return;
@@ -191,11 +193,21 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
 
   Future<void> _selectRangeTimes() async {
     final initialStart = _rangeStart ?? DateTime.now();
-    final start = await _pickScheduleDateTime(context, initial: initialStart);
+    final start = await _pickScheduleDateTime(
+      context,
+      initial: initialStart,
+      dateHelpText: 'Select range start date',
+      timeHelpText: 'Select range start time',
+    );
     if (!mounted) return;
     if (start == null) return;
     final initialEnd = _rangeEnd ?? start.add(const Duration(hours: 1));
-    final end = await _pickScheduleDateTime(context, initial: initialEnd);
+    final end = await _pickScheduleDateTime(
+      context,
+      initial: initialEnd,
+      dateHelpText: 'Select range end date',
+      timeHelpText: 'Select range end time',
+    );
     if (!mounted) return;
     if (end == null) return;
     if (!end.isAfter(start)) {
@@ -213,12 +225,15 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
     final start = await _pickScheduleDateTime(
       context,
       initial: _totalStart ?? DateTime.now(),
+      dateHelpText: 'Select start date',
+      timeHelpText: 'Select start time',
     );
     if (!mounted) return;
     if (start == null) return;
     final duration = await _pickDuration(
       context,
       initial: _totalDuration ?? const Duration(hours: 1),
+      timeHelpText: 'Select total duration',
     );
     if (!mounted) return;
     if (duration == null) return;
@@ -769,18 +784,22 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
   Future<DateTime?> _pickScheduleDateTime(
     BuildContext context, {
     required DateTime initial,
+    required String dateHelpText,
+    required String timeHelpText,
   }) async {
     final pickedDate = await showDatePicker(
       context: context,
       initialDate: initial,
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
+      helpText: dateHelpText,
     );
     if (pickedDate == null) return null;
     if (!context.mounted) return null;
     final pickedTime = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(initial),
+      helpText: timeHelpText,
     );
     if (pickedTime == null) return null;
     return DateTime(
@@ -795,6 +814,7 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
   Future<Duration?> _pickDuration(
     BuildContext context, {
     required Duration initial,
+    required String timeHelpText,
   }) async {
     final initialTime = TimeOfDay(
       hour: initial.inHours.clamp(0, 23),
@@ -803,6 +823,7 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
     final picked = await showTimePicker(
       context: context,
       initialTime: initialTime,
+      helpText: timeHelpText,
     );
     if (picked == null) return null;
     return Duration(hours: picked.hour, minutes: picked.minute);
