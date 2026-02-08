@@ -4720,6 +4720,18 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Validate scheduled auto-start across Web + Android + iOS with multiple devices open.
 
+# 🔹 Block 306 — Pre-Run auto-start robustness (08/02/2026)
+
+### ✔ Work completed:
+
+- Added a TimerScreen fallback to mark scheduled groups as running when the countdown ends.
+- Preserved scheduled actualStartTime when Start is pressed after a scheduled run begins.
+- Avoided overwriting scheduledByDeviceId when auto-starting a scheduled group.
+
+### 🎯 Next steps:
+
+- Re-test multi-device scheduled start (Web/iOS/Android) and verify no timeline reset.
+
 ---
 
 # 🚀 End of file

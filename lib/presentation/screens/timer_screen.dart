@@ -230,7 +230,33 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       _syncPreRunInfo(latest);
     }
     final group = vm.currentGroup;
-    if (group == null || group.status != TaskRunStatus.running) {
+    if (group == null) {
+      ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
+      return;
+    }
+    if (group.status != TaskRunStatus.running) {
+      final scheduledStart = group.scheduledStartTime;
+      final now = DateTime.now();
+      if (group.status == TaskRunStatus.scheduled &&
+          scheduledStart != null &&
+          !scheduledStart.isAfter(now)) {
+        final totalSeconds = group.totalDurationSeconds ??
+            groupDurationSecondsByMode(group.tasks, group.integrityMode);
+        final updated = group.copyWith(
+          status: TaskRunStatus.running,
+          actualStartTime: now,
+          theoreticalEndTime: now.add(Duration(seconds: totalSeconds)),
+          totalDurationSeconds: totalSeconds,
+          updatedAt: now,
+        );
+        await groupRepo.save(updated);
+        vm.updateGroup(updated);
+      } else {
+        ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
+        return;
+      }
+    }
+    if (vm.currentGroup?.status != TaskRunStatus.running) {
       if (_autoStartAttempts < 10) {
         _autoStartAttempts += 1;
         await Future.delayed(const Duration(milliseconds: 500));

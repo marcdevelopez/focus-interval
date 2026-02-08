@@ -405,7 +405,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
         status: TaskRunStatus.running,
         actualStartTime: now,
         theoreticalEndTime: now.add(Duration(seconds: totalSeconds)),
-        scheduledByDeviceId: deviceId,
+        scheduledByDeviceId: latest.scheduledByDeviceId ?? deviceId,
         updatedAt: now,
       );
       await groupRepo.save(updated);

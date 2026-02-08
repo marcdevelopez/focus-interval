@@ -506,7 +506,12 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _completedTaskRanges.clear();
     _timelinePhaseStartedAt = null;
     _currentTaskStartedAt = DateTime.now();
-    unawaited(_markGroupRunningIfNeeded(startOverride: DateTime.now()));
+    final group = _currentGroup;
+    final override =
+        group != null && group.status == TaskRunStatus.running
+            ? group.actualStartTime
+            : DateTime.now();
+    unawaited(_markGroupRunningIfNeeded(startOverride: override));
     _machine.startTask();
     _markPhaseStartedFromState(_machine.state);
     _publishCurrentSession();
