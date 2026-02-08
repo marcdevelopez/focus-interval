@@ -4670,3 +4670,18 @@ Mode A global long-break sequencing not fully validated (time constraints).
 ---
 
 # 🚀 End of file
+
+# 🔹 Block 301 — GitHub sign-in conflict code (08/02/2026)
+
+### ✔ Work completed:
+
+- Accepted both `account-exists-with-different-credential` and `account-exists-with-different-credentials` codes for GitHub linking on desktop.
+- Restored the provider-linking flow when Firebase returns the pluralized Windows error code.
+
+### ⚠️ Issues found:
+
+- Windows Firebase Auth returns the pluralized error code, which bypassed the linking flow.
+
+### 🎯 Next steps:
+
+- Validate GitHub sign-in on Windows when the email already exists for another provider.

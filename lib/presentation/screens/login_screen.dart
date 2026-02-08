@@ -472,7 +472,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<bool> _tryResolveProviderConflict(
     FirebaseAuthException exception,
   ) async {
-    if (exception.code != 'account-exists-with-different-credential') {
+    const conflictCodes = {
+      'account-exists-with-different-credential',
+      'account-exists-with-different-credentials',
+    };
+    if (!conflictCodes.contains(exception.code)) {
       return false;
     }
     final email = exception.email;
