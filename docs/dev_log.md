@@ -4708,6 +4708,18 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Scheduled Pre-Run sometimes waits for a manual Start instead of auto-starting at the scheduled time when multiple devices are open.
 
+# 🔹 Block 305 — Pre-Run auto-start fix (08/02/2026)
+
+### ✔ Work completed:
+
+- Removed scheduledByDeviceId gating so any open device can auto-start a scheduled group.
+- Increased scheduled auto-start retry window to reduce timing races.
+- Updated specs to mark scheduledByDeviceId as metadata only for auto-start/ownership.
+
+### 🎯 Next steps:
+
+- Validate scheduled auto-start across Web + Android + iOS with multiple devices open.
+
 ---
 
 # 🚀 End of file

@@ -198,8 +198,8 @@ Notes:
 - Conceptual pre-run state: scheduled -> preparing -> running (preparing is UI-only and does not change the model).
 - A scheduled group must transition to running at scheduledStartTime.
 - When a group transitions to running (scheduled auto-start or start now),
-  set `scheduledByDeviceId` to the initiating device. Other devices must not
-  auto-start while `activeSession` is null unless `scheduledByDeviceId` matches.
+  set `scheduledByDeviceId` to the initiating device.
+  `scheduledByDeviceId` is metadata only and must not block auto-start or ownership.
 - Editing a PomodoroTask after group creation does not affect a running or scheduled group.
 - TaskRunGroup names:
   - New groups must have a name. If the user leaves the name empty, auto-generate one at confirm time using local date/time in English (e.g., "Jan 1 00:00", 24h).
@@ -1396,8 +1396,8 @@ The MM:SS timer must not shift horizontally:
 - After a scheduled auto-start, the first device that starts the session becomes the owner; other devices open in mirror mode until ownership is approved.
 - When ownership changes, mirror devices must discard any local projection and re-anchor exclusively to the activeSession timestamps so pause/resume stays globally consistent.
 - Initial ownership is deterministic: the device that initiates the run
-  (Start now or auto-start) must be the first owner. Other devices must not
-  auto-start while activeSession is null unless `scheduledByDeviceId` matches.
+  (Start now or auto-start) must be the first owner. `scheduledByDeviceId`
+  must not block auto-start or ownership decisions.
 - Ownership transfer is explicit:
   - Mirror devices send a request (ownershipRequest) and remain in mirror while pending.
   - The current owner must explicitly accept or reject.
