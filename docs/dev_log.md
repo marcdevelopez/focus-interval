@@ -4743,6 +4743,12 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Re-test scheduled auto-start across Web + Android + iOS; verify only one owner and no Start prompt.
 
+# 🔹 Block 308 — Owner education snackbar scope (08/02/2026)
+
+### ✔ Work completed:
+
+- Guarded the owner-education snackbar so it only appears on the true owner device.
+
 ---
 
 # 🚀 End of file

@@ -851,6 +851,12 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     try {
       final appMode = ref.read(appModeProvider);
       if (appMode != AppMode.account) return;
+      final session = ref.read(activePomodoroSessionProvider);
+      final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
+      final isOwner = session != null &&
+          session.ownerDeviceId == deviceId &&
+          session.status.isActiveExecution;
+      if (!isOwner) return;
       final prefs = await SharedPreferences.getInstance();
       final seen = prefs.getBool(_ownerEducationKey) ?? false;
       if (seen) return;
