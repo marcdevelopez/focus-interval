@@ -222,6 +222,7 @@ class PomodoroSession {
   int totalTasks;
 
   String ownerDeviceId; // device that writes in real time
+  String? ownerDevicePlatform; // presentation-only label (e.g., "Web", "macOS")
 
   PomodoroStatus status; // pomodoroRunning, shortBreakRunning, longBreakRunning, paused, finished, idle
   PomodoroPhase? phase;
@@ -246,6 +247,24 @@ class OwnershipRequest {
   String? respondedByDeviceId;
 }
 ```
+
+## **5.4. UserProfile model (Account Mode only)**
+
+```dart
+class UserProfile {
+  String uid;
+  String? displayName; // optional user-provided name
+  String? avatarUrl;   // Firebase Storage download URL (optional)
+  DateTime updatedAt;
+}
+```
+
+Notes:
+
+- displayName is optional; empty values are treated as unset.
+- UserProfile is presentation-only and must never drive ownership, permissions, or state transitions.
+- Full owner label is derived as "{displayName or Account} (Platform)" where Platform is the owner device platform label.
+- Local Mode has no profile document; the UI hides profile controls when not logged in.
 
 ---
 
@@ -392,10 +411,22 @@ Platform notes:
 
 ## **8.1. Firestore (primary)**
 
+- users/{uid} (profile doc)
+  - displayName (optional)
+  - avatarUrl (optional)
+  - updatedAt
 - users/{uid}/tasks/{taskId}
 - users/{uid}/taskRunGroups/{groupId}
 - users/{uid}/pomodoroPresets/{presetId}
 - Linux: Firebase Auth/Firestore sync is unavailable; tasks and TaskRunGroups are stored locally (no cloud sync).
+
+## **8.1.1. Firebase Storage (account avatars)**
+
+- Path: user_avatars/{uid}/avatar.jpg (single object; overwrite on update).
+- Client must resize/compress to <= 200 KB before upload (target max 512px).
+- Store the download URL in users/{uid}.avatarUrl.
+- Removing the avatar clears avatarUrl and deletes the storage object (best-effort).
+- Account Mode only; hide avatar controls in Local Mode.
 
 ## **8.2. Local Mode (offline / no auth)**
 
@@ -425,6 +456,7 @@ users/{uid}/activeSession
 
 - Single document per user with the active session.
 - Must include groupId, currentTaskId, currentTaskIndex, and totalTasks.
+- ownerDevicePlatform is optional display metadata (presentation-only); it must not affect ownership logic.
 - Only the owner device writes authoritative execution fields; others subscribe in real time and
   render progress by calculating remaining time from phaseStartedAt + phaseDurationSeconds.
 - Mirror devices may write a non-authoritative ownershipRequest field to request a transfer.
@@ -507,6 +539,12 @@ Email verification (email/password)
 
 - Require email verification to confirm ownership of the address before enabling sync.
 - Unverified accounts must not block real owners from registering later.
+
+Account profile metadata
+
+- Account display name and avatar are stored in users/{uid} (Firestore) and Firebase Storage.
+- Display name is optional and managed in Settings (Account Mode only).
+- Provider displayName may be used as an initial suggestion, but it is not authoritative.
 
 ---
 
@@ -1030,6 +1068,7 @@ Run Mode is group-only: TimerScreen loads a TaskRunGroup by groupId; there is no
 
 - The planning screen must display a **full preview** of the resulting group:
   - **Group start and end time** near the top (based on the selected option).
+  - **Total duration (work + breaks)** near the top (same timing logic as execution).
   - A **task list preview** using the **same card visuals** as Task List
     when tasks are selected.
   - Each task card shows:
@@ -1101,6 +1140,8 @@ Redistribution rules (shared)
     - Recalculate theoreticalEndTime = actualStartTime + totalDurationSeconds
     - Auto-open the execution screen and auto-start the group
     - Ownership is claimed by the first active device that starts the session (if multiple devices are open)
+    - Auto-start requires **no user action**; if multiple devices are open, exactly one
+      device must claim ownership and others enter mirror mode automatically.
   - If the app was inactive at scheduledStartTime:
     - On next launch/resume of any signed-in device, if scheduledStartTime <= now and there is no active conflict,
       auto-start immediately using actualStartTime = now (scheduledStartTime remains unchanged)
@@ -1144,6 +1185,8 @@ Interactions
 - Cancel schedule is available.
 - Pause is visible but disabled (group has not started yet).
 - Start now is not available in this mode.
+- Pre-Run has no authoritative owner; all signed-in devices are equivalent and may cancel.
+- When the countdown reaches zero, the group must auto-start without user action.
 
 Transition at scheduled start
 
@@ -1372,7 +1415,8 @@ The MM:SS timer must not shift horizontally:
 - The indicator itself is tappable and opens a small sheet/popover explaining:
   - Whether this device is Owner or Mirror.
   - Which actions are allowed or blocked.
-  - Which device currently owns the session (platform label is acceptable).
+  - Which device currently owns the session, using the account display name + platform label when available
+    (e.g., "Marcos (Web)"); if no display name exists, fall back to "Account (Platform)" or platform-only.
 - When the device is in mirror mode, provide an explicit “Request ownership” action
   inside the sheet. The current owner must accept or reject.
 - On compact layouts, the control label may be shortened (e.g., “Request”) to avoid overflow.
@@ -1544,6 +1588,14 @@ Content
 - Language selector with system auto-detect by default (user can override).
 - Theme selector lives here; dark and light modes are both available in MVP.
 - All app-wide configuration options are centralized in this menu.
+- Account profile (Account Mode only):
+  - Display name (optional). Empty values clear the name.
+  - Avatar image (optional): pick, crop if needed, then compress to <= 200 KB
+    (target max 512px) before upload.
+  - Upload to Firebase Storage at user_avatars/{uid}/avatar.jpg and store the
+    download URL in users/{uid}.avatarUrl.
+  - Provide a Remove avatar action (clears avatarUrl; deletes storage object best-effort).
+  - Hide this section in Local Mode.
 - **Global sound configuration** (Pomodoro start, Break start, Task finish):
   - Settings store the selected global sounds but do **not** apply them unless the
     **Apply globally** switch is turned **ON**.
