@@ -1396,8 +1396,11 @@ The MM:SS timer must not shift horizontally:
 - After a scheduled auto-start, the first device that starts the session becomes the owner; other devices open in mirror mode until ownership is approved.
 - When ownership changes, mirror devices must discard any local projection and re-anchor exclusively to the activeSession timestamps so pause/resume stays globally consistent.
 - Initial ownership is deterministic: the device that initiates the run
-  (Start now or auto-start) must be the first owner. `scheduledByDeviceId`
-  must not block auto-start or ownership decisions.
+  (Start now or auto-start) must be the first owner.
+- For scheduled runs, `scheduledByDeviceId` is metadata only and must not block
+  auto-start; any device can claim at the scheduled time.
+- For Start now, only the initiating device (`scheduledByDeviceId`) should claim
+  the initial session; other devices wait for the activeSession.
 - Ownership transfer is explicit:
   - Mirror devices send a request (ownershipRequest) and remain in mirror while pending.
   - The current owner must explicitly accept or reject.
