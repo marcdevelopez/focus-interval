@@ -11,6 +11,7 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
   final FirestoreService firestoreService;
   final AuthService authService;
   final String deviceId;
+  static const Duration _ownerStaleThreshold = Duration(seconds: 90);
 
   FirestorePomodoroSessionRepository({
     required this.firestoreService,
@@ -83,6 +84,7 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
   Future<void> requestOwnership({required String requesterDeviceId}) async {
     final uid = await _uidOrThrow();
     final docRef = _doc(uid);
+    final now = DateTime.now();
     await _db.runTransaction((tx) async {
       final snap = await tx.get(docRef);
       if (!snap.exists) return;
@@ -90,6 +92,26 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
       if (data == null) return;
       final ownerDeviceId = data['ownerDeviceId'] as String?;
       if (ownerDeviceId == null || ownerDeviceId == requesterDeviceId) return;
+      final statusRaw = data['status'] as String?;
+      final status = PomodoroStatus.values.firstWhere(
+        (e) => e.name == statusRaw,
+        orElse: () => PomodoroStatus.idle,
+      );
+      if (!status.isActiveExecution) return;
+      final updatedAt = (data['lastUpdatedAt'] as Timestamp?)?.toDate();
+      if (updatedAt != null &&
+          now.difference(updatedAt) >= _ownerStaleThreshold) {
+        tx.set(
+          docRef,
+          {
+            'ownerDeviceId': requesterDeviceId,
+            'ownershipRequest': FieldValue.delete(),
+            'lastUpdatedAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true),
+        );
+        return;
+      }
       final rawRequest = data['ownershipRequest'];
       final requestMap = rawRequest is Map<String, dynamic>
           ? rawRequest

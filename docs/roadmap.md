@@ -144,6 +144,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 18 — Completion modal + Groups Hub navigation must work on owner and mirror devices (validation pending).
 - Phase 18 — Run Mode ownership visibility + take ownership UX (new requirement).
 - Phase 18 — Ownership transfer requires owner approval + rejection state (new requirement).
+- Phase 18 — Mirror auto-takeover when owner is inactive (stale heartbeat) (new requirement).
 - Phase 18 — Initial ownership assignment must be deterministic when multiple devices are open (implemented; validation pending).
 - Phase 18 — Group progress bar + task color accents still pending (new requirement).
 - Phase 19 — Groups Hub: group name display + rename action (new requirement).

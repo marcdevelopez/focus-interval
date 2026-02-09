@@ -4758,12 +4758,21 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 ---
 
-# 🔹 Block 309 — Start-now owner determinism (09/02/2026)
+# 🔹 Block 310 — Start-now owner determinism (09/02/2026)
 
 ### ✔ Work completed:
 
 - Clarified deterministic ownership rules for Start now vs scheduled auto-start.
 - Ensured only the initiating device claims the initial activeSession for Start now groups.
+
+---
+
+# 🔹 Block 311 — Auto-takeover on inactive owner (09/02/2026)
+
+### ✔ Work completed:
+
+- Documented ownership auto-takeover rules based on stale heartbeats.
+- Added paused-session heartbeats and auto-claim logic when the owner is inactive.
 
 ---
 
