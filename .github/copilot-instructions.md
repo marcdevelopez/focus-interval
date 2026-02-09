@@ -147,3 +147,12 @@ lib/
 - Confirm Firebase project access.
 - Confirm bundle IDs are consistent.
 - Confirm platform stubs exist where features are unsupported.
+
+## Release Safety and Data Evolution
+
+For any change touching Firestore data, queries, rules, auth, sync, or migrations:
+
+- Follow `docs/release_safety.md`.
+- Keep production backward compatible (additive changes first).
+- Use versioned documents and staged migrations (dual-read/dual-write + backfill).
+- Validate rules and schema changes in emulator or STAGING before PROD.

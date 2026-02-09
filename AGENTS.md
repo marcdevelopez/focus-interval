@@ -293,7 +293,22 @@ If unsure → **stop and verify**
 
 ---
 
-## 1️⃣2️⃣ Guiding principle
+## 1️⃣2️⃣ Production safety & data evolution
+
+Production must remain backward compatible at all times.
+
+Rules:
+
+- All changes touching Firestore data, queries, rules, auth, or sync must follow `docs/release_safety.md`.
+- Never remove, rename, or change the type of existing fields until old clients are effectively gone.
+- Migrations must be additive, versioned (`dataVersion`), and staged (dual-read/dual-write + backfill).
+- Rules changes must remain compatible with old and new clients; validate in emulator and STAGING.
+- Release sequencing must avoid coupling breaking client + backend changes in one release.
+- Use staged rollouts and keep a rollback plan.
+
+---
+
+## 1️⃣3️⃣ Guiding principle
 
 > **Focus Interval must remain predictable.**
 >
