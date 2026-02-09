@@ -32,6 +32,11 @@ Override host/ports if needed:
 
 If you use a physical device, set `FIREBASE_EMULATOR_HOST` to your machine's LAN IP.
 
+Emulator UI:
+- URL: `http://127.0.0.1:4000/`
+- Firestore tab: `http://127.0.0.1:4000/firestore`
+- Auth tab: `http://127.0.0.1:4000/auth`
+
 ## STAGING (separate Firebase project)
 
 Create a dedicated Firebase project for staging and register apps for every platform:
@@ -82,6 +87,7 @@ Example:
 ## Summary: commands
 
 DEV (emulator):
+- Start emulators: `firebase emulators:start --only firestore,auth`
 - `flutter run -d <device> --dart-define=APP_ENV=dev`
 
 STAGING:
@@ -89,3 +95,6 @@ STAGING:
 
 PROD (release):
 - `flutter build <platform> --release --dart-define=APP_ENV=prod`
+
+PROD (release + GitHub OAuth):
+- `flutter build <platform> --release --dart-define=APP_ENV=prod --dart-define=GITHUB_OAUTH_CLIENT_ID="<your_client_id>"`
