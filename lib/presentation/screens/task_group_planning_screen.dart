@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/models/pomodoro_task.dart';
+import '../../data/models/schema_version.dart';
 import '../../data/models/task_run_group.dart';
 import '../../domain/task_group_planner.dart';
 import '../../widgets/task_card.dart';
@@ -765,6 +766,7 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
         PomodoroTask(
           id: items[index].sourceTaskId,
           name: items[index].name,
+          dataVersion: kCurrentDataVersion,
           pomodoroMinutes: items[index].pomodoroMinutes,
           shortBreakMinutes: items[index].shortBreakMinutes,
           longBreakMinutes: items[index].longBreakMinutes,

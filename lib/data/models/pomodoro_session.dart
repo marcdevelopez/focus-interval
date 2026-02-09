@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/pomodoro_machine.dart';
+import 'schema_version.dart';
 
 class PomodoroSession {
   final String taskId;
@@ -8,6 +9,7 @@ class PomodoroSession {
   final String? currentTaskId;
   final int? currentTaskIndex;
   final int? totalTasks;
+  final int dataVersion;
   final String ownerDeviceId;
   final PomodoroStatus status;
   final PomodoroPhase? phase;
@@ -27,6 +29,7 @@ class PomodoroSession {
     this.currentTaskId,
     this.currentTaskIndex,
     this.totalTasks,
+    required this.dataVersion,
     required this.ownerDeviceId,
     required this.status,
     required this.phase,
@@ -47,6 +50,7 @@ class PomodoroSession {
     'currentTaskId': currentTaskId,
     'currentTaskIndex': currentTaskIndex,
     'totalTasks': totalTasks,
+    'dataVersion': dataVersion,
     'ownerDeviceId': ownerDeviceId,
     'status': status.name,
     'phase': phase?.name,
@@ -64,12 +68,14 @@ class PomodoroSession {
   factory PomodoroSession.fromMap(Map<String, dynamic> map) {
     final statusRaw = map['status'] as String?;
     final phaseRaw = map['phase'] as String?;
+    final dataVersion = readDataVersion(map);
     return PomodoroSession(
       taskId: map['taskId'] as String? ?? '',
       groupId: map['groupId'] as String?,
       currentTaskId: map['currentTaskId'] as String?,
       currentTaskIndex: _readInt(map, 'currentTaskIndex'),
       totalTasks: _readInt(map, 'totalTasks'),
+      dataVersion: dataVersion,
       ownerDeviceId: map['ownerDeviceId'] as String? ?? '',
       status: PomodoroStatus.values.firstWhere(
         (e) => e.name == statusRaw,

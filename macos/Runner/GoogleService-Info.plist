@@ -3,9 +3,11 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>32274647226-2496tlb97lrbt0qim7qu7s0off27ttnp.apps.googleusercontent.com</string>
+	<string>32274647226-2lv2osos7trc77jvefh7tu0fgqkg1bf0.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.32274647226-2496tlb97lrbt0qim7qu7s0off27ttnp</string>
+	<string>com.googleusercontent.apps.32274647226-2lv2osos7trc77jvefh7tu0fgqkg1bf0</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>32274647226-mcohp0kv0ujjobd0n721hkh2bg3ro8qe.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
 	<string>AIzaSyAqZcDExyzY-ef3XGQ1Vn7MvGUj8P5IB5Y</string>
 	<key>GCM_SENDER_ID</key>
@@ -13,7 +15,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.marcdevelopez.focusinterval</string>
+	<string>com.marcdevelopez.focusinterval.macos</string>
 	<key>PROJECT_ID</key>
 	<string>focus-interval</string>
 	<key>STORAGE_BUCKET</key>
@@ -29,6 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:32274647226:ios:6feb760358bfba46159a83</string>
+	<string>1:32274647226:ios:c42434ec57d5f427159a83</string>
 </dict>
 </plist>

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/pomodoro_task.dart';
+import '../../data/models/schema_version.dart';
 import '../../data/models/pomodoro_session.dart';
 import '../../data/models/task_run_group.dart';
 import '../../data/models/selected_sound.dart';
@@ -561,6 +562,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       currentTaskId: taskId,
       currentTaskIndex: _currentGroup != null ? _currentTaskIndex : 0,
       totalTasks: totalTasks,
+      dataVersion: kCurrentDataVersion,
       ownerDeviceId: _deviceInfo.deviceId,
       status: PomodoroStatus.pomodoroRunning,
       phase: PomodoroPhase.pomodoro,
@@ -815,6 +817,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       currentTaskId: taskId,
       currentTaskIndex: _currentGroup != null ? _currentTaskIndex : 0,
       totalTasks: _currentGroup?.tasks.length ?? 1,
+      dataVersion: kCurrentDataVersion,
       ownerDeviceId: _deviceInfo.deviceId,
       status: current.status,
       phase: current.phase,
@@ -1413,6 +1416,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       currentTaskId: taskId,
       currentTaskIndex: _currentGroup != null ? _currentTaskIndex : 0,
       totalTasks: _currentGroup?.tasks.length ?? 1,
+      dataVersion: kCurrentDataVersion,
       ownerDeviceId: _deviceInfo.deviceId,
       status: current.status,
       phase: current.phase,

@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'app/app_config.dart';
 import 'app/app.dart';
 import 'data/services/device_info_service.dart';
 import 'data/services/notification_service.dart';
@@ -13,7 +15,6 @@ import 'data/services/app_mode_service.dart';
 import 'data/services/android_pre_alert_alarm.dart';
 import 'data/services/firebase_auth_service.dart';
 import 'data/services/firestore_service.dart';
-import 'firebase_options.dart';
 import 'presentation/providers.dart';
 
 Future<void> main() async {
@@ -107,7 +108,8 @@ class _BootstrapResult {
 }
 
 Future<_BootstrapResult> _bootstrap() async {
-  final firebaseReady = await _initFirebaseSafe();
+  final appConfig = AppConfig.fromEnvironment();
+  final firebaseReady = await _initFirebaseSafe(appConfig);
   final deviceInfo = await _loadDeviceInfoSafe();
   final notifications = await _initNotificationsSafe();
   await AndroidPreAlertAlarm.initialize();
@@ -121,21 +123,35 @@ Future<_BootstrapResult> _bootstrap() async {
   );
 }
 
-Future<bool> _initFirebaseSafe() async {
+Future<bool> _initFirebaseSafe(AppConfig config) async {
   if (_isLinux) {
     // Linux desktop doesn't register Firebase plugins here yet; skip init to avoid channel errors.
     return false;
   }
   try {
     await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
+      options: config.firebaseOptions,
     ).timeout(const Duration(seconds: 8));
+    if (config.useFirebaseEmulator) {
+      await _connectToEmulators(config);
+    }
     await _configureWebAuthPersistence();
     return true;
   } catch (e) {
     debugPrint('Firebase init failed or timed out: $e');
     return false;
   }
+}
+
+Future<void> _connectToEmulators(AppConfig config) async {
+  FirebaseAuth.instance.useAuthEmulator(
+    config.emulatorHost,
+    config.authEmulatorPort,
+  );
+  FirebaseFirestore.instance.useFirestoreEmulator(
+    config.emulatorHost,
+    config.firestoreEmulatorPort,
+  );
 }
 
 Future<void> _configureWebAuthPersistence() async {

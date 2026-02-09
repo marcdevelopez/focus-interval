@@ -108,11 +108,12 @@ lib/
 class PomodoroTask {
   String id;
   String name;
+  int dataVersion; // schema version (integer)
   String? colorId; // palette id; auto-assigned when missing
 
-  int pomodoroDuration; // minutes
-  int shortBreakDuration;
-  int longBreakDuration;
+  int pomodoroMinutes; // minutes (legacy key: pomodoroDuration)
+  int shortBreakMinutes; // legacy key: shortBreakDuration
+  int longBreakMinutes; // legacy key: longBreakDuration
 
   int totalPomodoros;
   int longBreakInterval; // how many pomodoros between long breaks
@@ -127,10 +128,11 @@ class PomodoroTask {
   PomodoroTask({
     required this.id,
     required this.name,
+    required this.dataVersion,
     this.colorId,
-    required this.pomodoroDuration,
-    required this.shortBreakDuration,
-    required this.longBreakDuration,
+    required this.pomodoroMinutes,
+    required this.shortBreakMinutes,
+    required this.longBreakMinutes,
     required this.totalPomodoros,
     required this.longBreakInterval,
     required this.startSound,
@@ -150,6 +152,7 @@ A TaskRunGroup is an immutable snapshot generated when the user confirms a set o
 class TaskRunGroup {
   String id;
   String ownerUid;
+  int dataVersion; // schema version (integer)
   String name; // user-visible group name (max 40 chars)
   String integrityMode; // shared | individual (Mode A / Mode B)
 
@@ -179,9 +182,9 @@ class TaskRunItem {
   String? colorId; // palette id snapshot (for stable visuals in the group)
   String? presetId; // optional reference to the preset used for structure
 
-  int pomodoroDuration;
-  int shortBreakDuration;
-  int longBreakDuration;
+  int pomodoroMinutes;
+  int shortBreakMinutes;
+  int longBreakMinutes;
   int totalPomodoros;
   int longBreakInterval;
 
@@ -220,6 +223,7 @@ class PomodoroSession {
   String currentTaskId;  // TaskRunItem.sourceTaskId
   int currentTaskIndex;
   int totalTasks;
+  int dataVersion; // schema version (integer)
 
   String ownerDeviceId; // device that writes in real time
   String? ownerDevicePlatform; // presentation-only label (e.g., "Web", "macOS")
@@ -265,6 +269,13 @@ Notes:
 - UserProfile is presentation-only and must never drive ownership, permissions, or state transitions.
 - Full owner label is derived as "{displayName or Account} (Platform)" where Platform is the owner device platform label.
 - Local Mode has no profile document; the UI hides profile controls when not logged in.
+
+## **5.5. Schema versioning (dataVersion)**
+
+- All persisted documents must include an integer `dataVersion`.
+- Applicable models: PomodoroTask, TaskRunGroup, PomodoroSession, PomodoroPreset.
+- Clients must tolerate missing `dataVersion` and default to version 1.
+- Migrations are additive and use dual-read/dual-write + backfill (see `docs/release_safety.md`).
 
 ---
 
@@ -638,7 +649,7 @@ Item layout (top → bottom):
    - **When not selected**:
      - Label: **Total time**
      - One chip: total task duration
-     - Formula: `total = (pomodoros × pomodoroDuration) + breaks`
+    - Formula: `total = (pomodoros × pomodoroMinutes) + breaks`
        where breaks include short/long breaks between pomodoros and **exclude** the final break.
 
 4. **Sounds row**
@@ -843,7 +854,7 @@ Definitions:
 
 - **Pomodoro structural configuration**: pomodoro duration, short break duration, long break duration, long break interval.
 - **Task weight**: totalPomodoros (authoritative integer) and derived percentage of the group total.
-- **Work time**: `totalPomodoros * pomodoroDuration` (breaks are excluded).
+- **Work time**: `totalPomodoros * pomodoroMinutes` (breaks are excluded).
 
 Execution modes for TaskRunGroups:
 

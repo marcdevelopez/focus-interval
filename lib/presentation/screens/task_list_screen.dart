@@ -13,6 +13,7 @@ import '../../data/models/pomodoro_preset.dart';
 import '../../data/models/pomodoro_task.dart';
 import '../../data/models/selected_sound.dart';
 import '../../data/models/task_run_group.dart';
+import '../../data/models/schema_version.dart';
 import '../../data/repositories/task_run_group_repository.dart';
 import '../../data/services/firebase_auth_service.dart';
 import '../../data/services/app_mode_service.dart';
@@ -1303,6 +1304,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final group = TaskRunGroup(
       id: const Uuid().v4(),
       ownerUid: auth.currentUser?.uid ?? 'local',
+      dataVersion: kCurrentDataVersion,
       integrityMode: integrityMode,
       tasks: items,
       createdAt: planCapturedAt,

@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../data/models/pomodoro_session.dart';
 import '../../data/models/task_run_group.dart';
+import '../../data/models/schema_version.dart';
 import '../../data/repositories/task_run_group_repository.dart';
 import '../../data/services/task_run_notice_service.dart';
 import '../../domain/pomodoro_machine.dart';
@@ -462,6 +463,7 @@ class GroupsHubScreen extends ConsumerWidget {
     final newGroup = TaskRunGroup(
       id: const Uuid().v4(),
       ownerUid: ownerUid,
+      dataVersion: kCurrentDataVersion,
       integrityMode: source.integrityMode,
       tasks: items,
       createdAt: planCapturedAt,
