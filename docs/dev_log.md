@@ -4798,6 +4798,20 @@ Mode A global long-break sequencing not fully validated (time constraints).
 ### ✔ Work completed:
 
 - Ensured mirror takeover checks run for paused sessions by keeping the mirror timer active during any active execution.
+# 🔹 Block 311 — macOS mirror repaint guard (09/02/2026)
+
+### ✔ Work completed:
+
+- Added a macOS-only inactive repaint timer to keep mirror-mode timers updating when the app window lacks focus.
+- Limited the repaint guard to active execution in mirror mode (no logic changes).
+
+---
+
+# 🔹 Block 312 — macOS mirror repaint analyzer fix (09/02/2026)
+
+### ✔ Work completed:
+
+- Fixed a nullable state inference issue in the inactive repaint guard.
 
 ---
 
