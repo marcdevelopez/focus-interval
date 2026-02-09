@@ -4884,4 +4884,10 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Updated task-related tests to include `dataVersion` after schema versioning changes.
 
+# 🔹 Block 323 — Groups Hub empty-state CTA (09/02/2026)
+
+### ✔ Work completed:
+
+- Ensured the "Go to Task List" CTA remains visible in Groups Hub even when no groups exist.
+
 # 🚀 End of file
