@@ -77,6 +77,12 @@ Recommended approach for staging auth:
 Run with staging:
 - `flutter run -d <device> --dart-define=APP_ENV=staging`
 
+## Linux desktop note
+
+- Linux desktop runs in Local Mode only (no Firebase Auth/Firestore).
+- Rationale: FlutterFire plugins do not officially support Linux desktop.
+- Use Web (Chrome) on Linux if you need Account Mode.
+
 ## PROD (release only)
 
 Release builds must use production options and cannot run with `APP_ENV=staging`.
