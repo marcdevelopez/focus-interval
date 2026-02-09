@@ -430,6 +430,8 @@ Platform notes:
 - users/{uid}/taskRunGroups/{groupId}
 - users/{uid}/pomodoroPresets/{presetId}
 - Linux: Firebase Auth/Firestore sync is unavailable; tasks and TaskRunGroups are stored locally (no cloud sync).
+  - Rationale: FlutterFire plugins (`firebase_auth`, `cloud_firestore`) do not officially support Linux desktop,
+    so Account Mode is disabled to avoid unstable behavior. Use Web (Chrome) on Linux for Account Mode.
 
 ## **8.1.1. Firebase Storage (account avatars)**
 
