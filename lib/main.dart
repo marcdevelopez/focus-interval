@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/app.dart';
@@ -129,10 +130,20 @@ Future<bool> _initFirebaseSafe() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     ).timeout(const Duration(seconds: 8));
+    await _configureWebAuthPersistence();
     return true;
   } catch (e) {
     debugPrint('Firebase init failed or timed out: $e');
     return false;
+  }
+}
+
+Future<void> _configureWebAuthPersistence() async {
+  if (!kIsWeb) return;
+  try {
+    await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
+  } catch (e) {
+    debugPrint('Web auth persistence init failed: $e');
   }
 }
 

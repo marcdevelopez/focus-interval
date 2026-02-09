@@ -4818,4 +4818,13 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 ---
 
+# 🔹 Block 317 — Web auth persistence (09/02/2026)
+
+### ✔ Work completed:
+
+- Enforced Firebase Auth local persistence on web after Firebase init.
+- Documented the need for a stable Chrome user-data directory in web dev runs.
+
+---
+
 # 🚀 End of file

@@ -541,6 +541,9 @@ Desktop GitHub OAuth (device flow)
 Persistence
 
 - Account sessions remain active on all devices with Firebase Auth support.
+- Web uses Firebase Auth local persistence (LOCAL) to restore sessions across reloads.
+- Development note: when running via `flutter run -d chrome`, a stable Chrome
+  user-data directory is required to keep sessions between runs.
 
 Email verification (email/password)
 

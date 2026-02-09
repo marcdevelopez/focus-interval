@@ -149,6 +149,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 18 — Group progress bar + task color accents still pending (new requirement).
 - Phase 19 — Groups Hub: group name display + rename action (new requirement).
 - Phase 19 — Groups Hub: canceled groups visible + re-plan action (new requirement).
+- Phase 6 — Web auth session persistence (Chrome dev profile + Firebase Auth LOCAL persistence) (new requirement).
 - Outstanding items from specs sections 10.4.2 / 10.4.6 / 12 / 10.5 are tracked in Phases 18, 19, and 25 (not reopened).
 - Rule: if any previously completed phase is missing required behavior, list it here and resolve it before continuing in normal phase order.
 
