@@ -56,6 +56,8 @@ Flutter · Firebase Auth · Firestore · Riverpod · GoRouter · just_audio · f
 - `APP_ENV=prod` is allowed only in release builds.
 
 See `docs/environments.md` for setup steps and platform notes.
+Release + GitHub OAuth:
+- `flutter build <platform> --release --dart-define=APP_ENV=prod --dart-define=GITHUB_OAUTH_CLIENT_ID="<your_client_id>"`
 
 ## 📦 Android builds
 

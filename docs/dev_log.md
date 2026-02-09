@@ -4884,7 +4884,25 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Updated task-related tests to include `dataVersion` after schema versioning changes.
 
-# 🔹 Block 323 — Groups Hub empty-state CTA (09/02/2026)
+# 🔹 Block 323 — Emulator usage docs (09/02/2026)
+
+### ✔ Work completed:
+
+- Documented emulator start commands and the Emulator UI URL in `docs/environments.md`.
+
+# 🔹 Block 324 — Release GitHub OAuth command (09/02/2026)
+
+### ✔ Work completed:
+
+- Added a release build command with `GITHUB_OAUTH_CLIENT_ID` to `docs/environments.md`.
+
+# 🔹 Block 325 — README release OAuth command (09/02/2026)
+
+### ✔ Work completed:
+
+- Added the release + GitHub OAuth command to `README.md` for quick reference.
+  
+  # 🔹 Block 326 — Groups Hub empty-state CTA (09/02/2026)
 
 ### ✔ Work completed:
 
