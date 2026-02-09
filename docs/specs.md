@@ -1231,6 +1231,13 @@ Last 10 seconds
   - **Mode B (Keep individual configurations)**: each task’s own break structure
     is preserved; include the final break when another task follows.
 - Each segment uses the task’s palette color as an **accent** (outline or subtle fill).
+- Each segment is rendered as a **chip** with the task name label.
+- The label truncates to the available width (ellipsis or hard-cut); no overflow or
+  overlap is allowed. If the chip is too narrow, hide the label.
+- Not started: gray outline (neutral).
+- Active task: outline uses the task color and runs a subtle **color-only** pulse
+  synced to the Pre-Run 1Hz rhythm (no stroke-width changes).
+- Completed task: outline uses the task color, no animation.
 - The fill represents **effective executed time** only:
   - Progress **does not advance while paused**.
   - For running sessions, derive elapsed time from `phaseStartedAt` + `phaseDurationSeconds`.
@@ -1330,6 +1337,10 @@ Location: below the circle and above Pause/Cancel buttons.
 - No placeholders, no empty slots.
 - Each item shows its time range (HH:mm–HH:mm).
 - Task name is shown with the same color-accent chip used in the Task List.
+- Current task item uses the task color outline.
+- Previous/next items use a neutral gray outline.
+- Completed task item is slightly narrower (≈92–96% width), centered, and must
+  keep full legibility without shifting the overall layout.
 - Completed tasks keep their actual time range; current/upcoming tasks are projected.
 
 Cases
