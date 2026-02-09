@@ -460,10 +460,17 @@ users/{uid}/activeSession
 - Only the owner device writes authoritative execution fields; others subscribe in real time and
   render progress by calculating remaining time from phaseStartedAt + phaseDurationSeconds.
 - Mirror devices may write a non-authoritative ownershipRequest field to request a transfer.
-  The owner must explicitly accept or reject; no heartbeat/presence checks are required.
+  - If the owner is active (lastUpdatedAt within the stale threshold), the owner must
+    explicitly accept or reject.
+  - If the owner is inactive (lastUpdatedAt older than the stale threshold), the first
+    requester auto-claims ownership atomically and clears ownershipRequest.
+- The owner device must publish heartbeats (lastUpdatedAt) at least every 30s while
+  a session is active (running or paused) to signal liveness.
 - activeSession represents only an in-progress execution and must be cleared when the group reaches a terminal state (completed or canceled).
 - If a device observes an activeSession referencing a group that is not running (or missing), it must treat the session as stale and clear it.
 - If a running group has passed its theoreticalEndTime and the activeSession has not updated within the stale threshold, any device may clear the session and complete the group to prevent zombie runs.
+- Stale threshold definition (activeSession + ownership): 90 seconds without
+  lastUpdatedAt updates (≈3 heartbeats).
 - On app launch or after login, if an active session is running (pomodoroRunning/shortBreakRunning/longBreakRunning), auto-open the execution screen for that group.
 - Auto-open must apply on the owner device and on mirror devices (mirror mode with ownership requests).
 - If auto-open cannot occur (missing group data, blocked navigation, or explicit suppression), the user must see a clear entry point to the running group from the initial screen and from Groups Hub.
@@ -1408,7 +1415,9 @@ The MM:SS timer must not shift horizontally:
   - Rejected requests show a brief rejection state on the requester and a small
     rejection indicator near the request control (tap for time/details). The
     requester can re-submit at any time.
-  - Ownership changes only after approval; it is not automatic based on app focus or presence.
+- Ownership changes only after approval when the owner is active. If the owner is
+  inactive (stale lastUpdatedAt), the first requester auto-takes over. This is based
+  on session liveness (heartbeat), not app focus.
 
 ### **10.4.9. Ownership visibility in Run Mode**
 
@@ -1672,7 +1681,7 @@ When the timer completes the last pomodoro of the last task:
 - Mirror devices calculate time locally.
 - If a group is running, other devices:
   - Enter mirror mode
-  - May “Take over” when stale
+  - May auto-take over when the owner session is stale (>= 90s without heartbeat)
 - Group execution uses groupId + currentTaskIndex to maintain full context.
 
 ---

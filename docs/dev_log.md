@@ -4767,6 +4767,37 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 ---
 
+# 🔹 Block 311 — Auto-takeover on inactive owner (09/02/2026)
+
+### ✔ Work completed:
+
+- Documented ownership auto-takeover rules based on stale heartbeats.
+- Added paused-session heartbeats and auto-claim logic when the owner is inactive.
+
+---
+
+# 🔹 Block 312 — Ownership analyzer fix (09/02/2026)
+
+### ✔ Work completed:
+
+- Fixed request-status variable naming in the ownership auto-takeover transaction.
+
+---
+
+# 🔹 Block 313 — Ownership auto-takeover retry (09/02/2026)
+
+### ✔ Work completed:
+
+- Enabled stale-owner auto-takeover even when a pending request already exists for the same device.
+- Added a mirror-side retry when a pending request becomes stale.
+
+---
+
+# 🔹 Block 314 — Ownership takeover mirror timer (09/02/2026)
+
+### ✔ Work completed:
+
+- Ensured mirror takeover checks run for paused sessions by keeping the mirror timer active during any active execution.
 # 🔹 Block 311 — macOS mirror repaint guard (09/02/2026)
 
 ### ✔ Work completed:

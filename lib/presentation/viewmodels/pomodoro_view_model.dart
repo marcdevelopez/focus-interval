@@ -55,6 +55,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   DateTime? _timelinePhaseStartedAt;
   StreamSubscription<PomodoroSession?>? _sessionSub;
   Timer? _mirrorTimer;
+  Timer? _pausedHeartbeatTimer;
   String? _remoteOwnerId;
   PomodoroSession? _remoteSession;
   PomodoroSession? _latestSession;
@@ -62,6 +63,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   DateTime? _lastHeartbeatAt;
   DateTime? _finishedAt;
   String? _pauseReason;
+  DateTime? _lastAutoTakeoverAttemptAt;
   bool _groupCompleted = false;
   bool _foregroundActive = false;
   String? _foregroundTitle;
@@ -88,6 +90,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       _sub?.cancel();
       _sessionSub?.cancel();
       _mirrorTimer?.cancel();
+      _pausedHeartbeatTimer?.cancel();
       _stopForegroundService();
     });
 
@@ -647,6 +650,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _machine.cancel();
     _localPhaseStartedAt = null;
     _groupCompleted = false;
+    _stopPausedHeartbeat();
   }
 
   Future<void> _markGroupRunningIfNeeded({DateTime? startOverride}) async {
@@ -751,6 +755,38 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _publishCurrentSession();
   }
 
+  void _syncPausedHeartbeat() {
+    if (!_controlsEnabled) {
+      _stopPausedHeartbeat();
+      return;
+    }
+    final current = _machine.state;
+    if (current.status != PomodoroStatus.paused) {
+      _stopPausedHeartbeat();
+      return;
+    }
+    if (_pausedHeartbeatTimer != null) return;
+    _pausedHeartbeatTimer = Timer.periodic(
+      const Duration(seconds: _heartbeatIntervalSeconds),
+      (_) {
+        if (!_controlsEnabled) {
+          _stopPausedHeartbeat();
+          return;
+        }
+        if (_machine.state.status != PomodoroStatus.paused) {
+          _stopPausedHeartbeat();
+          return;
+        }
+        _publishCurrentSession();
+      },
+    );
+  }
+
+  void _stopPausedHeartbeat() {
+    _pausedHeartbeatTimer?.cancel();
+    _pausedHeartbeatTimer = null;
+  }
+
   void _publishCurrentSession() {
     final taskId = _currentItem?.sourceTaskId ?? _currentTask?.id;
     if (taskId == null || taskId.isEmpty) return;
@@ -792,6 +828,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       pauseReason: pauseReason,
     );
     _sessionRepo.publishSession(session);
+    _syncPausedHeartbeat();
   }
 
   int _phaseDurationForState(PomodoroState state) {
@@ -825,6 +862,8 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         _remoteOwnerId = null;
         _remoteSession = null;
         _localPhaseStartedAt = null;
+        _lastAutoTakeoverAttemptAt = null;
+        _stopPausedHeartbeat();
         _stopForegroundService();
         // If the owner cancels and clears the session, mirror idle.
         if (_currentItem != null || _currentTask != null) {
@@ -839,6 +878,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         _mirrorTimer?.cancel();
         _remoteOwnerId = null;
         _remoteSession = null;
+        _lastAutoTakeoverAttemptAt = null;
         if (_currentGroup != null && session.groupId == _currentGroup!.id) {
           _applySessionTaskContext(session);
           final shouldHydrate =
@@ -862,6 +902,8 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
           _mirrorTimer?.cancel();
           _remoteOwnerId = null;
           _remoteSession = null;
+          _lastAutoTakeoverAttemptAt = null;
+          _stopPausedHeartbeat();
           _stopForegroundService();
           return;
         }
@@ -871,6 +913,8 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         _mirrorTimer?.cancel();
         _remoteOwnerId = null;
         _remoteSession = null;
+        _lastAutoTakeoverAttemptAt = null;
+        _stopPausedHeartbeat();
         _stopForegroundService();
         return;
       }
@@ -881,6 +925,8 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       }
       _remoteOwnerId = session.ownerDeviceId;
       _remoteSession = session;
+      _lastAutoTakeoverAttemptAt = null;
+      _stopPausedHeartbeat();
       _stopForegroundService();
       _setMirrorSession(session);
     });
@@ -937,11 +983,37 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   void _setMirrorSession(PomodoroSession session) {
     _mirrorTimer?.cancel();
     _updateMirrorStateFromSession(session);
-    if (_isRunning(session.status) && session.phaseStartedAt != null) {
+    _maybeAutoTakeoverStaleOwner(session);
+    if (session.status.isActiveExecution) {
       _mirrorTimer = Timer.periodic(const Duration(seconds: 1), (_) {
         _updateMirrorStateFromSession(session);
+        _maybeAutoTakeoverStaleOwner(session);
       });
     }
+  }
+
+  void _maybeAutoTakeoverStaleOwner(PomodoroSession session) {
+    final request = session.ownershipRequest;
+    if (request == null) return;
+    if (request.status != OwnershipRequestStatus.pending) return;
+    if (request.requesterDeviceId != _deviceInfo.deviceId) return;
+    if (session.ownerDeviceId == _deviceInfo.deviceId) return;
+    final updatedAt = session.lastUpdatedAt;
+    final now = DateTime.now();
+    final isStale =
+        updatedAt == null || now.difference(updatedAt) >= _staleSessionGrace;
+    if (!isStale) return;
+    final lastAttempt = _lastAutoTakeoverAttemptAt;
+    if (lastAttempt != null &&
+        now.difference(lastAttempt) < const Duration(seconds: 10)) {
+      return;
+    }
+    _lastAutoTakeoverAttemptAt = now;
+    unawaited(
+      _sessionRepo.requestOwnership(
+        requesterDeviceId: _deviceInfo.deviceId,
+      ),
+    );
   }
 
   void _updateMirrorStateFromSession(PomodoroSession session) {
