@@ -4784,4 +4784,13 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 ---
 
+# 🔹 Block 313 — Ownership auto-takeover retry (09/02/2026)
+
+### ✔ Work completed:
+
+- Enabled stale-owner auto-takeover even when a pending request already exists for the same device.
+- Added a mirror-side retry when a pending request becomes stale.
+
+---
+
 # 🚀 End of file

@@ -99,8 +99,21 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
       );
       if (!status.isActiveExecution) return;
       final updatedAt = (data['lastUpdatedAt'] as Timestamp?)?.toDate();
-      if (updatedAt != null &&
-          now.difference(updatedAt) >= _ownerStaleThreshold) {
+      final isStale =
+          updatedAt == null ||
+          now.difference(updatedAt) >= _ownerStaleThreshold;
+      final rawRequest = data['ownershipRequest'];
+      final requestMap = rawRequest is Map<String, dynamic>
+          ? rawRequest
+          : rawRequest is Map
+              ? Map<String, dynamic>.from(rawRequest)
+              : null;
+      final requestStatus = requestMap?['status'] as String?;
+      final requester = requestMap?['requesterDeviceId'] as String?;
+      if (isStale) {
+        if (requester != null && requester != requesterDeviceId) {
+          return;
+        }
         tx.set(
           docRef,
           {
@@ -112,14 +125,6 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
         );
         return;
       }
-      final rawRequest = data['ownershipRequest'];
-      final requestMap = rawRequest is Map<String, dynamic>
-          ? rawRequest
-          : rawRequest is Map
-              ? Map<String, dynamic>.from(rawRequest)
-              : null;
-      final requestStatus = requestMap?['status'] as String?;
-      final requester = requestMap?['requesterDeviceId'] as String?;
       if (requestStatus == 'pending' && requester != requesterDeviceId) {
         return;
       }
