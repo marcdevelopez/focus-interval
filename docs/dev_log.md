@@ -4776,4 +4776,12 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 ---
 
+# 🔹 Block 312 — macOS mirror repaint analyzer fix (09/02/2026)
+
+### ✔ Work completed:
+
+- Fixed a nullable state inference issue in the inactive repaint guard.
+
+---
+
 # 🚀 End of file

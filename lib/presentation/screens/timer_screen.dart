@@ -165,7 +165,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     bool? isMirror,
   }) {
     if (!mounted) return;
-    final resolvedState = state ?? ref.read(pomodoroViewModelProvider);
+    final PomodoroState resolvedState =
+        state ?? ref.read(pomodoroViewModelProvider);
     final resolvedMirror = isMirror ?? _resolveIsMirrorForCurrentSession();
     final shouldEnable = _shouldEnableInactiveRepaint(
       state: resolvedState,
