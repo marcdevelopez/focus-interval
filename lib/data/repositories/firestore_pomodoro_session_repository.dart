@@ -118,9 +118,9 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
           : rawRequest is Map
               ? Map<String, dynamic>.from(rawRequest)
               : null;
-      final status = requestMap?['status'] as String?;
+      final requestStatus = requestMap?['status'] as String?;
       final requester = requestMap?['requesterDeviceId'] as String?;
-      if (status == 'pending' && requester != requesterDeviceId) {
+      if (requestStatus == 'pending' && requester != requesterDeviceId) {
         return;
       }
       tx.set(
