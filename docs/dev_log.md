@@ -4749,6 +4749,13 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Guarded the owner-education snackbar so it only appears on the true owner device.
 
+# 🔹 Block 309 — Canceled groups re-plan (09/02/2026)
+
+### ✔ Work completed:
+
+- Documented canceled-group retention and re-plan behavior in specs and roadmap.
+- Added Groups Hub support to surface canceled groups with a re-plan action.
+
 ---
 
 # 🔹 Block 309 — Start-now owner determinism (09/02/2026)

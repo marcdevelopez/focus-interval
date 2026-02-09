@@ -476,8 +476,8 @@ users/{uid}/activeSession
   - The last N completed
 - Canceled groups are retained **separately** and must **never** count against
   completed retention.
-  - They may be removed immediately, or kept with their own small cap
-    (default = same N as completed).
+  - They must remain visible in Groups Hub to allow re-planning.
+  - Keep a separate cap for canceled groups (default = same N as completed).
 - N is finite and configurable.
 - Default: 7 completed groups (last week).
 - User-configurable up to 30.
@@ -1368,6 +1368,7 @@ Cancel running group (Run Mode)
 - If a canceled status is observed while Run Mode is visible (local or remote),
   auto-exit to Groups Hub and never remain in an idle Run Mode state.
 - The Groups Hub provides the next decision path (open Task List / start or plan a new group).
+- Canceled groups remain visible in Groups Hub with a **Re-plan group** action; they never auto-start.
 
 ### **10.4.7. Mandatory visual improvements for the timer**
 
@@ -1476,6 +1477,7 @@ Actions
   - Start now (only if no conflicts)
   - Open Run Mode for running/paused groups
   - Run again (completed groups): duplicate the group snapshot into a new TaskRunGroup and open the pre-start planning flow
+  - Re-plan group (canceled groups): duplicate the group snapshot into a new TaskRunGroup and open the pre-start planning flow
   - Go to Task List screen (Task Library) to create/edit tasks and build new groups
     - The "Go to Task List" CTA is placed at the top of the Groups Hub content
       so it is visible without scrolling.
@@ -1501,11 +1503,12 @@ Summary (tap on a group)
 
 History
 
-- Show scheduled + running + last N completed groups
+- Show scheduled + running + last N completed groups + last N canceled groups
 - Keep history short and finite
 - When a scheduled group is within the Pre-Run window, the card must expose a clear
   "Open Pre-Run" action (instead of “Start now”), so the user can always return to
   the Pre-Run view.
+- Canceled groups never auto-start; they are reference-only for re-planning.
 
 ---
 

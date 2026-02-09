@@ -147,6 +147,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 18 — Initial ownership assignment must be deterministic when multiple devices are open (implemented; validation pending).
 - Phase 18 — Group progress bar + task color accents still pending (new requirement).
 - Phase 19 — Groups Hub: group name display + rename action (new requirement).
+- Phase 19 — Groups Hub: canceled groups visible + re-plan action (new requirement).
 - Outstanding items from specs sections 10.4.2 / 10.4.6 / 12 / 10.5 are tracked in Phases 18, 19, and 25 (not reopened).
 - Rule: if any previously completed phase is missing required behavior, list it here and resolve it before continuing in normal phase order.
 
@@ -735,6 +736,8 @@ These subphases should also appear in **dev_log.md** as they are completed.
 - Summary modal shows group timing, totals, and per-task breakdown (scrollable).
 - Add running-group entry points (Task List banner + Groups Hub "Open Run Mode" action).
 - Add "Run again" for completed groups to duplicate the snapshot into a new TaskRunGroup and open planning.
+- Show canceled groups in Groups Hub history (separate retention cap).
+- Add "Re-plan group" for canceled groups to duplicate the snapshot into a new TaskRunGroup and open planning.
 - Provide direct navigation to the Task List screen (Task Library).
 - Auto-navigate to Groups Hub after group completion (only after the user dismisses the completion modal).
 - Ensure Pre-Run remains accessible: Task List banner + Groups Hub "Open Pre-Run" action when within notice window.
