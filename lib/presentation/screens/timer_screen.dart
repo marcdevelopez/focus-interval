@@ -32,6 +32,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   Timer? _clockTimer;
   Timer? _preRunTimer;
   Timer? _debugFrameTimer;
+  Timer? _inactiveRepaintTimer;
   Timer? _cancelNavRetryTimer;
   String _currentClock = "";
   bool _taskLoaded = false;
@@ -50,6 +51,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   int _preRunRemainingSeconds = 0;
   bool _ownerEducationInFlight = false;
   String? _lastOwnershipRejectionKey;
+  bool _inactiveRepaintEnabled = false;
 
   @override
   void initState() {
@@ -115,6 +117,63 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _debugFrameTimer = null;
   }
 
+  void _startInactiveRepaintTimer() {
+    _inactiveRepaintTimer?.cancel();
+    _inactiveRepaintTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {});
+    });
+  }
+
+  void _stopInactiveRepaintTimer() {
+    _inactiveRepaintTimer?.cancel();
+    _inactiveRepaintTimer = null;
+  }
+
+  bool _shouldEnableInactiveRepaint({
+    required PomodoroState state,
+    required bool isMirror,
+  }) {
+    if (kDebugMode) return false;
+    if (defaultTargetPlatform != TargetPlatform.macOS) return false;
+    if (_appIsActive) return false;
+    if (!isMirror) return false;
+    return state.status.isActiveExecution;
+  }
+
+  void _setInactiveRepaintEnabled(bool enabled) {
+    if (_inactiveRepaintEnabled == enabled) return;
+    _inactiveRepaintEnabled = enabled;
+    if (enabled) {
+      _startInactiveRepaintTimer();
+    } else {
+      _stopInactiveRepaintTimer();
+    }
+  }
+
+  bool _resolveIsMirrorForCurrentSession() {
+    final session = ref.read(activePomodoroSessionProvider);
+    final group = ref.read(pomodoroViewModelProvider.notifier).currentGroup;
+    if (session == null || group == null) return false;
+    if (session.groupId != group.id) return false;
+    final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
+    return session.ownerDeviceId != deviceId;
+  }
+
+  void _syncInactiveRepaint({
+    PomodoroState? state,
+    bool? isMirror,
+  }) {
+    if (!mounted) return;
+    final resolvedState = state ?? ref.read(pomodoroViewModelProvider);
+    final resolvedMirror = isMirror ?? _resolveIsMirrorForCurrentSession();
+    final shouldEnable = _shouldEnableInactiveRepaint(
+      state: resolvedState,
+      isMirror: resolvedMirror,
+    );
+    _setInactiveRepaintEnabled(shouldEnable);
+  }
+
   void _stopCancelNavRetry() {
     _cancelNavRetryTimer?.cancel();
     _cancelNavRetryTimer = null;
@@ -138,6 +197,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _cancelNavigationHandled = false;
     _cancelNavRetryAttempts = 0;
     _stopCancelNavRetry();
+    _setInactiveRepaintEnabled(false);
     _preRunInfo = null;
     _preRunRemainingSeconds = 0;
     _stopPreRunTimer();
@@ -177,6 +237,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _stopClockTimer();
     _stopPreRunTimer();
     _stopDebugFramePing();
+    _stopInactiveRepaintTimer();
     _stopCancelNavRetry();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -189,6 +250,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       _appIsActive = true;
       _startClockTimer();
       vm.handleAppResumed();
+      _syncInactiveRepaint();
       _maybeShowPendingCompletionDialog(vm);
       return;
     }
@@ -204,6 +266,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         state == AppLifecycleState.detached) {
       _appIsActive = false;
       vm.handleAppPaused();
+      _syncInactiveRepaint();
     }
   }
 
@@ -449,6 +512,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final ownerDeviceId =
         isSessionForGroup ? activeSession.ownerDeviceId : deviceId;
     final isMirror = isSessionForGroup && ownerDeviceId != deviceId;
+    _syncInactiveRepaint(state: state, isMirror: isMirror);
     final ownershipRequest = vm.ownershipRequest;
     final hasPendingOwnershipRequest = vm.hasPendingOwnershipRequest;
     final isPendingForSelf = vm.isOwnershipRequestPendingForThisDevice;

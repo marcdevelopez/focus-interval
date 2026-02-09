@@ -4758,12 +4758,21 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 ---
 
-# 🔹 Block 309 — Start-now owner determinism (09/02/2026)
+# 🔹 Block 310 — Start-now owner determinism (09/02/2026)
 
 ### ✔ Work completed:
 
 - Clarified deterministic ownership rules for Start now vs scheduled auto-start.
 - Ensured only the initiating device claims the initial activeSession for Start now groups.
+
+---
+
+# 🔹 Block 311 — macOS mirror repaint guard (09/02/2026)
+
+### ✔ Work completed:
+
+- Added a macOS-only inactive repaint timer to keep mirror-mode timers updating when the app window lacks focus.
+- Limited the repaint guard to active execution in mirror mode (no logic changes).
 
 ---
 
