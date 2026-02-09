@@ -22,7 +22,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **08/02/2026**
+Last update: **09/02/2026**
 
 ---
 
@@ -4748,6 +4748,15 @@ Mode A global long-break sequencing not fully validated (time constraints).
 ### ✔ Work completed:
 
 - Guarded the owner-education snackbar so it only appears on the true owner device.
+
+---
+
+# 🔹 Block 309 — Start-now owner determinism (09/02/2026)
+
+### ✔ Work completed:
+
+- Clarified deterministic ownership rules for Start now vs scheduled auto-start.
+- Ensured only the initiating device claims the initial activeSession for Start now groups.
 
 ---
 

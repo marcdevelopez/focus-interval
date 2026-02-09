@@ -529,6 +529,15 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (session != null) {
       return session.ownerDeviceId == _deviceInfo.deviceId;
     }
+    final group = _currentGroup;
+    if (group != null &&
+        group.scheduledStartTime == null &&
+        group.status == TaskRunStatus.running) {
+      final initiator = group.scheduledByDeviceId;
+      if (initiator != null && initiator != _deviceInfo.deviceId) {
+        return false;
+      }
+    }
     final startSession = _buildStartSession(now);
     if (startSession == null) return false;
     return _sessionRepo.tryClaimSession(startSession);
