@@ -4837,3 +4837,16 @@ Mode A global long-break sequencing not fully validated (time constraints).
 ---
 
 # 🚀 End of file
+
+# 🔹 Block 319 — Release safety policy (09/02/2026)
+
+### ✔ Work completed:
+
+- Added `docs/release_safety.md` with production compatibility, migration, and rollout rules.
+- Updated `AGENTS.md` with mandatory production safety and data evolution requirements.
+- Updated `.github/copilot-instructions.md` to enforce the release safety policy.
+
+### 🎯 Next steps:
+
+- Define the concrete DEV/STAGING/PROD Firebase mapping and environment switch strategy.
+- Validate emulator and staging workflows before the first production release.
