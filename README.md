@@ -33,6 +33,8 @@ Flutter · Firebase Auth · Firestore · Riverpod · GoRouter · just_audio · f
 ## Web development (local)
 
 - Run with a fixed port: `flutter run -d chrome --web-port=5001`.
+- To persist auth sessions between runs, use a stable Chrome profile:
+  `flutter run -d chrome --web-port=5001 --web-browser-flag="--user-data-dir=$HOME/.focus_interval_chrome"`.
 - Ensure `http://localhost:5001` is listed in Google OAuth Authorized JavaScript origins.
 
 ## GitHub OAuth (desktop)
