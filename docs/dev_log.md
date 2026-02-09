@@ -4827,4 +4827,13 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 ---
 
+# 🔹 Block 318 — Run Mode progress visuals (docs) (09/02/2026)
+
+### ✔ Work completed:
+
+- Specified chip-based group progress bar labeling, states, and pulse behavior.
+- Clarified contextual task list outline rules and completed-item sizing.
+
+---
+
 # 🚀 End of file
