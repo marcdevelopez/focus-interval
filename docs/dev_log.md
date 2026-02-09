@@ -4901,5 +4901,11 @@ Mode A global long-break sequencing not fully validated (time constraints).
 ### ✔ Work completed:
 
 - Added the release + GitHub OAuth command to `README.md` for quick reference.
+  
+  # 🔹 Block 326 — Groups Hub empty-state CTA (09/02/2026)
+
+### ✔ Work completed:
+
+- Ensured the "Go to Task List" CTA remains visible in Groups Hub even when no groups exist.
 
 # 🚀 End of file

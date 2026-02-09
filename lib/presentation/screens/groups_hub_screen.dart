@@ -79,127 +79,143 @@ class GroupsHubScreen extends ConsumerWidget {
               .take(_canceledHistoryLimit)
               .toList(growable: false);
 
-          if (runningGroups.isEmpty &&
-              scheduledGroups.isEmpty &&
-              completedSlice.isEmpty &&
-              canceledSlice.isEmpty) {
-            return const Center(
-              child: Text(
-                'No groups yet.',
-                style: TextStyle(color: Colors.white54),
-              ),
+          final hasGroups =
+              runningGroups.isNotEmpty ||
+              scheduledGroups.isNotEmpty ||
+              completedSlice.isNotEmpty ||
+              canceledSlice.isNotEmpty;
+
+          final children = <Widget>[
+            OutlinedButton.icon(
+              onPressed: () => context.go('/tasks'),
+              icon: const Icon(Icons.library_books),
+              label: const Text('Go to Task List'),
+            ),
+            const SizedBox(height: 16),
+          ];
+
+          if (!hasGroups) {
+            children
+              ..add(const SizedBox(height: 48))
+              ..add(
+                const Center(
+                  child: Text(
+                    'No groups yet.',
+                    style: TextStyle(color: Colors.white54),
+                  ),
+                ),
+              );
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              children: children,
             );
           }
 
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            children: [
-              OutlinedButton.icon(
-                onPressed: () => context.go('/tasks'),
-                icon: const Icon(Icons.library_books),
-                label: const Text('Go to Task List'),
+          children.addAll([
+            _SectionHeader(title: 'Running / Paused'),
+            if (runningGroups.isEmpty)
+              const _EmptySection(label: 'No running groups'),
+            for (final group in runningGroups)
+              _GroupCard(
+                group: group,
+                activeSession: activeSession,
+                onTap: () => _showSummaryDialog(context, group),
+                actions: [
+                  _GroupAction(
+                    label: 'Open Run Mode',
+                    onPressed: () => context.go('/timer/${group.id}'),
+                  ),
+                ],
+                now: now,
               ),
-              const SizedBox(height: 16),
-              _SectionHeader(title: 'Running / Paused'),
-              if (runningGroups.isEmpty)
-                const _EmptySection(label: 'No running groups'),
-              for (final group in runningGroups)
-                _GroupCard(
-                  group: group,
-                  activeSession: activeSession,
-                  onTap: () => _showSummaryDialog(context, group),
-                  actions: [
-                    _GroupAction(
-                      label: 'Open Run Mode',
-                      onPressed: () => context.go('/timer/${group.id}'),
-                    ),
-                  ],
-                  now: now,
-                ),
-              const SizedBox(height: 20),
-              _SectionHeader(title: 'Scheduled'),
-              if (scheduledGroups.isEmpty)
-                const _EmptySection(label: 'No scheduled groups'),
-              for (final group in scheduledGroups)
-                Builder(
-                  builder: (context) {
-                    final isPreRunActive = _isPreRunActive(group, now);
-                    return _GroupCard(
-                      group: group,
-                      activeSession: activeSession,
-                      onTap: () => _showSummaryDialog(context, group),
-                      actions: [
-                        if (isPreRunActive)
-                          _GroupAction(
-                            label: 'Open Pre-Run',
-                            onPressed: () => context.go('/timer/${group.id}'),
-                          )
-                        else
-                          _GroupAction(
-                            label: 'Start now',
-                            onPressed: () => _handleStartNow(
-                              context,
-                              ref,
-                              group,
-                            ),
-                          ),
+            const SizedBox(height: 20),
+            _SectionHeader(title: 'Scheduled'),
+            if (scheduledGroups.isEmpty)
+              const _EmptySection(label: 'No scheduled groups'),
+            for (final group in scheduledGroups)
+              Builder(
+                builder: (context) {
+                  final isPreRunActive = _isPreRunActive(group, now);
+                  return _GroupCard(
+                    group: group,
+                    activeSession: activeSession,
+                    onTap: () => _showSummaryDialog(context, group),
+                    actions: [
+                      if (isPreRunActive)
                         _GroupAction(
-                          label: 'Cancel schedule',
-                          outlined: true,
-                          onPressed: () => _handleCancelSchedule(
+                          label: 'Open Pre-Run',
+                          onPressed: () => context.go('/timer/${group.id}'),
+                        )
+                      else
+                        _GroupAction(
+                          label: 'Start now',
+                          onPressed: () => _handleStartNow(
                             context,
                             ref,
                             group,
                           ),
                         ),
-                      ],
-                      now: now,
-                    );
-                  },
-                ),
-              const SizedBox(height: 20),
-              _SectionHeader(title: 'Completed'),
-              if (completedSlice.isEmpty)
-                const _EmptySection(label: 'No completed groups yet'),
-              for (final group in completedSlice)
-                _GroupCard(
-                  group: group,
-                  activeSession: activeSession,
-                  onTap: () => _showSummaryDialog(context, group),
-                  actions: [
-                    _GroupAction(
-                      label: 'Run again',
-                      onPressed: () => _handleRunAgain(
-                        context,
-                        ref,
-                        group,
+                      _GroupAction(
+                        label: 'Cancel schedule',
+                        outlined: true,
+                        onPressed: () => _handleCancelSchedule(
+                          context,
+                          ref,
+                          group,
+                        ),
                       ),
+                    ],
+                    now: now,
+                  );
+                },
+              ),
+            const SizedBox(height: 20),
+            _SectionHeader(title: 'Completed'),
+            if (completedSlice.isEmpty)
+              const _EmptySection(label: 'No completed groups yet'),
+            for (final group in completedSlice)
+              _GroupCard(
+                group: group,
+                activeSession: activeSession,
+                onTap: () => _showSummaryDialog(context, group),
+                actions: [
+                  _GroupAction(
+                    label: 'Run again',
+                    onPressed: () => _handleRunAgain(
+                      context,
+                      ref,
+                      group,
                     ),
-                  ],
-                  now: now,
-                ),
-              const SizedBox(height: 20),
-              _SectionHeader(title: 'Canceled'),
-              if (canceledSlice.isEmpty)
-                const _EmptySection(label: 'No canceled groups yet'),
-              for (final group in canceledSlice)
-                _GroupCard(
-                  group: group,
-                  activeSession: activeSession,
-                  onTap: () => _showSummaryDialog(context, group),
-                  actions: [
-                    _GroupAction(
-                      label: 'Re-plan group',
-                      onPressed: () => _handleRunAgain(
-                        context,
-                        ref,
-                        group,
-                      ),
+                  ),
+                ],
+                now: now,
+              ),
+            const SizedBox(height: 20),
+            _SectionHeader(title: 'Canceled'),
+            if (canceledSlice.isEmpty)
+              const _EmptySection(label: 'No canceled groups yet'),
+            for (final group in canceledSlice)
+              _GroupCard(
+                group: group,
+                activeSession: activeSession,
+                onTap: () => _showSummaryDialog(context, group),
+                actions: [
+                  _GroupAction(
+                    label: 'Re-plan group',
+                    onPressed: () => _handleRunAgain(
+                      context,
+                      ref,
+                      group,
                     ),
-                  ],
-                  now: now,
-                ),
-            ],
+                  ),
+                ],
+                now: now,
+              ),
+          ]);
+
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            children: children,
           );
         },
       ),
