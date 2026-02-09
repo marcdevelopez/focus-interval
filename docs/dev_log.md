@@ -4878,4 +4878,10 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Validate macOS/iOS auth + Firestore in debug and release builds.
 
+# 🔹 Block 322 — Test updates for dataVersion (09/02/2026)
+
+### ✔ Work completed:
+
+- Updated task-related tests to include `dataVersion` after schema versioning changes.
+
 # 🚀 End of file
