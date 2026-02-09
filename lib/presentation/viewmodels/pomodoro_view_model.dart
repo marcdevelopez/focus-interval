@@ -983,7 +983,8 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   void _setMirrorSession(PomodoroSession session) {
     _mirrorTimer?.cancel();
     _updateMirrorStateFromSession(session);
-    if (_isRunning(session.status) && session.phaseStartedAt != null) {
+    _maybeAutoTakeoverStaleOwner(session);
+    if (session.status.isActiveExecution) {
       _mirrorTimer = Timer.periodic(const Duration(seconds: 1), (_) {
         _updateMirrorStateFromSession(session);
         _maybeAutoTakeoverStaleOwner(session);

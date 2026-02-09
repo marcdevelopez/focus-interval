@@ -4793,4 +4793,12 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 ---
 
+# 🔹 Block 314 — Ownership takeover mirror timer (09/02/2026)
+
+### ✔ Work completed:
+
+- Ensured mirror takeover checks run for paused sessions by keeping the mirror timer active during any active execution.
+
+---
+
 # 🚀 End of file
