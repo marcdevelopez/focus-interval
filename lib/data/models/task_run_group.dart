@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'selected_sound.dart';
+import 'schema_version.dart';
 
 enum TaskRunStatus { scheduled, running, completed, canceled }
 
@@ -118,6 +119,7 @@ class TaskRunItem {
 class TaskRunGroup {
   final String id;
   final String ownerUid;
+  final int dataVersion;
   final TaskRunIntegrityMode integrityMode;
   final List<TaskRunItem> tasks;
   final DateTime createdAt;
@@ -137,6 +139,7 @@ class TaskRunGroup {
   const TaskRunGroup({
     required this.id,
     required this.ownerUid,
+    required this.dataVersion,
     required this.integrityMode,
     required this.tasks,
     required this.createdAt,
@@ -157,6 +160,7 @@ class TaskRunGroup {
   TaskRunGroup copyWith({
     String? id,
     String? ownerUid,
+    int? dataVersion,
     List<TaskRunItem>? tasks,
     DateTime? createdAt,
     DateTime? scheduledStartTime,
@@ -176,6 +180,7 @@ class TaskRunGroup {
     return TaskRunGroup(
       id: id ?? this.id,
       ownerUid: ownerUid ?? this.ownerUid,
+      dataVersion: dataVersion ?? this.dataVersion,
       integrityMode: integrityMode ?? this.integrityMode,
       tasks: tasks ?? this.tasks,
       createdAt: createdAt ?? this.createdAt,
@@ -197,6 +202,7 @@ class TaskRunGroup {
   Map<String, dynamic> toMap() => {
     'id': id,
     'ownerUid': ownerUid,
+    'dataVersion': dataVersion,
     'integrityMode': integrityMode.name,
     'tasks': tasks.map((task) => task.toMap()).toList(),
     'createdAt': createdAt.toIso8601String(),
@@ -219,6 +225,7 @@ class TaskRunGroup {
     final integrityMode = _readIntegrityMode(map);
     final createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now();
     final updatedAt = _parseDateTime(map['updatedAt']) ?? createdAt;
+    final dataVersion = readDataVersion(map);
     final totalTasks = (map['totalTasks'] as num?)?.toInt() ?? tasks.length;
     final totalPomodoros =
         (map['totalPomodoros'] as num?)?.toInt() ??
@@ -236,6 +243,7 @@ class TaskRunGroup {
     return TaskRunGroup(
       id: map['id'] as String? ?? '',
       ownerUid: map['ownerUid'] as String? ?? '',
+      dataVersion: dataVersion,
       integrityMode: integrityMode,
       tasks: tasks,
       createdAt: createdAt,

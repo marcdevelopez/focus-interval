@@ -4836,8 +4836,6 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 ---
 
-# 🚀 End of file
-
 # 🔹 Block 319 — Release safety policy (09/02/2026)
 
 ### ✔ Work completed:
@@ -4850,3 +4848,40 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Define the concrete DEV/STAGING/PROD Firebase mapping and environment switch strategy.
 - Validate emulator and staging workflows before the first production release.
+
+---
+
+# 🔹 Block 320 — Environment safety + schema versioning (09/02/2026)
+
+### ✔ Work completed:
+
+- Added AppConfig with `APP_ENV` enforcement, emulator defaults, and staging placeholders.
+- Updated Firebase init to select env-specific options and connect emulators in DEV.
+- Added `dataVersion` support to critical models and a dual-read/dual-write migration template.
+- Documented DEV/STAGING/PROD setup and added a release checklist.
+- Added a release-safety script to require specs/dev log updates on schema changes.
+
+### 🎯 Next steps:
+
+- Create the STAGING Firebase project and generate real `firebase_options_staging.dart`.
+- Validate emulator and staging runs across target platforms.
+
+# 🔹 Block 321 — Firebase macOS app registration (09/02/2026)
+
+### ✔ Work completed:
+
+- Registered a dedicated macOS Firebase app and regenerated `firebase_options.dart`.
+- Updated macOS bundle id to `com.marcdevelopez.focusinterval.macos`.
+- Updated iOS/macOS GoogleService-Info.plist files and firebase.json via FlutterFire CLI.
+
+### 🎯 Next steps:
+
+- Validate macOS/iOS auth + Firestore in debug and release builds.
+
+# 🔹 Block 322 — Test updates for dataVersion (09/02/2026)
+
+### ✔ Work completed:
+
+- Updated task-related tests to include `dataVersion` after schema versioning changes.
+
+# 🚀 End of file

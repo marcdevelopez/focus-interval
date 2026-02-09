@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../data/models/pomodoro_task.dart';
+import '../../data/models/schema_version.dart';
 import '../../data/models/pomodoro_preset.dart';
 import '../../data/models/pomodoro_session.dart';
 import '../../data/models/selected_sound.dart';
@@ -50,6 +51,7 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
       state = PomodoroTask(
         id: _uuid.v4(),
         name: "",
+        dataVersion: kCurrentDataVersion,
         pomodoroMinutes: preset.pomodoroMinutes,
         shortBreakMinutes: preset.shortBreakMinutes,
         longBreakMinutes: preset.longBreakMinutes,
@@ -69,6 +71,7 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
     state = PomodoroTask(
       id: _uuid.v4(),
       name: "",
+      dataVersion: kCurrentDataVersion,
       pomodoroMinutes: 25,
       shortBreakMinutes: 5,
       longBreakMinutes: 15,

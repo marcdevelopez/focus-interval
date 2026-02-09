@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'selected_sound.dart';
+import 'schema_version.dart';
 
 class PomodoroPreset {
   final String id;
   final String name;
+  final int dataVersion;
 
   final int pomodoroMinutes;
   final int shortBreakMinutes;
@@ -22,6 +24,7 @@ class PomodoroPreset {
   PomodoroPreset({
     required this.id,
     required this.name,
+    required this.dataVersion,
     required this.pomodoroMinutes,
     required this.shortBreakMinutes,
     required this.longBreakMinutes,
@@ -43,6 +46,7 @@ class PomodoroPreset {
     return PomodoroPreset(
       id: id,
       name: name,
+      dataVersion: kCurrentDataVersion,
       pomodoroMinutes: 25,
       shortBreakMinutes: 5,
       longBreakMinutes: 15,
@@ -59,6 +63,7 @@ class PomodoroPreset {
   PomodoroPreset copyWith({
     String? id,
     String? name,
+    int? dataVersion,
     int? pomodoroMinutes,
     int? shortBreakMinutes,
     int? longBreakMinutes,
@@ -73,6 +78,7 @@ class PomodoroPreset {
     return PomodoroPreset(
       id: id ?? this.id,
       name: name ?? this.name,
+      dataVersion: dataVersion ?? this.dataVersion,
       pomodoroMinutes: pomodoroMinutes ?? this.pomodoroMinutes,
       shortBreakMinutes: shortBreakMinutes ?? this.shortBreakMinutes,
       longBreakMinutes: longBreakMinutes ?? this.longBreakMinutes,
@@ -89,6 +95,7 @@ class PomodoroPreset {
   Map<String, dynamic> toMap() => {
     'id': id,
     'name': name,
+    'dataVersion': dataVersion,
     'pomodoroMinutes': pomodoroMinutes,
     'shortBreakMinutes': shortBreakMinutes,
     'longBreakMinutes': longBreakMinutes,
@@ -105,6 +112,7 @@ class PomodoroPreset {
     final now = DateTime.now();
     final createdAt = _parseDateTime(map['createdAt']) ?? now;
     final updatedAt = _parseDateTime(map['updatedAt']) ?? createdAt;
+    final dataVersion = readDataVersion(map);
     final pomodoroMinutes = _readInt(map, 'pomodoroMinutes', 25);
     final shortBreakMinutes = _readInt(map, 'shortBreakMinutes', 5);
     final longBreakMinutes = _readInt(map, 'longBreakMinutes', 15);
@@ -112,8 +120,9 @@ class PomodoroPreset {
     final isDefault = map['isDefault'] == true;
 
     return PomodoroPreset(
-      id: map['id'] as String,
+      id: map['id'] as String? ?? '',
       name: map['name'] as String? ?? '',
+      dataVersion: dataVersion,
       pomodoroMinutes: pomodoroMinutes,
       shortBreakMinutes: shortBreakMinutes,
       longBreakMinutes: longBreakMinutes,

@@ -49,6 +49,14 @@ Flutter · Firebase Auth · Firestore · Riverpod · GoRouter · just_audio · f
   - `./scripts/run_macos.sh` (this run --profile --devtools and print macos-log.txt in root /)
   - `powershell -ExecutionPolicy Bypass -File .\scripts\run_windows.ps1`
 
+## Environments (DEV / STAGING / PROD)
+
+- `APP_ENV=dev` (default for debug/profile) uses Firebase emulators only.
+- `APP_ENV=staging` targets a separate Firebase project.
+- `APP_ENV=prod` is allowed only in release builds.
+
+See `docs/environments.md` for setup steps and platform notes.
+
 ## 📦 Android builds
 
 Lightweight release APKs (split ABI):
@@ -83,3 +91,9 @@ flutter build apk --release --split-per-abi
 
 - `flutter build web --release`
 - Output is `build/web/` for deployment.
+
+## Release checklist
+
+- Follow `docs/release_safety.md` (backward compatibility and migration rules).
+- Run `tools/check_release_safety.sh` before commits that touch Firestore rules or model schemas.
+- Validate DEV (emulator) and STAGING before deploying PROD.

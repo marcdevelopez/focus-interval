@@ -101,3 +101,9 @@ At minimum:
 - Update `docs/specs.md` before any authoritative behavior change.
 - Record the migration plan and rollout steps in `docs/dev_log.md`.
 - If a migration reopens earlier phase work, list it in the Reopened phases.
+
+## Tooling guardrails
+
+- Environment setup and staging steps live in `docs/environments.md`.
+- Run `tools/check_release_safety.sh` before commits that touch Firestore rules
+  or model schema files.

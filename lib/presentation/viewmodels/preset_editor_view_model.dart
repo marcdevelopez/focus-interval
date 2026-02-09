@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../data/models/pomodoro_preset.dart';
+import '../../data/models/schema_version.dart';
 import '../../data/models/pomodoro_task.dart';
 import '../../data/models/selected_sound.dart';
 import '../../domain/validators.dart';
@@ -51,6 +52,7 @@ class PresetEditorViewModel extends Notifier<PomodoroPreset?> {
     state = PomodoroPreset(
       id: _uuid.v4(),
       name: base?.name ?? '',
+      dataVersion: kCurrentDataVersion,
       pomodoroMinutes: base?.pomodoroMinutes ?? 25,
       shortBreakMinutes: base?.shortBreakMinutes ?? 5,
       longBreakMinutes: base?.longBreakMinutes ?? 15,
@@ -72,6 +74,7 @@ class PresetEditorViewModel extends Notifier<PomodoroPreset?> {
     state = PomodoroPreset(
       id: presetId,
       name: '',
+      dataVersion: kCurrentDataVersion,
       pomodoroMinutes: task.pomodoroMinutes,
       shortBreakMinutes: task.shortBreakMinutes,
       longBreakMinutes: task.longBreakMinutes,

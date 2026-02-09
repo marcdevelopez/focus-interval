@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:focus_interval/data/models/pomodoro_task.dart';
 import 'package:focus_interval/data/models/selected_sound.dart';
+import 'package:focus_interval/data/models/schema_version.dart';
 import 'package:focus_interval/domain/validators.dart';
 import 'package:focus_interval/presentation/providers.dart';
 
@@ -27,6 +28,7 @@ void main() {
       return PomodoroTask(
         id: 'task-1',
         name: 'Test task',
+        dataVersion: kCurrentDataVersion,
         pomodoroMinutes: pomodoroMinutes,
         shortBreakMinutes: shortBreakMinutes,
         longBreakMinutes: longBreakMinutes,

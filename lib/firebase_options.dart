@@ -60,18 +60,20 @@ class DefaultFirebaseOptions {
     messagingSenderId: '32274647226',
     projectId: 'focus-interval',
     storageBucket: 'focus-interval.firebasestorage.app',
+    androidClientId: '32274647226-mcohp0kv0ujjobd0n721hkh2bg3ro8qe.apps.googleusercontent.com',
     iosClientId: '32274647226-2496tlb97lrbt0qim7qu7s0off27ttnp.apps.googleusercontent.com',
     iosBundleId: 'com.marcdevelopez.focusinterval',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyAqZcDExyzY-ef3XGQ1Vn7MvGUj8P5IB5Y',
-    appId: '1:32274647226:ios:6feb760358bfba46159a83',
+    appId: '1:32274647226:ios:c42434ec57d5f427159a83',
     messagingSenderId: '32274647226',
     projectId: 'focus-interval',
     storageBucket: 'focus-interval.firebasestorage.app',
-    iosClientId: '32274647226-2496tlb97lrbt0qim7qu7s0off27ttnp.apps.googleusercontent.com',
-    iosBundleId: 'com.marcdevelopez.focusinterval',
+    androidClientId: '32274647226-mcohp0kv0ujjobd0n721hkh2bg3ro8qe.apps.googleusercontent.com',
+    iosClientId: '32274647226-2lv2osos7trc77jvefh7tu0fgqkg1bf0.apps.googleusercontent.com',
+    iosBundleId: 'com.marcdevelopez.focusinterval.macos',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
