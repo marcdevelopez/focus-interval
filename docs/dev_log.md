@@ -4952,4 +4952,16 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Re-run `tools/check_release_safety.sh` after dev log update.
 - Validate sync + ownership transfer scenarios on macOS/Android (release builds).
 
+# 🔹 Block 331 — Run Mode sync UI safeguards (10/02/2026)
+
+### ✔ Work completed:
+
+- Added a Syncing state in Run Mode when `activeSession` is temporarily missing while a group is running.
+- Added manual refresh in Run Mode (AppBar sync icon) to trigger `syncWithRemoteSession()`.
+- Hid ownership indicator and contextual task list while syncing to avoid showing stale ranges.
+
+### 🎯 Next steps:
+
+- Re-test macOS sleep/wake + Android mirror to confirm no duplicate owner state appears.
+
 # 🚀 End of file

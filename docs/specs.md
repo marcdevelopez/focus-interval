@@ -1454,6 +1454,11 @@ The MM:SS timer must not shift horizontally:
   **Ready** state; show a loader or keep the last snapshot until the stream updates.
 - Desktop sleep/wake (macOS/Windows/Linux): invalidate any local owner assumption
   and re-verify Firestore before enabling owner controls.
+- If a group is **running** but `activeSession` is temporarily missing (stream
+  reconnecting), show **Syncing session...** instead of rendering potentially
+  stale state. Hide ownership indicators and task ranges until the session arrives.
+- Provide a manual sync affordance in Run Mode (AppBar sync icon) to re-trigger
+  `syncWithRemoteSession()` on demand.
 - After a scheduled auto-start, the first device that starts the session becomes the owner; other devices open in mirror mode until ownership is approved.
 - When ownership changes, mirror devices must discard any local projection and re-anchor exclusively to the activeSession timestamps so pause/resume stays globally consistent.
 - Initial ownership is deterministic: the device that initiates the run
