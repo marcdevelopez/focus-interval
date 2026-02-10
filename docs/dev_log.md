@@ -22,7 +22,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **09/02/2026**
+Last update: **10/02/2026**
 
 ---
 
@@ -4913,5 +4913,12 @@ Mode A global long-break sequencing not fully validated (time constraints).
 ### ✔ Work completed:
 
 - Documented why Linux desktop runs Local Mode only and how to use Web for Account Mode.
+
+# 🔹 Block 328 — Staging setup checklist (10/02/2026)
+
+### ✔ Work completed:
+
+- Added `docs/staging_checklist.md` with a step-by-step STAGING project setup path.
+- Clarified DEV/STAGING/PROD project mapping in `docs/environments.md`.
 
 # 🚀 End of file

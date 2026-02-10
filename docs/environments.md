@@ -12,6 +12,11 @@ Defaults:
 - Release builds must use `prod` (enforced at runtime).
 - Non-release builds cannot use `prod`.
 
+Project mapping:
+- PROD: Firebase project `focus-interval` (the original project).
+- STAGING: Firebase project `focus-interval-staging`.
+- DEV: local emulators only (no real Firebase project).
+
 ## DEV (Emulators only)
 
 DEV is emulator-only by design.
@@ -40,6 +45,7 @@ Emulator UI:
 ## STAGING (separate Firebase project)
 
 Create a dedicated Firebase project for staging and register apps for every platform:
+See `docs/staging_checklist.md` for the full step-by-step setup.
 
 Required apps in the STAGING project:
 - Android: package name `com.marcdevelopez.focusinterval`
