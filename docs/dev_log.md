@@ -4927,4 +4927,29 @@ Mode A global long-break sequencing not fully validated (time constraints).
 
 - Documented that STAGING currently uses Spark and should be upgraded to Blaze only if needed.
 
+# 🔹 Block 330 — Sync + lifecycle stabilization (10/02/2026)
+
+### ✔ Work completed:
+
+- Updated specs with activeSession fields (`currentTaskStartedAt`, `pausedAt`), time-range anchoring rules, pause offset persistence, resume resync, and ownership retry.
+- Reopened Phase 18 items for lifecycle resync, task range anchoring, pause-offset persistence, and ownership retry.
+- Added session schema fields (`currentTaskStartedAt`, `pausedAt`) and propagation in PomodoroViewModel + Firestore sync.
+- Run Mode now persists pause offsets by extending TaskRunGroup.theoreticalEndTime on resume.
+- Run Mode resyncs on AppLifecycleState.resumed and gates controls while syncing; TimerScreen avoids transient Ready by showing a sync loader.
+- Ownership request UI allows retry when a pending request exceeds the stale threshold.
+
+### 🧠 Decisions made:
+
+- Use TaskRunGroup.theoreticalEndTime as the authoritative pause-offset accumulator for task ranges.
+- Keep phaseStartedAt for progress only; task ranges anchor to actualStartTime + accumulated offsets.
+
+### ⚠️ Issues found:
+
+- `tools/check_release_safety.sh` failed before the dev log update (expected); passed after adding this block.
+
+### 🎯 Next steps:
+
+- Re-run `tools/check_release_safety.sh` after dev log update.
+- Validate sync + ownership transfer scenarios on macOS/Android (release builds).
+
 # 🚀 End of file
