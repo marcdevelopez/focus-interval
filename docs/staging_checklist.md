@@ -15,6 +15,10 @@ DEV on local emulators only.
 - Use the same Firestore region as PROD (region cannot be changed later).
 - Confirm billing plan if any required Firebase products need it.
 
+Billing plan note:
+- STAGING is currently on Spark (as of 10/02/2026).
+- Upgrade to Blaze only if a required product needs it or you want to match PROD.
+
 ## 2) Enable the same Firebase products as PROD
 
 - Firestore (Native mode).
@@ -87,4 +91,3 @@ firebase deploy --project focus-interval-staging --only firestore:rules,firestor
 - Sign up / sign in using the STAGING project.
 - Create a task and confirm it appears in the STAGING Firestore console.
 - Confirm data is **not** written to PROD.
-

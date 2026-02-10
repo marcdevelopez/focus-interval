@@ -4921,4 +4921,10 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Added `docs/staging_checklist.md` with a step-by-step STAGING project setup path.
 - Clarified DEV/STAGING/PROD project mapping in `docs/environments.md`.
 
+# 🔹 Block 329 — Staging billing plan note (10/02/2026)
+
+### ✔ Work completed:
+
+- Documented that STAGING currently uses Spark and should be upgraded to Blaze only if needed.
+
 # 🚀 End of file
