@@ -513,6 +513,12 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final ownerDeviceId =
         isSessionForGroup ? activeSession.ownerDeviceId : deviceId;
     final isMirror = isSessionForGroup && ownerDeviceId != deviceId;
+    final isResyncing = vm.isResyncing;
+    final shouldShowResyncLoader =
+        _taskLoaded &&
+        !isPreRun &&
+        state.phase == null &&
+        (isResyncing || isSessionForGroup);
     _syncInactiveRepaint(state: state, isMirror: isMirror);
     final ownershipRequest = vm.ownershipRequest;
     final hasPendingOwnershipRequest = vm.hasPendingOwnershipRequest;
@@ -575,8 +581,21 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                 const SizedBox(height: 12),
                 Expanded(
                   child: Center(
-                    child: _taskLoaded
-                        ? TimerDisplay(
+                    child: (!_taskLoaded || shouldShowResyncLoader)
+                        ? Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const CircularProgressIndicator(),
+                              const SizedBox(height: 12),
+                              Text(
+                                _taskLoaded
+                                    ? "Syncing session..."
+                                    : "Loading group...",
+                                style: const TextStyle(color: Colors.white70),
+                              ),
+                            ],
+                          )
+                        : TimerDisplay(
                             state: isPreRun ? _preRunState(preRunInfo) : state,
                             phaseColorOverride: isPreRun
                                 ? _PreRunCenterContent.preRunColor
@@ -596,17 +615,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                                     state: state,
                                     vm: vm,
                                   ),
-                          )
-                        : Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              CircularProgressIndicator(),
-                              SizedBox(height: 12),
-                              Text(
-                                "Loading group...",
-                                style: TextStyle(color: Colors.white70),
-                              ),
-                            ],
                           ),
                   ),
                 ),
@@ -1324,6 +1332,7 @@ class _ControlsBar extends StatelessWidget {
     final canRequestOwnership = vm.canRequestOwnership;
     final isPendingForSelf = vm.isOwnershipRequestPendingForThisDevice;
     final isPendingForOther = vm.isOwnershipRequestPendingForOther;
+    final isPendingStaleForSelf = vm.isOwnershipRequestStaleForThisDevice;
     final controlsEnabled = vm.canControlSession;
     final showLocalPauseInfo =
         isLocalMode && state.status == PomodoroStatus.paused;
@@ -1349,6 +1358,7 @@ class _ControlsBar extends StatelessWidget {
             canRequestOwnership: canRequestOwnership,
             isPendingForSelf: isPendingForSelf,
             isPendingForOther: isPendingForOther,
+            isPendingStaleForSelf: isPendingStaleForSelf,
           ),
         if (isIdle)
           _btn(
@@ -1383,12 +1393,18 @@ class _ControlsBar extends StatelessWidget {
     required bool canRequestOwnership,
     required bool isPendingForSelf,
     required bool isPendingForOther,
+    required bool isPendingStaleForSelf,
   }) {
     String label = 'Request';
     VoidCallback? onPressed = canRequestOwnership ? onRequestOwnership : null;
     if (isPendingForSelf) {
-      label = 'Requested';
-      onPressed = null;
+      if (isPendingStaleForSelf && canRequestOwnership) {
+        label = 'Retry';
+        onPressed = onRequestOwnership;
+      } else {
+        label = 'Requested';
+        onPressed = null;
+      }
     } else if (isPendingForOther) {
       label = 'Pending';
       onPressed = null;

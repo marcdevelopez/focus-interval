@@ -197,6 +197,9 @@ class TaskRunItem {
 Notes:
 
 - theoreticalEndTime is calculated when the group is scheduled or started, using scheduledStartTime (if set) or now (for immediate start). Recalculate if the start time changes.
+- During execution, theoreticalEndTime must be extended by **total pause offsets**
+  (cumulative paused time). The owner updates this on resume so all devices share
+  the same projected end.
 - Expected lifecycle: scheduled -> running -> completed (or canceled).
 - Conceptual pre-run state: scheduled -> preparing -> running (preparing is UI-only and does not change the model).
 - A scheduled group must transition to running at scheduledStartTime.
@@ -235,7 +238,9 @@ class PomodoroSession {
 
   int phaseDurationSeconds; // duration of the current phase
   int remainingSeconds;     // required for paused; running is projected from phaseStartedAt
-  DateTime phaseStartedAt;  // serverTimestamp on start/resume
+  DateTime phaseStartedAt;  // serverTimestamp on start/resume (phase progress only)
+  DateTime? currentTaskStartedAt; // actual start of the current task (for time ranges)
+  DateTime? pausedAt;       // serverTimestamp when pause begins (status == paused)
   DateTime lastUpdatedAt;   // serverTimestamp of the last event
   DateTime? finishedAt;     // serverTimestamp when the group reaches completed
   String? pauseReason;      // optional; "user" when paused manually
@@ -251,6 +256,14 @@ class OwnershipRequest {
   String? respondedByDeviceId;
 }
 ```
+
+Notes:
+
+- `phaseStartedAt` is **only** for phase progress/projection; it must never anchor
+  task/group time ranges.
+- `currentTaskStartedAt` is authoritative for the active task start and must be
+  published by the owner whenever the task changes.
+- `pausedAt` is required to compute cross-device pause offsets when any device resumes.
 
 ## **5.4. UserProfile model (Account Mode only)**
 
@@ -477,6 +490,8 @@ users/{uid}/activeSession
     explicitly accept or reject.
   - If the owner is inactive (lastUpdatedAt older than the stale threshold), the first
     requester auto-claims ownership atomically and clears ownershipRequest.
+- When resuming from a paused session, the owner must extend the TaskRunGroup
+  theoreticalEndTime by the pause duration (`now - pausedAt`) before continuing.
 - The owner device must publish heartbeats (lastUpdatedAt) at least every 30s while
   a session is active (running or paused) to signal liveness.
 - activeSession represents only an in-progress execution and must be cleared when the group reaches a terminal state (completed or canceled).
@@ -1355,6 +1370,12 @@ Location: below the circle and above Pause/Cancel buttons.
 - Completed task item is slightly narrower (≈92–96% width), centered, and must
   keep full legibility without shifting the overall layout.
 - Completed tasks keep their actual time range; current/upcoming tasks are projected.
+- **Authoritative time range anchoring (task list):**
+  - Start = `TaskRunGroup.actualStartTime + accumulated previous task durations +
+    pause offsets before the task`.
+  - End = start + task duration (**plus** pause time since task start for the current task).
+  - **Do not** use `activeSession.phaseStartedAt` to anchor task/group starts; it is
+    only for phase progress.
 
 Cases
 
@@ -1428,6 +1449,11 @@ The MM:SS timer must not shift horizontally:
 - Remaining time is calculated from phaseStartedAt + phaseDurationSeconds.
 - Mirror devices render task names/durations from the TaskRunGroup snapshot (by groupId), not from the editable task list.
 - When auto-open is triggered from launch/resume, open TimerScreen in mirror mode if the session belongs to another device.
+- On `AppLifecycleState.resumed`, force an immediate sync (activeSession + group)
+  before enabling controls. While resyncing, the UI must not show a transient
+  **Ready** state; show a loader or keep the last snapshot until the stream updates.
+- Desktop sleep/wake (macOS/Windows/Linux): invalidate any local owner assumption
+  and re-verify Firestore before enabling owner controls.
 - After a scheduled auto-start, the first device that starts the session becomes the owner; other devices open in mirror mode until ownership is approved.
 - When ownership changes, mirror devices must discard any local projection and re-anchor exclusively to the activeSession timestamps so pause/resume stays globally consistent.
 - Initial ownership is deterministic: the device that initiates the run
@@ -1474,6 +1500,8 @@ The MM:SS timer must not shift horizontally:
   only via the AppBar ownership indicator (e.g., amber/orange). Do not render
   inline or overlayed body text; the ownership info sheet should include the
   "Waiting for owner approval..." message.
+- If a pending ownership request exceeds the stale threshold, surface a **Retry**
+  action and allow the requester to re-send the request.
 - Show a one-time, non-blocking education message on the first owner start
   (Start now or auto-start) per device:
   - “This device controls the execution. Other devices will connect in view-only mode.”

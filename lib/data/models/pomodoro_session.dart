@@ -18,6 +18,8 @@ class PomodoroSession {
   final int phaseDurationSeconds;
   final int remainingSeconds;
   final DateTime? phaseStartedAt;
+  final DateTime? currentTaskStartedAt;
+  final DateTime? pausedAt;
   final DateTime? lastUpdatedAt;
   final DateTime? finishedAt;
   final String? pauseReason;
@@ -38,6 +40,8 @@ class PomodoroSession {
     required this.phaseDurationSeconds,
     required this.remainingSeconds,
     required this.phaseStartedAt,
+    required this.currentTaskStartedAt,
+    required this.pausedAt,
     required this.lastUpdatedAt,
     required this.finishedAt,
     required this.pauseReason,
@@ -59,6 +63,8 @@ class PomodoroSession {
     'phaseDurationSeconds': phaseDurationSeconds,
     'remainingSeconds': remainingSeconds,
     'phaseStartedAt': phaseStartedAt,
+    'currentTaskStartedAt': currentTaskStartedAt,
+    'pausedAt': pausedAt,
     'lastUpdatedAt': lastUpdatedAt,
     'finishedAt': finishedAt,
     'pauseReason': pauseReason,
@@ -91,14 +97,22 @@ class PomodoroSession {
       totalPomodoros: _readInt(map, 'totalPomodoros') ?? 0,
       phaseDurationSeconds: _readInt(map, 'phaseDurationSeconds') ?? 0,
       remainingSeconds: _readInt(map, 'remainingSeconds') ?? 0,
-      phaseStartedAt: (map['phaseStartedAt'] as Timestamp?)?.toDate(),
-      lastUpdatedAt: (map['lastUpdatedAt'] as Timestamp?)?.toDate(),
-      finishedAt: (map['finishedAt'] as Timestamp?)?.toDate(),
+      phaseStartedAt: _readDateTime(map['phaseStartedAt']),
+      currentTaskStartedAt: _readDateTime(map['currentTaskStartedAt']),
+      pausedAt: _readDateTime(map['pausedAt']),
+      lastUpdatedAt: _readDateTime(map['lastUpdatedAt']),
+      finishedAt: _readDateTime(map['finishedAt']),
       pauseReason: map['pauseReason'] as String?,
       ownershipRequest: OwnershipRequest.fromMap(
         map['ownershipRequest'] as Map<String, dynamic>?,
       ),
     );
+  }
+
+  static DateTime? _readDateTime(dynamic value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    return null;
   }
 
   static int? _readInt(Map<String, dynamic> map, String key) {

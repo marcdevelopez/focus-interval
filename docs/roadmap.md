@@ -141,6 +141,10 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 6 — Account profile metadata (display name + avatar) in Firestore/Storage; Settings UI (Account Mode only); ownership UI uses Name (Platform) (new requirement).
 - Phase 18 — Mode-specific breaks (global long-break counter in Mode A) implemented; validation pending.
 - Phase 18 — Run Mode task transition catch-up after background/resume (validation pending).
+- Phase 18 — Run Mode lifecycle resync on resume (no transient Ready state; owner re-verify before controls) (bug).
+- Phase 18 — Run Mode task ranges must anchor to group actualStartTime + accumulated durations + pause offsets (no phaseStartedAt) (bug).
+- Phase 18 — Pause offsets must extend TaskRunGroup.theoreticalEndTime on resume (cross-device) (bug).
+- Phase 18 — Ownership request retry when pending exceeds stale threshold (bug).
 - Phase 18 — Completion modal + Groups Hub navigation must work on owner and mirror devices (validation pending).
 - Phase 18 — Run Mode ownership visibility + take ownership UX (new requirement).
 - Phase 18 — Ownership transfer requires owner approval + rejection state (new requirement).
