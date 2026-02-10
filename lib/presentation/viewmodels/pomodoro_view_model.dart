@@ -302,7 +302,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         _expectedTaskStart(group, index) ??
         group.actualStartTime ??
         group.createdAt;
-    if (expectedStart == null) return null;
     final pauseOffsetSeconds = _totalPausedSecondsFromGroup(group);
     return expectedStart.add(Duration(seconds: pauseOffsetSeconds));
   }
