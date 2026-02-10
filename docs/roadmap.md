@@ -145,6 +145,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 18 — Run Mode task ranges must anchor to group actualStartTime + accumulated durations + pause offsets (no phaseStartedAt) (bug).
 - Phase 18 — Pause offsets must extend TaskRunGroup.theoreticalEndTime on resume (cross-device) (bug).
 - Phase 18 — Ownership request retry when pending exceeds stale threshold (bug).
+- Phase 18 — Run Mode shows Syncing state when activeSession is missing + manual refresh (sync icon) (bug).
 - Phase 18 — Completion modal + Groups Hub navigation must work on owner and mirror devices (validation pending).
 - Phase 18 — Run Mode ownership visibility + take ownership UX (new requirement).
 - Phase 18 — Ownership transfer requires owner approval + rejection state (new requirement).

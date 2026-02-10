@@ -500,6 +500,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
     final state = ref.watch(pomodoroViewModelProvider);
     final appMode = ref.watch(appModeProvider);
+    final isAccountMode = appMode == AppMode.account;
     final preRunInfo = _preRunInfo;
     final isPreRun = preRunInfo != null && _taskLoaded;
     final shouldBlockExit = state.status.isActiveExecution;
@@ -511,24 +512,27 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         currentGroup != null &&
         activeSession.groupId == currentGroup.id;
     final ownerDeviceId =
-        isSessionForGroup ? activeSession.ownerDeviceId : deviceId;
+        isSessionForGroup ? activeSession.ownerDeviceId : null;
     final isMirror = isSessionForGroup && ownerDeviceId != deviceId;
     final isResyncing = vm.isResyncing;
+    final isSessionMissingWhileRunning =
+        isAccountMode &&
+        currentGroup?.status == TaskRunStatus.running &&
+        !isSessionForGroup;
     final shouldShowResyncLoader =
-        _taskLoaded &&
-        !isPreRun &&
-        state.phase == null &&
-        (isResyncing || isSessionForGroup);
+        _taskLoaded && !isPreRun && (isResyncing || isSessionMissingWhileRunning);
     _syncInactiveRepaint(state: state, isMirror: isMirror);
     final ownershipRequest = vm.ownershipRequest;
     final hasPendingOwnershipRequest = vm.hasPendingOwnershipRequest;
     final isPendingForSelf = vm.isOwnershipRequestPendingForThisDevice;
     final showOwnerRequestBanner =
+        isSessionForGroup &&
         !isMirror &&
         hasPendingOwnershipRequest &&
         ownershipRequest != null &&
         ownershipRequest.requesterDeviceId != deviceId;
     final showOwnershipOverlay = showOwnerRequestBanner;
+    final showOwnershipIndicator = ownerDeviceId != null;
 
     if (currentGroup?.status == TaskRunStatus.canceled &&
         !_cancelNavigationHandled) {
@@ -559,7 +563,23 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           backgroundColor: Colors.black,
           title: const Text("Focus Interval"),
           actions: [
-            if (currentGroup != null)
+            if (currentGroup != null && isAccountMode)
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: isResyncing
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : IconButton(
+                        tooltip: "Sync session",
+                        icon: const Icon(Icons.sync),
+                        onPressed: () =>
+                            unawaited(vm.syncWithRemoteSession()),
+                      ),
+              ),
+            if (currentGroup != null && showOwnershipIndicator)
               _OwnershipIndicatorAction(
                 isMirror: isMirror,
                 isPendingRequest: isPendingForSelf,
@@ -618,7 +638,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                           ),
                   ),
                 ),
-                if (_taskLoaded)
+                if (_taskLoaded && !shouldShowResyncLoader)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                     child: _ContextualTaskList(vm: vm, preRunInfo: preRunInfo),
