@@ -488,14 +488,18 @@ users/{uid}/activeSession
 - Mirror devices may write a non-authoritative ownershipRequest field to request a transfer.
   - If the owner is active (lastUpdatedAt within the stale threshold), the owner must
     explicitly accept or reject.
-  - If the owner is inactive (lastUpdatedAt older than the stale threshold), any mirror
-    device may auto-claim ownership **without** a manual request. If an ownershipRequest
-    exists, the requester has priority; otherwise the first mirror to detect staleness
-    claims ownership atomically and clears ownershipRequest.
+  - If the owner is inactive (lastUpdatedAt older than the stale threshold):
+    - **Running:** any mirror device may auto-claim ownership **without** a manual request.
+      If an ownershipRequest exists, the requester has priority; otherwise the first
+      mirror to detect staleness claims ownership atomically and clears ownershipRequest.
+    - **Paused:** no automatic takeover without a manual request. If the requester has a
+      pending ownershipRequest and the owner is stale, the requester auto-claims immediately.
 - When resuming from a paused session, the owner must extend the TaskRunGroup
   theoreticalEndTime by the pause duration (`now - pausedAt`) before continuing.
 - The owner device must publish heartbeats (lastUpdatedAt) at least every 30s while
   a session is active (running or paused) to signal liveness.
+- Android: keep the ForegroundService active while paused (owner only) so heartbeats
+  continue even when the app is backgrounded.
 - activeSession represents only an in-progress execution and must be cleared when the group reaches a terminal state (completed or canceled).
 - If a device observes an activeSession referencing a group that is not running (or missing), it must treat the session as stale and clear it.
 - If a running group has passed its theoreticalEndTime and the activeSession has not updated within the stale threshold, any device may clear the session and complete the group to prevent zombie runs.
@@ -1479,9 +1483,10 @@ The MM:SS timer must not shift horizontally:
     rejection indicator near the request control (tap for time/details). The
     requester can re-submit at any time.
 - Ownership changes only after approval when the owner is active. If the owner is
-  inactive (stale lastUpdatedAt), any mirror device may auto-claim even without a
-  manual request. If an ownershipRequest exists, the requester has priority. This is
-  based on session liveness (heartbeat), not app focus.
+  inactive (stale lastUpdatedAt):
+  - **Running:** any mirror device may auto-claim even without a manual request.
+  - **Paused:** only a requester with a pending ownershipRequest may auto-claim.
+  This is based on session liveness (heartbeat), not app focus.
 
 ### **10.4.9. Ownership visibility in Run Mode**
 

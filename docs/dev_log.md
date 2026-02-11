@@ -4998,4 +4998,12 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Added post-request resync after approve/reject/request to remove transient control mismatches.
 - Updated scheduled session staleness checks to align with the new threshold.
 
+# 🔹 Block 336 — Paused ownership stability + Android paused heartbeats (11/02/2026)
+
+### ✔ Work completed:
+
+- Limited auto-claim to running sessions; paused sessions only auto-claim when a pending requester is stale.
+- Added Android owner heartbeats during paused state via ForegroundService.
+- Documented paused ownership stability rules in specs.
+
 # 🚀 End of file

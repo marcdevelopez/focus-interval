@@ -177,7 +177,7 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
         (e) => e.name == statusRaw,
         orElse: () => PomodoroStatus.idle,
       );
-      if (!status.isActiveExecution) return false;
+      if (!status.isRunning) return false;
       final updatedAt = (data['lastUpdatedAt'] as Timestamp?)?.toDate();
       final isStale =
           updatedAt == null ||
