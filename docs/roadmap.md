@@ -123,6 +123,10 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
                   with redistribution + adjusted-end notice).
       08/02/2026: Planning redistribution max-fit + inline adjusted-end notice + unit tests added
                   (validation pending).
+      11/02/2026: Ownership publish guard + ownership UI refresh to prevent stale owner flips
+                  (validation pending).
+      11/02/2026: Desktop inactive resync keepalive to surface ownership requests
+                  while the window is inactive (validation pending).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 

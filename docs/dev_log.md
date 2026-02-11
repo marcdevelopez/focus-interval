@@ -4971,4 +4971,22 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Documented that any new Firestore collection/path requires updating `firestore.rules`
   and redeploying rules/indexes (AGENTS, release safety, Copilot instructions).
 
+# 🔹 Block 333 — Ownership sync guard + UI refresh (11/02/2026)
+
+### ✔ Work completed:
+
+- Guarded activeSession publishes to prevent non-owners from overwriting `ownerDeviceId`.
+- Triggered UI refresh when ownership metadata changes (owner/device or request) even if state is unchanged.
+
+### 🎯 Next steps:
+
+- Re-test ownership transfer while the prior owner is backgrounded/asleep on macOS + Android mirror.
+
+# 🔹 Block 334 — Desktop inactive resync keepalive (11/02/2026)
+
+### ✔ Work completed:
+
+- Added a periodic inactive resync in Account Mode to surface ownership requests and avoid stale controls on desktop.
+- Documented the inactive resync keepalive behavior in the Run Mode sync specs.
+
 # 🚀 End of file

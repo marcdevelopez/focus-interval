@@ -33,6 +33,7 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
   @override
   Future<void> publishSession(PomodoroSession session) async {
     final uid = await _uidOrThrow();
+    final docRef = _doc(uid);
     final data = {
       ...session.toMap(),
       'lastUpdatedAt': FieldValue.serverTimestamp(),
@@ -40,7 +41,18 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
     if (session.status == PomodoroStatus.finished && session.finishedAt == null) {
       data['finishedAt'] = FieldValue.serverTimestamp();
     }
-    await _doc(uid).set(data, SetOptions(merge: true));
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(docRef);
+      if (!snap.exists || snap.data() == null) {
+        tx.set(docRef, data, SetOptions(merge: true));
+        return;
+      }
+      final currentOwner = snap.data()!['ownerDeviceId'] as String?;
+      if (currentOwner != null && currentOwner != session.ownerDeviceId) {
+        return;
+      }
+      tx.set(docRef, data, SetOptions(merge: true));
+    });
   }
 
   @override

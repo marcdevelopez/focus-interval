@@ -1454,6 +1454,9 @@ The MM:SS timer must not shift horizontally:
   **Ready** state; show a loader or keep the last snapshot until the stream updates.
 - Desktop sleep/wake (macOS/Windows/Linux): invalidate any local owner assumption
   and re-verify Firestore before enabling owner controls.
+- Desktop inactive keepalive: while a group is running and the window is inactive,
+  periodically re-sync activeSession (≈15s) to surface ownership requests and avoid
+  stale controls. Stop when the window is active.
 - If a group is **running** but `activeSession` is temporarily missing (stream
   reconnecting), show **Syncing session...** instead of rendering potentially
   stale state. Hide ownership indicators and task ranges until the session arrives.
