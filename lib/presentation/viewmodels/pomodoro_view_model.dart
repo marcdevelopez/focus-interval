@@ -1128,22 +1128,38 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         updatedAt == null || now.difference(updatedAt) >= _staleSessionGrace;
     if (!isStale) return;
     final request = session.ownershipRequest;
-    if (request != null &&
-        request.status == OwnershipRequestStatus.pending &&
-        request.requesterDeviceId != _deviceInfo.deviceId) {
-      return;
-    }
+    final hasPending =
+        request != null && request.status == OwnershipRequestStatus.pending;
+    final pendingForSelf =
+        hasPending && request!.requesterDeviceId == _deviceInfo.deviceId;
+    final pendingForOther = hasPending && !pendingForSelf;
     final lastAttempt = _lastAutoTakeoverAttemptAt;
     if (lastAttempt != null &&
         now.difference(lastAttempt) < const Duration(seconds: 10)) {
       return;
     }
+    if (session.status == PomodoroStatus.paused) {
+      if (!pendingForSelf) return;
+      _lastAutoTakeoverAttemptAt = now;
+      unawaited(
+        _sessionRepo.requestOwnership(
+          requesterDeviceId: _deviceInfo.deviceId,
+        ),
+      );
+      unawaited(syncWithRemoteSession(refreshGroup: false));
+      return;
+    }
+    if (pendingForOther) return;
     _lastAutoTakeoverAttemptAt = now;
-    unawaited(
-      _sessionRepo.tryAutoClaimStaleOwner(
-        requesterDeviceId: _deviceInfo.deviceId,
-      ),
+    unawaited(_autoClaimAndResync());
+  }
+
+  Future<void> _autoClaimAndResync() async {
+    final claimed = await _sessionRepo.tryAutoClaimStaleOwner(
+      requesterDeviceId: _deviceInfo.deviceId,
     );
+    if (!claimed) return;
+    await syncWithRemoteSession(refreshGroup: false);
   }
 
   void _updateMirrorStateFromSession(PomodoroSession session) {
@@ -1443,7 +1459,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       return;
     }
     final shouldRun =
-        _isRunning(state.status) ||
+        state.status.isActiveExecution ||
         (state.status == PomodoroStatus.finished && !_groupCompleted);
     if (!shouldRun) {
       _stopForegroundService();
@@ -1483,6 +1499,9 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       case PomodoroPhase.pomodoro:
         return 'Pomodoro running';
       default:
+        if (state.status == PomodoroStatus.paused) {
+          return 'Pomodoro paused';
+        }
         return 'Focus Interval is active';
     }
   }
