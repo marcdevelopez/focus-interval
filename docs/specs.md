@@ -505,6 +505,14 @@ users/{uid}/activeSession
 - activeSession represents only an in-progress execution and must be cleared when the group reaches a terminal state (completed or canceled).
 - If a device observes an activeSession referencing a group that is not running (or missing), it must treat the session as stale and clear it.
 - If a running group has passed its theoreticalEndTime and the activeSession has not updated within the stale threshold, any device may clear the session and complete the group to prevent zombie runs.
+- Do not expire/complete running groups while the activeSession stream is still loading
+  (unknown session state). Expiry checks may only run after at least one session snapshot
+  has been observed.
+- Expiry/cleanup is only allowed when the activeSession exists, is **running**, and
+  its groupId matches the running group being evaluated. If the session is missing,
+  paused, or belongs to a different group, do not complete.
+- Repositories must **never** auto-complete groups based on time during reads/streams.
+  Status changes only occur through the coordinator/viewmodel expiry rules above.
 - Stale threshold definition (activeSession + ownership): 45 seconds without
   lastUpdatedAt updates (≈1-2 heartbeats).
 - If `lastUpdatedAt` is temporarily missing (e.g., server timestamp not yet

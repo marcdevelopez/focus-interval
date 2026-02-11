@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart'
+    show debugPrint, kDebugMode, visibleForTesting;
 
 import '../models/task_run_group.dart';
 import '../services/firebase_auth_service.dart';
@@ -185,6 +187,7 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
     required String docId,
     required Map<String, dynamic> raw,
     required DateTime now,
+    bool allowWrites = true,
   }) {
     final normalized = Map<String, dynamic>.from(raw);
     final hasCreated = normalized['createdAt'] != null;
@@ -202,12 +205,14 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
       final updatedAt = hasUpdated ? normalized['updatedAt'] : createdAt;
       normalized['createdAt'] = createdAt;
       normalized['updatedAt'] = updatedAt;
-      unawaited(
-        _collection(uid).doc(docId).set({
-          'createdAt': createdAt,
-          'updatedAt': updatedAt,
-        }, SetOptions(merge: true)),
-      );
+      if (allowWrites) {
+        unawaited(
+          _collection(uid).doc(docId).set({
+            'createdAt': createdAt,
+            'updatedAt': updatedAt,
+          }, SetOptions(merge: true)),
+        );
+      }
     }
 
     if (!hasId || !hasOwner) {
@@ -215,29 +220,48 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
       final ownerUid = hasOwner ? normalized['ownerUid'] : uid;
       normalized['id'] = id;
       normalized['ownerUid'] = ownerUid;
-      unawaited(
-        _collection(uid).doc(docId).set({
-          'id': id,
-          'ownerUid': ownerUid,
-        }, SetOptions(merge: true)),
-      );
+      if (allowWrites) {
+        unawaited(
+          _collection(uid).doc(docId).set({
+            'id': id,
+            'ownerUid': ownerUid,
+          }, SetOptions(merge: true)),
+        );
+      }
     }
 
     final status = normalized['status'] as String?;
     if (status == TaskRunStatus.running.name) {
       final endTime = _resolveTheoreticalEndTime(normalized);
       if (endTime != null && endTime.isBefore(now)) {
-        normalized['status'] = TaskRunStatus.completed.name;
-        normalized['updatedAt'] = now.toIso8601String();
-        unawaited(
-          _collection(uid).doc(docId).set({
-            'status': TaskRunStatus.completed.name,
-            'updatedAt': now.toIso8601String(),
-          }, SetOptions(merge: true)),
-        );
+        if (kDebugMode) {
+          debugPrint(
+            '[RepoNormalize][skip-complete] '
+            'groupId=${normalized['id'] ?? docId} '
+            'status=running '
+            'theoreticalEndTime=$endTime '
+            'now=$now',
+          );
+        }
       }
     }
     return normalized;
+  }
+
+  @visibleForTesting
+  Map<String, dynamic> normalizeMapForTest({
+    required Map<String, dynamic> raw,
+    required DateTime now,
+    String uid = 'test-user',
+    String docId = 'test-doc',
+  }) {
+    return _normalizeMap(
+      uid: uid,
+      docId: docId,
+      raw: raw,
+      now: now,
+      allowWrites: false,
+    );
   }
 
   DateTime? _resolveTheoreticalEndTime(Map<String, dynamic> raw) {

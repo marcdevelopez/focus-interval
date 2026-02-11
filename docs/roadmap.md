@@ -135,6 +135,12 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
                   (validation pending).
       11/02/2026: Stale ownership checks ignore missing lastUpdatedAt to avoid
                   phantom auto-claims/cleanup (validation pending).
+      11/02/2026: Running-group expiry waits for the first activeSession snapshot
+                  to avoid completing paused sessions on resume (validation pending).
+      11/02/2026: Running-group expiry now requires an activeSession that is
+                  running and matches the groupId (validation pending).
+      11/02/2026: Removed repository auto-complete-on-read; expiry is enforced
+                  only by coordinator/viewmodel guards (validation pending).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
