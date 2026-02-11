@@ -39,6 +39,7 @@ class _GroupResumeProjection {
 
 class PomodoroViewModel extends Notifier<PomodoroState> {
   static const int _heartbeatIntervalSeconds = 30;
+  static const Duration _inactiveResyncInterval = Duration(seconds: 15);
   static const Duration _staleSessionGrace = Duration(seconds: 90);
   late PomodoroMachine _machine;
   StreamSubscription<PomodoroState>? _sub;
@@ -57,6 +58,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   StreamSubscription<PomodoroSession?>? _sessionSub;
   Timer? _mirrorTimer;
   Timer? _pausedHeartbeatTimer;
+  Timer? _inactiveResyncTimer;
   String? _remoteOwnerId;
   PomodoroSession? _remoteSession;
   PomodoroSession? _latestSession;
@@ -94,6 +96,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       _sessionSub?.cancel();
       _mirrorTimer?.cancel();
       _pausedHeartbeatTimer?.cancel();
+      _inactiveResyncTimer?.cancel();
       _stopForegroundService();
     });
 
@@ -927,7 +930,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   void _subscribeToRemoteSession() {
     _sessionSub?.cancel();
     _sessionSub = _sessionRepo.watchSession().listen((session) {
+      final previousSession = _latestSession;
       _latestSession = session;
+      final ownershipMetaChanged =
+          _didOwnershipMetaChange(previousSession, session);
       if (session == null) {
         _mirrorTimer?.cancel();
         _remoteOwnerId = null;
@@ -943,6 +949,9 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
           state = base.status == PomodoroStatus.idle && base.totalSeconds > 0
               ? base
               : _idlePreviewState();
+        }
+        if (ownershipMetaChanged) {
+          _notifySessionMetaChanged();
         }
         return;
       }
@@ -967,6 +976,9 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
             unawaited(_hydrateOwnerSession(session));
           }
         }
+        if (ownershipMetaChanged) {
+          _notifySessionMetaChanged();
+        }
         return;
       }
       if (_currentGroup != null) {
@@ -977,6 +989,9 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
           _lastAutoTakeoverAttemptAt = null;
           _stopPausedHeartbeat();
           _stopForegroundService();
+          if (ownershipMetaChanged) {
+            _notifySessionMetaChanged();
+          }
           return;
         }
         _applySessionTaskContext(session);
@@ -988,6 +1003,9 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         _lastAutoTakeoverAttemptAt = null;
         _stopPausedHeartbeat();
         _stopForegroundService();
+        if (ownershipMetaChanged) {
+          _notifySessionMetaChanged();
+        }
         return;
       }
       final wasOwner =
@@ -1001,8 +1019,36 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       _stopPausedHeartbeat();
       _stopForegroundService();
       _setMirrorSession(session);
+      if (ownershipMetaChanged) {
+        _notifySessionMetaChanged();
+      }
     });
   }
+
+  void _notifySessionMetaChanged() {
+    state = state;
+  }
+
+  bool _didOwnershipMetaChange(
+    PomodoroSession? previous,
+    PomodoroSession? next,
+  ) {
+    if (previous?.ownerDeviceId != next?.ownerDeviceId) return true;
+    final previousRequest = previous?.ownershipRequest;
+    final nextRequest = next?.ownershipRequest;
+    return !_sameOwnershipRequest(previousRequest, nextRequest);
+  }
+
+  bool _sameOwnershipRequest(OwnershipRequest? first, OwnershipRequest? second) {
+    if (first == null || second == null) return first == second;
+    return first.requesterDeviceId == second.requesterDeviceId &&
+        first.status == second.status &&
+        _epoch(first.requestedAt) == _epoch(second.requestedAt) &&
+        _epoch(first.respondedAt) == _epoch(second.respondedAt) &&
+        first.respondedByDeviceId == second.respondedByDeviceId;
+  }
+
+  int? _epoch(DateTime? value) => value?.millisecondsSinceEpoch;
 
   Future<void> _hydrateOwnerSession(PomodoroSession session) async {
     if (_currentGroup != null) {
@@ -1472,12 +1518,18 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   void handleAppPaused() {
     if (_currentItem == null && _currentTask == null) return;
+    final appMode = ref.read(appModeProvider);
+    if (appMode == AppMode.account) {
+      _startInactiveResync();
+      return;
+    }
     if (_remoteOwnerId != null) return;
     // Keep running in background; no auto-pause or prompt.
   }
 
   void handleAppResumed() {
     if (_currentItem == null && _currentTask == null) return;
+    _stopInactiveResync();
     final appMode = ref.read(appModeProvider);
     if (appMode == AppMode.account) {
       unawaited(syncWithRemoteSession());
@@ -1529,6 +1581,31 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (_isSameState(current, projected)) return;
     _applyProjectedState(projected, now: now);
     _publishCurrentSession();
+  }
+
+  void _startInactiveResync() {
+    if (_inactiveResyncTimer != null) return;
+    if (!_shouldResyncWhileInactive()) return;
+    _inactiveResyncTimer = Timer.periodic(_inactiveResyncInterval, (_) {
+      if (!_shouldResyncWhileInactive()) {
+        _stopInactiveResync();
+        return;
+      }
+      unawaited(syncWithRemoteSession(refreshGroup: false));
+    });
+  }
+
+  void _stopInactiveResync() {
+    _inactiveResyncTimer?.cancel();
+    _inactiveResyncTimer = null;
+  }
+
+  bool _shouldResyncWhileInactive() {
+    final appMode = ref.read(appModeProvider);
+    if (appMode != AppMode.account) return false;
+    if (state.status.isActiveExecution) return true;
+    if (_currentGroup?.status == TaskRunStatus.running) return true;
+    return _currentTask != null;
   }
 
   Future<void> syncWithRemoteSession({bool refreshGroup = true}) async {
