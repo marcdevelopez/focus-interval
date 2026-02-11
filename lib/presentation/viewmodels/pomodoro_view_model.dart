@@ -647,12 +647,11 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (!_controlsEnabled) return;
     _resetLocalSessionState();
     await _markGroupCanceled();
-    await _sessionRepo.clearSession();
+    await _sessionRepo.clearSessionAsOwner();
   }
 
   void applyRemoteCancellation() {
     _resetLocalSessionState();
-    _sessionRepo.clearSession();
   }
 
   Future<void> requestOwnership() async {
@@ -768,7 +767,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         session.groupId != groupId) {
       return;
     }
-    await _sessionRepo.clearSession();
+    await _sessionRepo.clearSessionAsOwner();
   }
 
   Future<void> _markGroupCanceled() async {
@@ -1124,14 +1123,16 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (!session.status.isActiveExecution) return;
     final updatedAt = session.lastUpdatedAt;
     final now = DateTime.now();
-    final isStale =
-        updatedAt == null || now.difference(updatedAt) >= _staleSessionGrace;
+    if (updatedAt == null) return;
+    final isStale = now.difference(updatedAt) >= _staleSessionGrace;
     if (!isStale) return;
     final request = session.ownershipRequest;
     final hasPending =
         request != null && request.status == OwnershipRequestStatus.pending;
     final pendingForSelf =
-        hasPending && request!.requesterDeviceId == _deviceInfo.deviceId;
+        request != null &&
+        request.status == OwnershipRequestStatus.pending &&
+        request.requesterDeviceId == _deviceInfo.deviceId;
     final pendingForOther = hasPending && !pendingForSelf;
     final lastAttempt = _lastAutoTakeoverAttemptAt;
     if (lastAttempt != null &&
@@ -1141,12 +1142,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (session.status == PomodoroStatus.paused) {
       if (!pendingForSelf) return;
       _lastAutoTakeoverAttemptAt = now;
-      unawaited(
-        _sessionRepo.requestOwnership(
-          requesterDeviceId: _deviceInfo.deviceId,
-        ),
-      );
-      unawaited(syncWithRemoteSession(refreshGroup: false));
+      unawaited(_autoClaimAndResync());
       return;
     }
     if (pendingForOther) return;
@@ -1707,7 +1703,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     try {
       final group = await _groupRepo.getById(groupId);
       if (group == null || group.status != TaskRunStatus.running) {
-        await _sessionRepo.clearSession();
+        await _sessionRepo.clearSessionIfGroupNotRunning();
         return null;
       }
       if (session.status.isRunning &&
@@ -1718,7 +1714,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
           updatedAt: now,
         );
         await _groupRepo.save(updated);
-        await _sessionRepo.clearSession();
+        await _sessionRepo.clearSessionIfStale(now: now);
         return null;
       }
     } catch (_) {
@@ -1729,7 +1725,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   bool _isSessionStaleForCleanup(PomodoroSession session, DateTime now) {
     final updatedAt = session.lastUpdatedAt;
-    if (updatedAt == null) return true;
+    if (updatedAt == null) return false;
     return now.difference(updatedAt) >= _staleSessionGrace;
   }
 

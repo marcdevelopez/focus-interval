@@ -5006,4 +5006,20 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Added Android owner heartbeats during paused state via ForegroundService.
 - Documented paused ownership stability rules in specs.
 
+# 🔹 Block 337 — Ownership API hardening (11/02/2026)
+
+### ✔ Work completed:
+
+- Split ownership request vs auto-claim responsibilities (request never changes owner).
+- Made auto-claim status-aware inside the transaction (running vs paused).
+- Added owner-only clearSession path plus explicit stale/invalid cleanup helpers.
+
+# 🔹 Block 338 — Stale null guard for ownership (11/02/2026)
+
+### ✔ Work completed:
+
+- Treated missing `lastUpdatedAt` as **not stale** to avoid auto-claim/cleanup
+  during server-timestamp propagation.
+- Applied the guard consistently in auto-claim and stale-cleanup paths.
+
 # 🚀 End of file

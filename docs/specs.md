@@ -486,6 +486,8 @@ users/{uid}/activeSession
 - Only the owner device writes authoritative execution fields; others subscribe in real time and
   render progress by calculating remaining time from phaseStartedAt + phaseDurationSeconds.
 - Mirror devices may write a non-authoritative ownershipRequest field to request a transfer.
+  - `requestOwnership` only creates/updates ownershipRequest; it never changes ownerDeviceId.
+    Ownership changes caused by staleness must use the auto-claim transaction.
   - If the owner is active (lastUpdatedAt within the stale threshold), the owner must
     explicitly accept or reject.
   - If the owner is inactive (lastUpdatedAt older than the stale threshold):
@@ -505,6 +507,9 @@ users/{uid}/activeSession
 - If a running group has passed its theoreticalEndTime and the activeSession has not updated within the stale threshold, any device may clear the session and complete the group to prevent zombie runs.
 - Stale threshold definition (activeSession + ownership): 45 seconds without
   lastUpdatedAt updates (≈1-2 heartbeats).
+- If `lastUpdatedAt` is temporarily missing (e.g., server timestamp not yet
+  materialized), treat the session as **not stale**. Do not auto-claim or clear
+  the session until a concrete timestamp is available.
 - On app launch or after login, if an active session is running (pomodoroRunning/shortBreakRunning/longBreakRunning), auto-open the execution screen for that group.
 - Auto-open must apply on the owner device and on mirror devices (mirror mode with ownership requests).
 - If auto-open cannot occur (missing group data, blocked navigation, or explicit suppression), the user must see a clear entry point to the running group from the initial screen and from Groups Hub.

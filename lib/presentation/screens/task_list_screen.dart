@@ -1060,7 +1060,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final groupStatus = group.status;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!context.mounted) return;
-      await ref.read(pomodoroSessionRepositoryProvider).clearSession();
+      await ref
+          .read(pomodoroSessionRepositoryProvider)
+          .clearSessionIfGroupNotRunning();
       if (!context.mounted) return;
       final message = groupStatus == TaskRunStatus.completed
           ? 'Group completed.'
@@ -2234,14 +2236,14 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final sessionRepo = ref.read(pomodoroSessionRepositoryProvider);
     final groupId = activeSession.groupId;
     if (groupId == null || groupId.isEmpty) {
-      await sessionRepo.clearSession();
+      await sessionRepo.clearSessionIfGroupNotRunning();
       return false;
     }
 
     final groupRepo = ref.read(taskRunGroupRepositoryProvider);
     final group = await groupRepo.getById(groupId);
     if (group == null || group.status != TaskRunStatus.running) {
-      await sessionRepo.clearSession();
+      await sessionRepo.clearSessionIfGroupNotRunning();
       return false;
     }
     return true;

@@ -169,7 +169,7 @@ class _ActiveSessionAutoOpenerState
 
   Future<void> _clearStaleSession() async {
     final sessionRepo = ref.read(pomodoroSessionRepositoryProvider);
-    await sessionRepo.clearSession();
+    await sessionRepo.clearSessionIfGroupNotRunning();
   }
 
   void _scheduleRetry(String groupId) {

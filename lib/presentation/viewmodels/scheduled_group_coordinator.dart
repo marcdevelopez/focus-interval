@@ -171,7 +171,12 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
             activeSession.status.isRunning &&
             (isLocalOwner || _isSessionStale(activeSession, now));
         if (shouldClearActive) {
-          await ref.read(pomodoroSessionRepositoryProvider).clearSession();
+          final sessionRepo = ref.read(pomodoroSessionRepositoryProvider);
+          if (isLocalOwner) {
+            await sessionRepo.clearSessionAsOwner();
+          } else {
+            await sessionRepo.clearSessionIfStale(now: now);
+          }
         }
       }
       debugPrint('Scheduled auto-start suppressed (running group active).');
@@ -229,14 +234,18 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       final repo = ref.read(taskRunGroupRepositoryProvider);
       final latest = await repo.getById(groupId);
       if (latest == null || latest.status != TaskRunStatus.running) {
-        await ref.read(pomodoroSessionRepositoryProvider).clearSession();
+        await ref
+            .read(pomodoroSessionRepositoryProvider)
+            .clearSessionIfGroupNotRunning();
         return true;
       }
       return false;
     }
 
     if (group.status != TaskRunStatus.running) {
-      await ref.read(pomodoroSessionRepositoryProvider).clearSession();
+      await ref
+          .read(pomodoroSessionRepositoryProvider)
+          .clearSessionIfGroupNotRunning();
       return true;
     }
 
@@ -280,7 +289,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
 
   bool _isSessionStale(PomodoroSession session, DateTime now) {
     final updatedAt = session.lastUpdatedAt;
-    if (updatedAt == null) return true;
+    if (updatedAt == null) return false;
     return now.difference(updatedAt) >= _staleSessionGrace;
   }
 
