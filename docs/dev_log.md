@@ -22,7 +22,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **10/02/2026**
+Last update: **11/02/2026**
 
 ---
 
@@ -4963,5 +4963,12 @@ Mode A global long-break sequencing not fully validated (time constraints).
 ### 🎯 Next steps:
 
 - Re-test macOS sleep/wake + Android mirror to confirm no duplicate owner state appears.
+
+# 🔹 Block 332 — Firestore rules deploy requirement (11/02/2026)
+
+### ✔ Work completed:
+
+- Documented that any new Firestore collection/path requires updating `firestore.rules`
+  and redeploying rules/indexes (AGENTS, release safety, Copilot instructions).
 
 # 🚀 End of file

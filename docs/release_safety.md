@@ -66,6 +66,8 @@ Never combine steps 1-6 in a single release.
 
 ## Firestore rules changes
 
+- Any new collection or document path must be added to `firestore.rules` and
+  redeployed (emulator -> STAGING -> PROD).
 - Rules must remain compatible with both old and new clients during migrations.
 - Test rules in the emulator first, then STAGING.
 - Never deploy a rule change that blocks existing production clients without a
