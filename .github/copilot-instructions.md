@@ -156,3 +156,5 @@ For any change touching Firestore data, queries, rules, auth, sync, or migration
 - Keep production backward compatible (additive changes first).
 - Use versioned documents and staged migrations (dual-read/dual-write + backfill).
 - Validate rules and schema changes in emulator or STAGING before PROD.
+- If you add a new Firestore collection or document path, update `firestore.rules`
+  and redeploy rules/indexes.
