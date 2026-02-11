@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/pomodoro_session.dart';
@@ -32,6 +32,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
   bool _autoStartInFlight = false;
   bool _initialized = false;
   bool _disposed = false;
+  bool _sessionStreamReady = false;
   final Map<String, DateTime> _scheduledNotices = {};
   List<TaskRunGroup> _lastGroups = const [];
 
@@ -59,6 +60,16 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
         _handleGroups(_lastGroups);
       }
     });
+    ref.listen<AsyncValue<PomodoroSession?>>(
+      pomodoroSessionStreamProvider,
+      (previous, next) {
+        final wasReady = _sessionStreamReady;
+        _sessionStreamReady = !next.isLoading;
+        if (!wasReady && _sessionStreamReady) {
+          _handleGroups(_lastGroups);
+        }
+      },
+    );
     final initial = ref.read(taskRunGroupStreamProvider).value ?? const [];
     _handleGroups(initial);
   }
@@ -114,11 +125,42 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     final running =
         groups.where((g) => g.status == TaskRunStatus.running).toList();
     if (running.isNotEmpty) {
+      if (!_sessionStreamReady) {
+        _debugLogExpiryDecision(
+          reason: 'skip-expiry-session-loading',
+          now: DateTime.now(),
+          session: ref.read(activePomodoroSessionProvider),
+        );
+        return;
+      }
       final activeSession = ref.read(activePomodoroSessionProvider);
       final activeGroupId = activeSession?.groupId;
       final now = DateTime.now();
-      var expired = _resolveExpiredRunningGroups(running, now);
+      var expired = <TaskRunGroup>[];
       TaskRunGroup? activeGroup;
+      if (activeSession == null) {
+        _debugLogExpiryDecision(
+          reason: 'skip-expiry-no-active-session',
+          now: now,
+          session: null,
+        );
+      } else if (!activeSession.status.isRunning) {
+        _debugLogExpiryDecision(
+          reason: 'skip-expiry-session-not-running',
+          now: now,
+          session: activeSession,
+        );
+      } else if (activeGroupId == null) {
+        _debugLogExpiryDecision(
+          reason: 'skip-expiry-missing-group-id',
+          now: now,
+          session: activeSession,
+        );
+      } else {
+        expired = _resolveExpiredRunningGroups(running, now)
+            .where((group) => group.id == activeGroupId)
+            .toList();
+      }
       if (activeGroupId != null) {
         for (final group in running) {
           if (group.id == activeGroupId) {
@@ -130,27 +172,22 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       final allowExpireActive = activeSession != null &&
           activeGroup != null &&
           _shouldExpireActiveSession(activeSession, activeGroup, now);
-      if (activeSession != null &&
-          activeSession.ownerDeviceId != deviceId &&
-          activeGroupId != null &&
-          !allowExpireActive) {
-        expired = expired
-            .where((group) => group.id != activeGroupId)
-            .toList();
-      }
-      if (activeSession?.status == PomodoroStatus.paused &&
-          activeGroupId != null &&
-          !allowExpireActive) {
-        expired = expired
-            .where((group) => group.id != activeGroupId)
-            .toList();
+      if (!allowExpireActive) {
+        expired = <TaskRunGroup>[];
       }
       if (expired.isNotEmpty) {
+        _debugLogExpiryDecision(
+          reason: 'expire-running-groups',
+          now: now,
+          session: activeSession,
+          group: activeGroup,
+          theoreticalEndTime: _resolveTheoreticalEndTime(activeGroup ?? expired.first),
+        );
         await _markRunningGroupsCompleted(expired, now);
       }
-        if (activeSession == null) {
-          final remaining = running
-              .where((g) => !expired.contains(g))
+      if (activeSession == null) {
+        final remaining = running
+            .where((g) => !expired.contains(g))
               .toList()
             ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
           if (remaining.isNotEmpty) {
@@ -212,6 +249,38 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       if (_disposed) return;
       _handleGroups(_lastGroups);
     });
+  }
+
+  void _debugLogExpiryDecision({
+    required String reason,
+    required DateTime now,
+    PomodoroSession? session,
+    TaskRunGroup? group,
+    DateTime? theoreticalEndTime,
+  }) {
+    if (!kDebugMode) return;
+    final updatedAt = session?.lastUpdatedAt;
+    final isRunning = session?.status.isRunning ?? false;
+    final isStale = updatedAt == null
+        ? null
+        : now.difference(updatedAt) >= _staleSessionGrace;
+    final endDeltaSeconds = theoreticalEndTime?.difference(now).inSeconds;
+    debugPrint(
+      '[ExpiryCheck][$reason] now=$now '
+      'groupId=${group?.id ?? 'n/a'} '
+      'groupStatus=${group?.status.name ?? 'n/a'} '
+      'theoreticalEndTime=${theoreticalEndTime ?? 'n/a'} '
+      'endDeltaSeconds=${endDeltaSeconds ?? 'n/a'} '
+      'sessionStatus=${session?.status.name ?? 'n/a'} '
+      'sessionGroupId=${session?.groupId ?? 'n/a'} '
+      'isRunning=$isRunning '
+      'isStale=${isStale ?? 'n/a'} '
+      'pausedAt=${session?.pausedAt ?? 'n/a'} '
+      'phaseStartedAt=${session?.phaseStartedAt ?? 'n/a'} '
+      'remainingSeconds=${session?.remainingSeconds ?? 'n/a'} '
+      'lastUpdatedAt=${session?.lastUpdatedAt ?? 'n/a'} '
+      'ownerDeviceId=${session?.ownerDeviceId ?? 'n/a'}',
+    );
   }
 
   Future<bool> _clearStaleActiveSessionIfNeeded(
@@ -315,6 +384,13 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       if (latest.status != TaskRunStatus.running) continue;
       final endTime = _resolveTheoreticalEndTime(latest);
       if (endTime == null || endTime.isAfter(now)) continue;
+      _debugLogExpiryDecision(
+        reason: 'mark-running-group-completed',
+        now: now,
+        session: ref.read(activePomodoroSessionProvider),
+        group: latest,
+        theoreticalEndTime: endTime,
+      );
       final updated = latest.copyWith(
         status: TaskRunStatus.completed,
         updatedAt: now,

@@ -5022,4 +5022,32 @@ Mode A global long-break sequencing not fully validated (time constraints).
   during server-timestamp propagation.
 - Applied the guard consistently in auto-claim and stale-cleanup paths.
 
+# 🔹 Block 339 — Paused expiry guard + verification (11/02/2026)
+
+### ✔ Work completed:
+
+- Deferred running-group expiry until the activeSession stream has emitted at least once
+  to prevent paused sessions from being completed on resume.
+- Added debug logs at the expiry decision points (sanitize + coordinator).
+- Added coordinator tests to assert paused sessions never complete and to cover the
+  stream-loading race.
+
+# 🔹 Block 340 — Active-session expiry guards (11/02/2026)
+
+### ✔ Work completed:
+
+- Prevented running-group expiry when `activeSession` is missing or not running.
+- Required groupId match between activeSession and the running group to allow expiry.
+- Expanded expiry logs with session/group ids, running/stale flags, and end delta.
+- Added tests for `null -> paused` session snapshots and cross-group running sessions.
+
+# 🔹 Block 341 — Repo auto-complete removal (11/02/2026)
+
+### ✔ Work completed:
+
+- Removed repository-level auto-complete-on-read for expired running groups.
+- Confirmed expiry is enforced only by coordinator/viewmodel guards.
+- Added repo-level debug logs for expired running groups without mutating status.
+- Added tests ensuring repos do not auto-complete without session context.
+
 # 🚀 End of file

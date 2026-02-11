@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/pomodoro_task.dart';
@@ -1709,6 +1710,33 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       if (session.status.isRunning &&
           _isGroupExpired(group, now) &&
           _isSessionStaleForCleanup(session, now)) {
+        if (kDebugMode) {
+          final start = group.actualStartTime;
+          var end = group.theoreticalEndTime;
+          if (start != null && end.isBefore(start)) {
+            final totalSeconds = _groupTotalSeconds(group);
+            if (totalSeconds > 0) {
+              end = start.add(Duration(seconds: totalSeconds));
+            }
+          }
+          final endDeltaSeconds = end.difference(now).inSeconds;
+          final isStale = _isSessionStaleForCleanup(session, now);
+          debugPrint(
+            '[ExpiryCheck][sanitize-complete] now=$now '
+            'groupId=${group.id} '
+            'groupStatus=${group.status.name} '
+            'theoreticalEndTime=$end '
+            'endDeltaSeconds=$endDeltaSeconds '
+            'sessionStatus=${session.status.name} '
+            'sessionGroupId=${session.groupId ?? 'n/a'} '
+            'isStale=$isStale '
+            'pausedAt=${session.pausedAt ?? 'n/a'} '
+            'phaseStartedAt=${session.phaseStartedAt ?? 'n/a'} '
+            'remainingSeconds=${session.remainingSeconds} '
+            'lastUpdatedAt=${session.lastUpdatedAt ?? 'n/a'} '
+            'ownerDeviceId=${session.ownerDeviceId}',
+          );
+        }
         final updated = group.copyWith(
           status: TaskRunStatus.completed,
           updatedAt: now,

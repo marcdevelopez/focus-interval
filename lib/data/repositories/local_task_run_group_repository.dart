@@ -37,7 +37,6 @@ class LocalTaskRunGroupRepository implements TaskRunGroupRepository {
   @override
   Future<List<TaskRunGroup>> getAll() async {
     await _ensureLoaded();
-    await _normalizeExpiredRunningGroups(DateTime.now());
     return _store.values.toList();
   }
 
@@ -74,7 +73,6 @@ class LocalTaskRunGroupRepository implements TaskRunGroupRepository {
 
   Future<void> _handleListen() async {
     await _ensureLoaded();
-    await _normalizeExpiredRunningGroups(DateTime.now());
     _emit();
   }
 
@@ -101,7 +99,6 @@ class LocalTaskRunGroupRepository implements TaskRunGroupRepository {
     } catch (e) {
       debugPrint('Local task run group load failed: $e');
     }
-    await _normalizeExpiredRunningGroups(DateTime.now());
     _loaded = true;
     _emit();
   }
@@ -163,13 +160,6 @@ class LocalTaskRunGroupRepository implements TaskRunGroupRepository {
     _controller.add(_store.values.toList());
   }
 
-  Future<void> _normalizeExpiredRunningGroups(DateTime now) async {
-    final changed = _normalizeExpiredRunningGroupsSync(now);
-    if (changed) {
-      await _persist();
-    }
-  }
-
   bool _normalizeExpiredRunningGroupsSync(DateTime now) {
     var changed = false;
     for (final entry in _store.entries) {
@@ -177,11 +167,15 @@ class LocalTaskRunGroupRepository implements TaskRunGroupRepository {
       if (group.status != TaskRunStatus.running) continue;
       final endTime = _resolveTheoreticalEndTime(group);
       if (endTime != null && endTime.isBefore(now)) {
-        _store[entry.key] = group.copyWith(
-          status: TaskRunStatus.completed,
-          updatedAt: now,
-        );
-        changed = true;
+        if (kDebugMode) {
+          debugPrint(
+            '[RepoNormalize][skip-complete] '
+            'groupId=${group.id} '
+            'status=running '
+            'theoreticalEndTime=$endTime '
+            'now=$now',
+          );
+        }
       }
     }
     return changed;
