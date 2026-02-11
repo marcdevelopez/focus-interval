@@ -4989,4 +4989,13 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Added a periodic inactive resync in Account Mode to surface ownership requests and avoid stale controls on desktop.
 - Documented the inactive resync keepalive behavior in the Run Mode sync specs.
 
+# 🔹 Block 335 — Ownership auto-claim + resync hardening (11/02/2026)
+
+### ✔ Work completed:
+
+- Lowered the stale ownership threshold to 45s and documented the new rule.
+- Enabled auto-claim on stale owner without requiring a manual request.
+- Added post-request resync after approve/reject/request to remove transient control mismatches.
+- Updated scheduled session staleness checks to align with the new threshold.
+
 # 🚀 End of file

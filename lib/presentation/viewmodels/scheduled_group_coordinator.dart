@@ -24,7 +24,7 @@ class ScheduledGroupAction {
 }
 
 class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
-  static const Duration _staleSessionGrace = Duration(seconds: 90);
+  static const Duration _staleSessionGrace = Duration(seconds: 45);
 
   Timer? _scheduledTimer;
   Timer? _preAlertTimer;

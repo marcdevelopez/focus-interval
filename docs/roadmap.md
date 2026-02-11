@@ -127,6 +127,8 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
                   (validation pending).
       11/02/2026: Desktop inactive resync keepalive to surface ownership requests
                   while the window is inactive (validation pending).
+      11/02/2026: Ownership auto-claim without request + stale threshold 45s +
+                  post-request resync (validation pending).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
