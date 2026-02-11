@@ -4,7 +4,9 @@ abstract class PomodoroSessionRepository {
   Future<void> publishSession(PomodoroSession session);
   Future<bool> tryClaimSession(PomodoroSession session);
   Stream<PomodoroSession?> watchSession();
-  Future<void> clearSession();
+  Future<void> clearSessionAsOwner();
+  Future<void> clearSessionIfStale({required DateTime now});
+  Future<void> clearSessionIfGroupNotRunning();
   Future<void> requestOwnership({required String requesterDeviceId});
   Future<bool> tryAutoClaimStaleOwner({required String requesterDeviceId});
   Future<void> respondToOwnershipRequest({
@@ -16,7 +18,13 @@ abstract class PomodoroSessionRepository {
 
 class NoopPomodoroSessionRepository implements PomodoroSessionRepository {
   @override
-  Future<void> clearSession() async {}
+  Future<void> clearSessionAsOwner() async {}
+
+  @override
+  Future<void> clearSessionIfStale({required DateTime now}) async {}
+
+  @override
+  Future<void> clearSessionIfGroupNotRunning() async {}
 
   @override
   Future<void> publishSession(PomodoroSession session) async {}

@@ -131,6 +131,10 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
                   post-request resync (validation pending).
       11/02/2026: Paused ownership stability rules + Android paused heartbeats
                   (validation pending).
+      11/02/2026: Ownership API hardening (request vs claim split, owner-only clears)
+                  (validation pending).
+      11/02/2026: Stale ownership checks ignore missing lastUpdatedAt to avoid
+                  phantom auto-claims/cleanup (validation pending).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
