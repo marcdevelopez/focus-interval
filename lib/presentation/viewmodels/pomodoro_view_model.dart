@@ -40,7 +40,7 @@ class _GroupResumeProjection {
 class PomodoroViewModel extends Notifier<PomodoroState> {
   static const int _heartbeatIntervalSeconds = 30;
   static const Duration _inactiveResyncInterval = Duration(seconds: 15);
-  static const Duration _staleSessionGrace = Duration(seconds: 90);
+  static const Duration _staleSessionGrace = Duration(seconds: 45);
   late PomodoroMachine _machine;
   StreamSubscription<PomodoroState>? _sub;
   late SoundService _soundService;
@@ -665,6 +665,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     await _sessionRepo.requestOwnership(
       requesterDeviceId: _deviceInfo.deviceId,
     );
+    unawaited(syncWithRemoteSession(refreshGroup: false));
   }
 
   Future<void> approveOwnershipRequest() async {
@@ -678,6 +679,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       requesterDeviceId: request.requesterDeviceId,
       approved: true,
     );
+    unawaited(syncWithRemoteSession(refreshGroup: false));
   }
 
   Future<void> rejectOwnershipRequest() async {
@@ -691,6 +693,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       requesterDeviceId: request.requesterDeviceId,
       approved: false,
     );
+    unawaited(syncWithRemoteSession(refreshGroup: false));
   }
 
   void _resetLocalSessionState() {
@@ -1117,16 +1120,19 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   void _maybeAutoTakeoverStaleOwner(PomodoroSession session) {
-    final request = session.ownershipRequest;
-    if (request == null) return;
-    if (request.status != OwnershipRequestStatus.pending) return;
-    if (request.requesterDeviceId != _deviceInfo.deviceId) return;
     if (session.ownerDeviceId == _deviceInfo.deviceId) return;
+    if (!session.status.isActiveExecution) return;
     final updatedAt = session.lastUpdatedAt;
     final now = DateTime.now();
     final isStale =
         updatedAt == null || now.difference(updatedAt) >= _staleSessionGrace;
     if (!isStale) return;
+    final request = session.ownershipRequest;
+    if (request != null &&
+        request.status == OwnershipRequestStatus.pending &&
+        request.requesterDeviceId != _deviceInfo.deviceId) {
+      return;
+    }
     final lastAttempt = _lastAutoTakeoverAttemptAt;
     if (lastAttempt != null &&
         now.difference(lastAttempt) < const Duration(seconds: 10)) {
@@ -1134,7 +1140,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     }
     _lastAutoTakeoverAttemptAt = now;
     unawaited(
-      _sessionRepo.requestOwnership(
+      _sessionRepo.tryAutoClaimStaleOwner(
         requesterDeviceId: _deviceInfo.deviceId,
       ),
     );

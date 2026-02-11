@@ -6,6 +6,7 @@ abstract class PomodoroSessionRepository {
   Stream<PomodoroSession?> watchSession();
   Future<void> clearSession();
   Future<void> requestOwnership({required String requesterDeviceId});
+  Future<bool> tryAutoClaimStaleOwner({required String requesterDeviceId});
   Future<void> respondToOwnershipRequest({
     required String ownerDeviceId,
     required String requesterDeviceId,
@@ -28,6 +29,13 @@ class NoopPomodoroSessionRepository implements PomodoroSessionRepository {
 
   @override
   Future<void> requestOwnership({required String requesterDeviceId}) async {}
+
+  @override
+  Future<bool> tryAutoClaimStaleOwner({
+    required String requesterDeviceId,
+  }) async {
+    return false;
+  }
 
   @override
   Future<void> respondToOwnershipRequest({

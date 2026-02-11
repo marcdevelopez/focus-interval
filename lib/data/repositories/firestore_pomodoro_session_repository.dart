@@ -11,7 +11,7 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
   final FirestoreService firestoreService;
   final AuthService authService;
   final String deviceId;
-  static const Duration _ownerStaleThreshold = Duration(seconds: 90);
+  static const Duration _ownerStaleThreshold = Duration(seconds: 45);
 
   FirestorePomodoroSessionRepository({
     required this.firestoreService,
@@ -153,6 +153,56 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
         },
         SetOptions(merge: true),
       );
+    });
+  }
+
+  @override
+  Future<bool> tryAutoClaimStaleOwner({
+    required String requesterDeviceId,
+  }) async {
+    final uid = await _uidOrThrow();
+    final docRef = _doc(uid);
+    final now = DateTime.now();
+    return _db.runTransaction((tx) async {
+      final snap = await tx.get(docRef);
+      if (!snap.exists) return false;
+      final data = snap.data();
+      if (data == null) return false;
+      final ownerDeviceId = data['ownerDeviceId'] as String?;
+      if (ownerDeviceId == null || ownerDeviceId == requesterDeviceId) {
+        return false;
+      }
+      final statusRaw = data['status'] as String?;
+      final status = PomodoroStatus.values.firstWhere(
+        (e) => e.name == statusRaw,
+        orElse: () => PomodoroStatus.idle,
+      );
+      if (!status.isActiveExecution) return false;
+      final updatedAt = (data['lastUpdatedAt'] as Timestamp?)?.toDate();
+      final isStale =
+          updatedAt == null ||
+          now.difference(updatedAt) >= _ownerStaleThreshold;
+      if (!isStale) return false;
+      final rawRequest = data['ownershipRequest'];
+      final requestMap = rawRequest is Map<String, dynamic>
+          ? rawRequest
+          : rawRequest is Map
+              ? Map<String, dynamic>.from(rawRequest)
+              : null;
+      final requester = requestMap?['requesterDeviceId'] as String?;
+      if (requester != null && requester != requesterDeviceId) {
+        return false;
+      }
+      tx.set(
+        docRef,
+        {
+          'ownerDeviceId': requesterDeviceId,
+          'ownershipRequest': FieldValue.delete(),
+          'lastUpdatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+      return true;
     });
   }
 
