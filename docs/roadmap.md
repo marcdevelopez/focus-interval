@@ -147,6 +147,8 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
                   while waiting for ownership approval (validation pending).
       12/02/2026: Ownership request banner dismisses immediately on reject
                   (validation pending).
+      12/02/2026: Ownership reject dismiss no longer reappears on transient
+                  session gaps (validation pending).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 

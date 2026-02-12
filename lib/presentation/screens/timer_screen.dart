@@ -456,8 +456,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     ) {
       final request = next?.ownershipRequest;
       if (_dismissedOwnershipRequestKey != null &&
-          (request == null ||
-              request.status != OwnershipRequestStatus.pending)) {
+          request != null &&
+          request.status != OwnershipRequestStatus.pending &&
+          request.requesterDeviceId == _dismissedOwnershipRequestKey) {
         if (mounted) {
           setState(() {
             _dismissedOwnershipRequestKey = null;

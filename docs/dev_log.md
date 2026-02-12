@@ -5078,4 +5078,12 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Added a per-request dismissal key to avoid waiting for remote snapshot latency.
 - Documented immediate dismiss behavior in specs.
 
+# 🔹 Block 345 — Ownership reject flicker guard (12/02/2026)
+
+### ✔ Work completed:
+
+- Prevented the reject prompt from reappearing due to transient `activeSession`
+  gaps by keeping the dismissal until the request resolves.
+- Cleared the dismissal only when the same requester’s request is no longer pending.
+
 # 🚀 End of file
