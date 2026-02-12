@@ -64,6 +64,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   String? _remoteOwnerId;
   PomodoroSession? _remoteSession;
   PomodoroSession? _latestSession;
+  OwnershipRequest? _optimisticOwnershipRequest;
   DateTime? _localPhaseStartedAt;
   DateTime? _lastHeartbeatAt;
   DateTime? _finishedAt;
@@ -111,6 +112,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     final rawSession = await _readCurrentSession();
     final session = await _sanitizeActiveSession(rawSession);
     _latestSession = session;
+    _syncOptimisticOwnershipRequest(session);
     if (_hasActiveGroupConflict(session, groupId)) {
       return PomodoroGroupLoadResult.blockedByActiveSession;
     }
@@ -664,10 +666,25 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (_currentGroup != null && session.groupId != _currentGroup!.id) return;
     if (_currentTask != null && session.taskId != _currentTask!.id) return;
     if (isOwnershipRequestPendingForOther) return;
-    await _sessionRepo.requestOwnership(
+    _optimisticOwnershipRequest = OwnershipRequest(
       requesterDeviceId: _deviceInfo.deviceId,
+      status: OwnershipRequestStatus.pending,
+      requestedAt: DateTime.now(),
+      respondedAt: null,
+      respondedByDeviceId: null,
     );
-    unawaited(syncWithRemoteSession(refreshGroup: false));
+    _notifySessionMetaChanged();
+    try {
+      await _sessionRepo.requestOwnership(
+        requesterDeviceId: _deviceInfo.deviceId,
+      );
+    } catch (_) {
+      _optimisticOwnershipRequest = null;
+      _notifySessionMetaChanged();
+      rethrow;
+    } finally {
+      unawaited(syncWithRemoteSession(refreshGroup: false));
+    }
   }
 
   Future<void> approveOwnershipRequest() async {
@@ -702,6 +719,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _finishedAt = null;
     _lastHeartbeatAt = null;
     _pauseReason = null;
+    _optimisticOwnershipRequest = null;
     _groupCompleted = false;
     _completedTaskRanges.clear();
     _timelinePhaseStartedAt = null;
@@ -937,8 +955,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _sessionSub = _sessionRepo.watchSession().listen((session) {
       final previousSession = _latestSession;
       _latestSession = session;
+      final optimisticChanged = _syncOptimisticOwnershipRequest(session);
       final ownershipMetaChanged =
-          _didOwnershipMetaChange(previousSession, session);
+          _didOwnershipMetaChange(previousSession, session) ||
+          optimisticChanged;
       if (session == null) {
         _mirrorTimer?.cancel();
         _remoteOwnerId = null;
@@ -1276,7 +1296,19 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     return timelineStart.add(Duration(seconds: offsetSeconds));
   }
 
-  OwnershipRequest? get ownershipRequest => _latestSession?.ownershipRequest;
+  OwnershipRequest? get ownershipRequest {
+    final optimistic = _optimisticOwnershipRequest;
+    if (optimistic == null) return _latestSession?.ownershipRequest;
+    final session = _latestSession;
+    if (session == null) return optimistic;
+    if (!session.status.isActiveExecution) return session.ownershipRequest;
+    if (session.ownerDeviceId == _deviceInfo.deviceId) {
+      return session.ownershipRequest;
+    }
+    final remote = session.ownershipRequest;
+    if (remote == null) return optimistic;
+    return remote;
+  }
 
   bool get hasPendingOwnershipRequest =>
       ownershipRequest?.status == OwnershipRequestStatus.pending;
@@ -1326,6 +1358,23 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     final requestedAt = request.requestedAt;
     if (requestedAt == null) return false;
     return DateTime.now().difference(requestedAt) >= _staleSessionGrace;
+  }
+
+  bool _syncOptimisticOwnershipRequest(PomodoroSession? session) {
+    if (_optimisticOwnershipRequest == null) return false;
+    if (session == null || !session.status.isActiveExecution) {
+      _optimisticOwnershipRequest = null;
+      return true;
+    }
+    if (session.ownerDeviceId == _deviceInfo.deviceId) {
+      _optimisticOwnershipRequest = null;
+      return true;
+    }
+    if (session.ownershipRequest != null) {
+      _optimisticOwnershipRequest = null;
+      return true;
+    }
+    return false;
   }
 
   bool get _controlsEnabled {
@@ -1653,8 +1702,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       final rawSession = await _readCurrentSession();
       final session = await _sanitizeActiveSession(rawSession);
       _latestSession = session;
+      final optimisticChanged = _syncOptimisticOwnershipRequest(session);
       final ownershipMetaChanged =
-          _didOwnershipMetaChange(previousSession, session);
+          _didOwnershipMetaChange(previousSession, session) ||
+          optimisticChanged;
       if (refreshGroup && _currentGroup != null) {
         final group = await _groupRepo.getById(_currentGroup!.id);
         if (group != null) {

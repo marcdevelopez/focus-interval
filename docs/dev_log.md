@@ -5059,4 +5059,14 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Added a short post-resume resync to catch delayed Firestore snapshots.
 - Ensured resync updates trigger UI refresh when ownership metadata changes.
 
+# 🔹 Block 343 — Optimistic ownership pending indicator (12/02/2026)
+
+### ✔ Work completed:
+
+- Added optimistic pending state for ownership requests so the requester sees
+  the amber indicator immediately after tapping Request.
+- Cleared optimistic state once the stream confirms the request or ownership
+  changes, keeping UI derived from the activeSession snapshot.
+- Documented the optimistic pending indicator behavior in specs.
+
 # 🚀 End of file

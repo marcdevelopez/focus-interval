@@ -1529,6 +1529,10 @@ The MM:SS timer must not shift horizontally:
   only via the AppBar ownership indicator (e.g., amber/orange). Do not render
   inline or overlayed body text; the ownership info sheet should include the
   "Waiting for owner approval..." message.
+- When the requester taps **Request ownership**, the pending (amber) indicator
+  must appear immediately (optimistic UI) without waiting for a remote snapshot.
+  Clear the optimistic state once the stream confirms the request (pending,
+  rejected, or approved), or if the request fails.
 - If a pending ownership request exceeds the stale threshold, surface a **Retry**
   action and allow the requester to re-send the request.
 - Show a one-time, non-blocking education message on the first owner start
