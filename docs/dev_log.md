@@ -5069,4 +5069,13 @@ Mode A global long-break sequencing not fully validated (time constraints).
   changes, keeping UI derived from the activeSession snapshot.
 - Documented the optimistic pending indicator behavior in specs.
 
+# 🔹 Block 344 — Ownership reject prompt dismiss (12/02/2026)
+
+### ✔ Work completed:
+
+- Dismissed the owner-side ownership request prompt immediately on reject
+  to match accept behavior (optimistic UI).
+- Added a per-request dismissal key to avoid waiting for remote snapshot latency.
+- Documented immediate dismiss behavior in specs.
+
 # 🚀 End of file

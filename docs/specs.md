@@ -1525,6 +1525,8 @@ The MM:SS timer must not shift horizontally:
   (light modal/banner) that does not push or reflow the existing layout. It must
   avoid overflow and should not collide with the AppBar or top widgets. The
   background must be opaque (no transparency) for clear legibility.
+- Tapping **Accept** or **Reject** must dismiss the owner-side request prompt
+  immediately (optimistic UI), without waiting for remote snapshot latency.
 - When a mirror device has a pending ownership request, show the pending state
   only via the AppBar ownership indicator (e.g., amber/orange). Do not render
   inline or overlayed body text; the ownership info sheet should include the
