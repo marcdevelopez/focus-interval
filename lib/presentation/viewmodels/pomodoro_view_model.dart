@@ -60,6 +60,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   Timer? _mirrorTimer;
   Timer? _pausedHeartbeatTimer;
   Timer? _inactiveResyncTimer;
+  Timer? _postResumeResyncTimer;
   String? _remoteOwnerId;
   PomodoroSession? _remoteSession;
   PomodoroSession? _latestSession;
@@ -98,6 +99,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       _mirrorTimer?.cancel();
       _pausedHeartbeatTimer?.cancel();
       _inactiveResyncTimer?.cancel();
+      _postResumeResyncTimer?.cancel();
       _stopForegroundService();
     });
 
@@ -1540,6 +1542,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   void handleAppPaused() {
     if (_currentItem == null && _currentTask == null) return;
+    _postResumeResyncTimer?.cancel();
     final appMode = ref.read(appModeProvider);
     if (appMode == AppMode.account) {
       _startInactiveResync();
@@ -1554,7 +1557,9 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _stopInactiveResync();
     final appMode = ref.read(appModeProvider);
     if (appMode == AppMode.account) {
+      _subscribeToRemoteSession();
       unawaited(syncWithRemoteSession());
+      _schedulePostResumeResync();
       return;
     }
     if (_remoteOwnerId != null) {
@@ -1622,6 +1627,16 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _inactiveResyncTimer = null;
   }
 
+  void _schedulePostResumeResync() {
+    _postResumeResyncTimer?.cancel();
+    _postResumeResyncTimer = Timer(const Duration(seconds: 2), () {
+      _postResumeResyncTimer = null;
+      if (ref.read(appModeProvider) != AppMode.account) return;
+      if (_resyncInProgress) return;
+      unawaited(syncWithRemoteSession(refreshGroup: false));
+    });
+  }
+
   bool _shouldResyncWhileInactive() {
     final appMode = ref.read(appModeProvider);
     if (appMode != AppMode.account) return false;
@@ -1634,9 +1649,12 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (_resyncInProgress) return;
     _setResyncInProgress(true);
     try {
+      final previousSession = _latestSession;
       final rawSession = await _readCurrentSession();
       final session = await _sanitizeActiveSession(rawSession);
       _latestSession = session;
+      final ownershipMetaChanged =
+          _didOwnershipMetaChange(previousSession, session);
       if (refreshGroup && _currentGroup != null) {
         final group = await _groupRepo.getById(_currentGroup!.id);
         if (group != null) {
@@ -1650,6 +1668,9 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       } else {
         _primeMirrorSession(session);
         _maybeAutoTakeoverStaleOwner(session);
+      }
+      if (ownershipMetaChanged) {
+        _notifySessionMetaChanged();
       }
     } finally {
       _setResyncInProgress(false);
