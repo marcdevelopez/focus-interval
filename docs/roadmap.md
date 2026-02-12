@@ -141,6 +141,8 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
                   running and matches the groupId (validation pending).
       11/02/2026: Removed repository auto-complete-on-read; expiry is enforced
                   only by coordinator/viewmodel guards (validation pending).
+      12/02/2026: Ownership requests re-sync on resume with a post-resume
+                  resubscription to surface pending requests (validation pending).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 

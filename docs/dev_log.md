@@ -22,7 +22,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **11/02/2026**
+Last update: **12/02/2026**
 
 ---
 
@@ -5049,5 +5049,14 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Confirmed expiry is enforced only by coordinator/viewmodel guards.
 - Added repo-level debug logs for expired running groups without mutating status.
 - Added tests ensuring repos do not auto-complete without session context.
+
+# 🔹 Block 342 — Ownership request resync on resume (12/02/2026)
+
+### ✔ Work completed:
+
+- Forced session stream re-subscription on resume to surface pending ownership
+  requests after background/sleep.
+- Added a short post-resume resync to catch delayed Firestore snapshots.
+- Ensured resync updates trigger UI refresh when ownership metadata changes.
 
 # 🚀 End of file
