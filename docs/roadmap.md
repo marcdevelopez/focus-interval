@@ -145,6 +145,8 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
                   resubscription to surface pending requests (validation pending).
       12/02/2026: Mirror request indicator now shows pending immediately (optimistic UI)
                   while waiting for ownership approval (validation pending).
+      12/02/2026: Ownership request banner dismisses immediately on reject
+                  (validation pending).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 

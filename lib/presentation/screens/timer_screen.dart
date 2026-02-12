@@ -51,6 +51,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   int _preRunRemainingSeconds = 0;
   bool _ownerEducationInFlight = false;
   String? _lastOwnershipRejectionKey;
+  String? _dismissedOwnershipRequestKey;
   bool _inactiveRepaintEnabled = false;
 
   @override
@@ -454,6 +455,17 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       next,
     ) {
       final request = next?.ownershipRequest;
+      if (_dismissedOwnershipRequestKey != null &&
+          (request == null ||
+              request.status != OwnershipRequestStatus.pending)) {
+        if (mounted) {
+          setState(() {
+            _dismissedOwnershipRequestKey = null;
+          });
+        } else {
+          _dismissedOwnershipRequestKey = null;
+        }
+      }
       if (request == null) return;
       if (request.status != OwnershipRequestStatus.rejected) return;
       if (request.requesterDeviceId != deviceId) return;
@@ -525,12 +537,16 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final ownershipRequest = vm.ownershipRequest;
     final hasPendingOwnershipRequest = vm.hasPendingOwnershipRequest;
     final isPendingForSelf = vm.isOwnershipRequestPendingForThisDevice;
+    final requestKey = _ownershipRequestKey(ownershipRequest);
+    final isDismissedRequest =
+        requestKey != null && requestKey == _dismissedOwnershipRequestKey;
     final showOwnerRequestBanner =
         isSessionForGroup &&
         !isMirror &&
         hasPendingOwnershipRequest &&
         ownershipRequest != null &&
-        ownershipRequest.requesterDeviceId != deviceId;
+        ownershipRequest.requesterDeviceId != deviceId &&
+        !isDismissedRequest;
     final showOwnershipOverlay = showOwnerRequestBanner;
     final showOwnershipIndicator = ownerDeviceId != null;
 
@@ -663,8 +679,14 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                           ),
                           onApprove: () =>
                               unawaited(vm.approveOwnershipRequest()),
-                          onReject: () =>
-                              unawaited(vm.rejectOwnershipRequest()),
+                          onReject: () {
+                            if (requestKey != null) {
+                              setState(() {
+                                _dismissedOwnershipRequestKey = requestKey;
+                              });
+                            }
+                            unawaited(vm.rejectOwnershipRequest());
+                          },
                         ),
                     ],
                   ),
@@ -976,6 +998,11 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final dash = deviceId.indexOf('-');
     if (dash <= 0) return deviceId;
     return deviceId.substring(0, dash);
+  }
+
+  String? _ownershipRequestKey(OwnershipRequest? request) {
+    if (request == null) return null;
+    return request.requesterDeviceId;
   }
 
   String _ownerLabel(String ownerDeviceId, String currentDeviceId) {
