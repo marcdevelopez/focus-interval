@@ -294,3 +294,82 @@ Run Mode remains stable across resize with 60fps animations.
 Notes:
 If scaling introduces instability, cap maxScale lower instead of forcing
 complex conditional layouts.
+
+---
+
+## IDEA-004 — Schedule Auto-Start Conditions Disclosure (Planning UX)
+
+ID: IDEA-004
+Title: Schedule Auto-Start Conditions Disclosure (Planning UX)
+Type: UI/UX
+Scope: S
+Priority: P1
+Status: idea
+
+Problem / Goal:
+Clarify when a scheduled TaskRunGroup actually starts in Account Mode so users
+do not expect auto-start without any active device.
+
+Summary:
+Add a clear, reusable explanation in the planning flow that scheduled groups
+start only when at least one device is open at or after the scheduled time. If
+the time passes while all devices are closed, execution starts on next app open.
+
+Design / UX:
+Layout / placement:
+In the planning screen, show the disclosure when a schedule option is selected
+(start time / total range / total time). Provide an info icon near the Confirm
+CTA that reopens the explanation at any time.
+
+Visual states:
+Use the existing planning info modal style. Keep Start now unaffected.
+
+Animation rules:
+None beyond existing modal transitions.
+
+Interaction:
+Modal appears the first time a schedule option is chosen, with "Don't show
+again" saved per device. When opened via the info icon, omit the toggle and
+show the same content for quick reference.
+
+Text / typography:
+Keep copy short and explicit. Emphasize: "A scheduled group starts when a
+device is open at or after the planned time."
+
+Data & Logic:
+Source of truth:
+Existing scheduling rules in specs section 10.4.1. No behavior changes.
+
+Calculations:
+None.
+
+Sync / multi-device:
+No change; this is a communication-only update.
+
+Edge cases:
+If the scheduled time passes while all devices are closed, the message must
+state that the group starts on next app open. Ensure the disclosure is still
+reachable later via the info icon.
+
+Accessibility:
+Modal content must be fully readable by screen readers. The info icon needs
+an accessible label referencing scheduled start conditions.
+
+Dependencies:
+Planning screen info modal and per-device preference storage for "Don't show
+again" (see specs 10.4.1).
+
+Risks:
+Overlong copy could be ignored; keep it concise and focused on the two key
+conditions.
+
+Acceptance criteria:
+When a schedule option is selected, the user sees a clear disclosure about
+the auto-start requirement (device open at or after scheduled time).
+If all devices were closed at the scheduled time, the disclosure states the
+group starts on next app open.
+The same information is accessible via an info icon near Confirm.
+No scheduling logic or ownership behavior changes.
+
+Notes:
+This is a UX-only clarification of existing business rules.
