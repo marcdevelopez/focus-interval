@@ -24,7 +24,8 @@ class NoopTaskRepository implements TaskRepository {
   Future<void> delete(String id) async {}
 
   @override
-  Stream<List<PomodoroTask>> watchAll() => const Stream.empty();
+  Stream<List<PomodoroTask>> watchAll() =>
+      Stream<List<PomodoroTask>>.value(const []);
 }
 
 /// Temporary implementation (local MVP)

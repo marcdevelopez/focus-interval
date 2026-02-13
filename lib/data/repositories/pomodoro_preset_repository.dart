@@ -24,7 +24,8 @@ class NoopPomodoroPresetRepository implements PomodoroPresetRepository {
   Future<void> delete(String id) async {}
 
   @override
-  Stream<List<PomodoroPreset>> watchAll() => const Stream.empty();
+  Stream<List<PomodoroPreset>> watchAll() =>
+      Stream<List<PomodoroPreset>>.value(const []);
 }
 
 class InMemoryPomodoroPresetRepository implements PomodoroPresetRepository {

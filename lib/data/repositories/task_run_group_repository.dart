@@ -11,7 +11,8 @@ abstract class TaskRunGroupRepository {
 
 class NoopTaskRunGroupRepository implements TaskRunGroupRepository {
   @override
-  Stream<List<TaskRunGroup>> watchAll() => const Stream.empty();
+  Stream<List<TaskRunGroup>> watchAll() =>
+      Stream<List<TaskRunGroup>>.value(const []);
 
   @override
   Future<List<TaskRunGroup>> getAll() async => const [];

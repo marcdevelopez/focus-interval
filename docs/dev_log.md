@@ -5378,3 +5378,27 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Verify on Chrome and iOS that tapping the mode chip exits to Local Mode.
+
+
+# 🔹 Block 369 — Noop streams emit empty lists (13/02/2026)
+
+### ✔ Work completed:
+
+- Updated Noop task, task run group, and preset repositories to emit an empty
+  list immediately instead of never emitting.
+- Unblocked Task List / Groups Hub / Preset screens from staying in a perpetual
+  loading state when Account Mode has no signed-in user or sync disabled.
+
+### 🧠 Decisions made:
+
+- Noop repositories must always emit an initial empty list so empty-state UI
+  renders instead of a stuck syncing indicator.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Validate on macOS that fresh installs show the empty states + sign-in CTA
+  instead of loading spinners in Account Mode with no user.
