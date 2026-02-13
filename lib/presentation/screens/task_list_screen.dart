@@ -465,6 +465,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final activeSession = ref.watch(activePomodoroSessionProvider);
     final groupsAsync = ref.watch(taskRunGroupStreamProvider);
     final selectedIds = ref.watch(taskSelectionProvider);
+    final selectedWeightPercents =
+        ref.watch(selectedTaskWeightPercentsProvider);
     final selection = ref.read(taskSelectionProvider.notifier);
     final isCompact = MediaQuery.of(context).size.width < 360;
     final screenWidth = MediaQuery.of(context).size.width;
@@ -759,7 +761,6 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                   selectedIds,
                   _planningAnchor,
                 );
-                final weightTotal = _weightTotal(tasks, selectedIds);
 
                 final soundOverrides = ref.read(localSoundOverridesProvider);
 
@@ -787,13 +788,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                       itemBuilder: (context, i) {
                         final t = tasks[i];
                         final isSelected = selectedIds.contains(t.id);
-                        final weightPercent =
-                            (weightTotal == null || !isSelected)
-                                ? null
-                                : (((t.totalPomodoros * t.pomodoroMinutes) /
-                                            weightTotal) *
-                                        100)
-                                    .round();
+                        final weightPercent = isSelected
+                            ? selectedWeightPercents[t.id]
+                            : null;
                         return TaskCard(
                           key: ValueKey(t.id),
                           task: t,
@@ -1610,16 +1607,6 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       cursor = end;
     }
     return ranges;
-  }
-
-  int? _weightTotal(List<PomodoroTask> tasks, Set<String> selectedIds) {
-    if (tasks.isEmpty || selectedIds.isEmpty) return null;
-    final scoped = tasks.where((task) => selectedIds.contains(task.id));
-    var total = 0;
-    for (final task in scoped) {
-      total += task.totalPomodoros * task.pomodoroMinutes;
-    }
-    return total <= 0 ? null : total;
   }
 
   Future<_IntegritySelection> _maybeShowIntegrityWarning(
