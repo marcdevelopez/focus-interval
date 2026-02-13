@@ -209,3 +209,88 @@ Vertical order, state logic, and base colors remain unchanged.
 Notes:
 Visual-only optimization for clarity and space inside the circle; no behavior
 changes.
+
+---
+
+## IDEA-003 — Responsive Timer Scaling (Desktop/Web)
+
+ID: IDEA-003
+Title: Responsive Timer Scaling (Desktop/Web)
+Type: UI/UX
+Scope: M
+Priority: P1
+Status: idea
+
+Problem / Goal:
+Make the Run Mode timer scale proportionally on desktop/web so it looks elegant
+in large windows while guaranteeing no overflow or layout instability.
+
+Summary:
+Introduce a dedicated Run Mode layout metrics layer that computes a clamped
+scaleFactor from available width and scales the circle, text, spacing, ring
+thickness, and markers proportionally. Mobile behavior remains unchanged.
+
+Design / UX:
+Layout / placement:
+Apply scaling only on desktop/web (kIsWeb or macOS/Windows/Linux). Use
+LayoutBuilder to derive availableWidth and keep the strict vertical order
+inside the circle per specs.
+
+Visual states:
+No color or state logic changes. Pomodoro/break/Pre-Run visuals stay identical,
+only sized by the scaleFactor.
+
+Animation rules:
+No changes to existing ring, marker, or progress animations; maintain 60fps
+and avoid layout jumps during window resize.
+
+Interaction:
+No interaction changes; Run Mode controls and ownership behavior remain
+unchanged.
+
+Text / typography:
+Scale the main countdown, current time, and status chip fonts proportionally
+within min/max bounds to prevent overflow. Preserve tabular figures behavior
+for the countdown.
+
+Data & Logic:
+Source of truth:
+Pure presentation change. No new state; PomodoroViewModel remains unchanged.
+
+Calculations:
+Compute scaleFactor = clamp(availableWidth / baseDesignWidth, minScale,
+maxScale). Base all sizes on the same metrics object to preserve proportions
+and ensure internal content never exceeds the circle.
+
+Sync / multi-device:
+No change to sync, ownership, or session logic.
+
+Edge cases:
+Minimum window size, ultra-wide windows, and live resize must not cause text
+overflow, chip clipping, or circle overrun. Verify Pre-Run, pomodoro, break,
+paused, mirror, owner, and completion states.
+
+Accessibility:
+Ensure text remains legible at minScale and that semantics labels are unchanged.
+Avoid truncating semantic content even if visual text is compacted.
+
+Dependencies:
+TimerScreen layout, TimerDisplay sizing inputs, group progress ring widget,
+and a new Run Mode layout metrics class (e.g., RunModeLayoutMetrics).
+
+Risks:
+Over-scaling could cause cramped interior spacing or subtle animation jitter;
+mitigate by lowering maxScale rather than adding layout hacks.
+
+Acceptance criteria:
+Desktop/web Run Mode scales smoothly with window size using a clamped
+scaleFactor derived from availableWidth / baseDesignWidth.
+Circle diameter, ring thickness, marker size, font sizes, and vertical
+spacing scale proportionally without overflow or layout shifts.
+Mobile behavior remains unchanged from current responsive logic.
+No changes to ViewModel logic, state transitions, or sync behavior.
+Run Mode remains stable across resize with 60fps animations.
+
+Notes:
+If scaling introduces instability, cap maxScale lower instead of forcing
+complex conditional layouts.
