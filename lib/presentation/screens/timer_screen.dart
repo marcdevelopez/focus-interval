@@ -52,6 +52,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   bool _ownerEducationInFlight = false;
   String? _lastOwnershipRejectionKey;
   String? _dismissedOwnershipRequestKey;
+  String? _dismissedOwnershipRequesterId;
+  bool _ownershipRejectionSnackVisible = false;
   bool _inactiveRepaintEnabled = false;
 
   @override
@@ -153,10 +155,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   }
 
   bool _resolveIsMirrorForCurrentSession() {
-    final session = ref.read(activePomodoroSessionProvider);
-    final group = ref.read(pomodoroViewModelProvider.notifier).currentGroup;
-    if (session == null || group == null) return false;
-    if (session.groupId != group.id) return false;
+    final vm = ref.read(pomodoroViewModelProvider.notifier);
+    final session = vm.activeSessionForCurrentGroup;
+    if (session == null) return false;
     final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
     return session.ownerDeviceId != deviceId;
   }
@@ -333,13 +334,13 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     }
 
     final state = ref.read(pomodoroViewModelProvider);
-    final session = ref.read(activePomodoroSessionProvider);
+    final session = vm.activeSessionForCurrentGroup;
     final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
     final isRemoteOwner =
         session != null &&
         session.groupId == widget.groupId &&
         session.ownerDeviceId != deviceId;
-    if (isRemoteOwner || !vm.canControlSession) {
+    if (isRemoteOwner) {
       ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
       return;
     }
@@ -350,7 +351,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     }
 
     ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
-    vm.start();
+    await vm.startFromAutoStart();
     unawaited(_maybeShowOwnerEducation());
   }
 
@@ -386,7 +387,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       _syncPreRunInfo(group);
 
       final state = ref.read(pomodoroViewModelProvider);
-      final session = ref.read(activePomodoroSessionProvider);
+      final session = vm.activeSessionForCurrentGroup;
       final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
       final isRemoteOwner =
           session != null &&
@@ -394,13 +395,12 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           session.ownerDeviceId != deviceId;
       if (group.status == TaskRunStatus.running &&
           state.status == PomodoroStatus.idle &&
-          !isRemoteOwner &&
-          vm.canControlSession) {
+          !isRemoteOwner) {
         if (_runningAutoStartHandled && _runningAutoStartGroupId == group.id) {
         } else {
           _runningAutoStartHandled = true;
           _runningAutoStartGroupId = group.id;
-          vm.start();
+          unawaited(vm.startFromAutoStart());
           unawaited(_maybeShowOwnerEducation());
         }
       }
@@ -448,61 +448,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           !_cancelNavigationHandled) {
         _navigateToGroupsHub(reason: 'vm canceled');
       }
-    });
 
-    ref.listen<PomodoroSession?>(activePomodoroSessionProvider, (
-      previous,
-      next,
-    ) {
-      final request = next?.ownershipRequest;
-      if (_dismissedOwnershipRequestKey != null &&
-          request != null &&
-          request.status != OwnershipRequestStatus.pending &&
-          request.requesterDeviceId == _dismissedOwnershipRequestKey) {
-        if (mounted) {
-          setState(() {
-            _dismissedOwnershipRequestKey = null;
-          });
-        } else {
-          _dismissedOwnershipRequestKey = null;
-        }
-      }
-      if (request == null) return;
-      if (request.status != OwnershipRequestStatus.rejected) return;
-      if (request.requesterDeviceId != deviceId) return;
-      final respondedAt = request.respondedAt;
-      final key =
-          '${request.requesterDeviceId}-${respondedAt?.millisecondsSinceEpoch ?? 0}';
-      if (_lastOwnershipRejectionKey == key) return;
-      _lastOwnershipRejectionKey = key;
-      if (!mounted) return;
-      final time = DateFormat('HH:mm').format(respondedAt ?? DateTime.now());
-      final messenger = ScaffoldMessenger.of(context);
-      final rejectionColor =
-          Theme.of(context).colorScheme.error.withAlpha(217);
-      messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(
-                Icons.cancel_outlined,
-                color: rejectionColor,
-                size: 18,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text('Ownership request rejected at $time'),
-              ),
-            ],
-          ),
-          duration: const Duration(days: 1),
-          action: SnackBarAction(
-            label: 'OK',
-            onPressed: () => messenger.hideCurrentSnackBar(),
-          ),
-        ),
-      );
+      _syncOwnershipRequestUiState(vm: vm, deviceId: deviceId);
     });
 
     ref.listen<String?>(scheduledAutoStartGroupIdProvider, (previous, next) {
@@ -519,37 +466,40 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final shouldBlockExit = state.status.isActiveExecution;
     final isLocalMode = appMode == AppMode.local;
     final currentGroup = vm.currentGroup;
-    final activeSession = ref.watch(activePomodoroSessionProvider);
-    final isSessionForGroup =
-        activeSession != null &&
-        currentGroup != null &&
-        activeSession.groupId == currentGroup.id;
-    final ownerDeviceId =
-        isSessionForGroup ? activeSession.ownerDeviceId : null;
+    final sessionForGroup = vm.activeSessionForCurrentGroup;
+    final isSessionForGroup = sessionForGroup != null;
+    final ownerDeviceId = sessionForGroup?.ownerDeviceId;
     final isMirror = isSessionForGroup && ownerDeviceId != deviceId;
+    final hasSession = isSessionForGroup;
     final isResyncing = vm.isResyncing;
     final isSessionMissingWhileRunning =
+        isAccountMode && vm.isSessionMissingWhileRunning;
+    final shouldForceSyncUntilSession =
         isAccountMode &&
         currentGroup?.status == TaskRunStatus.running &&
         !isSessionForGroup;
+    final isSyncingSession =
+        isSessionMissingWhileRunning || shouldForceSyncUntilSession;
     final shouldShowResyncLoader =
-        _taskLoaded && !isPreRun && (isResyncing || isSessionMissingWhileRunning);
+        _taskLoaded && !isPreRun && (isResyncing || isSyncingSession);
     _syncInactiveRepaint(state: state, isMirror: isMirror);
     final ownershipRequest = vm.ownershipRequest;
     final hasPendingOwnershipRequest = vm.hasPendingOwnershipRequest;
-    final isPendingForSelf = vm.isOwnershipRequestPendingForThisDevice;
-    final requestKey = _ownershipRequestKey(ownershipRequest);
-    final isDismissedRequest =
-        requestKey != null && requestKey == _dismissedOwnershipRequestKey;
+    final hasLocalPendingOwnershipRequest = vm.hasLocalPendingOwnershipRequest;
+    final isPendingForSelf =
+        vm.isOwnershipRequestPendingForThisDevice ||
+        (hasLocalPendingOwnershipRequest && !vm.isOwnershipRequestPendingForOther);
+    final isDismissedRequest = _isDismissedOwnershipRequest(ownershipRequest);
     final showOwnerRequestBanner =
         isSessionForGroup &&
         !isMirror &&
         hasPendingOwnershipRequest &&
         ownershipRequest != null &&
         ownershipRequest.requesterDeviceId != deviceId &&
-        !isDismissedRequest;
+        !isDismissedRequest &&
+        !isSyncingSession;
     final showOwnershipOverlay = showOwnerRequestBanner;
-    final showOwnershipIndicator = ownerDeviceId != null;
+    final showOwnershipIndicator = currentGroup != null && isAccountMode;
 
     if (currentGroup?.status == TaskRunStatus.canceled &&
         !_cancelNavigationHandled) {
@@ -580,31 +530,19 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           backgroundColor: Colors.black,
           title: const Text("Focus Interval"),
           actions: [
-            if (currentGroup != null && isAccountMode)
-              Padding(
-                padding: const EdgeInsets.only(right: 4),
-                child: isResyncing
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : IconButton(
-                        tooltip: "Sync session",
-                        icon: const Icon(Icons.sync),
-                        onPressed: () =>
-                            unawaited(vm.syncWithRemoteSession()),
-                      ),
-              ),
             if (currentGroup != null && showOwnershipIndicator)
               _OwnershipIndicatorAction(
                 isMirror: isMirror,
                 isPendingRequest: isPendingForSelf,
+                isSyncing: isSyncingSession && !isPendingForSelf,
+                hasSession: hasSession,
                 onPressed: () => _showOwnershipInfoSheet(
                   isMirror: isMirror,
                   ownerDeviceId: ownerDeviceId,
                   currentDeviceId: deviceId,
                   vm: vm,
+                  isSyncing: isSyncingSession && !isPendingForSelf,
+                  hasSession: hasSession,
                 ),
               ),
             const ModeIndicatorAction(compact: true),
@@ -681,11 +619,15 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                           onApprove: () =>
                               unawaited(vm.approveOwnershipRequest()),
                           onReject: () {
-                            if (requestKey != null) {
-                              setState(() {
-                                _dismissedOwnershipRequestKey = requestKey;
-                              });
-                            }
+                            setState(() {
+                              _dismissedOwnershipRequestKey =
+                                  ownershipRequest.requestId ??
+                                      ownershipRequest.requesterDeviceId;
+                              _dismissedOwnershipRequesterId =
+                                  ownershipRequest.requestId == null
+                                      ? ownershipRequest.requesterDeviceId
+                                      : null;
+                            });
                             unawaited(vm.rejectOwnershipRequest());
                           },
                         ),
@@ -710,9 +652,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                 onStartRequested: () {
                   vm.start();
                   unawaited(_maybeShowOwnerEducation());
-                },
-                onRequestOwnership: () {
-                  unawaited(vm.requestOwnership());
                 },
                 onPauseRequested: () {
                   _handlePauseWithLocalInfo(vm, isLocalMode);
@@ -818,12 +757,12 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
     final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
 
-    final session = ref.read(activePomodoroSessionProvider);
+    final session = vm.activeSessionForCurrentGroup;
     final isRemoteOwner =
         session != null &&
         session.groupId == group.id &&
         session.ownerDeviceId != deviceId;
-    if (isRemoteOwner || !vm.canControlSession) return;
+    if (isRemoteOwner) return;
 
     if (group.status != TaskRunStatus.running) {
       ref.read(scheduledAutoStartGroupIdProvider.notifier).state = group.id;
@@ -833,7 +772,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
     final state = ref.read(pomodoroViewModelProvider);
     if (state.status == PomodoroStatus.idle) {
-      vm.start();
+      unawaited(vm.startFromAutoStart());
     }
   }
 
@@ -967,7 +906,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     try {
       final appMode = ref.read(appModeProvider);
       if (appMode != AppMode.account) return;
-      final session = ref.read(activePomodoroSessionProvider);
+      final vm = ref.read(pomodoroViewModelProvider.notifier);
+      final session = vm.activeSessionForCurrentGroup;
       final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
       final isOwner = session != null &&
           session.ownerDeviceId == deviceId &&
@@ -1003,7 +943,97 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
   String? _ownershipRequestKey(OwnershipRequest? request) {
     if (request == null) return null;
-    return request.requesterDeviceId;
+    return request.requestId ?? request.requesterDeviceId;
+  }
+
+  bool _isDismissedOwnershipRequest(OwnershipRequest? request) {
+    if (request == null) return false;
+    if (request.requestId != null) {
+      return request.requestId == _dismissedOwnershipRequestKey;
+    }
+    final requestKey = _ownershipRequestKey(request);
+    return (requestKey != null && requestKey == _dismissedOwnershipRequestKey) ||
+        (_dismissedOwnershipRequesterId != null &&
+            request.requesterDeviceId == _dismissedOwnershipRequesterId);
+  }
+
+  void _clearDismissedOwnershipRequest() {
+    if (mounted) {
+      setState(() {
+        _dismissedOwnershipRequestKey = null;
+        _dismissedOwnershipRequesterId = null;
+      });
+    } else {
+      _dismissedOwnershipRequestKey = null;
+      _dismissedOwnershipRequesterId = null;
+    }
+  }
+
+  void _syncOwnershipRequestUiState({
+    required PomodoroViewModel vm,
+    required String deviceId,
+  }) {
+    final session = vm.activeSessionForCurrentGroup;
+    final request = vm.ownershipRequest;
+    final hasDismissedRequest = _dismissedOwnershipRequestKey != null ||
+        _dismissedOwnershipRequesterId != null;
+
+    if (_ownershipRejectionSnackVisible &&
+        (vm.isOwnerForCurrentSession ||
+            vm.isOwnershipRequestPendingForThisDevice)) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      _ownershipRejectionSnackVisible = false;
+    }
+
+    if (session != null && hasDismissedRequest) {
+      final requestResolved = request == null ||
+          request.status != OwnershipRequestStatus.pending;
+      final matchesDismissed =
+          request == null || _isDismissedOwnershipRequest(request);
+      if (requestResolved && matchesDismissed) {
+        _clearDismissedOwnershipRequest();
+      }
+    }
+
+    if (request == null) return;
+    if (request.status != OwnershipRequestStatus.rejected) return;
+    if (request.requesterDeviceId != deviceId) return;
+    final respondedAt = request.respondedAt;
+    final key = request.requestId ??
+        '${request.requesterDeviceId}-${respondedAt?.millisecondsSinceEpoch ?? 0}';
+    if (_lastOwnershipRejectionKey == key) return;
+    _lastOwnershipRejectionKey = key;
+    if (!mounted) return;
+    final time = DateFormat('HH:mm').format(respondedAt ?? DateTime.now());
+    final messenger = ScaffoldMessenger.of(context);
+    final rejectionColor = Theme.of(context).colorScheme.error.withAlpha(217);
+    messenger.hideCurrentSnackBar();
+    final controller = messenger.showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              Icons.cancel_outlined,
+              color: rejectionColor,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text('Ownership request rejected at $time'),
+            ),
+          ],
+        ),
+        duration: const Duration(days: 1),
+        action: SnackBarAction(
+          label: 'OK',
+          onPressed: () => messenger.hideCurrentSnackBar(),
+        ),
+      ),
+    );
+    _ownershipRejectionSnackVisible = true;
+    controller.closed.then((_) {
+      _ownershipRejectionSnackVisible = false;
+    });
   }
 
   String _ownerLabel(String ownerDeviceId, String currentDeviceId) {
@@ -1016,9 +1046,11 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
   void _showOwnershipInfoSheet({
     required bool isMirror,
-    required String ownerDeviceId,
+    required String? ownerDeviceId,
     required String currentDeviceId,
     required PomodoroViewModel vm,
+    required bool isSyncing,
+    required bool hasSession,
   }) {
     showModalBottomSheet<void>(
       context: context,
@@ -1027,16 +1059,29 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) {
-        final ownerLabel = _ownerLabel(ownerDeviceId, currentDeviceId);
+        final ownerLabel = ownerDeviceId == null
+            ? (hasSession ? 'Syncing...' : 'No active session yet')
+            : _ownerLabel(ownerDeviceId, currentDeviceId);
         final request = vm.ownershipRequest;
-        final isPendingForSelf = vm.isOwnershipRequestPendingForThisDevice;
+        final isPendingForSelf =
+            vm.isOwnershipRequestPendingForThisDevice ||
+            (vm.hasLocalPendingOwnershipRequest &&
+                !vm.isOwnershipRequestPendingForOther);
         final isPendingForOther = vm.isOwnershipRequestPendingForOther;
         final isRejectedForSelf = vm.isOwnershipRequestRejectedForThisDevice;
-        final canRequestOwnership = vm.canRequestOwnership;
+        final isPendingStaleForSelf =
+            vm.isOwnershipRequestStaleForThisDevice ||
+            vm.isLocalOwnershipRequestStaleForThisDevice;
+        final canRequestOwnership =
+            !isSyncing && hasSession && vm.canRequestOwnership;
         final rejectionAt = request?.respondedAt;
-        final allowed = isMirror
-            ? 'View progress only.'
-            : 'Pause, resume, and cancel.';
+        final allowed = isSyncing
+            ? 'Waiting for sync.'
+            : !hasSession
+                ? 'Waiting to start.'
+                : isMirror
+                    ? 'View progress only.'
+                    : 'Pause, resume, and cancel.';
         return SafeArea(
           top: false,
           child: Padding(
@@ -1055,9 +1100,13 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  isMirror
-                      ? 'This device is in view-only mode.'
-                      : 'This device controls the execution.',
+                  isSyncing
+                      ? 'Syncing session ownership...'
+                      : !hasSession
+                          ? 'No active session yet.'
+                          : isMirror
+                              ? 'This device is in view-only mode.'
+                              : 'This device controls the execution.',
                   style: const TextStyle(color: Colors.white70),
                 ),
                 const SizedBox(height: 12),
@@ -1085,14 +1134,18 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                     style: TextStyle(color: Colors.white70),
                   ),
                 ],
-                if (isMirror && isPendingForOther) ...[
+                if (!isSyncing && hasSession && isMirror && isPendingForOther) ...[
                   const SizedBox(height: 12),
                   const Text(
                     'Another device is requesting ownership.',
                     style: TextStyle(color: Colors.white70),
                   ),
                 ],
-                if (isMirror && isRejectedForSelf && rejectionAt != null) ...[
+                if (!isSyncing &&
+                    hasSession &&
+                    isMirror &&
+                    isRejectedForSelf &&
+                    rejectionAt != null) ...[
                   const SizedBox(height: 12),
                   Text(
                     'Last request rejected at ${DateFormat('HH:mm').format(rejectionAt)}.',
@@ -1112,8 +1165,14 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                           : null,
                       child: Text(
                         isPendingForSelf
-                            ? 'Request sent'
-                            : 'Request ownership',
+                            ? isPendingStaleForSelf && canRequestOwnership
+                                ? 'Retry'
+                                : 'Request sent'
+                            : isPendingForOther
+                                ? 'Pending'
+                                : isSyncing || !hasSession
+                                    ? 'Syncing...'
+                                    : 'Request ownership',
                       ),
                     ),
                   ),
@@ -1269,10 +1328,12 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     if (!state.status.isActiveExecution) return true;
 
     if (!vm.canControlSession) {
-      final canRequestOwnership = vm.canRequestOwnership;
-      final pendingForSelf = vm.isOwnershipRequestPendingForThisDevice;
+      final pendingForSelf =
+          vm.isOwnershipRequestPendingForThisDevice ||
+          (vm.hasLocalPendingOwnershipRequest &&
+              !vm.isOwnershipRequestPendingForOther);
       final pendingForOther = vm.isOwnershipRequestPendingForOther;
-      final shouldRequest = await showDialog<bool>(
+      await showDialog<bool>(
         context: context,
         builder: (_) => AlertDialog(
           title: const Text("Group running on another device"),
@@ -1281,35 +1342,16 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                 ? "Ownership request pending. Wait for approval to stop it here."
                 : pendingForOther
                     ? "Another device is requesting ownership. End it there to stop it."
-                    : canRequestOwnership
-                ? "This group is controlled by another device. "
-                    "To stop it here you must request ownership and wait for approval."
-                : "This group is controlled by another device. End it there to stop it.",
+                    : "This group is controlled by another device. Use the ownership icon to request control.",
           ),
           actions: [
-            if (canRequestOwnership)
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text("Request ownership"),
-              ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text("Keep running"),
+              child: const Text("OK"),
             ),
           ],
         ),
       );
-
-      if (shouldRequest != true) return false;
-      await vm.requestOwnership();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Ownership request sent'),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
       return false;
     }
 
@@ -1349,7 +1391,6 @@ class _ControlsBar extends StatelessWidget {
   final bool isPreRun;
   final bool isLocalMode;
   final VoidCallback onStartRequested;
-  final VoidCallback onRequestOwnership;
   final VoidCallback onPauseRequested;
   final VoidCallback onLocalPauseInfo;
   final VoidCallback onCancelRequested;
@@ -1361,7 +1402,6 @@ class _ControlsBar extends StatelessWidget {
     required this.isPreRun,
     required this.isLocalMode,
     required this.onStartRequested,
-    required this.onRequestOwnership,
     required this.onPauseRequested,
     required this.onLocalPauseInfo,
     required this.onCancelRequested,
@@ -1377,10 +1417,6 @@ class _ControlsBar extends StatelessWidget {
     final isPaused = state.status == PomodoroStatus.paused;
     final isFinished =
         state.status == PomodoroStatus.finished && vm.isGroupCompleted;
-    final canRequestOwnership = vm.canRequestOwnership;
-    final isPendingForSelf = vm.isOwnershipRequestPendingForThisDevice;
-    final isPendingForOther = vm.isOwnershipRequestPendingForOther;
-    final isPendingStaleForSelf = vm.isOwnershipRequestStaleForThisDevice;
     final controlsEnabled = vm.canControlSession;
     final showLocalPauseInfo =
         isLocalMode && state.status == PomodoroStatus.paused;
@@ -1401,13 +1437,6 @@ class _ControlsBar extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        if (vm.isMirrorMode)
-          _ownershipRequestControl(
-            canRequestOwnership: canRequestOwnership,
-            isPendingForSelf: isPendingForSelf,
-            isPendingForOther: isPendingForOther,
-            isPendingStaleForSelf: isPendingStaleForSelf,
-          ),
         if (isIdle)
           _btn(
             "Start",
@@ -1434,33 +1463,6 @@ class _ControlsBar extends StatelessWidget {
             controlsEnabled ? onCancelRequested : null,
           ),
       ],
-    );
-  }
-
-  Widget _ownershipRequestControl({
-    required bool canRequestOwnership,
-    required bool isPendingForSelf,
-    required bool isPendingForOther,
-    required bool isPendingStaleForSelf,
-  }) {
-    String label = 'Request';
-    VoidCallback? onPressed = canRequestOwnership ? onRequestOwnership : null;
-    if (isPendingForSelf) {
-      if (isPendingStaleForSelf && canRequestOwnership) {
-        label = 'Retry';
-        onPressed = onRequestOwnership;
-      } else {
-        label = 'Requested';
-        onPressed = null;
-      }
-    } else if (isPendingForOther) {
-      label = 'Pending';
-      onPressed = null;
-    }
-    return _btn(
-      label,
-      onPressed,
-      icon: Icons.verified,
     );
   }
 
@@ -1590,11 +1592,15 @@ class _OwnershipRequestBanner extends StatelessWidget {
 class _OwnershipIndicatorAction extends StatelessWidget {
   final bool isMirror;
   final bool isPendingRequest;
+  final bool isSyncing;
+  final bool hasSession;
   final VoidCallback onPressed;
 
   const _OwnershipIndicatorAction({
     required this.isMirror,
     required this.isPendingRequest,
+    required this.isSyncing,
+    required this.hasSession,
     required this.onPressed,
   });
 
@@ -1602,19 +1608,31 @@ class _OwnershipIndicatorAction extends StatelessWidget {
   Widget build(BuildContext context) {
     final icon = isPendingRequest
         ? Icons.verified
-        : isMirror
-            ? Icons.remove_red_eye
-            : Icons.verified;
+        : isSyncing
+            ? Icons.sync
+            : !hasSession
+                ? Icons.hourglass_empty
+                : isMirror
+                    ? Icons.remove_red_eye
+                    : Icons.verified;
     final color = isPendingRequest
         ? Colors.orangeAccent
-        : isMirror
-            ? Colors.white70
-            : Colors.greenAccent;
+        : isSyncing
+            ? Colors.white38
+            : !hasSession
+                ? Colors.white54
+                : isMirror
+                    ? Colors.white70
+                    : Colors.greenAccent;
     final tooltip = isPendingRequest
         ? 'Ownership request pending'
-        : isMirror
-            ? 'Mirror device'
-            : 'Owner device';
+        : isSyncing
+            ? 'Syncing session'
+            : !hasSession
+                ? 'No active session yet'
+                : isMirror
+                    ? 'Mirror device'
+                    : 'Owner device';
 
     return Padding(
       padding: const EdgeInsets.only(right: 4),

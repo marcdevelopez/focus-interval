@@ -149,6 +149,43 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
                   (validation pending).
       12/02/2026: Ownership reject dismiss no longer reappears on transient
                   session gaps (validation pending).
+      12/02/2026: Run Mode ownership indicator always visible (syncing variant);
+                  manual sync removed; VM now listens to the shared session
+                  stream; control gating requires a valid session snapshot
+                  (validation pending).
+      12/02/2026: Session-missing gating now always blocks controls while a
+                  running group has no activeSession; auto-start performs a
+                  sync-then-start check; ownership indicator shows neutral
+                  state when no session exists (validation pending).
+      12/02/2026: Sync-gap handling now neutralizes session-derived ownership
+                  state to avoid stale mirror/owner derivations (validation pending).
+      12/02/2026: Ownership pending indicator now overrides syncing/no-session
+                  visuals on the requester (validation pending).
+      12/02/2026: Optimistic ownership request now survives owner->mirror reset
+                  to avoid amber indicator flicker (validation pending).
+      12/02/2026: Optimistic pending now overrides older rejected ownership
+                  snapshots to prevent request indicator flicker (validation pending).
+      12/02/2026: Optimistic pending no longer cleared by stale rejected
+                  requests from other devices (validation pending).
+      12/02/2026: Local pending gating keeps requester UI stable and disables
+                  duplicate request taps during snapshot lag (validation pending).
+      12/02/2026: Ownership requests now include requestId to reconcile
+                  optimistic pending with remote snapshots (validation pending).
+      12/02/2026: Requester pending UI now stays active until the owner
+                  responds (accept/reject) or another pending request appears
+                  (validation pending).
+      12/02/2026: Request action moved to the ownership sheet; mirror control
+                  row no longer shows a Request button (validation pending).
+      12/02/2026: Retry CTA now lives in the ownership sheet when a pending
+                  request becomes stale (validation pending).
+      12/02/2026: CRITICAL: ownership request UI locked to AppBar sheet only;
+                  pending state remains stable until owner response
+                  (validation pending).
+      12/02/2026: Reject now clears local pending; request keys use requestId
+                  to prevent suppressing new requests after rejection
+                  (validation pending).
+      12/02/2026: Owner-side reject modal dismissal stabilized against
+                  requestId materialization flicker (validation pending).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 

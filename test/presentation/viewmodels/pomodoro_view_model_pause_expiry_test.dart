@@ -72,7 +72,10 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
   Future<void> clearSessionIfGroupNotRunning() async {}
 
   @override
-  Future<void> requestOwnership({required String requesterDeviceId}) async {}
+  Future<void> requestOwnership({
+    required String requesterDeviceId,
+    required String requestId,
+  }) async {}
 
   @override
   Future<bool> tryAutoClaimStaleOwner({

@@ -22,7 +22,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **12/02/2026**
+Last update: **13/02/2026**
 
 ---
 
@@ -5087,3 +5087,220 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Cleared the dismissal only when the same requester’s request is no longer pending.
 
 # 🚀 End of file
+
+# 🔹 Block 346 — Ownership stream unification + gating (12/02/2026)
+
+### ✔ Work completed:
+
+- Clarified specs for scheduled auto-start ownership (first device wins),
+  Pre-Run cancel exception, always-visible ownership indicator (syncing variant),
+  and removed manual sync from Run Mode.
+- PomodoroViewModel now listens to the shared activeSession stream
+  (`pomodoroSessionStreamProvider`) to keep VM/UI snapshots aligned.
+- Added session-missing tracking while a group is running, preserving last-known
+  session state while disabling controls during sync gaps.
+- Hardened control gating in Account Mode: requires a valid session snapshot,
+  disables during sync gaps, allows initial start when no session exists yet,
+  and allows Pre-Run cancel on all devices.
+- TimerScreen now uses VM session snapshots for ownership UI, shows a syncing
+  ownership indicator when needed, disables request actions while syncing, and
+  removed the AppBar manual sync button.
+
+
+# 🔹 Block 347 — Session-missing gating + neutral indicator (12/02/2026)
+
+### ✔ Work completed:
+
+- Treat `group running + session null` as syncing unconditionally to avoid
+  enabling controls before activeSession arrives.
+- Added auto-start path that syncs first and only starts when no session exists,
+  preventing duplicate starts while keeping scheduled/start-now flows working.
+- Ownership indicator now distinguishes real syncing vs "no session yet" (neutral),
+  and disables ownership actions when there is no session.
+
+
+# 🔹 Block 348 — Sync-gap neutralization (12/02/2026)
+
+### ✔ Work completed:
+
+- Removed unreachable duplicate branch in session-null handling.
+- Neutralized `activeSessionForCurrentGroup` during sync gaps so mirror/owner
+  derivations do not rely on stale snapshots while syncing.
+
+
+# 🔹 Block 349 — Pending indicator priority (12/02/2026)
+
+### ✔ Work completed:
+
+- Made the ownership pending indicator override syncing/no-session visuals so
+  the requester stays amber immediately after tapping Request.
+- Kept request button disabled during sync gaps while preserving the
+  "Request sent" status text.
+
+
+# 🔹 Block 350 — Preserve optimistic request on mirror switch (12/02/2026)
+
+### ✔ Work completed:
+
+- Prevented _resetLocalSessionState from clearing optimistic ownership when
+  switching from owner to mirror while a local request is pending.
+- This keeps the requester indicator amber without flicker until the owner
+  approves or rejects.
+
+
+# 🔹 Block 351 — Optimistic request precedence over stale rejection (12/02/2026)
+
+### ✔ Work completed:
+
+- Prevented optimistic pending state from being cleared by an older rejected
+  ownershipRequest snapshot (keeps requester indicator amber until confirmed).
+- OwnershipRequest getter now prefers optimistic pending when the remote request
+  is older than the local request.
+
+
+# 🔹 Block 352 — Optimistic request kept over stale rejected (other requester) (12/02/2026)
+
+### ✔ Work completed:
+
+- Stopped clearing optimistic pending when the remote ownershipRequest is a
+  rejected request from another device (stale rejection should not override
+  a fresh local request).
+- Prefers optimistic pending when a rejected request lacks timestamps,
+  avoiding flicker before Firestore writes the new pending request.
+
+
+# 🔹 Block 353 — Local pending gating for request UI (12/02/2026)
+
+### ✔ Work completed:
+
+- Added an explicit local pending flag for ownership requests so the requester
+  stays in "Request sent" immediately after tapping, even if snapshots lag.
+- Request button gating now respects local pending to prevent double taps while
+  the request is in-flight.
+
+
+# 🔹 Block 354 — Ownership requestId for optimistic reconciliation (12/02/2026)
+
+### ✔ Work completed:
+
+- Added `requestId` to ownership requests and propagated it through the
+  Firestore request + rejection flow.
+- Optimistic pending now matches by requestId to ignore stale rejected requests,
+  preventing the request indicator from flashing back to mirror.
+
+
+# 🔹 Block 355 — Pending UI held until owner responds (12/02/2026)
+
+### ✔ Work completed:
+
+- Requester pending UI no longer clears due to intermediate snapshots.
+- Local pending is cleared only when the owner responds (accepted or rejected)
+  or when another device has a pending request.
+
+
+# 🔹 Block 356 — Request action moved into ownership sheet (12/02/2026)
+
+### ✔ Work completed:
+
+- Removed the mirror-side “Request” button from the main control row.
+- Ownership requests are now initiated only from the AppBar ownership sheet
+  to reduce inconsistent UI states and simplify the flow.
+
+
+# 🔹 Block 357 — Retry CTA moved to ownership sheet (12/02/2026)
+
+### ✔ Work completed:
+
+- Added the **Retry** label to the ownership sheet action when a pending request
+  exceeds the stale threshold.
+- Keeps the retry path available without reintroducing a main control-row button.
+
+
+# 🔹 Block 358 — CRITICAL: Ownership request UI locked + stable (12/02/2026)
+
+### ✔ Work completed:
+
+- Ownership request action moved to the AppBar ownership sheet only; mirror
+  control row no longer shows a Request button.
+- Requester pending UI now stays stable (no revert) until the owner responds.
+- This UX flow is now a **locked requirement** in specs to prevent regressions.
+
+
+# 🔹 Block 359 — Fix reject + retry state reset (12/02/2026)
+
+### ✔ Work completed:
+
+- Cleared local pending when a rejection arrives for the same requester.
+- Ownership request keys now use requestId when available, so new requests
+  are not suppressed after a prior rejection.
+
+
+# 🔹 Block 360 — Reject modal dismissal stabilized (12/02/2026)
+
+### ✔ Work completed:
+
+- Prevented the owner-side reject modal from reappearing due to requestId
+  materializing after the initial tap by dismissing via requesterId as well.
+- Dismissal now clears only when the request resolves, avoiding flicker.
+
+
+# 🔹 Block 361 — Reject modal source unified (13/02/2026)
+
+### ✔ Work completed:
+
+- Ownership request dismissal + rejection snackbar now derive from the
+  ViewModel session only (removed mixed stream source).
+- This prevents the owner-side reject modal from reappearing after a reject
+  due to stale stream/Vm timing mismatches.
+
+
+# 🔹 Block 362 — Allow repeat requests after reject (13/02/2026)
+
+### ✔ Work completed:
+
+- Dismiss suppression now keys off requestId when available; requesterId is
+  only used for legacy requests without requestId.
+- This ensures a new request from the same mirror is visible to the owner
+  and is not blocked by a previous dismissal.
+
+
+# 🔹 Block 363 — Preserve new pending over old rejection (13/02/2026)
+
+### ✔ Work completed:
+
+- A new ownership request no longer loses its pending state when a previous
+  rejection still exists in the remote session.
+- Reconciliation now compares requestId (or timestamps for legacy requests),
+  so the mirror indicator stays amber immediately after re-requesting.
+
+
+# 🔹 Block 364 — Ownership request UX postmortem & lock-in (13/02/2026)
+
+### ✔ Work completed:
+
+- Final root cause identified: **optimistic pending was cleared by an older
+  rejection** because requestId was not used to reconcile snapshots.
+- Reinforced reconciliation rules in ViewModel and specs:
+  - Rejections apply **only** to the same requestId.
+  - New requests from the same device must remain pending immediately.
+- Earlier failed attempts (documented for future maintenance):
+  - Dismiss-by-requesterId blocked future requests (fixed by requestId scoping).
+  - Mixed stream vs VM dismissal caused the owner modal to reappear (unified to VM).
+  - Removing the control-row Request button reduced transient UI divergence.
+- Tests added to lock the expected behavior and prevent regressions.
+
+### 🧠 Lessons captured:
+
+- Ownership UI must derive from **one source of truth** (VM) to avoid flicker.
+- `requestId` is mandatory for reliable optimistic sync; legacy timestamps are
+  only a fallback.
+
+
+# 🔹 Block 365 — Auto-dismiss rejection snackbar on state change (13/02/2026)
+
+### ✔ Work completed:
+
+- Rejection snackbar now auto-clears when the requester either becomes owner
+  or sends a new pending request, preventing stale UI.
+- Kept snackbar non-blocking with OK, but ensured it never lingers over a
+  successful ownership transition.

@@ -139,7 +139,10 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
   }
 
   @override
-  Future<void> requestOwnership({required String requesterDeviceId}) async {
+  Future<void> requestOwnership({
+    required String requesterDeviceId,
+    required String requestId,
+  }) async {
     final uid = await _uidOrThrow();
     final docRef = _doc(uid);
     await _db.runTransaction((tx) async {
@@ -170,6 +173,7 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
         docRef,
         {
           'ownershipRequest': {
+            'requestId': requestId,
             'requesterDeviceId': requesterDeviceId,
             'status': 'pending',
             'requestedAt': FieldValue.serverTimestamp(),
@@ -278,6 +282,7 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
         docRef,
         {
           'ownershipRequest': {
+            'requestId': requestMap?['requestId'],
             'requesterDeviceId': requesterDeviceId,
             'status': 'rejected',
             'requestedAt': requestMap?['requestedAt'],

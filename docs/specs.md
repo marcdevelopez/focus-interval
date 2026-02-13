@@ -249,6 +249,7 @@ class PomodoroSession {
 }
 
 class OwnershipRequest {
+  String? requestId; // unique id to reconcile optimistic vs remote (optional for legacy)
   String requesterDeviceId;
   DateTime requestedAt;
   String status; // pending | rejected
@@ -259,6 +260,9 @@ class OwnershipRequest {
 
 Notes:
 
+- `requestId` is **required for new requests** and is used to reconcile optimistic
+  pending UI with remote snapshots. A rejected request with a **different**
+  `requestId` must **not** clear a newer pending request from the same device.
 - `phaseStartedAt` is **only** for phase progress/projection; it must never anchor
   task/group time ranges.
 - `currentTaskStartedAt` is authoritative for the active task start and must be
@@ -1411,10 +1415,9 @@ The list rebuilds automatically when tasks change.
 
 ### **10.4.5.a. Run Mode controls (below the list)**
 
-- Primary controls: Pause/Resume, Cancel, and Request ownership (mirror only).
+- Primary controls: Start/Resume, Pause, and Cancel (depending on state).
 - Controls must share a full-size button style (no compact sizing tied to owner/mirror state).
-- Keep labels short (e.g., "Request") and use the owner icon when applicable.
-- The layout must remain stable with 2 buttons (owner) or 3 buttons (mirror) without overlap or clipping.
+- The layout must remain stable without overlap or clipping.
 
 ### **10.4.6. Transitions**
 
@@ -1463,10 +1466,13 @@ The MM:SS timer must not shift horizontally:
 ### **10.4.8. Multi-device sync in TimerScreen**
 
 - If an activeSession exists, the screen connects in mirror mode and reflects the remote state.
-- Only the ownerDeviceId can start/pause/resume/cancel; mirror devices can request ownership from Run Mode.
+- Only the ownerDeviceId can start/pause/resume/cancel in **Run Mode**; mirror devices can request ownership.
+  - **Exception (Pre-Run Countdown):** there is no owner and any device may cancel while the Pre-Run window is active.
 - activeSession includes: groupId, currentTaskId, currentTaskIndex, totalTasks.
 - Remaining time is calculated from phaseStartedAt + phaseDurationSeconds.
 - Mirror devices render task names/durations from the TaskRunGroup snapshot (by groupId), not from the editable task list.
+- **Single source of truth:** owner/mirror state and control gating must be derived from the same activeSession snapshot
+  (groupId must match). Local flags may project state but must never override the snapshot.
 - When auto-open is triggered from launch/resume, open TimerScreen in mirror mode if the session belongs to another device.
 - On `AppLifecycleState.resumed`, force an immediate sync (activeSession + group)
   before enabling controls. While resyncing, the UI must not show a transient
@@ -1478,20 +1484,23 @@ The MM:SS timer must not shift horizontally:
   stale controls. Stop when the window is active.
 - If a group is **running** but `activeSession` is temporarily missing (stream
   reconnecting), show **Syncing session...** instead of rendering potentially
-  stale state. Hide ownership indicators and task ranges until the session arrives.
-- Provide a manual sync affordance in Run Mode (AppBar sync icon) to re-trigger
-  `syncWithRemoteSession()` on demand.
-- After a scheduled auto-start, the first device that starts the session becomes the owner; other devices open in mirror mode until ownership is approved.
+  stale state. Keep the ownership indicator visible (neutral/last-known) but
+  disable controls and hide task ranges until the session arrives.
+- After a scheduled auto-start, the **first device that starts the session** becomes the owner.
+  Other devices open in mirror mode and remain there until ownership is approved.
 - When ownership changes, mirror devices must discard any local projection and re-anchor exclusively to the activeSession timestamps so pause/resume stays globally consistent.
-- Initial ownership is deterministic: the device that initiates the run
+- Initial ownership is deterministic: the device that **initiates the run**
   (Start now or auto-start) must be the first owner.
-- For scheduled runs, `scheduledByDeviceId` is metadata only and must not block
-  auto-start; any device can claim at the scheduled time.
+- For scheduled runs, `scheduledByDeviceId` is **metadata only** and must not block
+  auto-start or ownership; any device can claim at the scheduled time.
 - For Start now, only the initiating device (`scheduledByDeviceId`) should claim
   the initial session; other devices wait for the activeSession.
 - Ownership transfer is explicit:
   - Mirror devices send a request (ownershipRequest) and remain in mirror while pending.
   - The current owner must explicitly accept or reject.
+  - The requester must switch to a **pending** UI state immediately on tap
+    (optimistic), and this pending state must not be cleared by transient
+    snapshot gaps.
   - Rejected requests show a brief rejection state on the requester and a small
     rejection indicator near the request control (tap for time/details). The
     requester can re-submit at any time.
@@ -1507,20 +1516,30 @@ The MM:SS timer must not shift horizontally:
 - Show a persistent, compact indicator in the Run Mode header:
   - Owner: green icon (e.g., shield/check).
   - Mirror: eye icon (e.g., visibility).
+- The ownership indicator is **always visible** in Run Mode (including while syncing).
+  If the session is temporarily missing, keep the last known state or show a neutral
+  syncing variant, but never hide the indicator.
 - The indicator itself is tappable and opens a small sheet/popover explaining:
   - Whether this device is Owner or Mirror.
   - Which actions are allowed or blocked.
   - Which device currently owns the session, using the account display name + platform label when available
     (e.g., "Marcos (Web)"); if no display name exists, fall back to "Account (Platform)" or platform-only.
 - When the device is in mirror mode, provide an explicit “Request ownership” action
-  inside the sheet. The current owner must accept or reject.
-- On compact layouts, the control label may be shortened (e.g., “Request”) to avoid overflow.
+  **inside the ownership sheet** (AppBar indicator). The current owner must accept or reject.
+- The request action is only exposed inside the ownership sheet to keep the main
+  control row consistent and avoid transient UI states.
+- **Hard requirement (do not change):** the Request action must not appear in the
+  main control row. Any change to this rule requires an explicit specs update.
+- On compact layouts, the request label inside the sheet may be shortened
+  (e.g., “Request”) to avoid overflow.
 - The request button may include the owner icon (same as the header indicator) to
   improve clarity; keep it compact on narrow screens.
 - Rejection feedback should be non-intrusive: show a snackbar with the rejection time,
   a subtle rejection icon/accent (muted red/orange) for immediate clarity, and require
   an explicit “OK” dismiss; also include the last rejection time inside the ownership
   info sheet. Do not add persistent inline icons that force the control row to overflow.
+- If the requester later **obtains ownership** or **submits a new request**, any
+  prior rejection snackbar must auto-dismiss to avoid stale/confusing feedback.
 - The owner-side ownership request prompt should render as a floating overlay
   (light modal/banner) that does not push or reflow the existing layout. It must
   avoid overflow and should not collide with the AppBar or top widgets. The
@@ -1535,6 +1554,12 @@ The MM:SS timer must not shift horizontally:
   must appear immediately (optimistic UI) without waiting for a remote snapshot.
   Clear the optimistic state once the stream confirms the request (pending,
   rejected, or approved), or if the request fails.
+- If the remote snapshot still contains a **previous rejection** for the same
+  requester, the UI must **not** drop the new pending state. Reconcile by
+  `requestId` (or timestamps for legacy requests) so new requests are always
+  reflected immediately.
+- A rejection is scoped to the **same requestId** only. It must **never**
+  suppress a newer request from the same device.
 - If a pending ownership request exceeds the stale threshold, surface a **Retry**
   action and allow the requester to re-send the request.
 - Show a one-time, non-blocking education message on the first owner start

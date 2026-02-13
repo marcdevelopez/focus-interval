@@ -127,6 +127,7 @@ class PomodoroSession {
 enum OwnershipRequestStatus { pending, rejected }
 
 class OwnershipRequest {
+  final String? requestId;
   final String requesterDeviceId;
   final OwnershipRequestStatus status;
   final DateTime? requestedAt;
@@ -134,6 +135,7 @@ class OwnershipRequest {
   final String? respondedByDeviceId;
 
   const OwnershipRequest({
+    required this.requestId,
     required this.requesterDeviceId,
     required this.status,
     required this.requestedAt,
@@ -142,6 +144,7 @@ class OwnershipRequest {
   });
 
   Map<String, dynamic> toMap() => {
+    if (requestId != null) 'requestId': requestId,
     'requesterDeviceId': requesterDeviceId,
     'status': status.name,
     'requestedAt': requestedAt,
@@ -157,6 +160,7 @@ class OwnershipRequest {
       orElse: () => OwnershipRequestStatus.pending,
     );
     return OwnershipRequest(
+      requestId: map['requestId'] as String?,
       requesterDeviceId: map['requesterDeviceId'] as String? ?? '',
       status: status,
       requestedAt: _readDateTime(map['requestedAt']),

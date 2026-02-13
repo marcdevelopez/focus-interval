@@ -72,7 +72,10 @@ class RecordingSessionRepository implements PomodoroSessionRepository {
   Future<void> clearSessionIfGroupNotRunning() async {}
 
   @override
-  Future<void> requestOwnership({required String requesterDeviceId}) async {
+  Future<void> requestOwnership({
+    required String requesterDeviceId,
+    required String requestId,
+  }) async {
     lastRequester = requesterDeviceId;
   }
 
@@ -218,5 +221,70 @@ void main() {
     expect(vm.ownershipRequest?.requesterDeviceId, deviceInfo.deviceId);
     expect(sessionRepo.lastRequester, deviceInfo.deviceId);
     sub.close();
+  });
+
+  test('requestOwnership keeps pending after prior rejection', () async {
+    final now = DateTime.now();
+    final deviceInfo = DeviceInfoService.ephemeral();
+    final group = _buildRunningGroup(id: 'group-2', start: now);
+    final rejection = OwnershipRequest(
+      requestId: 'old-request',
+      requesterDeviceId: deviceInfo.deviceId,
+      requestedAt: now.subtract(const Duration(minutes: 2)),
+      status: OwnershipRequestStatus.rejected,
+      respondedAt: now.subtract(const Duration(minutes: 1)),
+      respondedByDeviceId: 'owner-device',
+    );
+    final session = PomodoroSession(
+      taskId: group.tasks.first.sourceTaskId,
+      groupId: group.id,
+      currentTaskId: group.tasks.first.sourceTaskId,
+      currentTaskIndex: 0,
+      totalTasks: 1,
+      dataVersion: kCurrentDataVersion,
+      ownerDeviceId: 'other-device',
+      status: PomodoroStatus.pomodoroRunning,
+      phase: PomodoroPhase.pomodoro,
+      currentPomodoro: 1,
+      totalPomodoros: 2,
+      phaseDurationSeconds: 25 * 60,
+      remainingSeconds: 1200,
+      phaseStartedAt: now.subtract(const Duration(minutes: 5)),
+      currentTaskStartedAt: now.subtract(const Duration(minutes: 5)),
+      pausedAt: null,
+      lastUpdatedAt: now,
+      finishedAt: null,
+      pauseReason: null,
+      ownershipRequest: rejection,
+    );
+
+    final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+    final sessionRepo = RecordingSessionRepository(session);
+    final appModeService = AppModeService.memory();
+
+    final container = ProviderContainer(
+      overrides: [
+        taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+        pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+        appModeServiceProvider.overrideWithValue(appModeService),
+        deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+        soundServiceProvider.overrideWithValue(FakeSoundService()),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container.read(appModeProvider.notifier).setAccount();
+    await _pumpQueue();
+
+    final vm = container.read(pomodoroViewModelProvider.notifier);
+    final result = await vm.loadGroup(group.id);
+    expect(result, PomodoroGroupLoadResult.loaded);
+
+    await vm.requestOwnership();
+    await _pumpQueue();
+
+    expect(vm.isOwnershipRequestPendingForThisDevice, isTrue);
+    expect(vm.hasLocalPendingOwnershipRequest, isTrue);
+    expect(sessionRepo.lastRequester, deviceInfo.deviceId);
   });
 }
