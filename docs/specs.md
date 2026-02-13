@@ -1538,6 +1538,8 @@ The MM:SS timer must not shift horizontally:
   a subtle rejection icon/accent (muted red/orange) for immediate clarity, and require
   an explicit “OK” dismiss; also include the last rejection time inside the ownership
   info sheet. Do not add persistent inline icons that force the control row to overflow.
+- If the requester later **obtains ownership** or **submits a new request**, any
+  prior rejection snackbar must auto-dismiss to avoid stale/confusing feedback.
 - The owner-side ownership request prompt should render as a floating overlay
   (light modal/banner) that does not push or reflow the existing layout. It must
   avoid overflow and should not collide with the AppBar or top widgets. The

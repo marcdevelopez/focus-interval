@@ -53,6 +53,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   String? _lastOwnershipRejectionKey;
   String? _dismissedOwnershipRequestKey;
   String? _dismissedOwnershipRequesterId;
+  bool _ownershipRejectionSnackVisible = false;
   bool _inactiveRepaintEnabled = false;
 
   @override
@@ -977,6 +978,13 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final hasDismissedRequest = _dismissedOwnershipRequestKey != null ||
         _dismissedOwnershipRequesterId != null;
 
+    if (_ownershipRejectionSnackVisible &&
+        (vm.isOwnerForCurrentSession ||
+            vm.isOwnershipRequestPendingForThisDevice)) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      _ownershipRejectionSnackVisible = false;
+    }
+
     if (session != null && hasDismissedRequest) {
       final requestResolved = request == null ||
           request.status != OwnershipRequestStatus.pending;
@@ -1000,7 +1008,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final messenger = ScaffoldMessenger.of(context);
     final rejectionColor = Theme.of(context).colorScheme.error.withAlpha(217);
     messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(
+    final controller = messenger.showSnackBar(
       SnackBar(
         content: Row(
           children: [
@@ -1022,6 +1030,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         ),
       ),
     );
+    _ownershipRejectionSnackVisible = true;
+    controller.closed.then((_) {
+      _ownershipRejectionSnackVisible = false;
+    });
   }
 
   String _ownerLabel(String ownerDeviceId, String currentDeviceId) {

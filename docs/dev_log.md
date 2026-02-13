@@ -5294,3 +5294,13 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Ownership UI must derive from **one source of truth** (VM) to avoid flicker.
 - `requestId` is mandatory for reliable optimistic sync; legacy timestamps are
   only a fallback.
+
+
+# 🔹 Block 365 — Auto-dismiss rejection snackbar on state change (13/02/2026)
+
+### ✔ Work completed:
+
+- Rejection snackbar now auto-clears when the requester either becomes owner
+  or sends a new pending request, preventing stale UI.
+- Kept snackbar non-blocking with OK, but ensured it never lingers over a
+  successful ownership transition.
