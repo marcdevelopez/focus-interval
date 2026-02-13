@@ -5402,3 +5402,43 @@ _(fill in when they happen)_
 
 - Validate on macOS that fresh installs show the empty states + sign-in CTA
   instead of loading spinners in Account Mode with no user.
+
+
+# 🔹 Block 370 — Add centralized bug log (13/02/2026)
+
+### ✔ Work completed:
+
+- Added docs/bug_log.md to centralize bug tracking.
+- Seeded the log with BUG-001 (mirror Ready with active session) and marked it intermittent.
+
+### 🧠 Decisions made:
+
+- Bug notes live in docs/bug_log.md; dev log references them only when tied to code changes.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Add new bug reports to docs/bug_log.md in chronological order.
+
+
+# 🔹 Block 371 — Add feature backlog (13/02/2026)
+
+### ✔ Work completed:
+
+- Added docs/feature_backlog.md to centralize feature ideas.
+- Seeded IDEA-001 (circular group progress ring around the timer).
+
+### 🧠 Decisions made:
+
+- Feature ideas live in docs/feature_backlog.md with a consistent template.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Add the remaining feature ideas using the same template.
