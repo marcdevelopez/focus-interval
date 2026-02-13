@@ -90,9 +90,9 @@ Symptom:
 - Android mirror can remain in requested/Ready after ownership rejection and
   become visually desynced from activeSession; requires navigation to Groups Hub
   and back to resync.
- - After acceptance, Android can stay in amber "requested" state with Pause/Cancel
+- After acceptance, Android can stay in amber "requested" state with Pause/Cancel
   disabled even when Firestore shows Android as owner.
- - Owner can flip back to macOS seconds after acceptance; Android still shows
+- Owner can flip back to macOS seconds after acceptance; Android still shows
   pending/requested UI even with no active ownershipRequest in Firestore.
 
 Observed behavior:
@@ -101,6 +101,8 @@ Observed behavior:
   - Android requests ownership; macOS rejects; Android requests again.
   - After rejection(s), Android UI shows Ready or stale requested state while
     Firestore reports an active running session.
+  - Ownership request can appear on macOS only after Android taps Retry
+    (delayed delivery).
 - After ownership request rejection, Firestore shows
   `ownershipRequest.status = rejected` with `respondedByDeviceId = macOS...`,
   but Android stays in Ready or shows stale requested state.
@@ -111,6 +113,8 @@ Observed behavior:
 - After macOS accepts a request and Firestore shows Android as owner, Android UI
   can remain amber (requested) with Pause/Cancel disabled; seconds later ownership
   flips back to macOS while Android still shows pending/requested state.
+ - After returning from Groups Hub, UI can look correct but Firestore still
+   contains a rejected ownershipRequest from the delayed Retry flow.
 
 Expected behavior:
 - Ownership rejection should immediately clear pending/requested UI and return
@@ -143,6 +147,10 @@ Evidence:
   - 23:47:04 requestId `341cc0e1-...` pending (requestedAt 23:47:21) after Retry.
   - 23:48:36 `ownerDeviceId = android` after accept; Android still amber.
   - 23:49:32 `ownerDeviceId = macOS` while Android continued to show requested.
+- 14/02/2026 00:04:46 snapshot shows `ownershipRequest.status = rejected`
+  (requestId `3cfac1a5-...`, requestedAt 00:00:26, respondedAt 00:00:28 by
+  macOS) while `status = pomodoroRunning` and `remainingSeconds = 629`
+  (Pomodoro 5/7).
 - Screenshots show Android in amber requested state with Pause/Cancel disabled
   while macOS shows owner controls and the ownership modal.
 
