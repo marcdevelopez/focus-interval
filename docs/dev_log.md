@@ -5465,3 +5465,26 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Validate BUG-002 on Android after any ownership UI changes.
+
+
+# 🔹 Block 373 — Split ownership bugs and add timer drift/inactive window issues (13/02/2026)
+
+### ✔ Work completed:
+
+- Refined BUG-002 with clearer ownership-requested UI symptoms and evidence.
+- Added BUG-004 (mirror timer drift during long breaks).
+- Added BUG-005 (macOS inactive window hides ownership requests).
+
+### 🧠 Decisions made:
+
+- Separate ownership-handling failures from time-drift and desktop-focus issues
+  to isolate root causes.
+
+### ⚠️ Issues found:
+
+- Mirror time drift can grow over long phases.
+- macOS may miss ownership requests while inactive.
+
+### 🎯 Next steps:
+
+- Validate BUG-004 and BUG-005 after ownership resync changes.
