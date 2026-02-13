@@ -5357,3 +5357,24 @@ _(fill in when they happen)_
 
 - Validate on Android mirror that session gaps show Syncing instead of Ready,
   including background/foreground and app-switch scenarios.
+
+
+# 🔹 Block 368 — Allow Local Mode switch from login (13/02/2026)
+
+### ✔ Work completed:
+
+- Enabled the Account/Local mode chip on the Login screen to switch into
+  Local Mode and return to the Task List when Account Mode is active.
+
+### 🧠 Decisions made:
+
+- Login should honor “switch between Local and Account at any time” by allowing
+  a direct Local Mode exit even before sign-in.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Verify on Chrome and iOS that tapping the mode chip exits to Local Mode.

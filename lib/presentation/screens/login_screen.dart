@@ -45,6 +45,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     ref.invalidate(presetEditorProvider);
   }
 
+  Future<void> _switchToLocalMode() async {
+    if (_loading) return;
+    final controller = ref.read(appModeProvider.notifier);
+    await controller.setLocal();
+    if (!mounted) return;
+    context.go('/tasks');
+  }
+
   bool get _isGoogleSignInSupported {
     if (kIsWeb) return true;
     return defaultTargetPlatform == TargetPlatform.android ||
@@ -799,6 +807,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         auth.isGitHubSignInSupported || auth.isGitHubDesktopOAuthSupported;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final allowLocalExit = appMode == AppMode.local && currentUser == null;
+    final canSwitchToLocal = appMode == AppMode.account;
 
     if (!authSupported) {
       return Scaffold(
@@ -842,7 +851,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         actions: [
           ModeIndicatorAction(
             compact: true,
-            onTap: allowLocalExit ? () => context.go('/tasks') : null,
+            onTap: allowLocalExit
+                ? () => context.go('/tasks')
+                : (canSwitchToLocal ? _switchToLocalMode : null),
           ),
         ],
       ),
