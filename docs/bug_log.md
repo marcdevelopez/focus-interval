@@ -80,10 +80,20 @@ Context: Planned group scheduled by time range. Initial state Android mirror,
 macOS owner. During a break, Android is backgrounded (app kept running), then
 foregrounded. Android issues ownership requests; macOS rejects at least once.
 
+Repro steps:
+- Start a planned group (range scheduling). macOS = owner, Android = mirror.
+- Pause on macOS; Android is backgrounded (app running), then foregrounded.
+- Accept ownership on macOS; observe Android UI state and control availability.
+- Repeat with Retry from Android when the amber owner-requested indicator remains.
+
 Symptom:
 - Android mirror can remain in requested/Ready after ownership rejection and
   become visually desynced from activeSession; requires navigation to Groups Hub
   and back to resync.
+- After acceptance, Android can stay in amber "requested" state with Pause/Cancel
+  disabled even when Firestore shows Android as owner.
+- Owner can flip back to macOS seconds after acceptance; Android still shows
+  pending/requested UI even with no active ownershipRequest in Firestore.
 
 Observed behavior:
 - Condensed sequence:
@@ -91,6 +101,8 @@ Observed behavior:
   - Android requests ownership; macOS rejects; Android requests again.
   - After rejection(s), Android UI shows Ready or stale requested state while
     Firestore reports an active running session.
+  - Ownership request can appear on macOS only after Android taps Retry
+    (delayed delivery).
 - After ownership request rejection, Firestore shows
   `ownershipRequest.status = rejected` with `respondedByDeviceId = macOS...`,
   but Android stays in Ready or shows stale requested state.
@@ -98,6 +110,11 @@ Observed behavior:
   and `remainingSeconds` continues to decrease.
 - Android only resyncs after leaving Run Mode to Groups Hub and returning; then
   the rejection snackbar appears and mirror view updates.
+- After macOS accepts a request and Firestore shows Android as owner, Android UI
+  can remain amber (requested) with Pause/Cancel disabled; seconds later ownership
+  flips back to macOS while Android still shows pending/requested state.
+ - After returning from Groups Hub, UI can look correct but Firestore still
+   contains a rejected ownershipRequest from the delayed Retry flow.
 
 Expected behavior:
 - Ownership rejection should immediately clear pending/requested UI and return
@@ -118,6 +135,28 @@ Evidence:
     `ownerDeviceId = macOS`, but Android stayed in Ready for >1 minute.
   - 21:14:54 after navigating to Groups Hub and back, Android re-synced and
     showed the rejection snackbar; Firestore still `pomodoroRunning`.
+- Additional snapshots (UTC+1, long break, Pomodoro 4/7):
+  - 23:38:53 `ownerDeviceId = macOS`, `status = longBreakRunning`,
+    `remainingSeconds = 658` while Android showed Ready earlier.
+  - 23:44:01 requestId `d4834ac2-...` pending (requestedAt 23:43:54) while
+    Android showed amber requested sheet.
+  - 23:44:32 `ownerDeviceId = android` after macOS accepted, yet Android stayed
+    amber with Pause/Cancel disabled.
+  - 23:46:03 `ownerDeviceId = macOS` (ownership flipped back) while Android
+    still showed requested UI.
+  - 23:47:04 requestId `341cc0e1-...` pending (requestedAt 23:47:21) after Retry.
+  - 23:48:36 `ownerDeviceId = android` after accept; Android still amber.
+  - 23:49:32 `ownerDeviceId = macOS` while Android continued to show requested.
+- 14/02/2026 00:04:46 snapshot shows `ownershipRequest.status = rejected`
+  (requestId `3cfac1a5-...`, requestedAt 00:00:26, respondedAt 00:00:28 by
+  macOS) while `status = pomodoroRunning` and `remainingSeconds = 629`
+  (Pomodoro 5/7).
+- Screenshots show Android in amber requested state with Pause/Cancel disabled
+  while macOS shows owner controls and the ownership modal.
+
+Workaround:
+- Navigate Android to Groups Hub and back to force re-sync.
+- Use Retry in the ownership sheet to re-issue the request.
 
 Hypothesis:
 - Ownership request UI state is not cleared/overridden after rejection when the
@@ -150,6 +189,10 @@ Observed behavior:
   shows periodic full UI refresh (timer circle, status boxes, task items) every
   ~15s though data appears unchanged.
 - Only observed in mirror mode on macOS.
+- Later observation: macOS in owner mode can also show a similar effect but less
+  frequent (~30-45s) or as a brief pause (~0.5-1s) instead of a full flicker.
+  Seen after macOS received ownership from Android that had been backgrounded
+  before handoff.
 
 Expected behavior:
 - Mirror UI should stay visually stable; periodic refresh should not cause full
@@ -172,3 +215,89 @@ None.
 
 Status:
 Open. Low priority unless fix can be made without regressions.
+
+---
+
+## BUG-004 — Mirror timer drift grows during long break
+
+ID: BUG-004
+Date: 13/02/2026 (UTC+1)
+Platforms: macOS owner + Android mirror
+Context: Planned group scheduled by time range. Ownership churn occurred earlier
+in the session. During long break (Pomodoro 4/7), macOS remained owner and
+Android stayed in mirror.
+
+Repro steps:
+- Run a planned group with macOS as owner and Android in mirror.
+- After ownership requests/accepts, enter a long break.
+- Compare remaining time shown on macOS vs Android over several minutes.
+
+Symptom:
+- Mirror timer lags behind owner and the drift increases over time.
+
+Observed behavior:
+- At the start of the long break, Android showed ~4s less remaining than macOS.
+- The gap grew over time; by ~8 minutes remaining the difference was ~10s.
+
+Expected behavior:
+- Mirror projection should stay within a small, stable tolerance from the owner
+  (no accumulating drift over time).
+
+Evidence:
+- Screenshots around 23:42 show Android at 07:41 while macOS shows 07:47
+  (same wall clock), indicating ~6s delta.
+- Firestore snapshot (UTC+1) 23:41:28 shows `status = longBreakRunning`,
+  `remainingSeconds = 507` while Android displayed fewer seconds than macOS.
+
+Hypothesis:
+- Mirror projection may be using a local clock without correction for snapshot
+  cadence or server time offset, causing accumulating drift during long phases.
+
+Fix applied:
+None.
+
+Status:
+Open. Medium priority (visible correctness issue).
+
+---
+
+## BUG-005 — Ownership request not surfaced while macOS window inactive
+
+ID: BUG-005
+Date: 13/02/2026 (UTC+1)
+Platforms: macOS owner + Android mirror
+Context: Planned group scheduled by time range. macOS is owner. Android requests
+ownership while macOS window is inactive (other app focused).
+
+Repro steps:
+- Keep macOS as owner and move focus to another app (window inactive).
+- From Android mirror, request ownership.
+- Observe macOS UI; then click/focus the macOS window.
+
+Symptom:
+- Ownership request does not appear on macOS until the app window is focused.
+
+Observed behavior:
+- Android shows a pending ownership request, but macOS displays no modal/banner.
+- After clicking/focusing the macOS window, the ownership request appears.
+
+Expected behavior:
+- Ownership requests should surface even when the window is inactive (or at
+  least show a clear inactive-state indicator).
+
+Evidence:
+- 23:44:01 requestId `d4834ac2-...` pending while Android showed the request;
+  macOS only displayed the modal after window focus.
+
+Workaround:
+- Click/focus the macOS window to surface pending requests.
+
+Hypothesis:
+- Inactive-window keepalive/resubscribe is not firing or request UI is gated
+  behind an active-focus check.
+
+Fix applied:
+None.
+
+Status:
+Open. Medium priority (blocks timely ownership handoff).
