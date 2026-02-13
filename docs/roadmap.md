@@ -198,6 +198,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 17 — Scheduled Pre-Run must auto-start without user action when the countdown ends (bug).
 - Phase 10 — Auto-adjust breaks on valid pomodoro changes and break edits (focus-loss adjustment; Task Editor + Edit Preset) (validation pending).
 - Phase 10 — Task weight (%) is selection-scoped in Edit Task + info modal (validation pending).
+- Phase 13 — Mirror session gaps must not drop Run Mode to Ready (validation pending).
 - Phase 10 — Task Editor: total time chip + task color picker (new requirement).
 - Phase 9 — Task List: group name input + group summary + per-task total time + selection reset (new requirement).
 - Phase 14 — Global sound settings (apply switch + revert) (new requirement).
