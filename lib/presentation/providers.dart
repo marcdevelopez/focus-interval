@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart' show StateProvider;
 
 import '../domain/pomodoro_machine.dart';
+import '../domain/task_weighting.dart';
 import '../data/models/pomodoro_task.dart';
 import '../data/models/pomodoro_preset.dart';
 import '../data/models/pomodoro_session.dart';
@@ -312,6 +313,22 @@ final taskSelectionProvider =
     NotifierProvider.autoDispose<TaskSelectionViewModel, Set<String>>(
       TaskSelectionViewModel.new,
     );
+
+final selectedTasksProvider = Provider<List<PomodoroTask>>((ref) {
+  final selectedIds = ref.watch(taskSelectionProvider);
+  final tasks = ref.watch(taskListProvider).asData?.value ?? const [];
+  if (selectedIds.isEmpty || tasks.isEmpty) return const [];
+  return [
+    for (final task in tasks)
+      if (selectedIds.contains(task.id)) task,
+  ];
+});
+
+final selectedTaskWeightPercentsProvider =
+    Provider<Map<String, int>>((ref) {
+      final selectedTasks = ref.watch(selectedTasksProvider);
+      return normalizeTaskWeightPercents(selectedTasks);
+    });
 
 final localSoundStorageProvider = Provider<LocalSoundStorage>((_) {
   return createLocalSoundStorage();

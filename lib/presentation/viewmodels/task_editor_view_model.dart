@@ -237,16 +237,6 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
     state = task.copyWith(presetId: null);
   }
 
-  int weightPercent({
-    required PomodoroTask task,
-    required int totalWorkMinutes,
-  }) {
-    if (totalWorkMinutes <= 0) return 0;
-    final taskWork = _workMinutes(task);
-    final raw = (taskWork / totalWorkMinutes) * 100;
-    return raw.round();
-  }
-
   Map<String, int> redistributeWeightPercent({
     required PomodoroTask edited,
     required int targetPercent,

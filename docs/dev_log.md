@@ -5304,3 +5304,31 @@ Mode A global long-break sequencing not fully validated (time constraints).
   or sends a new pending request, preventing stale UI.
 - Kept snackbar non-blocking with OK, but ensured it never lingers over a
   successful ownership transition.
+
+
+# 🔹 Block 366 — Selection-scoped task weight (13/02/2026)
+
+### ✔ Work completed:
+
+- Updated specs to make task weight selection-scoped and hide Task weight (%)
+  when the task is not selected.
+- Added a domain helper + unit tests for normalized task weight percentages.
+- Added selection-scoped weight providers and wired Task List to them.
+- Updated Task Editor to show Task weight (%) only for selected tasks,
+  redistribute within the selected set, and add an info modal + info icon.
+
+### 🧠 Decisions made:
+
+- Task weight percentages are derived only from the selected task group;
+  unselected tasks are never impacted by weight edits.
+- The educational modal follows the existing “Don’t show again” pattern and
+  remains accessible via the info icon.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Validate weight behavior across selection scenarios (1 task = 100%, 2 tasks = 50/50),
+  plus Edit Task visibility and redistribution boundaries.
