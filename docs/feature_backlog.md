@@ -122,3 +122,90 @@ Uses existing task durations and activeSession data; no logic changes.
 
 Notes:
 This is a visual-only change; all execution and sync rules remain unchanged.
+
+---
+
+## IDEA-002 — Simplification of status boxes in Run Mode (visual optimization inside the circle)
+
+ID: IDEA-002
+Title: Simplification of status boxes in Run Mode (visual optimization inside the circle)
+Type: UI/UX
+Scope: M
+Priority: P1
+Status: idea
+
+Problem / Goal:
+Reduce visual noise inside the timer circle while keeping state clarity and
+consistent visual language.
+
+Summary:
+Simplify the Run Mode status chips by trimming text and using stroke thickness
+to distinguish short vs long breaks, without changing state logic or colors.
+
+Design / UX:
+Layout / placement:
+Keep the existing vertical order and placement of the two-line status chip
+inside the circle.
+
+Visual states:
+Pomodoro: line 1 "Run X of Y"; line 2 time range (HH:mm–HH:mm); remove redundant
+"Pomodoro running" text.
+Break: line 1 "Break"; line 2 time range (HH:mm–HH:mm); remove "Short break" or
+"Long break" labels.
+Short vs long break: no text or icons; use chip border thickness (short = thin
+stroke, long = thick stroke) following the thin/thick blue ring logic used in
+Task List, break duration card, and interval dots.
+
+Animation rules:
+No change to existing animations; only text content and break border thickness
+change.
+
+Interaction:
+No change to Run Mode interaction; chip behavior remains as currently defined.
+
+Text / typography:
+Keep current typography and text color (red for pomodoro, blue for break).
+Keep dark chip background. Borders: red (#E53935) for pomodoro, blue (#1E88E5)
+for breaks.
+
+Data & Logic:
+Source of truth:
+Use existing Run Mode state (PomodoroMachine + PomodoroViewModel); no new
+authoritative state.
+
+Calculations:
+Time range formatting and run counts remain unchanged. Break type selects the
+stroke thickness only.
+
+Sync / multi-device:
+No change; presentation-only update.
+
+Edge cases:
+If break type is unavailable, default to short-break stroke thickness. Ensure
+the thickness difference remains legible on small screens.
+
+Accessibility:
+Expose semantics that include break type (short/long) and time range even when
+the visible text is simplified.
+
+Dependencies:
+Execution Screen status chip layout and shared thin/thick stroke tokens used in
+existing UI elements.
+
+Risks:
+Stroke thickness contrast may be too subtle at small sizes; ensure minimum
+visibility while preserving base colors.
+
+Acceptance criteria:
+Pomodoro chip shows "Run X of Y" + time range; no "Pomodoro running" text
+appears.
+Break chip shows "Break" + time range; no "Short/Long break" text appears.
+Short vs long break is communicated solely by border thickness with the same
+thin/thick logic as existing blue ring cues.
+Chip background stays dark; text colors remain red/blue; borders use #E53935
+(pomodoro) and #1E88E5 (break).
+Vertical order, state logic, and base colors remain unchanged.
+
+Notes:
+Visual-only optimization for clarity and space inside the circle; no behavior
+changes.
