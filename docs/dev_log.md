@@ -5332,3 +5332,28 @@ _(fill in when they happen)_
 
 - Validate weight behavior across selection scenarios (1 task = 100%, 2 tasks = 50/50),
   plus Edit Task visibility and redistribution boundaries.
+
+
+# 🔹 Block 367 — Hold mirror state during session gaps (13/02/2026)
+
+### ✔ Work completed:
+
+- Added a session-gap guard in PomodoroViewModel so recent active sessions keep
+  Run Mode in a syncing state instead of dropping to Ready.
+- Missing activeSession now checks the previous session + lastUpdatedAt before
+  clearing mirror state, preventing transient gaps from resetting the timer.
+
+### 🧠 Decisions made:
+
+- Treat a missing activeSession as a **sync gap** when the last known session is
+  active and within the stale threshold; prefer Syncing UI over Ready.
+
+### ⚠️ Issues found:
+
+- Android mirror briefly rendered Ready while activeSession was still running
+  on the owner (session snapshot gap).
+
+### 🎯 Next steps:
+
+- Validate on Android mirror that session gaps show Syncing instead of Ready,
+  including background/foreground and app-switch scenarios.

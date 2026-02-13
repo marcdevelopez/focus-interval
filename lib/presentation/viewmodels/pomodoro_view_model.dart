@@ -982,8 +982,9 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         final wasMissing = _sessionMissingWhileRunning;
         final session = _resolveSessionSnapshot(previous, next);
         if (session == null) {
-          final groupRunning = _currentGroup?.status == TaskRunStatus.running;
-          if (groupRunning) {
+          final shouldHoldForMissing =
+              _shouldTreatMissingSessionAsRunning(previousSession);
+          if (shouldHoldForMissing) {
             _sessionMissingWhileRunning = true;
             _mirrorTimer?.cancel();
             _stopPausedHeartbeat();
@@ -1861,7 +1862,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       final wasMissing = _sessionMissingWhileRunning;
       final rawSession = await _readCurrentSession();
       final session = await _sanitizeActiveSession(rawSession);
-      final groupRunning = _currentGroup?.status == TaskRunStatus.running;
       if (refreshGroup && _currentGroup != null) {
         final group = await _groupRepo.getById(_currentGroup!.id);
         if (group != null) {
@@ -1869,7 +1869,9 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         }
       }
       if (session == null) {
-        if (groupRunning) {
+        final shouldHoldForMissing =
+            _shouldTreatMissingSessionAsRunning(previousSession);
+        if (shouldHoldForMissing) {
           _sessionMissingWhileRunning = true;
           if (previousSession != null) {
             _notifySessionMetaChanged();
@@ -1902,6 +1904,19 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     } finally {
       _setResyncInProgress(false);
     }
+  }
+
+  bool _shouldTreatMissingSessionAsRunning(PomodoroSession? previousSession) {
+    if (_currentGroup?.status == TaskRunStatus.running) return true;
+    if (previousSession == null) return false;
+    if (!previousSession.status.isActiveExecution) return false;
+    final group = _currentGroup;
+    if (group != null && previousSession.groupId != group.id) return false;
+    final task = _currentTask;
+    if (task != null && previousSession.taskId != task.id) return false;
+    final updatedAt = previousSession.lastUpdatedAt;
+    if (updatedAt == null) return false;
+    return DateTime.now().difference(updatedAt) < _staleSessionGrace;
   }
 
   void _applyProjectedState(PomodoroState projected, {DateTime? now}) {
