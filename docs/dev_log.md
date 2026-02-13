@@ -5442,3 +5442,26 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Add the remaining feature ideas using the same template.
+
+
+# 🔹 Block 372 — Document ownership desync + mirror flicker bugs (13/02/2026)
+
+### ✔ Work completed:
+
+- Added BUG-002 and BUG-003 to docs/bug_log.md, splitting ownership rejection
+  desync from macOS mirror flicker.
+- Expanded evidence with key Firestore timestamps and observed sequences.
+- Updated bug log template to include Repro steps, Workaround, and optional
+  device/role/snapshot details.
+
+### 🧠 Decisions made:
+
+- Separate root-cause candidates into distinct bug entries for targeted fixes.
+
+### ⚠️ Issues found:
+
+- Ownership rejection can leave Android in Ready despite activeSession running.
+
+### 🎯 Next steps:
+
+- Validate BUG-002 on Android after any ownership UI changes.
