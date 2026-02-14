@@ -820,3 +820,78 @@ Copy matches current active/stale and running/paused rules.
 
 Notes:
 Communication-only feature; no ownership behavior changes.
+
+---
+
+## IDEA-011 — Mirror Notifications for Active Runs
+
+ID: IDEA-011
+Title: Mirror Notifications for Active Runs
+Type: UX
+Scope: M
+Priority: P1
+Status: idea
+
+Problem / Goal:
+Execution notifications (pomodoro end, group end, etc.) are currently emitted
+from owner-side callbacks only, so mirror devices with the app open miss key
+progress signals.
+
+Summary:
+Deliver the same execution notifications to mirror devices while the group is
+running/paused and the app is open. No new notification types.
+
+Design / UX:
+Layout / placement:
+Reuse the existing local/system notification pattern. Trigger on mirror devices
+when Run Mode is visible or the app is active.
+
+Visual states:
+Mirror and owner look identical for execution notifications when the app is
+open. No changes to colors or sounds beyond current behavior.
+
+Animation rules:
+Follow existing notification animation rules.
+
+Interaction:
+No new actions; notifications remain informational only.
+
+Text / typography:
+Use existing notification copy and styling.
+
+Data & Logic:
+Source of truth:
+ActiveSession phase transitions (mirror projection), aligned to the same event
+boundaries as the owner-side PomodoroMachine callbacks.
+
+Calculations:
+None; reuse existing timing triggers.
+
+Sync / multi-device:
+Mirror devices should mirror notifications when the app is open. This is
+presentation-only and must not change ownership or session state.
+
+Edge cases:
+Do not deliver notifications on mirror devices when the app is closed.
+Avoid duplicate notifications when switching owner/mirror roles mid-run.
+If a device is offline, do not attempt to queue notifications for later.
+
+Accessibility:
+Ensure notifications remain accessible with screen readers.
+
+Dependencies:
+Notification service, Run Mode session listeners, ownership state handling.
+
+Risks:
+Potential duplicate notifications on rapid owner changes; ensure role switch
+de-duplicates within a short time window.
+
+Acceptance criteria:
+When a group is running or paused and the app is open, owner and mirror devices
+receive the same execution notifications.
+No change to notification types or ownership logic.
+Closed apps do not receive additional notifications beyond current behavior.
+
+Notes:
+Scope is UX parity for open-app devices; does not alter background notification
+policy.
