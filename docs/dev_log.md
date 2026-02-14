@@ -5671,3 +5671,26 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Validate BUG-005 variants alongside other ownership-request resync fixes.
+
+
+# 🔹 Block 382 — Add Ready->Run context to BUG-005 (14/02/2026)
+
+### ✔ Work completed:
+
+- Added context to BUG-005 noting a brief Ready screen on macOS mirror before
+  the ownership request (macOS -> Android) failed to surface, then a tap
+  restored the running timer.
+
+### 🧠 Decisions made:
+
+- Keep the Ready->Run context under BUG-005 Variant B to preserve the full
+  ownership-request timeline.
+
+### ⚠️ Issues found:
+
+- macOS mirror can show Ready briefly before an ownership request is missed on
+  Android.
+
+### 🎯 Next steps:
+
+- Validate whether the Ready->Run flicker correlates with missed requests.
