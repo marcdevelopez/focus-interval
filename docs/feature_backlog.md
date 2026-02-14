@@ -671,3 +671,71 @@ No business logic changes; presentation only.
 
 Notes:
 UX-only change to reduce scroll and improve at-a-glance context.
+
+---
+
+## IDEA-009 — Sticky "Go to Task List" CTA in Groups Hub
+
+ID: IDEA-009
+Title: Sticky "Go to Task List" CTA in Groups Hub
+Type: UI/UX
+Scope: S
+Priority: P1
+Status: idea
+
+Problem / Goal:
+The "Go to Task List" CTA scrolls away in Groups Hub, forcing users to return
+to the top when reviewing long histories.
+
+Summary:
+Pin the "Go to Task List" CTA to the top of Groups Hub, outside the scrollable
+list, so it remains accessible at all times.
+
+Design / UX:
+Layout / placement:
+Place the CTA in a fixed header area above the scrollable content. Keep the
+current text/style and spacing. The group list scrolls independently below it.
+
+Visual states:
+Always visible in Groups Hub regardless of scroll position.
+
+Animation rules:
+None.
+
+Interaction:
+No changes to navigation behavior; same destination and action.
+
+Text / typography:
+Reuse existing CTA text and styling.
+
+Data & Logic:
+Source of truth:
+None; presentation-only change.
+
+Calculations:
+None.
+
+Sync / multi-device:
+No impact.
+
+Edge cases:
+Ensure the CTA does not overlap the AppBar or insets on small screens. The
+scrollable list should account for the fixed header height.
+
+Accessibility:
+CTA remains reachable via keyboard navigation and screen readers.
+
+Dependencies:
+Groups Hub layout structure (header + scrollable list).
+
+Risks:
+Reduced vertical space for the list on small screens; ensure content remains
+usable without clipping.
+
+Acceptance criteria:
+The "Go to Task List" CTA remains visible at the top while scrolling.
+The list scrolls independently below the fixed CTA.
+No behavior changes to navigation; presentation only.
+
+Notes:
+UX-only placement change to reduce friction in long lists.
