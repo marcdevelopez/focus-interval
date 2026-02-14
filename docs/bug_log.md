@@ -301,3 +301,56 @@ None.
 
 Status:
 Open. Medium priority (blocks timely ownership handoff).
+
+---
+
+## BUG-006 — Status box time ranges ignore pause anchoring
+
+ID: BUG-006
+Date: 14/02/2026 (UTC+1)
+Platforms: Not specified (Run Mode UI)
+Context: In Run Mode, the contextual task list below the circle correctly
+anchors time ranges on pause/resume (start stays fixed; end extends; future
+ranges shift forward). The timer status boxes (Current/Next) also show
+HH:mm–HH:mm ranges for Pomodoro/Break and should follow the same rule.
+
+Repro steps:
+- Start any group and enter Run Mode.
+- Pause during a Pomodoro or Break phase, then resume.
+- Compare time ranges shown in the status boxes vs the contextual task list.
+
+Symptom:
+- Status box HH:mm–HH:mm ranges update inconsistently on pause/resume, as if the
+  pause impacts the current range start or rewrites past segments.
+
+Observed behavior:
+- On pause/resume, status box ranges do not follow the same anchoring behavior
+  as the contextual task list; the current phase range can shift in a way that
+  looks retroactive rather than forward-only.
+
+Expected behavior:
+- Current status box keeps its original start time and only extends its end
+  time by the pause duration.
+- Next status box (and later phases) shift forward by the accumulated pause
+  offset.
+- Past ranges already elapsed are not modified.
+- Behavior matches the contextual task list logic exactly, per spec note:
+  "Status boxes and contextual list update automatically (including time ranges
+  after pause/resume)."
+
+Evidence:
+- Visual observation: task list time ranges behave correctly; status box ranges
+  shift differently during pause/resume.
+
+Workaround:
+- None.
+
+Hypothesis:
+- Status boxes are computed from a re-based timeline (e.g., now or phase start)
+  without applying the same pause-offset anchoring used by the task list.
+
+Fix applied:
+None.
+
+Status:
+Open. Medium priority (UX consistency).
