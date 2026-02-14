@@ -739,3 +739,84 @@ No behavior changes to navigation; presentation only.
 
 Notes:
 UX-only placement change to reduce friction in long lists.
+
+---
+
+## IDEA-010 — Ownership Request Explainer (Run Mode)
+
+ID: IDEA-010
+Title: Ownership Request Explainer (Run Mode)
+Type: UI/UX
+Scope: M
+Priority: P1
+Status: idea
+
+Problem / Goal:
+Users do not understand what "Request ownership" does or how priority and
+auto-claim work when the owner is stale, leading to confusion and false
+expectations.
+
+Summary:
+Show a concise explainer when the user taps "Request ownership" and allow
+re-opening it from the ownership UI. The explainer reflects current ownership
+rules (active owner, stale owner, auto-claim priority, running vs paused).
+
+Design / UX:
+Layout / placement:
+Show the explainer using a presentation pattern that is valid for the platform
+(avoid stacking a modal on top of the ownership sheet if that violates UI
+conventions). If a nested modal is not acceptable, use an in-sheet expand,
+inline panel, or a full-screen info route. Include an "OK" action and an
+optional "Don't show again" toggle saved per device. Provide an info affordance
+in the ownership UI to reopen the explainer.
+
+Visual states:
+Shown only on mirror devices when requesting ownership. Use existing ownership
+sheet visual language.
+
+Animation rules:
+Use existing modal transitions only.
+
+Interaction:
+If "Don't show again" is enabled, skip the auto-open next time but keep the
+info affordance available.
+
+Text / typography:
+Use short, user-friendly bullets aligned to current rules:
+- If the owner is active, your request stays pending until they approve/reject.
+- If the owner is stale and the session is running, a mirror may auto-claim.
+  If a request exists, the requester has priority; otherwise the first mirror
+  to detect staleness claims ownership.
+- If the session is paused, auto-claim only occurs when there is a pending
+  request.
+
+Data & Logic:
+Source of truth:
+Current ownership rules in specs (active vs stale owner, running vs paused).
+
+Calculations:
+None.
+
+Sync / multi-device:
+No changes to ownership logic; presentation only.
+
+Edge cases:
+If rules change in specs, update the explainer copy to match. If ownership data
+is unavailable, show a generic explanation without state-specific claims.
+
+Accessibility:
+Explainer content must be readable by screen readers; info affordance labeled.
+
+Dependencies:
+Ownership sheet UI and per-device preference storage.
+
+Risks:
+Outdated copy if rules change without updating the explainer.
+
+Acceptance criteria:
+Tapping "Request ownership" shows the explainer with OK (and optional "Don't
+show again"). The same information is accessible later via the ownership UI.
+Copy matches current active/stale and running/paused rules.
+
+Notes:
+Communication-only feature; no ownership behavior changes.
