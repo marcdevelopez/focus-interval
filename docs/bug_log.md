@@ -275,8 +275,10 @@ Repro steps:
 - Variant A: From Android mirror, request ownership.
 - Variant A: Observe macOS UI; then click/focus the macOS window.
 - Variant B (Android receiver): Start a planned group; macOS owner pauses for
-  ~5 minutes, then transfers ownership to Android.
-- Variant B: After a couple phases, request ownership on macOS.
+  ~5 minutes, then transfers ownership to Android (no background).
+- Variant B: macOS is now mirror; if Run Mode shows Ready, tap to restore the
+  running timer.
+- Variant B: Request ownership from macOS (mirror) to Android (owner).
 - Variant B: Observe Android; then navigate to Groups Hub and back to Run Mode.
 
 Symptom:
@@ -288,6 +290,11 @@ Observed behavior:
   until the window is focused.
 - Variant B: Android shows no incoming request; after navigating to Groups Hub
   and back, the request appears and can be accepted.
+- Variant B: macOS (mirror) briefly showed Ready as if the run had not started;
+  tapping the screen returned it to the correct running timer, then the
+  ownership request failed to surface on Android.
+- Variant B: After the Ready -> tap recovery, backgrounding the owner
+  (Android) and returning also surfaced the pending request.
 
 Expected behavior:
 - Ownership requests should surface immediately on the receiving device without
@@ -298,10 +305,13 @@ Evidence:
   request; macOS only displayed the modal after window focus.
 - Variant B: User report — macOS request only appeared on Android after entering
   Groups Hub and returning to Run Mode.
+- Variant B: User report — background/foreground on Android owner also revealed
+  the pending request.
 
 Workaround:
 - Click/focus the macOS window to surface pending requests.
 - Navigate Android to Groups Hub and back to force resubscribe.
+- Background/foreground the Android owner to force resubscribe.
 
 Hypothesis:
 - Ownership request stream is missed by the receiver until a resubscribe
