@@ -451,3 +451,75 @@ Mirror devices show consistent values; Local Mode behaves per existing rules.
 
 Notes:
 UX-only visibility improvement for pause time; no business logic changes.
+
+---
+
+## IDEA-006 — Scheduled vs Actual End in Groups Hub Summary
+
+ID: IDEA-006
+Title: Scheduled vs Actual End in Groups Hub Summary
+Type: UI/UX
+Scope: S
+Priority: P1
+Status: idea
+
+Problem / Goal:
+Group Summary shows only the real end time, so users cannot compare the
+planned end versus the actual end when pauses shift the timeline.
+
+Summary:
+Add "Scheduled end" and "Actual end" to Group Summary. Hide Scheduled end
+for non-planned runs (scheduledStartTime == null).
+
+Design / UX:
+Layout / placement:
+Group Summary timing section should list Scheduled start, Actual start,
+Scheduled end, Actual end in a clear order. Follow the existing timing layout
+and formatting rules.
+
+Visual states:
+Only show Scheduled end when the group was scheduled. Actual end always shows
+for completed/canceled groups when available.
+
+Animation rules:
+None.
+
+Interaction:
+None.
+
+Text / typography:
+Use existing summary typography and HH:mm formatting rules. Keep labels explicit
+("Scheduled end", "Actual end").
+
+Data & Logic:
+Source of truth:
+Scheduled end = TaskRunGroup.theoreticalEndTime (planned end).
+Actual end = TaskRunGroup.end/finishedAt (real end after pauses).
+
+Calculations:
+No new calculations; only display existing values.
+
+Sync / multi-device:
+Presentation only; no sync changes.
+
+Edge cases:
+For non-planned runs, omit Scheduled start and Scheduled end.
+If actual end is missing (running group), hide Actual end.
+
+Accessibility:
+Ensure timing labels are exposed in Semantics for screen readers.
+
+Dependencies:
+Groups Hub summary modal layout and date/time formatting utilities.
+
+Risks:
+More timing rows may increase scroll; keep the summary compact and readable.
+
+Acceptance criteria:
+Scheduled end appears in Group Summary for planned runs and matches the planned
+theoreticalEndTime.
+Actual end appears when the group has finished and reflects pause-adjusted end.
+Non-planned runs do not show Scheduled end.
+
+Notes:
+Visibility-only change; no behavior or scheduling logic changes.
