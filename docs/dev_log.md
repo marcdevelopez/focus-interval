@@ -5694,3 +5694,23 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Validate whether the Ready->Run flicker correlates with missed requests.
+
+
+# 🔹 Block 383 — Add owner background resubscribe detail (14/02/2026)
+
+### ✔ Work completed:
+
+- Added BUG-005 Variant B detail: background/foreground on the Android owner
+  surfaces the pending ownership request after the Ready->Run recovery.
+
+### 🧠 Decisions made:
+
+- Treat background/foreground as another resubscribe trigger for the same bug.
+
+### ⚠️ Issues found:
+
+- Ownership requests can remain hidden until the owner app resubscribes.
+
+### 🎯 Next steps:
+
+- Validate whether resume listeners consistently surface pending requests.
