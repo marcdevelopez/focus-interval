@@ -596,3 +596,78 @@ Non-planned runs do not show "Starts in"; no behavior changes.
 
 Notes:
 Visibility-only change; scheduling rules remain unchanged.
+
+---
+
+## IDEA-008 — Collapsible Groups Hub Sections + Counts
+
+ID: IDEA-008
+Title: Collapsible Groups Hub Sections + Counts
+Type: UI/UX
+Scope: M
+Priority: P1
+Status: idea
+
+Problem / Goal:
+Groups Hub becomes scroll-heavy as Scheduled/Completed/Canceled lists grow, and
+users cannot see section totals at a glance.
+
+Summary:
+Collapse all non-active sections by default (Scheduled/Completed/Canceled/etc.),
+show counts in section headers, and keep Running/Paused always expanded. Keep
+Scheduled ordering from nearest to farthest start time.
+
+Design / UX:
+Layout / placement:
+Use section headers as collapsible toggles with a chevron. Header text includes
+the count, e.g., "Canceled (3)". Collapsed sections show only the header.
+
+Visual states:
+Running and Paused are always expanded. All other sections are collapsed on
+initial entry but can be expanded/collapsed by the user.
+
+Animation rules:
+Optional simple expand/collapse animation; avoid layout jank on large lists.
+
+Interaction:
+Tap header to expand/collapse. The expanded state is local to the session unless
+explicitly persisted per device (optional, not required).
+
+Text / typography:
+Keep existing section typography. Count uses the same style as header text.
+
+Data & Logic:
+Source of truth:
+Existing Groups Hub sectioning and group status values.
+
+Calculations:
+Section count = number of groups in the section. Scheduled sorting is ascending
+by scheduledStartTime (nearest first).
+
+Sync / multi-device:
+Presentation only; no changes to sync or status logic.
+
+Edge cases:
+Empty sections can be hidden or shown as "Section (0)" per current UI rules;
+do not show expand controls for empty sections unless already standard.
+If Scheduled has a mix of past-due and future items, still order by time.
+
+Accessibility:
+Section headers must be accessible buttons with count included in labels (e.g.,
+"Canceled, 3 groups, collapsed").
+
+Dependencies:
+Groups Hub list/section renderer and header component.
+
+Risks:
+Users may miss collapsed content; ensure the chevron and counts are clear.
+
+Acceptance criteria:
+Running/Paused sections always visible and expanded.
+All other sections are collapsed by default and can be toggled.
+Section headers display total counts (e.g., "Completed (7)").
+Scheduled section is ordered from nearest to farthest start time.
+No business logic changes; presentation only.
+
+Notes:
+UX-only change to reduce scroll and improve at-a-glance context.
