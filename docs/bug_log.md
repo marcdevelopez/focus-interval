@@ -261,40 +261,51 @@ Open. Medium priority (visible correctness issue).
 
 ---
 
-## BUG-005 — Ownership request not surfaced while macOS window inactive
+## BUG-005 — Ownership request not surfaced until focus or resubscribe
 
 ID: BUG-005
 Date: 13/02/2026 (UTC+1)
 Platforms: macOS owner + Android mirror
-Context: Planned group scheduled by time range. macOS is owner. Android requests
-ownership while macOS window is inactive (other app focused).
+Context: Planned group scheduled by time range. Ownership requests can fail to
+surface on the receiving device until focus or a manual resubscribe.
 
 Repro steps:
-- Keep macOS as owner and move focus to another app (window inactive).
-- From Android mirror, request ownership.
-- Observe macOS UI; then click/focus the macOS window.
+- Variant A (macOS inactive): Keep macOS as owner and move focus to another app
+  (window inactive).
+- Variant A: From Android mirror, request ownership.
+- Variant A: Observe macOS UI; then click/focus the macOS window.
+- Variant B (Android receiver): Start a planned group; macOS owner pauses for
+  ~5 minutes, then transfers ownership to Android.
+- Variant B: After a couple phases, request ownership on macOS.
+- Variant B: Observe Android; then navigate to Groups Hub and back to Run Mode.
 
 Symptom:
-- Ownership request does not appear on macOS until the app window is focused.
+- Ownership request does not appear on the receiving device until focus or a
+  manual resubscribe.
 
 Observed behavior:
-- Android shows a pending ownership request, but macOS displays no modal/banner.
-- After clicking/focusing the macOS window, the ownership request appears.
+- Variant A: Android shows a pending request, but macOS displays no modal/banner
+  until the window is focused.
+- Variant B: Android shows no incoming request; after navigating to Groups Hub
+  and back, the request appears and can be accepted.
 
 Expected behavior:
-- Ownership requests should surface even when the window is inactive (or at
-  least show a clear inactive-state indicator).
+- Ownership requests should surface immediately on the receiving device without
+  requiring focus changes or navigation.
 
 Evidence:
-- 23:44:01 requestId `d4834ac2-...` pending while Android showed the request;
-  macOS only displayed the modal after window focus.
+- Variant A: 23:44:01 requestId `d4834ac2-...` pending while Android showed the
+  request; macOS only displayed the modal after window focus.
+- Variant B: User report — macOS request only appeared on Android after entering
+  Groups Hub and returning to Run Mode.
 
 Workaround:
 - Click/focus the macOS window to surface pending requests.
+- Navigate Android to Groups Hub and back to force resubscribe.
 
 Hypothesis:
-- Inactive-window keepalive/resubscribe is not firing or request UI is gated
-  behind an active-focus check.
+- Ownership request stream is missed by the receiver until a resubscribe
+  trigger (window focus or navigation).
 
 Fix applied:
 None.
@@ -354,3 +365,5 @@ None.
 
 Status:
 Open. Medium priority (UX consistency).
+
+---

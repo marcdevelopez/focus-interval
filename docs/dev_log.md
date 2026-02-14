@@ -5650,3 +5650,24 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Validate BUG-006 once Run Mode time-range calculations are reviewed.
+
+
+# 🔹 Block 381 — Merge Android request delay into BUG-005 (14/02/2026)
+
+### ✔ Work completed:
+
+- Expanded BUG-005 to include the Android receiver variant where ownership
+  requests only surface after navigating to Groups Hub.
+- Removed the duplicate BUG-007 entry to keep ownership request issues unified.
+
+### 🧠 Decisions made:
+
+- Keep ownership request delays under a single bug with platform variants.
+
+### ⚠️ Issues found:
+
+- Android can miss ownership requests until a manual navigation refresh.
+
+### 🎯 Next steps:
+
+- Validate BUG-005 variants alongside other ownership-request resync fixes.
