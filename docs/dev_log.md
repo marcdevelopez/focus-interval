@@ -5630,3 +5630,23 @@ _(fill in when they happen)_
 
 - Ensure implementation uses batch/transaction writes for conflict resolution
   and resume updates.
+
+
+# 🔹 Block 380 — Log status box pause anchoring bug (14/02/2026)
+
+### ✔ Work completed:
+
+- Added BUG-006 to docs/bug_log.md for status-box time ranges that ignore pause
+  anchoring, to align with contextual task list behavior.
+
+### 🧠 Decisions made:
+
+- Treat status-box time range inconsistency as a bug (not a feature request).
+
+### ⚠️ Issues found:
+
+- Pause/resume can shift status-box ranges retroactively instead of forward-only.
+
+### 🎯 Next steps:
+
+- Validate BUG-006 once Run Mode time-range calculations are reviewed.
