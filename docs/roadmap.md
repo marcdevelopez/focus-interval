@@ -196,6 +196,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 17 — Pre-start planning redesign + schedule by total range / total time (proportional redistribution) (implemented; validation pending).
 - Phase 17 — Plan Group shows total duration (work + breaks) in the planning screen (new requirement).
 - Phase 17 — Scheduled Pre-Run must auto-start without user action when the countdown ends (bug).
+- Phase 17 — Define conflict resolution for late-start overlaps, long-pause overlaps, and overdue scheduled groups (specs updated; implementation pending).
 - Phase 10 — Auto-adjust breaks on valid pomodoro changes and break edits (focus-loss adjustment; Task Editor + Edit Preset) (validation pending).
 - Phase 10 — Task weight (%) is selection-scoped in Edit Task + info modal (validation pending).
 - Phase 13 — Mirror session gaps must not drop Run Mode to Ready (validation pending).

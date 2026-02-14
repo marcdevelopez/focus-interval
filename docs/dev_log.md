@@ -5509,3 +5509,124 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Re-validate BUG-002 after ownership-request handling changes.
+
+
+# 🔹 Block 375 — Define scheduling conflict resolution rules (14/02/2026)
+
+### ✔ Work completed:
+
+- Documented late-start overlap handling, overdue scheduled group queue, and
+  long-pause conflict resolution in `docs/specs.md`.
+- Added owner-only decision rules with auto-claim on conflict flows.
+- Introduced `canceledReason` for canceled groups (interrupted/conflict/missed)
+  and Groups Hub labeling guidance.
+
+### 🧠 Decisions made:
+
+- Conflicts caused by delayed starts or long pauses always require explicit user
+  choice; no silent auto-cancellation.
+- Overdue scheduled groups are queued by user-selected order; the first starts
+  immediately while subsequent groups preserve pre-run windows.
+- Paused/running overlap decisions count as normal pauses and must be resolved
+  by the owner.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Implement and validate the new conflict-resolution flows in Run Mode and
+  planning/Groups Hub surfaces.
+
+
+# 🔹 Block 376 — Refine late-start conflict chooser behavior (14/02/2026)
+
+### ✔ Work completed:
+
+- Updated the late-start conflict chooser to allow selecting one group or
+  selecting none, with explicit confirmation for canceling all conflicts.
+- Clarified single-selection behavior in the chooser flow.
+
+### 🧠 Decisions made:
+
+- Late-start conflicts remain owner-only; user can explicitly choose to cancel
+  all conflicting groups instead of being forced to pick one.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Verify the conflict chooser UX aligns with the catch-up queue expectations.
+
+
+# 🔹 Block 377 — Allow multi-select ordering in late-start conflicts (14/02/2026)
+
+### ✔ Work completed:
+
+- Updated the late-start conflict chooser to allow multi-select + reordering
+  of conflicting groups, with sequential execution and preserved pre-run windows.
+- Clarified that unselected conflicting groups are canceled with reason
+  `conflict`.
+
+### 🧠 Decisions made:
+
+- Late-start conflicts use a queue-like selection: the first starts immediately
+  (no pre-run), subsequent selections keep their pre-run windows.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Ensure the conflict chooser preview reflects updated projected ranges and
+  revalidation rules.
+
+
+# 🔹 Block 378 — Unify late-start overlap flows (14/02/2026)
+
+### ✔ Work completed:
+
+- Unified late-start overlap handling into a single full-screen queue flow.
+- Removed the separate late-start chooser variant; the queue now covers one or
+  more overdue overlaps with the same multi-select + reorder logic.
+- Clarified cancel-reason rules for overdue vs future-scheduled groups.
+
+### 🧠 Decisions made:
+
+- Late-start overlap resolution uses one consistent UX path to reduce logic
+  branches and bug surface area.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Validate the unified flow against all late-start overlap cases.
+
+
+# 🔹 Block 379 — Add write-safety rules for conflict resolution (14/02/2026)
+
+### ✔ Work completed:
+
+- Added atomic write requirements for multi-group cancel/reschedule flows.
+- Required resume to update TaskRunGroup + activeSession atomically, blocking
+  resume on failure to prevent time drift.
+
+### 🧠 Decisions made:
+
+- Conflict-resolution flows must not proceed on partial writes; retries are
+  mandatory before starting or resuming groups.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Ensure implementation uses batch/transaction writes for conflict resolution
+  and resume updates.
