@@ -523,3 +523,76 @@ Non-planned runs do not show Scheduled end.
 
 Notes:
 Visibility-only change; no behavior or scheduling logic changes.
+
+---
+
+## IDEA-007 — Time Until Scheduled Start (Plan Group + Groups Hub Summary)
+
+ID: IDEA-007
+Title: Time Until Scheduled Start (Plan Group + Groups Hub Summary)
+Type: UI/UX
+Scope: M
+Priority: P1
+Status: idea
+
+Problem / Goal:
+Users see the scheduled start time but not how long remains until the group
+begins, which makes temporal context unclear.
+
+Summary:
+Show a "Starts in" indicator in Plan group preview and a live countdown in the
+Groups Hub summary modal for scheduled groups.
+
+Design / UX:
+Layout / placement:
+Plan group preview: add a "Starts in" line near the Start/End timing fields
+without replacing them. Groups Hub summary: add a "Starts in" row in the timing
+section that updates while the modal is open.
+
+Visual states:
+Only for scheduled groups (scheduledStartTime != null). Hide when the group is
+already running or scheduledStartTime <= now.
+
+Animation rules:
+No new animations; countdown updates at the same cadence used for other visible
+timers (minutely or per-second, consistent with existing patterns).
+
+Interaction:
+None.
+
+Text / typography:
+Use clear, compact labels:
+< 24h: "Starts in: HH h MM min"
+>= 24h: "Starts in: DD d HH h MM min"
+
+Data & Logic:
+Source of truth:
+scheduledStartTime + current device time (projection).
+
+Calculations:
+Remaining = max(0, scheduledStartTime - now). Format per rules above.
+
+Sync / multi-device:
+Presentation only; no changes to scheduling or ownership logic.
+
+Edge cases:
+If scheduledStartTime <= now, hide the "Starts in" line to avoid showing 0 min.
+If the group is already running or completed, do not show the countdown.
+
+Accessibility:
+Expose the remaining time in Semantics for screen readers.
+
+Dependencies:
+Plan group preview layout and Groups Hub summary modal layout.
+
+Risks:
+Additional timing rows may increase vertical density; keep spacing consistent
+with existing summary sections.
+
+Acceptance criteria:
+Plan group preview shows "Starts in" for scheduled groups with clear formatting.
+Groups Hub summary shows a live countdown while the modal is open.
+Non-planned runs do not show "Starts in"; no behavior changes.
+
+Notes:
+Visibility-only change; scheduling rules remain unchanged.
