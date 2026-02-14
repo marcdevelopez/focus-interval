@@ -373,3 +373,81 @@ No scheduling logic or ownership behavior changes.
 
 Notes:
 This is a UX-only clarification of existing business rules.
+
+---
+
+## IDEA-005 — Pause Time Visibility (Run Mode + Groups Hub)
+
+ID: IDEA-005
+Title: Pause Time Visibility (Run Mode + Groups Hub)
+Type: UI/UX
+Scope: M
+Priority: P1
+Status: idea
+
+Problem / Goal:
+Paused groups lack clear visibility of how long they have been paused and the
+total paused time for the group, making timeline shifts feel arbitrary.
+
+Summary:
+Show a live "paused elapsed" timer in Run Mode while status == paused and
+display the total accumulated paused time on the Groups Hub group item.
+
+Design / UX:
+Layout / placement:
+Run Mode: surface a paused elapsed line (e.g., "Paused: 00:07:32") without
+changing the strict vertical order inside the circle; place near the status
+area or controls and only render while paused. Groups Hub: add a "Total paused"
+row in the group card or summary area.
+
+Visual states:
+Paused only. Hide the indicator in running/pre-run/completed states.
+Use existing paused visual language (neutral/amber) and avoid layout jumps
+when the indicator appears.
+
+Animation rules:
+No new animations; the paused elapsed timer updates once per second.
+
+Interaction:
+None; purely informational.
+
+Text / typography:
+Use tabular digits for time. Keep labeling explicit ("Paused", "Total paused").
+
+Data & Logic:
+Source of truth:
+Derived-only. Use activeSession.pausedAt for current paused elapsed and
+TaskRunGroup theoreticalEndTime vs actualStartTime + totalDurationSeconds for
+total paused time.
+
+Calculations:
+Paused elapsed = now - pausedAt (when status == paused).
+Total paused = max(0, theoreticalEndTime - (actualStartTime + totalDurationSeconds)).
+
+Sync / multi-device:
+Mirror devices display the same values derived from the shared session/group.
+Local Mode follows its existing pause-loss behavior on app close.
+
+Edge cases:
+If pausedAt is missing, hide the paused elapsed indicator.
+In Local Mode, if the app was closed while paused, the paused elapsed resets
+on reopen; keep messaging consistent with the existing pause warning.
+
+Accessibility:
+Expose the paused elapsed and total paused values in Semantics labels.
+
+Dependencies:
+Run Mode layout (TimerScreen) and Groups Hub group cards/summary layout.
+
+Risks:
+Additional text may crowd small layouts; ensure it does not break the circle
+stack or card spacing.
+
+Acceptance criteria:
+When status == paused, Run Mode shows a live paused elapsed timer.
+Groups Hub shows total paused time for each group.
+No changes to scheduling or ownership logic; data is derived only.
+Mirror devices show consistent values; Local Mode behaves per existing rules.
+
+Notes:
+UX-only visibility improvement for pause time; no business logic changes.
