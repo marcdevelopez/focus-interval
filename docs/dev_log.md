@@ -22,7 +22,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **14/02/2026**
+Last update: **15/02/2026**
 
 ---
 
@@ -5734,3 +5734,25 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Validate if Ready-state flicker and request delay have separate triggers.
+
+
+# 🔹 Block 385 — Clarify plan group auto-rebase wording (15/02/2026)
+
+### ✔ Work completed:
+
+- Updated IDEA-016 in `docs/feature_backlog.md` to state that scheduled previews
+  auto-rebase to the nearest valid start when pre-run becomes stale, with a
+  warning and conflict gating.
+
+### 🧠 Decisions made:
+
+- Scheduled plan previews must remain confirmable by auto-updating stale start
+  times (now + noticeMinutes) and warning the user.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Commit and push IDEA-016/017 once wording is approved.
