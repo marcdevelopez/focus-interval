@@ -1357,3 +1357,72 @@ Schedule modes only; no change to business rules.
 
 Notes:
 UX-only guardrail aligned to existing pre-run reservation rules.
+
+---
+
+## IDEA-018 — Live Pause Time Range Updates in Run Mode Task List
+
+ID: IDEA-018
+Title: Live Pause Time Range Updates in Run Mode Task List
+Type: UI/UX
+Scope: S
+Priority: P1
+Status: idea
+
+Problem / Goal:
+When a group is paused, task time ranges under the timer stay frozen until
+resume, drifting from the status boxes and the real paused timeline.
+
+Summary:
+While paused, keep task list time ranges updating in real time (minute cadence)
+so they reflect the accumulating pause offset and remain consistent with the
+status boxes.
+
+Design / UX:
+Layout / placement:
+No layout changes; update the existing time range chips under the timer.
+
+Visual states:
+Paused: time ranges continue to shift forward as pause time accumulates.
+Running: unchanged behavior.
+
+Animation rules:
+No new animations; reuse the existing timer tick cadence.
+
+Interaction:
+None.
+
+Text / typography:
+Keep existing HH:mm–HH:mm formatting and styles.
+
+Data & Logic:
+Source of truth:
+Use the same pause-offset projection used by the status boxes.
+
+Calculations:
+Recompute projected task ranges while paused at a fixed cadence (e.g., per
+minute) and update the entire list together to avoid partial drift.
+
+Sync / multi-device:
+UI-only projection; no sync or ownership changes.
+
+Edge cases:
+Pause during pomodoro or break must behave the same. If the app is backgrounded,
+pause updates and refresh on resume. Avoid excessive rebuilds when the list is
+off-screen.
+
+Accessibility:
+Time range updates should not spam announcements; keep them silent.
+
+Dependencies:
+TimerScreen task list range renderer and pause-offset projection helpers.
+
+Risks:
+Extra rebuilds during long pauses; keep cadence minimal.
+
+Acceptance criteria:
+While paused, task list time ranges update in real time and match the status
+box ranges. No changes to business rules or pause logic.
+
+Notes:
+Consistency fix for pause offsets in Run Mode UI.
