@@ -895,3 +895,87 @@ Closed apps do not receive additional notifications beyond current behavior.
 Notes:
 Scope is UX parity for open-app devices; does not alter background notification
 policy.
+
+---
+
+## IDEA-012 — Exact End Time Option for Scheduled Planning
+
+ID: IDEA-012
+Title: Exact End Time Option for Scheduled Planning
+Type: UI/UX
+Scope: L
+Priority: P1
+Status: idea
+
+Problem / Goal:
+Users cannot force an exact end time when scheduling by total range or total
+time because pomodoros/breaks are fixed and pomodoros are integer-only.
+
+Summary:
+Add an "Exact end time" switch in Plan group that allows a controlled exception
+to the integer pomodoro rule so the final end time matches the user’s target.
+
+Design / UX:
+Layout / placement:
+Add a switch labeled "Exact end time" in the planning options area for
+Schedule by total range time and Schedule by total time. Include an info icon
+that reopens a short explainer.
+
+Visual states:
+When enabled, preview and time ranges reflect the exact end. When disabled,
+use current behavior with adjusted end notice.
+
+Animation rules:
+None beyond existing planning transitions.
+
+Interaction:
+On first enable, show an explainer modal with "Don't show again" (per-device).
+Subsequent access via the info icon.
+
+Text / typography:
+Keep copy explicit: only the final segment may be shortened to hit the exact
+end time.
+
+Data & Logic:
+Source of truth:
+Planning flow for Schedule by total range time / Schedule by total time.
+Store an explicit flag on the TaskRunGroup snapshot (e.g., exactEndTimeEnabled)
+to keep preview and execution aligned.
+
+Calculations:
+If the exact end falls inside the last pomodoro, shorten that final pomodoro.
+If the exact end falls inside the last break:
+- Short break: convert the final break into final work time until the exact end.
+- Long break: convert to a short break, then final work time until the exact end.
+Only the final segment is adjusted; the rest of the group remains standard.
+
+Sync / multi-device:
+No new sync rules, but execution must follow the stored exact-end flag so owner
+and mirrors render the same final timing.
+
+Edge cases:
+If the exact end already matches a segment boundary, no adjustment occurs.
+If the exact end is before start, block scheduling with a clear warning.
+Do not apply the exception when "Exact end time" is off.
+
+Accessibility:
+Explainer and switch must be screen-reader friendly with clear labels.
+
+Dependencies:
+Plan group preview, scheduling redistribution logic, Run Mode time-range
+projection, and group summary timing.
+
+Risks:
+Users may misinterpret the exception; copy must be explicit and consistent.
+
+Acceptance criteria:
+With "Exact end time" on, the group ends exactly at the target time in both
+preview and execution.
+Only the final segment may be shortened/converted; all other pomodoros/breaks
+remain unchanged.
+With the switch off, current behavior (integer pomodoros + adjusted end notice)
+remains unchanged.
+
+Notes:
+This feature intentionally introduces a controlled exception to current rules;
+the UI must make the exception clear.
