@@ -1191,3 +1191,169 @@ No changes to scheduling or duration logic.
 
 Notes:
 Presentation-only refresh to keep Start now previews accurate.
+
+---
+
+## IDEA-016 — Live Plan Group Preview + Real-Time Conflict Gating
+
+ID: IDEA-016
+Title: Live Plan Group Preview + Real-Time Conflict Gating
+Type: UI/UX
+Scope: M
+Priority: P1
+Status: idea
+
+Problem / Goal:
+Plan group previews (Start/End and task time ranges) can become stale while the
+screen is open, and conflicts may appear over time without blocking Confirm.
+
+Summary:
+Keep Start now previews in sync with “now”. For Schedule modes, keep the
+preview fixed to the chosen plan unless the scheduled start becomes stale
+(pre-run window or start time passes), in which case rebase the preview to the
+current time (next valid start) using the selected schedule mode, re-check
+conflicts, and warn that the start time was updated. This keeps the displayed
+start time confirmable (pre-run window in the future). The pre-run window must
+always be reserved and must never overlap other groups.
+
+Design / UX:
+Layout / placement:
+Reuse existing preview layout and conflict messaging. Add a clear inline warning
+when a conflict is detected and disable Confirm.
+
+Visual states:
+Start now: Start/End and task ranges update automatically each minute.
+Schedule: Preview stays coherent with the selected plan. If the scheduled start
+or pre-run window is now in the past, rebase the preview to "now" using the
+same schedule mode rules (total range or total time), preserving the full
+pre-run window, update Start/End and task ranges, and show a clear warning.
+
+Animation rules:
+No new animations; time values refresh at a steady cadence.
+
+Interaction:
+Confirm becomes disabled when a conflict is detected; re-enables once resolved.
+
+Text / typography:
+Use existing time formatting (HH:mm–HH:mm). Conflict warning copy should be
+short and consistent with current overlap messaging.
+
+Data & Logic:
+Source of truth:
+Existing planning preview calculations and conflict/overlap rules.
+
+Calculations:
+Recompute preview Start/End and task ranges at a fixed cadence (e.g., per minute).
+For Schedule modes, only rebase when the planned start/pre-run window becomes
+stale; otherwise keep the fixed schedule. Rebased schedules must ensure the
+pre-run window fits in the future and does not overlap existing groups.
+
+Sync / multi-device:
+Local UI only; no sync changes.
+
+Edge cases:
+If no tasks are selected, avoid refresh timers. If the app is backgrounded,
+pause updates and refresh on resume. Ensure partial updates never occur; all
+preview fields must update together. If the pre-run window start time has
+already passed, automatically rebase the schedule to the nearest valid start
+(now + noticeMinutes) with a warning so Confirm does not fail due to stale
+timing. If the rebased schedule still conflicts with other groups, keep Confirm
+disabled until the user resolves the conflict.
+
+Accessibility:
+Conflict warnings must be announced by screen readers. Disabled Confirm should
+have an accessible reason.
+
+Dependencies:
+Plan group preview renderer, scheduling conflict checks, and Confirm CTA state.
+
+Risks:
+Increased rebuilds; keep cadence minimal and avoid heavy recomputation.
+
+Acceptance criteria:
+Plan group preview Start/End and task ranges stay aligned with current time in
+Start now mode.
+Schedule previews remain fixed unless the planned start/pre-run window becomes
+stale; then the preview rebases to now using the same schedule mode rules,
+reserving the full pre-run window and showing a warning that the start time was
+auto-updated to stay valid.
+Confirm is disabled immediately when an overlap appears, and re-enabled when
+resolved, with a clear warning. Confirm should not fail due to stale timing
+once the preview has rebased.
+No changes to business rules; presentation and gating only.
+
+Notes:
+UX-only improvement to keep previews accurate and prevent late conflicts.
+
+---
+
+## IDEA-017 — Start Time Picker Minimum Valid Time (Pre-Run Aware)
+
+ID: IDEA-017
+Title: Start Time Picker Minimum Valid Time (Pre-Run Aware)
+Type: UI/UX
+Scope: S
+Priority: P1
+Status: idea
+
+Problem / Goal:
+Users can select a start time that is already invalid because the pre-run
+window would begin in the past, leading to late error messages.
+
+Summary:
+Make the start-time picker default and constraints respect the minimum valid
+time based on now + noticeMinutes (pre-run), so invalid times are avoided up
+front and auto-adjusted with a clear warning if time passes.
+
+Design / UX:
+Layout / placement:
+In Schedule by total range time / total time, initialize the picker to the
+earliest valid start time. If the user tries to pick earlier, clamp to the
+minimum and show a brief notice.
+
+Visual states:
+Only applies in Schedule modes (not Start now). If the picker becomes stale
+while open, auto-shift to the new minimum and warn.
+
+Animation rules:
+None.
+
+Interaction:
+If an auto-adjust occurs (time now invalid), show a lightweight message like
+"Start time updated to allow pre-run".
+
+Text / typography:
+Use existing planning warning style and copy patterns.
+
+Data & Logic:
+Source of truth:
+Current time + noticeMinutes pre-run requirement.
+
+Calculations:
+Minimum valid start = now + noticeMinutes (+ optional UX buffer if already used
+elsewhere). The full pre-run window must be reservable.
+
+Sync / multi-device:
+No impact.
+
+Edge cases:
+If noticeMinutes == 0, minimum valid start is now (plus optional buffer).
+If the minimum valid time crosses midnight/day boundaries, ensure the picker
+updates the date as needed.
+
+Accessibility:
+Auto-adjust warnings must be announced to screen readers.
+
+Dependencies:
+Planning start-time picker and pre-run validation helpers.
+
+Risks:
+Users may be surprised by auto-adjust; keep the warning clear and brief.
+
+Acceptance criteria:
+Start-time picker opens at a valid time that preserves the full pre-run window.
+Invalid past times are prevented or clamped with a clear warning.
+Schedule modes only; no change to business rules.
+
+Notes:
+UX-only guardrail aligned to existing pre-run reservation rules.
