@@ -979,3 +979,80 @@ remains unchanged.
 Notes:
 This feature intentionally introduces a controlled exception to current rules;
 the UI must make the exception clear.
+
+---
+
+## IDEA-013 — Global Group Remaining Time + Pending Tasks
+
+ID: IDEA-013
+Title: Global Group Remaining Time + Pending Tasks
+Type: UI/UX
+Scope: M
+Priority: P1
+Status: idea
+
+Problem / Goal:
+Users only see the current phase timer; there is no clear, consistent view of
+overall remaining group time, especially for running/paused/canceled states.
+
+Summary:
+Expose a global “group remaining time” in Group Summary (and optionally near the
+group progress ring), with state-specific behavior, plus a list of unfinished
+tasks for canceled groups.
+
+Design / UX:
+Layout / placement:
+Group Summary: add a “Group remaining” row in the timing section. If approved,
+also show a subtle secondary label near the group progress ring (outside the
+main phase timer) to avoid competing with the phase countdown.
+
+Visual states:
+Running: live countdown updates while the modal is open.
+Paused: remaining time is frozen while paused.
+Canceled: show the remaining time at the moment of cancellation.
+
+Animation rules:
+Reuse existing countdown update cadence (per-second or per-minute) without new
+animations.
+
+Interaction:
+None.
+
+Text / typography:
+Use secondary styling (e.g., muted gray) so the phase timer remains primary.
+
+Data & Logic:
+Source of truth:
+Derive remaining time from TaskRunGroup actualStartTime/theoreticalEndTime and
+pause offsets. Use activeSession for live projection when running.
+
+Calculations:
+Remaining = max(0, theoreticalEndTime - now) for running.
+Paused: Remaining is fixed to the value at pause time.
+Canceled: Remaining is fixed to the value at cancellation time.
+
+Sync / multi-device:
+Derived-only; mirrors use the same activeSession/group data for projection.
+
+Edge cases:
+If end time is missing, hide the remaining label.
+If the group is completed, do not show remaining time.
+
+Accessibility:
+Expose the remaining time and pending task list in Semantics labels.
+
+Dependencies:
+Groups Hub summary modal, group progress ring layout, and task completion
+tracking for canceled groups.
+
+Risks:
+Additional timing labels may clutter the UI; ensure hierarchy stays clear.
+
+Acceptance criteria:
+Group Summary shows a global remaining time for running/paused/canceled groups.
+Running counts down, paused stays fixed, canceled shows the last remaining value.
+Canceled groups list the unfinished tasks in order.
+No changes to execution or scheduling logic.
+
+Notes:
+Visibility-only enhancement to preserve context during execution and review.
