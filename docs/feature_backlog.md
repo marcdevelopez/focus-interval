@@ -1124,3 +1124,70 @@ No changes to redistribution logic beyond UI enable/disable.
 
 Notes:
 UX-only clarification aligned to selection-scoped weight rules.
+
+---
+
+## IDEA-015 — Live "Start Now" Time Ranges in Task List
+
+ID: IDEA-015
+Title: Live "Start Now" Time Ranges in Task List
+Type: UI/UX
+Scope: S
+Priority: P1
+Status: idea
+
+Problem / Goal:
+Time range chips in Task List are only recalculated on interaction, so they
+become stale if the user waits before starting the group.
+
+Summary:
+Auto-refresh the Start now time range chips for selected tasks so the preview
+always reflects the current time without extra user actions.
+
+Design / UX:
+Layout / placement:
+Keep the current chip layout and visuals. Update only the displayed time values.
+
+Visual states:
+Time ranges update while the Task List is open and tasks are selected.
+
+Animation rules:
+No new animations; time values refresh at a steady cadence (e.g., every minute).
+
+Interaction:
+None.
+
+Text / typography:
+Use existing time range formatting (HH:mm–HH:mm).
+
+Data & Logic:
+Source of truth:
+Current time + existing duration/ordering rules for Start now preview.
+
+Calculations:
+Recompute start/end ranges at a fixed interval using the same logic as current
+selection/reorder updates.
+
+Sync / multi-device:
+Local UI only; no sync changes.
+
+Edge cases:
+If no tasks are selected, do not run refresh timers. If the app is backgrounded,
+pause updates and refresh on resume.
+
+Accessibility:
+Ensure updated time values are reflected in Semantics labels.
+
+Dependencies:
+Task List selection preview renderer and timing calculation helper.
+
+Risks:
+Unnecessary rebuilds; keep refresh cadence minimal to avoid performance issues.
+
+Acceptance criteria:
+When tasks are selected, time range chips stay aligned with the current time.
+Ranges update automatically without requiring selection changes or reorder.
+No changes to scheduling or duration logic.
+
+Notes:
+Presentation-only refresh to keep Start now previews accurate.
