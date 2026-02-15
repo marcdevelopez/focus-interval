@@ -5756,3 +5756,24 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Commit and push IDEA-016/017 once wording is approved.
+
+
+# 🔹 Block 386 — Add paused task range live update idea (15/02/2026)
+
+### ✔ Work completed:
+
+- Added IDEA-018 to `docs/feature_backlog.md` for live pause updates of task
+  time ranges in Run Mode (task list under the timer).
+
+### 🧠 Decisions made:
+
+- Treat pause-time range updates as a UI consistency improvement (no business
+  logic changes).
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Commit and push IDEA-018 on its own branch.
