@@ -5877,3 +5877,23 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Commit and push IDEA-019 once approved.
+
+
+# 🔹 Block 392 — Add scheduled-by field idea (15/02/2026)
+
+### ✔ Work completed:
+
+- Added IDEA-020 to `docs/feature_backlog.md` for showing scheduledByDeviceId
+  in Group Summary with a legacy fallback.
+
+### 🧠 Decisions made:
+
+- Treat scheduled-by visibility as a UI-only traceability improvement.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Commit and push IDEA-020 on its own branch.
