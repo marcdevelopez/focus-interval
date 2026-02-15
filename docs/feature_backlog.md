@@ -1518,3 +1518,72 @@ managing the same list outside Run Mode.
 
 Notes:
 UX-only enhancement; no changes to TaskRunGroup scheduling or execution logic.
+
+---
+
+## IDEA-020 — Show "Scheduled By" in Group Summary
+
+ID: IDEA-020
+Title: Show "Scheduled By" in Group Summary
+Type: UI/UX
+Scope: S
+Priority: P1
+Status: idea
+
+Problem / Goal:
+Group Summary lacks visibility into which device initiated schedule or Start
+now, making multi-device history harder to reconstruct.
+
+Summary:
+Expose `scheduledByDeviceId` in Group Summary as a "Scheduled by" (or "Planned
+by") field, with a clear legacy fallback when the field is missing.
+
+Design / UX:
+Layout / placement:
+Add a single row in Group Summary near other timing metadata (Scheduled start,
+Actual start, End).
+
+Visual states:
+If `scheduledByDeviceId` exists, show a device label. If not, show
+"Unknown (legacy group)" or equivalent.
+
+Animation rules:
+None.
+
+Interaction:
+None.
+
+Text / typography:
+Use existing summary row styling. Prefer a human-readable device name if
+available; otherwise show a short id token.
+
+Data & Logic:
+Source of truth:
+TaskRunGroup.scheduledByDeviceId.
+
+Calculations:
+Resolve device id to a label using the existing device registry (if available);
+fallback to a truncated id or "Unknown (legacy group)" when missing.
+
+Sync / multi-device:
+Read-only; no sync changes.
+
+Edge cases:
+Legacy groups without scheduledByDeviceId should display the fallback label
+instead of hiding the row.
+
+Accessibility:
+Ensure the row is readable by screen readers with a clear label.
+
+Dependencies:
+Group Summary modal layout and device-label lookup (if present).
+
+Risks:
+Device ids may be opaque; ensure fallback labeling is clear and non-confusing.
+
+Acceptance criteria:
+Group Summary shows a "Scheduled by" row based on scheduledByDeviceId. Legacy
+groups show "Unknown (legacy group)" (or equivalent). No business rules change.
+
+Notes:
+Visibility-only change for multi-device traceability.
