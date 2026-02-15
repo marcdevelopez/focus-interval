@@ -1426,3 +1426,95 @@ box ranges. No changes to business rules or pause logic.
 
 Notes:
 Consistency fix for pause offsets in Run Mode UI.
+
+---
+
+## IDEA-019 — Break Tasks List in Run Mode
+
+ID: IDEA-019
+Title: Break Tasks List in Run Mode
+Type: UI/UX
+Scope: M
+Priority: P1
+Status: idea
+
+Problem / Goal:
+Run Mode lacks a lightweight place to capture and prioritize small tasks meant
+for breaks, forcing users to leave the app or carry mental load during focus.
+
+Summary:
+Add a lightweight "Break tasks" list accessible from TimerScreen, with editing
+and reordering, and restrict completion to break phases only. Persist locally
+per device and per signed-in user. Default is device-only visibility, with an
+optional share flow to copy the list to selected active devices that accept it.
+Optional per-group scoping remains available.
+
+Design / UX:
+Layout / placement:
+Add a discreet access point from TimerScreen (e.g., a corner affordance outside
+the timer circle) that opens a compact list UI.
+
+Visual states:
+Pomodoro: list view allowed; completion controls disabled or hidden to avoid
+encouraging break-task execution during focus time.
+Break (short/long): completion controls enabled. If there are pending break
+tasks, surface the next-in-order item as a small chip/label near the access
+icon (or just below it) for quick review.
+
+Animation rules:
+None beyond existing list transitions.
+
+Interaction:
+Add, edit, delete items. Drag to reorder. Tap to expand long text. Long press
+opens edit/delete actions. During breaks, tapping the surfaced "next" chip
+opens a quick modal asking if the task is done (Yes / Not yet). Yes marks it
+complete; Not yet keeps it in place. The chip is hidden during pomodoros.
+Sharing: allow sharing the full list or selected items to chosen active devices.
+
+Text / typography:
+One-line default display; expand to show full text. Keep list visuals aligned
+with existing Task List styling.
+
+Data & Logic:
+Source of truth:
+Local persistence keyed by device + signed-in user. By default, lists are
+visible only on the device that created them. Optional share flow can copy the
+list to other devices (recipient must accept). No impact on TaskRunGroup.
+
+Calculations:
+None.
+
+Sync / multi-device:
+No background sync. Optional user-initiated sharing to active devices only.
+Recipients accept or decline; accepted items are merged locally. Sharing can be
+the full list or a selected subset of items.
+
+Edge cases:
+If no user is signed in, store under local scope. If switching accounts, swap
+the list accordingly. If per-group mode is enabled, bind to groupId and keep a
+separate default global list. Shared lists must dedupe by item id to avoid
+duplicates; each break task must have a stable id.
+
+Accessibility:
+Ensure completion toggle is announced as disabled during pomodoro. Support
+screen reader actions for reorder and edit/delete.
+
+Dependencies:
+TimerScreen overlay/sheet pattern, local storage (SharedPreferences in MVP),
+Settings screen entry for managing the list, optional device discovery list
+for active devices during sharing.
+
+Risks:
+UI clutter in TimerScreen; keep the entry minimal and optional.
+
+Acceptance criteria:
+Users can add/edit/reorder break tasks from Run Mode. Completion is only
+available during break phases. During breaks, the next pending task is surfaced
+as a chip/label and can be completed via a Yes/Not yet modal. Items persist per
+device and per user and are visible only on the creating device by default.
+Optional share allows copying the full list or selected items to chosen active
+devices after they accept, with id-based dedupe. A Settings entry allows
+managing the same list outside Run Mode.
+
+Notes:
+UX-only enhancement; no changes to TaskRunGroup scheduling or execution logic.

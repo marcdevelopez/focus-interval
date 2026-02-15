@@ -5777,3 +5777,103 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Commit and push IDEA-018 on its own branch.
+
+
+# 🔹 Block 387 — Add break tasks list idea (15/02/2026)
+
+### ✔ Work completed:
+
+- Added IDEA-019 to `docs/feature_backlog.md` for a Break tasks list in Run Mode
+  with break-only completion and local per-user persistence.
+
+### 🧠 Decisions made:
+
+- Keep Break tasks as a UI/UX feature without changes to TaskRunGroup logic.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Commit and push IDEA-019 on its own branch.
+
+
+# 🔹 Block 388 — Add break-only quick chip behavior (15/02/2026)
+
+### ✔ Work completed:
+
+- Expanded IDEA-019 to surface the next break task as a chip during breaks,
+  with a quick Yes/Not yet completion modal.
+
+### 🧠 Decisions made:
+
+- Keep the quick chip visible only in break phases; pomodoros show the icon only.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Commit and push the updated IDEA-019.
+
+
+# 🔹 Block 389 — Add optional break tasks sharing notes (15/02/2026)
+
+### ✔ Work completed:
+
+- Expanded IDEA-019 to clarify device-only visibility by default and an optional
+  share-to-active-devices flow with recipient acceptance and id-based dedupe.
+
+### 🧠 Decisions made:
+
+- Keep sharing explicit and opt-in; no background sync for break tasks.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Commit and push the updated IDEA-019 if approved.
+
+
+# 🔹 Block 390 — Clarify pomodoro completion restriction rationale (15/02/2026)
+
+### ✔ Work completed:
+
+- Updated IDEA-019 to explain that break-task completion is disabled during
+  pomodoros to protect focus time.
+
+### 🧠 Decisions made:
+
+- Completion gating rationale must be explicit in the visual states section.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Commit and push IDEA-019 once approved.
+
+
+# 🔹 Block 391 — Clarify break tasks sharing scope (15/02/2026)
+
+### ✔ Work completed:
+
+- Updated IDEA-019 to allow sharing either the full break-task list or selected
+  items when sending to active devices.
+
+### 🧠 Decisions made:
+
+- Share flow must support subset sharing, not just full list transfer.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Commit and push IDEA-019 once approved.
