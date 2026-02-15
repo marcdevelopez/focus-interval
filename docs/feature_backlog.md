@@ -1056,3 +1056,71 @@ No changes to execution or scheduling logic.
 
 Notes:
 Visibility-only enhancement to preserve context during execution and review.
+
+---
+
+## IDEA-014 — Disable Task Weight When Only One Task Is Selected
+
+ID: IDEA-014
+Title: Disable Task Weight When Only One Task Is Selected
+Type: UI/UX
+Scope: S
+Priority: P1
+Status: idea
+
+Problem / Goal:
+When only one task is selected for a group, Task weight (%) is always 100% and
+editing it has no effect, which can confuse users.
+
+Summary:
+If exactly one task is selected in group preparation and the user edits that
+task, show Task weight as fixed 100% and disable the control.
+
+Design / UX:
+Layout / placement:
+Keep the Task weight field visible but disabled with value 100%. Add a short
+helper note such as "Only one task selected" if space allows.
+
+Visual states:
+Disabled state only when a single task is selected. In 2+ task selections, the
+field behaves normally (editable).
+
+Animation rules:
+None.
+
+Interaction:
+Disabled field does not accept input. No additional actions.
+
+Text / typography:
+Use existing Task weight labeling and formatting.
+
+Data & Logic:
+Source of truth:
+Group selection context in Plan group / Task Editor.
+
+Calculations:
+None; value is fixed to 100% when only one task is selected.
+
+Sync / multi-device:
+No impact.
+
+Edge cases:
+If selection changes from 1 to 2+ tasks while editor is open, re-enable the
+field and restore normal behavior.
+
+Accessibility:
+Expose disabled state and reason to screen readers.
+
+Dependencies:
+Task Editor UI and selection-scoped Task weight logic.
+
+Risks:
+None; small UI-only change.
+
+Acceptance criteria:
+With exactly one selected task, Task weight shows 100% and is disabled.
+With 2+ selected tasks, Task weight is editable as currently defined.
+No changes to redistribution logic beyond UI enable/disable.
+
+Notes:
+UX-only clarification aligned to selection-scoped weight rules.
