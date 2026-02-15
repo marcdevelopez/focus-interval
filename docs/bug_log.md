@@ -295,6 +295,10 @@ Observed behavior:
   ownership request failed to surface on Android.
 - Variant B: After the Ready -> tap recovery, backgrounding the owner
   (Android) and returning also surfaced the pending request.
+- Variant B: Another occurrence showed macOS mirror stuck on Ready shortly
+  after a Pomodoro started; clicking inside the app restored the running timer,
+  and the subsequent ownership request to Android surfaced immediately and was
+  accepted (no delay).
 
 Expected behavior:
 - Ownership requests should surface immediately on the receiving device without
@@ -307,6 +311,9 @@ Evidence:
   Groups Hub and returning to Run Mode.
 - Variant B: User report — background/foreground on Android owner also revealed
   the pending request.
+- Variant B: User report — Ready screen can recover on click and still allow
+  immediate ownership request delivery, indicating the Ready state is not
+  always tied to request delay.
 
 Workaround:
 - Click/focus the macOS window to surface pending requests.

@@ -5714,3 +5714,23 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Validate whether resume listeners consistently surface pending requests.
+
+
+# 🔹 Block 384 — Note Ready recovery without request delay (14/02/2026)
+
+### ✔ Work completed:
+
+- Added BUG-005 Variant B context where macOS mirror showed Ready briefly, then
+  recovered on click and the ownership request to Android surfaced immediately.
+
+### 🧠 Decisions made:
+
+- Document that Ready-state flicker does not always correlate with request delay.
+
+### ⚠️ Issues found:
+
+- Ready-state recovery can still coexist with correct request delivery.
+
+### 🎯 Next steps:
+
+- Validate if Ready-state flicker and request delay have separate triggers.
