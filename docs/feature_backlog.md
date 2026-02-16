@@ -1587,3 +1587,79 @@ groups show "Unknown (legacy group)" (or equivalent). No business rules change.
 
 Notes:
 Visibility-only change for multi-device traceability.
+
+---
+
+## IDEA-021 — Account Deletion Action in Settings
+
+ID: IDEA-021
+Title: Account Deletion Action in Settings
+Type: UI/UX
+Scope: M
+Priority: P1
+Status: idea
+
+Problem / Goal:
+Account Mode users cannot delete their account from within the app, creating
+uncertainty about data removal and long-term access.
+
+Summary:
+Add an explicit "Delete account" action in Settings when authenticated in
+Account Mode, with a clear destructive confirmation flow and a safe final
+state (signed out, data access removed).
+
+Design / UX:
+Layout / placement:
+Settings > Account section, visible only when Account Mode is active and the
+user is signed in. Hide in Local Mode and on platforms without Account Mode.
+
+Visual states:
+Destructive styling (red or warning icon) with a strong confirmation dialog.
+
+Animation rules:
+None beyond existing modal transitions.
+
+Interaction:
+Tap shows a confirmation modal with explicit consequences. Require a deliberate
+confirmation step (e.g., typed "DELETE" or double-confirm) before proceeding.
+
+Text / typography:
+Copy must clearly state that deletion is irreversible and clarifies data scope
+and access loss. Use consistent warning copy patterns from other destructive
+flows.
+
+Data & Logic:
+Source of truth:
+Auth provider account deletion + server-side data deletion policy (as defined
+in specs / backend rules).
+
+Calculations:
+None.
+
+Sync / multi-device:
+If deletion succeeds, sign out locally and clear Account Mode state. Other
+devices should detect the auth change and return to signed-out state.
+
+Edge cases:
+If deletion fails (network/auth), show an error and keep the user signed in.
+If the account has pending sessions, ensure they are ended or made inaccessible
+per existing logout semantics. Legacy Local Mode data remains untouched.
+
+Accessibility:
+Confirmation dialog must be fully accessible and clearly labeled as destructive.
+
+Dependencies:
+Settings > Account UI, auth deletion capability, data cleanup policy,
+platform-specific account providers.
+
+Risks:
+Destructive action requires precise copy and handling to avoid accidental loss.
+
+Acceptance criteria:
+Account Mode users see a "Delete account" action in Settings. The flow requires
+explicit confirmation and results in a signed-out, consistent state on success.
+Local Mode is unaffected. No changes to business rules beyond visibility and
+safe deletion flow.
+
+Notes:
+Requires alignment with backend data-retention policy and auth provider rules.
