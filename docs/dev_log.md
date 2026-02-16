@@ -5960,3 +5960,25 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Re-validate BUG-001 after any session-gap handling changes.
+
+
+# 🔹 Block 396 — Add ownership revert workaround to BUG-002 (16/02/2026)
+
+### ✔ Work completed:
+
+- Expanded BUG-002 with a 16/02/2026 scenario: mirror Ready after background,
+  ownership accepted but reverted unless Run Mode was refreshed quickly.
+- Documented the short-window Groups Hub refresh workaround (~20–30s) that
+  stabilizes ownership.
+
+### 🧠 Decisions made:
+
+- Treat the ownership revert as part of the existing desync bug.
+
+### ⚠️ Issues found:
+
+- Ownership can revert to the previous owner unless a fast resubscribe occurs.
+
+### 🎯 Next steps:
+
+- Validate whether resubscribe timing prevents ownership rollback.

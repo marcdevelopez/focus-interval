@@ -125,8 +125,12 @@ Observed behavior:
 - After macOS accepts a request and Firestore shows Android as owner, Android UI
   can remain amber (requested) with Pause/Cancel disabled; seconds later ownership
   flips back to macOS while Android still shows pending/requested state.
- - After returning from Groups Hub, UI can look correct but Firestore still
-   contains a rejected ownershipRequest from the delayed Retry flow.
+- After returning from Groups Hub, UI can look correct but Firestore still
+  contains a rejected ownershipRequest from the delayed Retry flow.
+- Additional scenario (16/02/2026): After Android (mirror) went Ready following
+  background usage (WhatsApp), it stayed in mirror and requested ownership.
+  macOS accepted, Firestore showed Android owner, but Android remained requested
+  and ownership flipped back to macOS unless Run Mode was refreshed quickly.
 
 Expected behavior:
 - Ownership rejection should immediately clear pending/requested UI and return
@@ -165,15 +169,21 @@ Evidence:
   (Pomodoro 5/7).
 - Screenshots show Android in amber requested state with Pause/Cancel disabled
   while macOS shows owner controls and the ownership modal.
+- User report (16/02/2026): after Ready screen on mirror, ownership acceptance
+  still reverted unless Run Mode was refreshed within ~20–30s.
 
 Workaround:
 - Navigate Android to Groups Hub and back to force re-sync.
 - Use Retry in the ownership sheet to re-issue the request.
+- After ownership acceptance, exit to Groups Hub and return within ~20–30s to
+  prevent the owner from reverting back to the previous device.
 
 Hypothesis:
 - Ownership request UI state is not cleared/overridden after rejection when the
   requester resumes from background; local pending state or session-gap handling
   may mask the latest snapshot.
+- Ownership revert may be triggered by a stale snapshot or delayed resubscribe;
+  immediate Run Mode refresh appears to stabilize the accepted owner.
 
 Fix applied:
 None.
