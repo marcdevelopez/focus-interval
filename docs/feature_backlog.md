@@ -1868,6 +1868,9 @@ Members can propose/share a group from Groups Hub. Workspace owner can schedule
 and start shared groups, including assigning the start time. Members must
 resolve conflicts between workspace runs and their personal groups by either
 opting out of the workspace run or modifying their personal group.
+Optional setting: the workspace owner can allow automatic run ownership for any
+member (no approval). When enabled, a member can take ownership immediately to
+set start times if the owner/delegate is unavailable.
 
 Text / typography:
 Clear ownership and conflict copy. Explicitly state when a workspace group
@@ -1893,6 +1896,8 @@ If the workspace owner is offline when a run starts, ownership falls to the
 designated delegate; if none, the first device to open at run start becomes run
 owner. If a member does not resolve a conflict, auto-start is blocked for them
 and they are excluded from that workspace run.
+If auto-ownership is enabled, ensure only one member becomes owner at a time
+and update the owner assignment before scheduling.
 
 Accessibility:
 Conflict decisions and exclusion states must be announced clearly. Workspace
