@@ -1825,3 +1825,96 @@ no longer claims the group cannot be resumed and explains the two paths.
 
 Notes:
 This is a behavior change; specs must be updated before implementation.
+
+---
+
+## IDEA-024 — Workspaces With Shared TaskRunGroups
+
+ID: IDEA-024
+Title: Workspaces With Shared TaskRunGroups
+Type: Product / Architecture
+Scope: L
+Priority: P1
+Status: idea
+
+Problem / Goal:
+There is no shared workspace layer for planning and executing groups together,
+and no clear rules for sharing groups across members with ownership and overlap
+resolution.
+
+Summary:
+Introduce Workspaces where members can share existing TaskRunGroups from Groups
+Hub, plan and execute them together, and resolve conflicts with personal groups.
+Shared groups are copies of personal groups and do not sync changes back.
+Shared groups do not carry a start time on share; the workspace owner sets the
+exact start time later, so multiple shared groups can coexist before scheduling.
+
+Design / UX:
+Layout / placement:
+Add a Workspaces entry with Create/Join flows. Provide a Workspace board that
+lists shared groups and their run status. Sharing a group is done from Groups
+Hub (any status: running, paused, scheduled, completed, canceled).
+
+Visual states:
+Workspace run mirrors the existing Run Mode UI for members. Members see the same
+timer run across their devices. Workspace groups show planned/running state and
+exclusion status when a member opts out due to overlap.
+
+Animation rules:
+Reuse existing run animations; no new visual effects required.
+
+Interaction:
+Members can propose/share a group from Groups Hub. Workspace owner can schedule
+and start shared groups, including assigning the start time. Members must
+resolve conflicts between workspace runs and their personal groups by either
+opting out of the workspace run or modifying their personal group.
+
+Text / typography:
+Clear ownership and conflict copy. Explicitly state when a workspace group
+cannot be edited by non-owners and when a member is excluded from a run.
+
+Data & Logic:
+Source of truth:
+Workspace collections in Firestore plus a copied TaskRunGroup snapshot.
+
+Calculations:
+Overlap detection uses the same [start, end) intersection rules, including
+pre-run windows when applicable. Conflicts are only evaluated once the owner
+assigns a start time; shared groups can coexist without conflicts while
+unscheduled. Exclusions prevent members from joining a workspace run that
+conflicts with their personal groups.
+
+Sync / multi-device:
+Members see the same workspace run on all their logged-in devices. The workspace
+run is a single shared session (not per device).
+
+Edge cases:
+If the workspace owner is offline when a run starts, ownership falls to the
+designated delegate; if none, the first device to open at run start becomes run
+owner. If a member does not resolve a conflict, auto-start is blocked for them
+and they are excluded from that workspace run.
+
+Accessibility:
+Conflict decisions and exclusion states must be announced clearly. Workspace
+ownership and run state should be readable via screen readers.
+
+Dependencies:
+Workspace data model, invite flow, workspace board UI, shared run ownership
+rules, conflict-resolution UI that integrates with personal group overlaps.
+
+Risks:
+Large scope with new backend collections and ownership rules. Requires careful
+spec alignment and release safety for new Firestore paths and rules.
+
+Acceptance criteria:
+Users can create/join workspaces and share any existing Groups Hub TaskRunGroup.
+Shared groups are copied and independent of the original. Workspace runs are
+visible to all members across devices. Shared groups have no start time until
+the owner schedules them. Personal vs workspace overlap requires a forced
+decision (opt out or modify personal group) once a start time is assigned, with
+gating on unresolved conflicts.
+
+Notes:
+Workspace groups are shared from Groups Hub only; no new group creation inside
+the workspace. This is a documentation-level feature proposal pending full
+spec alignment.
