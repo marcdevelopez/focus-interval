@@ -22,7 +22,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **15/02/2026**
+Last update: **16/02/2026**
 
 ---
 
@@ -5897,3 +5897,24 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Commit and push IDEA-020 on its own branch.
+
+
+# 🔹 Block 393 — Add account deletion idea (16/02/2026)
+
+### ✔ Work completed:
+
+- Added IDEA-021 to `docs/feature_backlog.md` for an Account Mode "Delete account"
+  action with explicit destructive confirmation.
+
+### 🧠 Decisions made:
+
+- Keep deletion flow as a UI/UX entry that must align with provider and backend
+  deletion rules (no behavior change beyond exposure and safe flow).
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Commit and push IDEA-021 on its own branch.
