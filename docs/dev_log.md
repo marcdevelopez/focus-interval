@@ -6127,6 +6127,46 @@ _(fill in when they happen)_
 - Commit and push IDEA-024 on its own branch.
 
 
+# 🔹 Block 401 — Add workspace owner-request option (17/02/2026)
+
+### ✔ Work completed:
+
+- Updated IDEA-024 to allow an optional setting where members can request
+  workspace run ownership if the owner enables it.
+
+### 🧠 Decisions made:
+
+- Keep ownership requests opt-in per workspace and require explicit approval.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Commit and push IDEA-024 update.
+
+
+# 🔹 Block 402 — Switch to auto-ownership option (17/02/2026)
+
+### ✔ Work completed:
+
+- Updated IDEA-024 to specify an optional setting for automatic member
+  ownership (no approval) when the workspace owner enables it.
+
+### 🧠 Decisions made:
+
+- Auto-ownership is opt-in per workspace and replaces approval-based requests.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Commit and push IDEA-024 update.
+
+
 # 🔹 Block 401 — Clarify workspace shared group scheduling (17/02/2026)
 
 ### ✔ Work completed:
