@@ -5961,6 +5961,27 @@ _(fill in when they happen)_
 - Commit and push along with IDEA-022 if approved.
 
 
+# 🔹 Block 396 — Add resume canceled groups idea (16/02/2026)
+
+### ✔ Work completed:
+
+- Added IDEA-023 to `docs/feature_backlog.md` for resuming canceled groups while
+  keeping Re-plan as an alternative.
+
+### 🧠 Decisions made:
+
+- Treat Resume as a behavior change that requires a spec update before any
+  implementation.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Commit and push IDEA-023 on its own branch.
+
+
 # 🔹 Block 394 — Add mirror desync after resync/phase change (16/02/2026)
 
 ### ✔ Work completed:
