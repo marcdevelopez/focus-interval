@@ -1748,3 +1748,80 @@ changes to TaskRunGroup execution logic.
 
 Notes:
 No manual time entry; activity is based on executed, verified pomodoros only.
+
+---
+
+## IDEA-023 — Resume Canceled Groups
+
+ID: IDEA-023
+Title: Resume Canceled Groups
+Type: Product / UX
+Scope: L
+Priority: P1
+Status: idea
+
+Problem / Goal:
+Canceled groups can only be re-planned from scratch, which forces users to lose
+partial progress when they cancel due to interruptions.
+
+Summary:
+Add a Resume action for canceled groups that continues from the exact
+cancellation point, while keeping Re-plan as the "start over" option. Update
+cancel-confirmation copy to reflect both paths.
+
+Design / UX:
+Layout / placement:
+Groups Hub: show both actions for canceled groups — Resume and Re-plan group.
+Run Mode cancel confirmation modal: update copy to remove "cannot be resumed".
+
+Visual states:
+Canceled group card shows Resume as a primary/secondary action (per existing
+CTA hierarchy) and Re-plan as the alternative.
+
+Animation rules:
+None.
+
+Interaction:
+Resume opens the group in Run Mode at the saved execution point. Re-plan opens
+the planning flow as it does today.
+
+Text / typography:
+Cancel confirmation copy must explicitly state the two options available after
+canceling (Resume vs Re-plan).
+
+Data & Logic:
+Source of truth:
+TaskRunGroup execution snapshot at the time of cancel (current task index,
+phase, remaining time offsets).
+
+Calculations:
+Resume must preserve completed segments and continue from the saved point
+without restarting earlier tasks or pomodoros.
+
+Sync / multi-device:
+Resume follows existing ownership rules; only the owner can resume.
+
+Edge cases:
+If the group was canceled while paused, resume should restore paused state or
+resume into a consistent running state per existing pause semantics.
+If local data needed to resume is missing, fall back to Re-plan.
+
+Accessibility:
+Actions must be clearly labeled; cancellation dialog copy must be announced.
+
+Dependencies:
+Run Mode cancel flow copy, Groups Hub action menu, persisted execution snapshot
+fields needed to resume, and any resume guards in the ViewModel.
+
+Risks:
+Conflicts with current spec rule "canceled groups cannot be resumed"; requires
+spec update and careful backward compatibility. Resume logic could diverge from
+completion/cancel timelines if snapshot fields are incomplete.
+
+Acceptance criteria:
+Canceled groups show Resume and Re-plan actions in Groups Hub. Resume continues
+from the cancellation point with completed segments preserved. Cancel modal copy
+no longer claims the group cannot be resumed and explains the two paths.
+
+Notes:
+This is a behavior change; specs must be updated before implementation.
