@@ -131,6 +131,9 @@ Observed behavior:
   background usage (WhatsApp), it stayed in mirror and requested ownership.
   macOS accepted, Firestore showed Android owner, but Android remained requested
   and ownership flipped back to macOS unless Run Mode was refreshed quickly.
+- Follow-up (same day): After ownership stabilized with Android as owner and
+  macOS as mirror, macOS showed ~5 seconds less remaining than Android (mirror
+  ahead), indicating a small but persistent offset.
 
 Expected behavior:
 - Ownership rejection should immediately clear pending/requested UI and return
@@ -171,6 +174,8 @@ Evidence:
   while macOS shows owner controls and the ownership modal.
 - User report (16/02/2026): after Ready screen on mirror, ownership acceptance
   still reverted unless Run Mode was refreshed within ~20–30s.
+- User report (16/02/2026): once Android remained owner, macOS mirror showed
+  ~5 seconds less remaining (mirror ahead).
 
 Workaround:
 - Navigate Android to Groups Hub and back to force re-sync.
