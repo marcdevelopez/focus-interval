@@ -1923,3 +1923,84 @@ Notes:
 Workspace groups are shared from Groups Hub only; no new group creation inside
 the workspace. This is a documentation-level feature proposal pending full
 spec alignment.
+
+---
+
+## IDEA-025 — Workspace Break Chat (Text + Deferred DM)
+
+ID: IDEA-025
+Title: Workspace Break Chat (Text + Deferred DM)
+Type: Product / UX
+Scope: L
+Priority: P1
+Status: idea
+
+Problem / Goal:
+Workspace runs have no built-in communication channel for breaks, forcing
+members to use external apps and reducing the social value of shared runs.
+
+Summary:
+Add a text-only chat tied to the active workspace run, designed for breaks.
+During pomodoros the chat is hidden or read-only. Direct messages are queued
+during pomodoro and delivered at the next break. Chat sync must be data-efficient
+by loading recent messages once and then only incremental updates.
+
+Design / UX:
+Layout / placement:
+Workspace run view shows a compact chat panel or entry point visible during
+breaks. Profile/Settings provides a per-user mute toggle for workspace chat.
+
+Visual states:
+Pomodoro: chat hidden or read-only; no message delivery during focus.
+Break: chat input enabled; queued DMs are delivered.
+Muted: chat panel remains hidden and does not surface new messages.
+
+Animation rules:
+Reuse existing panel transitions only.
+
+Interaction:
+Group chat: members can read and post during breaks. Messages show author and
+time in arrival order.
+Direct chat: users can draft at any time, but delivery to the recipient occurs
+only when the next break starts (queued -> delivered).
+
+Text / typography:
+Keep messages minimal and readable; show author and timestamp for context.
+
+Data & Logic:
+Source of truth:
+Workspace run chat messages stored under the workspace run context, plus DM
+threads between workspace members.
+
+Calculations:
+Queued DM delivery triggers on transition to shortBreakRunning or longBreakRunning.
+
+Sync / multi-device:
+Chat is visible on all devices for the same member account. Delivery gating is
+based on the run phase, not device focus.
+
+Edge cases:
+If no run is active, chat is hidden. If a member is excluded from the run due
+to overlap, they do not receive run chat. If a break starts while offline, queued
+DMs should deliver on next reconnect at break.
+
+Accessibility:
+Chat visibility changes must be announced once. Provide accessible labels for
+message author and time.
+
+Dependencies:
+Requires Workspaces with shared TaskRunGroups (IDEA-024). Needs a chat UI panel,
+message storage, and run-phase gating.
+
+Risks:
+Chat could distract during focus if gating is weak. Data usage could grow without
+incremental sync and caching.
+
+Acceptance criteria:
+Text chat is available during breaks for workspace runs and hidden or read-only
+during pomodoros. DMs are queued during pomodoro and delivered at the next break.
+Users can mute chat. Chat loads recent messages once and then only new messages
+without re-downloading already seen history. No audio chat in this scope.
+
+Notes:
+Audio room is a future idea only and is not part of this scope.

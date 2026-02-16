@@ -6167,7 +6167,7 @@ _(fill in when they happen)_
 - Commit and push IDEA-024 update.
 
 
-# 🔹 Block 401 — Clarify workspace shared group scheduling (17/02/2026)
+# 🔹 Block 403 — Clarify workspace shared group scheduling (17/02/2026)
 
 ### ✔ Work completed:
 
@@ -6185,3 +6185,24 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Commit and push IDEA-024 update.
+
+
+# 🔹 Block 404 — Add workspace break chat idea (17/02/2026)
+
+### ✔ Work completed:
+
+- Added IDEA-025 to `docs/feature_backlog.md` for break-focused workspace chat,
+  including deferred DM delivery and data-efficient sync rules.
+
+### 🧠 Decisions made:
+
+- Chat is text-only in this phase; delivery and visibility are gated by run
+  break phases to avoid focus disruption.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Commit and push IDEA-025 on its own branch.
