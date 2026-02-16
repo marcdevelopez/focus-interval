@@ -5982,3 +5982,23 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Validate whether resubscribe timing prevents ownership rollback.
+
+
+# 🔹 Block 397 — Add post-ownership timer offset detail (16/02/2026)
+
+### ✔ Work completed:
+
+- Added BUG-002 follow-up: after ownership stabilized on Android, macOS mirror
+  showed ~5 seconds less remaining (mirror ahead).
+
+### 🧠 Decisions made:
+
+- Track small post-ownership offsets under the same desync bug.
+
+### ⚠️ Issues found:
+
+- Mirror can remain a few seconds behind even after ownership stabilizes.
+
+### 🎯 Next steps:
+
+- Verify whether ownership stabilization also re-bases mirror timers.
