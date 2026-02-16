@@ -5920,6 +5920,47 @@ _(fill in when they happen)_
 - Commit and push IDEA-021 on its own branch.
 
 
+# 🔹 Block 394 — Add verified presence + heatmap idea (16/02/2026)
+
+### ✔ Work completed:
+
+- Added IDEA-022 to `docs/feature_backlog.md` for pomodoro presence verification
+  and a GitHub-style activity heatmap (personal vs workspace).
+
+### 🧠 Decisions made:
+
+- Presence confirmation is a lightweight banner at pomodoro boundaries and only
+  verified pomodoros count toward the heatmap.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Commit and push IDEA-022 on its own branch.
+
+
+# 🔹 Block 395 — Clarify backlog scope/priority legend (16/02/2026)
+
+### ✔ Work completed:
+
+- Updated the feature backlog template to document Scope (S/M/L) and Priority
+  (P0/P1/P2) meanings.
+
+### 🧠 Decisions made:
+
+- Keep the legend inline with the template for quick reference.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Commit and push along with IDEA-022 if approved.
+
+
 # 🔹 Block 394 — Add mirror desync after resync/phase change (16/02/2026)
 
 ### ✔ Work completed:
