@@ -7,8 +7,8 @@ Entry template:
 ID:
 Title:
 Type:
-Scope:
-Priority:
+Scope: S | M | L (Small / Medium / Large)
+Priority: P0 | P1 | P2 (Critical / High / Normal)
 Status:
 
 Problem / Goal:
@@ -1663,3 +1663,88 @@ safe deletion flow.
 
 Notes:
 Requires alignment with backend data-retention policy and auth provider rules.
+
+---
+
+## IDEA-022 — Verified Presence + Activity Heatmap
+
+ID: IDEA-022
+Title: Verified Presence + Activity Heatmap
+Type: UI/UX
+Scope: L
+Priority: P1
+Status: idea
+
+Problem / Goal:
+There is no way to confirm the user was present during each pomodoro and no
+visual history of real, verified activity by day.
+
+Summary:
+Add a lightweight presence confirmation at the end of each pomodoro and use
+only verified pomodoros to power a GitHub-style activity heatmap in the user
+profile (personal vs workspace).
+
+Design / UX:
+Layout / placement:
+Run Mode: show a small, non-blocking confirmation banner/toast near the bottom
+of the timer at each pomodoro end. Profile/Settings: add a compact heatmap panel
+near the user identity metadata.
+
+Visual states:
+Confirmation banner shows a single "Confirm" action. If not confirmed before
+the next pomodoro starts, show a brief notice that the previous pomodoro will
+not be counted.
+Heatmap uses 5 intensity levels; empty days show a neutral tile.
+
+Animation rules:
+Use existing toast/banner transitions only.
+
+Interaction:
+User taps Confirm to verify the pomodoro. If ignored, the banner auto-dismisses
+when the next pomodoro begins and marks the prior pomodoro unverified.
+
+Text / typography:
+Keep copy short and clear (e.g., "Confirm presence for the last pomodoro").
+Use existing warning copy style for the "not counted" notice.
+
+Data & Logic:
+Source of truth:
+Verified pomodoro events derived from TaskRunGroup execution, tagged with
+timestamp, duration, workspaceId (if any), and deviceId of the confirmer.
+
+Calculations:
+Verified minutes per day = sum of confirmed pomodoro work minutes for that day.
+Heatmap intensity levels map verified minutes to 5 buckets (e.g., ~1h minimum
+to ~8h maximum), with thresholds defined in specs.
+
+Sync / multi-device:
+Confirmation should be owner-only to avoid conflicting writes; mirrors display
+the result. If the app is not active when the banner would show, mark the
+pomodoro unverified and surface the "not counted" notice on resume.
+
+Edge cases:
+If a group is paused at the pomodoro boundary, defer the banner until the
+transition resumes. If the group is canceled or ends before confirmation, the
+last pomodoro remains unverified. Offline confirmations should queue locally
+and sync when online. Legacy groups without verification data show empty days.
+
+Accessibility:
+Banner and notices must be announced once via screen readers. Avoid repeated
+announcements on rapid transitions.
+
+Dependencies:
+Run Mode banner/toast component, verified-pomodoro storage, daily aggregation,
+profile/Settings UI for heatmap, workspace attribution source.
+
+Risks:
+User annoyance if prompts are too frequent; keep them minimal and consistent.
+Additional storage and aggregation complexity; ensure retention policy is clear.
+
+Acceptance criteria:
+Each pomodoro end triggers a presence confirmation banner. Verified pomodoros
+count toward the heatmap; unverified ones do not. Heatmap displays 7-row weekly
+grid with 5 intensity levels, and supports personal vs workspace views. No
+changes to TaskRunGroup execution logic.
+
+Notes:
+No manual time entry; activity is based on executed, verified pomodoros only.
