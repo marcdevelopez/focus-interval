@@ -5918,3 +5918,45 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Commit and push IDEA-021 on its own branch.
+
+
+# 🔹 Block 394 — Add mirror desync after resync/phase change (16/02/2026)
+
+### ✔ Work completed:
+
+- Expanded BUG-004 with a new scenario: mirror desync after Ready->Run recovery,
+  ownership acceptance, and a phase change; pause/resume preserves the offset
+  until another mirror device resubscribes.
+
+### 🧠 Decisions made:
+
+- Treat this as additional evidence for mirror timer drift rather than a new bug.
+
+### ⚠️ Issues found:
+
+- Mirror offset can persist across phase changes and survive pause/resume.
+
+### 🎯 Next steps:
+
+- Validate whether resubscribe or phase-change handling re-bases mirror timers.
+
+
+# 🔹 Block 395 — Add Ready screen recurrence to BUG-001 (16/02/2026)
+
+### ✔ Work completed:
+
+- Expanded BUG-001 with a 16/02/2026 occurrence: Android mirror showed Ready
+  during Pomodoro 2 after backgrounding; resynced only after Groups Hub
+  navigation, despite macOS owner running.
+
+### 🧠 Decisions made:
+
+- Treat this as additional evidence for the mirror Ready-with-session bug.
+
+### ⚠️ Issues found:
+
+- Mirror Ready screen can recur after background/resume without ownership changes.
+
+### 🎯 Next steps:
+
+- Re-validate BUG-001 after any session-gap handling changes.
