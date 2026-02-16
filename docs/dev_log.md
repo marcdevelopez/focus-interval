@@ -6002,3 +6002,43 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Verify whether ownership stabilization also re-bases mirror timers.
+
+
+# 🔹 Block 398 — Add mirror pulsing + growing drift detail (16/02/2026)
+
+### ✔ Work completed:
+
+- Added BUG-002 follow-up: mirror drift grows over time and macOS UI pulses
+  between synced and offset timers once per second during the break.
+
+### 🧠 Decisions made:
+
+- Track pulsing UI and growing drift under the same ownership desync bug.
+
+### ⚠️ Issues found:
+
+- Mirror can oscillate between two timer projections while drifting.
+
+### 🎯 Next steps:
+
+- Check for competing projections or duplicate timer sources on mirror.
+
+
+# 🔹 Block 399 — Note Groups Hub resync after pulsing (16/02/2026)
+
+### ✔ Work completed:
+
+- Added BUG-002 detail: navigating to Groups Hub and back re-synchronizes the
+  mirror with the owner/Firebase after pulsing/drift.
+
+### 🧠 Decisions made:
+
+- Keep resync behavior documented under the same desync bug.
+
+### ⚠️ Issues found:
+
+- Manual navigation remains the reliable recovery path.
+
+### 🎯 Next steps:
+
+- Verify if automatic resubscribe can replace manual Groups Hub refresh.

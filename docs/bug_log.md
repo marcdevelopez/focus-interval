@@ -134,6 +134,13 @@ Observed behavior:
 - Follow-up (same day): After ownership stabilized with Android as owner and
   macOS as mirror, macOS showed ~5 seconds less remaining than Android (mirror
   ahead), indicating a small but persistent offset.
+- Continuation: The offset continued to increase over time during the break,
+  not staying constant.
+- While interacting with the macOS app, the Run Mode UI pulsed each second,
+  alternating between the synced timer and the offset timer (as if swapping
+  between owner and stale mirror projections).
+- After navigating to Groups Hub and back to Run Mode, the mirror re-synced and
+  matched the owner/Firebase again.
 
 Expected behavior:
 - Ownership rejection should immediately clear pending/requested UI and return
@@ -176,6 +183,9 @@ Evidence:
   still reverted unless Run Mode was refreshed within ~20–30s.
 - User report (16/02/2026): once Android remained owner, macOS mirror showed
   ~5 seconds less remaining (mirror ahead).
+- User report (16/02/2026): during the following break, the drift grew over
+  time and macOS UI flickered between the synced and offset timers on a
+  per-second pulse.
 
 Workaround:
 - Navigate Android to Groups Hub and back to force re-sync.
