@@ -22,7 +22,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **16/02/2026**
+Last update: **17/02/2026**
 
 ---
 
@@ -6104,3 +6104,44 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Verify if automatic resubscribe can replace manual Groups Hub refresh.
+
+
+# 🔹 Block 400 — Add workspace shared groups idea (17/02/2026)
+
+### ✔ Work completed:
+
+- Added IDEA-024 to `docs/feature_backlog.md` for Workspaces with shared
+  TaskRunGroups, ownership rules, and personal-overlap conflict gating.
+
+### 🧠 Decisions made:
+
+- Treat Workspaces as a large-scope product/architecture feature that depends
+  on new Firestore collections and explicit conflict-resolution rules.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Commit and push IDEA-024 on its own branch.
+
+
+# 🔹 Block 401 — Clarify workspace shared group scheduling (17/02/2026)
+
+### ✔ Work completed:
+
+- Updated IDEA-024 to state that shared workspace groups have no start time
+  until the owner schedules them, so conflicts only apply after scheduling.
+
+### 🧠 Decisions made:
+
+- Keep multiple shared groups unscheduled until the owner assigns exact starts.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Commit and push IDEA-024 update.
