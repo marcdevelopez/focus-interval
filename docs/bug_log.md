@@ -40,6 +40,12 @@ Additional scenario:
 After ownership handoff (macOS becomes mirror) and accepting an ownership request,
 the new mirror showed Ready for several seconds (up to ~1 minute) before resyncing.
 
+Additional scenario (16/02/2026):
+Planned group scheduled 16:35–20:10. Android was mirror, macOS owner. After the
+break into Pomodoro 2, Android went to background and later showed Ready in Run
+Mode while the session was running. No ownership changes occurred. Sync only
+returned after entering Groups Hub and coming back to Run Mode.
+
 Observed moment: Pomodoro 2, ~13 minutes remaining.
 
 Evidence (Firestore state at failure):
@@ -48,6 +54,12 @@ Evidence (Firestore state at failure):
 - ownerDeviceId: macOS
 - remainingSeconds: ~624
 - lastUpdatedAt: 13/02/2026 15:08:36 (UTC+1)
+
+Evidence (16/02/2026, planned range group):
+- Firestore snapshot 17:25:02 (UTC+1): status pomodoroRunning, phase pomodoro,
+  phaseStartedAt 17:05:00, remainingSeconds 298, ownerDeviceId macOS.
+- Android screenshot at ~17:26 shows Ready with Start disabled while the group
+  was active; resync after Groups Hub navigation.
 
 Evidence (after foreground):
 - remainingSeconds: ~470
@@ -238,6 +250,15 @@ Symptom:
 Observed behavior:
 - At the start of the long break, Android showed ~4s less remaining than macOS.
 - The gap grew over time; by ~8 minutes remaining the difference was ~10s.
+- Additional scenario (approx 16/02/2026 20:00 UTC+1):
+  - Mirror went to Ready during an active run, then resynced after entering and
+    leaving Groups Hub.
+  - Ownership was requested and accepted; after the next phase change the mirror
+    timer lagged by several seconds and did not auto-correct.
+  - Pausing on the owner temporarily aligned the mirror, but resuming restored
+    the same offset.
+  - The desync persisted until another device opened in mirror, after which the
+    original mirror re-synced.
 
 Expected behavior:
 - Mirror projection should stay within a small, stable tolerance from the owner
@@ -248,10 +269,15 @@ Evidence:
   (same wall clock), indicating ~6s delta.
 - Firestore snapshot (UTC+1) 23:41:28 shows `status = longBreakRunning`,
   `remainingSeconds = 507` while Android displayed fewer seconds than macOS.
+- User report (16/02/2026 ~20:00 UTC+1): mirror desync appears after phase
+  change following a Ready->Run recovery and ownership acceptance; pause/resume
+  preserves the offset; new mirror device forces resync.
 
 Hypothesis:
 - Mirror projection may be using a local clock without correction for snapshot
   cadence or server time offset, causing accumulating drift during long phases.
+ - Phase-change projection may reuse a stale offset after resubscribe/ownership
+   changes, and pause/resume re-applies the same offset instead of re-basing.
 
 Fix applied:
 None.
