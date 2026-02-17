@@ -6286,3 +6286,23 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Re-validate mirror Ready recovery paths in Run Mode.
+
+
+# 🔹 Block 409 — Add Manage Presets item UX idea (17/02/2026)
+
+### ✔ Work completed:
+
+- Added IDEA-026 to `docs/feature_backlog.md` for consistent Manage Presets item
+  preview, star placement, and tap/long-press behavior.
+
+### 🧠 Decisions made:
+
+- Align preset item gestures with Task List: tap edits, long-press selects.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Commit and push IDEA-026 on its own branch.
