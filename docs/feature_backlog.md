@@ -2233,3 +2233,71 @@ weekly grouping. Only verified pomodoros are counted.
 
 Notes:
 No manual time entry; aligns strictly with IDEA-022 verification rules.
+
+---
+
+## IDEA-029 — Live Pause Time Ranges (Forward-Only)
+
+ID: IDEA-029
+Title: Live Pause Time Ranges (Forward-Only)
+Type: UI/UX
+Scope: S
+Priority: P1
+Status: idea
+
+Problem / Goal:
+While a group is paused, task and status-box time ranges stay frozen, so the UI
+does not reflect the accumulating pause offset in real time.
+
+Summary:
+Update all displayed time ranges in Run Mode during pauses so they reflect the
+current pause offset, adjusting only forward in time (never rewriting past
+starts or ends).
+
+Design / UX:
+Layout / placement:
+No layout changes. Applies to task items below the timer and the status boxes.
+
+Visual states:
+Paused: ranges update in real time (e.g., per minute) to reflect delay.
+Running: unchanged.
+
+Animation rules:
+No new animations; reuse existing timer tick cadence.
+
+Interaction:
+None.
+
+Text / typography:
+Keep HH:mm–HH:mm formatting.
+
+Data & Logic:
+Source of truth:
+Pause-offset projection already used for time-range calculations.
+
+Calculations:
+If a range start is in the past, keep it fixed. Extend the current range end
+by the pause offset, and shift all future ranges forward by the same offset.
+
+Sync / multi-device:
+UI-only projection; no sync changes.
+
+Edge cases:
+Applies to both task items and status boxes. Must update even if the user never
+resumes. If the app is backgrounded, pause updates and refresh on resume.
+
+Accessibility:
+Avoid noisy announcements; time range updates should be silent.
+
+Dependencies:
+Run Mode time-range renderer for task items and status boxes.
+
+Risks:
+Extra rebuilds during long pauses; keep cadence minimal.
+
+Acceptance criteria:
+While paused, all displayed ranges update in real time, preserving past starts and ends
+and shifting only forward. Task items and status boxes stay consistent.
+
+Notes:
+Consistency fix for pause offsets during paused state.

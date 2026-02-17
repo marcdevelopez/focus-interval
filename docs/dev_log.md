@@ -6347,3 +6347,23 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Commit and push IDEA-028 on its own branch.
+
+
+# 🔹 Block 412 — Add live pause time ranges idea (17/02/2026)
+
+### ✔ Work completed:
+
+- Added IDEA-029 to `docs/feature_backlog.md` for live pause time ranges that
+  update forward-only during paused state.
+
+### 🧠 Decisions made:
+
+- Pause offsets must never rewrite past start times; only forward ranges move.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Commit and push IDEA-029 on its own branch.
