@@ -46,6 +46,15 @@ break into Pomodoro 2, Android went to background and later showed Ready in Run
 Mode while the session was running. No ownership changes occurred. Sync only
 returned after entering Groups Hub and coming back to Run Mode.
 
+Additional scenario (17/02/2026):
+Planned group scheduled by total time. macOS became owner at pre-run with both
+apps open. During the first break, Android requested ownership and macOS accepted.
+Later (Pomodoro 2 or its break), macOS (mirror) switched to Ready and stayed
+there while the run continued into Pomodoro 3. It did not resync until the
+macOS app was tapped (sometimes tap was insufficient and required leaving to
+Groups Hub and returning). Returning to Run Mode often shows Ready briefly
+before syncing.
+
 Observed moment: Pomodoro 2, ~13 minutes remaining.
 
 Evidence (Firestore state at failure):
@@ -67,7 +76,8 @@ Evidence (after foreground):
 
 Expected behavior:
 Never show Ready if activeSession is running. During stream gaps, show
-"Syncing session...".
+"Syncing session..." and provide a clear refresh path if the session is still
+running.
 
 Hypothesis:
 Temporary activeSession stream gaps on Android are interpreted as missing

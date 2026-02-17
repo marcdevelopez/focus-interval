@@ -6266,3 +6266,23 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Commit and push the IDEA-025 clarification.
+
+
+# 🔹 Block 408 — Add total-time Ready recurrence to BUG-001 (17/02/2026)
+
+### ✔ Work completed:
+
+- Expanded BUG-001 with a total-time planning scenario where macOS mirror shows
+  Ready during a running group and only resyncs after tap or Groups Hub navigation.
+
+### 🧠 Decisions made:
+
+- Keep this under the mirror Ready-with-session bug as additional evidence.
+
+### ⚠️ Issues found:
+
+- Mirror can remain in Ready across multiple phases without auto-resync.
+
+### 🎯 Next steps:
+
+- Re-validate mirror Ready recovery paths in Run Mode.
