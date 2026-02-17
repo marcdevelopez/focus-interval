@@ -2159,3 +2159,77 @@ remain visually clean and consistent.
 
 Notes:
 UX-only standardization; no changes to auth logic.
+
+---
+
+## IDEA-028 — Verified Activity Summary + Week Start Setting
+
+ID: IDEA-028
+Title: Verified Activity Summary + Week Start Setting
+Type: UI/UX
+Scope: M
+Priority: P1
+Status: idea
+
+Problem / Goal:
+The activity heatmap (IDEA-022) lacks clear weekly/monthly totals and a task
+breakdown, and there is no explicit week-start setting to define "this week."
+
+Summary:
+Add verified activity totals for the current week and month, plus a task-based
+breakdown, with Personal vs Workspace separation. Add a "Week starts on"
+setting (default from locale) that drives weekly grouping.
+
+Design / UX:
+Layout / placement:
+Profile/Activity area: show "Verified time" totals for Week and Month, and a
+task breakdown list/chart under each scope (Personal, Workspace).
+Settings: add a "Week starts on" selector.
+
+Visual states:
+Week/Month totals show 0 when no verified time exists. Task breakdown is sorted
+by highest verified time. Personal and Workspace views mirror heatmap tabs.
+
+Animation rules:
+None.
+
+Interaction:
+Switch between Personal and Workspace scopes. Week-start setting updates
+week-based totals and groupings.
+
+Text / typography:
+Use clear labels like "This week" and "This month" tied to the configured
+week-start. Keep task breakdown labels consistent with task/group naming.
+
+Data & Logic:
+Source of truth:
+Verified pomodoros from IDEA-022 only (executed + confirmed).
+
+Calculations:
+Week total = verified minutes from the current week window (per week-start).
+Month total = verified minutes from day 1 to today. Task breakdown aggregates
+verified minutes by task (or task group if that is the visible entity).
+
+Sync / multi-device:
+No new sync rules; follows verified activity data.
+
+Edge cases:
+Locale-based default week start must be used until user overrides it. If tasks
+were deleted/renamed, show the best available label for historical entries.
+
+Accessibility:
+Totals and breakdown lists must be screen-reader friendly and announce scope.
+
+Dependencies:
+Requires IDEA-022 data, profile/heatmap UI, Settings storage for week-start.
+
+Risks:
+Aggregation cost if computed on the fly; consider caching daily totals.
+
+Acceptance criteria:
+Profile shows verified totals for week and month, plus a task breakdown, with
+Personal/Workspace separation. Week start can be set in Settings and affects
+weekly grouping. Only verified pomodoros are counted.
+
+Notes:
+No manual time entry; aligns strictly with IDEA-022 verification rules.

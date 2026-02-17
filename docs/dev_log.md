@@ -6327,3 +6327,23 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Commit and push IDEA-027 on its own branch.
+
+
+# 🔹 Block 411 — Add verified activity summary idea (17/02/2026)
+
+### ✔ Work completed:
+
+- Added IDEA-028 to `docs/feature_backlog.md` for verified weekly/monthly totals,
+  task breakdowns, and a Week-start setting aligned with IDEA-022.
+
+### 🧠 Decisions made:
+
+- Only verified pomodoros count toward totals and breakdowns.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Commit and push IDEA-028 on its own branch.
