@@ -1940,7 +1940,8 @@ Workspace runs have no built-in communication channel for breaks, forcing
 members to use external apps and reducing the social value of shared runs.
 
 Summary:
-Add a text-only chat tied to the active workspace run, designed for breaks.
+Add a text-only workspace group chat for all members, plus direct messages (DM)
+between members, both tied to the active workspace run and designed for breaks.
 During pomodoros the chat is hidden or read-only. Direct messages are queued
 during pomodoro and delivered at the next break. Chat sync must be data-efficient
 by loading recent messages once and then only incremental updates.
@@ -1948,21 +1949,27 @@ by loading recent messages once and then only incremental updates.
 Design / UX:
 Layout / placement:
 Workspace run view shows a compact chat panel or entry point visible during
-breaks. Profile/Settings provides a per-user mute toggle for workspace chat.
+breaks. Outside runs, provide a Workspace chat entry (and member DM list) so
+messages can be reviewed and sent anytime. Profile/Settings provides a per-user
+mute toggle for workspace chat.
 
 Visual states:
-Pomodoro: chat hidden or read-only; no message delivery during focus.
-Break: chat input enabled; queued DMs are delivered.
+Pomodoro: chat hidden or read-only; inbound messages are not delivered or
+shown (to protect focus). Messages sent during pomodoro are queued.
+Break: chat input enabled; queued messages become visible and deliver.
 Muted: chat panel remains hidden and does not surface new messages.
+Out of run: chat and DMs are accessible for reading and sending.
 
 Animation rules:
 Reuse existing panel transitions only.
 
 Interaction:
-Group chat: members can read and post during breaks. Messages show author and
-time in arrival order.
-Direct chat: users can draft at any time, but delivery to the recipient occurs
-only when the next break starts (queued -> delivered).
+Group chat (workspace-wide): members can read and post during breaks. Messages
+show author and time in arrival order.
+Direct chat (member-to-member DM): users can draft at any time, but delivery to
+the recipient occurs only when the next break starts (queued -> delivered).
+During pomodoro, users may draft/send, but incoming messages are not delivered
+or notified until the next break. "Receive" means the messages become visible.
 
 Text / typography:
 Keep messages minimal and readable; show author and timestamp for context.
@@ -1980,9 +1987,10 @@ Chat is visible on all devices for the same member account. Delivery gating is
 based on the run phase, not device focus.
 
 Edge cases:
-If no run is active, chat is hidden. If a member is excluded from the run due
-to overlap, they do not receive run chat. If a break starts while offline, queued
-DMs should deliver on next reconnect at break.
+If no run is active, chat remains accessible from the workspace hub (not the
+Run Mode view). If a member is excluded from the run due to overlap, they do not
+receive run chat. If a break starts while offline, queued DMs should deliver on
+next reconnect at break.
 
 Accessibility:
 Chat visibility changes must be announced once. Provide accessible labels for

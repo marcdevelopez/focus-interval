@@ -6206,3 +6206,63 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Commit and push IDEA-025 on its own branch.
+
+
+# 🔹 Block 405 — Clarify workspace chat vs DM scope (17/02/2026)
+
+### ✔ Work completed:
+
+- Updated IDEA-025 to explicitly call out a workspace-wide group chat plus
+  member-to-member direct messages.
+
+### 🧠 Decisions made:
+
+- Keep both chat modes text-only and break-focused in this phase.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Commit and push the IDEA-025 clarification.
+
+
+# 🔹 Block 406 — Clarify out-of-run chat access (17/02/2026)
+
+### ✔ Work completed:
+
+- Updated IDEA-025 to allow workspace chat and DMs outside runs, with no inbound
+  delivery/notifications during pomodoro focus time.
+
+### 🧠 Decisions made:
+
+- Keep pomodoro focus time free of incoming chat delivery; queue until break.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Commit and push the IDEA-025 update.
+
+
+# 🔹 Block 407 — Clarify pomodoro vs break delivery semantics (17/02/2026)
+
+### ✔ Work completed:
+
+- Tightened IDEA-025 to state that inbound messages are not visible during
+  pomodoros and become visible at the next break; out-of-run behaves normally.
+
+### 🧠 Decisions made:
+
+- "Receive" explicitly means "becomes visible" to avoid focus disruption.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Commit and push the IDEA-025 clarification.
