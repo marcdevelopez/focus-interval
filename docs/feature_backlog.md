@@ -2083,3 +2083,79 @@ Default star is on the right. Tap opens editor. Long-press selects for delete.
 
 Notes:
 UX consistency change only; no changes to preset data or logic.
+
+---
+
+## IDEA-027 — Unified Mode Indicator + Session Context
+
+ID: IDEA-027
+Title: Unified Mode Indicator + Session Context
+Type: UI/UX
+Scope: M
+Priority: P1
+Status: idea
+
+Problem / Goal:
+The Local/Account mode indicator and session context (current account + logout)
+are inconsistent across screens, creating visual clutter and confusion about
+the current session.
+
+Summary:
+Standardize the mode indicator placement across key screens, and centralize
+session context and logout inside a single mode sheet to keep AppBars clean.
+
+Design / UX:
+Layout / placement:
+Show the mode indicator consistently on the second AppBar line, left-aligned,
+under the screen title. Apply to Task List, Settings, Groups Hub, Login, and
+any other screen that currently shows the indicator.
+
+Visual states:
+Mode icon reflects Local vs Account. Login screen shows "No active session"
+when logged out. Account mode shows current user identity and provider.
+
+Animation rules:
+None beyond existing sheet transitions.
+
+Interaction:
+Tapping the mode indicator opens a sheet that always shows:
+Current mode (Local/Account), account identity if logged in, and actions
+relevant to the mode (e.g., logout). The sheet is the single entry point for
+session context across screens.
+
+Text / typography:
+Use consistent labels and avoid extra AppBar text like "your tasks" + logout
+blocks. Keep the AppBar title clean.
+
+Data & Logic:
+Source of truth:
+Current auth state and mode settings.
+
+Calculations:
+None.
+
+Sync / multi-device:
+No sync changes.
+
+Edge cases:
+Login screen must not show logout. If no active session exists, show a clear
+state in the sheet without adding new flows. Respect platform availability
+(Linux has Local Mode only).
+
+Accessibility:
+Mode sheet and labels must be readable by screen readers; ensure focus order.
+
+Dependencies:
+AppBar layout on Task List, Settings, Groups Hub, Login; mode sheet UI.
+
+Risks:
+Changing AppBar layout could affect visual balance; ensure consistent spacing.
+
+Acceptance criteria:
+Mode indicator appears in a fixed AppBar position across key screens. Tapping
+it always shows the mode sheet with session context. Logout is removed from
+Task List AppBar and is available via Settings and/or the mode sheet. AppBars
+remain visually clean and consistent.
+
+Notes:
+UX-only standardization; no changes to auth logic.

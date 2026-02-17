@@ -6306,3 +6306,24 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Commit and push IDEA-026 on its own branch.
+
+
+# 🔹 Block 410 — Add unified mode indicator idea (17/02/2026)
+
+### ✔ Work completed:
+
+- Added IDEA-027 to `docs/feature_backlog.md` for consistent mode indicator
+  placement and a single session-context sheet across screens.
+
+### 🧠 Decisions made:
+
+- Keep logout and account context inside the mode sheet/Settings to clean
+  AppBars.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Commit and push IDEA-027 on its own branch.
