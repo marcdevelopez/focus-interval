@@ -2012,3 +2012,74 @@ without re-downloading already seen history. No audio chat in this scope.
 
 Notes:
 Audio room is a future idea only and is not part of this scope.
+
+---
+
+## IDEA-026 — Manage Presets Item UX Consistency
+
+ID: IDEA-026
+Title: Manage Presets Item UX Consistency
+Type: UI/UX
+Scope: S
+Priority: P1
+Status: idea
+
+Problem / Goal:
+Manage Presets list items do not follow the same interaction and preview
+patterns as other lists, causing inconsistent UX for editing and deleting
+presets.
+
+Summary:
+Align Manage Presets item layout and gestures with Task List patterns: preview
+chips, default-star placement on the right, and consistent tap/long-press
+behavior (tap = edit, long-press = select for delete).
+
+Design / UX:
+Layout / placement:
+Preset item shows a preview row using the same visual language as Task List
+chips/cards, but without total pomodoros. Show pomodoro minutes, short break,
+long break, and long-break interval. Default star appears on the far right.
+
+Visual states:
+Default preset shows a visible star on the right. Selection state appears only
+after long-press (not on tap).
+
+Animation rules:
+None beyond existing list interactions.
+
+Interaction:
+Short tap opens the preset editor. Long press enters selection mode for delete.
+Deletion happens via the existing delete action after selection.
+
+Text / typography:
+Use existing list typography and preview styling; keep preset preview compact.
+
+Data & Logic:
+Source of truth:
+Preset data in Settings / Manage Presets.
+
+Calculations:
+None.
+
+Sync / multi-device:
+No sync changes.
+
+Edge cases:
+If only one preset exists and it is default, star still appears on the right.
+Selection mode must not trigger on short tap.
+
+Accessibility:
+Long-press action should be discoverable (e.g., via context menu) and announced.
+
+Dependencies:
+Manage Presets list item widget and selection/delete flow.
+
+Risks:
+Changing gesture behavior may surprise users; keep consistent with Task List.
+
+Acceptance criteria:
+Preset item preview matches Task List visual language (minus total pomodoros).
+Default star is on the right. Tap opens editor. Long-press selects for delete.
+
+Notes:
+UX consistency change only; no changes to preset data or logic.
