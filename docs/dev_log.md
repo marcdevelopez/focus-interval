@@ -6850,3 +6850,24 @@ _(none)_
 ### 🎯 Next steps:
 
 - Revisit the order after ownership/sync bugs and Phase 17 validation close.
+
+
+# 🔹 Block 433 — Document resync overlay mitigation (18/02/2026)
+
+### ✔ Work completed:
+
+- Added a mitigation note to `docs/bug_log.md` proposing a Run Mode "Syncing..."
+  overlay that mimics the Groups Hub resubscribe without navigation.
+
+### 🧠 Decisions made:
+
+- Treat this as a release fallback if ownership/sync bugs persist near MVP
+  launch, while continuing to pursue root-cause fixes.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Implement only if needed for release stability and after specs approval.

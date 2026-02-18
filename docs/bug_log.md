@@ -427,6 +427,37 @@ Open. Medium priority (visible correctness issue).
 
 ---
 
+## Mitigation candidate — Run Mode resync overlay (Groups Hub equivalent)
+
+Date: 18/02/2026 (UTC+1)
+Scope: Run Mode (Account Mode)
+
+Problem / Goal:
+Multiple ownership/sync issues are temporarily resolved by entering and exiting
+Groups Hub, which forces a resubscribe and state rehydration. Provide a
+non-navigational fallback to achieve the same re-sync without leaving Run Mode.
+
+Summary:
+Add a lightweight "Syncing..." overlay in Run Mode that triggers:
+- `syncWithRemoteSession(preferServer: true)`
+- a controlled resubscribe to the activeSession stream
+This should be used only when an inconsistency is detected (or via a manual
+user action), to avoid unnecessary UI jumps.
+
+When to use:
+- Release fallback if ownership/sync bugs persist near MVP launch.
+- Manual user action when timer state appears frozen or out of sync.
+
+Risks:
+- May mask underlying ownership bugs if overused.
+- Can introduce visible jumps if the projection re-anchors.
+
+Status:
+Not implemented. Documented as a release mitigation if root cause is not fully
+resolved.
+
+---
+
 ## BUG-008 — Owner becomes stale while foreground (unexpected auto-claim)
 
 ID: BUG-008
