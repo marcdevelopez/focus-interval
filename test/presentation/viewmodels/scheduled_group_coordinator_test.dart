@@ -59,13 +59,20 @@ class FakeTaskRunGroupRepository implements TaskRunGroupRepository {
 class FakePomodoroSessionRepository implements PomodoroSessionRepository {
   final StreamController<PomodoroSession?> _controller =
       StreamController<PomodoroSession?>.broadcast();
+  PomodoroSession? _lastSession;
 
   void emit(PomodoroSession? session) {
+    _lastSession = session;
     _controller.add(session);
   }
 
   @override
   Stream<PomodoroSession?> watchSession() => _controller.stream;
+
+  @override
+  Future<PomodoroSession?> fetchSession({bool preferServer = false}) async {
+    return _lastSession;
+  }
 
   @override
   Future<void> publishSession(PomodoroSession session) async {}

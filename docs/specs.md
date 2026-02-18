@@ -541,7 +541,12 @@ users/{uid}/activeSession
 - Must include groupId, currentTaskId, currentTaskIndex, and totalTasks.
 - ownerDevicePlatform is optional display metadata (presentation-only); it must not affect ownership logic.
 - Only the owner device writes authoritative execution fields; others subscribe in real time and
-  render progress by calculating remaining time from phaseStartedAt + phaseDurationSeconds.
+  render progress by calculating remaining time from phaseStartedAt + phaseDurationSeconds using
+  a server-time offset derived from lastUpdatedAt (do not rely on raw local clock).
+  - Compute `serverTimeOffset = lastUpdatedAt - localNow` when a snapshot arrives.
+  - Project with `serverNow = localNow + serverTimeOffset`, `elapsed = serverNow - phaseStartedAt`.
+  - Update the offset on each new snapshot; keep the last offset between ticks.
+  - If `lastUpdatedAt` is missing, keep the prior offset and do not rebase from local time alone.
 - Mirror devices may write a non-authoritative ownershipRequest field to request a transfer.
   - `requestOwnership` only creates/updates ownershipRequest; it never changes ownerDeviceId.
     Ownership changes caused by staleness must use the auto-claim transaction.
@@ -1612,7 +1617,9 @@ The MM:SS timer must not shift horizontally:
 - Only the ownerDeviceId can start/pause/resume/cancel in **Run Mode**; mirror devices can request ownership.
   - **Exception (Pre-Run Countdown):** there is no owner and any device may cancel while the Pre-Run window is active.
 - activeSession includes: groupId, currentTaskId, currentTaskIndex, totalTasks.
-- Remaining time is calculated from phaseStartedAt + phaseDurationSeconds.
+- Remaining time is projected from phaseStartedAt + phaseDurationSeconds using the
+  server-time offset from lastUpdatedAt (same rule as activeSession); never project
+  from raw local clock alone.
 - Mirror devices render task names/durations from the TaskRunGroup snapshot (by groupId), not from the editable task list.
 - **Single source of truth:** owner/mirror state and control gating must be derived from the same activeSession snapshot
   (groupId must match). Local flags may project state but must never override the snapshot.
@@ -1634,7 +1641,9 @@ The MM:SS timer must not shift horizontally:
 - Conflict-resolution flows (late-start overlap queue, running overlap decision)
   are owner-only. If no owner is active, the first active device auto-claims
   ownership before presenting any decision UI.
-- When ownership changes, mirror devices must discard any local projection and re-anchor exclusively to the activeSession timestamps so pause/resume stays globally consistent.
+- When ownership changes, mirror devices must discard any local projection and
+  re-anchor exclusively to the activeSession timestamps (recompute server-time offset)
+  so pause/resume stays globally consistent.
 - Initial ownership is deterministic: the device that **initiates the run**
   (Start now or auto-start) must be the first owner.
 - For scheduled runs, `scheduledByDeviceId` is **metadata only** and must not block

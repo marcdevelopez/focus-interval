@@ -4,6 +4,7 @@ abstract class PomodoroSessionRepository {
   Future<void> publishSession(PomodoroSession session);
   Future<bool> tryClaimSession(PomodoroSession session);
   Stream<PomodoroSession?> watchSession();
+  Future<PomodoroSession?> fetchSession({bool preferServer = false});
   Future<void> clearSessionAsOwner();
   Future<void> clearSessionIfStale({required DateTime now});
   Future<void> clearSessionIfGroupNotRunning();
@@ -37,6 +38,11 @@ class NoopPomodoroSessionRepository implements PomodoroSessionRepository {
 
   @override
   Stream<PomodoroSession?> watchSession() => Stream.value(null);
+
+  @override
+  Future<PomodoroSession?> fetchSession({bool preferServer = false}) async {
+    return null;
+  }
 
   @override
   Future<void> requestOwnership({

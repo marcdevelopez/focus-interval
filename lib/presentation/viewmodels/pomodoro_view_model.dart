@@ -66,6 +66,12 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   String? _remoteOwnerId;
   PomodoroSession? _remoteSession;
   PomodoroSession? _latestSession;
+  Duration? _serverTimeOffset;
+  DateTime? _serverTimeAnchor;
+  dynamic _keepAliveLink;
+  DateTime? _lastActiveSessionSnapshotAt;
+  String? _lastActiveSessionGroupId;
+  String? _lastActiveSessionTaskId;
   bool _sessionMissingWhileRunning = false;
   OwnershipRequest? _optimisticOwnershipRequest;
   DateTime? _localPhaseStartedAt;
@@ -94,6 +100,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _sub = _machine.stream.listen((s) {
       state = s;
       _syncForegroundService(s);
+      _syncKeepAliveState();
     });
 
     // Clean up resources.
@@ -105,6 +112,8 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       _inactiveResyncTimer?.cancel();
       _postResumeResyncTimer?.cancel();
       _stopForegroundService();
+      _keepAliveLink?.close();
+      _keepAliveLink = null;
     });
 
     return _machine.state;
@@ -112,9 +121,17 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   // Load values from TaskRunGroup.
   Future<PomodoroGroupLoadResult> loadGroup(String groupId) async {
-    final rawSession = await _readCurrentSession();
+    final preferServer = ref.read(appModeProvider) == AppMode.account;
+    final rawSession = await _fetchSessionSnapshot(
+      preferServer: preferServer,
+    );
     final session = await _sanitizeActiveSession(rawSession);
     _latestSession = session;
+    if (session != null) {
+      _recordSessionSnapshot(session);
+    } else {
+      _clearSessionSnapshotTracking();
+    }
     _sessionMissingWhileRunning = false;
     _syncOptimisticOwnershipRequest(session);
     if (_hasActiveGroupConflict(session, groupId)) {
@@ -184,8 +201,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _pauseStartedAt = session.status == PomodoroStatus.paused
         ? session.pausedAt
         : null;
-    final projected = _projectStateFromSession(session, now: now);
-    _applyProjectedState(projected, now: now);
+    final projectionNow = _projectionNowForSession(session, localNow: now);
+    final projected =
+        _projectStateFromSession(session, projectionNow: projectionNow);
+    _applyProjectedState(projected, now: projectionNow ?? now);
     if (session.status == PomodoroStatus.paused &&
         session.phaseStartedAt != null) {
       _localPhaseStartedAt = session.phaseStartedAt;
@@ -847,7 +866,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   void _maybeHeartbeat(PomodoroState state) {
-    if (!_controlsEnabled) return;
+    if (!_controlsEnabled && !_canPublishHeartbeatWhileSyncing()) return;
     if (!_isRunning(state.status)) return;
     final now = DateTime.now();
     final last = _lastHeartbeatAt;
@@ -855,12 +874,15 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         now.difference(last).inSeconds < _heartbeatIntervalSeconds) {
       return;
     }
+    if (!_controlsEnabled && kDebugMode) {
+      debugPrint('[ActiveSession] Heartbeat while syncing (owner candidate).');
+    }
     _lastHeartbeatAt = now;
     _publishCurrentSession();
   }
 
   void _syncPausedHeartbeat() {
-    if (!_controlsEnabled) {
+    if (!_controlsEnabled && !_canPublishHeartbeatWhileSyncing()) {
       _stopPausedHeartbeat();
       return;
     }
@@ -889,6 +911,14 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   void _stopPausedHeartbeat() {
     _pausedHeartbeatTimer?.cancel();
     _pausedHeartbeatTimer = null;
+  }
+
+  bool _canPublishHeartbeatWhileSyncing() {
+    if (!_sessionMissingWhileRunning) return false;
+    if (ref.read(appModeProvider) != AppMode.account) return false;
+    final session = _latestSession;
+    if (session == null) return false;
+    return session.ownerDeviceId == _deviceInfo.deviceId;
   }
 
   void _setResyncInProgress(bool value) {
@@ -985,6 +1015,9 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
           final shouldHoldForMissing =
               _shouldTreatMissingSessionAsRunning(previousSession);
           if (shouldHoldForMissing) {
+            if (kDebugMode) {
+              debugPrint('[ActiveSession] Missing snapshot; holding in sync.');
+            }
             _sessionMissingWhileRunning = true;
             _mirrorTimer?.cancel();
             _stopPausedHeartbeat();
@@ -994,8 +1027,12 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
             }
             return;
           }
+          if (kDebugMode) {
+            debugPrint('[ActiveSession] Missing snapshot; clearing session.');
+          }
           _sessionMissingWhileRunning = false;
           _latestSession = null;
+          _clearSessionSnapshotTracking();
           _mirrorTimer?.cancel();
           _remoteOwnerId = null;
           _remoteSession = null;
@@ -1019,6 +1056,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
         _sessionMissingWhileRunning = false;
         _latestSession = session;
+        _recordSessionSnapshot(session);
         final optimisticChanged = _syncOptimisticOwnershipRequest(session);
         final ownershipMetaChanged =
             _didOwnershipMetaChange(previousSession, session) ||
@@ -1106,6 +1144,83 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     return null;
   }
 
+  void _recordSessionSnapshot(PomodoroSession session, {DateTime? now}) {
+    final timestamp = now ?? DateTime.now();
+    if (!session.status.isActiveExecution) return;
+    _updateServerTimeOffset(session, now: timestamp);
+    _syncKeepAliveState();
+    _lastActiveSessionSnapshotAt = timestamp;
+    _lastActiveSessionGroupId = session.groupId;
+    _lastActiveSessionTaskId = session.taskId;
+    if (kDebugMode) {
+      debugPrint(
+        '[ActiveSession][snapshot] '
+        'owner=${session.ownerDeviceId} '
+        'status=${session.status.name} '
+        'phase=${session.phase?.name ?? 'n/a'} '
+        'remaining=${session.remainingSeconds} '
+        'lastUpdatedAt=${session.lastUpdatedAt ?? 'n/a'} '
+        'groupId=${session.groupId ?? 'n/a'}',
+      );
+    }
+  }
+
+  void _updateServerTimeOffset(PomodoroSession session, {DateTime? now}) {
+    final updatedAt = session.lastUpdatedAt;
+    if (updatedAt == null) return;
+    final anchor = _serverTimeAnchor;
+    if (anchor != null && updatedAt.isAtSameMomentAs(anchor)) return;
+    final base = now ?? DateTime.now();
+    _serverTimeAnchor = updatedAt;
+    _serverTimeOffset = updatedAt.difference(base);
+  }
+
+  void _syncKeepAliveState() {
+    final shouldKeep = _shouldKeepAlive();
+    if (shouldKeep) {
+      _keepAliveLink ??= ref.keepAlive();
+      return;
+    }
+    _keepAliveLink?.close();
+    _keepAliveLink = null;
+  }
+
+  bool _shouldKeepAlive() {
+    if (ref.read(appModeProvider) != AppMode.account) return false;
+    if (_sessionMissingWhileRunning) return true;
+    if (_machine.state.status.isActiveExecution) return true;
+    if (_latestSession?.status.isActiveExecution ?? false) return true;
+    if (_remoteSession?.status.isActiveExecution ?? false) return true;
+    return false;
+  }
+
+  DateTime? _projectionNowForSession(
+    PomodoroSession session, {
+    DateTime? localNow,
+  }) {
+    final now = localNow ?? DateTime.now();
+    final appMode = ref.read(appModeProvider);
+    if (appMode != AppMode.account) return now;
+    _updateServerTimeOffset(session, now: now);
+    final offset = _serverTimeOffset;
+    if (offset == null) return null;
+    return now.add(offset);
+  }
+
+  void _clearSessionSnapshotTracking() {
+    _lastActiveSessionSnapshotAt = null;
+    _lastActiveSessionGroupId = null;
+    _lastActiveSessionTaskId = null;
+  }
+
+  bool _matchesCurrentContext(PomodoroSession session) {
+    final group = _currentGroup;
+    if (group != null) return session.groupId == group.id;
+    final task = _currentTask;
+    if (task != null) return session.taskId == task.id;
+    return true;
+  }
+
   void _notifySessionMetaChanged() {
     state = state;
   }
@@ -1151,8 +1266,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _pauseStartedAt = session.status == PomodoroStatus.paused
         ? session.pausedAt
         : null;
-    final projected = _projectStateFromSession(session, now: now);
-    _applyProjectedState(projected, now: now);
+    final projectionNow = _projectionNowForSession(session, localNow: now);
+    final projected =
+        _projectStateFromSession(session, projectionNow: projectionNow);
+    _applyProjectedState(projected, now: projectionNow ?? now);
     if (session.status == PomodoroStatus.paused &&
         session.phaseStartedAt != null) {
       _localPhaseStartedAt = session.phaseStartedAt;
@@ -1239,7 +1356,8 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   void _updateMirrorStateFromSession(PomodoroSession session) {
-    state = _projectStateFromSession(session);
+    final projectionNow = _projectionNowForSession(session);
+    state = _projectStateFromSession(session, projectionNow: projectionNow);
   }
 
   bool _isRunning(PomodoroStatus status) =>
@@ -1767,7 +1885,12 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     final appMode = ref.read(appModeProvider);
     if (appMode == AppMode.account) {
       _subscribeToRemoteSession();
-      unawaited(syncWithRemoteSession());
+      unawaited(
+        syncWithRemoteSession(
+          preferServer: true,
+          reason: 'resume',
+        ),
+      );
       _schedulePostResumeResync();
       return;
     }
@@ -1813,9 +1936,11 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       finishedAt: null,
       pauseReason: null,
     );
-    final projected = _projectStateFromSession(baseSession, now: now);
+    final projectionNow = _projectionNowForSession(baseSession, localNow: now);
+    final projected =
+        _projectStateFromSession(baseSession, projectionNow: projectionNow);
     if (_isSameState(current, projected)) return;
-    _applyProjectedState(projected, now: now);
+    _applyProjectedState(projected, now: projectionNow ?? now);
     _publishCurrentSession();
   }
 
@@ -1827,7 +1952,13 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         _stopInactiveResync();
         return;
       }
-      unawaited(syncWithRemoteSession(refreshGroup: false));
+      unawaited(
+        syncWithRemoteSession(
+          refreshGroup: false,
+          preferServer: true,
+          reason: 'inactive-resync',
+        ),
+      );
     });
   }
 
@@ -1842,7 +1973,12 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       _postResumeResyncTimer = null;
       if (ref.read(appModeProvider) != AppMode.account) return;
       if (_resyncInProgress) return;
-      unawaited(syncWithRemoteSession(refreshGroup: false));
+      unawaited(
+        syncWithRemoteSession(
+          refreshGroup: false,
+          reason: 'post-resume',
+        ),
+      );
     });
   }
 
@@ -1854,13 +1990,22 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     return _currentTask != null;
   }
 
-  Future<void> syncWithRemoteSession({bool refreshGroup = true}) async {
+  Future<void> syncWithRemoteSession({
+    bool refreshGroup = true,
+    bool preferServer = false,
+    String? reason,
+  }) async {
     if (_resyncInProgress) return;
     _setResyncInProgress(true);
     try {
       final previousSession = _latestSession;
       final wasMissing = _sessionMissingWhileRunning;
-      final rawSession = await _readCurrentSession();
+      if (kDebugMode && reason != null) {
+        debugPrint('[ActiveSession] Resync start ($reason).');
+      }
+      final rawSession = await _fetchSessionSnapshot(
+        preferServer: preferServer,
+      );
       final session = await _sanitizeActiveSession(rawSession);
       if (refreshGroup && _currentGroup != null) {
         final group = await _groupRepo.getById(_currentGroup!.id);
@@ -1872,13 +2017,20 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         final shouldHoldForMissing =
             _shouldTreatMissingSessionAsRunning(previousSession);
         if (shouldHoldForMissing) {
+          if (kDebugMode) {
+            debugPrint('[ActiveSession] Resync missing; holding state.');
+          }
           _sessionMissingWhileRunning = true;
           if (previousSession != null) {
             _notifySessionMetaChanged();
           }
         } else {
+          if (kDebugMode) {
+            debugPrint('[ActiveSession] Resync missing; clearing state.');
+          }
           _sessionMissingWhileRunning = false;
           _latestSession = null;
+          _clearSessionSnapshotTracking();
           if (previousSession != null || wasMissing) {
             _notifySessionMetaChanged();
           }
@@ -1887,6 +2039,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       }
       _sessionMissingWhileRunning = false;
       _latestSession = session;
+      _recordSessionSnapshot(session);
       final optimisticChanged = _syncOptimisticOwnershipRequest(session);
       final ownershipMetaChanged =
           _didOwnershipMetaChange(previousSession, session) ||
@@ -1907,16 +2060,31 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   bool _shouldTreatMissingSessionAsRunning(PomodoroSession? previousSession) {
+    final now = DateTime.now();
     if (_currentGroup?.status == TaskRunStatus.running) return true;
-    if (previousSession == null) return false;
-    if (!previousSession.status.isActiveExecution) return false;
-    final group = _currentGroup;
-    if (group != null && previousSession.groupId != group.id) return false;
-    final task = _currentTask;
-    if (task != null && previousSession.taskId != task.id) return false;
-    final updatedAt = previousSession.lastUpdatedAt;
-    if (updatedAt == null) return false;
-    return DateTime.now().difference(updatedAt) < _staleSessionGrace;
+    if (previousSession != null &&
+        previousSession.status.isActiveExecution &&
+        _matchesCurrentContext(previousSession)) {
+      final updatedAt = previousSession.lastUpdatedAt;
+      if (updatedAt == null) {
+        return true;
+      }
+      return now.difference(updatedAt) < _staleSessionGrace;
+    }
+    final lastActiveAt = _lastActiveSessionSnapshotAt;
+    if (lastActiveAt == null) return false;
+    if (now.difference(lastActiveAt) >= _staleSessionGrace) return false;
+    if (_currentGroup != null &&
+        _lastActiveSessionGroupId != null &&
+        _lastActiveSessionGroupId != _currentGroup!.id) {
+      return false;
+    }
+    if (_currentTask != null &&
+        _lastActiveSessionTaskId != null &&
+        _lastActiveSessionTaskId != _currentTask!.id) {
+      return false;
+    }
+    return true;
   }
 
   void _applyProjectedState(PomodoroState projected, {DateTime? now}) {
@@ -1955,6 +2123,21 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     } on StateError {
       return null;
     }
+  }
+
+  Future<PomodoroSession?> _fetchSessionSnapshot({
+    bool preferServer = false,
+  }) async {
+    try {
+      final session =
+          await _sessionRepo.fetchSession(preferServer: preferServer);
+      if (session != null) return session;
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('[ActiveSession] Fetch failed: $error');
+      }
+    }
+    return _readCurrentSession();
   }
 
   Future<PomodoroSession?> _sanitizeActiveSession(
@@ -2060,7 +2243,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   PomodoroState _projectStateFromSession(
     PomodoroSession session, {
-    DateTime? now,
+    DateTime? projectionNow,
   }) {
     if (_currentItem == null && _currentTask == null) {
       return _stateFromSession(session, remaining: session.remainingSeconds);
@@ -2068,7 +2251,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (!_isRunning(session.status) || session.phaseStartedAt == null) {
       return _stateFromSession(session, remaining: session.remainingSeconds);
     }
-    final anchor = now ?? DateTime.now();
+    final anchor = projectionNow;
+    if (anchor == null) {
+      return _stateFromSession(session, remaining: session.remainingSeconds);
+    }
     var elapsed = anchor.difference(session.phaseStartedAt!).inSeconds;
     if (elapsed < 0) elapsed = 0;
     final initialPhase = session.phase;

@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import 'package:focus_interval/data/models/pomodoro_session.dart';
 import 'package:focus_interval/data/models/schema_version.dart';
@@ -47,18 +47,32 @@ class FakeTaskRunGroupRepository implements TaskRunGroupRepository {
   Future<void> prune({int? keepCompleted}) async {}
 }
 
-class RecordingSessionRepository implements PomodoroSessionRepository {
-  RecordingSessionRepository(this._session);
+class FakePomodoroSessionRepository implements PomodoroSessionRepository {
+  FakePomodoroSessionRepository(this._initialSession);
 
-  final PomodoroSession? _session;
-  String? lastRequester;
+  final StreamController<PomodoroSession?> _controller =
+      StreamController<PomodoroSession?>.broadcast();
+  PomodoroSession? _lastSession;
+  PomodoroSession? _initialSession;
 
   @override
-  Stream<PomodoroSession?> watchSession() => Stream.value(_session);
+  Stream<PomodoroSession?> watchSession() async* {
+    if (_initialSession != null) {
+      _lastSession = _initialSession;
+      yield _initialSession;
+      _initialSession = null;
+    }
+    yield* _controller.stream;
+  }
+
+  void emit(PomodoroSession? session) {
+    _lastSession = session;
+    _controller.add(session);
+  }
 
   @override
   Future<PomodoroSession?> fetchSession({bool preferServer = false}) async {
-    return _session;
+    return _lastSession;
   }
 
   @override
@@ -80,9 +94,7 @@ class RecordingSessionRepository implements PomodoroSessionRepository {
   Future<void> requestOwnership({
     required String requesterDeviceId,
     required String requestId,
-  }) async {
-    lastRequester = requesterDeviceId;
-  }
+  }) async {}
 
   @override
   Future<bool> tryAutoClaimStaleOwner({
@@ -97,6 +109,10 @@ class RecordingSessionRepository implements PomodoroSessionRepository {
     required String requesterDeviceId,
     required bool approved,
   }) async {}
+
+  void dispose() {
+    _controller.close();
+  }
 }
 
 class FakeSoundService implements SoundService {
@@ -127,12 +143,13 @@ TaskRunGroup _buildRunningGroup({
   required String id,
   required DateTime start,
 }) {
+  final item = _buildItem();
   return TaskRunGroup(
     id: id,
     ownerUid: 'user-1',
     dataVersion: kCurrentDataVersion,
     integrityMode: TaskRunIntegrityMode.shared,
-    tasks: [_buildItem()],
+    tasks: [item],
     createdAt: start,
     scheduledStartTime: null,
     scheduledByDeviceId: 'device-1',
@@ -170,7 +187,7 @@ PomodoroSession _buildRunningSession({
     phaseStartedAt: now.subtract(const Duration(minutes: 5)),
     currentTaskStartedAt: now.subtract(const Duration(minutes: 5)),
     pausedAt: null,
-    lastUpdatedAt: now,
+    lastUpdatedAt: null,
     finishedAt: null,
     pauseReason: null,
   );
@@ -182,7 +199,7 @@ Future<void> _pumpQueue() async {
 }
 
 void main() {
-  test('requestOwnership shows pending immediately', () async {
+  test('missing session holds sync when lastUpdatedAt is null', () async {
     final now = DateTime.now();
     final deviceInfo = DeviceInfoService.ephemeral();
     final group = _buildRunningGroup(id: 'group-1', start: now);
@@ -194,7 +211,7 @@ void main() {
     );
 
     final groupRepo = FakeTaskRunGroupRepository()..seed(group);
-    final sessionRepo = RecordingSessionRepository(session);
+    final sessionRepo = FakePomodoroSessionRepository(session);
     final appModeService = AppModeService.memory();
 
     final container = ProviderContainer(
@@ -206,90 +223,22 @@ void main() {
         soundServiceProvider.overrideWithValue(FakeSoundService()),
       ],
     );
-    addTearDown(container.dispose);
+    addTearDown(() {
+      sessionRepo.dispose();
+      container.dispose();
+    });
 
     await container.read(appModeProvider.notifier).setAccount();
     await _pumpQueue();
 
-    final sub = container.listen<PomodoroState>(
-      pomodoroViewModelProvider,
-      (_, __) {},
-    );
+    container.listen<PomodoroState>(pomodoroViewModelProvider, (_, __) {});
     final vm = container.read(pomodoroViewModelProvider.notifier);
     final result = await vm.loadGroup(group.id);
     expect(result, PomodoroGroupLoadResult.loaded);
 
-    await vm.requestOwnership();
+    sessionRepo.emit(null);
     await _pumpQueue();
 
-    expect(vm.isOwnershipRequestPendingForThisDevice, isTrue);
-    expect(vm.ownershipRequest?.requesterDeviceId, deviceInfo.deviceId);
-    expect(sessionRepo.lastRequester, deviceInfo.deviceId);
-    sub.close();
-  });
-
-  test('requestOwnership keeps pending after prior rejection', () async {
-    final now = DateTime.now();
-    final deviceInfo = DeviceInfoService.ephemeral();
-    final group = _buildRunningGroup(id: 'group-2', start: now);
-    final rejection = OwnershipRequest(
-      requestId: 'old-request',
-      requesterDeviceId: deviceInfo.deviceId,
-      requestedAt: now.subtract(const Duration(minutes: 2)),
-      status: OwnershipRequestStatus.rejected,
-      respondedAt: now.subtract(const Duration(minutes: 1)),
-      respondedByDeviceId: 'owner-device',
-    );
-    final session = PomodoroSession(
-      taskId: group.tasks.first.sourceTaskId,
-      groupId: group.id,
-      currentTaskId: group.tasks.first.sourceTaskId,
-      currentTaskIndex: 0,
-      totalTasks: 1,
-      dataVersion: kCurrentDataVersion,
-      ownerDeviceId: 'other-device',
-      status: PomodoroStatus.pomodoroRunning,
-      phase: PomodoroPhase.pomodoro,
-      currentPomodoro: 1,
-      totalPomodoros: 2,
-      phaseDurationSeconds: 25 * 60,
-      remainingSeconds: 1200,
-      phaseStartedAt: now.subtract(const Duration(minutes: 5)),
-      currentTaskStartedAt: now.subtract(const Duration(minutes: 5)),
-      pausedAt: null,
-      lastUpdatedAt: now,
-      finishedAt: null,
-      pauseReason: null,
-      ownershipRequest: rejection,
-    );
-
-    final groupRepo = FakeTaskRunGroupRepository()..seed(group);
-    final sessionRepo = RecordingSessionRepository(session);
-    final appModeService = AppModeService.memory();
-
-    final container = ProviderContainer(
-      overrides: [
-        taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
-        pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
-        appModeServiceProvider.overrideWithValue(appModeService),
-        deviceInfoServiceProvider.overrideWithValue(deviceInfo),
-        soundServiceProvider.overrideWithValue(FakeSoundService()),
-      ],
-    );
-    addTearDown(container.dispose);
-
-    await container.read(appModeProvider.notifier).setAccount();
-    await _pumpQueue();
-
-    final vm = container.read(pomodoroViewModelProvider.notifier);
-    final result = await vm.loadGroup(group.id);
-    expect(result, PomodoroGroupLoadResult.loaded);
-
-    await vm.requestOwnership();
-    await _pumpQueue();
-
-    expect(vm.isOwnershipRequestPendingForThisDevice, isTrue);
-    expect(vm.hasLocalPendingOwnershipRequest, isTrue);
-    expect(sessionRepo.lastRequester, deviceInfo.deviceId);
+    expect(vm.isSessionMissingWhileRunning, isTrue);
   });
 }

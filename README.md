@@ -37,6 +37,37 @@ Flutter · Firebase Auth · Firestore · Riverpod · GoRouter · just_audio · f
   `flutter run -d chrome --web-port=5001 --web-browser-flag="--user-data-dir=$HOME/.focus_interval_chrome"`.
 - Ensure `http://localhost:5001` is listed in Google OAuth Authorized JavaScript origins.
 
+## 🧽 Local reset (macOS)
+
+Use this to wipe **local-only** data before clean ownership/sync tests. This does
+not touch Firestore.
+
+```bash
+# Close the app if it is running
+pkill -f "Focus Interval" || true
+
+# Local data, caches, prefs
+rm -rf ~/Library/Application\ Support/focus_interval
+rm -rf ~/Library/Caches/focus_interval
+rm -f  ~/Library/Preferences/com.marcdevelopez.focusinterval.macos.plist
+
+# App container (data only; metadata can remain)
+rm -rf ~/Library/Containers/com.marcdevelopez.focusinterval.macos/Data
+
+# Optional: group containers
+ls ~/Library/Group\ Containers | grep -i focus
+# If any appear, remove them:
+# rm -rf ~/Library/Group\ Containers/<name>
+
+# Keychain tokens (Firebase)
+security delete-generic-password -l "Focus Interval" 2>/dev/null
+security delete-generic-password -s "com.marcdevelopez.focusinterval.macos" 2>/dev/null
+```
+
+If container deletion fails with "Operation not permitted", grant your terminal
+**Full Disk Access** (System Settings → Privacy & Security → Full Disk Access),
+then retry.
+
 ## GitHub OAuth (desktop)
 
 - Desktop uses **GitHub Device Flow** (no backend).

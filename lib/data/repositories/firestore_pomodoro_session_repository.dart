@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 
 import '../../domain/pomodoro_machine.dart';
 
@@ -84,6 +85,28 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
       if (!doc.exists || doc.data() == null) return null;
       return PomodoroSession.fromMap(doc.data()!);
     });
+  }
+
+  @override
+  Future<PomodoroSession?> fetchSession({bool preferServer = false}) async {
+    final uid = authService.currentUser?.uid;
+    if (uid == null) return null;
+    final docRef = _doc(uid);
+    DocumentSnapshot<Map<String, dynamic>> snap;
+    if (preferServer) {
+      try {
+        snap = await docRef.get(const GetOptions(source: Source.server));
+      } catch (_) {
+        if (kDebugMode) {
+          debugPrint('[ActiveSession] Server fetch failed. Falling back to cache.');
+        }
+        snap = await docRef.get(const GetOptions(source: Source.cache));
+      }
+    } else {
+      snap = await docRef.get();
+    }
+    if (!snap.exists || snap.data() == null) return null;
+    return PomodoroSession.fromMap(snap.data()!);
   }
 
   @override
@@ -273,6 +296,7 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
           {
             'ownerDeviceId': requesterDeviceId,
             'ownershipRequest': FieldValue.delete(),
+            'lastUpdatedAt': FieldValue.serverTimestamp(),
           },
           SetOptions(merge: true),
         );
@@ -289,6 +313,7 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
             'respondedAt': FieldValue.serverTimestamp(),
             'respondedByDeviceId': ownerDeviceId,
           },
+          'lastUpdatedAt': FieldValue.serverTimestamp(),
         },
         SetOptions(merge: true),
       );
