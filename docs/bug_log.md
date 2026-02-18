@@ -196,6 +196,10 @@ Evidence:
 - User report (16/02/2026): during the following break, the drift grew over
   time and macOS UI flickered between the synced and offset timers on a
   per-second pulse.
+- User report (18/02/2026): Start Now with macOS owner. Android app was open
+  on Task List and did not auto-open Run Mode. After requesting ownership and
+  accepting on macOS, Firestore briefly showed Android as owner but Android
+  froze in requested state; within ~5 seconds ownership reverted to macOS.
 
 Workaround:
 - Navigate Android to Groups Hub and back to force re-sync.
@@ -327,12 +331,14 @@ Hypothesis:
   transfer, causing per-second swaps between local ticks and session projection.
 
 Fix applied:
-- Suppressed local PomodoroMachine timer while in mirror mode by restoring
-  session state without starting the machine timer; mirrors now project solely
-  from activeSession snapshots (branch: bug-mirror-machine-suppress).
+- Attempted: suppress local PomodoroMachine timer while in mirror mode so the
+  mirror projects solely from activeSession snapshots (merge #122).
+  Regression reported (18/02/2026): after ownership accept, the new owner
+  freezes and ownership reverts to the previous owner within seconds. Rollback
+  pending.
 
 Status:
-Pending validation after the mirror timer suppression.
+Open. Fix attempt regressed ownership stability; rollback pending.
 
 ---
 
@@ -578,6 +584,10 @@ Evidence:
 - Variant C (18/02/2026): after multiple ownership changes and an owner pause,
   a mirror ownership request did not reach the owner until Groups Hub was opened
   and Run Mode was re-entered.
+- Variant D (18/02/2026): while paused, macOS requested ownership from Android.
+  Firestore showed `ownershipRequest = pending` (17:47:24 UTC+1), but Android
+  did not surface the request until ~30s later (17:48:15 UTC+1). After that,
+  subsequent requests/accepts succeeded without issues.
 
 Workaround:
 - Click/focus the macOS window to surface pending requests.

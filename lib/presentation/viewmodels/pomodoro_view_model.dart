@@ -1357,9 +1357,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   void _updateMirrorStateFromSession(PomodoroSession session) {
     final projectionNow = _projectionNowForSession(session);
-    final projected =
-        _projectStateFromSession(session, projectionNow: projectionNow);
-    _applyProjectedState(projected, now: projectionNow, startTimer: false);
+    state = _projectStateFromSession(session, projectionNow: projectionNow);
   }
 
   bool _isRunning(PomodoroStatus status) =>
@@ -2089,11 +2087,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     return true;
   }
 
-  void _applyProjectedState(
-    PomodoroState projected, {
-    DateTime? now,
-    bool startTimer = true,
-  }) {
+  void _applyProjectedState(PomodoroState projected, {DateTime? now}) {
     _machine.restoreFromSession(
       status: projected.status,
       phase: projected.phase,
@@ -2101,7 +2095,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       totalPomodoros: projected.totalPomodoros,
       totalSeconds: projected.totalSeconds,
       remainingSeconds: projected.remainingSeconds,
-      startTimer: startTimer,
     );
     _markPhaseStartedFromState(projected, now: now);
   }
