@@ -35,6 +35,48 @@ Notes:
 
 ---
 
+## Recommended execution order (updated 18/02/2026)
+
+This section defines the recommended implementation order. The idea entries
+below remain in chronological order; new ideas must be appended at the end.
+When a new idea is added, update this list to place it in the appropriate
+execution slot.
+
+1. IDEA-014 — Disable Task Weight When Only One Task Is Selected
+2. IDEA-026 — Manage Presets Item UX Consistency
+3. IDEA-015 — Live "Start Now" Time Ranges in Task List
+4. IDEA-004 — Schedule Auto-Start Conditions Disclosure (Planning UX)
+5. IDEA-017 — Start Time Picker Minimum Valid Time (Pre-Run Aware)
+6. IDEA-007 — Time Until Scheduled Start (Plan Group + Groups Hub Summary)
+7. IDEA-016 — Live Plan Group Preview + Real-Time Conflict Gating
+8. IDEA-012 — Exact End Time Option for Scheduled Planning
+9. IDEA-006 — Scheduled vs Actual End in Groups Hub Summary
+10. IDEA-020 — Show "Scheduled By" in Group Summary
+11. IDEA-029 — Live Pause Time Ranges (Forward-Only)
+12. IDEA-018 — Live Pause Time Range Updates in Run Mode Task List
+13. IDEA-005 — Pause Time Visibility (Run Mode + Groups Hub)
+14. IDEA-013 — Global Group Remaining Time + Pending Tasks
+15. IDEA-009 — Sticky "Go to Task List" CTA in Groups Hub
+16. IDEA-008 — Collapsible Groups Hub Sections + Counts
+17. IDEA-002 — Simplification of Status Boxes in Run Mode
+18. IDEA-003 — Responsive Timer Scaling (Desktop/Web)
+19. IDEA-010 — Ownership Request Explainer (Run Mode)
+20. IDEA-011 — Mirror Notifications for Active Runs
+21. IDEA-019 — Break Tasks List in Run Mode
+22. IDEA-001 — Circular group progress ring around timer
+23. IDEA-027 — Unified Mode Indicator + Session Context
+24. IDEA-021 — Account Deletion Action in Settings
+25. IDEA-022 — Verified Presence + Activity Heatmap
+26. IDEA-028 — Verified Activity Summary + Week Start Setting
+27. IDEA-023 — Resume Canceled Groups
+28. IDEA-024 — Workspaces With Shared TaskRunGroups
+29. IDEA-025 — Workspace Break Chat (Text + Deferred DM)
+
+Notes:
+- IDEA-028 depends on IDEA-022.
+- IDEA-025 depends on IDEA-024.
+- IDEA-029 and IDEA-018 overlap; keep both for now and merge later if needed.
+
 ## IDEA-001 — Circular group progress ring around timer
 
 ID: IDEA-001

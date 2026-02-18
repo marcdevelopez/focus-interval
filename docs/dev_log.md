@@ -6829,3 +6829,24 @@ _(none)_
 
 - Continue testing background + long pause scenarios to isolate the trigger for
   delayed ownership delivery.
+
+
+# 🔹 Block 432 — Add feature execution order list (18/02/2026)
+
+### ✔ Work completed:
+
+- Added a "Recommended execution order" section to `docs/feature_backlog.md`
+  while keeping idea entries in chronological order.
+
+### 🧠 Decisions made:
+
+- New ideas remain appended at the end; the recommended order list will be
+  updated as new ideas are added.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Revisit the order after ownership/sync bugs and Phase 17 validation close.
