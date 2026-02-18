@@ -6871,3 +6871,24 @@ _(none)_
 ### 🎯 Next steps:
 
 - Implement only if needed for release stability and after specs approval.
+
+
+# 🔹 Block 434 — Add pending request evidence after Ready (18/02/2026)
+
+### ✔ Work completed:
+
+- Expanded BUG-005 with an 18/02/2026 case: macOS mirror recovered from Ready,
+  but ownership requests remained pending in Firestore and did not surface on
+  Android until Groups Hub navigation.
+
+### 🧠 Decisions made:
+
+- Keep this under ownership request surfacing failures (BUG-005).
+
+### ⚠️ Issues found:
+
+- Owner UI can miss pending requests even after mirror resync.
+
+### 🎯 Next steps:
+
+- Validate whether owner-side listeners refresh on incoming requests.
