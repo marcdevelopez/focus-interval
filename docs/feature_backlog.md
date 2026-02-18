@@ -1409,7 +1409,7 @@ Title: Live Pause Time Range Updates in Run Mode Task List
 Type: UI/UX
 Scope: S
 Priority: P1
-Status: idea
+Status: merged into IDEA-029 (details retained)
 
 Problem / Goal:
 When a group is paused, task time ranges under the timer stay frozen until
@@ -1467,7 +1467,8 @@ While paused, task list time ranges update in real time and match the status
 box ranges. No changes to business rules or pause logic.
 
 Notes:
-Consistency fix for pause offsets in Run Mode UI.
+Merged into IDEA-029 to unify pause-range rules across task list + status boxes.
+This entry keeps task-list-specific details for traceability.
 
 ---
 
@@ -2320,6 +2321,8 @@ Pause-offset projection already used for time-range calculations.
 Calculations:
 If a range start is in the past, keep it fixed. Extend the current range end
 by the pause offset, and shift all future ranges forward by the same offset.
+Recompute at a fixed cadence (e.g., per minute) and update task list ranges
+as a batch to avoid partial drift.
 
 Sync / multi-device:
 UI-only projection; no sync changes.
@@ -2327,6 +2330,7 @@ UI-only projection; no sync changes.
 Edge cases:
 Applies to both task items and status boxes. Must update even if the user never
 resumes. If the app is backgrounded, pause updates and refresh on resume.
+Avoid excessive rebuilds when the task list is off-screen.
 
 Accessibility:
 Avoid noisy announcements; time range updates should be silent.
