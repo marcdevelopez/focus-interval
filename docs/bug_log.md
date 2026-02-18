@@ -597,6 +597,9 @@ Observed behavior:
   after a Pomodoro started; clicking inside the app restored the running timer,
   and the subsequent ownership request to Android surfaced immediately and was
   accepted (no delay).
+- Variant E (18/02/2026): macOS mirror went Ready, click restored the running
+  timer, then a new ownership request (macOS -> Android owner) stayed pending
+  in Firestore and did not surface on Android until Groups Hub navigation.
 
 Expected behavior:
 - Ownership requests should surface immediately on the receiving device without
@@ -619,6 +622,16 @@ Evidence:
   Firestore showed `ownershipRequest = pending` (17:47:24 UTC+1), but Android
   did not surface the request until ~30s later (17:48:15 UTC+1). After that,
   subsequent requests/accepts succeeded without issues.
+- Variant E (18/02/2026):
+  - 18:40:45 Firestore shows `ownershipRequest` pending (requestId
+    `b7d214e4-...`, requestedAt 18:38:15) with `ownerDeviceId = android` and
+    `status = pomodoroRunning` (remainingSeconds 102).
+  - 18:41:17 Firestore shows a new pending request (requestId
+    `40aa8974-...`, requestedAt 18:41:24); Android still showed no request UI.
+  - 18:43:17 Groups Hub snapshot shows the request still pending during
+    shortBreak; returning to Run Mode (18:43:38) finally surfaced the request.
+  - 18:44:04 after acceptance, `ownerDeviceId = macOS...` and the request
+    cleared.
 
 Workaround:
 - Click/focus the macOS window to surface pending requests.
@@ -628,6 +641,8 @@ Workaround:
 Hypothesis:
 - Ownership request stream is missed by the receiver until a resubscribe
   trigger (window focus or navigation).
+- Ready->Run recovery on the requester may not refresh the owner-side listener,
+  leaving pending requests invisible until a manual resubscribe.
 
 Fix applied:
 None.
