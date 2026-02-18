@@ -6735,3 +6735,48 @@ _(fill in when they happen)_
 
 - Re-test the jump after the keep-alive change; confirm if the timer no longer
   adds seconds on return.
+
+
+# 🔹 Block 428 — Suppress local machine timer in mirror mode (18/02/2026)
+
+### ✔ Work completed:
+
+- Added a mirror-safe restore path that updates the session state without
+  starting the local PomodoroMachine timer.
+- Updated mirror projection to apply state via the new restore mode so the
+  mirror relies exclusively on activeSession snapshots.
+
+### 🧠 Decisions made:
+
+- Mirror devices must not run the local PomodoroMachine timer; they only
+  project from Firestore-derived session data.
+
+### ⚠️ Issues found:
+
+- Ownership request delivery can still require a Groups Hub resubscribe after
+  multiple ownership changes and an owner pause (BUG-005).
+
+### 🎯 Next steps:
+
+- Validate that mirror timer flicker and late sounds no longer occur after
+  ownership handoff.
+
+
+# 🔹 Block 429 — Split mirror flicker vs timer swap (18/02/2026)
+
+### ✔ Work completed:
+
+- Separated the ~15s mirror pulse (BUG-003) from the per-second timer swap
+  (BUG-009) to avoid conflating cosmetic refresh with the timer swap bug.
+
+### 🧠 Decisions made:
+
+- Track the per-second swap as a distinct bug with its own fix/validation path.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Re-test after the mirror timer suppression to confirm BUG-009 no longer appears.
