@@ -6913,3 +6913,25 @@ _(none)_
 ### 🎯 Next steps:
 
 - Update the recommended execution order if needed after Phase 17 closes.
+
+
+# 🔹 Block 436 — Restore IDEA-018 details while merged (18/02/2026)
+
+### ✔ Work completed:
+
+- Restored IDEA-018 details while keeping it merged into IDEA-029.
+- Expanded IDEA-029 with task-list cadence and batch-update details from
+  IDEA-018 to preserve the full spec.
+
+### 🧠 Decisions made:
+
+- Keep IDEA-018 as a traceable sub-scope while IDEA-029 remains the unified
+  source for pause-range behavior.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- None.
