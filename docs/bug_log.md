@@ -584,6 +584,10 @@ Evidence:
 - Variant C (18/02/2026): after multiple ownership changes and an owner pause,
   a mirror ownership request did not reach the owner until Groups Hub was opened
   and Run Mode was re-entered.
+- Variant D (18/02/2026): while paused, macOS requested ownership from Android.
+  Firestore showed `ownershipRequest = pending` (17:47:24 UTC+1), but Android
+  did not surface the request until ~30s later (17:48:15 UTC+1). After that,
+  subsequent requests/accepts succeeded without issues.
 
 Workaround:
 - Click/focus the macOS window to surface pending requests.

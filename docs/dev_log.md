@@ -6805,3 +6805,27 @@ _(none)_
 
 - Revert the mirror suppression change on a dedicated branch.
 - Re-test ownership acceptance and auto-open flow after rollback.
+
+
+# 🔹 Block 431 — Ownership request delay (first delivery) validated (18/02/2026)
+
+### ✔ Work completed:
+
+- Captured a delayed ownership request delivery on Android while paused:
+  Firestore showed `ownershipRequest = pending` ~30s before Android surfaced it.
+- Subsequent ownership requests and accepts succeeded without regressions in the
+  same session.
+
+### 🧠 Decisions made:
+
+- Treat this as additional evidence for BUG-005 (request not surfaced until
+  resubscribe/focus) rather than a new bug.
+
+### ⚠️ Issues found:
+
+- Initial ownership request delivery can lag even when both devices are active.
+
+### 🎯 Next steps:
+
+- Continue testing background + long pause scenarios to isolate the trigger for
+  delayed ownership delivery.
