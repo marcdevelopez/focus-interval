@@ -22,7 +22,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **17/02/2026**
+Last update: **18/02/2026**
 
 ---
 
@@ -6367,3 +6367,371 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Commit and push IDEA-029 on its own branch.
+
+
+# 🔹 Block 413 — Log owner resume drift after background crash (17/02/2026)
+
+### ✔ Work completed:
+
+- Logged BUG-007 in `docs/bug_log.md` for owner resume drift after an Android
+  background crash (owner behind mirror by ~5s) and manual resync recovery.
+
+### 🧠 Decisions made:
+
+- Track this as a distinct sync/ownership correctness issue with resume
+  re-anchoring as the likely root cause.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Investigate resume re-anchoring and add instrumentation/tests before fix.
+
+
+# 🔹 Block 414 — Ownership sync hardening (server fetch + gap handling) (17/02/2026)
+
+### ✔ Work completed:
+
+- Added server-preferred activeSession fetch and used it on resume/inactive resync.
+- Added session snapshot tracking to hold “Syncing session...” during gaps.
+- Added debug instrumentation for activeSession snapshots and missing holds.
+- Added unit test covering session-gap hold when lastUpdatedAt is missing.
+
+### 🧠 Decisions made:
+
+- Prefer server snapshots for resume and inactive keepalive to surface ownership
+  changes promptly and avoid stale cached reads.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Validate on Android + macOS with real devices (owner background/resume, request
+  flows, mirror drift scenarios).
+
+
+# 🔹 Block 415 — Short ownership request validation (17/02/2026)
+
+### ✔ Work completed:
+
+- Ran a short manual test: Android mirror requested ownership while macOS owner
+  was in background (app hidden). On bringing macOS to foreground, the request
+  appeared immediately and was accepted; Android obtained ownership correctly
+  (UI + Firestore).
+
+### 🧠 Decisions made:
+
+- Treat this as a positive short-session validation only; longer/pause-heavy
+  scenarios still need coverage before closing BUG-005/BUG-002.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Run a long-pause test (2–3h) with both devices backgrounded; report any
+  desync or ownership regressions.
+
+
+# 🔹 Block 416 — Background auto-claim validation (17/02/2026)
+
+### ✔ Work completed:
+
+- Ran a manual test with both devices backgrounded during a scheduled run:
+  Android requested and obtained ownership, then both devices went to
+  background. On resume, macOS auto-claimed as owner (stale owner rule) and
+  Firestore reflected the same ownerDeviceId and running state.
+- Verified Firestore snapshot during resume showed consistent fields:
+  ownerDeviceId = macOS, status = shortBreakRunning, phaseStartedAt and
+  lastUpdatedAt populated, remainingSeconds aligned.
+
+### 🧠 Decisions made:
+
+- Treat this as a positive validation of auto-claim rules when owner is stale.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Capture precise timestamps (owner before/after, lastUpdatedAt, status) on
+  long-pause tests to confirm no regressions.
+
+
+# 🔹 Block 417 — Pause resume snapshot validation (17/02/2026)
+
+### ✔ Work completed:
+
+- Captured Firestore snapshot before resume with both devices backgrounded:
+  ownerDeviceId = android, status = paused, pausedAt = 20:20:03, remainingSeconds = 360.
+- Captured snapshot after resume (≈15s later): ownerDeviceId = android,
+  status = pomodoroRunning, lastUpdatedAt = 20:43:09, phaseStartedAt = 20:24:08,
+  remainingSeconds = 359.
+- Ownership remained on Android; session resumed without drift.
+
+### 🧠 Decisions made:
+
+- Treat this as a positive validation for owner stability after a backgrounded
+  pause (no auto-flip to macOS in this scenario).
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Re-test with a longer pause window if any regression appears.
+
+
+# 🔹 Block 418 — Clarify pause duration (17/02/2026)
+
+### ✔ Work completed:
+
+- Clarification: the previous validation pause lasted ~20 minutes (approx).
+
+### 🧠 Decisions made:
+
+- Treat the pause duration as approximate; use Firestore timestamps for exact
+  deltas in future logs.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- None.
+
+
+# 🔹 Block 419 — Owner heartbeat during session gaps (17/02/2026)
+
+### ✔ Work completed:
+
+- Logged BUG-008 for unexpected owner auto-claim while Android owner was in
+  foreground (owner became stale and macOS auto-claimed).
+- Updated PomodoroViewModel to allow owner heartbeats while the session stream
+  is missing (syncing) to prevent stale ownership during gaps.
+
+### 🧠 Decisions made:
+
+- Treat missing-session gaps as a UI-sync state only; owner heartbeats must
+  continue when the last known snapshot says this device is owner.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Re-test foreground owner stability during stream gaps (no auto-claim).
+
+
+# 🔹 Block 420 — Add macOS local reset commands to README (17/02/2026)
+
+### ✔ Work completed:
+
+- Added a dedicated "Local reset (macOS)" section to `README.md` with clean
+  test commands and Keychain cleanup guidance.
+
+### 🧠 Decisions made:
+
+- Keep reset steps in README for quick access during device sync testing.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- None.
+
+
+# 🔹 Block 421 — Foreground owner stability validation (alt account) (17/02/2026)
+
+### ✔ Work completed:
+
+- Ran the foreground owner stability test on a different account:
+  - Android started the run and remained owner.
+  - macOS opened for observation only (no request).
+  - After 2–3 minutes with Android in foreground, Firestore still showed
+    ownerDeviceId = android and lastUpdatedAt advancing.
+
+### 🧠 Decisions made:
+
+- Treat this as a positive validation for the foreground owner heartbeat path.
+
+### ⚠️ Issues found:
+
+- Failures still appear after long pauses or backgrounding; those scenarios
+  remain the priority for reproductions.
+
+### 🎯 Next steps:
+
+- Continue long-pause/background tests on the original account to reproduce
+  ownership flips or retry/accept loops.
+
+
+# 🔹 Block 422 — Long background validations + ownership loop (17/02/2026)
+
+### ✔ Work completed:
+
+- Ran long pause + both background test (60–90 min): owner stayed Android after
+  resume; activeSession remained consistent.
+- Ran running session + both background test (30–45 min): owner stayed Android
+  after reopening; no ownership flip.
+- Ran ownership request after long background (macOS owner, Android requester):
+  accept briefly flipped owner to Android, then reverted to macOS within
+  ~15–20 seconds; retry/accept loop persisted until Groups Hub navigation.
+- Captured drift observation: macOS owner matched Firestore snapshot
+  (`remainingSeconds = 1060` at 23:52:53 UTC+1), while Android showed fewer
+  seconds and the gap appeared to grow until Groups Hub resync.
+
+### 🧠 Decisions made:
+
+- Treat the long-pause and running-background scenarios as positive
+  validations for owner stability.
+- Log the ownership loop as additional evidence for BUG-002.
+- Log the growing drift observation under BUG-004 (possible clock skew /
+  projection offset issue).
+
+### ⚠️ Issues found:
+
+- Ownership accept loops after long background; Android remains in requested/
+  retry state and cannot retain ownership.
+- Mirror drift grows over time with macOS owner; Android displays fewer seconds
+  until a Groups Hub resync.
+
+### 🎯 Next steps:
+
+- Re-test the ownership loop after the next build to confirm if fixes reduce
+  reversion behavior.
+- Capture system clock times on both devices during drift to confirm
+  clock-skew vs projection error.
+
+
+# 🔹 Block 423 — Drift growth confirmed with matched system clocks (18/02/2026)
+
+### ✔ Work completed:
+
+- Captured drift evidence during long break with system clocks aligned:
+  - 00:43:58 UTC+1: macOS 05:56 vs Android 05:14 (delta 42s).
+  - 00:55:09 UTC+1: macOS 19:55 vs Android 19:02 (delta 53s).
+- Confirmed the drift increased (~11s in ~11 minutes) while macOS remained
+  owner, indicating a projection issue rather than clock skew.
+
+### 🧠 Decisions made:
+
+- Treat this as strong evidence for BUG-004 (growing mirror drift).
+
+### ⚠️ Issues found:
+
+- Drift grows over time even when device clocks match; Android shows fewer
+  seconds than macOS.
+
+### 🎯 Next steps:
+
+- Document a spec change for server-time offset projection before code changes.
+
+
+# 🔹 Block 424 — Specs: server-time offset projection (18/02/2026)
+
+### ✔ Work completed:
+
+- Updated `docs/specs.md` to require server-time offset projection for
+  activeSession timers (derived from lastUpdatedAt).
+- Clarified that projection must not use raw local clock alone and must
+  rebase on ownership changes or new snapshots.
+
+### 🧠 Decisions made:
+
+- Treat the drift as a projection/rebase issue; fix via spec-first changes
+  before any code updates.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Implement server-time offset projection in Run Mode after confirming the
+  spec change is acceptable.
+
+
+# 🔹 Block 425 — Implement server-time offset projection (18/02/2026)
+
+### ✔ Work completed:
+
+- Added server-time offset projection in `PomodoroViewModel` for activeSession
+  timers (derived from lastUpdatedAt).
+- Ensured projection reuses the last known offset when lastUpdatedAt is missing.
+- Applied projection anchor consistently when rehydrating sessions and mirror
+  updates.
+
+### 🧠 Decisions made:
+
+- Keep local-time projection only for Local Mode; Account Mode uses server
+  offset when available.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Validate on device that mirror drift no longer grows during long breaks.
+
+
+# 🔹 Block 426 — Keep Run Mode alive during active sessions (18/02/2026)
+
+### ✔ Work completed:
+
+- Added a keep-alive link for `PomodoroViewModel` while an active session exists
+  to avoid offset resets when navigating to Groups Hub.
+- Tied keep-alive state to active execution or missing-session sync gaps.
+
+### 🧠 Decisions made:
+
+- Preserve the Run Mode VM in Account Mode during active sessions to keep
+  heartbeat cadence and projection offsets stable across navigation.
+
+### ⚠️ Issues found:
+
+_(fill in when they happen)_
+
+### 🎯 Next steps:
+
+- Re-test Groups Hub navigation to confirm timers no longer gain seconds on
+  return.
+
+
+# 🔹 Block 427 — Groups Hub jump evidence captured (18/02/2026)
+
+### ✔ Work completed:
+
+- Captured Firestore snapshots around Groups Hub navigation while running
+  (macOS owner):
+  - 02:03:54: remainingSeconds = 150 (before Groups Hub).
+  - 02:04:24: remainingSeconds = 120 (2–5s after return).
+  - 02:05:26: remainingSeconds = 60 (≈30s later).
+- Reported that the returning device briefly showed more remaining seconds
+  (timer jumped forward) despite Firestore continuing to count down.
+
+### 🧠 Decisions made:
+
+- Treat the jump as a navigation-induced offset reset; validate the keep-alive
+  fix against this exact flow.
+
+### ⚠️ Issues found:
+
+- UI jump on return from Groups Hub while running (pending fix validation).
+
+### 🎯 Next steps:
+
+- Re-test the jump after the keep-alive change; confirm if the timer no longer
+  adds seconds on return.

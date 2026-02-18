@@ -203,6 +203,27 @@ Workaround:
 - After ownership acceptance, exit to Groups Hub and return within ~20–30s to
   prevent the owner from reverting back to the previous device.
 
+Additional scenario (17/02/2026, UTC+1):
+Long background ownership loop. Android owner accepted requests but ownership
+reverted to macOS within seconds; Android stayed in requested/retry until
+Groups Hub navigation.
+
+Evidence (Firestore snapshots, UTC+1):
+- 23:41:51 ownerDeviceId = android after macOS accepted (shortBreakRunning).
+- 23:44:13 ownerDeviceId = macOS shortly after (auto-claim).
+- 23:46:15 ownerDeviceId = android after accept (requestId 7c73a503...).
+- 23:47:17 ownerDeviceId = macOS again; Android stuck pending/retry.
+
+Observed behavior:
+- Ownership flips back to macOS shortly after accept, even without a new manual
+  request; Android remains in requested/retry UI.
+- Only navigating to Groups Hub and back resets the state.
+
+Hypothesis:
+- Ownership accept does not refresh lastUpdatedAt, so the new owner appears stale
+  immediately and macOS auto-claims; requester UI remains stale without a
+  forced resubscribe.
+
 Hypothesis:
 - Ownership request UI state is not cleared/overridden after rejection when the
   requester resumes from background; local pending state or session-gap handling
@@ -211,7 +232,8 @@ Hypothesis:
   immediate Run Mode refresh appears to stabilize the accepted owner.
 
 Fix applied:
-None.
+Update ownership accept/reject to set lastUpdatedAt (branch:
+bug-ownership-sync-stabilization). Validation pending.
 
 Status:
 Open. Reproduced in real device test (Android + macOS). High priority.
@@ -258,7 +280,8 @@ Hypothesis:
   derived values are unchanged.
 
 Fix applied:
-None.
+- Implemented server-time offset projection in `PomodoroViewModel` so mirrors
+  project from lastUpdatedAt-derived server time (pending validation).
 
 Status:
 Open. Low priority unless fix can be made without regressions.
@@ -307,20 +330,149 @@ Evidence:
 - User report (16/02/2026 ~20:00 UTC+1): mirror desync appears after phase
   change following a Ready->Run recovery and ownership acceptance; pause/resume
   preserves the offset; new mirror device forces resync.
+- User report (17/02/2026 ~23:52 UTC+1): owner macOS showed the correct timer
+  after Groups Hub resync; Android displayed fewer seconds and the gap grew over
+  time. Firestore snapshot 23:52:53 shows `remainingSeconds = 1060` with
+  `ownerDeviceId = macOS` while Android showed less remaining.
+- User report (18/02/2026 00:43:58 to 00:55:09 UTC+1): system clocks matched
+  on Android and macOS, yet timers diverged and the gap grew:
+  - 00:43:58: macOS 05:56 vs Android 05:14 (delta 42s).
+  - 00:55:09: macOS 19:55 vs Android 19:02 (delta 53s).
+  Gap increased ~11s in ~11 minutes during a long break.
+- User report (18/02/2026 ~02:03–02:05 UTC+1): opening Groups Hub while running
+  can **add seconds** on the device that navigated away and back. After return,
+  the timer jumped forward (more remaining) and re-synced once a fresh
+  lastUpdatedAt heartbeat arrived or ownership was accepted.
+- Supporting snapshots (18/02/2026 UTC+1, macOS owner):
+  - 02:03:54: remainingSeconds = 150 (before Groups Hub).
+  - 02:04:24: remainingSeconds = 120 (2–5s after return).
+  - 02:05:26: remainingSeconds = 60 (≈30s later).
+  UI on the returning device briefly increased remaining time despite the
+  Firestore countdown continuing normally.
 
 Hypothesis:
 - Mirror projection may be using a local clock without correction for snapshot
   cadence or server time offset, causing accumulating drift during long phases.
  - Phase-change projection may reuse a stale offset after resubscribe/ownership
    changes, and pause/resume re-applies the same offset instead of re-basing.
+- Device clock skew between Android and macOS may compound projection drift;
+  use a server time offset derived from Firestore timestamps.
+- Since system clocks matched during the drift, projection logic itself is the
+  likely root cause (local tick offset or re-base error).
+- Opening Groups Hub may dispose the Run Mode VM and reset the offset, causing
+  projection from a stale lastUpdatedAt until the next heartbeat arrives.
 
 Fix applied:
-None.
+- Implemented server-time offset projection in `PomodoroViewModel` so mirrors
+  project from lastUpdatedAt-derived server time (pending validation).
+- Added Run Mode keep-alive while active sessions exist to prevent offset reset
+  on navigation (pending validation).
 
 Status:
 Open. Medium priority (visible correctness issue).
 
 ---
+
+## BUG-008 — Owner becomes stale while foreground (unexpected auto-claim)
+
+ID: BUG-008
+Date: 17/02/2026 (UTC+1)
+Platforms: Android owner + macOS mirror
+Context: Account Mode. Android in foreground with app open. Session running.
+No manual ownership request/accept during the window.
+
+Symptom:
+Owner flips from Android to macOS without a manual request, while Android is
+foreground and should be heartbeating.
+
+Observed behavior (Firestore snapshots, UTC+1):
+- 20:43:09 ownerDeviceId = android, status pomodoroRunning.
+- 20:46:00 ownerDeviceId = macOS, status pomodoroRunning.
+
+Expected behavior:
+If the owner device is active/foreground, it must keep heartbeating and should
+not become stale. Auto-claim should not occur in this case.
+
+Workaround:
+None (manual resync via Groups Hub may stabilize UI).
+
+Hypothesis:
+During session stream gaps, owner heartbeat is suppressed (controls disabled),
+so lastUpdatedAt becomes stale even while owner is active.
+
+Fix applied:
+Pending (allow owner heartbeats while session is missing).
+
+Status:
+Open. High priority (ownership correctness).
+
+## BUG-002 — Ownership rejection desync after background/resume
+
+Additional scenario (17/02/2026, UTC+1):
+Long pause/background test. Android was owner; both devices backgrounded. On
+resume, ownership flipped to macOS and repeated request/accept cycles did not
+stick on Android (owner reverted back to macOS). Only Groups Hub navigation
+restored a stable state.
+
+Evidence (Firestore snapshots, UTC+1):
+- 20:09:03 ownerDeviceId = android, status pomodoroRunning, remainingSeconds 1023.
+- 20:09:50 ownerDeviceId = macOS, status pomodoroRunning, remainingSeconds 972.
+- 20:11:13 ownershipRequest pending (requestId d714b521... requester android).
+- 20:11:53 ownerDeviceId = android after accept, remainingSeconds 851.
+- 20:12:40 ownerDeviceId = macOS, remainingSeconds 805.
+- 20:12:47 ownershipRequest pending (requestId 23e60ce8... requester android).
+- 20:13:28 ownerDeviceId = macOS, remainingSeconds 758 (Android stuck pending/retry).
+
+Observed behavior:
+- Android request accepted on macOS (Firestore shows Android owner), but owner
+  reverted to macOS shortly after.
+- Android remained in requested/retry state and could not retain ownership.
+- Sync timing itself stayed aligned (no timer drift), but ownership stability
+  failed.
+- Entering Groups Hub and returning re-synced the UI and cleared the stuck state.
+
+Expected behavior:
+- After owner accepts, ownership must remain stable on the requester until a new
+  explicit transfer or auto-claim rule applies.
+
+Additional scenario (17/02/2026, UTC+1, late test):
+Context: Running session with macOS as owner. Android mirror requested
+ownership after a background window (macOS lid closed during the wait).
+
+Evidence (Firestore snapshots, UTC+1):
+- 23:41:51 ownerDeviceId = android after macOS accept (shortBreakRunning).
+- 23:44:13 ownerDeviceId = macOS (ownership reverted).
+- 23:46:22 ownershipRequest pending (requestId 7c73a503..., requester Android).
+- 23:46:15 ownerDeviceId = android after accept (pomodoroRunning).
+- 23:47:17 ownerDeviceId = macOS (ownership reverted again).
+Note: timestamps come from Firestore; capture order may differ slightly from
+the request/accept sequence.
+
+Observed behavior:
+- After accept, Android briefly becomes owner, then flips back to macOS within
+  ~15–20 seconds.
+- Android UI remains in requested/retry; repeated retry/accept cycles loop.
+- Only navigating to Groups Hub and returning stabilizes the session.
+
+Expected behavior:
+- Accepting an ownership request should stabilize ownership until a new
+  explicit transfer or a documented auto-claim condition applies.
+
+Additional scenario (18/02/2026, UTC+1, long break loop):
+Repeated ownership flips during long break despite accept:
+
+Evidence (Firestore snapshots, UTC+1):
+- 00:38:05 ownerDeviceId = android (longBreakRunning).
+- 00:39:06 ownerDeviceId = macOS (auto flip).
+- 00:39:06 ownerDeviceId = android after retry/accept.
+- 00:40:32 ownerDeviceId = macOS (auto flip).
+- 00:41:32 ownerDeviceId = android after retry/accept.
+- 00:42:32 ownerDeviceId = macOS (auto flip).
+- 00:43:06 paused by macOS (pausedAt 00:43:06) while Android remained mirror.
+
+Observed behavior:
+- Android can obtain ownership via accept, but macOS reclaims within ~1 minute.
+- Loop repeats without stabilizing on the requester.
 
 ## BUG-005 — Ownership request not surfaced until focus or resubscribe
 
@@ -445,3 +597,45 @@ Status:
 Open. Medium priority (UX consistency).
 
 ---
+
+## BUG-007 — Owner resumes behind mirror after background crash
+
+ID: BUG-007
+Date: 17/02/2026 (UTC+1)
+Platforms: Android owner + macOS mirror
+Context: Account Mode. Break after Pomodoro 6/19. Android owner. Group had been
+paused earlier (~2.5–3h) with Android as owner, no ownership changes after.
+Android went to background for ~90s (sending a WhatsApp audio); system showed
+"app has stopped working". On returning to foreground, Android resumed as owner
+but appeared ~5s behind the macOS mirror.
+
+Symptom:
+Owner device resumes a few seconds behind mirror after background crash.
+
+Observed behavior:
+- Android owner displayed ~5s less remaining than macOS mirror after resume.
+- The difference resolved after entering and leaving Groups Hub (and clicking
+  the macOS app), which re-synced the session.
+
+Expected behavior:
+Owner should re-anchor from the activeSession snapshot on resume so owner and
+mirror show the same remaining time immediately.
+
+Evidence:
+- User report (17/02/2026): break after Pomodoro 6/19, ~90s background, Android
+  system "app has stopped working" banner, owner returned behind mirror by ~5s.
+
+Workaround:
+Enter Groups Hub and return to Run Mode; click/focus the macOS app to force a
+resubscribe.
+
+Hypothesis:
+Resume after crash/suspend reuses a stale local phase anchor instead of
+re-anchoring from activeSession (server snapshot), causing a short owner lag
+until a manual resubscribe occurs.
+
+Fix applied:
+None.
+
+Status:
+Open. Medium priority (visible correctness issue).

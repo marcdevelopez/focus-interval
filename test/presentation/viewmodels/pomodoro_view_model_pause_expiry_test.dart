@@ -57,6 +57,11 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
   Stream<PomodoroSession?> watchSession() => Stream.value(_session);
 
   @override
+  Future<PomodoroSession?> fetchSession({bool preferServer = false}) async {
+    return _session;
+  }
+
+  @override
   Future<void> publishSession(PomodoroSession session) async {}
 
   @override
