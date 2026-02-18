@@ -6892,3 +6892,24 @@ _(none)_
 ### 🎯 Next steps:
 
 - Validate whether owner-side listeners refresh on incoming requests.
+
+
+# 🔹 Block 435 — Merge IDEA-018 into IDEA-029 (18/02/2026)
+
+### ✔ Work completed:
+
+- Marked IDEA-018 as merged into IDEA-029 to avoid duplicate pause-range
+  features in the backlog.
+
+### 🧠 Decisions made:
+
+- Keep IDEA-029 as the single source for live pause range updates (task list
+  + status boxes).
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Update the recommended execution order if needed after Phase 17 closes.
