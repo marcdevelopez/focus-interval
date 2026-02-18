@@ -229,8 +229,20 @@ final taskRunRetentionServiceProvider = Provider<TaskRunRetentionService>((_) {
   return TaskRunRetentionService();
 });
 
-final taskRunNoticeServiceProvider = Provider<TaskRunNoticeService>((_) {
-  return TaskRunNoticeService();
+final taskRunNoticeServiceProvider = Provider<TaskRunNoticeService>((ref) {
+  final appMode = ref.watch(appModeProvider);
+  final syncEnabled = ref.watch(accountSyncEnabledProvider);
+  final useAccount = appMode == AppMode.account && syncEnabled;
+  if (!useAccount) {
+    return TaskRunNoticeService();
+  }
+  final auth = ref.watch(firebaseAuthServiceProvider);
+  final firestore = ref.watch(firestoreServiceProvider);
+  return TaskRunNoticeService(
+    authService: auth,
+    firestoreService: firestore,
+    useAccount: true,
+  );
 });
 
 // Task run group repository
@@ -271,7 +283,22 @@ final activePomodoroSessionProvider = Provider<PomodoroSession?>((ref) {
   return session.status.isActiveExecution ? session : null;
 });
 
+class RunningOverlapDecision {
+  final String runningGroupId;
+  final String scheduledGroupId;
+  final int token;
+
+  const RunningOverlapDecision({
+    required this.runningGroupId,
+    required this.scheduledGroupId,
+    required this.token,
+  });
+}
+
 final scheduledAutoStartGroupIdProvider = StateProvider<String?>((_) => null);
+final runningOverlapDecisionProvider =
+    StateProvider<RunningOverlapDecision?>((_) => null);
+
 
 //
 // ==============================================================

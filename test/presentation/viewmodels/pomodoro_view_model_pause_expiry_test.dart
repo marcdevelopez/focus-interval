@@ -40,6 +40,14 @@ class FakeTaskRunGroupRepository implements TaskRunGroupRepository {
   }
 
   @override
+  Future<void> saveAll(List<TaskRunGroup> groups) async {
+    for (final group in groups) {
+      saved.add(group);
+      _store[group.id] = group;
+    }
+  }
+
+  @override
   Future<void> delete(String id) async {
     _store.remove(id);
   }

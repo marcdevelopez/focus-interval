@@ -56,6 +56,17 @@ class LocalTaskRunGroupRepository implements TaskRunGroupRepository {
   }
 
   @override
+  Future<void> saveAll(List<TaskRunGroup> groups) async {
+    await _ensureLoaded();
+    for (final group in groups) {
+      _store[group.id] = group;
+    }
+    await _pruneInMemory();
+    await _persist();
+    _emit();
+  }
+
+  @override
   Future<void> delete(String id) async {
     await _ensureLoaded();
     _store.remove(id);

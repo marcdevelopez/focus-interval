@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../presentation/viewmodels/scheduled_group_coordinator.dart';
+import '../presentation/screens/late_start_overlap_queue_screen.dart';
 
 class ScheduledGroupAutoStarter extends ConsumerStatefulWidget {
   final Widget child;
@@ -34,7 +35,7 @@ class _ScheduledGroupAutoStarterState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final action = ref.read(scheduledGroupCoordinatorProvider);
       if (action == null) return;
-      _navigateToTimer(action.groupId);
+      _handleAction(action);
       ref.read(scheduledGroupCoordinatorProvider.notifier).clearAction();
     });
   }
@@ -59,17 +60,35 @@ class _ScheduledGroupAutoStarterState
       scheduledGroupCoordinatorProvider,
       (previous, next) {
         if (next == null) return;
-        _navigateToTimer(next.groupId);
+        _handleAction(next);
         ref.read(scheduledGroupCoordinatorProvider.notifier).clearAction();
       },
     );
     return widget.child;
   }
 
+  void _handleAction(ScheduledGroupAction action) {
+    switch (action.type) {
+      case ScheduledGroupActionType.openTimer:
+        final groupId = action.groupId;
+        if (groupId == null) return;
+        _navigateToTimer(groupId);
+        break;
+      case ScheduledGroupActionType.lateStartQueue:
+        final groupIds = action.groupIds;
+        if (groupIds == null || groupIds.isEmpty) return;
+        _navigateToLateStartQueue(
+          groupIds,
+          action.anchor ?? DateTime.now(),
+        );
+        break;
+    }
+  }
+
   void _navigateToTimer(String groupId) {
     final navigatorContext = widget.navigatorKey.currentContext;
     if (navigatorContext == null) {
-      _scheduleRetry(groupId);
+      _scheduleRetry(() => _navigateToTimer(groupId));
       return;
     }
     _retryAttempts = 0;
@@ -82,17 +101,33 @@ class _ScheduledGroupAutoStarterState
     navigatorContext.go('/timer/$groupId');
   }
 
-  void _scheduleRetry(String groupId) {
+  void _navigateToLateStartQueue(List<String> groupIds, DateTime anchor) {
+    final navigatorContext = widget.navigatorKey.currentContext;
+    if (navigatorContext == null) {
+      _scheduleRetry(() => _navigateToLateStartQueue(groupIds, anchor));
+      return;
+    }
+    _retryAttempts = 0;
+    final current = _currentLocation(navigatorContext);
+    if (current.startsWith('/groups/late-start')) return;
+    debugPrint('Opening late-start overlap queue.');
+    navigatorContext.go(
+      '/groups/late-start',
+      extra: LateStartOverlapArgs(groupIds: groupIds, anchor: anchor),
+    );
+  }
+
+  void _scheduleRetry(VoidCallback action) {
     _retryAttempts += 1;
     if (_retryAttempts > 5) {
-      debugPrint('Scheduled auto-start suppressed (navigator not ready).');
+      debugPrint('Scheduled action suppressed (navigator not ready).');
       _retryAttempts = 0;
       return;
     }
     _navRetryTimer?.cancel();
     _navRetryTimer = Timer(const Duration(milliseconds: 250), () {
       if (!mounted) return;
-      _navigateToTimer(groupId);
+      action();
     });
   }
 

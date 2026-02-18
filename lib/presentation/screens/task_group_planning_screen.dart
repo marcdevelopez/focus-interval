@@ -294,6 +294,9 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
         _shiftNoticePrefLoaded &&
         !_shiftNoticeSuppressed;
 
+    final totalDurationLabel =
+        _formatDuration(Duration(seconds: preview.totalDurationSeconds));
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Plan group'),
@@ -368,7 +371,7 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
           const SizedBox(height: 20),
           _sectionHeader('Group preview'),
           const SizedBox(height: 8),
-          _groupTimeRow(groupStartLabel, groupEndLabel),
+          _groupTimeRow(groupStartLabel, groupEndLabel, totalDurationLabel),
           if (showShiftNotice) ...[
             const SizedBox(height: 6),
             _shiftNoticeBanner(shiftLabel),
@@ -663,12 +666,22 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
     _setShiftNoticeSuppressed(true);
   }
 
-  Widget _groupTimeRow(String start, String end) {
-    return Row(
+  Widget _groupTimeRow(String start, String end, String total) {
+    return Column(
       children: [
-        _timeChip('Start', start),
-        const SizedBox(width: 8),
-        _timeChip('End', end),
+        Row(
+          children: [
+            _timeChip('Start', start),
+            const SizedBox(width: 8),
+            _timeChip('End', end),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            _timeChip('Total duration', total),
+          ],
+        ),
       ],
     );
   }

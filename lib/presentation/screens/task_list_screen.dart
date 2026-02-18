@@ -24,6 +24,7 @@ import '../../domain/validators.dart';
 import '../../widgets/task_card.dart';
 import '../../widgets/mode_indicator.dart';
 import 'task_group_planning_screen.dart';
+import '../utils/scheduled_group_timing.dart';
 
 enum _EmailVerificationAction { verified, resend, useLocal, signOut }
 enum _IntegritySelectionType { keepIndividual, useDefault, useStructure, cancel }
@@ -127,6 +128,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   bool _webLocalNoticeChecked = false;
   bool _verificationPromptShown = false;
   bool _isReordering = false;
+  String? _lastMirrorConflictSnackKey;
+  final Set<String> _dismissedMirrorConflictSnackKeys = {};
+  bool _mirrorConflictSnackVisible = false;
   DateTime _planningAnchor = DateTime.now();
   String _planningAnchorKey = '';
   String? _activeBannerGroupId;
@@ -463,11 +467,13 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final signedIn = currentUser != null;
     final requiresVerification = ref.watch(emailVerificationRequiredProvider);
     final activeSession = ref.watch(activePomodoroSessionProvider);
+    final overlapDecision = ref.watch(runningOverlapDecisionProvider);
     final groupsAsync = ref.watch(taskRunGroupStreamProvider);
     final selectedIds = ref.watch(taskSelectionProvider);
     final selectedWeightPercents =
         ref.watch(selectedTaskWeightPercentsProvider);
     final selection = ref.read(taskSelectionProvider.notifier);
+    final deviceId = ref.watch(deviceInfoServiceProvider).deviceId;
     final isCompact = MediaQuery.of(context).size.width < 360;
     final screenWidth = MediaQuery.of(context).size.width;
     final emailLabel = currentUser?.email?.trim() ?? '';
@@ -506,6 +512,18 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final maxEmailWidth = (maxActionsWidth - actionReservedWidth)
         .clamp(0.0, baseMaxEmailWidth)
         .toDouble();
+    final mirrorConflictDecision = _resolveMirrorConflictDecision(
+      appMode: appMode,
+      activeSession: activeSession,
+      decision: overlapDecision,
+      deviceId: deviceId,
+    );
+    final mirrorConflictKey = mirrorConflictDecision == null
+        ? null
+        : _overlapDecisionKey(mirrorConflictDecision);
+    if (mirrorConflictKey != null) {
+      _maybeShowMirrorConflictSnack(context, mirrorConflictKey);
+    }
     final activeGroupId = activeSession?.groupId;
     if (activeGroupId != _activeBannerGroupId) {
       _activeBannerGroupId = activeGroupId;
@@ -680,6 +698,14 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       ),
       body: Column(
         children: [
+          if (mirrorConflictDecision != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+              child: _buildMirrorConflictBanner(
+                context,
+                decision: mirrorConflictDecision,
+              ),
+            ),
           if (activeGroupBanner != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
@@ -868,6 +894,93 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     );
   }
 
+  RunningOverlapDecision? _resolveMirrorConflictDecision({
+    required AppMode appMode,
+    required PomodoroSession? activeSession,
+    required RunningOverlapDecision? decision,
+    required String deviceId,
+  }) {
+    if (appMode != AppMode.account) return null;
+    if (activeSession == null || decision == null) return null;
+    if (activeSession.ownerDeviceId == deviceId) return null;
+    if (activeSession.groupId != decision.runningGroupId) return null;
+    return decision;
+  }
+
+  String _overlapDecisionKey(RunningOverlapDecision decision) =>
+      '${decision.runningGroupId}_${decision.scheduledGroupId}';
+
+  void _maybeShowMirrorConflictSnack(BuildContext context, String key) {
+    if (_dismissedMirrorConflictSnackKeys.contains(key)) return;
+    if (_lastMirrorConflictSnackKey == key && _mirrorConflictSnackVisible) {
+      return;
+    }
+    _lastMirrorConflictSnackKey = key;
+    _mirrorConflictSnackVisible = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.showSnackBar(
+        SnackBar(
+          duration: const Duration(days: 365),
+          dismissDirection: DismissDirection.none,
+          content: const Text(
+            'Owner seems unavailable. Request ownership to resolve this conflict.',
+          ),
+          action: SnackBarAction(
+            label: 'OK',
+            onPressed: () {
+              _dismissedMirrorConflictSnackKeys.add(key);
+              messenger.hideCurrentSnackBar();
+              if (!mounted) return;
+              setState(() {
+                _mirrorConflictSnackVisible = false;
+              });
+            },
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _buildMirrorConflictBanner(
+    BuildContext context, {
+    required RunningOverlapDecision decision,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.6)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Owner seems unavailable. Request ownership to resolve this conflict.',
+            style: TextStyle(color: Colors.white),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton(
+              onPressed: () =>
+                  _requestOwnershipForConflict(decision.runningGroupId),
+              child: const Text('Request ownership'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _requestOwnershipForConflict(String groupId) async {
+    await ref
+        .read(pomodoroViewModelProvider.notifier)
+        .requestOwnershipForActiveSession(groupId: groupId);
+  }
+
   Widget? _buildActiveGroupBanner(
     BuildContext context, {
     required PomodoroSession? activeSession,
@@ -955,11 +1068,19 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final groups = groupsAsync.value ?? const [];
     if (groups.isEmpty) return null;
     final now = DateTime.now();
+    final activeSession = ref.read(activePomodoroSessionProvider);
     TaskRunGroup? selected;
     DateTime? startTime;
     for (final group in groups) {
       if (group.status != TaskRunStatus.scheduled) continue;
-      final scheduledStart = group.scheduledStartTime;
+      final scheduledStart =
+          resolveEffectiveScheduledStart(
+            group: group,
+            allGroups: groups,
+            activeSession: activeSession,
+            now: now,
+          ) ??
+          group.scheduledStartTime;
       if (scheduledStart == null) continue;
       final noticeMinutes =
           group.noticeMinutes ?? TaskRunNoticeService.defaultNoticeMinutes;
@@ -1179,6 +1300,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final planOption = planningResult.option;
     final isStartNow = planOption == TaskGroupPlanOption.startNow;
     final isSchedule = !isStartNow;
+    final activeSession = ref.read(activePomodoroSessionProvider);
 
     final planCapturedAt = DateTime.now();
     DateTime? scheduledStart;
@@ -1226,13 +1348,11 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       return;
     }
     if (!context.mounted) return;
-    if (isSchedule &&
-        scheduledStart != null &&
-        noticeMinutes > 0) {
+    final now = DateTime.now();
+    if (isSchedule && scheduledStart != null && noticeMinutes > 0) {
       final preRunStart = scheduledStart.subtract(
         Duration(minutes: noticeMinutes),
       );
-      final now = DateTime.now();
       if (preRunStart.isBefore(now)) {
         _showSnackBar(
           context,
@@ -1245,6 +1365,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         existingGroups,
         preRunStart: preRunStart,
         scheduledStart: scheduledStart,
+        activeSession: activeSession,
+        now: now,
       );
       if (preRunConflict != null) {
         final message = preRunConflict == _PreRunConflictType.running
@@ -1263,6 +1385,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       newStart: conflictStart,
       newEnd: conflictEnd,
       includeRunningAlways: isStartNow,
+      activeSession: activeSession,
+      now: now,
     );
 
     try {
@@ -1386,6 +1510,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     required DateTime newStart,
     required DateTime newEnd,
     required bool includeRunningAlways,
+    required PomodoroSession? activeSession,
+    required DateTime now,
   }) {
     final running = <TaskRunGroup>[];
     final scheduled = <TaskRunGroup>[];
@@ -1399,11 +1525,29 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         running.add(group);
         continue;
       }
-      final start =
-          group.actualStartTime ?? group.scheduledStartTime ?? group.createdAt;
-      final end = group.theoreticalEndTime.isBefore(start)
-          ? start
-          : group.theoreticalEndTime;
+      final start = group.status == TaskRunStatus.scheduled
+          ? (resolveEffectiveScheduledStart(
+                group: group,
+                allGroups: groups,
+                activeSession: activeSession,
+                now: now,
+              ) ??
+              group.scheduledStartTime ??
+              group.createdAt)
+          : (group.actualStartTime ??
+              group.scheduledStartTime ??
+              group.createdAt);
+      final end = group.status == TaskRunStatus.scheduled
+          ? (resolveEffectiveScheduledEnd(
+                group: group,
+                allGroups: groups,
+                activeSession: activeSession,
+                now: now,
+              ) ??
+              group.theoreticalEndTime)
+          : (group.theoreticalEndTime.isBefore(start)
+              ? start
+              : group.theoreticalEndTime);
       if (!_overlaps(newStart, newEnd, start, end)) continue;
       if (group.status == TaskRunStatus.running) {
         running.add(group);
@@ -1421,17 +1565,37 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     List<TaskRunGroup> groups, {
     required DateTime preRunStart,
     required DateTime scheduledStart,
+    required PomodoroSession? activeSession,
+    required DateTime now,
   }) {
     for (final group in groups) {
       if (group.status == TaskRunStatus.canceled ||
           group.status == TaskRunStatus.completed) {
         continue;
       }
-      final start =
-          group.actualStartTime ?? group.scheduledStartTime ?? group.createdAt;
-      final end = group.theoreticalEndTime.isBefore(start)
-          ? start
-          : group.theoreticalEndTime;
+      final start = group.status == TaskRunStatus.scheduled
+          ? (resolveEffectiveScheduledStart(
+                group: group,
+                allGroups: groups,
+                activeSession: activeSession,
+                now: now,
+              ) ??
+              group.scheduledStartTime ??
+              group.createdAt)
+          : (group.actualStartTime ??
+              group.scheduledStartTime ??
+              group.createdAt);
+      final end = group.status == TaskRunStatus.scheduled
+          ? (resolveEffectiveScheduledEnd(
+                group: group,
+                allGroups: groups,
+                activeSession: activeSession,
+                now: now,
+              ) ??
+              group.theoreticalEndTime)
+          : (group.theoreticalEndTime.isBefore(start)
+              ? start
+              : group.theoreticalEndTime);
       if (!_overlaps(preRunStart, scheduledStart, start, end)) continue;
       if (group.status == TaskRunStatus.running) {
         return _PreRunConflictType.running;
@@ -1482,7 +1646,11 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final now = DateTime.now();
     for (final group in runningGroups) {
       await repo.save(
-        group.copyWith(status: TaskRunStatus.canceled, updatedAt: now),
+        group.copyWith(
+          status: TaskRunStatus.canceled,
+          canceledReason: TaskRunCanceledReason.user,
+          updatedAt: now,
+        ),
       );
     }
     return true;

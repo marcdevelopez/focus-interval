@@ -39,6 +39,13 @@ class FakeTaskRunGroupRepository implements TaskRunGroupRepository {
   }
 
   @override
+  Future<void> saveAll(List<TaskRunGroup> groups) async {
+    for (final group in groups) {
+      _store[group.id] = group;
+    }
+  }
+
+  @override
   Future<void> delete(String id) async {
     _store.remove(id);
   }
@@ -235,6 +242,8 @@ void main() {
     final vm = container.read(pomodoroViewModelProvider.notifier);
     final result = await vm.loadGroup(group.id);
     expect(result, PomodoroGroupLoadResult.loaded);
+    await _pumpQueue();
+    expect(vm.activeSessionForCurrentGroup, isNotNull);
 
     sessionRepo.emit(null);
     await _pumpQueue();

@@ -8,33 +8,146 @@ import '../../data/models/pomodoro_session.dart';
 import '../../data/models/task_run_group.dart';
 import '../../data/models/schema_version.dart';
 import '../../data/repositories/task_run_group_repository.dart';
+import '../../data/services/app_mode_service.dart';
 import '../../data/services/task_run_notice_service.dart';
 import '../../domain/pomodoro_machine.dart';
 import '../../widgets/mode_indicator.dart';
 import '../providers.dart';
 import 'task_group_planning_screen.dart';
+import '../utils/scheduled_group_timing.dart';
 
-class GroupsHubScreen extends ConsumerWidget {
+final DateFormat _groupsHubTimeFormat = DateFormat('HH:mm');
+final DateFormat _groupsHubDateTimeFormat = DateFormat('MMM d, HH:mm');
+
+String _formatGroupDateTime(DateTime? value, DateTime now) {
+  if (value == null) return '--:--';
+  final isToday =
+      value.year == now.year && value.month == now.month && value.day == now.day;
+  return isToday
+      ? _groupsHubTimeFormat.format(value)
+      : _groupsHubDateTimeFormat.format(value);
+}
+
+class GroupsHubScreen extends ConsumerStatefulWidget {
   const GroupsHubScreen({super.key});
 
+  @override
+  ConsumerState<GroupsHubScreen> createState() => _GroupsHubScreenState();
+}
+
+class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
+  String? _lastMirrorConflictSnackKey;
+  final Set<String> _dismissedMirrorConflictSnackKeys = {};
+  bool _mirrorConflictSnackVisible = false;
   static const int _completedHistoryLimit = 7;
   static const int _canceledHistoryLimit = 7;
-  static final DateFormat _timeFormat = DateFormat('HH:mm');
-  static final DateFormat _dateTimeFormat = DateFormat('MMM d, HH:mm');
 
-  static String _formatGroupDateTime(DateTime? value, DateTime now) {
-    if (value == null) return '--:--';
-    final isToday =
-        value.year == now.year &&
-        value.month == now.month &&
-        value.day == now.day;
-    return isToday ? _timeFormat.format(value) : _dateTimeFormat.format(value);
+  RunningOverlapDecision? _resolveMirrorConflictDecision({
+    required AppMode appMode,
+    required PomodoroSession? activeSession,
+    required RunningOverlapDecision? decision,
+    required String deviceId,
+  }) {
+    if (appMode != AppMode.account) return null;
+    if (activeSession == null || decision == null) return null;
+    if (activeSession.ownerDeviceId == deviceId) return null;
+    if (activeSession.groupId != decision.runningGroupId) return null;
+    return decision;
+  }
+
+  String _overlapDecisionKey(RunningOverlapDecision decision) =>
+      '${decision.runningGroupId}_${decision.scheduledGroupId}';
+
+  void _maybeShowMirrorConflictSnack(BuildContext context, String key) {
+    if (_dismissedMirrorConflictSnackKeys.contains(key)) return;
+    if (_lastMirrorConflictSnackKey == key && _mirrorConflictSnackVisible) {
+      return;
+    }
+    _lastMirrorConflictSnackKey = key;
+    _mirrorConflictSnackVisible = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.showSnackBar(
+        SnackBar(
+          duration: const Duration(days: 365),
+          dismissDirection: DismissDirection.none,
+          content: const Text(
+            'Owner seems unavailable. Request ownership to resolve this conflict.',
+          ),
+          action: SnackBarAction(
+            label: 'OK',
+            onPressed: () {
+              _dismissedMirrorConflictSnackKeys.add(key);
+              messenger.hideCurrentSnackBar();
+              if (!mounted) return;
+              setState(() {
+                _mirrorConflictSnackVisible = false;
+              });
+            },
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _buildMirrorConflictBanner(
+    BuildContext context, {
+    required RunningOverlapDecision decision,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.6)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Owner seems unavailable. Request ownership to resolve this conflict.',
+            style: TextStyle(color: Colors.white),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton(
+              onPressed: () =>
+                  _requestOwnershipForConflict(decision.runningGroupId),
+              child: const Text('Request ownership'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _requestOwnershipForConflict(String groupId) async {
+    await ref
+        .read(pomodoroViewModelProvider.notifier)
+        .requestOwnershipForActiveSession(groupId: groupId);
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final groupsAsync = ref.watch(taskRunGroupStreamProvider);
     final activeSession = ref.watch(activePomodoroSessionProvider);
+    final overlapDecision = ref.watch(runningOverlapDecisionProvider);
+    final appMode = ref.watch(appModeProvider);
+    final deviceId = ref.watch(deviceInfoServiceProvider).deviceId;
+    final mirrorConflictDecision = _resolveMirrorConflictDecision(
+      appMode: appMode,
+      activeSession: activeSession,
+      decision: overlapDecision,
+      deviceId: deviceId,
+    );
+    final mirrorConflictKey = mirrorConflictDecision == null
+        ? null
+        : _overlapDecisionKey(mirrorConflictDecision);
+    if (mirrorConflictKey != null) {
+      _maybeShowMirrorConflictSnack(context, mirrorConflictKey);
+    }
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -60,8 +173,24 @@ class GroupsHubScreen extends ConsumerWidget {
               .where((g) => g.status == TaskRunStatus.scheduled)
               .toList()
             ..sort((a, b) {
-              final aStart = a.scheduledStartTime ?? a.createdAt;
-              final bStart = b.scheduledStartTime ?? b.createdAt;
+              final aStart =
+                  resolveEffectiveScheduledStart(
+                    group: a,
+                    allGroups: groups,
+                    activeSession: activeSession,
+                    now: now,
+                  ) ??
+                  a.scheduledStartTime ??
+                  a.createdAt;
+              final bStart =
+                  resolveEffectiveScheduledStart(
+                    group: b,
+                    allGroups: groups,
+                    activeSession: activeSession,
+                    now: now,
+                  ) ??
+                  b.scheduledStartTime ??
+                  b.createdAt;
               return aStart.compareTo(bStart);
             });
           final completedGroups = groups
@@ -93,6 +222,15 @@ class GroupsHubScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
           ];
+          if (mirrorConflictDecision != null) {
+            children.add(
+              _buildMirrorConflictBanner(
+                context,
+                decision: mirrorConflictDecision,
+              ),
+            );
+            children.add(const SizedBox(height: 16));
+          }
 
           if (!hasGroups) {
             children
@@ -135,10 +273,27 @@ class GroupsHubScreen extends ConsumerWidget {
             for (final group in scheduledGroups)
               Builder(
                 builder: (context) {
-                  final isPreRunActive = _isPreRunActive(group, now);
+                  final effectiveStart = resolveEffectiveScheduledStart(
+                    group: group,
+                    allGroups: groups,
+                    activeSession: activeSession,
+                    now: now,
+                  );
+                  final isPreRunActive = _isPreRunActive(
+                    group,
+                    now,
+                    scheduledStartOverride: effectiveStart,
+                  );
                   return _GroupCard(
                     group: group,
                     activeSession: activeSession,
+                    scheduledStartOverride: effectiveStart,
+                    scheduledEndOverride: resolveEffectiveScheduledEnd(
+                      group: group,
+                      allGroups: groups,
+                      activeSession: activeSession,
+                      now: now,
+                    ),
                     onTap: () => _showSummaryDialog(context, group),
                     actions: [
                       if (isPreRunActive)
@@ -252,6 +407,7 @@ class GroupsHubScreen extends ConsumerWidget {
     final now = DateTime.now();
     final updated = group.copyWith(
       status: TaskRunStatus.canceled,
+      canceledReason: TaskRunCanceledReason.user,
       updatedAt: now,
     );
     await repo.save(updated);
@@ -267,6 +423,7 @@ class GroupsHubScreen extends ConsumerWidget {
   ) async {
     final repo = ref.read(taskRunGroupRepositoryProvider);
     final now = DateTime.now();
+    final activeSession = ref.read(activePomodoroSessionProvider);
     final totalSeconds =
         group.totalDurationSeconds ??
         groupDurationSecondsByMode(group.tasks, group.integrityMode);
@@ -288,6 +445,8 @@ class GroupsHubScreen extends ConsumerWidget {
       newStart: conflictStart,
       newEnd: conflictEnd,
       includeRunningAlways: true,
+      activeSession: activeSession,
+      now: now,
       excludeGroupId: group.id,
     );
 
@@ -401,11 +560,12 @@ class GroupsHubScreen extends ConsumerWidget {
       _showSnackBar(context, "Failed to check conflicts: $e");
       return;
     }
+    final now = DateTime.now();
+    final activeSession = ref.read(activePomodoroSessionProvider);
     if (isSchedule && scheduledStart != null && noticeMinutes > 0) {
       final preRunStart = scheduledStart.subtract(
         Duration(minutes: noticeMinutes),
       );
-      final now = DateTime.now();
       if (preRunStart.isBefore(now)) {
         _showSnackBar(
           context,
@@ -418,6 +578,8 @@ class GroupsHubScreen extends ConsumerWidget {
         existing,
         preRunStart: preRunStart,
         scheduledStart: scheduledStart,
+        activeSession: activeSession,
+        now: now,
       );
       if (preRunConflict != null) {
         final message = preRunConflict == _PreRunConflictType.running
@@ -437,6 +599,8 @@ class GroupsHubScreen extends ConsumerWidget {
       newStart: conflictStart,
       newEnd: conflictEnd,
       includeRunningAlways: isStartNow,
+      activeSession: activeSession,
+      now: now,
     );
 
     try {
@@ -543,6 +707,8 @@ class GroupsHubScreen extends ConsumerWidget {
     required DateTime newStart,
     required DateTime newEnd,
     required bool includeRunningAlways,
+    required PomodoroSession? activeSession,
+    required DateTime now,
     String? excludeGroupId,
   }) {
     final running = <TaskRunGroup>[];
@@ -558,11 +724,29 @@ class GroupsHubScreen extends ConsumerWidget {
         running.add(group);
         continue;
       }
-      final start =
-          group.actualStartTime ?? group.scheduledStartTime ?? group.createdAt;
-      final end = group.theoreticalEndTime.isBefore(start)
-          ? start
-          : group.theoreticalEndTime;
+      final start = group.status == TaskRunStatus.scheduled
+          ? (resolveEffectiveScheduledStart(
+                group: group,
+                allGroups: groups,
+                activeSession: activeSession,
+                now: now,
+              ) ??
+              group.scheduledStartTime ??
+              group.createdAt)
+          : (group.actualStartTime ??
+              group.scheduledStartTime ??
+              group.createdAt);
+      final end = group.status == TaskRunStatus.scheduled
+          ? (resolveEffectiveScheduledEnd(
+                group: group,
+                allGroups: groups,
+                activeSession: activeSession,
+                now: now,
+              ) ??
+              group.theoreticalEndTime)
+          : (group.theoreticalEndTime.isBefore(start)
+              ? start
+              : group.theoreticalEndTime);
       if (!_overlaps(newStart, newEnd, start, end)) continue;
       if (group.status == TaskRunStatus.running) {
         running.add(group);
@@ -580,17 +764,37 @@ class GroupsHubScreen extends ConsumerWidget {
     List<TaskRunGroup> groups, {
     required DateTime preRunStart,
     required DateTime scheduledStart,
+    required PomodoroSession? activeSession,
+    required DateTime now,
   }) {
     for (final group in groups) {
       if (group.status == TaskRunStatus.canceled ||
           group.status == TaskRunStatus.completed) {
         continue;
       }
-      final start =
-          group.actualStartTime ?? group.scheduledStartTime ?? group.createdAt;
-      final end = group.theoreticalEndTime.isBefore(start)
-          ? start
-          : group.theoreticalEndTime;
+      final start = group.status == TaskRunStatus.scheduled
+          ? (resolveEffectiveScheduledStart(
+                group: group,
+                allGroups: groups,
+                activeSession: activeSession,
+                now: now,
+              ) ??
+              group.scheduledStartTime ??
+              group.createdAt)
+          : (group.actualStartTime ??
+              group.scheduledStartTime ??
+              group.createdAt);
+      final end = group.status == TaskRunStatus.scheduled
+          ? (resolveEffectiveScheduledEnd(
+                group: group,
+                allGroups: groups,
+                activeSession: activeSession,
+                now: now,
+              ) ??
+              group.theoreticalEndTime)
+          : (group.theoreticalEndTime.isBefore(start)
+              ? start
+              : group.theoreticalEndTime);
       if (!_overlaps(preRunStart, scheduledStart, start, end)) continue;
       if (group.status == TaskRunStatus.running) {
         return _PreRunConflictType.running;
@@ -641,7 +845,11 @@ class GroupsHubScreen extends ConsumerWidget {
     final now = DateTime.now();
     for (final group in runningGroups) {
       await repo.save(
-        group.copyWith(status: TaskRunStatus.canceled, updatedAt: now),
+        group.copyWith(
+          status: TaskRunStatus.canceled,
+          canceledReason: TaskRunCanceledReason.user,
+          updatedAt: now,
+        ),
       );
     }
     return true;
@@ -701,15 +909,36 @@ class GroupsHubScreen extends ConsumerWidget {
   void _showSummaryDialog(BuildContext context, TaskRunGroup group) {
     final title = group.tasks.isNotEmpty ? group.tasks.first.name : 'Task group';
     final now = DateTime.now();
-    final scheduledLabel = _formatGroupDateTime(group.scheduledStartTime, now);
+    final allGroups = ref.read(taskRunGroupStreamProvider).value ?? const [];
+    final activeSession = ref.read(activePomodoroSessionProvider);
+    final effectiveScheduledStart = resolveEffectiveScheduledStart(
+      group: group,
+      allGroups: allGroups,
+      activeSession: activeSession,
+      now: now,
+    );
+    final effectiveScheduledEnd = resolveEffectiveScheduledEnd(
+      group: group,
+      allGroups: allGroups,
+      activeSession: activeSession,
+      now: now,
+    );
+    final scheduledLabel = _formatGroupDateTime(
+      effectiveScheduledStart ?? group.scheduledStartTime,
+      now,
+    );
     final actualLabel = _formatGroupDateTime(group.actualStartTime, now);
-    final endLabel = _formatGroupDateTime(group.theoreticalEndTime, now);
+    final endLabel = _formatGroupDateTime(
+      effectiveScheduledEnd ?? group.theoreticalEndTime,
+      now,
+    );
     final totalTasks = group.totalTasks ?? group.tasks.length;
     final totalDuration = _formatDuration(group.totalDurationSeconds ?? 0);
     final totalPomodoros = group.totalPomodoros ??
         group.tasks.fold<int>(0, (total, item) => total + item.totalPomodoros);
     final notice = group.noticeMinutes;
-    final showScheduled = group.scheduledStartTime != null;
+    final showScheduled =
+        (effectiveScheduledStart ?? group.scheduledStartTime) != null;
     final showNotice = showScheduled;
     showDialog<void>(
       context: context,
@@ -774,9 +1003,13 @@ class GroupsHubScreen extends ConsumerWidget {
     );
   }
 
-  bool _isPreRunActive(TaskRunGroup group, DateTime now) {
+  bool _isPreRunActive(
+    TaskRunGroup group,
+    DateTime now, {
+    DateTime? scheduledStartOverride,
+  }) {
     if (group.status != TaskRunStatus.scheduled) return false;
-    final scheduledStart = group.scheduledStartTime;
+    final scheduledStart = scheduledStartOverride ?? group.scheduledStartTime;
     if (scheduledStart == null) return false;
     final noticeMinutes =
         group.noticeMinutes ?? TaskRunNoticeService.defaultNoticeMinutes;
@@ -1225,6 +1458,8 @@ class _EmptySection extends StatelessWidget {
 class _GroupCard extends StatelessWidget {
   final TaskRunGroup group;
   final PomodoroSession? activeSession;
+  final DateTime? scheduledStartOverride;
+  final DateTime? scheduledEndOverride;
   final VoidCallback onTap;
   final List<_GroupAction> actions;
   final DateTime now;
@@ -1232,6 +1467,8 @@ class _GroupCard extends StatelessWidget {
   const _GroupCard({
     required this.group,
     required this.activeSession,
+    this.scheduledStartOverride,
+    this.scheduledEndOverride,
     required this.onTap,
     required this.actions,
     required this.now,
@@ -1243,9 +1480,9 @@ class _GroupCard extends StatelessWidget {
     final totalTasks = group.totalTasks ?? group.tasks.length;
     final totalDuration =
         _formatDuration(group.totalDurationSeconds ?? 0);
-    final scheduledStart = group.scheduledStartTime;
-    final endTime = group.theoreticalEndTime;
-    final showNotice = group.scheduledStartTime != null;
+    final scheduledStart = scheduledStartOverride ?? group.scheduledStartTime;
+    final endTime = scheduledEndOverride ?? group.theoreticalEndTime;
+    final showNotice = scheduledStart != null;
     final notice =
         group.noticeMinutes ?? TaskRunNoticeService.defaultNoticeMinutes;
     final sessionPaused =
@@ -1286,11 +1523,11 @@ class _GroupCard extends StatelessWidget {
             if (scheduledStart != null)
               _MetaRow(
                 label: 'Scheduled',
-                value: GroupsHubScreen._formatGroupDateTime(scheduledStart, now),
+                value: _formatGroupDateTime(scheduledStart, now),
               ),
             _MetaRow(
               label: 'Ends',
-              value: GroupsHubScreen._formatGroupDateTime(endTime, now),
+              value: _formatGroupDateTime(endTime, now),
             ),
             _MetaRow(
               label: 'Tasks',

@@ -7,6 +7,13 @@ enum TaskRunStatus { scheduled, running, completed, canceled }
 
 enum TaskRunIntegrityMode { shared, individual }
 
+class TaskRunCanceledReason {
+  static const String user = 'user';
+  static const String conflict = 'conflict';
+  static const String interrupted = 'interrupted';
+  static const String missedSchedule = 'missedSchedule';
+}
+
 int _readInt(Map<String, dynamic> map, String key, int fallback) {
   final value = map[key];
   if (value is int) return value;
@@ -125,11 +132,13 @@ class TaskRunGroup {
   final DateTime createdAt;
   final DateTime? scheduledStartTime;
   final String? scheduledByDeviceId;
+  final String? postponedAfterGroupId;
   final DateTime? noticeSentAt;
   final String? noticeSentByDeviceId;
   final DateTime? actualStartTime;
   final DateTime theoreticalEndTime;
   final TaskRunStatus status;
+  final String? canceledReason;
   final int? noticeMinutes;
   final int? totalTasks;
   final int? totalPomodoros;
@@ -145,11 +154,13 @@ class TaskRunGroup {
     required this.createdAt,
     required this.scheduledStartTime,
     this.scheduledByDeviceId,
+    this.postponedAfterGroupId,
     this.noticeSentAt,
     this.noticeSentByDeviceId,
     required this.actualStartTime,
     required this.theoreticalEndTime,
     required this.status,
+    this.canceledReason,
     required this.noticeMinutes,
     required this.totalTasks,
     required this.totalPomodoros,
@@ -165,11 +176,13 @@ class TaskRunGroup {
     DateTime? createdAt,
     DateTime? scheduledStartTime,
     String? scheduledByDeviceId,
+    String? postponedAfterGroupId,
     DateTime? noticeSentAt,
     String? noticeSentByDeviceId,
     DateTime? actualStartTime,
     DateTime? theoreticalEndTime,
     TaskRunStatus? status,
+    String? canceledReason,
     TaskRunIntegrityMode? integrityMode,
     int? noticeMinutes,
     int? totalTasks,
@@ -186,11 +199,14 @@ class TaskRunGroup {
       createdAt: createdAt ?? this.createdAt,
       scheduledStartTime: scheduledStartTime ?? this.scheduledStartTime,
       scheduledByDeviceId: scheduledByDeviceId ?? this.scheduledByDeviceId,
+      postponedAfterGroupId:
+          postponedAfterGroupId ?? this.postponedAfterGroupId,
       noticeSentAt: noticeSentAt ?? this.noticeSentAt,
       noticeSentByDeviceId: noticeSentByDeviceId ?? this.noticeSentByDeviceId,
       actualStartTime: actualStartTime ?? this.actualStartTime,
       theoreticalEndTime: theoreticalEndTime ?? this.theoreticalEndTime,
       status: status ?? this.status,
+      canceledReason: canceledReason ?? this.canceledReason,
       noticeMinutes: noticeMinutes ?? this.noticeMinutes,
       totalTasks: totalTasks ?? this.totalTasks,
       totalPomodoros: totalPomodoros ?? this.totalPomodoros,
@@ -208,11 +224,13 @@ class TaskRunGroup {
     'createdAt': createdAt.toIso8601String(),
     'scheduledStartTime': scheduledStartTime?.toIso8601String(),
     'scheduledByDeviceId': scheduledByDeviceId,
+    'postponedAfterGroupId': postponedAfterGroupId,
     'noticeSentAt': noticeSentAt?.toIso8601String(),
     'noticeSentByDeviceId': noticeSentByDeviceId,
     'actualStartTime': actualStartTime?.toIso8601String(),
     'theoreticalEndTime': theoreticalEndTime.toIso8601String(),
     'status': status.name,
+    'canceledReason': canceledReason,
     'noticeMinutes': noticeMinutes,
     'totalTasks': totalTasks,
     'totalPomodoros': totalPomodoros,
@@ -249,6 +267,7 @@ class TaskRunGroup {
       createdAt: createdAt,
       scheduledStartTime: _parseDateTime(map['scheduledStartTime']),
       scheduledByDeviceId: map['scheduledByDeviceId'] as String?,
+      postponedAfterGroupId: map['postponedAfterGroupId'] as String?,
       noticeSentAt: _parseDateTime(map['noticeSentAt']),
       noticeSentByDeviceId: map['noticeSentByDeviceId'] as String?,
       actualStartTime: _parseDateTime(map['actualStartTime']),
@@ -258,6 +277,7 @@ class TaskRunGroup {
         (s) => s.name == map['status'],
         orElse: () => TaskRunStatus.scheduled,
       ),
+      canceledReason: map['canceledReason'] as String?,
       noticeMinutes: (map['noticeMinutes'] as num?)?.toInt(),
       totalTasks: totalTasks,
       totalPomodoros: totalPomodoros,

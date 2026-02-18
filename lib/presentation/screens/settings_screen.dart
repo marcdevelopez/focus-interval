@@ -2,13 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../data/services/task_run_notice_service.dart';
 import '../../widgets/mode_indicator.dart';
+import '../viewmodels/pre_run_notice_view_model.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final noticeSubtitle = ref.watch(preRunNoticeMinutesProvider).when(
+          data: (minutes) {
+            if (minutes <= TaskRunNoticeService.minNoticeMinutes) {
+              return 'Off';
+            }
+            return 'Notice $minutes min before';
+          },
+          loading: () => 'Loading...',
+          error: (_, __) => 'Unavailable',
+        );
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -26,6 +39,15 @@ class SettingsScreen extends ConsumerWidget {
             subtitle: 'Create, edit, delete, and set defaults',
             icon: Icons.tune,
             onTap: () => context.push('/settings/presets'),
+          ),
+          const SizedBox(height: 24),
+          _sectionLabel('Scheduling'),
+          _settingsTile(
+            context,
+            title: 'Pre-run notice',
+            subtitle: noticeSubtitle,
+            icon: Icons.schedule,
+            onTap: () => context.push('/settings/pre-run-notice'),
           ),
           const SizedBox(height: 24),
           _sectionLabel('Preferences'),

@@ -96,6 +96,20 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
   }
 
   @override
+  Future<void> saveAll(List<TaskRunGroup> groups) async {
+    if (groups.isEmpty) return;
+    final uid = await _uidOrThrow();
+    final now = DateTime.now();
+    final batch = _db.batch();
+    for (final group in groups) {
+      final normalized = _normalizeGroup(group, now: now);
+      batch.set(_collection(uid).doc(group.id), normalized.toMap());
+    }
+    await batch.commit();
+    await prune();
+  }
+
+  @override
   Future<void> delete(String id) async {
     final uid = await _uidOrThrow();
     await _collection(uid).doc(id).delete();

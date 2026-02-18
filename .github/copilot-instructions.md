@@ -20,8 +20,9 @@ At the start of every session:
 3. Verify CURRENT PHASE and any Reopened phases in `docs/roadmap.md`.
 4. If a phase is reopened and not listed, add it immediately to the Reopened list.
 5. Do not start coding until context is aligned.
-6. Ensure you are not on `main`; create a new branch before any code or doc changes.
-7. If already on a branch, ensure the change matches the branch scope; otherwise finish/commit that work and create a new branch.
+6. Before any implementation, explain the high-level plan and review it for incoherence or likely failure modes; wait for confirmation.
+7. Ensure you are not on `main`; create a new branch before any code or doc changes.
+8. If already on a branch, ensure the change matches the branch scope; otherwise finish/commit that work and create a new branch.
 
 Documentation-first rule:
 - Specs must define behavior before code changes.

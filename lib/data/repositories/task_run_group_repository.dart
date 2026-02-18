@@ -5,6 +5,7 @@ abstract class TaskRunGroupRepository {
   Future<List<TaskRunGroup>> getAll();
   Future<TaskRunGroup?> getById(String id);
   Future<void> save(TaskRunGroup group);
+  Future<void> saveAll(List<TaskRunGroup> groups);
   Future<void> delete(String id);
   Future<void> prune({int? keepCompleted});
 }
@@ -22,6 +23,9 @@ class NoopTaskRunGroupRepository implements TaskRunGroupRepository {
 
   @override
   Future<void> save(TaskRunGroup group) async {}
+
+  @override
+  Future<void> saveAll(List<TaskRunGroup> groups) async {}
 
   @override
   Future<void> delete(String id) async {}

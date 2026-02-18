@@ -686,10 +686,12 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     await _groupRepo.save(updated);
   }
 
-  Future<void> cancel() async {
+  Future<void> cancel({String? reason}) async {
     if (!_controlsEnabled) return;
     _resetLocalSessionState();
-    await _markGroupCanceled();
+    await _markGroupCanceled(
+      reason: reason ?? TaskRunCanceledReason.user,
+    );
     await _sessionRepo.clearSessionAsOwner();
   }
 
@@ -725,6 +727,22 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     } finally {
       unawaited(syncWithRemoteSession(refreshGroup: false));
     }
+  }
+
+  Future<void> requestOwnershipForActiveSession({
+    required String groupId,
+  }) async {
+    if (ref.read(appModeProvider) != AppMode.account) return;
+    final session = ref.read(activePomodoroSessionProvider);
+    if (session == null) return;
+    if (session.groupId != groupId) return;
+    if (!session.status.isActiveExecution) return;
+    if (session.ownerDeviceId == _deviceInfo.deviceId) return;
+    final requestId = _uuid.v4();
+    await _sessionRepo.requestOwnership(
+      requesterDeviceId: _deviceInfo.deviceId,
+      requestId: requestId,
+    );
   }
 
   Future<void> approveOwnershipRequest() async {
@@ -833,13 +851,14 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     await _sessionRepo.clearSessionAsOwner();
   }
 
-  Future<void> _markGroupCanceled() async {
+  Future<void> _markGroupCanceled({required String reason}) async {
     final group = _currentGroup;
     if (group == null) return;
     if (group.status == TaskRunStatus.canceled) return;
     final now = DateTime.now();
     final updated = group.copyWith(
       status: TaskRunStatus.canceled,
+      canceledReason: reason,
       updatedAt: now,
     );
     _currentGroup = updated;
