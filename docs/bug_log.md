@@ -240,7 +240,7 @@ Open. Reproduced in real device test (Android + macOS). High priority.
 
 ---
 
-## BUG-003 — Mirror flicker every ~15s on macOS after Android pause/resume
+## BUG-003 — Mirror pulse refresh (~15s) after Android pause/resume
 
 ID: BUG-003
 Date: 13/02/2026 (UTC+1)
@@ -251,7 +251,7 @@ eventually becomes owner. Android pauses ~1 minute and then resumes; macOS moves
 to mirror.
 
 Symptom:
-- macOS mirror flicks/rebuilds UI about every ~15s after Android pause/resume.
+- macOS mirror flicks/rebuilds UI after Android pause/resume.
 
 Observed behavior:
 - After Android pause (~1 minute) and resume while Android is owner, macOS mirror
@@ -274,17 +274,65 @@ Evidence:
   - 21:01:44 `ownerDeviceId = android`, `status = pomodoroRunning`,
     `remainingSeconds = 1035`, `phaseStartedAt = 20:53:59`, yet UI rebuilds
     every ~15s on macOS mirror.
+- User report (18/02/2026 ~13:53 UTC+1): after ownership transfer (Android
+  owner, macOS mirror), macOS alternated between the correct owner timer and a
+  stale timer offset by ~17–28 seconds. The mismatch persisted across pause/
+  resume and carried into break; macOS break sounds fired ~20s late. Sample
+  readings:
+  - 13:53:17 (running): Android 19:04 vs macOS 18:47.
+  - 13:53:23 (pause): Android 18:58 vs macOS 18:41.
+  - 13:53:34 (resume): Android 18:58 vs macOS 18:30.
+  - 13:53:43 (pause): Android 18:50 vs macOS 18:22.
+  - 13:53:52 (resume): Android 18:50 vs macOS 18:12.
 
 Hypothesis:
 - Periodic resubscribe/refresh may trigger a full Run Mode rebuild even when
   derived values are unchanged.
-
-Fix applied:
-- Implemented server-time offset projection in `PomodoroViewModel` so mirrors
-  project from lastUpdatedAt-derived server time (pending validation).
+- macOS mirror may keep a local timer running after ownership transfer or miss
+  pause/resume snapshots, causing alternating projections (local vs remote).
 
 Status:
-Open. Low priority unless fix can be made without regressions.
+Open. Low priority; cosmetic unless it escalates.
+
+---
+
+## BUG-009 — Mirror swaps between two timers every second (ownership handoff)
+
+ID: BUG-009
+Date: 18/02/2026 (UTC+1)
+Platforms: macOS mirror + Android owner
+Context: Ownership transfer completed. Android is owner, macOS is mirror. A pause
+occurred earlier (exact device uncertain), then the mirror began alternating
+between two timer values.
+
+Symptom:
+- macOS mirror alternates every second between the correct owner timer and a
+  stale timer offset by ~17–28 seconds.
+- Break sounds fire late on macOS (~20s late), matching the stale timer.
+
+Observed behavior:
+- Per-second swap visible in Run Mode (timer circle and status boxes), while
+  Firestore remains consistent with the owner timer.
+- The swap persists across pause/resume and can continue into breaks.
+
+Evidence:
+- 13:53:17 (running): Android 19:04 vs macOS 18:47.
+- 13:53:23 (pause): Android 18:58 vs macOS 18:41.
+- 13:53:34 (resume): Android 18:58 vs macOS 18:30.
+- 13:53:43 (pause): Android 18:50 vs macOS 18:22.
+- 13:53:52 (resume): Android 18:50 vs macOS 18:12.
+
+Hypothesis:
+- macOS mirror kept the local PomodoroMachine timer running after ownership
+  transfer, causing per-second swaps between local ticks and session projection.
+
+Fix applied:
+- Suppressed local PomodoroMachine timer while in mirror mode by restoring
+  session state without starting the machine timer; mirrors now project solely
+  from activeSession snapshots (branch: bug-mirror-machine-suppress).
+
+Status:
+Pending validation after the mirror timer suppression.
 
 ---
 
@@ -527,6 +575,9 @@ Evidence:
 - Variant B: User report — Ready screen can recover on click and still allow
   immediate ownership request delivery, indicating the Ready state is not
   always tied to request delay.
+- Variant C (18/02/2026): after multiple ownership changes and an owner pause,
+  a mirror ownership request did not reach the owner until Groups Hub was opened
+  and Run Mode was re-entered.
 
 Workaround:
 - Click/focus the macOS window to surface pending requests.
