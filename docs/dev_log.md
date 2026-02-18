@@ -6780,3 +6780,28 @@ _(none)_
 ### 🎯 Next steps:
 
 - Re-test after the mirror timer suppression to confirm BUG-009 no longer appears.
+
+
+# 🔹 Block 430 — Regression found: owner freezes after accept (18/02/2026)
+
+### ✔ Work completed:
+
+- Logged a regression where ownership acceptance briefly flips to the requester,
+  then reverts to the previous owner within seconds; requester UI freezes in
+  requested state.
+- Captured the Start Now scenario where Android did not auto-open Run Mode while
+  macOS started the session.
+
+### 🧠 Decisions made:
+
+- Roll back the mirror timer suppression change and reassess ownership flow.
+
+### ⚠️ Issues found:
+
+- Ownership accept still reverts after a few seconds; requester remains stuck.
+- Auto-open to Run Mode did not trigger for Android on Task List.
+
+### 🎯 Next steps:
+
+- Revert the mirror suppression change on a dedicated branch.
+- Re-test ownership acceptance and auto-open flow after rollback.

@@ -259,7 +259,6 @@ class PomodoroMachine {
     required int totalPomodoros,
     required int totalSeconds,
     required int remainingSeconds,
-    bool startTimer = true,
   }) {
     _cancelTimer();
     _prePauseStatus = null;
@@ -285,14 +284,10 @@ class PomodoroMachine {
 
     if (_isRunningStatus(status)) {
       if (remainingSeconds <= 0) {
-        if (startTimer) {
-          _onCycleCompleted();
-        }
+        _onCycleCompleted();
         return;
       }
-      if (startTimer) {
-        _startTimer();
-      }
+      _startTimer();
     }
   }
 
