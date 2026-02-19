@@ -22,7 +22,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **18/02/2026**
+Last update: **19/02/2026**
 
 ---
 
@@ -1062,6 +1062,56 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - None.
+
+
+# 🔹 Block 438 — Phase 17 conflict resolution + planning total duration (18/02/2026)
+
+### ✔ Work completed:
+
+- Added Plan Group total duration (work + breaks) to the planning preview.
+- Implemented late-start overlap queue flow with selection, reorder, preview,
+  and batch updates for cancel/reschedule.
+- Added running overlap decision modal with pause, postpone, cancel, or end
+  current group handling.
+- Added TaskRunGroup canceledReason field and repository batch save support.
+- Updated ScheduledGroupCoordinator to detect overdue overlaps and pre-run
+  conflicts and trigger the appropriate UI flows.
+
+### 🧠 Decisions made:
+
+- Use Firestore batch writes for multi-group conflict resolution updates.
+- Keep conflict resolution UI in-app with full-screen queue + blocking modal.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Validate Phase 17 conflict resolution flows on devices (Account + Local).
+
+
+# 🔹 Block 437 — Close Phase 17 validation items (18/02/2026)
+
+### ✔ Work completed:
+
+- Confirmed Phase 17 validation for pre-run reservation messaging, planning
+  redesign with range/total-time scheduling, and scheduled pre-run auto-start.
+- Removed the three validated Phase 17 items from the reopened phases list in
+  `docs/roadmap.md`.
+
+### 🧠 Decisions made:
+
+- Treat these Phase 17 items as closed; keep remaining Phase 17 reopen items
+  limited to conflict resolution and total-duration display.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Implement Phase 17 conflict resolution rules and Plan Group total duration.
 
 ---
 
@@ -6935,3 +6985,196 @@ _(none)_
 ### 🎯 Next steps:
 
 - None.
+
+
+# 🔹 Block 437 — Phase 17 test coverage + workflow rule (18/02/2026)
+
+### ✔ Work completed:
+
+- Added a mandatory pre-implementation high-level plan + risk review rule to
+  `AGENTS.md` and `.github/copilot-instructions.md`.
+- Added ScheduledGroupCoordinator tests for late-start queue + running overlap
+  decision; introduced a `@visibleForTesting` helper to evaluate overlap logic
+  deterministically.
+- Updated ownership/session-gap tests to wait for session readiness before
+  asserting pending/missing states.
+- `flutter analyze` and `flutter test` now pass.
+
+### 🧠 Decisions made:
+
+- Use a `@visibleForTesting` helper to validate overlap decision logic without
+  relying on stream timing.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- None.
+
+
+# 🔹 Block 438 — Account-scoped pre-run notice setting (18/02/2026)
+
+### ✔ Work completed:
+
+- Documented account-scoped Pre-Run notice minutes in `docs/specs.md` and
+  added the requirement to Phase 14; Phase 17 reopened items removed and
+  formally closed in `docs/roadmap.md`.
+- Added Settings UI for Pre-Run notice minutes and a small viewmodel to load
+  and persist the value.
+- Implemented Firestore-backed notice preference (per account) with local
+  fallback; updated `firestore.rules` for `/users/{uid}/settings/*`.
+- Added tests for the notice settings viewmodel.
+- `flutter analyze` and `flutter test` pass.
+
+### 🧠 Decisions made:
+
+- Notice minutes are **per account** in Account Mode and **per device** in
+  Local Mode; range capped at 0–15 minutes with default 5.
+- Firestore settings document is additive; no backfill required (per
+  `docs/release_safety.md`).
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Validate cross-device sync of notice minutes on two signed-in devices.
+
+
+# 🔹 Block 439 — Phase 17 reopen: early overlap warning + mirror CTA (18/02/2026)
+
+### ✔ Work completed:
+
+- Updated specs for early running-overlap detection (pause drift) with break-based
+  deferral rules and an explicit last-pomodoro exception.
+- Added mirror UX requirements: persistent CTA in Groups Hub/Task List and a
+  persistent conflict SnackBar requiring OK to dismiss.
+- Reopened Phase 17 in the roadmap to track the new conflict-resolution scope.
+
+### 🧠 Decisions made:
+
+- Detect running overlap as soon as theoreticalEndTime crosses the next
+  scheduled pre-run window (even before the pre-run starts).
+- Defer the decision modal to breaks when possible; show immediately only on
+  the final pomodoro.
+- Mirror CTA copy uses “Owner seems unavailable…” and always allows a request.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Implement the early overlap warning + mirror CTA + persistent SnackBar.
+- Add tests for the updated overlap detection timing and deferral rules.
+
+
+# 🔹 Block 440 — Clarify overlap notification timing (18/02/2026)
+
+### ✔ Work completed:
+
+- Refined the running-overlap timing rules to trigger the decision as soon as
+  overlap becomes possible (runningEnd >= preRunStart), without waiting for
+  a pomodoro-count threshold.
+- Clarified break-first behavior with an explicit last-pomodoro exception.
+
+### 🧠 Decisions made:
+
+- Overlap detection starts at the moment it becomes possible; the UI only
+  defers to the nearest allowed break unless there is no break left.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Implement the updated timing logic in the coordinator and TimerScreen.
+
+
+# 🔹 Block 441 — Implement early overlap warning + mirror CTA (18/02/2026)
+
+### ✔ Work completed:
+
+- Scheduled overlap detection now triggers as soon as runningEnd crosses the
+  next pre-run start (no pre-run window gating), and mirrors receive the
+  overlap signal for CTA/snackbar use.
+- TimerScreen now defers the conflict modal to breaks, with an immediate
+  exception for the final pomodoro.
+- Added mirror conflict CTA + persistent SnackBar to Groups Hub and Task List.
+- Added an ownership-request helper on the PomodoroViewModel for mirror CTAs.
+- Updated overlap tests to cover pre-run-future detection and mirror devices.
+- Ran `flutter analyze`.
+- Ran `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart`.
+
+### 🧠 Decisions made:
+
+- Use the existing overlap decision provider for mirror UX signals, while
+  keeping the modal owner-only via TimerScreen checks.
+- SnackBars are persistent (no swipe dismissal) and require explicit OK.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Validate the new overlap timing and mirror CTA behavior on device.
+
+# 🔹 Block 442 — Phase 17: auto-follow postpone + paused overlap timing (19/02/2026)
+
+### ✔ Work completed:
+
+- Updated specs for postponed scheduling (postponedAfterGroupId), paused overlap
+  projection, and postpone confirmation SnackBar copy.
+- Implemented auto-follow postpone: scheduled groups track the running group’s
+  projected end in real time and lock in the schedule when the anchor ends.
+- Added paused overlap recheck scheduling so conflicts surface without waiting
+  for resume.
+- Updated Groups Hub and Task List to display effective scheduled timing and
+  pre-run status for postponed groups.
+- Postpone now confirms the new start time and pre-run time via SnackBar.
+- Added overlap tests for paused projection and postponed-follow suppression.
+- Ran `flutter analyze`.
+- Ran `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart`.
+
+### 🧠 Decisions made:
+
+- Paused overlap decisions show immediately (no deferral).
+- Effective schedule derives from anchor end + notice until it is finalized.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Run the full test suite.
+- Validate postpone flow on device (no repeat modal; schedule updates during
+  pauses).
+
+# 🔹 Block 443 — Phase 17: paused overlap recheck + cancel postponed schedule fix (19/02/2026)
+
+### ✔ Work completed:
+
+- ScheduledGroupCoordinator now re-evaluates overlaps on paused session heartbeats
+  (no resume required) and avoids overriding canceled postponed groups.
+- Cancel scheduled group now clears postponedAfterGroupId to prevent re-apply.
+- Ran `flutter analyze`.
+- Ran `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart`.
+
+### 🧠 Decisions made:
+
+- Use paused-session heartbeats (pausedAt/lastUpdatedAt) to trigger conflict
+  evaluation while in foreground.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Validate pause-overlap and cancel-postponed flows on device.

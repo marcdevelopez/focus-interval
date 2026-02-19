@@ -186,23 +186,28 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
                   (validation pending).
       12/02/2026: Owner-side reject modal dismissal stabilized against
                   requestId materialization flicker (validation pending).
+      18/02/2026: Phase 17 validation closed (planning total duration + conflict
+                  resolution).
+      18/02/2026: Phase 17 reopened — early overlap warning (pause drift) +
+                  mirror ownership CTA (Groups Hub / Task List) (pending).
+      18/02/2026: Early overlap warning + mirror CTA + persistent conflict
+                  SnackBar implemented (validation pending).
+      19/02/2026: Phase 17 scope extended — postpone follows running group in
+                  real time (no repeat modal) + paused overlap alerts
+                  implemented (validation pending).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
 ## 🔄 Reopened phases (must complete before moving on)
 
-- Phase 17 — Scheduled auto-start stuck after prior running group ended; recheck on session end + expired running group auto-complete (validation pending).
-- Phase 17 — Scheduling must reserve full Pre-Run window (noticeMinutes) with clear user messaging (validation pending).
-- Phase 17 — Pre-start planning redesign + schedule by total range / total time (proportional redistribution) (implemented; validation pending).
-- Phase 17 — Plan Group shows total duration (work + breaks) in the planning screen (new requirement).
-- Phase 17 — Scheduled Pre-Run must auto-start without user action when the countdown ends (bug).
-- Phase 17 — Define conflict resolution for late-start overlaps, long-pause overlaps, and overdue scheduled groups (specs updated; implementation pending).
 - Phase 10 — Auto-adjust breaks on valid pomodoro changes and break edits (focus-loss adjustment; Task Editor + Edit Preset) (validation pending).
 - Phase 10 — Task weight (%) is selection-scoped in Edit Task + info modal (validation pending).
 - Phase 13 — Mirror session gaps must not drop Run Mode to Ready (validation pending).
 - Phase 10 — Task Editor: total time chip + task color picker (new requirement).
 - Phase 9 — Task List: group name input + group summary + per-task total time + selection reset (new requirement).
+- Phase 17 — Early overlap warning (pause drift) + mirror ownership CTA + persistent conflict snackbar + auto-follow postpone (no repeat modal) + paused overlap alerts (new requirement).
 - Phase 14 — Global sound settings (apply switch + revert) (new requirement).
+- Phase 14 — Pre-Run notice minutes setting (Account Mode sync + Settings UI; range 0–15) (new requirement).
 - Phase 15 — TaskRunGroup model updates (group name + task color snapshot + integrityMode) (new requirement).
 - Phase 6 — Account profile metadata (display name + avatar) in Firestore/Storage; Settings UI (Account Mode only); ownership UI uses Name (Platform) (new requirement).
 - Phase 18 — Mode-specific breaks (global long-break counter in Mode A) implemented; validation pending.

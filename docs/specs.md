@@ -161,6 +161,7 @@ class TaskRunGroup {
 
   DateTime? scheduledStartTime; // null when "Start now"
   String? scheduledByDeviceId; // device that initiated schedule or start
+  String? postponedAfterGroupId; // when set, schedule follows another group
   DateTime theoreticalEndTime;  // required for overlap checks
 
   String status; // scheduled | running | completed | canceled
@@ -198,6 +199,7 @@ class TaskRunItem {
 Notes:
 
 - theoreticalEndTime is calculated when the group is scheduled or started, using scheduledStartTime (if set) or now (for immediate start). Recalculate if the start time changes.
+- postponedAfterGroupId marks a scheduled group as following another group. While the anchor group is running/paused, the effective scheduledStartTime is derived as anchorEnd + noticeMinutes, and pre-run begins at anchorEnd. When the anchor group ends, the schedule is locked in and postponedAfterGroupId is cleared.
 - During execution, theoreticalEndTime must be extended by **total pause offsets**
   (cumulative paused time). The owner updates this on resume so all devices share
   the same projected end.
@@ -1396,6 +1398,27 @@ Trigger
 
 - A scheduled group’s **pre-run window begins** while another group is still
   running or paused (see section 6.4).
+- If the running group’s **theoreticalEndTime** is pushed (e.g., by pauses)
+  so it now overlaps the next scheduled group’s **pre-run window**, the
+  conflict is detected immediately **even before** the pre-run window begins.
+- While paused, use the **projected end** (theoreticalEndTime + elapsed pause)
+  for overlap detection. Trigger as soon as the projected end reaches the
+  pre-run start; do **not** wait for resume.
+
+Timing of the decision UI
+
+- The moment an overlap becomes possible (runningEnd >= preRunStart), begin
+  conflict notification timing. Do **not** wait for the pre-run to start.
+- The decision modal should appear **during a break** when possible to avoid
+  interrupting focus time.
+- If the overlap is detected while the user is already in a **break** (short
+  or long), show the modal **immediately**.
+- If the overlap is detected during a **pomodoro**, defer the modal to the
+  **next break**.
+- Exception: if the overlap is detected during the **final pomodoro of the
+  group** (no breaks remain), show the modal **immediately** even during the
+  pomodoro.
+- If the group is **paused**, show the modal **immediately** (no deferral).
 
 Flow
 
@@ -1404,8 +1427,18 @@ Flow
 - Options:
   1. **End current group** → cancel current group (canceledReason = interrupted),
      then proceed with the scheduled group’s pre-run/start.
-  2. **Postpone scheduled group** → reschedule it to start after the current
-     group ends, preserving its pre-run window; revalidate conflicts.
+  2. **Postpone scheduled group** →
+     - Set `scheduledStartTime = projectedEnd + noticeMinutes`, and set
+       `postponedAfterGroupId = currentGroupId`.
+     - While the current group is running/paused, the scheduled group’s
+       **effective** start tracks the current group’s projected end in real
+       time (no repeat modal for the same pair).
+     - When the current group ends, **lock in** the schedule (update
+       `scheduledStartTime` + `theoreticalEndTime`) and clear
+       `postponedAfterGroupId`.
+     - Show a confirmation SnackBar with the **new start time** and the
+       **pre-run time**.
+     - Revalidate conflicts against other scheduled groups.
   3. **Cancel scheduled group** → cancel it (canceledReason = conflict) and
      continue the current group.
 
@@ -1413,6 +1446,10 @@ Permissions
 
 - Only the **owner** device can act. Mirrors show a read-only state until the
   owner resolves the decision.
+- Mirrors must show a **persistent CTA** in Groups Hub and Task List:
+  “Owner seems unavailable. Request ownership to resolve this conflict.”
+- Mirrors must also show a **persistent SnackBar** (no swipe dismissal) that
+  requires an explicit **OK** to close.
 
 ### **10.4.2. Header**
 
@@ -1904,6 +1941,13 @@ Content
     - Applies only to tasks that still exist.
     - Tasks created after the last activation are not reverted.
     - After revert, the switch turns OFF and a brief notice explains how to reapply.
+- **Pre-Run notice minutes** (scheduled groups):
+  - Default: **5 min**.
+  - Range: **0–15 min** (0 disables Pre-Run Countdown Mode entirely).
+  - Account Mode: stored **per account** and synced across devices.
+  - Local Mode: stored **per device** (local only).
+  - Applies to **new scheduled groups**; each TaskRunGroup stores the noticeMinutes
+    snapshot at scheduling time.
 
 ---
 

@@ -9,6 +9,8 @@ import 'package:focus_interval/data/models/selected_sound.dart';
 import 'package:focus_interval/data/models/task_run_group.dart';
 import 'package:focus_interval/data/repositories/pomodoro_session_repository.dart';
 import 'package:focus_interval/data/repositories/task_run_group_repository.dart';
+import 'package:focus_interval/data/services/app_mode_service.dart';
+import 'package:focus_interval/data/services/device_info_service.dart';
 import 'package:focus_interval/domain/pomodoro_machine.dart';
 import 'package:focus_interval/presentation/providers.dart';
 import 'package:focus_interval/presentation/viewmodels/scheduled_group_coordinator.dart';
@@ -39,6 +41,14 @@ class FakeTaskRunGroupRepository implements TaskRunGroupRepository {
   @override
   Future<void> save(TaskRunGroup group) async {
     _store[group.id] = group;
+    _emit();
+  }
+
+  @override
+  Future<void> saveAll(List<TaskRunGroup> groups) async {
+    for (final group in groups) {
+      _store[group.id] = group;
+    }
     _emit();
   }
 
@@ -158,6 +168,37 @@ TaskRunGroup _buildRunningGroup({
   );
 }
 
+TaskRunGroup _buildScheduledGroup({
+  required String id,
+  required DateTime scheduledStart,
+  int durationMinutes = 60,
+  int noticeMinutes = 5,
+}) {
+  final item = _buildItem();
+  final createdAt = scheduledStart.subtract(const Duration(minutes: 1));
+  return TaskRunGroup(
+    id: id,
+    ownerUid: 'user-1',
+    dataVersion: kCurrentDataVersion,
+    integrityMode: TaskRunIntegrityMode.shared,
+    tasks: [item],
+    createdAt: createdAt,
+    scheduledStartTime: scheduledStart,
+    scheduledByDeviceId: 'device-1',
+    noticeSentAt: null,
+    noticeSentByDeviceId: null,
+    actualStartTime: null,
+    theoreticalEndTime:
+        scheduledStart.add(Duration(minutes: durationMinutes)),
+    status: TaskRunStatus.scheduled,
+    noticeMinutes: noticeMinutes,
+    totalTasks: 1,
+    totalPomodoros: item.totalPomodoros,
+    totalDurationSeconds: durationMinutes * 60,
+    updatedAt: createdAt,
+  );
+}
+
 PomodoroSession _buildPausedSession({
   required String groupId,
   required String ownerId,
@@ -215,8 +256,8 @@ PomodoroSession _buildRunningSession({
 }
 
 Future<void> _pumpQueue() async {
-  await Future<void>.delayed(const Duration(milliseconds: 20));
-  await Future<void>.delayed(const Duration(milliseconds: 20));
+  await Future<void>.delayed(const Duration(milliseconds: 50));
+  await Future<void>.delayed(const Duration(milliseconds: 50));
 }
 
 void main() {
@@ -369,6 +410,275 @@ void main() {
 
       final stored = await groupRepo.getById(group.id);
       expect(stored?.status, TaskRunStatus.running);
+    });
+  });
+
+  group('ScheduledGroupCoordinator late-start queue', () {
+    test('emits late-start queue when multiple overdue groups exist', () async {
+      final groupRepo = FakeTaskRunGroupRepository();
+      final sessionRepo = FakePomodoroSessionRepository();
+      final actionCompleter = Completer<ScheduledGroupAction>();
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+        ],
+      );
+      addTearDown(() {
+        groupRepo.dispose();
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      final sub = container.listen<ScheduledGroupAction?>(
+        scheduledGroupCoordinatorProvider,
+        (_, next) {
+          if (next != null && !actionCompleter.isCompleted) {
+            actionCompleter.complete(next);
+          }
+        },
+      );
+      addTearDown(sub.close);
+
+      container.read(scheduledGroupCoordinatorProvider);
+
+      final now = DateTime.now();
+      final first = _buildScheduledGroup(
+        id: 'group-a',
+        scheduledStart: now.subtract(const Duration(hours: 2)),
+        durationMinutes: 30,
+        noticeMinutes: 5,
+      );
+      final second = _buildScheduledGroup(
+        id: 'group-b',
+        scheduledStart: now.subtract(const Duration(hours: 1)),
+        durationMinutes: 30,
+        noticeMinutes: 5,
+      );
+
+      sessionRepo.emit(null);
+      await groupRepo.saveAll([first, second]);
+
+      await _pumpQueue();
+
+      final action = await actionCompleter.future.timeout(
+        const Duration(seconds: 1),
+      );
+      expect(action.type, ScheduledGroupActionType.lateStartQueue);
+      expect(action.groupIds, ['group-a', 'group-b']);
+      expect(action.anchor, isNotNull);
+    });
+  });
+
+  group('ScheduledGroupCoordinator running overlap decision', () {
+    test('sets running overlap decision before pre-run window when overlap exists',
+        () async {
+      final groupRepo = FakeTaskRunGroupRepository();
+      final sessionRepo = FakePomodoroSessionRepository();
+      final appModeService = AppModeService.memory();
+      final container = ProviderContainer(
+        overrides: [
+          appModeServiceProvider.overrideWithValue(appModeService),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+        ],
+      );
+      addTearDown(() {
+        groupRepo.dispose();
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      final coordinator =
+          container.read(scheduledGroupCoordinatorProvider.notifier);
+
+      final now = DateTime.now();
+      final running = _buildRunningGroup(
+        id: 'running-1',
+        start: now.subtract(const Duration(minutes: 30)),
+        theoreticalEnd: now.add(const Duration(minutes: 30)),
+      );
+      final scheduled = _buildScheduledGroup(
+        id: 'scheduled-1',
+        scheduledStart: now.add(const Duration(minutes: 10)),
+        durationMinutes: 30,
+        noticeMinutes: 5,
+      );
+      final preRunStart =
+          scheduled.scheduledStartTime!.subtract(Duration(minutes: 5));
+      expect(running.theoreticalEndTime.isAfter(preRunStart), isTrue);
+      expect(DateTime.now().isBefore(preRunStart), isTrue);
+
+      coordinator.debugEvaluateRunningOverlap(
+        running: [running],
+        scheduled: [scheduled],
+        allGroups: [running, scheduled],
+        session: null,
+        now: DateTime.now(),
+      );
+
+      final decision = container.read(runningOverlapDecisionProvider);
+      expect(decision, isNotNull);
+      expect(decision?.runningGroupId, running.id);
+      expect(decision?.scheduledGroupId, scheduled.id);
+    });
+
+    test('sets running overlap decision in account mode for non-owner',
+        () async {
+      final now = DateTime.now();
+      final running = _buildRunningGroup(
+        id: 'running-2',
+        start: now.subtract(const Duration(minutes: 30)),
+        theoreticalEnd: now.add(const Duration(minutes: 30)),
+      );
+      final scheduled = _buildScheduledGroup(
+        id: 'scheduled-2',
+        scheduledStart: now.add(const Duration(minutes: 2)),
+        durationMinutes: 30,
+        noticeMinutes: 5,
+      );
+      final groupRepo = FakeTaskRunGroupRepository();
+      final sessionRepo = FakePomodoroSessionRepository();
+      final appModeService = AppModeService.memory();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final session = _buildRunningSession(
+        groupId: running.id,
+        ownerId: '${deviceInfo.deviceId}-other',
+        now: now,
+      );
+      final container = ProviderContainer(
+        overrides: [
+          appModeServiceProvider.overrideWithValue(appModeService),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          activePomodoroSessionProvider.overrideWithValue(session),
+        ],
+      );
+      addTearDown(() {
+        groupRepo.dispose();
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      final coordinator =
+          container.read(scheduledGroupCoordinatorProvider.notifier);
+      await container.read(appModeProvider.notifier).setAccount();
+
+      coordinator.debugEvaluateRunningOverlap(
+        running: [running],
+        scheduled: [scheduled],
+        allGroups: [running, scheduled],
+        session: session,
+        now: DateTime.now(),
+      );
+
+      final decision = container.read(runningOverlapDecisionProvider);
+      expect(decision, isNotNull);
+      expect(decision?.runningGroupId, running.id);
+      expect(decision?.scheduledGroupId, scheduled.id);
+    });
+
+    test('uses paused session projection to trigger overlap earlier', () async {
+      final groupRepo = FakeTaskRunGroupRepository();
+      final sessionRepo = FakePomodoroSessionRepository();
+      final appModeService = AppModeService.memory();
+      final container = ProviderContainer(
+        overrides: [
+          appModeServiceProvider.overrideWithValue(appModeService),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+        ],
+      );
+      addTearDown(() {
+        groupRepo.dispose();
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      final coordinator =
+          container.read(scheduledGroupCoordinatorProvider.notifier);
+
+      final now = DateTime.now();
+      final running = _buildRunningGroup(
+        id: 'running-paused',
+        start: now.subtract(const Duration(minutes: 30)),
+        theoreticalEnd: now.add(const Duration(minutes: 2)),
+      );
+      final scheduled = _buildScheduledGroup(
+        id: 'scheduled-paused',
+        scheduledStart: now.add(const Duration(minutes: 10)),
+        durationMinutes: 30,
+        noticeMinutes: 5,
+      );
+      final session = _buildPausedSession(
+        groupId: running.id,
+        ownerId: container.read(deviceInfoServiceProvider).deviceId,
+        now: now,
+      );
+
+      coordinator.debugEvaluateRunningOverlap(
+        running: [running],
+        scheduled: [scheduled],
+        allGroups: [running, scheduled],
+        session: session,
+        now: now,
+      );
+
+      final decision = container.read(runningOverlapDecisionProvider);
+      expect(decision, isNotNull);
+      expect(decision?.runningGroupId, running.id);
+      expect(decision?.scheduledGroupId, scheduled.id);
+    });
+
+    test('does not flag overlap when scheduled group follows running group',
+        () async {
+      final groupRepo = FakeTaskRunGroupRepository();
+      final sessionRepo = FakePomodoroSessionRepository();
+      final appModeService = AppModeService.memory();
+      final container = ProviderContainer(
+        overrides: [
+          appModeServiceProvider.overrideWithValue(appModeService),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+        ],
+      );
+      addTearDown(() {
+        groupRepo.dispose();
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      final coordinator =
+          container.read(scheduledGroupCoordinatorProvider.notifier);
+
+      final now = DateTime.now();
+      final running = _buildRunningGroup(
+        id: 'running-follow',
+        start: now.subtract(const Duration(minutes: 30)),
+        theoreticalEnd: now.add(const Duration(minutes: 20)),
+      );
+      final scheduled = _buildScheduledGroup(
+        id: 'scheduled-follow',
+        scheduledStart: now.add(const Duration(minutes: 10)),
+        durationMinutes: 30,
+        noticeMinutes: 5,
+      ).copyWith(postponedAfterGroupId: running.id);
+
+      coordinator.debugEvaluateRunningOverlap(
+        running: [running],
+        scheduled: [scheduled],
+        allGroups: [running, scheduled],
+        session: _buildRunningSession(
+          groupId: running.id,
+          ownerId: container.read(deviceInfoServiceProvider).deviceId,
+          now: now,
+        ),
+        now: now,
+      );
+
+      final decision = container.read(runningOverlapDecisionProvider);
+      expect(decision, isNull);
     });
   });
 }
