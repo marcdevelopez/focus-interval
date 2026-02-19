@@ -75,6 +75,14 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     ref.listen<PomodoroSession?>(activePomodoroSessionProvider, (previous, next) {
       final wasActive = previous != null;
       final isActive = next != null;
+      final wasPaused = previous?.status == PomodoroStatus.paused;
+      final isPaused = next?.status == PomodoroStatus.paused;
+      final pausedAtChanged = previous?.pausedAt != next?.pausedAt;
+      final heartbeatChanged =
+          previous?.lastUpdatedAt != next?.lastUpdatedAt;
+      if (isPaused && (!wasPaused || pausedAtChanged || heartbeatChanged)) {
+        _handleGroups(_lastGroups);
+      }
       if (wasActive && !isActive) {
         _handleGroups(_lastGroups);
       }
@@ -538,15 +546,19 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     required PomodoroSession? activeSession,
     required DateTime now,
   }) async {
+    final repo = ref.read(taskRunGroupRepositoryProvider);
     final updates = <TaskRunGroup>[];
     for (final group in groups) {
       if (group.status != TaskRunStatus.scheduled) continue;
       final anchorId = group.postponedAfterGroupId;
       if (anchorId == null) continue;
+      final latest = await repo.getById(group.id) ?? group;
+      if (latest.status != TaskRunStatus.scheduled) continue;
+      if (latest.postponedAfterGroupId != anchorId) continue;
       final anchor = findGroupById(groups, anchorId);
       if (anchor == null) {
         updates.add(
-          group.copyWith(
+          latest.copyWith(
             postponedAfterGroupId: null,
             updatedAt: now,
           ),
@@ -562,11 +574,11 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
         now: now,
       );
       if (anchorEnd == null) continue;
-      final noticeMinutes = resolveNoticeMinutes(group);
+      final noticeMinutes = resolveNoticeMinutes(latest);
       final scheduledStart = anchorEnd.add(Duration(minutes: noticeMinutes));
-      final durationSeconds = _groupDurationSeconds(group);
+      final durationSeconds = _groupDurationSeconds(latest);
       updates.add(
-        group.copyWith(
+        latest.copyWith(
           scheduledStartTime: scheduledStart,
           theoreticalEndTime: scheduledStart.add(
             Duration(seconds: durationSeconds),
@@ -581,7 +593,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
 
     if (updates.isEmpty) return false;
 
-    await ref.read(taskRunGroupRepositoryProvider).saveAll(updates);
+    await repo.saveAll(updates);
     for (final group in updates) {
       await _cancelLocalPreAlert(group.id);
     }

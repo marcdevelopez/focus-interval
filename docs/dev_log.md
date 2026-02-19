@@ -7155,3 +7155,26 @@ _(none)_
 - Run the full test suite.
 - Validate postpone flow on device (no repeat modal; schedule updates during
   pauses).
+
+# 🔹 Block 443 — Phase 17: paused overlap recheck + cancel postponed schedule fix (19/02/2026)
+
+### ✔ Work completed:
+
+- ScheduledGroupCoordinator now re-evaluates overlaps on paused session heartbeats
+  (no resume required) and avoids overriding canceled postponed groups.
+- Cancel scheduled group now clears postponedAfterGroupId to prevent re-apply.
+- Ran `flutter analyze`.
+- Ran `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart`.
+
+### 🧠 Decisions made:
+
+- Use paused-session heartbeats (pausedAt/lastUpdatedAt) to trigger conflict
+  evaluation while in foreground.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Validate pause-overlap and cancel-postponed flows on device.

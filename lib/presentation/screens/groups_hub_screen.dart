@@ -408,6 +408,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     final updated = group.copyWith(
       status: TaskRunStatus.canceled,
       canceledReason: TaskRunCanceledReason.user,
+      postponedAfterGroupId: null,
       updatedAt: now,
     );
     await repo.save(updated);

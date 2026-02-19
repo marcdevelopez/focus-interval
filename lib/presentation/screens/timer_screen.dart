@@ -977,6 +977,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final updated = scheduled.copyWith(
       status: TaskRunStatus.canceled,
       canceledReason: TaskRunCanceledReason.conflict,
+      postponedAfterGroupId: null,
       updatedAt: DateTime.now(),
     );
     await repo.save(updated);
