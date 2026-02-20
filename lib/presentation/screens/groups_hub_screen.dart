@@ -15,6 +15,7 @@ import '../../widgets/mode_indicator.dart';
 import '../providers.dart';
 import 'task_group_planning_screen.dart';
 import '../utils/scheduled_group_timing.dart';
+import 'late_start_overlap_queue_screen.dart';
 
 final DateFormat _groupsHubTimeFormat = DateFormat('HH:mm');
 final DateFormat _groupsHubDateTimeFormat = DateFormat('MMM d, HH:mm');
@@ -439,6 +440,57 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
       if (!context.mounted) return;
       _showSnackBar(context, "Failed to check conflicts: $e");
       return;
+    }
+
+    final hasRunning =
+        existing.any((candidate) => candidate.status == TaskRunStatus.running);
+    if (!hasRunning) {
+      final scheduled =
+          existing
+              .where(
+                (candidate) =>
+                    candidate.status == TaskRunStatus.scheduled &&
+                    candidate.scheduledStartTime != null,
+              )
+              .toList()
+            ..sort((a, b) {
+              final aStart =
+                  resolveEffectiveScheduledStart(
+                    group: a,
+                    allGroups: existing,
+                    activeSession: activeSession,
+                    now: now,
+                  ) ??
+                  a.scheduledStartTime!;
+              final bStart =
+                  resolveEffectiveScheduledStart(
+                    group: b,
+                    allGroups: existing,
+                    activeSession: activeSession,
+                    now: now,
+                  ) ??
+                  b.scheduledStartTime!;
+              return aStart.compareTo(bStart);
+            });
+      final lateStartConflicts = resolveLateStartConflictSet(
+        scheduled: scheduled,
+        allGroups: existing,
+        activeSession: activeSession,
+        now: now,
+      );
+      if (lateStartConflicts.isNotEmpty) {
+        final anchor =
+            resolveLateStartAnchor(lateStartConflicts) ?? now;
+        if (!context.mounted) return;
+        context.go(
+          '/groups/late-start',
+          extra: LateStartOverlapArgs(
+            groupIds: lateStartConflicts.map((g) => g.id).toList(),
+            anchor: anchor,
+          ),
+        );
+        return;
+      }
     }
 
     final conflicts = _findConflicts(

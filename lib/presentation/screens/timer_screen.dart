@@ -55,6 +55,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   String? _dismissedOwnershipRequestKey;
   String? _dismissedOwnershipRequesterId;
   bool _ownershipRejectionSnackVisible = false;
+  bool _mirrorConflictSnackVisible = false;
+  final Set<String> _dismissedMirrorConflictSnackKeys = {};
   bool _inactiveRepaintEnabled = false;
   bool _runningOverlapDialogVisible = false;
   RunningOverlapDecision? _pendingRunningOverlapDecision;
@@ -472,6 +474,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         return;
       }
       if (_runningOverlapDialogVisible) return;
+      if (_isMirrorOverlapDecision(next, vm, deviceId)) {
+        _maybeShowMirrorConflictSnack(_overlapDecisionKey(next));
+        return;
+      }
       if (!_isRunningOverlapDecisionForCurrentGroup(next, vm, deviceId)) {
         return;
       }
@@ -886,6 +892,19 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     return true;
   }
 
+  bool _isMirrorOverlapDecision(
+    RunningOverlapDecision decision,
+    PomodoroViewModel vm,
+    String deviceId,
+  ) {
+    final currentGroup = vm.currentGroup;
+    if (currentGroup == null || currentGroup.id != decision.runningGroupId) {
+      return false;
+    }
+    final session = vm.activeSessionForCurrentGroup;
+    return session != null && session.ownerDeviceId != deviceId;
+  }
+
   bool _isBreakPhase(PomodoroState state) =>
       state.phase == PomodoroPhase.shortBreak ||
       state.phase == PomodoroPhase.longBreak;
@@ -940,32 +959,73 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         ) ??
         _resolveGroupEnd(running);
     if (endTime == null) return;
-    final noticeMinutes =
-        scheduled.noticeMinutes ?? TaskRunNoticeService.defaultNoticeMinutes;
-    final scheduledStart = endTime.add(Duration(minutes: noticeMinutes));
-    final durationSeconds = scheduled.totalDurationSeconds ??
-        groupDurationSecondsByMode(scheduled.tasks, scheduled.integrityMode);
-    final updated = scheduled.copyWith(
-      status: TaskRunStatus.scheduled,
-      scheduledStartTime: scheduledStart,
-      scheduledByDeviceId: deviceId,
-      actualStartTime: null,
-      theoreticalEndTime:
-          scheduledStart.add(Duration(seconds: durationSeconds)),
-      noticeSentAt: null,
-      noticeSentByDeviceId: null,
-      postponedAfterGroupId: running.id,
-      updatedAt: DateTime.now(),
-    );
-    await repo.save(updated);
-    await notifier.cancelGroupPreAlert(updated.id);
+    final queueId = scheduled.lateStartQueueId;
+    final queueOrder = scheduled.lateStartQueueOrder;
+    final allGroups = queueId == null
+        ? const <TaskRunGroup>[]
+        : await repo.getAll();
+    final queued = queueId == null
+        ? <TaskRunGroup>[]
+        : allGroups
+            .where(
+              (group) =>
+                  group.status == TaskRunStatus.scheduled &&
+                  group.lateStartQueueId == queueId,
+            )
+            .toList()
+          ..sort((a, b) {
+            final aOrder = a.lateStartQueueOrder ?? 0;
+            final bOrder = b.lateStartQueueOrder ?? 0;
+            return aOrder.compareTo(bOrder);
+          });
+    final startIndex = queued.isEmpty
+        ? 0
+        : queued.indexWhere((group) => group.id == scheduled.id);
+    final applyChain = queueId != null && queueOrder != null && startIndex >= 0;
+    final chainGroups =
+        applyChain ? queued.sublist(startIndex) : [scheduled];
+    final updates = <TaskRunGroup>[];
+    var cursor = endTime;
+    for (var index = 0; index < chainGroups.length; index += 1) {
+      final group = chainGroups[index];
+      final noticeMinutes = resolveNoticeMinutes(group);
+      final scheduledStart = cursor.add(Duration(minutes: noticeMinutes));
+      final durationSeconds = resolveGroupDurationSeconds(group);
+      final anchorId = index == 0 ? running.id : chainGroups[index - 1].id;
+      final updated = group.copyWith(
+        status: TaskRunStatus.scheduled,
+        scheduledStartTime: scheduledStart,
+        scheduledByDeviceId: deviceId,
+        actualStartTime: null,
+        theoreticalEndTime:
+            scheduledStart.add(Duration(seconds: durationSeconds)),
+        noticeSentAt: null,
+        noticeSentByDeviceId: null,
+        postponedAfterGroupId: anchorId,
+        updatedAt: now,
+      );
+      updates.add(updated);
+      cursor = scheduledStart.add(Duration(seconds: durationSeconds));
+    }
+    if (updates.length == 1) {
+      await repo.save(updates.first);
+    } else {
+      await repo.saveAll(updates);
+    }
+    for (final group in updates) {
+      await notifier.cancelGroupPreAlert(group.id);
+    }
     if (!mounted) return;
-    final preRunStart = noticeMinutes > 0
-        ? scheduledStart.subtract(Duration(minutes: noticeMinutes))
-        : scheduledStart;
+    final firstNotice = resolveNoticeMinutes(updates.first);
+    final preRunStart = firstNotice > 0
+        ? updates.first.scheduledStartTime!.subtract(
+            Duration(minutes: firstNotice),
+          )
+        : updates.first.scheduledStartTime!;
     _showPostponeConfirmation(
-      scheduledStart: scheduledStart,
+      scheduledStart: updates.first.scheduledStartTime!,
       preRunStart: preRunStart,
+      chainedCount: updates.length - 1,
     );
   }
 
@@ -999,16 +1059,20 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   void _showPostponeConfirmation({
     required DateTime scheduledStart,
     required DateTime preRunStart,
+    int chainedCount = 0,
   }) {
     final messenger = ScaffoldMessenger.of(context);
     final format = DateFormat('HH:mm');
     final startLabel = format.format(scheduledStart);
     final preRunLabel = format.format(preRunStart);
+    final chainNote = chainedCount > 0
+        ? ' Remaining queued groups will shift sequentially.'
+        : '';
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
       SnackBar(
         content: Text(
-          'Scheduled start moved to $startLabel (pre-run at $preRunLabel).',
+          'Scheduled start moved to $startLabel (pre-run at $preRunLabel).$chainNote',
         ),
         duration: const Duration(seconds: 4),
         action: SnackBarAction(
@@ -1017,6 +1081,47 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         ),
       ),
     );
+  }
+
+  String _overlapDecisionKey(RunningOverlapDecision decision) {
+    return '${decision.runningGroupId}_${decision.scheduledGroupId}';
+  }
+
+  void _maybeShowMirrorConflictSnack(String key) {
+    if (_mirrorConflictSnackVisible ||
+        _dismissedMirrorConflictSnackKeys.contains(key)) {
+      return;
+    }
+    _mirrorConflictSnackVisible = true;
+    final messenger = ScaffoldMessenger.of(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Owner seems unavailable. Request ownership to resolve this conflict.',
+          ),
+          duration: const Duration(minutes: 10),
+          dismissDirection: DismissDirection.none,
+          action: SnackBarAction(
+            label: 'OK',
+            onPressed: () {
+              _dismissedMirrorConflictSnackKeys.add(key);
+              messenger.hideCurrentSnackBar();
+              if (!mounted) return;
+              setState(() {
+                _mirrorConflictSnackVisible = false;
+              });
+            },
+          ),
+        ),
+      ).closed.then((_) {
+        if (!mounted) return;
+        setState(() {
+          _mirrorConflictSnackVisible = false;
+        });
+      });
+    });
   }
 
   void _syncPreRunInfo(TaskRunGroup? group) {
@@ -1118,7 +1223,13 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     if (_finishedDialogVisible || _completionDialogHandled) return;
     final totalTasks = vm.totalTasks;
     final totalPomodoros = vm.totalGroupPomodoros;
-    final totalDuration = _formatDurationLong(vm.totalGroupDurationSeconds);
+    final totalDurationSeconds = vm.totalGroupDurationSeconds;
+    if (totalTasks <= 0 || totalPomodoros <= 0 || totalDurationSeconds <= 0) {
+      _completionDialogHandled = true;
+      _navigateToGroupsHubAfterCompletion(reason: 'completion empty summary');
+      return;
+    }
+    final totalDuration = _formatDurationLong(totalDurationSeconds);
     _finishedDialogVisible = true;
     _completionDialogHandled = true;
     showDialog(

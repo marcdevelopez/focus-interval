@@ -162,6 +162,14 @@ class TaskRunGroup {
   DateTime? scheduledStartTime; // null when "Start now"
   String? scheduledByDeviceId; // device that initiated schedule or start
   String? postponedAfterGroupId; // when set, schedule follows another group
+  DateTime? lateStartAnchorAt; // server anchor for late-start queue projections
+  String? lateStartQueueId; // shared id for the late-start queue (conflict set)
+  int? lateStartQueueOrder; // order index within the late-start queue
+  String? lateStartOwnerDeviceId; // device that owns the late-start queue
+  DateTime? lateStartOwnerHeartbeatAt; // heartbeat for stale owner detection
+  String? lateStartClaimRequestId; // pending ownership request id
+  String? lateStartClaimRequestedByDeviceId; // device requesting ownership
+  DateTime? lateStartClaimRequestedAt; // when ownership was requested
   DateTime theoreticalEndTime;  // required for overlap checks
 
   String status; // scheduled | running | completed | canceled
@@ -200,6 +208,11 @@ Notes:
 
 - theoreticalEndTime is calculated when the group is scheduled or started, using scheduledStartTime (if set) or now (for immediate start). Recalculate if the start time changes.
 - postponedAfterGroupId marks a scheduled group as following another group. While the anchor group is running/paused, the effective scheduledStartTime is derived as anchorEnd + noticeMinutes, and pre-run begins at anchorEnd. When the anchor group ends, the schedule is locked in and postponedAfterGroupId is cleared.
+- lateStartAnchorAt is a server timestamp written when the late-start overlap queue is triggered. It is used to anchor projected ranges across devices (consistent projections). It should be cleared when the queue is resolved (confirmed or canceled).
+- lateStartQueueId is a shared identifier for the conflict set (same for all queued groups).
+- lateStartQueueOrder defines the current ordering for queued groups (used for display and chain-postpone).
+- lateStartOwnerDeviceId + lateStartOwnerHeartbeatAt define the queue owner and allow stale detection (>=45s).
+- lateStartClaimRequestId / lateStartClaimRequestedByDeviceId / lateStartClaimRequestedAt define a pending ownership request while the owner is active.
 - During execution, theoreticalEndTime must be extended by **total pause offsets**
   (cumulative paused time). The owner updates this on resume so all devices share
   the same projected end.
@@ -1349,6 +1362,22 @@ Trigger
   group is overdue (scheduledStartTime <= now) **and** starting now would
   overlap another scheduled group window (overdue or future).
 
+Anchor & timebase
+
+- When this queue is triggered, the **owner** writes `lateStartAnchorAt` using
+  a **server timestamp** on all groups in the conflict set.
+- The owner also writes `lateStartQueueId`, `lateStartQueueOrder`,
+  `lateStartOwnerDeviceId`, and `lateStartOwnerHeartbeatAt`.
+- All devices derive a **queue timebase** from that anchor to keep projections
+  consistent across devices (do **not** use local `DateTime.now()` directly for
+  projections).
+- Use the **latest server timestamp** available (owner heartbeat) as the
+  timebase when present; fall back to `lateStartAnchorAt` if no heartbeat exists.
+- `lateStartAnchorAt` is cleared on confirm/cancel so it does not linger.
+- If there is **no owner** yet, the first active device auto-claims ownership
+  for the queue (before it is shown).
+- Owner label: show **"Owner: <device>"** using `lateStartOwnerDeviceId`.
+
 UI (full-screen flow, same visual language as Plan group)
 
 - Show a clear explanation of the late-start overlap situation and options.
@@ -1357,11 +1386,17 @@ UI (full-screen flow, same visual language as Plan group)
 - List **conflicting groups** with:
   - Group name
   - Scheduled time range (HH:mm–HH:mm)
-- Allow **multi-select** and **drag reorder** of selected groups.
+- Owner-only: allow **multi-select** and **drag reorder** of selected groups.
+- Mirror: read-only list + CTA “Request ownership to resolve”.
+  - The CTA writes `lateStartClaimRequestId`, `lateStartClaimRequestedByDeviceId`,
+    and `lateStartClaimRequestedAt` if the owner is active.
+  - If the owner is stale (>=45s), the mirror can **auto-claim** and become owner.
 - Show up to **5 groups** by default; include a **“Show more”** control to
   expand the full list.
 - As the user reorders selections, update the **projected ranges** in the list
   to reflect the new sequential order.
+- Projected ranges **update in real time** (e.g., every second) based on the
+  queue timebase so the preview matches the actual start on confirm.
 
 Actions
 
@@ -1377,10 +1412,22 @@ Actions
     summarizing the selected groups in order.
   - On confirm:
     - Start the **first** group immediately (no pre-run).
+    - Set `scheduledStartTime = queueNow` and `actualStartTime = queueNow`
+      for the first group to keep the schedule coherent.
+    - Create/publish the **activeSession** as owner so Run Mode does not
+      stall in “syncing session”.
     - Schedule the remaining groups **sequentially**, preserving pre-run windows:
       scheduledStartTime = previousEnd + noticeMinutes.
     - Update scheduledStartTime and theoreticalEndTime for rescheduled groups.
     - Cancel all **unselected** groups using the reason rules above.
+    - Clear `lateStartAnchorAt`, `lateStartOwnerDeviceId`,
+      `lateStartOwnerHeartbeatAt`, `lateStartClaimRequestId`,
+      `lateStartClaimRequestedByDeviceId`, `lateStartClaimRequestedAt`
+      for all groups in the queue.
+    - Keep `lateStartQueueId` and `lateStartQueueOrder` on the **selected**
+      groups so later postpones can drag the remaining queued groups.
+    - Clear `lateStartQueueId` and `lateStartQueueOrder` on **unselected**
+      (canceled) groups.
     - Revalidate overlaps against any other scheduled groups not in the selection.
       If conflicts exist, reopen this queue flow.
 
@@ -1388,6 +1435,9 @@ Permissions
 
 - Only the **owner** device can act. If no owner is active, the first active device
   auto-claims ownership before this flow appears.
+- If the owner is active, mirrors must request ownership and wait for
+  explicit approval before acting.
+- Manual “Start now” must not bypass this queue when overdue conflicts exist.
 
 ### **10.4.1.c. Running overlap decision (pause drift vs scheduled)**
 
@@ -1438,7 +1488,16 @@ Flow
        `postponedAfterGroupId`.
      - Show a confirmation SnackBar with the **new start time** and the
        **pre-run time**.
-     - Revalidate conflicts against other scheduled groups.
+     - If the scheduled group is part of a resolved late-start queue
+       (`lateStartQueueId` is set) and has **later groups in the same queue**,
+       drag the remaining queued groups forward in sequence:
+       - nextStart = projectedEnd + noticeMinutes
+       - each following group starts at previousEnd + noticeMinutes
+       - this avoids repeated conflict modals for each queued group.
+       - Show a one-time SnackBar:
+         “Postponed. The remaining queued groups will shift sequentially.”
+     - Revalidate conflicts against other scheduled groups; if new overlaps
+       exist outside the queue, reopen the appropriate conflict flow immediately.
   3. **Cancel scheduled group** → cancel it (canceledReason = conflict) and
      continue the current group.
 
@@ -1446,10 +1505,13 @@ Permissions
 
 - Only the **owner** device can act. Mirrors show a read-only state until the
   owner resolves the decision.
+- If the owner is **stale**, mirrors may auto-claim ownership; otherwise,
+  ownership requires explicit owner approval.
 - Mirrors must show a **persistent CTA** in Groups Hub and Task List:
   “Owner seems unavailable. Request ownership to resolve this conflict.”
 - Mirrors must also show a **persistent SnackBar** (no swipe dismissal) that
   requires an explicit **OK** to close.
+- Mirrors must **not** navigate away from Run Mode when showing this CTA/snackbar.
 
 ### **10.4.2. Header**
 

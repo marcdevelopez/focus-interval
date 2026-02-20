@@ -178,6 +178,123 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
     }
   }
 
+  @override
+  Future<void> claimLateStartQueue({
+    required List<TaskRunGroup> groups,
+    required String ownerDeviceId,
+    required String queueId,
+    required List<String> orderedIds,
+    required bool allowOverride,
+  }) async {
+    if (groups.isEmpty) return;
+    final uid = await _uidOrThrow();
+    final orderLookup = <String, int>{};
+    for (var i = 0; i < orderedIds.length; i += 1) {
+      orderLookup[orderedIds[i]] = i;
+    }
+    final localQueueId = groups
+        .map((g) => g.lateStartQueueId)
+        .whereType<String>()
+        .firstWhere((id) => id.isNotEmpty, orElse: () => '');
+    await _db.runTransaction((tx) async {
+      final firstId = groups.first.id;
+      final firstRef = _collection(uid).doc(firstId);
+      final snap = await tx.get(firstRef);
+      final data = snap.data();
+      final existingAnchor = data?['lateStartAnchorAt'];
+      if (existingAnchor != null && !allowOverride) {
+        return;
+      }
+      final existingQueueId =
+          (data?['lateStartQueueId'] as String?)?.trim() ?? '';
+      final resolvedQueueId = existingQueueId.isNotEmpty
+          ? existingQueueId
+          : (localQueueId.isNotEmpty ? localQueueId : queueId);
+      final anchorValue =
+          existingAnchor ?? FieldValue.serverTimestamp();
+      for (final group in groups) {
+        final order = orderLookup[group.id];
+        tx.set(_collection(uid).doc(group.id), {
+          'lateStartAnchorAt': anchorValue,
+          'lateStartQueueId': resolvedQueueId,
+          'lateStartQueueOrder': order,
+          'lateStartOwnerDeviceId': ownerDeviceId,
+          'lateStartOwnerHeartbeatAt': FieldValue.serverTimestamp(),
+          'lateStartClaimRequestId': FieldValue.delete(),
+          'lateStartClaimRequestedByDeviceId': FieldValue.delete(),
+          'lateStartClaimRequestedAt': FieldValue.delete(),
+        }, SetOptions(merge: true));
+      }
+    });
+  }
+
+  @override
+  Future<void> updateLateStartOwnerHeartbeat({
+    required List<TaskRunGroup> groups,
+    required String ownerDeviceId,
+  }) async {
+    if (groups.isEmpty) return;
+    final uid = await _uidOrThrow();
+    final batch = _db.batch();
+    for (final group in groups) {
+      if (group.lateStartOwnerDeviceId != ownerDeviceId) continue;
+      batch.set(_collection(uid).doc(group.id), {
+        'lateStartOwnerHeartbeatAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }
+    await batch.commit();
+  }
+
+  @override
+  Future<void> requestLateStartOwnership({
+    required List<TaskRunGroup> groups,
+    required String requesterDeviceId,
+    required String requestId,
+  }) async {
+    if (groups.isEmpty) return;
+    final uid = await _uidOrThrow();
+    final batch = _db.batch();
+    for (final group in groups) {
+      batch.set(_collection(uid).doc(group.id), {
+        'lateStartClaimRequestId': requestId,
+        'lateStartClaimRequestedByDeviceId': requesterDeviceId,
+        'lateStartClaimRequestedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }
+    await batch.commit();
+  }
+
+  @override
+  Future<void> respondLateStartOwnershipRequest({
+    required List<TaskRunGroup> groups,
+    required String ownerDeviceId,
+    required String requesterDeviceId,
+    required String requestId,
+    required bool approved,
+  }) async {
+    if (groups.isEmpty) return;
+    final uid = await _uidOrThrow();
+    final batch = _db.batch();
+    for (final group in groups) {
+      if (approved) {
+        batch.set(_collection(uid).doc(group.id), {
+          'lateStartOwnerDeviceId': requesterDeviceId,
+          'lateStartOwnerHeartbeatAt': FieldValue.serverTimestamp(),
+          'lateStartClaimRequestId': FieldValue.delete(),
+          'lateStartClaimRequestedByDeviceId': FieldValue.delete(),
+          'lateStartClaimRequestedAt': FieldValue.delete(),
+        }, SetOptions(merge: true));
+      } else {
+        batch.set(_collection(uid).doc(group.id), {
+          'lateStartClaimRequestId': FieldValue.delete(),
+          'lateStartClaimRequestedByDeviceId': FieldValue.delete(),
+          'lateStartClaimRequestedAt': FieldValue.delete(),
+        }, SetOptions(merge: true));
+      }
+    }
+    await batch.commit();
+  }
+
   TaskRunGroup _normalizeGroup(TaskRunGroup group, {required DateTime now}) {
     final tasks = group.tasks;
     final totalTasks = group.totalTasks ?? tasks.length;

@@ -61,6 +61,55 @@ class FakeTaskRunGroupRepository implements TaskRunGroupRepository {
   @override
   Future<void> prune({int? keepCompleted}) async {}
 
+  @override
+  Future<void> claimLateStartQueue({
+    required List<TaskRunGroup> groups,
+    required String ownerDeviceId,
+    required String queueId,
+    required List<String> orderedIds,
+    required bool allowOverride,
+  }) async {
+    if (groups.isEmpty) return;
+    final now = DateTime.now();
+    final orderLookup = <String, int>{};
+    for (var i = 0; i < orderedIds.length; i += 1) {
+      orderLookup[orderedIds[i]] = i;
+    }
+    for (final group in groups) {
+      final updated = group.copyWith(
+        lateStartAnchorAt: now,
+        lateStartQueueId: queueId,
+        lateStartQueueOrder: orderLookup[group.id],
+        lateStartOwnerDeviceId: ownerDeviceId,
+        lateStartOwnerHeartbeatAt: now,
+      );
+      _store[group.id] = updated;
+    }
+    _emit();
+  }
+
+  @override
+  Future<void> updateLateStartOwnerHeartbeat({
+    required List<TaskRunGroup> groups,
+    required String ownerDeviceId,
+  }) async {}
+
+  @override
+  Future<void> requestLateStartOwnership({
+    required List<TaskRunGroup> groups,
+    required String requesterDeviceId,
+    required String requestId,
+  }) async {}
+
+  @override
+  Future<void> respondLateStartOwnershipRequest({
+    required List<TaskRunGroup> groups,
+    required String ownerDeviceId,
+    required String requesterDeviceId,
+    required String requestId,
+    required bool approved,
+  }) async {}
+
   void dispose() {
     _controller.close();
   }
@@ -466,6 +515,67 @@ void main() {
       );
       expect(action.type, ScheduledGroupActionType.lateStartQueue);
       expect(action.groupIds, ['group-a', 'group-b']);
+      expect(action.anchor, isNotNull);
+    });
+
+    test('emits late-start queue when three overdue groups exist', () async {
+      final groupRepo = FakeTaskRunGroupRepository();
+      final sessionRepo = FakePomodoroSessionRepository();
+      final actionCompleter = Completer<ScheduledGroupAction>();
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+        ],
+      );
+      addTearDown(() {
+        groupRepo.dispose();
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      final sub = container.listen<ScheduledGroupAction?>(
+        scheduledGroupCoordinatorProvider,
+        (_, next) {
+          if (next != null && !actionCompleter.isCompleted) {
+            actionCompleter.complete(next);
+          }
+        },
+      );
+      addTearDown(sub.close);
+
+      container.read(scheduledGroupCoordinatorProvider);
+
+      final now = DateTime.now();
+      final first = _buildScheduledGroup(
+        id: 'group-a',
+        scheduledStart: now.subtract(const Duration(hours: 4)),
+        durationMinutes: 15,
+        noticeMinutes: 1,
+      );
+      final second = _buildScheduledGroup(
+        id: 'group-b',
+        scheduledStart: now.subtract(const Duration(hours: 3, minutes: 30)),
+        durationMinutes: 15,
+        noticeMinutes: 1,
+      );
+      final third = _buildScheduledGroup(
+        id: 'group-c',
+        scheduledStart: now.subtract(const Duration(hours: 3)),
+        durationMinutes: 15,
+        noticeMinutes: 1,
+      );
+
+      sessionRepo.emit(null);
+      await groupRepo.saveAll([first, second, third]);
+
+      await _pumpQueue();
+
+      final action = await actionCompleter.future.timeout(
+        const Duration(seconds: 1),
+      );
+      expect(action.type, ScheduledGroupActionType.lateStartQueue);
+      expect(action.groupIds, ['group-a', 'group-b', 'group-c']);
       expect(action.anchor, isNotNull);
     });
   });
