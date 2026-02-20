@@ -22,7 +22,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **19/02/2026**
+Last update: **20/02/2026**
 
 ---
 
@@ -7178,3 +7178,23 @@ _(none)_
 ### 🎯 Next steps:
 
 - Validate pause-overlap and cancel-postponed flows on device.
+
+
+# 🔹 Block 444 — Add break-start Ready recurrence (20/02/2026)
+
+### ✔ Work completed:
+
+- Expanded BUG-001 with a 20/02/2026 recurrence: mirror shows Ready at break
+  start and only re-syncs after tap on macOS or Groups Hub navigation on Android.
+
+### 🧠 Decisions made:
+
+- Treat break-start Ready as another recurrence of the mirror Ready bug.
+
+### ⚠️ Issues found:
+
+- Android mirror often requires Groups Hub navigation to recover.
+
+### 🎯 Next steps:
+
+- Validate whether break transitions trigger session-gap handling.
