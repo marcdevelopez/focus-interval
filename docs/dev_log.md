@@ -7198,3 +7198,61 @@ _(none)_
 ### 🎯 Next steps:
 
 - Validate whether break transitions trigger session-gap handling.
+
+# 🔹 Block 445 — Fix overdue late-start queue + navigation stability (20/02/2026)
+
+### ✔ Work completed:
+
+- Late-start conflict detection moved to shared timing utilities.
+- Coordinator now re-evaluates overdue queues immediately after clearing stale
+  active sessions.
+- Groups Hub “Start now” now redirects to late-start queue when overdue
+  conflicts exist.
+- Late-start confirm navigation now uses a delayed fallback to avoid duplicate
+  transitions.
+- Completion dialog suppressed when totals are empty (prevents 0/0/0 modal).
+- Added unit test for 3 overdue scheduled groups.
+- Updated bug log (BUG-008).
+
+### 🧠 Decisions made:
+
+- Prioritize late-start resolution over manual “Start now” when overdue
+  conflicts exist and no running group is active.
+- Avoid double navigation by letting the coordinator own the main transition.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Validate overdue late-start flow on Android (late-open scenario).
+- Verify confirm flow navigates directly to Run Mode (no carousel).
+
+# 🔹 Block 446 — Late-start queue ownership + live projections + chained postpone (20/02/2026)
+
+### ✔ Work completed:
+
+- Added late-start queue metadata fields (anchor, queue id/order, owner, claim).
+- Implemented queue ownership claim/auto-claim and owner heartbeat updates.
+- Late-start queue UI is now owner-only; mirrors are read-only with request CTA.
+- Projections update live using a shared server timebase.
+- Confirm queue now sets scheduledStartTime to queueNow, bootstraps activeSession,
+  and clears queue owner/claim fields while keeping queue id/order for chaining.
+- Postpone now chains queued groups sequentially and preserves notice/pre-run.
+- copyWith now supports explicit null clearing for optional fields.
+
+### 🧠 Decisions made:
+
+- Use server heartbeat timebase for cross-device queue projections.
+- Preserve lateStartQueueId/order on selected groups for chained postpone.
+
+### ⚠️ Issues found:
+
+_(not yet validated on devices)_
+
+### 🎯 Next steps:
+
+- Validate late-start owner flow + request/approve on macOS/Android.
+- Confirm live projections align across devices.
+- Exercise chained postpone with multiple queued groups.

@@ -1,14 +1,21 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../data/models/pomodoro_task.dart';
+import '../../data/models/pomodoro_session.dart';
 import '../../data/models/schema_version.dart';
 import '../../data/models/task_run_group.dart';
 import '../../data/services/task_run_notice_service.dart';
+import '../../data/services/app_mode_service.dart';
+import '../../domain/pomodoro_machine.dart';
 import '../../widgets/task_card.dart';
 import '../providers.dart';
+import '../utils/scheduled_group_timing.dart';
 
 class LateStartOverlapArgs {
   final List<String> groupIds;
@@ -34,19 +41,39 @@ class _LateStartOverlapQueueScreenState
     extends ConsumerState<LateStartOverlapQueueScreen> {
   static const int _maxVisibleGroups = 5;
   static const Duration _warningThreshold = Duration(hours: 8);
+  static const Duration _ownerStaleThreshold = Duration(seconds: 45);
   static final DateFormat _timeFormat = DateFormat('HH:mm');
 
   late DateTime _anchor;
+  late DateTime _anchorCapturedAt;
+  DateTime _now = DateTime.now();
+  Timer? _tickTimer;
+  bool _claimInFlight = false;
+  bool _requestInFlight = false;
   bool _showPreview = false;
   bool _showAll = false;
   bool _busy = false;
   List<String> _selectedIds = [];
+  List<String> _latestConflictIds = const [];
 
   @override
   void initState() {
     super.initState();
     _anchor = widget.args.anchor;
+    _anchorCapturedAt = DateTime.now();
+    _tickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        _now = DateTime.now();
+      });
+    });
     _selectedIds = List<String>.from(widget.args.groupIds);
+  }
+
+  @override
+  void dispose() {
+    _tickTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -77,12 +104,43 @@ class _LateStartOverlapQueueScreenState
       ..sort(
         (a, b) => a.scheduledStartTime!.compareTo(b.scheduledStartTime!),
       );
+    _latestConflictIds = conflictGroups.map((g) => g.id).toList();
 
     if (conflictGroups.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) Navigator.of(context).pop();
       });
       return const SizedBox.shrink();
+    }
+
+    final appMode = ref.watch(appModeProvider);
+    final deviceId = ref.watch(deviceInfoServiceProvider).deviceId;
+    final ownerDeviceId = resolveLateStartOwnerDeviceId(conflictGroups);
+    final ownerHeartbeat = resolveLateStartOwnerHeartbeat(conflictGroups);
+    final anchorFromGroups = resolveLateStartAnchor(conflictGroups);
+    final timebase = ownerHeartbeat ?? anchorFromGroups;
+    if (timebase != null && timebase != _anchor) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          _anchor = timebase;
+          _anchorCapturedAt = DateTime.now();
+        });
+      });
+    }
+    final ownerStale =
+        ownerDeviceId != null &&
+        (ownerHeartbeat == null ||
+            _now.difference(ownerHeartbeat) >= _ownerStaleThreshold);
+    final isOwner =
+        appMode != AppMode.account ||
+        ownerDeviceId == null ||
+        ownerDeviceId == deviceId;
+    if (!isOwner && ownerStale) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _maybeAutoClaimOwnership(conflictGroups, deviceId);
+      });
     }
 
     final availableIds = conflictGroups.map((group) => group.id).toSet();
@@ -98,11 +156,17 @@ class _LateStartOverlapQueueScreenState
         .toList();
     final unselectedGroups =
         conflictGroups.where((g) => !selectedSet.contains(g.id)).toList();
-    final projectedRanges = _buildProjectedRanges(selectedGroups, _anchor);
+    final queueNow = _queueNow(_now);
+    final projectedRanges = _buildProjectedRanges(selectedGroups, queueNow);
     final totalSeconds = _totalQueueSeconds(selectedGroups);
     final totalDuration = Duration(seconds: totalSeconds);
     final totalLabel = _formatDuration(totalDuration);
     final showWarning = totalDuration > _warningThreshold;
+    final requestId = resolveLateStartClaimRequestId(conflictGroups);
+    final requesterDeviceId =
+        resolveLateStartClaimRequesterDeviceId(conflictGroups);
+    final hasPendingRequest =
+        requestId != null && requesterDeviceId != null;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -124,6 +188,11 @@ class _LateStartOverlapQueueScreenState
                   projectedRanges: projectedRanges,
                   totalLabel: totalLabel,
                   showWarning: showWarning,
+                  isOwner: isOwner,
+                  ownerDeviceId: ownerDeviceId,
+                  ownerStale: ownerStale,
+                  hasPendingRequest: hasPendingRequest,
+                  requesterDeviceId: requesterDeviceId,
                 ),
           if (_busy)
             const Positioned(
@@ -142,7 +211,7 @@ class _LateStartOverlapQueueScreenState
               ? [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: _busy
+                      onPressed: (_busy || !isOwner)
                           ? null
                           : () => setState(() {
                                 _showPreview = false;
@@ -153,7 +222,7 @@ class _LateStartOverlapQueueScreenState
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: _busy
+                      onPressed: (_busy || !isOwner)
                           ? null
                           : () => _applySelection(
                                 conflictGroups: conflictGroups,
@@ -166,14 +235,16 @@ class _LateStartOverlapQueueScreenState
               : [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: _busy ? null : () => Navigator.of(context).pop(),
+                      onPressed: (_busy || !isOwner)
+                          ? null
+                          : () => Navigator.of(context).pop(),
                       child: const Text('Cancel'),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: _busy
+                      onPressed: (_busy || !isOwner)
                           ? null
                           : () =>
                               _handleContinue(conflictGroups, selectedGroups),
@@ -193,6 +264,11 @@ class _LateStartOverlapQueueScreenState
     required Map<String, _ProjectedRange> projectedRanges,
     required String totalLabel,
     required bool showWarning,
+    required bool isOwner,
+    required String? ownerDeviceId,
+    required bool ownerStale,
+    required bool hasPendingRequest,
+    required String? requesterDeviceId,
   }) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -210,6 +286,21 @@ class _LateStartOverlapQueueScreenState
             style: TextStyle(color: Colors.orangeAccent, fontSize: 12),
           ),
         ],
+        const SizedBox(height: 8),
+        if (ownerDeviceId != null)
+          _ownerRow(ownerDeviceId),
+        if (!isOwner) ...[
+          const SizedBox(height: 8),
+          _mirrorOwnershipPrompt(
+            ownerStale: ownerStale,
+            hasPendingRequest: hasPendingRequest,
+            requesterDeviceId: requesterDeviceId,
+          ),
+        ],
+        if (isOwner && hasPendingRequest && requesterDeviceId != null) ...[
+          const SizedBox(height: 8),
+          _ownerRequestBanner(requesterDeviceId),
+        ],
         const SizedBox(height: 16),
         _sectionHeader('Selected groups'),
         if (selectedGroups.isEmpty) ...[
@@ -225,7 +316,7 @@ class _LateStartOverlapQueueScreenState
           physics: const NeverScrollableScrollPhysics(),
           buildDefaultDragHandles: false,
           itemCount: selectedGroups.length,
-          onReorder: _reorderSelected,
+          onReorder: isOwner ? _reorderSelected : (_, __) {},
           itemBuilder: (context, index) {
             final group = selectedGroups[index];
             return _ConflictGroupCard(
@@ -233,11 +324,16 @@ class _LateStartOverlapQueueScreenState
               group: group,
               selected: true,
               projectedRange: projectedRanges[group.id]?.label,
-              onToggle: () => _toggleSelection(group.id),
-              trailing: ReorderableDragStartListener(
-                index: index,
-                child: const Icon(Icons.drag_handle, color: Colors.white38),
-              ),
+              onToggle: isOwner ? () => _toggleSelection(group.id) : null,
+              trailing: isOwner
+                  ? ReorderableDragStartListener(
+                      index: index,
+                      child: const Icon(
+                        Icons.drag_handle,
+                        color: Colors.white38,
+                      ),
+                    )
+                  : null,
             );
           },
         ),
@@ -251,7 +347,7 @@ class _LateStartOverlapQueueScreenState
               group: group,
               selected: false,
               projectedRange: null,
-              onToggle: () => _toggleSelection(group.id),
+              onToggle: isOwner ? () => _toggleSelection(group.id) : null,
             ),
           if (unselectedGroups.length > _maxVisibleGroups)
             TextButton(
@@ -449,10 +545,11 @@ class _LateStartOverlapQueueScreenState
       final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
       final notifier = ref.read(notificationServiceProvider);
       final now = DateTime.now();
+      final queueNow = _queueNow(now);
 
       final updates = <TaskRunGroup>[];
       if (selectedGroups.isNotEmpty) {
-        var cursor = now;
+        var cursor = queueNow;
         for (var index = 0; index < selectedGroups.length; index += 1) {
           final group = selectedGroups[index];
           final durationSeconds = _groupDurationSeconds(group);
@@ -460,16 +557,24 @@ class _LateStartOverlapQueueScreenState
             updates.add(
               group.copyWith(
                 status: TaskRunStatus.running,
-                actualStartTime: now,
+                scheduledStartTime: queueNow,
+                actualStartTime: queueNow,
                 theoreticalEndTime:
-                    now.add(Duration(seconds: durationSeconds)),
+                    queueNow.add(Duration(seconds: durationSeconds)),
                 scheduledByDeviceId: deviceId,
                 noticeSentAt: null,
                 noticeSentByDeviceId: null,
+                lateStartQueueOrder: index,
+                lateStartAnchorAt: null,
+                lateStartOwnerDeviceId: null,
+                lateStartOwnerHeartbeatAt: null,
+                lateStartClaimRequestId: null,
+                lateStartClaimRequestedByDeviceId: null,
+                lateStartClaimRequestedAt: null,
                 updatedAt: now,
               ),
             );
-            cursor = now.add(Duration(seconds: durationSeconds));
+            cursor = queueNow.add(Duration(seconds: durationSeconds));
           } else {
             final noticeMinutes = _noticeMinutesOrDefault(group);
             final scheduledStart =
@@ -484,6 +589,13 @@ class _LateStartOverlapQueueScreenState
                     scheduledStart.add(Duration(seconds: durationSeconds)),
                 noticeSentAt: null,
                 noticeSentByDeviceId: null,
+                lateStartQueueOrder: index,
+                lateStartAnchorAt: null,
+                lateStartOwnerDeviceId: null,
+                lateStartOwnerHeartbeatAt: null,
+                lateStartClaimRequestId: null,
+                lateStartClaimRequestedByDeviceId: null,
+                lateStartClaimRequestedAt: null,
                 updatedAt: now,
               ),
             );
@@ -497,13 +609,21 @@ class _LateStartOverlapQueueScreenState
         if (selectedIds.contains(group.id)) continue;
         final scheduledStart = group.scheduledStartTime;
         final isMissed =
-            scheduledStart != null && !scheduledStart.isAfter(now);
+            scheduledStart != null && !scheduledStart.isAfter(queueNow);
         updates.add(
           group.copyWith(
             status: TaskRunStatus.canceled,
             canceledReason: isMissed
                 ? TaskRunCanceledReason.missedSchedule
                 : TaskRunCanceledReason.conflict,
+            lateStartQueueId: null,
+            lateStartQueueOrder: null,
+            lateStartAnchorAt: null,
+            lateStartOwnerDeviceId: null,
+            lateStartOwnerHeartbeatAt: null,
+            lateStartClaimRequestId: null,
+            lateStartClaimRequestedByDeviceId: null,
+            lateStartClaimRequestedAt: null,
             updatedAt: now,
           ),
         );
@@ -516,7 +636,19 @@ class _LateStartOverlapQueueScreenState
 
       if (!mounted) return;
       if (selectedGroups.isNotEmpty) {
-        context.go('/timer/${selectedGroups.first.id}');
+        final target = selectedGroups.first;
+        await _publishInitialSession(target, queueNow: queueNow);
+        ref.read(scheduledAutoStartGroupIdProvider.notifier).state =
+            target.id;
+        Future.delayed(const Duration(milliseconds: 350), () {
+          if (!mounted) return;
+          final uri = GoRouter.of(context)
+              .routerDelegate
+              .currentConfiguration
+              .uri;
+          if (uri.path.startsWith('/timer/')) return;
+          context.go('/timer/${target.id}');
+        });
       } else {
         Navigator.of(context).pop();
       }
@@ -581,6 +713,264 @@ class _LateStartOverlapQueueScreenState
 
   int _noticeMinutesOrDefault(TaskRunGroup group) {
     return group.noticeMinutes ?? TaskRunNoticeService.defaultNoticeMinutes;
+  }
+
+  DateTime _queueNow(DateTime now) {
+    return _anchor.add(now.difference(_anchorCapturedAt));
+  }
+
+  Widget _ownerRow(String ownerDeviceId) {
+    return Row(
+      children: [
+        const Text(
+          'Owner:',
+          style: TextStyle(color: Colors.white54, fontSize: 12),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            ownerDeviceId,
+            style: const TextStyle(color: Colors.white, fontSize: 12),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _mirrorOwnershipPrompt({
+    required bool ownerStale,
+    required bool hasPendingRequest,
+    required String? requesterDeviceId,
+  }) {
+    final label = ownerStale ? 'Claim ownership' : 'Request ownership';
+    final message = ownerStale
+        ? 'Owner seems unavailable. Claim ownership to resolve this conflict.'
+        : 'Owner is resolving this conflict. Request ownership if needed.';
+    final isPending = hasPendingRequest &&
+        requesterDeviceId == ref.read(deviceInfoServiceProvider).deviceId;
+    final isBlocked = hasPendingRequest && !isPending;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white10,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            message,
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
+          ),
+          if (isPending) ...[
+            const SizedBox(height: 6),
+            const Text(
+              'Request sent. Waiting for owner approval.',
+              style: TextStyle(color: Colors.white54, fontSize: 12),
+            ),
+          ],
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton(
+              onPressed: (_claimInFlight || _requestInFlight || isBlocked)
+                  ? null
+                  : () {
+                      if (ownerStale) {
+                        _maybeAutoClaimOwnership(
+                          null,
+                          ref.read(deviceInfoServiceProvider).deviceId,
+                        );
+                      } else {
+                        _requestOwnership();
+                      }
+                    },
+              child: Text(label),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _ownerRequestBanner(String requesterDeviceId) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.6)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Ownership request from $requesterDeviceId.',
+            style: const TextStyle(color: Colors.white, fontSize: 12),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _requestInFlight
+                      ? null
+                      : () => _respondOwnershipRequest(approved: false),
+                  child: const Text('Reject'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _requestInFlight
+                      ? null
+                      : () => _respondOwnershipRequest(approved: true),
+                  child: const Text('Approve'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<TaskRunGroup> _resolveConflictGroups() {
+    final groups =
+        ref.read(taskRunGroupStreamProvider).value ?? const [];
+    if (_latestConflictIds.isEmpty) return const [];
+    return groups
+        .where((group) => _latestConflictIds.contains(group.id))
+        .toList();
+  }
+
+  void _maybeAutoClaimOwnership(
+    List<TaskRunGroup>? conflictGroups,
+    String deviceId,
+  ) {
+    if (_claimInFlight) return;
+    final groups = conflictGroups != null && conflictGroups.isNotEmpty
+        ? conflictGroups
+        : _resolveConflictGroups();
+    if (groups.isEmpty) return;
+    setState(() {
+      _claimInFlight = true;
+    });
+    ref
+        .read(taskRunGroupRepositoryProvider)
+        .claimLateStartQueue(
+          groups: groups,
+          ownerDeviceId: deviceId,
+          queueId: resolveLateStartQueueId(groups) ??
+              const Uuid().v4(),
+          orderedIds: groups.map((g) => g.id).toList(),
+          allowOverride: true,
+        )
+        .whenComplete(() {
+          if (!mounted) return;
+          setState(() {
+            _claimInFlight = false;
+          });
+        });
+  }
+
+  Future<void> _requestOwnership() async {
+    if (_requestInFlight) return;
+    final groups =
+        ref.read(taskRunGroupStreamProvider).value ?? const [];
+    final conflictGroups = groups
+        .where((group) => widget.args.groupIds.contains(group.id))
+        .toList();
+    if (conflictGroups.isEmpty) return;
+    final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
+    final requestId = const Uuid().v4();
+    setState(() {
+      _requestInFlight = true;
+    });
+    try {
+      await ref
+          .read(taskRunGroupRepositoryProvider)
+          .requestLateStartOwnership(
+            groups: conflictGroups,
+            requesterDeviceId: deviceId,
+            requestId: requestId,
+          );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _requestInFlight = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _respondOwnershipRequest({
+    required bool approved,
+  }) async {
+    if (_requestInFlight) return;
+    final groups =
+        ref.read(taskRunGroupStreamProvider).value ?? const [];
+    final conflictGroups = groups
+        .where((group) => widget.args.groupIds.contains(group.id))
+        .toList();
+    if (conflictGroups.isEmpty) return;
+    final ownerId = resolveLateStartOwnerDeviceId(conflictGroups);
+    final requesterId =
+        resolveLateStartClaimRequesterDeviceId(conflictGroups);
+    final requestId = resolveLateStartClaimRequestId(conflictGroups);
+    if (ownerId == null || requesterId == null || requestId == null) return;
+    setState(() {
+      _requestInFlight = true;
+    });
+    try {
+      await ref
+          .read(taskRunGroupRepositoryProvider)
+          .respondLateStartOwnershipRequest(
+            groups: conflictGroups,
+            ownerDeviceId: ownerId,
+            requesterDeviceId: requesterId,
+            requestId: requestId,
+            approved: approved,
+          );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _requestInFlight = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _publishInitialSession(
+    TaskRunGroup group, {
+    required DateTime queueNow,
+  }) async {
+    if (group.tasks.isEmpty) return;
+    final task = group.tasks.first;
+    final session = PomodoroSession(
+      taskId: task.sourceTaskId,
+      groupId: group.id,
+      currentTaskId: task.sourceTaskId,
+      currentTaskIndex: 0,
+      totalTasks: group.tasks.length,
+      dataVersion: kCurrentDataVersion,
+      ownerDeviceId: ref.read(deviceInfoServiceProvider).deviceId,
+      status: PomodoroStatus.pomodoroRunning,
+      phase: PomodoroPhase.pomodoro,
+      currentPomodoro: 1,
+      totalPomodoros: task.totalPomodoros,
+      phaseDurationSeconds: task.pomodoroMinutes * 60,
+      remainingSeconds: task.pomodoroMinutes * 60,
+      phaseStartedAt: queueNow,
+      currentTaskStartedAt: queueNow,
+      pausedAt: null,
+      lastUpdatedAt: queueNow,
+      finishedAt: null,
+      pauseReason: null,
+    );
+    await ref.read(pomodoroSessionRepositoryProvider).publishSession(session);
   }
 
   String _formatRange(DateTime start, DateTime end) {
@@ -715,7 +1105,7 @@ class _ConflictGroupCard extends StatelessWidget {
   final TaskRunGroup group;
   final bool selected;
   final String? projectedRange;
-  final VoidCallback onToggle;
+  final VoidCallback? onToggle;
   final Widget? trailing;
 
   const _ConflictGroupCard({
@@ -754,7 +1144,7 @@ class _ConflictGroupCard extends StatelessWidget {
         children: [
           Checkbox(
             value: selected,
-            onChanged: (_) => onToggle(),
+            onChanged: onToggle == null ? null : (_) => onToggle!(),
           ),
           const SizedBox(width: 6),
           Expanded(

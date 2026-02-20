@@ -54,6 +54,37 @@ class FakeTaskRunGroupRepository implements TaskRunGroupRepository {
 
   @override
   Future<void> prune({int? keepCompleted}) async {}
+
+  @override
+  Future<void> claimLateStartQueue({
+    required List<TaskRunGroup> groups,
+    required String ownerDeviceId,
+    required String queueId,
+    required List<String> orderedIds,
+    required bool allowOverride,
+  }) async {}
+
+  @override
+  Future<void> updateLateStartOwnerHeartbeat({
+    required List<TaskRunGroup> groups,
+    required String ownerDeviceId,
+  }) async {}
+
+  @override
+  Future<void> requestLateStartOwnership({
+    required List<TaskRunGroup> groups,
+    required String requesterDeviceId,
+    required String requestId,
+  }) async {}
+
+  @override
+  Future<void> respondLateStartOwnershipRequest({
+    required List<TaskRunGroup> groups,
+    required String ownerDeviceId,
+    required String requesterDeviceId,
+    required String requestId,
+    required bool approved,
+  }) async {}
 }
 
 class FakePomodoroSessionRepository implements PomodoroSessionRepository {

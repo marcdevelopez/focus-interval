@@ -432,6 +432,96 @@ Open. Medium priority (visible correctness issue).
 
 ---
 
+## BUG-009 — Late-start queue desync + ownership gaps in Account Mode
+
+ID: BUG-009  
+Date: 20/02/2026 (UTC+1)  
+Platforms: macOS owner + Android mirror  
+Context: Account Mode late-open with multiple overdue scheduled groups.
+
+Symptom:
+- Late-start projections differed across devices (minute drift).
+- Queue projections froze; confirm time did not match actual Run Mode start.
+- Ownership unclear; mirrors could act or got stuck.
+- Postpone did not drag remaining queued groups, causing repeated overlaps.
+
+Expected behavior:
+Deterministic late-start queue with a single owner, consistent projections, and
+chained postpone for queued groups.
+
+Fix applied:
+- Server-anchored queue timebase + owner heartbeat.
+- Owner-only queue with request/auto-claim.
+- Live projected ranges, confirm sets scheduledStartTime to queueNow.
+- ActiveSession bootstrap on confirm.
+- Chained postpone for queued groups.
+
+Status:
+Pending validation on macOS/Android.
+
+---
+
+## BUG-008 — Overdue scheduled groups not resolved on late open (Account Mode)
+
+ID: BUG-008
+Date: 20/02/2026 (UTC+1)
+Platforms: Android (Account Mode)
+Context: No running group. Multiple scheduled groups already overdue when
+opening the app late.
+
+Repro steps:
+- Plan 3 scheduled groups starting at 06:00 (15m each, 1m notice), consecutive.
+- Close the app.
+- Open at ~09:59 (all scheduled windows already in the past).
+
+Symptom:
+Late-start overlap queue does not appear. UI shows a running banner and a
+completion modal with totals 0/0/0, then Groups Hub still shows all groups as
+scheduled. Manual “Start now” bypasses overdue resolution. Confirm flow can
+trigger duplicate navigation.
+
+Observed behavior:
+- Task List shows “Group running” banner despite no real running group.
+- Completion modal “Tasks group completed” appears with 0 tasks/pomodoros/time.
+- Groups Hub shows the 3 groups still scheduled.
+- “Start now” starts one group directly (no overdue queue).
+- Resolve overlaps appears only after canceling the running group.
+- Confirm can cause Groups Hub double-load and a brief Timer flash.
+
+Expected behavior:
+- When opening late with overdue scheduled groups (no running), the late-start
+  overlap queue should appear immediately.
+- Manual “Start now” should not bypass overdue resolution.
+- Confirm queue should navigate cleanly (single transition to Run Mode).
+- Completion modal should not show with empty totals.
+
+Evidence:
+- User reproduction + screenshots (20/02/2026).
+
+Workaround:
+- Manually start/cancel to force the queue (not acceptable long-term).
+
+Hypothesis:
+- Stale activeSession clearing returned early, skipping overdue evaluation.
+- “Start now” path bypassed late-start queue.
+- Queue confirm and coordinator both navigated, causing duplicate transitions.
+- Completion dialog allowed empty summaries.
+
+Fix applied:
+- ScheduledGroupCoordinator continues after clearing stale activeSession and
+  re-evaluates overdue queue immediately.
+- Late-start conflict detection moved to shared utility; Groups Hub “Start now”
+  redirects to the late-start queue when conflicts exist.
+- LateStartOverlapQueueScreen uses delayed fallback navigation to avoid double
+  navigation on confirm.
+- TimerScreen skips completion dialog when totals are empty.
+- Added unit test for 3 overdue groups emitting late-start queue.
+
+Status:
+Fixed; validation pending on Android.
+
+---
+
 ## Mitigation candidate — Run Mode resync overlay (Groups Hub equivalent)
 
 Date: 18/02/2026 (UTC+1)

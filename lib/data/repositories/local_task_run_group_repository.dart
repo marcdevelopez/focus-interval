@@ -82,6 +82,128 @@ class LocalTaskRunGroupRepository implements TaskRunGroupRepository {
     _emit();
   }
 
+  @override
+  Future<void> claimLateStartQueue({
+    required List<TaskRunGroup> groups,
+    required String ownerDeviceId,
+    required String queueId,
+    required List<String> orderedIds,
+    required bool allowOverride,
+  }) async {
+    await _ensureLoaded();
+    if (groups.isEmpty) return;
+    final hasAnchor = groups.any((g) => g.lateStartAnchorAt != null);
+    if (hasAnchor && !allowOverride) return;
+    final now = DateTime.now();
+    final existingAnchor = groups
+        .map((g) => g.lateStartAnchorAt)
+        .whereType<DateTime>()
+        .fold<DateTime?>(null, (prev, next) {
+          if (prev == null) return next;
+          return next.isBefore(prev) ? next : prev;
+        });
+    final existingQueueId = groups
+        .map((g) => g.lateStartQueueId)
+        .whereType<String>()
+        .firstWhere((id) => id.isNotEmpty, orElse: () => '');
+    final resolvedQueueId = existingQueueId.isNotEmpty
+        ? existingQueueId
+        : queueId;
+    final anchor = existingAnchor ?? now;
+    final orderLookup = <String, int>{};
+    for (var i = 0; i < orderedIds.length; i += 1) {
+      orderLookup[orderedIds[i]] = i;
+    }
+    for (final group in groups) {
+      final order = orderLookup[group.id];
+      final updated = group.copyWith(
+        lateStartAnchorAt: anchor,
+        lateStartQueueId: resolvedQueueId,
+        lateStartQueueOrder: order,
+        lateStartOwnerDeviceId: ownerDeviceId,
+        lateStartOwnerHeartbeatAt: now,
+        lateStartClaimRequestId: null,
+        lateStartClaimRequestedByDeviceId: null,
+        lateStartClaimRequestedAt: null,
+      );
+      _store[group.id] = updated;
+    }
+    await _persist();
+    _emit();
+  }
+
+  @override
+  Future<void> updateLateStartOwnerHeartbeat({
+    required List<TaskRunGroup> groups,
+    required String ownerDeviceId,
+  }) async {
+    await _ensureLoaded();
+    if (groups.isEmpty) return;
+    final now = DateTime.now();
+    for (final group in groups) {
+      if (group.lateStartOwnerDeviceId != ownerDeviceId) continue;
+      final updated = group.copyWith(lateStartOwnerHeartbeatAt: now);
+      _store[group.id] = updated;
+    }
+    await _persist();
+    _emit();
+  }
+
+  @override
+  Future<void> requestLateStartOwnership({
+    required List<TaskRunGroup> groups,
+    required String requesterDeviceId,
+    required String requestId,
+  }) async {
+    await _ensureLoaded();
+    if (groups.isEmpty) return;
+    final now = DateTime.now();
+    for (final group in groups) {
+      final updated = group.copyWith(
+        lateStartClaimRequestId: requestId,
+        lateStartClaimRequestedByDeviceId: requesterDeviceId,
+        lateStartClaimRequestedAt: now,
+      );
+      _store[group.id] = updated;
+    }
+    await _persist();
+    _emit();
+  }
+
+  @override
+  Future<void> respondLateStartOwnershipRequest({
+    required List<TaskRunGroup> groups,
+    required String ownerDeviceId,
+    required String requesterDeviceId,
+    required String requestId,
+    required bool approved,
+  }) async {
+    await _ensureLoaded();
+    if (groups.isEmpty) return;
+    final now = DateTime.now();
+    for (final group in groups) {
+      if (approved) {
+        final updated = group.copyWith(
+          lateStartOwnerDeviceId: requesterDeviceId,
+          lateStartOwnerHeartbeatAt: now,
+          lateStartClaimRequestId: null,
+          lateStartClaimRequestedByDeviceId: null,
+          lateStartClaimRequestedAt: null,
+        );
+        _store[group.id] = updated;
+      } else {
+        final updated = group.copyWith(
+          lateStartClaimRequestId: null,
+          lateStartClaimRequestedByDeviceId: null,
+          lateStartClaimRequestedAt: null,
+        );
+        _store[group.id] = updated;
+      }
+    }
+    await _persist();
+    _emit();
+  }
+
   Future<void> _handleListen() async {
     await _ensureLoaded();
     _emit();

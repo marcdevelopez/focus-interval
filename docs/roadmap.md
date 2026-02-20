@@ -195,6 +195,10 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       19/02/2026: Phase 17 scope extended — postpone follows running group in
                   real time (no repeat modal) + paused overlap alerts
                   implemented (validation pending).
+      20/02/2026: Phase 17 scope extended — late-start queue owner-only flow
+                  (request/auto-claim), server-anchored projections with live
+                  updates, queue-confirm session bootstrap, and chained
+                  postpone for queued groups (validation pending).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
@@ -206,6 +210,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 10 — Task Editor: total time chip + task color picker (new requirement).
 - Phase 9 — Task List: group name input + group summary + per-task total time + selection reset (new requirement).
 - Phase 17 — Early overlap warning (pause drift) + mirror ownership CTA + persistent conflict snackbar + auto-follow postpone (no repeat modal) + paused overlap alerts (new requirement).
+- Phase 17 — Late-start queue anchor (server time) + owner-only queue + realtime projections + activeSession creation on confirm + mirror Run Mode CTA + revalidate post-postpone overlaps (bug).
 - Phase 14 — Global sound settings (apply switch + revert) (new requirement).
 - Phase 14 — Pre-Run notice minutes setting (Account Mode sync + Settings UI; range 0–15) (new requirement).
 - Phase 15 — TaskRunGroup model updates (group name + task color snapshot + integrityMode) (new requirement).

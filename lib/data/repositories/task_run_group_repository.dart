@@ -8,6 +8,29 @@ abstract class TaskRunGroupRepository {
   Future<void> saveAll(List<TaskRunGroup> groups);
   Future<void> delete(String id);
   Future<void> prune({int? keepCompleted});
+  Future<void> claimLateStartQueue({
+    required List<TaskRunGroup> groups,
+    required String ownerDeviceId,
+    required String queueId,
+    required List<String> orderedIds,
+    required bool allowOverride,
+  });
+  Future<void> updateLateStartOwnerHeartbeat({
+    required List<TaskRunGroup> groups,
+    required String ownerDeviceId,
+  });
+  Future<void> requestLateStartOwnership({
+    required List<TaskRunGroup> groups,
+    required String requesterDeviceId,
+    required String requestId,
+  });
+  Future<void> respondLateStartOwnershipRequest({
+    required List<TaskRunGroup> groups,
+    required String ownerDeviceId,
+    required String requesterDeviceId,
+    required String requestId,
+    required bool approved,
+  });
 }
 
 class NoopTaskRunGroupRepository implements TaskRunGroupRepository {
@@ -32,4 +55,35 @@ class NoopTaskRunGroupRepository implements TaskRunGroupRepository {
 
   @override
   Future<void> prune({int? keepCompleted}) async {}
+
+  @override
+  Future<void> claimLateStartQueue({
+    required List<TaskRunGroup> groups,
+    required String ownerDeviceId,
+    required String queueId,
+    required List<String> orderedIds,
+    required bool allowOverride,
+  }) async {}
+
+  @override
+  Future<void> updateLateStartOwnerHeartbeat({
+    required List<TaskRunGroup> groups,
+    required String ownerDeviceId,
+  }) async {}
+
+  @override
+  Future<void> requestLateStartOwnership({
+    required List<TaskRunGroup> groups,
+    required String requesterDeviceId,
+    required String requestId,
+  }) async {}
+
+  @override
+  Future<void> respondLateStartOwnershipRequest({
+    required List<TaskRunGroup> groups,
+    required String ownerDeviceId,
+    required String requesterDeviceId,
+    required String requestId,
+    required bool approved,
+  }) async {}
 }
