@@ -55,6 +55,11 @@ macOS app was tapped (sometimes tap was insufficient and required leaving to
 Groups Hub and returning). Returning to Run Mode often shows Ready briefly
 before syncing.
 
+Additional scenario (20/02/2026):
+Mirror frequently shows Ready at the start of breaks while the group is running.
+On macOS, clicking inside the app window re-syncs. On Android, a tap may not
+recover; navigation to Groups Hub and back is required to resync Run Mode.
+
 Observed moment: Pomodoro 2, ~13 minutes remaining.
 
 Evidence (Firestore state at failure):
