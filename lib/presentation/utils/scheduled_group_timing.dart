@@ -10,8 +10,10 @@ TaskRunGroup? findGroupById(List<TaskRunGroup> groups, String id) {
   return null;
 }
 
-int resolveNoticeMinutes(TaskRunGroup group) {
-  return group.noticeMinutes ?? TaskRunNoticeService.defaultNoticeMinutes;
+int resolveNoticeMinutes(TaskRunGroup group, {int? fallback}) {
+  return group.noticeMinutes ??
+      fallback ??
+      TaskRunNoticeService.defaultNoticeMinutes;
 }
 
 int resolveGroupDurationSeconds(TaskRunGroup group) {
@@ -54,6 +56,7 @@ DateTime? resolvePostponedAnchorEnd({
   required List<TaskRunGroup> allGroups,
   required PomodoroSession? activeSession,
   required DateTime now,
+  int? fallbackNoticeMinutes,
 }) {
   if (anchor.status == TaskRunStatus.running) {
     return resolveProjectedRunningEnd(
@@ -67,6 +70,7 @@ DateTime? resolvePostponedAnchorEnd({
     allGroups: allGroups,
     activeSession: activeSession,
     now: now,
+    fallbackNoticeMinutes: fallbackNoticeMinutes,
   );
   if (effectiveEnd != null) return effectiveEnd;
   final updatedAt = anchor.updatedAt;
@@ -79,6 +83,7 @@ DateTime? resolveEffectiveScheduledStart({
   required List<TaskRunGroup> allGroups,
   required PomodoroSession? activeSession,
   required DateTime now,
+  int? fallbackNoticeMinutes,
 }) {
   final scheduledStart = group.scheduledStartTime;
   if (scheduledStart == null) return null;
@@ -91,9 +96,13 @@ DateTime? resolveEffectiveScheduledStart({
     allGroups: allGroups,
     activeSession: activeSession,
     now: now,
+    fallbackNoticeMinutes: fallbackNoticeMinutes,
   );
   if (anchorEnd == null) return scheduledStart;
-  final noticeMinutes = resolveNoticeMinutes(group);
+  final noticeMinutes = resolveNoticeMinutes(
+    group,
+    fallback: fallbackNoticeMinutes,
+  );
   return anchorEnd.add(Duration(minutes: noticeMinutes));
 }
 
@@ -102,15 +111,20 @@ DateTime? resolveEffectivePreRunStart({
   required List<TaskRunGroup> allGroups,
   required PomodoroSession? activeSession,
   required DateTime now,
+  int? fallbackNoticeMinutes,
 }) {
   final scheduledStart = resolveEffectiveScheduledStart(
     group: group,
     allGroups: allGroups,
     activeSession: activeSession,
     now: now,
+    fallbackNoticeMinutes: fallbackNoticeMinutes,
   );
   if (scheduledStart == null) return null;
-  final noticeMinutes = resolveNoticeMinutes(group);
+  final noticeMinutes = resolveNoticeMinutes(
+    group,
+    fallback: fallbackNoticeMinutes,
+  );
   if (noticeMinutes <= 0) return scheduledStart;
   return scheduledStart.subtract(Duration(minutes: noticeMinutes));
 }
@@ -120,12 +134,14 @@ DateTime? resolveEffectiveScheduledEnd({
   required List<TaskRunGroup> allGroups,
   required PomodoroSession? activeSession,
   required DateTime now,
+  int? fallbackNoticeMinutes,
 }) {
   final scheduledStart = resolveEffectiveScheduledStart(
     group: group,
     allGroups: allGroups,
     activeSession: activeSession,
     now: now,
+    fallbackNoticeMinutes: fallbackNoticeMinutes,
   );
   if (scheduledStart == null) return null;
   final durationSeconds = resolveGroupDurationSeconds(group);
@@ -141,6 +157,7 @@ List<TaskRunGroup> resolveLateStartConflictSet({
   required List<TaskRunGroup> allGroups,
   required PomodoroSession? activeSession,
   required DateTime now,
+  int? fallbackNoticeMinutes,
 }) {
   if (scheduled.isEmpty) return const [];
   final overdue = scheduled
@@ -151,6 +168,7 @@ List<TaskRunGroup> resolveLateStartConflictSet({
               allGroups: allGroups,
               activeSession: activeSession,
               now: now,
+              fallbackNoticeMinutes: fallbackNoticeMinutes,
             ) ??
             group.scheduledStartTime!;
         return !effectiveStart.isAfter(now);
@@ -163,6 +181,7 @@ List<TaskRunGroup> resolveLateStartConflictSet({
             allGroups: allGroups,
             activeSession: activeSession,
             now: now,
+            fallbackNoticeMinutes: fallbackNoticeMinutes,
           ) ??
           a.scheduledStartTime!;
       final bStart =
@@ -171,6 +190,7 @@ List<TaskRunGroup> resolveLateStartConflictSet({
             allGroups: allGroups,
             activeSession: activeSession,
             now: now,
+            fallbackNoticeMinutes: fallbackNoticeMinutes,
           ) ??
           b.scheduledStartTime!;
       return aStart.compareTo(bStart);
@@ -189,11 +209,16 @@ List<TaskRunGroup> resolveLateStartConflictSet({
       allGroups: allGroups,
       activeSession: activeSession,
       now: now,
+      fallbackNoticeMinutes: fallbackNoticeMinutes,
     );
     return conflict.length > 1 ? conflict : const [];
   }
 
-  final horizonEnd = _projectedQueueEnd(overdue, now);
+  final horizonEnd = _projectedQueueEnd(
+    overdue,
+    now,
+    fallbackNoticeMinutes: fallbackNoticeMinutes,
+  );
   return _collectLateStartConflicts(
     scheduled: scheduled,
     overdueIds: overdue.map((g) => g.id).toSet(),
@@ -202,6 +227,7 @@ List<TaskRunGroup> resolveLateStartConflictSet({
     allGroups: allGroups,
     activeSession: activeSession,
     now: now,
+    fallbackNoticeMinutes: fallbackNoticeMinutes,
   );
 }
 
@@ -293,6 +319,7 @@ List<TaskRunGroup> _collectLateStartConflicts({
   required List<TaskRunGroup> allGroups,
   required PomodoroSession? activeSession,
   required DateTime now,
+  int? fallbackNoticeMinutes,
 }) {
   final conflicts = <TaskRunGroup>{};
   for (final group in scheduled) {
@@ -305,12 +332,14 @@ List<TaskRunGroup> _collectLateStartConflicts({
       allGroups: allGroups,
       activeSession: activeSession,
       now: now,
+      fallbackNoticeMinutes: fallbackNoticeMinutes,
     );
     final end = _scheduledWindowEnd(
       group,
       allGroups: allGroups,
       activeSession: activeSession,
       now: now,
+      fallbackNoticeMinutes: fallbackNoticeMinutes,
     );
     if (_overlaps(windowStart, windowEnd, start, end)) {
       conflicts.add(group);
@@ -321,11 +350,18 @@ List<TaskRunGroup> _collectLateStartConflicts({
   return list;
 }
 
-DateTime _projectedQueueEnd(List<TaskRunGroup> overdue, DateTime now) {
+DateTime _projectedQueueEnd(
+  List<TaskRunGroup> overdue,
+  DateTime now, {
+  int? fallbackNoticeMinutes,
+}) {
   var cursor = now;
   for (var index = 0; index < overdue.length; index += 1) {
     if (index > 0) {
-      final notice = resolveNoticeMinutes(overdue[index]);
+      final notice = resolveNoticeMinutes(
+        overdue[index],
+        fallback: fallbackNoticeMinutes,
+      );
       cursor = cursor.add(Duration(minutes: notice));
     }
     cursor = cursor.add(
@@ -340,6 +376,7 @@ DateTime _scheduledWindowStart(
   required List<TaskRunGroup> allGroups,
   required PomodoroSession? activeSession,
   required DateTime now,
+  int? fallbackNoticeMinutes,
 }) {
   final start =
       resolveEffectiveScheduledStart(
@@ -347,9 +384,10 @@ DateTime _scheduledWindowStart(
         allGroups: allGroups,
         activeSession: activeSession,
         now: now,
+        fallbackNoticeMinutes: fallbackNoticeMinutes,
       ) ??
       group.scheduledStartTime!;
-  final notice = resolveNoticeMinutes(group);
+  final notice = resolveNoticeMinutes(group, fallback: fallbackNoticeMinutes);
   if (notice <= 0) return start;
   return start.subtract(Duration(minutes: notice));
 }
@@ -359,6 +397,7 @@ DateTime _scheduledWindowEnd(
   required List<TaskRunGroup> allGroups,
   required PomodoroSession? activeSession,
   required DateTime now,
+  int? fallbackNoticeMinutes,
 }) {
   final scheduledStart =
       resolveEffectiveScheduledStart(
@@ -366,6 +405,7 @@ DateTime _scheduledWindowEnd(
         allGroups: allGroups,
         activeSession: activeSession,
         now: now,
+        fallbackNoticeMinutes: fallbackNoticeMinutes,
       ) ??
       group.scheduledStartTime!;
   final duration = resolveGroupDurationSeconds(group);

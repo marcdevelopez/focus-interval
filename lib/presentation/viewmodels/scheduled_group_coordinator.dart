@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../data/models/pomodoro_session.dart';
+import '../../data/models/schema_version.dart';
 import '../../data/models/task_run_group.dart';
 import '../../domain/pomodoro_machine.dart';
 import '../providers.dart';
@@ -44,6 +45,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
   static const Duration _staleSessionGrace = Duration(seconds: 45);
   static const Duration _lateStartOwnerStale = Duration(seconds: 45);
   static const Duration _lateStartHeartbeatInterval = Duration(seconds: 20);
+  static const Duration _noticeFallbackTtl = Duration(seconds: 30);
 
   Timer? _scheduledTimer;
   Timer? _preAlertTimer;
@@ -62,6 +64,10 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
   final Map<String, DateTime> _scheduledNotices = {};
   List<TaskRunGroup> _lastGroups = const [];
   final Uuid _uuid = const Uuid();
+  int? _noticeFallbackMinutes;
+  DateTime? _noticeFallbackFetchedAt;
+
+  bool get _canUseRef => !_disposed;
 
   @override
   ScheduledGroupAction? build() {
@@ -151,6 +157,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
   Future<void> _handleGroupsAsync(List<TaskRunGroup> groups) async {
     if (_autoStartInFlight || _disposed) return;
 
+    if (!_canUseRef) return;
     final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
 
     _scheduledTimer?.cancel();
@@ -162,13 +169,23 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     _runningOverlapTimer?.cancel();
     _runningOverlapTimer = null;
     final now = DateTime.now();
-    var session = ref.read(activePomodoroSessionProvider);
+    final noticeFallback = await _refreshNoticeFallback();
+    if (!_canUseRef) return;
+    PomodoroSession? session;
+    try {
+      session = ref.read(activePomodoroSessionProvider);
+    } catch (_) {
+      return;
+    }
     await _pruneScheduledNotices(
       groups,
       activeSession: session,
       now: now,
+      noticeFallbackMinutes: noticeFallback,
     );
+    if (!_canUseRef) return;
     final clearedStale = await _clearStaleActiveSessionIfNeeded(groups);
+    if (!_canUseRef) return;
     if (clearedStale) {
       session = null;
     }
@@ -181,7 +198,9 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       groups: groups,
       activeSession: session,
       now: now,
+      noticeFallbackMinutes: noticeFallback,
     );
+    if (!_canUseRef) return;
     if (finalized) {
       return;
     }
@@ -200,6 +219,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
                   allGroups: groups,
                   activeSession: session,
                   now: now,
+                  fallbackNoticeMinutes: noticeFallback,
                 ) ??
                 a.scheduledStartTime!;
             final bStart =
@@ -208,6 +228,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
                   allGroups: groups,
                   activeSession: session,
                   now: now,
+                  fallbackNoticeMinutes: noticeFallback,
                 ) ??
                 b.scheduledStartTime!;
             return aStart.compareTo(bStart);
@@ -221,6 +242,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
         allGroups: groups,
         session: session,
         now: now,
+        noticeFallbackMinutes: noticeFallback,
       );
       if (!_sessionStreamReady) {
         _debugLogExpiryDecision(
@@ -328,27 +350,41 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       allGroups: groups,
       activeSession: session,
       now: now,
+      fallbackNoticeMinutes: noticeFallback,
     );
     if (lateStartConflicts.isNotEmpty) {
       final anchor = resolveLateStartAnchor(lateStartConflicts);
       final queueId = resolveLateStartQueueId(lateStartConflicts);
       final ownerId = resolveLateStartOwnerDeviceId(lateStartConflicts);
       final ownerHeartbeat = resolveLateStartOwnerHeartbeat(lateStartConflicts);
-      final ownerStale = ownerHeartbeat == null
-          ? true
-          : now.difference(ownerHeartbeat) >= _lateStartOwnerStale;
+      final hasOwner = ownerId != null && ownerId.isNotEmpty;
+      final staleByHeartbeat =
+          ownerHeartbeat != null &&
+          now.difference(ownerHeartbeat) >= _lateStartOwnerStale;
+      final staleByAnchor =
+          ownerHeartbeat == null &&
+          anchor != null &&
+          now.difference(anchor) >= _lateStartOwnerStale;
+      final ownerStale = _isLateStartOwnerStale(
+        ownerDeviceId: ownerId,
+        ownerHeartbeat: ownerHeartbeat,
+        anchor: anchor,
+        now: now,
+      );
+      final shouldAutoClaim =
+          !hasOwner || staleByHeartbeat || staleByAnchor;
       final repo = ref.read(taskRunGroupRepositoryProvider);
-      if (anchor == null) {
+      if (shouldAutoClaim && ownerId != deviceId) {
         await repo.claimLateStartQueue(
           groups: lateStartConflicts,
           ownerDeviceId: deviceId,
           queueId: queueId ?? _uuid.v4(),
           orderedIds: lateStartConflicts.map((g) => g.id).toList(),
-          allowOverride: false,
+          allowOverride: hasOwner || ownerStale,
         );
         return;
       }
-      if (ownerStale && ownerId != deviceId) {
+      if (anchor == null && ownerId == deviceId) {
         await repo.claimLateStartQueue(
           groups: lateStartConflicts,
           ownerDeviceId: deviceId,
@@ -356,17 +392,19 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
           orderedIds: lateStartConflicts.map((g) => g.id).toList(),
           allowOverride: true,
         );
+        return;
       }
       _syncLateStartHeartbeat(
         lateStartConflicts,
         ownerDeviceId: ownerId,
         deviceId: deviceId,
       );
+      final resolvedAnchor = anchor ?? now;
       if (kDebugMode) {
         debugPrint(
           '[LateStartQueue] overdue=${lateStartConflicts.length} '
           'owner=${ownerId ?? 'n/a'} '
-          'anchor=$anchor '
+          'anchor=$resolvedAnchor '
           'groupIds=${lateStartConflicts.map((g) => g.id).join(',')}',
         );
       }
@@ -375,7 +413,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
         _lastLateStartQueueKey = key;
         _emitLateStartQueue(
           lateStartConflicts.map((g) => g.id).toList(),
-          anchor,
+          resolvedAnchor,
         );
       }
       return;
@@ -390,6 +428,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
           allGroups: groups,
           activeSession: session,
           now: now,
+          fallbackNoticeMinutes: noticeFallback,
         ) ??
         nextGroup.scheduledStartTime!;
     final noticeMinutes = await _resolveNoticeMinutes(nextGroup);
@@ -448,6 +487,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
   Future<bool> _clearStaleActiveSessionIfNeeded(
     List<TaskRunGroup> groups,
   ) async {
+    if (!_canUseRef) return false;
     final session = ref.read(activePomodoroSessionProvider);
     if (session == null) return false;
     final groupId = session.groupId;
@@ -464,6 +504,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     if (group == null) {
       final repo = ref.read(taskRunGroupRepositoryProvider);
       final latest = await repo.getById(groupId);
+      if (!_canUseRef) return false;
       if (latest == null || latest.status != TaskRunStatus.running) {
         await ref
             .read(pomodoroSessionRepositoryProvider)
@@ -486,7 +527,8 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
   Future<int> _resolveNoticeMinutes(TaskRunGroup group) async {
     final explicit = group.noticeMinutes;
     if (explicit != null) return explicit;
-    return ref.read(taskRunNoticeServiceProvider).getNoticeMinutes();
+    final fallback = await _refreshNoticeFallback();
+    return resolveNoticeMinutes(group, fallback: fallback);
   }
 
   void _updateRunningOverlapDecision({
@@ -495,6 +537,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     required List<TaskRunGroup> allGroups,
     required PomodoroSession? session,
     required DateTime now,
+    int? noticeFallbackMinutes,
   }) {
     if (running.isEmpty || scheduled.isEmpty) {
       _clearRunningOverlapDecisionIfNeeded();
@@ -512,9 +555,13 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
           allGroups: allGroups,
           activeSession: session,
           now: now,
+          fallbackNoticeMinutes: noticeFallbackMinutes,
         ) ??
         nextScheduled.scheduledStartTime!;
-    final noticeMinutes = resolveNoticeMinutes(nextScheduled);
+    final noticeMinutes = resolveNoticeMinutes(
+      nextScheduled,
+      fallback: noticeFallbackMinutes,
+    );
     final preRunStart = noticeMinutes > 0
         ? scheduledStart.subtract(Duration(minutes: noticeMinutes))
         : scheduledStart;
@@ -523,7 +570,12 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       activeSession: session,
       now: now,
     );
-    if (runningEnd == null || !runningEnd.isAfter(preRunStart)) {
+    final isAnchoredToRunning =
+        nextScheduled.postponedAfterGroupId == runningGroup.id;
+    if (runningEnd == null ||
+        runningEnd.isBefore(preRunStart) ||
+        (isAnchoredToRunning &&
+            runningEnd.isAtSameMomentAs(preRunStart))) {
       _clearRunningOverlapDecisionIfNeeded();
       _scheduleRunningOverlapRecheck(
         runningGroup: runningGroup,
@@ -562,6 +614,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       allGroups: allGroups,
       session: session,
       now: now,
+      noticeFallbackMinutes: _noticeFallbackMinutes,
     );
   }
 
@@ -599,7 +652,9 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     required List<TaskRunGroup> groups,
     required PomodoroSession? activeSession,
     required DateTime now,
+    int? noticeFallbackMinutes,
   }) async {
+    if (!_canUseRef) return false;
     final repo = ref.read(taskRunGroupRepositoryProvider);
     final updates = <TaskRunGroup>[];
     for (final group in groups) {
@@ -607,6 +662,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       final anchorId = group.postponedAfterGroupId;
       if (anchorId == null) continue;
       final latest = await repo.getById(group.id) ?? group;
+      if (!_canUseRef) return false;
       if (latest.status != TaskRunStatus.scheduled) continue;
       if (latest.postponedAfterGroupId != anchorId) continue;
       final anchor = findGroupById(groups, anchorId);
@@ -627,9 +683,13 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
         allGroups: groups,
         activeSession: activeSession,
         now: now,
+        fallbackNoticeMinutes: noticeFallbackMinutes,
       );
       if (anchorEnd == null) continue;
-      final noticeMinutes = resolveNoticeMinutes(latest);
+      final noticeMinutes = resolveNoticeMinutes(
+        latest,
+        fallback: noticeFallbackMinutes,
+      );
       final scheduledStart = anchorEnd.add(Duration(minutes: noticeMinutes));
       final durationSeconds = resolveGroupDurationSeconds(latest);
       updates.add(
@@ -649,6 +709,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     if (updates.isEmpty) return false;
 
     await repo.saveAll(updates);
+    if (!_canUseRef) return false;
     for (final group in updates) {
       await _cancelLocalPreAlert(group.id);
     }
@@ -716,7 +777,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
   }
 
   Future<void> _touchLateStartHeartbeat() async {
-    if (_disposed) return;
+    if (!_canUseRef) return;
     if (_lateStartHeartbeatGroupIds.isEmpty) return;
     final ownerDeviceId = _lateStartHeartbeatOwnerId;
     if (ownerDeviceId == null) return;
@@ -767,6 +828,38 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     return now.difference(updatedAt) >= _staleSessionGrace;
   }
 
+  bool _isLateStartOwnerStale({
+    required String? ownerDeviceId,
+    required DateTime? ownerHeartbeat,
+    required DateTime? anchor,
+    required DateTime now,
+  }) {
+    if (ownerDeviceId == null || ownerDeviceId.isEmpty) return false;
+    final lastSeen = ownerHeartbeat ?? anchor;
+    if (lastSeen == null) return false;
+    return now.difference(lastSeen) >= _lateStartOwnerStale;
+  }
+
+  Future<int?> _refreshNoticeFallback() async {
+    if (_disposed) return _noticeFallbackMinutes;
+    final cached = _noticeFallbackMinutes;
+    final fetchedAt = _noticeFallbackFetchedAt;
+    if (cached != null &&
+        fetchedAt != null &&
+        DateTime.now().difference(fetchedAt) < _noticeFallbackTtl) {
+      return cached;
+    }
+    try {
+      final resolved =
+          await ref.read(taskRunNoticeServiceProvider).getNoticeMinutes();
+      _noticeFallbackMinutes = resolved;
+      _noticeFallbackFetchedAt = DateTime.now();
+      return resolved;
+    } catch (_) {
+      return cached;
+    }
+  }
+
   bool _shouldExpireActiveSession(
     PomodoroSession session,
     TaskRunGroup group,
@@ -783,9 +876,11 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     DateTime now,
   ) async {
     if (groups.isEmpty) return;
+    if (!_canUseRef) return;
     final repo = ref.read(taskRunGroupRepositoryProvider);
     for (final group in groups) {
       final latest = await repo.getById(group.id) ?? group;
+      if (!_canUseRef) return;
       if (latest.status != TaskRunStatus.running) continue;
       final endTime = _resolveTheoreticalEndTime(latest);
       if (endTime == null || endTime.isAfter(now)) continue;
@@ -867,8 +962,10 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     TaskRunGroup group,
     DateTime preAlertStart,
   ) async {
+    if (!_canUseRef) return;
     final groupRepo = ref.read(taskRunGroupRepositoryProvider);
     final latest = await groupRepo.getById(group.id) ?? group;
+    if (!_canUseRef) return;
     if (latest.status != TaskRunStatus.scheduled) return;
     final sentAt = latest.noticeSentAt;
     if (sentAt != null && sentAt.isAfter(preAlertStart)) {
@@ -888,29 +985,50 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     if (_autoStartInFlight || _disposed) return;
     _autoStartInFlight = true;
     try {
+      if (!_canUseRef) return;
       final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
       final groupRepo = ref.read(taskRunGroupRepositoryProvider);
       final latest = await groupRepo.getById(groupId);
+      if (!_canUseRef) return;
       if (latest == null) return;
       if (latest.status != TaskRunStatus.scheduled) return;
-      final scheduledStart = latest.scheduledStartTime;
-      if (scheduledStart == null) return;
-
       final now = DateTime.now();
+      final scheduledStart =
+          resolveEffectiveScheduledStart(
+            group: latest,
+            allGroups: _lastGroups,
+            activeSession: ref.read(activePomodoroSessionProvider),
+            now: now,
+            fallbackNoticeMinutes: _noticeFallbackMinutes,
+          ) ??
+          latest.scheduledStartTime;
+      if (scheduledStart == null) return;
       if (scheduledStart.isAfter(now)) return;
 
       final totalSeconds =
           latest.totalDurationSeconds ??
           groupDurationSecondsByMode(latest.tasks, latest.integrityMode);
+      final shouldUpdateScheduledStart =
+          latest.postponedAfterGroupId != null &&
+          (latest.scheduledStartTime == null ||
+              !latest.scheduledStartTime!.isAtSameMomentAs(scheduledStart));
 
       final updated = latest.copyWith(
         status: TaskRunStatus.running,
+        scheduledStartTime: shouldUpdateScheduledStart
+            ? scheduledStart
+            : latest.scheduledStartTime,
+        postponedAfterGroupId: shouldUpdateScheduledStart
+            ? null
+            : latest.postponedAfterGroupId,
         actualStartTime: now,
         theoreticalEndTime: now.add(Duration(seconds: totalSeconds)),
         scheduledByDeviceId: latest.scheduledByDeviceId ?? deviceId,
         updatedAt: now,
       );
       await groupRepo.save(updated);
+      if (!_canUseRef) return;
+      await _publishInitialSession(updated, startedAt: now);
 
       ref.read(scheduledAutoStartGroupIdProvider.notifier).state = groupId;
       await _cancelLocalPreAlert(groupId);
@@ -920,6 +1038,37 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     } finally {
       _autoStartInFlight = false;
     }
+  }
+
+  Future<void> _publishInitialSession(
+    TaskRunGroup group, {
+    required DateTime startedAt,
+  }) async {
+    if (group.tasks.isEmpty) return;
+    if (!_canUseRef) return;
+    final task = group.tasks.first;
+    final session = PomodoroSession(
+      taskId: task.sourceTaskId,
+      groupId: group.id,
+      currentTaskId: task.sourceTaskId,
+      currentTaskIndex: 0,
+      totalTasks: group.tasks.length,
+      dataVersion: kCurrentDataVersion,
+      ownerDeviceId: ref.read(deviceInfoServiceProvider).deviceId,
+      status: PomodoroStatus.pomodoroRunning,
+      phase: PomodoroPhase.pomodoro,
+      currentPomodoro: 1,
+      totalPomodoros: task.totalPomodoros,
+      phaseDurationSeconds: task.pomodoroMinutes * 60,
+      remainingSeconds: task.pomodoroMinutes * 60,
+      phaseStartedAt: startedAt,
+      currentTaskStartedAt: startedAt,
+      pausedAt: null,
+      lastUpdatedAt: startedAt,
+      finishedAt: null,
+      pauseReason: null,
+    );
+    await ref.read(pomodoroSessionRepositoryProvider).publishSession(session);
   }
 
   Future<void> _scheduleLocalPreAlert({
@@ -960,8 +1109,10 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     List<TaskRunGroup> groups, {
     required PomodoroSession? activeSession,
     required DateTime now,
+    int? noticeFallbackMinutes,
   }) async {
     if (_scheduledNotices.isEmpty) return;
+    if (!_canUseRef) return;
     final scheduledGroups = groups
         .where(
           (g) =>
@@ -979,7 +1130,10 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
         toRemove.add(entry.key);
         continue;
       }
-      final noticeMinutes = resolveNoticeMinutes(group);
+      final noticeMinutes = resolveNoticeMinutes(
+        group,
+        fallback: noticeFallbackMinutes,
+      );
       if (noticeMinutes <= 0) {
         toRemove.add(entry.key);
         continue;
@@ -990,6 +1144,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
             allGroups: groups,
             activeSession: activeSession,
             now: now,
+            fallbackNoticeMinutes: noticeFallbackMinutes,
           ) ??
           group.scheduledStartTime!;
       final expectedPreAlertStart =
@@ -1003,6 +1158,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       }
     }
     for (final groupId in toRemove) {
+      if (!_canUseRef) return;
       await ref.read(notificationServiceProvider).cancelGroupPreAlert(groupId);
       _scheduledNotices.remove(groupId);
     }

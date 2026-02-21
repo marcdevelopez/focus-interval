@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focus_interval/data/models/pomodoro_session.dart';
 import 'package:focus_interval/data/models/schema_version.dart';
@@ -14,11 +15,14 @@ import 'package:focus_interval/data/services/device_info_service.dart';
 import 'package:focus_interval/domain/pomodoro_machine.dart';
 import 'package:focus_interval/presentation/providers.dart';
 import 'package:focus_interval/presentation/viewmodels/scheduled_group_coordinator.dart';
+import 'package:focus_interval/presentation/utils/scheduled_group_timing.dart';
 
 class FakeTaskRunGroupRepository implements TaskRunGroupRepository {
   final Map<String, TaskRunGroup> _store = {};
   final StreamController<List<TaskRunGroup>> _controller =
       StreamController<List<TaskRunGroup>>.broadcast();
+  int claimLateStartCalls = 0;
+  String? lastClaimOwnerDeviceId;
 
   void seed(TaskRunGroup group) {
     _store[group.id] = group;
@@ -70,6 +74,8 @@ class FakeTaskRunGroupRepository implements TaskRunGroupRepository {
     required bool allowOverride,
   }) async {
     if (groups.isEmpty) return;
+    claimLateStartCalls += 1;
+    lastClaimOwnerDeviceId = ownerDeviceId;
     final now = DateTime.now();
     final orderLookup = <String, int>{};
     for (var i = 0; i < orderedIds.length; i += 1) {
@@ -309,7 +315,39 @@ Future<void> _pumpQueue() async {
   await Future<void>.delayed(const Duration(milliseconds: 50));
 }
 
+Future<TaskRunGroup?> _awaitOwner({
+  required FakeTaskRunGroupRepository repo,
+  required String groupId,
+  required String ownerId,
+  Duration timeout = const Duration(seconds: 1),
+}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (DateTime.now().isBefore(deadline)) {
+    final stored = await repo.getById(groupId);
+    if (stored?.lateStartOwnerDeviceId == ownerId) {
+      return stored;
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+  }
+  return repo.getById(groupId);
+}
+
+Future<void> _awaitClaim({
+  required FakeTaskRunGroupRepository repo,
+  Duration timeout = const Duration(seconds: 1),
+}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (DateTime.now().isBefore(deadline)) {
+    if (repo.claimLateStartCalls > 0) return;
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+  }
+}
+
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   group('ScheduledGroupCoordinator paused expiry guard', () {
     test('does not complete running group while session stream is loading',
         () async {
@@ -577,6 +615,169 @@ void main() {
       expect(action.type, ScheduledGroupActionType.lateStartQueue);
       expect(action.groupIds, ['group-a', 'group-b', 'group-c']);
       expect(action.anchor, isNotNull);
+    });
+
+    test(
+        'does not auto-claim late-start queue when heartbeat is missing but anchor is fresh',
+        () async {
+      final groupRepo = FakeTaskRunGroupRepository();
+      final sessionRepo = FakePomodoroSessionRepository();
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+        ],
+      );
+      addTearDown(() {
+        groupRepo.dispose();
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      container.read(scheduledGroupCoordinatorProvider);
+
+      final now = DateTime.now();
+      final anchor = now.subtract(const Duration(seconds: 10));
+      final first = _buildScheduledGroup(
+        id: 'group-stale-1',
+        scheduledStart: now.subtract(const Duration(hours: 2)),
+        durationMinutes: 15,
+        noticeMinutes: 1,
+      ).copyWith(
+        lateStartAnchorAt: anchor,
+        lateStartQueueId: 'queue-1',
+        lateStartQueueOrder: 0,
+        lateStartOwnerDeviceId: 'device-other',
+        lateStartOwnerHeartbeatAt: null,
+      );
+      final second = _buildScheduledGroup(
+        id: 'group-stale-1b',
+        scheduledStart: now.subtract(const Duration(hours: 1, minutes: 45)),
+        durationMinutes: 15,
+        noticeMinutes: 1,
+      ).copyWith(
+        lateStartAnchorAt: anchor,
+        lateStartQueueId: 'queue-1',
+        lateStartQueueOrder: 1,
+        lateStartOwnerDeviceId: 'device-other',
+        lateStartOwnerHeartbeatAt: null,
+      );
+
+      sessionRepo.emit(null);
+      await groupRepo.saveAll([first, second]);
+
+      await _pumpQueue();
+
+      final stored = await groupRepo.getById(first.id);
+      expect(stored?.lateStartOwnerDeviceId, 'device-other');
+    });
+
+    test(
+        'auto-claims late-start queue when heartbeat is missing and anchor is stale',
+        () async {
+      final groupRepo = FakeTaskRunGroupRepository();
+      final sessionRepo = FakePomodoroSessionRepository();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final actionCompleter = Completer<ScheduledGroupAction>();
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+        ],
+      );
+      addTearDown(() {
+        groupRepo.dispose();
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      final sub = container.listen<ScheduledGroupAction?>(
+        scheduledGroupCoordinatorProvider,
+        (_, next) {
+          if (next != null && !actionCompleter.isCompleted) {
+            actionCompleter.complete(next);
+          }
+        },
+      );
+      addTearDown(sub.close);
+
+      container.read(scheduledGroupCoordinatorProvider);
+
+      final now = DateTime.now();
+      final anchor = now.subtract(const Duration(seconds: 60));
+      final first = _buildScheduledGroup(
+        id: 'group-stale-2',
+        scheduledStart: now.subtract(const Duration(hours: 2)),
+        durationMinutes: 15,
+        noticeMinutes: 1,
+      ).copyWith(
+        lateStartAnchorAt: anchor,
+        lateStartQueueId: 'queue-2',
+        lateStartQueueOrder: 0,
+        lateStartOwnerDeviceId: 'device-other',
+        lateStartOwnerHeartbeatAt: null,
+      );
+      final second = _buildScheduledGroup(
+        id: 'group-stale-2b',
+        scheduledStart: now.subtract(const Duration(hours: 1, minutes: 45)),
+        durationMinutes: 15,
+        noticeMinutes: 1,
+      ).copyWith(
+        lateStartAnchorAt: anchor,
+        lateStartQueueId: 'queue-2',
+        lateStartQueueOrder: 1,
+        lateStartOwnerDeviceId: 'device-other',
+        lateStartOwnerHeartbeatAt: null,
+      );
+      final initialOwnerId = resolveLateStartOwnerDeviceId([first, second]);
+      final initialAnchor = resolveLateStartAnchor([first, second]);
+      final initialLastSeen = resolveLateStartOwnerHeartbeat([first, second]) ?? initialAnchor;
+      final initialOwnerStale =
+          initialLastSeen != null &&
+          DateTime.now().difference(initialLastSeen) >=
+              const Duration(seconds: 45);
+      expect(initialOwnerId, 'device-other');
+      expect(initialOwnerStale, isTrue);
+
+      sessionRepo.emit(null);
+      await groupRepo.saveAll([first, second]);
+
+      await _pumpQueue();
+
+      final allGroups = await groupRepo.getAll();
+      final scheduledGroups = allGroups
+          .where(
+            (group) =>
+                group.status == TaskRunStatus.scheduled &&
+                group.scheduledStartTime != null,
+          )
+          .toList();
+      final conflicts = resolveLateStartConflictSet(
+        scheduled: scheduledGroups,
+        allGroups: allGroups,
+        activeSession: null,
+        now: DateTime.now(),
+      );
+      expect(conflicts, isNotEmpty);
+      final resolvedAnchor = resolveLateStartAnchor(conflicts);
+      expect(resolvedAnchor, isNotNull);
+
+      final action = await actionCompleter.future.timeout(
+        const Duration(seconds: 1),
+      );
+      expect(action.type, ScheduledGroupActionType.lateStartQueue);
+
+      await _awaitClaim(repo: groupRepo);
+      expect(groupRepo.claimLateStartCalls, greaterThan(0));
+      expect(groupRepo.lastClaimOwnerDeviceId, deviceInfo.deviceId);
+
+      final stored = await _awaitOwner(
+        repo: groupRepo,
+        groupId: first.id,
+        ownerId: deviceInfo.deviceId,
+      );
+      expect(stored?.lateStartOwnerDeviceId, deviceInfo.deviceId);
     });
   });
 
