@@ -7279,3 +7279,25 @@ _(none in automated tests)_
 ### 🎯 Next steps:
 
 - Resume manual multi-device validation on macOS/Android (owner request / approve / no bounce).
+
+# 🔹 Block 448 — Restore sticky Groups Hub CTA + regression guard (21/02/2026)
+
+### ✔ Work completed:
+
+- Specs updated to require a sticky “Go to Task List” CTA outside the scrollable list.
+- Roadmap reopened item added for the Groups Hub sticky CTA regression.
+- Groups Hub now renders the CTA as a fixed header (always visible).
+- Added AGENTS rule: do not degrade implemented UX without explicit owner approval.
+- Ran `flutter analyze`.
+
+### 🧠 Decisions made:
+
+- Keep the mirror conflict banner inside the scrollable list; only the CTA is sticky.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Validate Groups Hub CTA remains visible while scrolling long lists.

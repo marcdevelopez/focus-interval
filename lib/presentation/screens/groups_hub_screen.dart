@@ -163,100 +163,107 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
           const ModeIndicatorAction(compact: true),
         ],
       ),
-      body: groupsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Text("Error: $e", style: const TextStyle(color: Colors.red)),
-        ),
-        data: (groups) {
-          final now = DateTime.now();
-          final runningGroups = groups
-              .where((g) => g.status == TaskRunStatus.running)
-              .toList()
-            ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-          final scheduledGroups = groups
-              .where((g) => g.status == TaskRunStatus.scheduled)
-              .toList()
-            ..sort((a, b) {
-              final aStart =
-                  resolveEffectiveScheduledStart(
-                    group: a,
-                    allGroups: groups,
-                    activeSession: activeSession,
-                    now: now,
-                    fallbackNoticeMinutes: _noticeFallbackMinutes,
-                  ) ??
-                  a.scheduledStartTime ??
-                  a.createdAt;
-              final bStart =
-                  resolveEffectiveScheduledStart(
-                    group: b,
-                    allGroups: groups,
-                    activeSession: activeSession,
-                    now: now,
-                    fallbackNoticeMinutes: _noticeFallbackMinutes,
-                  ) ??
-                  b.scheduledStartTime ??
-                  b.createdAt;
-              return aStart.compareTo(bStart);
-            });
-          final completedGroups = groups
-              .where((g) => g.status == TaskRunStatus.completed)
-              .toList()
-            ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-          final completedSlice = completedGroups
-              .take(_completedHistoryLimit)
-              .toList(growable: false);
-          final canceledGroups = groups
-              .where((g) => g.status == TaskRunStatus.canceled)
-              .toList()
-            ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-          final canceledSlice = canceledGroups
-              .take(_canceledHistoryLimit)
-              .toList(growable: false);
-
-          final hasGroups =
-              runningGroups.isNotEmpty ||
-              scheduledGroups.isNotEmpty ||
-              completedSlice.isNotEmpty ||
-              canceledSlice.isNotEmpty;
-
-          final children = <Widget>[
-            OutlinedButton.icon(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: OutlinedButton.icon(
               onPressed: () => context.go('/tasks'),
               icon: const Icon(Icons.library_books),
               label: const Text('Go to Task List'),
             ),
-            const SizedBox(height: 16),
-          ];
-          if (mirrorConflictDecision != null) {
-            children.add(
-              _buildMirrorConflictBanner(
-                context,
-                decision: mirrorConflictDecision,
-              ),
-            );
-            children.add(const SizedBox(height: 16));
-          }
-
-          if (!hasGroups) {
-            children
-              ..add(const SizedBox(height: 48))
-              ..add(
-                const Center(
-                  child: Text(
-                    'No groups yet.',
-                    style: TextStyle(color: Colors.white54),
-                  ),
+          ),
+          Expanded(
+            child: groupsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(
+                child: Text(
+                  "Error: $e",
+                  style: const TextStyle(color: Colors.red),
                 ),
-              );
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-              children: children,
-            );
-          }
+              ),
+              data: (groups) {
+                final now = DateTime.now();
+                final runningGroups = groups
+                    .where((g) => g.status == TaskRunStatus.running)
+                    .toList()
+                  ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+                final scheduledGroups = groups
+                    .where((g) => g.status == TaskRunStatus.scheduled)
+                    .toList()
+                  ..sort((a, b) {
+                    final aStart =
+                        resolveEffectiveScheduledStart(
+                          group: a,
+                          allGroups: groups,
+                          activeSession: activeSession,
+                          now: now,
+                          fallbackNoticeMinutes: _noticeFallbackMinutes,
+                        ) ??
+                        a.scheduledStartTime ??
+                        a.createdAt;
+                    final bStart =
+                        resolveEffectiveScheduledStart(
+                          group: b,
+                          allGroups: groups,
+                          activeSession: activeSession,
+                          now: now,
+                          fallbackNoticeMinutes: _noticeFallbackMinutes,
+                        ) ??
+                        b.scheduledStartTime ??
+                        b.createdAt;
+                    return aStart.compareTo(bStart);
+                  });
+                final completedGroups = groups
+                    .where((g) => g.status == TaskRunStatus.completed)
+                    .toList()
+                  ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+                final completedSlice = completedGroups
+                    .take(_completedHistoryLimit)
+                    .toList(growable: false);
+                final canceledGroups = groups
+                    .where((g) => g.status == TaskRunStatus.canceled)
+                    .toList()
+                  ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+                final canceledSlice = canceledGroups
+                    .take(_canceledHistoryLimit)
+                    .toList(growable: false);
 
-          children.addAll([
+                final hasGroups =
+                    runningGroups.isNotEmpty ||
+                    scheduledGroups.isNotEmpty ||
+                    completedSlice.isNotEmpty ||
+                    canceledSlice.isNotEmpty;
+
+                final children = <Widget>[];
+                if (mirrorConflictDecision != null) {
+                  children.add(
+                    _buildMirrorConflictBanner(
+                      context,
+                      decision: mirrorConflictDecision,
+                    ),
+                  );
+                  children.add(const SizedBox(height: 16));
+                }
+
+                if (!hasGroups) {
+                  children
+                    ..add(const SizedBox(height: 48))
+                    ..add(
+                      const Center(
+                        child: Text(
+                          'No groups yet.',
+                          style: TextStyle(color: Colors.white54),
+                        ),
+                      ),
+                    );
+                  return ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                    children: children,
+                  );
+                }
+
+                children.addAll([
             _SectionHeader(title: 'Running / Paused'),
             if (runningGroups.isEmpty)
               const _EmptySection(label: 'No running groups'),
@@ -397,13 +404,16 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                 ],
                 now: now,
               ),
-          ]);
+                ]);
 
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            children: children,
-          );
-        },
+                return ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  children: children,
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
