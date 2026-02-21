@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 
 import '../providers.dart';
 import '../viewmodels/task_editor_view_model.dart';
+import '../viewmodels/pre_run_notice_view_model.dart';
 import '../../data/models/pomodoro_session.dart';
 import '../../data/models/pomodoro_preset.dart';
 import '../../data/models/pomodoro_task.dart';
@@ -18,7 +19,6 @@ import '../../data/repositories/task_run_group_repository.dart';
 import '../../data/services/firebase_auth_service.dart';
 import '../../data/services/app_mode_service.dart';
 import '../../data/services/local_sound_overrides.dart';
-import '../../data/services/task_run_notice_service.dart';
 import '../../domain/pomodoro_machine.dart';
 import '../../domain/validators.dart';
 import '../../widgets/task_card.dart';
@@ -135,6 +135,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   String _planningAnchorKey = '';
   String? _activeBannerGroupId;
   bool _staleActiveHandled = false;
+  int? _noticeFallbackMinutes;
 
   @override
   void initState() {
@@ -459,6 +460,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         _showEmailVerificationDialog();
       });
     });
+    _noticeFallbackMinutes = ref
+        .watch(preRunNoticeMinutesProvider)
+        .maybeWhen(data: (value) => value, orElse: () => null);
     final tasksAsync = ref.watch(taskListProvider);
     final auth = ref.watch(firebaseAuthServiceProvider);
     final authSupported = auth is! StubAuthService;
@@ -1079,11 +1083,14 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
             allGroups: groups,
             activeSession: activeSession,
             now: now,
+            fallbackNoticeMinutes: _noticeFallbackMinutes,
           ) ??
           group.scheduledStartTime;
       if (scheduledStart == null) continue;
-      final noticeMinutes =
-          group.noticeMinutes ?? TaskRunNoticeService.defaultNoticeMinutes;
+      final noticeMinutes = resolveNoticeMinutes(
+        group,
+        fallback: _noticeFallbackMinutes,
+      );
       if (noticeMinutes <= 0) continue;
       final preRunStart = scheduledStart.subtract(
         Duration(minutes: noticeMinutes),
@@ -1475,7 +1482,10 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
       if (scheduledBy != deviceId) return;
     }
-    final noticeMinutes = group.noticeMinutes ?? 0;
+    final noticeMinutes = resolveNoticeMinutes(
+      group,
+      fallback: _noticeFallbackMinutes,
+    );
     if (noticeMinutes <= 0) return;
     final preAlertStart =
         scheduledStart.subtract(Duration(minutes: noticeMinutes));
@@ -1531,6 +1541,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                 allGroups: groups,
                 activeSession: activeSession,
                 now: now,
+                fallbackNoticeMinutes: _noticeFallbackMinutes,
               ) ??
               group.scheduledStartTime ??
               group.createdAt)
@@ -1543,6 +1554,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                 allGroups: groups,
                 activeSession: activeSession,
                 now: now,
+                fallbackNoticeMinutes: _noticeFallbackMinutes,
               ) ??
               group.theoreticalEndTime)
           : (group.theoreticalEndTime.isBefore(start)
@@ -1579,6 +1591,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                 allGroups: groups,
                 activeSession: activeSession,
                 now: now,
+                fallbackNoticeMinutes: _noticeFallbackMinutes,
               ) ??
               group.scheduledStartTime ??
               group.createdAt)
@@ -1591,6 +1604,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                 allGroups: groups,
                 activeSession: activeSession,
                 now: now,
+                fallbackNoticeMinutes: _noticeFallbackMinutes,
               ) ??
               group.theoreticalEndTime)
           : (group.theoreticalEndTime.isBefore(start)

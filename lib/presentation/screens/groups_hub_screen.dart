@@ -9,10 +9,10 @@ import '../../data/models/task_run_group.dart';
 import '../../data/models/schema_version.dart';
 import '../../data/repositories/task_run_group_repository.dart';
 import '../../data/services/app_mode_service.dart';
-import '../../data/services/task_run_notice_service.dart';
 import '../../domain/pomodoro_machine.dart';
 import '../../widgets/mode_indicator.dart';
 import '../providers.dart';
+import '../viewmodels/pre_run_notice_view_model.dart';
 import 'task_group_planning_screen.dart';
 import '../utils/scheduled_group_timing.dart';
 import 'late_start_overlap_queue_screen.dart';
@@ -38,6 +38,7 @@ class GroupsHubScreen extends ConsumerStatefulWidget {
 
 class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
   String? _lastMirrorConflictSnackKey;
+  int? _noticeFallbackMinutes;
   final Set<String> _dismissedMirrorConflictSnackKeys = {};
   bool _mirrorConflictSnackVisible = false;
   static const int _completedHistoryLimit = 7;
@@ -137,6 +138,9 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     final overlapDecision = ref.watch(runningOverlapDecisionProvider);
     final appMode = ref.watch(appModeProvider);
     final deviceId = ref.watch(deviceInfoServiceProvider).deviceId;
+    _noticeFallbackMinutes = ref
+        .watch(preRunNoticeMinutesProvider)
+        .maybeWhen(data: (value) => value, orElse: () => null);
     final mirrorConflictDecision = _resolveMirrorConflictDecision(
       appMode: appMode,
       activeSession: activeSession,
@@ -159,98 +163,107 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
           const ModeIndicatorAction(compact: true),
         ],
       ),
-      body: groupsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Text("Error: $e", style: const TextStyle(color: Colors.red)),
-        ),
-        data: (groups) {
-          final now = DateTime.now();
-          final runningGroups = groups
-              .where((g) => g.status == TaskRunStatus.running)
-              .toList()
-            ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-          final scheduledGroups = groups
-              .where((g) => g.status == TaskRunStatus.scheduled)
-              .toList()
-            ..sort((a, b) {
-              final aStart =
-                  resolveEffectiveScheduledStart(
-                    group: a,
-                    allGroups: groups,
-                    activeSession: activeSession,
-                    now: now,
-                  ) ??
-                  a.scheduledStartTime ??
-                  a.createdAt;
-              final bStart =
-                  resolveEffectiveScheduledStart(
-                    group: b,
-                    allGroups: groups,
-                    activeSession: activeSession,
-                    now: now,
-                  ) ??
-                  b.scheduledStartTime ??
-                  b.createdAt;
-              return aStart.compareTo(bStart);
-            });
-          final completedGroups = groups
-              .where((g) => g.status == TaskRunStatus.completed)
-              .toList()
-            ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-          final completedSlice = completedGroups
-              .take(_completedHistoryLimit)
-              .toList(growable: false);
-          final canceledGroups = groups
-              .where((g) => g.status == TaskRunStatus.canceled)
-              .toList()
-            ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-          final canceledSlice = canceledGroups
-              .take(_canceledHistoryLimit)
-              .toList(growable: false);
-
-          final hasGroups =
-              runningGroups.isNotEmpty ||
-              scheduledGroups.isNotEmpty ||
-              completedSlice.isNotEmpty ||
-              canceledSlice.isNotEmpty;
-
-          final children = <Widget>[
-            OutlinedButton.icon(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: OutlinedButton.icon(
               onPressed: () => context.go('/tasks'),
               icon: const Icon(Icons.library_books),
               label: const Text('Go to Task List'),
             ),
-            const SizedBox(height: 16),
-          ];
-          if (mirrorConflictDecision != null) {
-            children.add(
-              _buildMirrorConflictBanner(
-                context,
-                decision: mirrorConflictDecision,
-              ),
-            );
-            children.add(const SizedBox(height: 16));
-          }
-
-          if (!hasGroups) {
-            children
-              ..add(const SizedBox(height: 48))
-              ..add(
-                const Center(
-                  child: Text(
-                    'No groups yet.',
-                    style: TextStyle(color: Colors.white54),
-                  ),
+          ),
+          Expanded(
+            child: groupsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(
+                child: Text(
+                  "Error: $e",
+                  style: const TextStyle(color: Colors.red),
                 ),
-              );
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-              children: children,
-            );
-          }
+              ),
+              data: (groups) {
+                final now = DateTime.now();
+                final runningGroups = groups
+                    .where((g) => g.status == TaskRunStatus.running)
+                    .toList()
+                  ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+                final scheduledGroups = groups
+                    .where((g) => g.status == TaskRunStatus.scheduled)
+                    .toList()
+                  ..sort((a, b) {
+                    final aStart =
+                        resolveEffectiveScheduledStart(
+                          group: a,
+                          allGroups: groups,
+                          activeSession: activeSession,
+                          now: now,
+                          fallbackNoticeMinutes: _noticeFallbackMinutes,
+                        ) ??
+                        a.scheduledStartTime ??
+                        a.createdAt;
+                    final bStart =
+                        resolveEffectiveScheduledStart(
+                          group: b,
+                          allGroups: groups,
+                          activeSession: activeSession,
+                          now: now,
+                          fallbackNoticeMinutes: _noticeFallbackMinutes,
+                        ) ??
+                        b.scheduledStartTime ??
+                        b.createdAt;
+                    return aStart.compareTo(bStart);
+                  });
+                final completedGroups = groups
+                    .where((g) => g.status == TaskRunStatus.completed)
+                    .toList()
+                  ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+                final completedSlice = completedGroups
+                    .take(_completedHistoryLimit)
+                    .toList(growable: false);
+                final canceledGroups = groups
+                    .where((g) => g.status == TaskRunStatus.canceled)
+                    .toList()
+                  ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+                final canceledSlice = canceledGroups
+                    .take(_canceledHistoryLimit)
+                    .toList(growable: false);
 
-          children.addAll([
+                final hasGroups =
+                    runningGroups.isNotEmpty ||
+                    scheduledGroups.isNotEmpty ||
+                    completedSlice.isNotEmpty ||
+                    canceledSlice.isNotEmpty;
+
+                final children = <Widget>[];
+                if (mirrorConflictDecision != null) {
+                  children.add(
+                    _buildMirrorConflictBanner(
+                      context,
+                      decision: mirrorConflictDecision,
+                    ),
+                  );
+                  children.add(const SizedBox(height: 16));
+                }
+
+                if (!hasGroups) {
+                  children
+                    ..add(const SizedBox(height: 48))
+                    ..add(
+                      const Center(
+                        child: Text(
+                          'No groups yet.',
+                          style: TextStyle(color: Colors.white54),
+                        ),
+                      ),
+                    );
+                  return ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                    children: children,
+                  );
+                }
+
+                children.addAll([
             _SectionHeader(title: 'Running / Paused'),
             if (runningGroups.isEmpty)
               const _EmptySection(label: 'No running groups'),
@@ -258,6 +271,11 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
               _GroupCard(
                 group: group,
                 activeSession: activeSession,
+                noticeMinutes: resolveNoticeMinutes(
+                  group,
+                  fallback: _noticeFallbackMinutes,
+                ),
+                noticeFromSettings: group.noticeMinutes == null,
                 onTap: () => _showSummaryDialog(context, group),
                 actions: [
                   _GroupAction(
@@ -279,7 +297,13 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                     allGroups: groups,
                     activeSession: activeSession,
                     now: now,
+                    fallbackNoticeMinutes: _noticeFallbackMinutes,
                   );
+                  final noticeMinutes = resolveNoticeMinutes(
+                    group,
+                    fallback: _noticeFallbackMinutes,
+                  );
+                  final noticeFromSettings = group.noticeMinutes == null;
                   final isPreRunActive = _isPreRunActive(
                     group,
                     now,
@@ -294,7 +318,10 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                       allGroups: groups,
                       activeSession: activeSession,
                       now: now,
+                      fallbackNoticeMinutes: _noticeFallbackMinutes,
                     ),
+                    noticeMinutes: noticeMinutes,
+                    noticeFromSettings: noticeFromSettings,
                     onTap: () => _showSummaryDialog(context, group),
                     actions: [
                       if (isPreRunActive)
@@ -333,6 +360,11 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
               _GroupCard(
                 group: group,
                 activeSession: activeSession,
+                noticeMinutes: resolveNoticeMinutes(
+                  group,
+                  fallback: _noticeFallbackMinutes,
+                ),
+                noticeFromSettings: group.noticeMinutes == null,
                 onTap: () => _showSummaryDialog(context, group),
                 actions: [
                   _GroupAction(
@@ -354,6 +386,11 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
               _GroupCard(
                 group: group,
                 activeSession: activeSession,
+                noticeMinutes: resolveNoticeMinutes(
+                  group,
+                  fallback: _noticeFallbackMinutes,
+                ),
+                noticeFromSettings: group.noticeMinutes == null,
                 onTap: () => _showSummaryDialog(context, group),
                 actions: [
                   _GroupAction(
@@ -367,13 +404,16 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                 ],
                 now: now,
               ),
-          ]);
+                ]);
 
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            children: children,
-          );
-        },
+                return ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  children: children,
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -460,6 +500,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                     allGroups: existing,
                     activeSession: activeSession,
                     now: now,
+                    fallbackNoticeMinutes: _noticeFallbackMinutes,
                   ) ??
                   a.scheduledStartTime!;
               final bStart =
@@ -468,6 +509,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                     allGroups: existing,
                     activeSession: activeSession,
                     now: now,
+                    fallbackNoticeMinutes: _noticeFallbackMinutes,
                   ) ??
                   b.scheduledStartTime!;
               return aStart.compareTo(bStart);
@@ -477,6 +519,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
         allGroups: existing,
         activeSession: activeSession,
         now: now,
+        fallbackNoticeMinutes: _noticeFallbackMinutes,
       );
       if (lateStartConflicts.isNotEmpty) {
         final anchor =
@@ -740,7 +783,10 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
       final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
       if (scheduledBy != deviceId) return;
     }
-    final noticeMinutes = group.noticeMinutes ?? 0;
+    final noticeMinutes = resolveNoticeMinutes(
+      group,
+      fallback: _noticeFallbackMinutes,
+    );
     if (noticeMinutes <= 0) return;
     final preAlertStart =
         scheduledStart.subtract(Duration(minutes: noticeMinutes));
@@ -783,6 +829,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                 allGroups: groups,
                 activeSession: activeSession,
                 now: now,
+                fallbackNoticeMinutes: _noticeFallbackMinutes,
               ) ??
               group.scheduledStartTime ??
               group.createdAt)
@@ -795,6 +842,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                 allGroups: groups,
                 activeSession: activeSession,
                 now: now,
+                fallbackNoticeMinutes: _noticeFallbackMinutes,
               ) ??
               group.theoreticalEndTime)
           : (group.theoreticalEndTime.isBefore(start)
@@ -831,6 +879,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                 allGroups: groups,
                 activeSession: activeSession,
                 now: now,
+                fallbackNoticeMinutes: _noticeFallbackMinutes,
               ) ??
               group.scheduledStartTime ??
               group.createdAt)
@@ -843,6 +892,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                 allGroups: groups,
                 activeSession: activeSession,
                 now: now,
+                fallbackNoticeMinutes: _noticeFallbackMinutes,
               ) ??
               group.theoreticalEndTime)
           : (group.theoreticalEndTime.isBefore(start)
@@ -969,12 +1019,14 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
       allGroups: allGroups,
       activeSession: activeSession,
       now: now,
+      fallbackNoticeMinutes: _noticeFallbackMinutes,
     );
     final effectiveScheduledEnd = resolveEffectiveScheduledEnd(
       group: group,
       allGroups: allGroups,
       activeSession: activeSession,
       now: now,
+      fallbackNoticeMinutes: _noticeFallbackMinutes,
     );
     final scheduledLabel = _formatGroupDateTime(
       effectiveScheduledStart ?? group.scheduledStartTime,
@@ -989,7 +1041,12 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     final totalDuration = _formatDuration(group.totalDurationSeconds ?? 0);
     final totalPomodoros = group.totalPomodoros ??
         group.tasks.fold<int>(0, (total, item) => total + item.totalPomodoros);
-    final notice = group.noticeMinutes;
+    final notice = resolveNoticeMinutes(
+      group,
+      fallback: _noticeFallbackMinutes,
+    );
+    final noticeLabel =
+        group.noticeMinutes == null ? 'Notice (settings)' : 'Notice';
     final showScheduled =
         (effectiveScheduledStart ?? group.scheduledStartTime) != null;
     final showNotice = showScheduled;
@@ -1028,8 +1085,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                 _summaryRow('Actual start', actualLabel),
                 _summaryRow('End', endLabel),
                 _summaryRow('Total time', totalDuration),
-                if (showNotice)
-                  _summaryRow('Notice', '${notice ?? 0} min'),
+                if (showNotice) _summaryRow(noticeLabel, '$notice min'),
                 const SizedBox(height: 12),
                 _summarySectionTitle('Totals'),
                 _summaryRow('Tasks', totalTasks.toString()),
@@ -1064,8 +1120,10 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     if (group.status != TaskRunStatus.scheduled) return false;
     final scheduledStart = scheduledStartOverride ?? group.scheduledStartTime;
     if (scheduledStart == null) return false;
-    final noticeMinutes =
-        group.noticeMinutes ?? TaskRunNoticeService.defaultNoticeMinutes;
+    final noticeMinutes = resolveNoticeMinutes(
+      group,
+      fallback: _noticeFallbackMinutes,
+    );
     if (noticeMinutes <= 0) return false;
     final preRunStart = scheduledStart.subtract(
       Duration(minutes: noticeMinutes),
@@ -1513,6 +1571,8 @@ class _GroupCard extends StatelessWidget {
   final PomodoroSession? activeSession;
   final DateTime? scheduledStartOverride;
   final DateTime? scheduledEndOverride;
+  final int noticeMinutes;
+  final bool noticeFromSettings;
   final VoidCallback onTap;
   final List<_GroupAction> actions;
   final DateTime now;
@@ -1522,6 +1582,8 @@ class _GroupCard extends StatelessWidget {
     required this.activeSession,
     this.scheduledStartOverride,
     this.scheduledEndOverride,
+    required this.noticeMinutes,
+    required this.noticeFromSettings,
     required this.onTap,
     required this.actions,
     required this.now,
@@ -1536,8 +1598,8 @@ class _GroupCard extends StatelessWidget {
     final scheduledStart = scheduledStartOverride ?? group.scheduledStartTime;
     final endTime = scheduledEndOverride ?? group.theoreticalEndTime;
     final showNotice = scheduledStart != null;
-    final notice =
-        group.noticeMinutes ?? TaskRunNoticeService.defaultNoticeMinutes;
+    final noticeLabel =
+        noticeFromSettings ? 'Notice (settings)' : 'Notice';
     final sessionPaused =
         activeSession?.groupId == group.id &&
         activeSession?.status == PomodoroStatus.paused;
@@ -1592,8 +1654,8 @@ class _GroupCard extends StatelessWidget {
             ),
             if (showNotice)
               _MetaRow(
-                label: 'Notice',
-                value: '$notice min',
+                label: noticeLabel,
+                value: '$noticeMinutes min',
               ),
             const SizedBox(height: 10),
             Wrap(

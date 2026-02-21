@@ -355,6 +355,7 @@ Notes:
   - The group ends (status = completed).
   - Final modal + final animation are shown (see section 12).
   - After the user explicitly dismisses the completion modal, auto-navigate to the Groups Hub screen (no time-based auto-navigation).
+  - If a new group auto-opens (pre-run or run) while the completion modal is visible, the modal auto-dismisses and must not block the new run.
 - If the user cancels a running group:
   - The group ends immediately (status = canceled, canceledReason = user).
   - The active session is cleared.
@@ -416,6 +417,8 @@ Purpose: make delayed auto-start and long pauses deterministic, with explicit us
 
 - Owner decision only. If no owner is active, the first active device auto-claims ownership
   before presenting any decision UI (mirrors remain view-only).
+  - "Owner active" is defined by a recent `lateStartOwnerHeartbeatAt`. If the heartbeat is missing,
+    treat the owner as active for a short grace window based on `lateStartAnchorAt` before allowing auto-claim.
 
 Late-start overlap resolution (no running group)
 
@@ -1390,7 +1393,9 @@ UI (full-screen flow, same visual language as Plan group)
 - Mirror: read-only list + CTA “Request ownership to resolve”.
   - The CTA writes `lateStartClaimRequestId`, `lateStartClaimRequestedByDeviceId`,
     and `lateStartClaimRequestedAt` if the owner is active.
-  - If the owner is stale (>=45s), the mirror can **auto-claim** and become owner.
+  - If the owner heartbeat is stale (>=45s), the mirror can **auto-claim** and become owner.
+  - If the heartbeat is missing, do **not** auto-claim until the grace window
+    (>=45s since `lateStartAnchorAt`) has elapsed.
 - Show up to **5 groups** by default; include a **“Show more”** control to
   expand the full list.
 - As the user reorders selections, update the **projected ranges** in the list
@@ -1863,8 +1868,8 @@ Actions
   - Run again (completed groups): duplicate the group snapshot into a new TaskRunGroup and open the pre-start planning flow
   - Re-plan group (canceled groups): duplicate the group snapshot into a new TaskRunGroup and open the pre-start planning flow
   - Go to Task List screen (Task Library) to create/edit tasks and build new groups
-    - The "Go to Task List" CTA is placed at the top of the Groups Hub content
-      so it is visible without scrolling.
+    - The "Go to Task List" CTA is a **sticky header** outside the scrollable
+      list, so it is always visible while scrolling.
 
 Summary (tap on a group)
 
@@ -2010,6 +2015,9 @@ Content
   - Local Mode: stored **per device** (local only).
   - Applies to **new scheduled groups**; each TaskRunGroup stores the noticeMinutes
     snapshot at scheduling time.
+  - If a legacy scheduled group is missing noticeMinutes, resolve it from the
+    current settings at evaluation time and treat that value as the group notice
+    (UI should display the resolved notice to avoid confusion).
 
 ---
 
@@ -2049,6 +2057,7 @@ When the timer completes the last pomodoro of the last task:
    - Change the circle color to green or gold
    - Show "TASKS GROUP COMPLETED" in the center
 7. After the user explicitly dismisses the completion modal, navigate to the Groups Hub screen (do not remain in an idle Execution screen and do not use a time-based auto-dismiss).
+8. If a new group auto-opens (pre-run or run) while the completion modal is visible, auto-dismiss the modal and skip the Groups Hub navigation so the new run can proceed.
 
 ✔ No popup between tasks
 

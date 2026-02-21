@@ -15,6 +15,7 @@ import '../../data/services/app_mode_service.dart';
 import '../../domain/pomodoro_machine.dart';
 import '../../widgets/task_card.dart';
 import '../providers.dart';
+import '../viewmodels/pre_run_notice_view_model.dart';
 import '../utils/scheduled_group_timing.dart';
 
 class LateStartOverlapArgs {
@@ -55,6 +56,7 @@ class _LateStartOverlapQueueScreenState
   bool _busy = false;
   List<String> _selectedIds = [];
   List<String> _latestConflictIds = const [];
+  int? _noticeFallbackMinutes;
 
   @override
   void initState() {
@@ -115,6 +117,12 @@ class _LateStartOverlapQueueScreenState
 
     final appMode = ref.watch(appModeProvider);
     final deviceId = ref.watch(deviceInfoServiceProvider).deviceId;
+    final noticeFallback =
+        ref
+            .watch(preRunNoticeMinutesProvider)
+            .maybeWhen(data: (value) => value, orElse: () => null) ??
+        TaskRunNoticeService.defaultNoticeMinutes;
+    _noticeFallbackMinutes = noticeFallback;
     final ownerDeviceId = resolveLateStartOwnerDeviceId(conflictGroups);
     final ownerHeartbeat = resolveLateStartOwnerHeartbeat(conflictGroups);
     final anchorFromGroups = resolveLateStartAnchor(conflictGroups);
@@ -128,10 +136,12 @@ class _LateStartOverlapQueueScreenState
         });
       });
     }
-    final ownerStale =
-        ownerDeviceId != null &&
-        (ownerHeartbeat == null ||
-            _now.difference(ownerHeartbeat) >= _ownerStaleThreshold);
+    final ownerStale = _isOwnerStale(
+      ownerDeviceId: ownerDeviceId,
+      ownerHeartbeat: ownerHeartbeat,
+      anchor: anchorFromGroups,
+      now: _now,
+    );
     final isOwner =
         appMode != AppMode.account ||
         ownerDeviceId == null ||
@@ -712,7 +722,21 @@ class _LateStartOverlapQueueScreenState
   }
 
   int _noticeMinutesOrDefault(TaskRunGroup group) {
-    return group.noticeMinutes ?? TaskRunNoticeService.defaultNoticeMinutes;
+    return group.noticeMinutes ??
+        _noticeFallbackMinutes ??
+        TaskRunNoticeService.defaultNoticeMinutes;
+  }
+
+  bool _isOwnerStale({
+    required String? ownerDeviceId,
+    required DateTime? ownerHeartbeat,
+    required DateTime? anchor,
+    required DateTime now,
+  }) {
+    if (ownerDeviceId == null || ownerDeviceId.isEmpty) return false;
+    final lastSeen = ownerHeartbeat ?? anchor;
+    if (lastSeen == null) return false;
+    return now.difference(lastSeen) >= _ownerStaleThreshold;
   }
 
   DateTime _queueNow(DateTime now) {

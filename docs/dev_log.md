@@ -22,7 +22,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **20/02/2026**
+Last update: **21/02/2026**
 
 ---
 
@@ -7256,3 +7256,48 @@ _(not yet validated on devices)_
 - Validate late-start owner flow + request/approve on macOS/Android.
 - Confirm live projections align across devices.
 - Exercise chained postpone with multiple queued groups.
+
+# 🔹 Block 447 — Late-start auto-claim determinism + dispose guards (21/02/2026)
+
+### ✔ Work completed:
+
+- Made late-start auto-claim deterministic when heartbeat is missing and anchor is stale.
+- Added guard rails against ref use after dispose in coordinator async flow.
+- Ensured late-start anchor is materialized when owner already has the queue.
+- Extended coordinator tests with claim tracking + async wait to avoid race flakiness.
+- Ran `flutter analyze` and `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart`.
+
+### 🧠 Decisions made:
+
+- Auto-claim is allowed when no owner exists or when owner heartbeat/anchor is stale.
+- If owner is current device but anchor is missing, claim to seed the anchor.
+
+### ⚠️ Issues found:
+
+_(none in automated tests)_
+
+### 🎯 Next steps:
+
+- Resume manual multi-device validation on macOS/Android (owner request / approve / no bounce).
+
+# 🔹 Block 448 — Restore sticky Groups Hub CTA + regression guard (21/02/2026)
+
+### ✔ Work completed:
+
+- Specs updated to require a sticky “Go to Task List” CTA outside the scrollable list.
+- Roadmap reopened item added for the Groups Hub sticky CTA regression.
+- Groups Hub now renders the CTA as a fixed header (always visible).
+- Added AGENTS rule: do not degrade implemented UX without explicit owner approval.
+- Ran `flutter analyze`.
+
+### 🧠 Decisions made:
+
+- Keep the mirror conflict banner inside the scrollable list; only the CTA is sticky.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Validate Groups Hub CTA remains visible while scrolling long lists.

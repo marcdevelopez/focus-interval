@@ -12,10 +12,11 @@ import '../../widgets/mode_indicator.dart';
 import '../providers.dart';
 import '../../domain/pomodoro_machine.dart';
 import '../viewmodels/pomodoro_view_model.dart';
+import '../viewmodels/pre_run_notice_view_model.dart';
+import '../viewmodels/scheduled_group_coordinator.dart';
 import '../utils/scheduled_group_timing.dart';
 import '../../data/models/task_run_group.dart';
 import '../../data/models/pomodoro_session.dart';
-import '../../data/services/task_run_notice_service.dart';
 import '../../data/services/app_mode_service.dart';
 
 class TimerScreen extends ConsumerStatefulWidget {
@@ -50,6 +51,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   int _cancelNavRetryAttempts = 0;
   _PreRunInfo? _preRunInfo;
   int _preRunRemainingSeconds = 0;
+  int? _noticeFallbackMinutes;
   bool _ownerEducationInFlight = false;
   String? _lastOwnershipRejectionKey;
   String? _dismissedOwnershipRequestKey;
@@ -377,6 +379,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   Widget build(BuildContext context) {
     final vm = ref.read(pomodoroViewModelProvider.notifier);
     final deviceId = ref.watch(deviceInfoServiceProvider).deviceId;
+    _noticeFallbackMinutes = ref
+        .watch(preRunNoticeMinutesProvider)
+        .maybeWhen(data: (value) => value, orElse: () => null);
     ref.listen<AsyncValue<List<TaskRunGroup>>>(taskRunGroupStreamProvider, (
       previous,
       next,
@@ -464,6 +469,23 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         _maybeAutoStartScheduled();
       }
     });
+
+    ref.listen<ScheduledGroupAction?>(
+      scheduledGroupCoordinatorProvider,
+      (_, next) {
+        if (next == null) return;
+        if (next.type == ScheduledGroupActionType.openTimer &&
+            next.groupId != null &&
+            next.groupId != widget.groupId &&
+            _finishedDialogVisible) {
+          _completionNavigationHandled = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            _dismissFinishedDialog();
+          });
+        }
+      },
+    );
 
     ref.listen<RunningOverlapDecision?>(runningOverlapDecisionProvider, (
       previous,
@@ -988,7 +1010,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     var cursor = endTime;
     for (var index = 0; index < chainGroups.length; index += 1) {
       final group = chainGroups[index];
-      final noticeMinutes = resolveNoticeMinutes(group);
+      final noticeMinutes = _resolveNoticeMinutes(group);
       final scheduledStart = cursor.add(Duration(minutes: noticeMinutes));
       final durationSeconds = resolveGroupDurationSeconds(group);
       final anchorId = index == 0 ? running.id : chainGroups[index - 1].id;
@@ -1016,7 +1038,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       await notifier.cancelGroupPreAlert(group.id);
     }
     if (!mounted) return;
-    final firstNotice = resolveNoticeMinutes(updates.first);
+    final firstNotice = _resolveNoticeMinutes(updates.first);
     final preRunStart = firstNotice > 0
         ? updates.first.scheduledStartTime!.subtract(
             Duration(minutes: firstNotice),
@@ -1167,11 +1189,11 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           allGroups: allGroups,
           activeSession: activeSession,
           now: now,
+          fallbackNoticeMinutes: _noticeFallbackMinutes,
         ) ??
         group.scheduledStartTime;
     if (scheduledStart == null) return null;
-    final noticeMinutes =
-        group.noticeMinutes ?? TaskRunNoticeService.defaultNoticeMinutes;
+    final noticeMinutes = _resolveNoticeMinutes(group);
     if (noticeMinutes <= 0) return null;
     final start = scheduledStart.subtract(Duration(minutes: noticeMinutes));
     if (now.isBefore(start)) return null;
@@ -1189,6 +1211,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       plannedStart: scheduledStart,
       firstPomodoroMinutes: firstPomodoroMinutes,
     );
+  }
+
+  int _resolveNoticeMinutes(TaskRunGroup group) {
+    return resolveNoticeMinutes(group, fallback: _noticeFallbackMinutes);
   }
 
   void _maybeHandleGroupCompleted(PomodoroViewModel vm, TaskRunGroup group) {

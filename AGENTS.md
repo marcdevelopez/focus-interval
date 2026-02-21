@@ -263,6 +263,12 @@ Then:
 
 Skipping this step creates hidden technical debt.
 
+Additional regression rule:
+
+- Do not remove, downgrade, or reposition existing UI/flows that were already
+  implemented and validated without explicitly notifying the project owner and
+  receiving approval, unless it is strictly required for a new delivery.
+
 ---
 
 ## 🔟 Language & consistency
