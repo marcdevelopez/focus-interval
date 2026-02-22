@@ -357,6 +357,14 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       final queueId = resolveLateStartQueueId(lateStartConflicts);
       final ownerId = resolveLateStartOwnerDeviceId(lateStartConflicts);
       final ownerHeartbeat = resolveLateStartOwnerHeartbeat(lateStartConflicts);
+      final pendingRequestId =
+          resolveLateStartClaimRequestId(lateStartConflicts);
+      final pendingRequester =
+          resolveLateStartClaimRequesterDeviceId(lateStartConflicts);
+      final hasPendingRequest =
+          pendingRequestId != null && pendingRequester != null;
+      final isPendingForSelf =
+          hasPendingRequest && pendingRequester == deviceId;
       final hasOwner = ownerId != null && ownerId.isNotEmpty;
       final staleByHeartbeat =
           ownerHeartbeat != null &&
@@ -372,7 +380,8 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
         now: now,
       );
       final shouldAutoClaim =
-          !hasOwner || staleByHeartbeat || staleByAnchor;
+          (!hasOwner || staleByHeartbeat || staleByAnchor) &&
+          (!hasPendingRequest || isPendingForSelf);
       final repo = ref.read(taskRunGroupRepositoryProvider);
       if (shouldAutoClaim && ownerId != deviceId) {
         await repo.claimLateStartQueue(
@@ -380,7 +389,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
           ownerDeviceId: deviceId,
           queueId: queueId ?? _uuid.v4(),
           orderedIds: lateStartConflicts.map((g) => g.id).toList(),
-          allowOverride: hasOwner || ownerStale,
+          allowOverride: !hasOwner || ownerStale,
         );
         return;
       }
@@ -570,12 +579,9 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       activeSession: session,
       now: now,
     );
-    final isAnchoredToRunning =
-        nextScheduled.postponedAfterGroupId == runningGroup.id;
     if (runningEnd == null ||
         runningEnd.isBefore(preRunStart) ||
-        (isAnchoredToRunning &&
-            runningEnd.isAtSameMomentAs(preRunStart))) {
+        runningEnd.isAtSameMomentAs(preRunStart)) {
       _clearRunningOverlapDecisionIfNeeded();
       _scheduleRunningOverlapRecheck(
         runningGroup: runningGroup,

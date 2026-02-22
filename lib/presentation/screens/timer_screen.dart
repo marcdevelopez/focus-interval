@@ -911,6 +911,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     }
     final session = vm.activeSessionForCurrentGroup;
     if (session != null && session.ownerDeviceId != deviceId) return false;
+    if (!_isRunningOverlapDecisionActive(decision)) return false;
     return true;
   }
 
@@ -924,7 +925,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       return false;
     }
     final session = vm.activeSessionForCurrentGroup;
-    return session != null && session.ownerDeviceId != deviceId;
+    if (session == null || session.ownerDeviceId == deviceId) return false;
+    return _isRunningOverlapDecisionActive(decision);
   }
 
   bool _isBreakPhase(PomodoroState state) =>
@@ -954,6 +956,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   ) {
     final pending = _pendingRunningOverlapDecision;
     if (pending == null || _runningOverlapDialogVisible) return;
+    if (!_isRunningOverlapDecisionActive(pending)) {
+      _pendingRunningOverlapDecision = null;
+      return;
+    }
     if (!_isRunningOverlapDecisionForCurrentGroup(pending, vm, deviceId)) {
       _pendingRunningOverlapDecision = null;
       return;
@@ -961,6 +967,21 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     if (!_shouldShowRunningOverlapNow(state, vm)) return;
     _pendingRunningOverlapDecision = null;
     unawaited(_handleRunningOverlapDecision(pending));
+  }
+
+  bool _isRunningOverlapDecisionActive(RunningOverlapDecision decision) {
+    final groups = ref.read(taskRunGroupStreamProvider).value ?? const [];
+    if (groups.isEmpty) return false;
+    final activeSession = ref.read(activePomodoroSessionProvider);
+    final fallback = _noticeFallbackMinutes;
+    return isRunningOverlapStillValid(
+      runningGroupId: decision.runningGroupId,
+      scheduledGroupId: decision.scheduledGroupId,
+      groups: groups,
+      activeSession: activeSession,
+      now: DateTime.now(),
+      fallbackNoticeMinutes: fallback,
+    );
   }
 
   Future<void> _postponeScheduledGroup(RunningOverlapDecision decision) async {

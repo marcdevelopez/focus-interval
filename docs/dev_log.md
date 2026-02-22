@@ -22,7 +22,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **21/02/2026**
+Last update: **22/02/2026**
 
 ---
 
@@ -7301,3 +7301,27 @@ _(none)_
 ### 🎯 Next steps:
 
 - Validate Groups Hub CTA remains visible while scrolling long lists.
+
+# 🔹 Block 449 — Late-start ownership stability + overlap validity guards (22/02/2026)
+
+### ✔ Work completed:
+
+- Specs: late-start queue scheduled range now shows date when not today.
+- Late-start queue ownership: server-validated claim + heartbeat + request guards to prevent owner bounce.
+- Late-start queue UI: auto-claim blocked when another requester is pending.
+- Running overlap UI: added validity checks to suppress stale conflict banners/snackbars.
+- Running overlap detection: treat end == pre-run start as non-overlap to avoid false conflicts.
+
+### 🧠 Decisions made:
+
+- Guard late-start ownership changes against pending requests and stale-owner checks using server state when possible.
+- Validate overlap decisions at render time to avoid persistent UI after conflicts resolve.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Re-validate late-start ownership on macOS + Android with queued conflicts.
+- Verify no stale overlap banners remain after rescheduling or completion.

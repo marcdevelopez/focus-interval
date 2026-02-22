@@ -44,6 +44,7 @@ class _LateStartOverlapQueueScreenState
   static const Duration _warningThreshold = Duration(hours: 8);
   static const Duration _ownerStaleThreshold = Duration(seconds: 45);
   static final DateFormat _timeFormat = DateFormat('HH:mm');
+  static final DateFormat _dateFormat = DateFormat('MMM d');
 
   late DateTime _anchor;
   late DateTime _anchorCapturedAt;
@@ -126,6 +127,13 @@ class _LateStartOverlapQueueScreenState
     final ownerDeviceId = resolveLateStartOwnerDeviceId(conflictGroups);
     final ownerHeartbeat = resolveLateStartOwnerHeartbeat(conflictGroups);
     final anchorFromGroups = resolveLateStartAnchor(conflictGroups);
+    final requestId = resolveLateStartClaimRequestId(conflictGroups);
+    final requesterDeviceId =
+        resolveLateStartClaimRequesterDeviceId(conflictGroups);
+    final hasPendingRequest =
+        requestId != null && requesterDeviceId != null;
+    final isPendingForSelf =
+        hasPendingRequest && requesterDeviceId == deviceId;
     final timebase = ownerHeartbeat ?? anchorFromGroups;
     if (timebase != null && timebase != _anchor) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -146,7 +154,9 @@ class _LateStartOverlapQueueScreenState
         appMode != AppMode.account ||
         ownerDeviceId == null ||
         ownerDeviceId == deviceId;
-    if (!isOwner && ownerStale) {
+    final shouldAutoClaim =
+        !isOwner && ownerStale && (!hasPendingRequest || isPendingForSelf);
+    if (shouldAutoClaim) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _maybeAutoClaimOwnership(conflictGroups, deviceId);
@@ -172,11 +182,6 @@ class _LateStartOverlapQueueScreenState
     final totalDuration = Duration(seconds: totalSeconds);
     final totalLabel = _formatDuration(totalDuration);
     final showWarning = totalDuration > _warningThreshold;
-    final requestId = resolveLateStartClaimRequestId(conflictGroups);
-    final requesterDeviceId =
-        resolveLateStartClaimRequesterDeviceId(conflictGroups);
-    final hasPendingRequest =
-        requestId != null && requesterDeviceId != null;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -1005,7 +1010,12 @@ class _LateStartOverlapQueueScreenState
     final start = group.scheduledStartTime;
     if (start == null) return '--:--';
     final end = group.theoreticalEndTime;
-    return _formatRange(start, end);
+    final now = DateTime.now();
+    final isToday =
+        start.year == now.year && start.month == now.month && start.day == now.day;
+    final range = _formatRange(start, end);
+    if (isToday) return range;
+    return '${_dateFormat.format(start)}, $range';
   }
 
   String _formatDuration(Duration value) {

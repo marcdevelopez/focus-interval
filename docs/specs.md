@@ -1389,6 +1389,8 @@ UI (full-screen flow, same visual language as Plan group)
 - List **conflicting groups** with:
   - Group name
   - Scheduled time range (HH:mm–HH:mm)
+    - If the scheduled date is **not today** (local), include the date
+      before the time range (e.g., "Feb 21, 17:55–18:10").
 - Owner-only: allow **multi-select** and **drag reorder** of selected groups.
 - Mirror: read-only list + CTA “Request ownership to resolve”.
   - The CTA writes `lateStartClaimRequestId`, `lateStartClaimRequestedByDeviceId`,

@@ -49,11 +49,23 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     required PomodoroSession? activeSession,
     required RunningOverlapDecision? decision,
     required String deviceId,
+    required List<TaskRunGroup> groups,
+    required DateTime now,
+    int? noticeFallbackMinutes,
   }) {
     if (appMode != AppMode.account) return null;
     if (activeSession == null || decision == null) return null;
     if (activeSession.ownerDeviceId == deviceId) return null;
     if (activeSession.groupId != decision.runningGroupId) return null;
+    final isValid = isRunningOverlapStillValid(
+      runningGroupId: decision.runningGroupId,
+      scheduledGroupId: decision.scheduledGroupId,
+      groups: groups,
+      activeSession: activeSession,
+      now: now,
+      fallbackNoticeMinutes: noticeFallbackMinutes,
+    );
+    if (!isValid) return null;
     return decision;
   }
 
@@ -141,11 +153,15 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     _noticeFallbackMinutes = ref
         .watch(preRunNoticeMinutesProvider)
         .maybeWhen(data: (value) => value, orElse: () => null);
+    final groups = groupsAsync.value ?? const [];
     final mirrorConflictDecision = _resolveMirrorConflictDecision(
       appMode: appMode,
       activeSession: activeSession,
       decision: overlapDecision,
       deviceId: deviceId,
+      groups: groups,
+      now: DateTime.now(),
+      noticeFallbackMinutes: _noticeFallbackMinutes,
     );
     final mirrorConflictKey = mirrorConflictDecision == null
         ? null

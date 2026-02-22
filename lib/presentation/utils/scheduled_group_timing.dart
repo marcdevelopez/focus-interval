@@ -78,6 +78,49 @@ DateTime? resolvePostponedAnchorEnd({
   return resolveGroupBaseEnd(anchor) ?? updatedAt;
 }
 
+bool isRunningOverlapStillValid({
+  required String runningGroupId,
+  required String scheduledGroupId,
+  required List<TaskRunGroup> groups,
+  required PomodoroSession? activeSession,
+  required DateTime now,
+  int? fallbackNoticeMinutes,
+}) {
+  final runningGroup = findGroupById(groups, runningGroupId);
+  final scheduledGroup = findGroupById(groups, scheduledGroupId);
+  if (runningGroup == null || scheduledGroup == null) return false;
+  if (runningGroup.status != TaskRunStatus.running) return false;
+  if (scheduledGroup.status != TaskRunStatus.scheduled) return false;
+  final scheduledStart =
+      resolveEffectiveScheduledStart(
+        group: scheduledGroup,
+        allGroups: groups,
+        activeSession: activeSession,
+        now: now,
+        fallbackNoticeMinutes: fallbackNoticeMinutes,
+      ) ??
+      scheduledGroup.scheduledStartTime;
+  if (scheduledStart == null) return false;
+  final noticeMinutes = resolveNoticeMinutes(
+    scheduledGroup,
+    fallback: fallbackNoticeMinutes,
+  );
+  final preRunStart = noticeMinutes > 0
+      ? scheduledStart.subtract(Duration(minutes: noticeMinutes))
+      : scheduledStart;
+  final runningEnd = resolveProjectedRunningEnd(
+    runningGroup: runningGroup,
+    activeSession: activeSession,
+    now: now,
+  );
+  if (runningEnd == null) return false;
+  if (runningEnd.isBefore(preRunStart) ||
+      runningEnd.isAtSameMomentAs(preRunStart)) {
+    return false;
+  }
+  return true;
+}
+
 DateTime? resolveEffectiveScheduledStart({
   required TaskRunGroup group,
   required List<TaskRunGroup> allGroups,
