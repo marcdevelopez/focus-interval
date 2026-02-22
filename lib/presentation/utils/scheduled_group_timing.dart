@@ -21,6 +21,28 @@ int resolveGroupDurationSeconds(TaskRunGroup group) {
       groupDurationSecondsByMode(group.tasks, group.integrityMode);
 }
 
+DateTime ceilToMinute(DateTime value) {
+  if (value.second == 0 && value.millisecond == 0 && value.microsecond == 0) {
+    return value;
+  }
+  if (value.isUtc) {
+    return DateTime.utc(
+      value.year,
+      value.month,
+      value.day,
+      value.hour,
+      value.minute,
+    ).add(const Duration(minutes: 1));
+  }
+  return DateTime(
+    value.year,
+    value.month,
+    value.day,
+    value.hour,
+    value.minute,
+  ).add(const Duration(minutes: 1));
+}
+
 DateTime? resolveGroupBaseEnd(TaskRunGroup group) {
   final start = group.actualStartTime;
   if (start == null) return null;
@@ -76,6 +98,49 @@ DateTime? resolvePostponedAnchorEnd({
   final updatedAt = anchor.updatedAt;
   if (updatedAt.isAfter(anchor.createdAt)) return updatedAt;
   return resolveGroupBaseEnd(anchor) ?? updatedAt;
+}
+
+bool isRunningOverlapStillValid({
+  required String runningGroupId,
+  required String scheduledGroupId,
+  required List<TaskRunGroup> groups,
+  required PomodoroSession? activeSession,
+  required DateTime now,
+  int? fallbackNoticeMinutes,
+}) {
+  final runningGroup = findGroupById(groups, runningGroupId);
+  final scheduledGroup = findGroupById(groups, scheduledGroupId);
+  if (runningGroup == null || scheduledGroup == null) return false;
+  if (runningGroup.status != TaskRunStatus.running) return false;
+  if (scheduledGroup.status != TaskRunStatus.scheduled) return false;
+  final scheduledStart =
+      resolveEffectiveScheduledStart(
+        group: scheduledGroup,
+        allGroups: groups,
+        activeSession: activeSession,
+        now: now,
+        fallbackNoticeMinutes: fallbackNoticeMinutes,
+      ) ??
+      scheduledGroup.scheduledStartTime;
+  if (scheduledStart == null) return false;
+  final noticeMinutes = resolveNoticeMinutes(
+    scheduledGroup,
+    fallback: fallbackNoticeMinutes,
+  );
+  final preRunStart = noticeMinutes > 0
+      ? scheduledStart.subtract(Duration(minutes: noticeMinutes))
+      : scheduledStart;
+  final runningEnd = resolveProjectedRunningEnd(
+    runningGroup: runningGroup,
+    activeSession: activeSession,
+    now: now,
+  );
+  if (runningEnd == null) return false;
+  if (runningEnd.isBefore(preRunStart) ||
+      runningEnd.isAtSameMomentAs(preRunStart)) {
+    return false;
+  }
+  return true;
 }
 
 DateTime? resolveEffectiveScheduledStart({

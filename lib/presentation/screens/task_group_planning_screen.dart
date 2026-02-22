@@ -275,11 +275,12 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
 
     final startTime = preview.scheduledStart;
     final groupStartLabel =
-        startTime == null ? '--:--' : _timeFormat.format(startTime);
+        startTime == null ? '--:--' : _formatTimeOrDate(startTime);
     final groupEndLabel = startTime == null
         ? '--:--'
-        : _timeFormat
-            .format(startTime.add(Duration(seconds: preview.totalDurationSeconds)));
+        : _formatTimeOrDate(
+            startTime.add(Duration(seconds: preview.totalDurationSeconds)),
+          );
     final durations = taskDurationSecondsByMode(
       preview.items,
       integrityMode,
@@ -725,6 +726,24 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
     return '${_dateFormat.format(value)} · ${_timeFormat.format(value)}';
   }
 
+  String _formatTimeOrDate(DateTime value) {
+    final now = DateTime.now();
+    final isToday =
+        value.year == now.year && value.month == now.month && value.day == now.day;
+    if (isToday) return _timeFormat.format(value);
+    return '${_dateFormat.format(value)}, ${_timeFormat.format(value)}';
+  }
+
+  String _formatRangeWithDate(DateTime start, DateTime end) {
+    final range =
+        '${_timeFormat.format(start)}–${_timeFormat.format(end)}';
+    final now = DateTime.now();
+    final isToday =
+        start.year == now.year && start.month == now.month && start.day == now.day;
+    if (isToday) return range;
+    return '${_dateFormat.format(start)}, $range';
+  }
+
   String _formatDuration(Duration value) {
     final totalMinutes = value.inMinutes;
     final hours = totalMinutes ~/ 60;
@@ -750,8 +769,7 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
     var cursor = start;
     for (var index = 0; index < durations.length; index += 1) {
       final end = cursor.add(Duration(seconds: durations[index]));
-      ranges[index] =
-          '${_timeFormat.format(cursor)}–${_timeFormat.format(end)}';
+      ranges[index] = _formatRangeWithDate(cursor, end);
       cursor = end;
     }
     return ranges;

@@ -92,6 +92,7 @@ class LocalTaskRunGroupRepository implements TaskRunGroupRepository {
   }) async {
     await _ensureLoaded();
     if (groups.isEmpty) return;
+    const staleThreshold = Duration(seconds: 45);
     final hasAnchor = groups.any((g) => g.lateStartAnchorAt != null);
     if (hasAnchor && !allowOverride) return;
     final now = DateTime.now();
@@ -102,6 +103,35 @@ class LocalTaskRunGroupRepository implements TaskRunGroupRepository {
           if (prev == null) return next;
           return next.isBefore(prev) ? next : prev;
         });
+    final existingOwner = groups
+        .map((g) => g.lateStartOwnerDeviceId)
+        .whereType<String>()
+        .firstWhere((id) => id.isNotEmpty, orElse: () => '');
+    final existingHeartbeat = groups
+        .map((g) => g.lateStartOwnerHeartbeatAt)
+        .whereType<DateTime>()
+        .fold<DateTime?>(null, (prev, next) {
+          if (prev == null) return next;
+          return next.isAfter(prev) ? next : prev;
+        });
+    final existingRequestId = groups
+        .map((g) => g.lateStartClaimRequestId)
+        .whereType<String>()
+        .firstWhere((id) => id.isNotEmpty, orElse: () => '');
+    final existingRequester = groups
+        .map((g) => g.lateStartClaimRequestedByDeviceId)
+        .whereType<String>()
+        .firstWhere((id) => id.isNotEmpty, orElse: () => '');
+    final hasPendingRequest =
+        existingRequestId.isNotEmpty && existingRequester.isNotEmpty;
+    if (allowOverride && existingOwner.isNotEmpty && existingOwner != ownerDeviceId) {
+      final lastSeen = existingHeartbeat ?? existingAnchor;
+      final isStale = lastSeen == null
+          ? true
+          : now.difference(lastSeen) >= staleThreshold;
+      if (hasPendingRequest && existingRequester != ownerDeviceId) return;
+      if (!isStale) return;
+    }
     final existingQueueId = groups
         .map((g) => g.lateStartQueueId)
         .whereType<String>()
@@ -159,6 +189,13 @@ class LocalTaskRunGroupRepository implements TaskRunGroupRepository {
     if (groups.isEmpty) return;
     final now = DateTime.now();
     for (final group in groups) {
+      final existingRequestId = group.lateStartClaimRequestId ?? '';
+      final existingRequester = group.lateStartClaimRequestedByDeviceId ?? '';
+      final hasPending =
+          existingRequestId.isNotEmpty && existingRequester.isNotEmpty;
+      if (hasPending && existingRequester != requesterDeviceId) {
+        continue;
+      }
       final updated = group.copyWith(
         lateStartClaimRequestId: requestId,
         lateStartClaimRequestedByDeviceId: requesterDeviceId,
@@ -182,6 +219,9 @@ class LocalTaskRunGroupRepository implements TaskRunGroupRepository {
     if (groups.isEmpty) return;
     final now = DateTime.now();
     for (final group in groups) {
+      if (group.lateStartOwnerDeviceId != ownerDeviceId) continue;
+      if (group.lateStartClaimRequestId != requestId) continue;
+      if (group.lateStartClaimRequestedByDeviceId != requesterDeviceId) continue;
       if (approved) {
         final updated = group.copyWith(
           lateStartOwnerDeviceId: requesterDeviceId,

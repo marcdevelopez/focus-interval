@@ -586,6 +586,11 @@ users/{uid}/activeSession
 - Android: keep the ForegroundService active while paused (owner only) so heartbeats
   continue even when the app is backgrounded.
 - activeSession represents only an in-progress execution and must be cleared when the group reaches a terminal state (completed or canceled).
+- If a group is **running or paused locally** but `activeSession` is missing (no doc
+  or stream gap), the **owner device** must attempt to republish the session
+  (owner-only, no overwrite). Use `tryClaimSession` to create the doc if missing,
+  then publish normally. Rate-limit recovery attempts (e.g., >=5s between tries).
+  Mirror devices must never publish during this recovery path.
 - If a device observes an activeSession referencing a group that is not running (or missing), it must treat the session as stale and clear it.
 - If a running group has passed its theoreticalEndTime and the activeSession has not updated within the stale threshold, any device may clear the session and complete the group to prevent zombie runs.
 - Do not expire/complete running groups while the activeSession stream is still loading
@@ -995,6 +1000,12 @@ Timing integrity
 
 - All planning totals (Task List summary, time ranges, scheduling) must use the **same**
   break-insertion logic as execution for the chosen mode.
+- **Time range formatting (global):** whenever a **scheduled** or **projected**
+  time range is displayed (planning preview, late-start queue, Task List / Groups Hub
+  banners, conflict screens, contextual lists), show **HH:mm–HH:mm** when the date
+  is today, and show **date + time** when the date is not today
+  (e.g., “Feb 21, 17:55–18:10”). This applies to both **Scheduled** and **Projected**
+  labels.
 
 Task weight rules:
 
@@ -1308,6 +1319,10 @@ Trigger
 - If the app opens after scheduledStartTime, it goes directly to standard Run Mode.
 - If the user leaves the Pre-Run screen, they must be able to return via Task List
   or Groups Hub entry points while the pre-run window is active.
+- When the pre-run window begins, auto-open the TimerScreen in Pre-Run mode
+  from **any** screen (Task List, Groups Hub, etc.) and **do not** bounce back to
+  the previous screen. If the user navigates away manually, the entry points above
+  must remain available until the pre-run window ends.
 
 UI (reuses Run Mode layout)
 
@@ -1371,11 +1386,13 @@ Anchor & timebase
   a **server timestamp** on all groups in the conflict set.
 - The owner also writes `lateStartQueueId`, `lateStartQueueOrder`,
   `lateStartOwnerDeviceId`, and `lateStartOwnerHeartbeatAt`.
-- All devices derive a **queue timebase** from that anchor to keep projections
-  consistent across devices (do **not** use local `DateTime.now()` directly for
-  projections).
-- Use the **latest server timestamp** available (owner heartbeat) as the
-  timebase when present; fall back to `lateStartAnchorAt` if no heartbeat exists.
+- All devices derive a **queue timebase** from `lateStartAnchorAt` to keep
+  projections consistent across devices (do **not** use local `DateTime.now()`
+  directly for projections).
+- The timebase is **anchored** to `lateStartAnchorAt` once set. Owner heartbeat is
+  for **liveness/staleness checks only** and must **not** shift the projection
+  base. If `lateStartAnchorAt` is missing (legacy), fall back to the latest
+  heartbeat **only until** the anchor is materialized.
 - `lateStartAnchorAt` is cleared on confirm/cancel so it does not linger.
 - If there is **no owner** yet, the first active device auto-claims ownership
   for the queue (before it is shown).
@@ -1389,6 +1406,11 @@ UI (full-screen flow, same visual language as Plan group)
 - List **conflicting groups** with:
   - Group name
   - Scheduled time range (HH:mm–HH:mm)
+    - If the scheduled date is **not today** (local), include the date
+      before the time range (e.g., "Feb 21, 17:55–18:10").
+  - Projected time range (HH:mm–HH:mm)
+    - If the projected start date is **not today**, include the date
+      before the time range (same format as Scheduled).
 - Owner-only: allow **multi-select** and **drag reorder** of selected groups.
 - Mirror: read-only list + CTA “Request ownership to resolve”.
   - The CTA writes `lateStartClaimRequestId`, `lateStartClaimRequestedByDeviceId`,
@@ -1402,6 +1424,8 @@ UI (full-screen flow, same visual language as Plan group)
   to reflect the new sequential order.
 - Projected ranges **update in real time** (e.g., every second) based on the
   queue timebase so the preview matches the actual start on confirm.
+- The **first** selected group starts immediately (**no pre-run**), so its
+  projected start **equals the queue timebase** (no extra minute added).
 
 Actions
 
@@ -1423,6 +1447,9 @@ Actions
       stall in “syncing session”.
     - Schedule the remaining groups **sequentially**, preserving pre-run windows:
       scheduledStartTime = previousEnd + noticeMinutes.
+    - When deriving scheduledStartTime from queue sequencing, **round up to the
+      next full minute** (seconds = 00) to match minute-only UI display. Never
+      round backwards into the past.
     - Update scheduledStartTime and theoreticalEndTime for rescheduled groups.
     - Cancel all **unselected** groups using the reason rules above.
     - Clear `lateStartAnchorAt`, `lateStartOwnerDeviceId`,
@@ -1483,8 +1510,11 @@ Flow
   1. **End current group** → cancel current group (canceledReason = interrupted),
      then proceed with the scheduled group’s pre-run/start.
   2. **Postpone scheduled group** →
-     - Set `scheduledStartTime = projectedEnd + noticeMinutes`, and set
-       `postponedAfterGroupId = currentGroupId`.
+    - Set `scheduledStartTime = projectedEnd + noticeMinutes`, and set
+      `postponedAfterGroupId = currentGroupId`.
+    - When deriving scheduledStartTime from a projected end, **round up to the
+      next full minute** (seconds = 00) to match minute-only UI display. Never
+      round backwards into the past.
      - While the current group is running/paused, the scheduled group’s
        **effective** start tracks the current group’s projected end in real
        time (no repeat modal for the same pair).
@@ -1513,10 +1543,14 @@ Permissions
 - If the owner is **stale**, mirrors may auto-claim ownership; otherwise,
   ownership requires explicit owner approval.
 - Mirrors must show a **persistent CTA** in Groups Hub and Task List:
-  “Owner seems unavailable. Request ownership to resolve this conflict.”
-- Mirrors must also show a **persistent SnackBar** (no swipe dismissal) that
-  requires an explicit **OK** to close.
-- Mirrors must **not** navigate away from Run Mode when showing this CTA/snackbar.
+  - If the owner is **stale**: “Owner seems unavailable. **Claim** ownership to resolve this conflict.”
+  - If the owner is **active**: “Owner is resolving this conflict. Request ownership if needed.”
+  (Use the appropriate CTA label: **Claim** when stale, **Request** when active.)
+- Show the mirror CTA **only while the overlap is still valid**. If the conflict
+  resolves or the session is missing, hide the CTA and clear any related banners.
+- Do **not** show duplicate conflict messaging. If the banner is visible, do not
+  also show a conflict SnackBar on the same screen.
+- Mirrors must **not** navigate away from Run Mode when showing this CTA/banner.
 
 ### **10.4.2. Header**
 
@@ -1803,6 +1837,9 @@ The MM:SS timer must not shift horizontally:
   (light modal/banner) that does not push or reflow the existing layout. It must
   avoid overflow and should not collide with the AppBar or top widgets. The
   background must be opaque (no transparency) for clear legibility.
+- If the owner is **not** in Run Mode when a request arrives, surface the same
+  approve/reject prompt in **Groups Hub** and **Task List** (banner or modal),
+  so the owner can respond without navigating to Run Mode.
 - Tapping **Accept** or **Reject** must dismiss the owner-side request prompt
   immediately (optimistic UI), without waiting for remote snapshot latency.
 - When a mirror device has a pending ownership request, show the pending state

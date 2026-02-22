@@ -188,6 +188,7 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
   }) async {
     if (groups.isEmpty) return;
     final uid = await _uidOrThrow();
+    const staleThreshold = Duration(seconds: 45);
     final orderLookup = <String, int>{};
     for (var i = 0; i < orderedIds.length; i += 1) {
       orderLookup[orderedIds[i]] = i;
@@ -202,8 +203,31 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
       final snap = await tx.get(firstRef);
       final data = snap.data();
       final existingAnchor = data?['lateStartAnchorAt'];
+      final existingOwner =
+          (data?['lateStartOwnerDeviceId'] as String?)?.trim() ?? '';
+      final existingHeartbeat =
+          (data?['lateStartOwnerHeartbeatAt'] as Timestamp?)?.toDate();
+      final anchorTime = (existingAnchor as Timestamp?)?.toDate();
+      final existingRequestId =
+          (data?['lateStartClaimRequestId'] as String?)?.trim() ?? '';
+      final existingRequester =
+          (data?['lateStartClaimRequestedByDeviceId'] as String?)?.trim() ?? '';
+      final hasPendingRequest =
+          existingRequestId.isNotEmpty && existingRequester.isNotEmpty;
       if (existingAnchor != null && !allowOverride) {
         return;
+      }
+      if (allowOverride && existingOwner.isNotEmpty && existingOwner != ownerDeviceId) {
+        final lastSeen = existingHeartbeat ?? anchorTime;
+        final isStale = lastSeen == null
+            ? true
+            : DateTime.now().difference(lastSeen) >= staleThreshold;
+        if (hasPendingRequest && existingRequester != ownerDeviceId) {
+          return;
+        }
+        if (!isStale) {
+          return;
+        }
       }
       final existingQueueId =
           (data?['lateStartQueueId'] as String?)?.trim() ?? '';
@@ -235,14 +259,19 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
   }) async {
     if (groups.isEmpty) return;
     final uid = await _uidOrThrow();
-    final batch = _db.batch();
-    for (final group in groups) {
-      if (group.lateStartOwnerDeviceId != ownerDeviceId) continue;
-      batch.set(_collection(uid).doc(group.id), {
-        'lateStartOwnerHeartbeatAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    }
-    await batch.commit();
+    await _db.runTransaction((tx) async {
+      for (final group in groups) {
+        final ref = _collection(uid).doc(group.id);
+        final snap = await tx.get(ref);
+        final data = snap.data();
+        final currentOwner =
+            (data?['lateStartOwnerDeviceId'] as String?)?.trim() ?? '';
+        if (currentOwner != ownerDeviceId) continue;
+        tx.set(ref, {
+          'lateStartOwnerHeartbeatAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+    });
   }
 
   @override
@@ -253,15 +282,28 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
   }) async {
     if (groups.isEmpty) return;
     final uid = await _uidOrThrow();
-    final batch = _db.batch();
-    for (final group in groups) {
-      batch.set(_collection(uid).doc(group.id), {
-        'lateStartClaimRequestId': requestId,
-        'lateStartClaimRequestedByDeviceId': requesterDeviceId,
-        'lateStartClaimRequestedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    }
-    await batch.commit();
+    await _db.runTransaction((tx) async {
+      for (final group in groups) {
+        final ref = _collection(uid).doc(group.id);
+        final snap = await tx.get(ref);
+        final data = snap.data();
+        final existingRequestId =
+            (data?['lateStartClaimRequestId'] as String?)?.trim() ?? '';
+        final existingRequester =
+            (data?['lateStartClaimRequestedByDeviceId'] as String?)?.trim() ??
+                '';
+        final hasPending =
+            existingRequestId.isNotEmpty && existingRequester.isNotEmpty;
+        if (hasPending && existingRequester != requesterDeviceId) {
+          continue;
+        }
+        tx.set(ref, {
+          'lateStartClaimRequestId': requestId,
+          'lateStartClaimRequestedByDeviceId': requesterDeviceId,
+          'lateStartClaimRequestedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+    });
   }
 
   @override
@@ -276,6 +318,9 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
     final uid = await _uidOrThrow();
     final batch = _db.batch();
     for (final group in groups) {
+      if (group.lateStartOwnerDeviceId != ownerDeviceId) continue;
+      if (group.lateStartClaimRequestId != requestId) continue;
+      if (group.lateStartClaimRequestedByDeviceId != requesterDeviceId) continue;
       if (approved) {
         batch.set(_collection(uid).doc(group.id), {
           'lateStartOwnerDeviceId': requesterDeviceId,

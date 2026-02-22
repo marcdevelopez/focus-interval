@@ -22,7 +22,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **21/02/2026**
+Last update: **22/02/2026**
 
 ---
 
@@ -7301,3 +7301,74 @@ _(none)_
 ### 🎯 Next steps:
 
 - Validate Groups Hub CTA remains visible while scrolling long lists.
+
+# 🔹 Block 449 — Late-start ownership stability + overlap validity guards (22/02/2026)
+
+### ✔ Work completed:
+
+- Specs: late-start queue scheduled range now shows date when not today.
+- Late-start queue ownership: server-validated claim + heartbeat + request guards to prevent owner bounce.
+- Late-start queue UI: auto-claim blocked when another requester is pending.
+- Running overlap UI: added validity checks to suppress stale conflict banners/snackbars.
+- Running overlap detection: treat end == pre-run start as non-overlap to avoid false conflicts.
+
+### 🧠 Decisions made:
+
+- Guard late-start ownership changes against pending requests and stale-owner checks using server state when possible.
+- Validate overlap decisions at render time to avoid persistent UI after conflicts resolve.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Re-validate late-start ownership on macOS + Android with queued conflicts.
+- Verify no stale overlap banners remain after rescheduling or completion.
+
+# 🔹 Block 450 — ActiveSession missing recovery (22/02/2026)
+
+### ✔ Work completed:
+
+- Specs: documented owner-only recovery when `activeSession` is missing during running/paused.
+- PomodoroViewModel: added missing-session recovery (tryClaim + publish) with cooldown.
+- Enabled heartbeats while syncing when the local machine is actively executing.
+- Triggered recovery on stream/resync missing snapshots.
+
+### 🧠 Decisions made:
+
+- Recovery is allowed only when the local machine is running/paused and the group is running.
+- Mirrors never publish during missing-session recovery.
+
+### ⚠️ Issues found:
+
+_(not yet validated on devices)_
+
+### 🎯 Next steps:
+
+- Validate activeSession recovery during late-start queue confirm + running/paused flows.
+
+# 🔹 Block 451 — Timer ranges + pre-run load guards + overlap validity (22/02/2026)
+
+### ✔ Work completed:
+
+- TimerScreen contextual task ranges now include date when the range is not today (scheduled/projection formatting rule).
+- Task List planning preview ranges now include date when not today.
+- TimerScreen now suppresses stale running-overlap UI by validating decision still matches current schedule.
+- TimerScreen no longer shows transient “Ready” during running idle gaps (syncing loader held when needed).
+- PomodoroViewModel now allows loading **scheduled** groups even if another active session exists, so Pre-Run/overlap flows can open without bouncing back.
+
+### 🧠 Decisions made:
+
+- Scheduled-group loads are permitted under active-session conflict to unblock Pre-Run and overlap resolution; controls remain gated by conflict rules.
+- Running-overlap validity is checked in TimerScreen to prevent persistent mirror conflict messaging after reschedule.
+
+### ⚠️ Issues found:
+
+_(not yet validated on devices)_
+
+### 🎯 Next steps:
+
+- Validate Pre-Run auto-open no longer bounces back to Groups Hub.
+- Confirm “Ready” interstitial does not appear during ownership transitions.
+- Re-test mirror conflict banners/snackbar suppression after overlaps resolve.
