@@ -48,6 +48,7 @@ app.*.map.json
 
 # Private docs
 docs/nuevas-funcionalidades/
+docs/bugs/
 
 # Local env
 .env.local
