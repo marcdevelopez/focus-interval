@@ -7347,3 +7347,28 @@ _(not yet validated on devices)_
 ### 🎯 Next steps:
 
 - Validate activeSession recovery during late-start queue confirm + running/paused flows.
+
+# 🔹 Block 451 — Timer ranges + pre-run load guards + overlap validity (22/02/2026)
+
+### ✔ Work completed:
+
+- TimerScreen contextual task ranges now include date when the range is not today (scheduled/projection formatting rule).
+- Task List planning preview ranges now include date when not today.
+- TimerScreen now suppresses stale running-overlap UI by validating decision still matches current schedule.
+- TimerScreen no longer shows transient “Ready” during running idle gaps (syncing loader held when needed).
+- PomodoroViewModel now allows loading **scheduled** groups even if another active session exists, so Pre-Run/overlap flows can open without bouncing back.
+
+### 🧠 Decisions made:
+
+- Scheduled-group loads are permitted under active-session conflict to unblock Pre-Run and overlap resolution; controls remain gated by conflict rules.
+- Running-overlap validity is checked in TimerScreen to prevent persistent mirror conflict messaging after reschedule.
+
+### ⚠️ Issues found:
+
+_(not yet validated on devices)_
+
+### 🎯 Next steps:
+
+- Validate Pre-Run auto-open no longer bounces back to Groups Hub.
+- Confirm “Ready” interstitial does not appear during ownership transitions.
+- Re-test mirror conflict banners/snackbar suppression after overlaps resolve.

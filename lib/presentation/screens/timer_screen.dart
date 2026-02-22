@@ -493,11 +493,37 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     ) {
       if (next == null) {
         _pendingRunningOverlapDecision = null;
+        if (_mirrorConflictSnackVisible) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          _mirrorConflictSnackVisible = false;
+        }
+        return;
+      }
+      final groups = ref.read(taskRunGroupStreamProvider).value ?? const [];
+      final activeSession = ref.read(activePomodoroSessionProvider);
+      final now = DateTime.now();
+      final stillValid = isRunningOverlapStillValid(
+        runningGroupId: next.runningGroupId,
+        scheduledGroupId: next.scheduledGroupId,
+        groups: groups,
+        activeSession: activeSession,
+        now: now,
+        fallbackNoticeMinutes: _noticeFallbackMinutes,
+      );
+      if (!stillValid) {
+        ref.read(runningOverlapDecisionProvider.notifier).state = null;
         return;
       }
       if (_runningOverlapDialogVisible) return;
       if (_isMirrorOverlapDecision(next, vm, deviceId)) {
-        _maybeShowMirrorConflictSnack(_overlapDecisionKey(next));
+        final ownerStale = _isOwnerStale(
+          vm.activeSessionForCurrentGroup,
+          DateTime.now(),
+        );
+        _maybeShowMirrorConflictSnack(
+          _overlapDecisionKey(next),
+          ownerStale: ownerStale,
+        );
         return;
       }
       if (!_isRunningOverlapDecisionForCurrentGroup(next, vm, deviceId)) {
@@ -533,8 +559,14 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         !isSessionForGroup;
     final isSyncingSession =
         isSessionMissingWhileRunning || shouldForceSyncUntilSession;
+    final shouldHoldReadyWhileRunning =
+        isAccountMode &&
+        currentGroup?.status == TaskRunStatus.running &&
+        state.status == PomodoroStatus.idle;
     final shouldShowResyncLoader =
-        _taskLoaded && !isPreRun && (isResyncing || isSyncingSession);
+        _taskLoaded &&
+        !isPreRun &&
+        (isResyncing || isSyncingSession || shouldHoldReadyWhileRunning);
     _syncInactiveRepaint(state: state, isMirror: isMirror);
     final ownershipRequest = vm.ownershipRequest;
     final hasPendingOwnershipRequest = vm.hasPendingOwnershipRequest;
@@ -1032,7 +1064,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     for (var index = 0; index < chainGroups.length; index += 1) {
       final group = chainGroups[index];
       final noticeMinutes = _resolveNoticeMinutes(group);
-      final scheduledStart = cursor.add(Duration(minutes: noticeMinutes));
+      final scheduledStart = ceilToMinute(
+        cursor.add(Duration(minutes: noticeMinutes)),
+      );
       final durationSeconds = resolveGroupDurationSeconds(group);
       final anchorId = index == 0 ? running.id : chainGroups[index - 1].id;
       final updated = group.copyWith(
@@ -1105,9 +1139,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     int chainedCount = 0,
   }) {
     final messenger = ScaffoldMessenger.of(context);
-    final format = DateFormat('HH:mm');
-    final startLabel = format.format(scheduledStart);
-    final preRunLabel = format.format(preRunStart);
+    final startLabel = _formatTimeOrDate(scheduledStart);
+    final preRunLabel = _formatTimeOrDate(preRunStart);
     final chainNote = chainedCount > 0
         ? ' Remaining queued groups will shift sequentially.'
         : '';
@@ -1130,20 +1163,31 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     return '${decision.runningGroupId}_${decision.scheduledGroupId}';
   }
 
-  void _maybeShowMirrorConflictSnack(String key) {
+  bool _isOwnerStale(PomodoroSession? session, DateTime now) {
+    if (session == null) return false;
+    final updatedAt = session.lastUpdatedAt;
+    if (updatedAt == null) return false;
+    return now.difference(updatedAt) >= const Duration(seconds: 45);
+  }
+
+  void _maybeShowMirrorConflictSnack(
+    String key, {
+    required bool ownerStale,
+  }) {
     if (_mirrorConflictSnackVisible ||
         _dismissedMirrorConflictSnackKeys.contains(key)) {
       return;
     }
     _mirrorConflictSnackVisible = true;
     final messenger = ScaffoldMessenger.of(context);
+    final message = ownerStale
+        ? 'Owner seems unavailable. Claim ownership to resolve this conflict.'
+        : 'Owner is resolving this conflict. Request ownership if needed.';
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       messenger.showSnackBar(
         SnackBar(
-          content: const Text(
-            'Owner seems unavailable. Request ownership to resolve this conflict.',
-          ),
+          content: Text(message),
           duration: const Duration(minutes: 10),
           dismissDirection: DismissDirection.none,
           action: SnackBarAction(
@@ -1785,6 +1829,16 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final minutes = (seconds % 3600) ~/ 60;
     if (hours > 0) return "${hours}h ${minutes.toString().padLeft(2, '0')}m";
     return "${minutes}m";
+  }
+
+  String _formatTimeOrDate(DateTime value) {
+    final now = DateTime.now();
+    final isToday =
+        value.year == now.year && value.month == now.month && value.day == now.day;
+    if (isToday) {
+      return DateFormat('HH:mm').format(value);
+    }
+    return DateFormat('MMM d, HH:mm').format(value);
   }
 }
 
@@ -2465,10 +2519,21 @@ class _ContextualTaskList extends StatelessWidget {
     if (group == null || currentItem == null) return const SizedBox.shrink();
 
     final timeFormat = DateFormat('HH:mm');
+    final dateFormat = DateFormat('MMM d');
 
     String formatRange(TaskTimeRange? range) {
       if (range == null) return '--:--';
-      return '${timeFormat.format(range.start)}–${timeFormat.format(range.end)}';
+      final start = range.start;
+      final end = range.end;
+      final rangeLabel =
+          '${timeFormat.format(start)}–${timeFormat.format(end)}';
+      final now = DateTime.now();
+      final isToday =
+          start.year == now.year &&
+          start.month == now.month &&
+          start.day == now.day;
+      if (isToday) return rangeLabel;
+      return '${dateFormat.format(start)}, $rangeLabel';
     }
 
     if (preRunInfo != null) {

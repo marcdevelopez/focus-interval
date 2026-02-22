@@ -18,6 +18,19 @@ import '../providers.dart';
 import '../viewmodels/pre_run_notice_view_model.dart';
 import '../utils/scheduled_group_timing.dart';
 
+final DateFormat _lateStartTimeFormat = DateFormat('HH:mm');
+final DateFormat _lateStartDateFormat = DateFormat('MMM d');
+
+String _formatLateStartRange(DateTime start, DateTime end) {
+  final range =
+      '${_lateStartTimeFormat.format(start)}-${_lateStartTimeFormat.format(end)}';
+  final now = DateTime.now();
+  final isToday =
+      start.year == now.year && start.month == now.month && start.day == now.day;
+  if (isToday) return range;
+  return '${_lateStartDateFormat.format(start)}, $range';
+}
+
 class LateStartOverlapArgs {
   final List<String> groupIds;
   final DateTime anchor;
@@ -43,8 +56,6 @@ class _LateStartOverlapQueueScreenState
   static const int _maxVisibleGroups = 5;
   static const Duration _warningThreshold = Duration(hours: 8);
   static const Duration _ownerStaleThreshold = Duration(seconds: 45);
-  static final DateFormat _timeFormat = DateFormat('HH:mm');
-  static final DateFormat _dateFormat = DateFormat('MMM d');
 
   late DateTime _anchor;
   late DateTime _anchorCapturedAt;
@@ -134,7 +145,7 @@ class _LateStartOverlapQueueScreenState
         requestId != null && requesterDeviceId != null;
     final isPendingForSelf =
         hasPendingRequest && requesterDeviceId == deviceId;
-    final timebase = ownerHeartbeat ?? anchorFromGroups;
+    final timebase = anchorFromGroups;
     if (timebase != null && timebase != _anchor) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -592,8 +603,9 @@ class _LateStartOverlapQueueScreenState
             cursor = queueNow.add(Duration(seconds: durationSeconds));
           } else {
             final noticeMinutes = _noticeMinutesOrDefault(group);
-            final scheduledStart =
-                cursor.add(Duration(minutes: noticeMinutes));
+            final scheduledStart = ceilToMinute(
+              cursor.add(Duration(minutes: noticeMinutes)),
+            );
             updates.add(
               group.copyWith(
                 status: TaskRunStatus.scheduled,
@@ -1002,20 +1014,11 @@ class _LateStartOverlapQueueScreenState
     await ref.read(pomodoroSessionRepositoryProvider).publishSession(session);
   }
 
-  String _formatRange(DateTime start, DateTime end) {
-    return '${_timeFormat.format(start)}-${_timeFormat.format(end)}';
-  }
-
   String _scheduledRange(TaskRunGroup group) {
     final start = group.scheduledStartTime;
     if (start == null) return '--:--';
     final end = group.theoreticalEndTime;
-    final now = DateTime.now();
-    final isToday =
-        start.year == now.year && start.month == now.month && start.day == now.day;
-    final range = _formatRange(start, end);
-    if (isToday) return range;
-    return '${_dateFormat.format(start)}, $range';
+    return _formatLateStartRange(start, end);
   }
 
   String _formatDuration(Duration value) {
@@ -1052,7 +1055,7 @@ class _LateStartOverlapQueueScreenState
       var cursor = start;
       for (var index = 0; index < durations.length; index += 1) {
         final end = cursor.add(Duration(seconds: durations[index]));
-        ranges[index] = _formatRange(cursor, end);
+        ranges[index] = _formatLateStartRange(cursor, end);
         cursor = end;
       }
     }
@@ -1131,8 +1134,7 @@ class _ProjectedRange {
 
   const _ProjectedRange({required this.start, required this.end});
 
-  String get label =>
-      '${DateFormat('HH:mm').format(start)}-${DateFormat('HH:mm').format(end)}';
+  String get label => _formatLateStartRange(start, end);
 }
 
 class _ConflictGroupCard extends StatelessWidget {
@@ -1160,8 +1162,7 @@ class _ConflictGroupCard extends StatelessWidget {
     final scheduledEnd = group.theoreticalEndTime;
     final scheduledLabel = scheduledStart == null
         ? '--:--'
-        : '${DateFormat('HH:mm').format(scheduledStart)}-'
-            '${DateFormat('HH:mm').format(scheduledEnd)}';
+        : _formatLateStartRange(scheduledStart, scheduledEnd);
     final projectedLabel = projectedRange;
 
     return Container(

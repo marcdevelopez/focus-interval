@@ -696,7 +696,9 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
         latest,
         fallback: noticeFallbackMinutes,
       );
-      final scheduledStart = anchorEnd.add(Duration(minutes: noticeMinutes));
+      final scheduledStart = ceilToMinute(
+        anchorEnd.add(Duration(minutes: noticeMinutes)),
+      );
       final durationSeconds = resolveGroupDurationSeconds(latest);
       updates.add(
         latest.copyWith(

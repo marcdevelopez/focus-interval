@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -121,16 +123,17 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   static const String _webLocalNoticeKey = 'web_local_notice_seen';
   static const double _autoScrollEdgeThreshold = 56;
   static const double _autoScrollStep = 12;
+  static const Duration _ownerStaleThreshold = Duration(seconds: 45);
   final _timeFormat = DateFormat('HH:mm');
+  final _dateFormat = DateFormat('MMM d');
   final GlobalKey _taskListViewportKey = GlobalKey();
   final ScrollController _taskListScrollController = ScrollController();
   bool _syncNoticeChecked = false;
   bool _webLocalNoticeChecked = false;
   bool _verificationPromptShown = false;
   bool _isReordering = false;
-  String? _lastMirrorConflictSnackKey;
-  final Set<String> _dismissedMirrorConflictSnackKeys = {};
-  bool _mirrorConflictSnackVisible = false;
+  String? _dismissedOwnershipRequestKey;
+  String? _dismissedOwnershipRequesterId;
   DateTime _planningAnchor = DateTime.now();
   String _planningAnchorKey = '';
   String? _activeBannerGroupId;
@@ -517,21 +520,46 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         .clamp(0.0, baseMaxEmailWidth)
         .toDouble();
     final groups = groupsAsync.value ?? const [];
+    final now = DateTime.now();
     final mirrorConflictDecision = _resolveMirrorConflictDecision(
       appMode: appMode,
       activeSession: activeSession,
       decision: overlapDecision,
       deviceId: deviceId,
       groups: groups,
-      now: DateTime.now(),
+      now: now,
       noticeFallbackMinutes: _noticeFallbackMinutes,
     );
-    final mirrorConflictKey = mirrorConflictDecision == null
-        ? null
-        : _overlapDecisionKey(mirrorConflictDecision);
-    if (mirrorConflictKey != null) {
-      _maybeShowMirrorConflictSnack(context, mirrorConflictKey);
+    if (overlapDecision != null && mirrorConflictDecision == null) {
+      final stillValid = isRunningOverlapStillValid(
+        runningGroupId: overlapDecision.runningGroupId,
+        scheduledGroupId: overlapDecision.scheduledGroupId,
+        groups: groups,
+        activeSession: activeSession,
+        now: now,
+        fallbackNoticeMinutes: _noticeFallbackMinutes,
+      );
+      if (!stillValid) {
+        ref.read(runningOverlapDecisionProvider.notifier).state = null;
+      }
     }
+    final ownershipRequest = activeSession?.ownershipRequest;
+    final isOwnerDevice =
+        activeSession != null && activeSession.ownerDeviceId == deviceId;
+    final hasPendingOwnerRequest =
+        ownershipRequest?.status == OwnershipRequestStatus.pending &&
+        ownershipRequest?.requesterDeviceId != deviceId;
+    final isDismissedOwnerRequest =
+        _isDismissedOwnershipRequest(ownershipRequest);
+    if ((_dismissedOwnershipRequestKey != null ||
+            _dismissedOwnershipRequesterId != null) &&
+        (ownershipRequest == null ||
+            ownershipRequest.status != OwnershipRequestStatus.pending ||
+            !_isDismissedOwnershipRequest(ownershipRequest))) {
+      _clearDismissedOwnershipRequest();
+    }
+    final showOwnerRequestBanner =
+        isOwnerDevice && hasPendingOwnerRequest && !isDismissedOwnerRequest;
     final activeGroupId = activeSession?.groupId;
     if (activeGroupId != _activeBannerGroupId) {
       _activeBannerGroupId = activeGroupId;
@@ -706,12 +734,18 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       ),
       body: Column(
         children: [
+          if (showOwnerRequestBanner && ownershipRequest != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+              child: _buildOwnershipRequestBanner(ownershipRequest),
+            ),
           if (mirrorConflictDecision != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
               child: _buildMirrorConflictBanner(
                 context,
                 decision: mirrorConflictDecision,
+                ownerStale: _isOwnerStale(activeSession, now),
               ),
             ),
           if (activeGroupBanner != null)
@@ -927,46 +961,51 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     return decision;
   }
 
-  String _overlapDecisionKey(RunningOverlapDecision decision) =>
-      '${decision.runningGroupId}_${decision.scheduledGroupId}';
+  String _ownershipRequestKey(OwnershipRequest? request) {
+    if (request == null) return '';
+    return request.requestId ?? request.requesterDeviceId;
+  }
 
-  void _maybeShowMirrorConflictSnack(BuildContext context, String key) {
-    if (_dismissedMirrorConflictSnackKeys.contains(key)) return;
-    if (_lastMirrorConflictSnackKey == key && _mirrorConflictSnackVisible) {
-      return;
+  bool _isDismissedOwnershipRequest(OwnershipRequest? request) {
+    if (request == null) return false;
+    if (request.requestId != null) {
+      return request.requestId == _dismissedOwnershipRequestKey;
     }
-    _lastMirrorConflictSnackKey = key;
-    _mirrorConflictSnackVisible = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final messenger = ScaffoldMessenger.of(context);
-      messenger.showSnackBar(
-        SnackBar(
-          duration: const Duration(days: 365),
-          dismissDirection: DismissDirection.none,
-          content: const Text(
-            'Owner seems unavailable. Request ownership to resolve this conflict.',
-          ),
-          action: SnackBarAction(
-            label: 'OK',
-            onPressed: () {
-              _dismissedMirrorConflictSnackKeys.add(key);
-              messenger.hideCurrentSnackBar();
-              if (!mounted) return;
-              setState(() {
-                _mirrorConflictSnackVisible = false;
-              });
-            },
-          ),
-        ),
-      );
-    });
+    final requestKey = _ownershipRequestKey(request);
+    return (requestKey.isNotEmpty &&
+            requestKey == _dismissedOwnershipRequestKey) ||
+        (_dismissedOwnershipRequesterId != null &&
+            request.requesterDeviceId == _dismissedOwnershipRequesterId);
+  }
+
+  void _clearDismissedOwnershipRequest() {
+    if (mounted) {
+      setState(() {
+        _dismissedOwnershipRequestKey = null;
+        _dismissedOwnershipRequesterId = null;
+      });
+    } else {
+      _dismissedOwnershipRequestKey = null;
+      _dismissedOwnershipRequesterId = null;
+    }
+  }
+
+  bool _isOwnerStale(PomodoroSession? session, DateTime now) {
+    if (session == null) return false;
+    final updatedAt = session.lastUpdatedAt;
+    if (updatedAt == null) return false;
+    return now.difference(updatedAt) >= _ownerStaleThreshold;
   }
 
   Widget _buildMirrorConflictBanner(
     BuildContext context, {
     required RunningOverlapDecision decision,
+    required bool ownerStale,
   }) {
+    final message = ownerStale
+        ? 'Owner seems unavailable. Claim ownership to resolve this conflict.'
+        : 'Owner is resolving this conflict. Request ownership if needed.';
+    final actionLabel = ownerStale ? 'Claim ownership' : 'Request ownership';
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -977,17 +1016,19 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Owner seems unavailable. Request ownership to resolve this conflict.',
-            style: TextStyle(color: Colors.white),
+          Text(
+            message,
+            style: const TextStyle(color: Colors.white),
           ),
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerLeft,
             child: OutlinedButton(
-              onPressed: () =>
-                  _requestOwnershipForConflict(decision.runningGroupId),
-              child: const Text('Request ownership'),
+              onPressed: () => _handleConflictOwnershipAction(
+                decision.runningGroupId,
+                ownerStale: ownerStale,
+              ),
+              child: Text(actionLabel),
             ),
           ),
         ],
@@ -995,10 +1036,87 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     );
   }
 
-  Future<void> _requestOwnershipForConflict(String groupId) async {
-    await ref
-        .read(pomodoroViewModelProvider.notifier)
-        .requestOwnershipForActiveSession(groupId: groupId);
+  Future<void> _handleConflictOwnershipAction(
+    String groupId, {
+    required bool ownerStale,
+  }) async {
+    final vm = ref.read(pomodoroViewModelProvider.notifier);
+    if (ownerStale) {
+      await vm.claimOwnershipForActiveSession(groupId: groupId);
+      return;
+    }
+    await vm.requestOwnershipForActiveSession(groupId: groupId);
+  }
+
+  String _platformFromDeviceId(String deviceId) {
+    final dash = deviceId.indexOf('-');
+    if (dash <= 0) return deviceId;
+    return deviceId.substring(0, dash);
+  }
+
+  Widget _buildOwnershipRequestBanner(OwnershipRequest request) {
+    final requesterLabel = _platformFromDeviceId(request.requesterDeviceId);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.6)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Ownership request from $requesterLabel.',
+            style: const TextStyle(color: Colors.white),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    setState(() {
+                      _dismissedOwnershipRequestKey =
+                          request.requestId ?? request.requesterDeviceId;
+                      _dismissedOwnershipRequesterId =
+                          request.requestId == null
+                              ? request.requesterDeviceId
+                              : null;
+                    });
+                    unawaited(
+                      ref.read(pomodoroViewModelProvider.notifier)
+                          .rejectOwnershipRequest(),
+                    );
+                  },
+                  child: const Text('Reject'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _dismissedOwnershipRequestKey =
+                          request.requestId ?? request.requesterDeviceId;
+                      _dismissedOwnershipRequesterId =
+                          request.requestId == null
+                              ? request.requesterDeviceId
+                              : null;
+                    });
+                    unawaited(
+                      ref.read(pomodoroViewModelProvider.notifier)
+                          .approveOwnershipRequest(),
+                    );
+                  },
+                  child: const Text('Approve'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   Widget? _buildActiveGroupBanner(
@@ -1800,11 +1918,20 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       final task = selectedTasks[index];
       final duration = durations[index];
       final end = cursor.add(Duration(seconds: duration));
-      ranges[task.id] =
-          "${_timeFormat.format(cursor)}–${_timeFormat.format(end)}";
+      ranges[task.id] = _formatRangeWithDate(cursor, end);
       cursor = end;
     }
     return ranges;
+  }
+
+  String _formatRangeWithDate(DateTime start, DateTime end) {
+    final range =
+        '${_timeFormat.format(start)}–${_timeFormat.format(end)}';
+    final now = DateTime.now();
+    final isToday =
+        start.year == now.year && start.month == now.month && start.day == now.day;
+    if (isToday) return range;
+    return '${_dateFormat.format(start)}, $range';
   }
 
   Future<_IntegritySelection> _maybeShowIntegrityWarning(

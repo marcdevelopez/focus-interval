@@ -21,6 +21,28 @@ int resolveGroupDurationSeconds(TaskRunGroup group) {
       groupDurationSecondsByMode(group.tasks, group.integrityMode);
 }
 
+DateTime ceilToMinute(DateTime value) {
+  if (value.second == 0 && value.millisecond == 0 && value.microsecond == 0) {
+    return value;
+  }
+  if (value.isUtc) {
+    return DateTime.utc(
+      value.year,
+      value.month,
+      value.day,
+      value.hour,
+      value.minute,
+    ).add(const Duration(minutes: 1));
+  }
+  return DateTime(
+    value.year,
+    value.month,
+    value.day,
+    value.hour,
+    value.minute,
+  ).add(const Duration(minutes: 1));
+}
+
 DateTime? resolveGroupBaseEnd(TaskRunGroup group) {
   final start = group.actualStartTime;
   if (start == null) return null;

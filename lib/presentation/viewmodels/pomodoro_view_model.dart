@@ -136,12 +136,12 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     }
     _sessionMissingWhileRunning = false;
     _syncOptimisticOwnershipRequest(session);
-    if (_hasActiveGroupConflict(session, groupId)) {
-      return PomodoroGroupLoadResult.blockedByActiveSession;
-    }
-
     final group = await _groupRepo.getById(groupId);
     if (group == null) return PomodoroGroupLoadResult.notFound;
+    if (_hasActiveGroupConflict(session, groupId) &&
+        group.status != TaskRunStatus.scheduled) {
+      return PomodoroGroupLoadResult.blockedByActiveSession;
+    }
 
     _currentGroup = group;
     _currentTask = null;
@@ -745,6 +745,27 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       requesterDeviceId: _deviceInfo.deviceId,
       requestId: requestId,
     );
+  }
+
+  Future<void> claimOwnershipForActiveSession({
+    required String groupId,
+  }) async {
+    if (ref.read(appModeProvider) != AppMode.account) return;
+    final session = ref.read(activePomodoroSessionProvider);
+    if (session == null) return;
+    if (session.groupId != groupId) return;
+    if (!session.status.isActiveExecution) return;
+    if (session.ownerDeviceId == _deviceInfo.deviceId) return;
+    final updatedAt = session.lastUpdatedAt;
+    if (updatedAt == null) return;
+    final isStale =
+        DateTime.now().difference(updatedAt) >= _staleSessionGrace;
+    if (!isStale) return;
+    final claimed = await _sessionRepo.tryAutoClaimStaleOwner(
+      requesterDeviceId: _deviceInfo.deviceId,
+    );
+    if (!claimed) return;
+    unawaited(syncWithRemoteSession(refreshGroup: false));
   }
 
   Future<void> approveOwnershipRequest() async {
