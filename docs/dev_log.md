@@ -7325,3 +7325,25 @@ _(none)_
 
 - Re-validate late-start ownership on macOS + Android with queued conflicts.
 - Verify no stale overlap banners remain after rescheduling or completion.
+
+# 🔹 Block 450 — ActiveSession missing recovery (22/02/2026)
+
+### ✔ Work completed:
+
+- Specs: documented owner-only recovery when `activeSession` is missing during running/paused.
+- PomodoroViewModel: added missing-session recovery (tryClaim + publish) with cooldown.
+- Enabled heartbeats while syncing when the local machine is actively executing.
+- Triggered recovery on stream/resync missing snapshots.
+
+### 🧠 Decisions made:
+
+- Recovery is allowed only when the local machine is running/paused and the group is running.
+- Mirrors never publish during missing-session recovery.
+
+### ⚠️ Issues found:
+
+_(not yet validated on devices)_
+
+### 🎯 Next steps:
+
+- Validate activeSession recovery during late-start queue confirm + running/paused flows.

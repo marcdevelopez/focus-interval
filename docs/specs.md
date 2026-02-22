@@ -586,6 +586,11 @@ users/{uid}/activeSession
 - Android: keep the ForegroundService active while paused (owner only) so heartbeats
   continue even when the app is backgrounded.
 - activeSession represents only an in-progress execution and must be cleared when the group reaches a terminal state (completed or canceled).
+- If a group is **running or paused locally** but `activeSession` is missing (no doc
+  or stream gap), the **owner device** must attempt to republish the session
+  (owner-only, no overwrite). Use `tryClaimSession` to create the doc if missing,
+  then publish normally. Rate-limit recovery attempts (e.g., >=5s between tries).
+  Mirror devices must never publish during this recovery path.
 - If a device observes an activeSession referencing a group that is not running (or missing), it must treat the session as stale and clear it.
 - If a running group has passed its theoreticalEndTime and the activeSession has not updated within the stale threshold, any device may clear the session and complete the group to prevent zombie runs.
 - Do not expire/complete running groups while the activeSession stream is still loading
