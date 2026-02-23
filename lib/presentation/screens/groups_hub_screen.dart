@@ -45,6 +45,25 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
   String? _dismissedOwnershipRequesterId;
   static const int _completedHistoryLimit = 7;
   static const int _canceledHistoryLimit = 7;
+  Timer? _nowTickTimer;
+  DateTime _now = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    _nowTickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        _now = DateTime.now();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _nowTickTimer?.cancel();
+    super.dispose();
+  }
 
   RunningOverlapDecision? _resolveMirrorConflictDecision({
     required AppMode appMode,
@@ -236,7 +255,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     final overlapDecision = ref.watch(runningOverlapDecisionProvider);
     final appMode = ref.watch(appModeProvider);
     final deviceId = ref.watch(deviceInfoServiceProvider).deviceId;
-    final now = DateTime.now();
+    final now = _now;
     _noticeFallbackMinutes = ref
         .watch(preRunNoticeMinutesProvider)
         .maybeWhen(data: (value) => value, orElse: () => null);
@@ -1730,7 +1749,9 @@ class _GroupCard extends StatelessWidget {
         _formatDuration(group.totalDurationSeconds ?? 0);
     final scheduledStart = scheduledStartOverride ?? group.scheduledStartTime;
     final endTime = scheduledEndOverride ?? group.theoreticalEndTime;
-    final showNotice = scheduledStart != null;
+    final showScheduled = group.status == TaskRunStatus.scheduled &&
+        scheduledStart != null;
+    final showNotice = showScheduled;
     final noticeLabel =
         noticeFromSettings ? 'Notice (settings)' : 'Notice';
     final sessionPaused =
@@ -1767,8 +1788,14 @@ class _GroupCard extends StatelessWidget {
               'Status: $statusLabel',
               style: const TextStyle(color: Colors.white54, fontSize: 12),
             ),
+            if (group.status == TaskRunStatus.canceled)
+              _ReasonRow(
+                label: 'Reason',
+                value: _canceledReasonLabel(group),
+                onTap: () => _showCanceledReasonDialog(context, group),
+              ),
             const SizedBox(height: 8),
-            if (scheduledStart != null)
+            if (showScheduled)
               _MetaRow(
                 label: 'Scheduled',
                 value: _formatGroupDateTime(scheduledStart, now),
@@ -1811,6 +1838,65 @@ class _GroupCard extends StatelessWidget {
     if (hours > 0) return '${hours}h ${minutes.toString().padLeft(2, '0')}m';
     return '${minutes}m';
   }
+
+  String _canceledReasonLabel(TaskRunGroup group) {
+    switch (group.canceledReason) {
+      case TaskRunCanceledReason.interrupted:
+        return 'Interrupted';
+      case TaskRunCanceledReason.conflict:
+        return 'Conflict';
+      case TaskRunCanceledReason.missedSchedule:
+        return 'Missed schedule';
+      case TaskRunCanceledReason.user:
+        return 'Canceled';
+      default:
+        return 'Canceled';
+    }
+  }
+
+  String _canceledReasonDescription(TaskRunGroup group) {
+    switch (group.canceledReason) {
+      case TaskRunCanceledReason.interrupted:
+        return 'This group was canceled because a running session was ended '
+            'early (for example, choosing "End current group" during a '
+            'conflict).';
+      case TaskRunCanceledReason.conflict:
+        return 'This group was canceled because it would overlap another '
+            'group. This can happen during running overlap decisions or when '
+            'late-start overdue groups push later groups out of their planned '
+            'time.';
+      case TaskRunCanceledReason.missedSchedule:
+        return 'This group was canceled because its scheduled start time had '
+            'already passed when conflicts were resolved.';
+      case TaskRunCanceledReason.user:
+        return 'This group was canceled manually by you (for example from '
+            'Groups Hub or when canceling a running group).';
+      default:
+        return 'This group was canceled.';
+    }
+  }
+
+  void _showCanceledReasonDialog(
+    BuildContext context,
+    TaskRunGroup group,
+  ) {
+    final description = _canceledReasonDescription(group);
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Cancellation reason'),
+        content: Text(
+          '$description\n\nYou can re-plan canceled groups from Groups Hub.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _MetaRow extends StatelessWidget {
@@ -1834,6 +1920,52 @@ class _MetaRow extends StatelessWidget {
             style: const TextStyle(color: Colors.white70, fontSize: 12),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ReasonRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final VoidCallback onTap;
+
+  const _ReasonRow({
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Row(
+          children: [
+            Text(
+              '$label: ',
+              style: const TextStyle(color: Colors.white54, fontSize: 12),
+            ),
+            Expanded(
+              child: Text(
+                value,
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Text(
+              'Details',
+              style: TextStyle(
+                color: Colors.white54,
+                fontSize: 12,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

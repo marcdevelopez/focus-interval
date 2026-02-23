@@ -871,6 +871,9 @@ Item layout (top → bottom):
   - Label indicates the group is starting soon and shows a countdown or start time.
   - Primary action: "Open Pre-Run" (Run Mode in Pre-Run state).
   - Secondary action: "View in Groups Hub".
+- Any countdown shown in this banner must update in real time while visible
+  (at least once per second). This is a **projection** only and must never
+  drive authoritative state transitions.
 - These entry points must not add new AppBar actions or change the AppBar layout.
   The header stays as-is; access is provided through existing screen content.
 
@@ -1323,6 +1326,9 @@ Trigger
   from **any** screen (Task List, Groups Hub, etc.) and **do not** bounce back to
   the previous screen. If the user navigates away manually, the entry points above
   must remain available until the pre-run window ends.
+- Auto-open is **idempotent**: if the correct group is already visible in
+  Pre-Run or Run Mode, do not push or replace routes, and never stack duplicate
+  screens.
 
 UI (reuses Run Mode layout)
 
@@ -1393,6 +1399,9 @@ Anchor & timebase
   for **liveness/staleness checks only** and must **not** shift the projection
   base. If `lateStartAnchorAt` is missing (legacy), fall back to the latest
   heartbeat **only until** the anchor is materialized.
+- On app resume/reopen, if `lateStartAnchorAt` exists, recompute projections
+  from the anchor + now; never revert to `scheduledStartTime` while the queue
+  is active.
 - `lateStartAnchorAt` is cleared on confirm/cancel so it does not linger.
 - If there is **no owner** yet, the first active device auto-claims ownership
   for the queue (before it is shown).
@@ -1430,7 +1439,12 @@ UI (full-screen flow, same visual language as Plan group)
 Actions
 
 - Primary: **Continue**
-- Secondary: **Cancel**
+- Secondary: **Cancel all**
+- On **Cancel all**: show a confirmation modal stating that **all listed groups
+  will be canceled** and that they can be re-planned from Groups Hub. On
+  confirm, cancel each group using the reason rules below, clear all late-start
+  queue fields (`lateStartAnchorAt`, owner/claim metadata, queue id/order), and
+  return to Groups Hub. Never leave a blank/black screen.
 - If **no groups** are selected and the user taps Continue:
   - Show a confirmation modal stating that **all listed groups will be canceled**.
   - On confirm, cancel each group using the reason rules:
@@ -1505,6 +1519,8 @@ Timing of the decision UI
 Flow
 
 - Show a **blocking decision modal** on the owner device.
+- The modal must include **context** about the conflicting scheduled group:
+  group name and its scheduled time range (and pre-run start time if different).
 - The modal **pauses** the current group immediately and counts as a normal pause.
 - Options:
   1. **End current group** → cancel current group (canceledReason = interrupted),
@@ -1662,6 +1678,9 @@ Note (mode-specific):
 
 
 Rule: the upper box always matches the current executing phase.
+Rule: time ranges shown in the status boxes are derived from
+`TaskRunGroup.actualStartTime` + accumulated durations + pause offsets.
+Once a group is running, never use `scheduledStartTime` for these ranges.
 
 ### **10.4.5. Contextual task list (below circle)**
 
@@ -1886,6 +1905,11 @@ List fields per group
   - missedSchedule → "Missed schedule"
   - user → "Canceled"
 - If canceledReason is missing, default to "Canceled".
+- The reason label is **tappable**. On tap, show a modal explaining the
+  cancellation circumstance in plain language (e.g., conflict due to overlap,
+  missed schedule because the start time already passed, user-canceled, or
+  interrupted by ending a running group early). Include a note that canceled
+  groups can be re-planned from Groups Hub.
 - Scheduled start time (only for scheduled groups; omit when scheduledStartTime is null)
 - Theoretical end time
 - Number of tasks
@@ -1894,12 +1918,14 @@ List fields per group
   (scheduledStartTime != null). Do not show notice/pre-run info for “Start now”.
 - For any time field shown on the card, display **only HH:mm** when the date is
   today, and show **date + time** when the date is not today (scheduled or completed).
+- If a card shows a countdown or projected start (e.g., "Starts in"), it must
+  update in real time while visible (projection only; never authoritative).
 
 Actions
 
 - Tap -> light detail view (summary)
   - Rename group (pencil/edit action)
-  - Cancel planning
+  - Cancel planning → mark the group as canceled (canceledReason = user)
   - Start now (only if no conflicts)
   - Open Run Mode for running/paused groups
   - Run again (completed groups): duplicate the group snapshot into a new TaskRunGroup and open the pre-start planning flow

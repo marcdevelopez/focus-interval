@@ -49,6 +49,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   String? _runningAutoStartGroupId;
   bool _cancelNavigationHandled = false;
   int _cancelNavRetryAttempts = 0;
+  String? _cancelNavTargetGroupId;
   _PreRunInfo? _preRunInfo;
   int _preRunRemainingSeconds = 0;
   int? _noticeFallbackMinutes;
@@ -879,14 +880,13 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     }
 
     _runningOverlapDialogVisible = true;
+    final scheduledInfo = _resolveConflictGroupInfo(decision);
     final choice = await showDialog<_RunningOverlapChoice>(
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
         title: const Text('Scheduling conflict'),
-        content: const Text(
-          'A scheduled group is about to start while this group is still active.',
-        ),
+        content: _ConflictDialogContent(info: scheduledInfo),
         actions: [
           TextButton(
             onPressed: () =>
@@ -1307,6 +1307,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     if (_completionNavigationHandled) return;
     _completionNavigationHandled = true;
     _cancelNavRetryAttempts = 0;
+    _cancelNavTargetGroupId = widget.groupId;
     _attemptNavigateToGroupsHub(reason);
   }
 
@@ -1689,6 +1690,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     if (_cancelNavigationHandled) return;
     _cancelNavigationHandled = true;
     _cancelNavRetryAttempts = 0;
+    _cancelNavTargetGroupId = widget.groupId;
     _attemptNavigateToGroupsHub(reason);
   }
 
@@ -1713,6 +1715,15 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _cancelNavRetryTimer = Timer(const Duration(milliseconds: 250), () {
       if (!mounted) return;
       final currentPath = router.routerDelegate.currentConfiguration.uri.path;
+      if (!currentPath.startsWith('/timer/')) {
+        return;
+      }
+      final activeId =
+          currentPath.substring('/timer/'.length).split('?').first;
+      if (_cancelNavTargetGroupId != null &&
+          activeId != _cancelNavTargetGroupId) {
+        return;
+      }
       if (currentPath.startsWith('/timer/')) {
         if (kDebugMode) {
           debugPrint('Cancel nav retry $_cancelNavRetryAttempts (still in timer)');
@@ -1839,6 +1850,108 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       return DateFormat('HH:mm').format(value);
     }
     return DateFormat('MMM d, HH:mm').format(value);
+  }
+
+  String _formatConflictRange(DateTime start, DateTime end) {
+    final now = DateTime.now();
+    final isToday =
+        start.year == now.year && start.month == now.month && start.day == now.day;
+    if (isToday) {
+      return '${DateFormat('HH:mm').format(start)}-${DateFormat('HH:mm').format(end)}';
+    }
+    final startLabel = DateFormat('MMM d, HH:mm').format(start);
+    final endLabel = DateFormat('HH:mm').format(end);
+    return '$startLabel-$endLabel';
+  }
+
+  _ConflictGroupInfo? _resolveConflictGroupInfo(
+    RunningOverlapDecision decision,
+  ) {
+    final groups = ref.read(taskRunGroupStreamProvider).value ?? const [];
+    final scheduled = findGroupById(groups, decision.scheduledGroupId);
+    if (scheduled == null) return null;
+    final name =
+        scheduled.tasks.isNotEmpty ? scheduled.tasks.first.name : 'Task group';
+    final activeSession = ref.read(activePomodoroSessionProvider);
+    final scheduledStart =
+        resolveEffectiveScheduledStart(
+          group: scheduled,
+          allGroups: groups,
+          activeSession: activeSession,
+          now: DateTime.now(),
+          fallbackNoticeMinutes: _noticeFallbackMinutes,
+        ) ??
+        scheduled.scheduledStartTime;
+    String? rangeLabel;
+    String? preRunLabel;
+    if (scheduledStart != null) {
+      final durationSeconds = resolveGroupDurationSeconds(scheduled);
+      final scheduledEnd =
+          scheduledStart.add(Duration(seconds: durationSeconds));
+      rangeLabel = _formatConflictRange(scheduledStart, scheduledEnd);
+      final noticeMinutes = resolveNoticeMinutes(
+        scheduled,
+        fallback: _noticeFallbackMinutes,
+      );
+      if (noticeMinutes > 0) {
+        final preRunStart =
+            scheduledStart.subtract(Duration(minutes: noticeMinutes));
+        if (!preRunStart.isAtSameMomentAs(scheduledStart)) {
+          preRunLabel = _formatTimeOrDate(preRunStart);
+        }
+      }
+    }
+    return _ConflictGroupInfo(
+      name: name,
+      scheduledRange: rangeLabel,
+      preRunStartLabel: preRunLabel,
+    );
+  }
+}
+
+class _ConflictGroupInfo {
+  final String name;
+  final String? scheduledRange;
+  final String? preRunStartLabel;
+
+  const _ConflictGroupInfo({
+    required this.name,
+    required this.scheduledRange,
+    required this.preRunStartLabel,
+  });
+}
+
+class _ConflictDialogContent extends StatelessWidget {
+  final _ConflictGroupInfo? info;
+
+  const _ConflictDialogContent({required this.info});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'A scheduled group is about to start while this group is still active.',
+        ),
+        if (info != null) ...[
+          const SizedBox(height: 12),
+          Text(
+            info!.name,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          if (info!.scheduledRange != null) ...[
+            const SizedBox(height: 6),
+            Text('Scheduled: ${info!.scheduledRange}'),
+          ],
+          if (info!.preRunStartLabel != null) ...[
+            const SizedBox(height: 4),
+            Text('Pre-Run: ${info!.preRunStartLabel}'),
+          ],
+        ],
+      ],
+    );
   }
 }
 
