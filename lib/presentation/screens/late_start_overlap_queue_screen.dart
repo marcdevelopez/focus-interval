@@ -74,7 +74,7 @@ class _LateStartOverlapQueueScreenState
   void initState() {
     super.initState();
     _anchor = widget.args.anchor;
-    _anchorCapturedAt = DateTime.now();
+    _anchorCapturedAt = _anchor;
     _tickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
       setState(() {
@@ -122,7 +122,7 @@ class _LateStartOverlapQueueScreenState
 
     if (conflictGroups.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) Navigator.of(context).pop();
+        if (mounted) context.go('/groups');
       });
       return const SizedBox.shrink();
     }
@@ -151,7 +151,7 @@ class _LateStartOverlapQueueScreenState
         if (!mounted) return;
         setState(() {
           _anchor = timebase;
-          _anchorCapturedAt = DateTime.now();
+          _anchorCapturedAt = _anchor;
         });
       });
     }
@@ -263,8 +263,8 @@ class _LateStartOverlapQueueScreenState
                     child: OutlinedButton(
                       onPressed: (_busy || !isOwner)
                           ? null
-                          : () => Navigator.of(context).pop(),
-                      child: const Text('Cancel'),
+                          : () => _cancelAllQueue(conflictGroups),
+                      child: const Text('Cancel all'),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -516,6 +516,34 @@ class _LateStartOverlapQueueScreenState
     });
   }
 
+  Future<void> _cancelAllQueue(List<TaskRunGroup> conflictGroups) async {
+    if (_busy) return;
+    final shouldCancelAll = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Cancel all groups?'),
+        content: const Text(
+          'This will cancel all listed groups. You can re-plan them from Groups Hub.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Keep'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Cancel all'),
+          ),
+        ],
+      ),
+    );
+    if (shouldCancelAll != true) return;
+    await _applySelection(
+      conflictGroups: conflictGroups,
+      selectedGroups: const [],
+    );
+  }
+
   List<TaskRunGroup> _visibleUnselected(List<TaskRunGroup> groups) {
     if (_showAll || groups.length <= _maxVisibleGroups) return groups;
     return groups.take(_maxVisibleGroups).toList();
@@ -537,7 +565,8 @@ class _LateStartOverlapQueueScreenState
       builder: (_) => AlertDialog(
         title: const Text('Cancel all groups?'),
         content: const Text(
-          'No groups are selected. Continue will cancel all listed groups.',
+          'No groups are selected. Continue will cancel all listed groups. '
+          'You can re-plan them from Groups Hub.',
         ),
         actions: [
           TextButton(
@@ -677,7 +706,7 @@ class _LateStartOverlapQueueScreenState
           context.go('/timer/${target.id}');
         });
       } else {
-        Navigator.of(context).pop();
+        context.go('/groups');
       }
     } catch (e) {
       if (!mounted) return;

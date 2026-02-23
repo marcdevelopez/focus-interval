@@ -22,7 +22,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **22/02/2026**
+Last update: **23/02/2026**
 
 ---
 
@@ -7372,3 +7372,126 @@ _(not yet validated on devices)_
 - Validate Pre-Run auto-open no longer bounces back to Groups Hub.
 - Confirm “Ready” interstitial does not appear during ownership transitions.
 - Re-test mirror conflict banners/snackbar suppression after overlaps resolve.
+
+# 🔹 Block 452 — Late-start validation docs + countdown accuracy (23/02/2026)
+
+### ✔ Work completed:
+
+- Specs updated: Pre-Run auto-open idempotency, late-start queue cancel behavior,
+  anchored projections on resume, conflict modal context, status box ranges anchored
+  to actualStartTime, and real-time countdown requirements for Task List/Groups Hub.
+- Roadmap reopened items added for late-start cancel behavior, conflict modal context,
+  pre-run auto-open idempotency, and real-time countdowns.
+- AGENTS rule added: user-visible countdowns must update in real time (projection-only).
+
+### 🧠 Decisions made:
+
+- Treat all user-visible countdowns as projection-only but **always live-updated**.
+- Clarify timebase responsibilities to avoid mixing scheduled/actual/anchor ranges.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Implement code fixes for late-start queue stability, pre-run auto-open navigation,
+  countdown updates, conflict modal context, and run-mode range consistency.
+
+# 🔹 Block 453 — Late-start queue fixes + live countdowns (23/02/2026)
+
+### ✔ Work completed:
+
+- Task List pre-run banner now updates countdown every second via a local ticker.
+- Late-start queue timebase now projects from `lateStartAnchorAt` on reopen
+  (anchor-captured time fixed).
+- Late-start queue Cancel clears queue metadata and navigates safely to Groups Hub.
+- Late-start queue auto-exit now navigates to Groups Hub (no blank/black screen).
+- Running conflict modal now includes the scheduled group's name and time range.
+- Cancel-navigation retries no longer override a different timer route.
+
+### 🧠 Decisions made:
+
+- Pre-run countdowns are projection-only but must be live-updated while visible.
+- Late-start queue cancel is treated as a cleanup action (clear queue fields).
+
+### ⚠️ Issues found:
+
+_(not yet validated on devices)_
+
+### 🎯 Next steps:
+
+- Re-validate late-start queue projections on macOS/Android after reopen.
+- Verify pre-run auto-open is not overridden by Groups Hub navigation.
+- Confirm conflict modal timing + context during running overlap scenarios.
+
+# 🔹 Block 454 — Late-start anchor gating + Groups Hub live timing (23/02/2026)
+
+### ✔ Work completed:
+
+- Late-start queue: navigation now requires a real anchor (no `DateTime.now()` fallback).
+- Late-start queue cancel-all now exits to Groups Hub (no blank screen).
+- Groups Hub adds a 1s ticker for live timing (effective schedule + pre-run state).
+- Groups Hub hides Scheduled row for non-scheduled groups to avoid stale ranges.
+
+### 🧠 Decisions made:
+
+- When the late-start anchor is missing, wait for it to materialize before opening the queue.
+- Running/paused groups should not show scheduled-only rows.
+
+### ⚠️ Issues found:
+
+_(not yet validated on devices)_
+
+### 🎯 Next steps:
+
+- Validate queue open timing when the anchor is written on the owner device.
+- Verify Groups Hub reflects postponed/anchored schedules in real time.
+
+# 🔹 Block 455 — Late-start cancel-all + canceled reason labels (23/02/2026)
+
+### ✔ Work completed:
+
+- Late-start queue Cancel now cancels all listed groups with confirmation and a
+  re-plan note, then returns to Groups Hub.
+- Continue with no selection now explains that canceled groups can be re-planned
+  from Groups Hub.
+- Groups Hub cards now show a canceled-reason label (Conflict / Missed schedule /
+  Interrupted / Canceled).
+
+### 🧠 Decisions made:
+
+- Cancel in late-start queue resolves the conflict by canceling all groups to
+  avoid re-open loops.
+- Canceled reason labels are shown on the group card for clear context.
+
+### ⚠️ Issues found:
+
+_(not yet validated on devices)_
+
+### 🎯 Next steps:
+
+- Validate late-start Cancel all flow on macOS + Android.
+- Verify canceled-reason labels in Groups Hub across canceled sources.
+
+# 🔹 Block 456 — Canceled reason details + manual cancel doc (23/02/2026)
+
+### ✔ Work completed:
+
+- Specs: explicit cancel-planning reason (user) added to Groups Hub actions.
+- Specs: canceled reason label is now tappable with a details modal requirement.
+- Groups Hub: reason row is tappable and opens a modal explaining the
+  cancellation circumstance with a re-plan reminder.
+
+### 🧠 Decisions made:
+
+- The reason modal uses a short, user-facing explanation per reason to avoid
+  confusion and preserve trust.
+
+### ⚠️ Issues found:
+
+_(not yet validated on devices)_
+
+### 🎯 Next steps:
+
+- Validate the reason modal on macOS + Android (tap the reason label).

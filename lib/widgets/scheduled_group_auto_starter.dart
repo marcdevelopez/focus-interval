@@ -77,9 +77,11 @@ class _ScheduledGroupAutoStarterState
       case ScheduledGroupActionType.lateStartQueue:
         final groupIds = action.groupIds;
         if (groupIds == null || groupIds.isEmpty) return;
+        final anchor = action.anchor;
+        if (anchor == null) return;
         _navigateToLateStartQueue(
           groupIds,
-          action.anchor ?? DateTime.now(),
+          anchor,
         );
         break;
     }

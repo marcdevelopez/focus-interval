@@ -408,7 +408,10 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
         ownerDeviceId: ownerId,
         deviceId: deviceId,
       );
-      final resolvedAnchor = anchor ?? now;
+      if (anchor == null) {
+        return;
+      }
+      final resolvedAnchor = anchor;
       if (kDebugMode) {
         debugPrint(
           '[LateStartQueue] overdue=${lateStartConflicts.length} '

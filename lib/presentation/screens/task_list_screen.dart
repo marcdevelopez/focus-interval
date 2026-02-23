@@ -128,6 +128,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   final _dateFormat = DateFormat('MMM d');
   final GlobalKey _taskListViewportKey = GlobalKey();
   final ScrollController _taskListScrollController = ScrollController();
+  final ValueNotifier<DateTime> _nowTicker =
+      ValueNotifier<DateTime>(DateTime.now());
+  Timer? _nowTickTimer;
   bool _syncNoticeChecked = false;
   bool _webLocalNoticeChecked = false;
   bool _verificationPromptShown = false;
@@ -147,10 +150,16 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       _maybeShowLinuxSyncNotice();
       _maybeShowWebLocalNotice();
     });
+    _nowTickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      _nowTicker.value = DateTime.now();
+    });
   }
 
   @override
   void dispose() {
+    _nowTickTimer?.cancel();
+    _nowTicker.dispose();
     _taskListScrollController.dispose();
     super.dispose();
   }
@@ -575,14 +584,40 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       activeSession: activeSession,
       groupsAsync: groupsAsync,
     );
-    final preRunBanner = activeGroupBanner == null
-        ? _buildPreRunBanner(
-            context,
-            groupsAsync: groupsAsync,
-          )
-        : null;
-    final showGroupsHubCta =
-        activeGroupBanner == null && preRunBanner == null;
+    final preRunBannerSlot = ValueListenableBuilder<DateTime>(
+      valueListenable: _nowTicker,
+      builder: (context, tickNow, _) {
+        if (activeGroupBanner != null) return const SizedBox.shrink();
+        final preRunBanner = _buildPreRunBanner(
+          context,
+          groupsAsync: groupsAsync,
+          activeSession: activeSession,
+          now: tickNow,
+        );
+        final showGroupsHubCta = preRunBanner == null;
+        return Column(
+          children: [
+            if (preRunBanner != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                child: preRunBanner,
+              ),
+            if (showGroupsHubCta)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.go('/groups'),
+                    icon: const Icon(Icons.view_list, size: 18),
+                    label: const Text('View Groups Hub'),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -753,23 +788,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
               child: activeGroupBanner,
             ),
-          if (activeGroupBanner == null && preRunBanner != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-              child: preRunBanner,
-            ),
-          if (showGroupsHubCta)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: OutlinedButton.icon(
-                  onPressed: () => context.go('/groups'),
-                  icon: const Icon(Icons.view_list, size: 18),
-                  label: const Text('View Groups Hub'),
-                ),
-              ),
-            ),
+          preRunBannerSlot,
           Expanded(
             child: tasksAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -1202,11 +1221,11 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   Widget? _buildPreRunBanner(
     BuildContext context, {
     required AsyncValue<List<TaskRunGroup>> groupsAsync,
+    required PomodoroSession? activeSession,
+    required DateTime now,
   }) {
     final groups = groupsAsync.value ?? const [];
     if (groups.isEmpty) return null;
-    final now = DateTime.now();
-    final activeSession = ref.read(activePomodoroSessionProvider);
     TaskRunGroup? selected;
     DateTime? startTime;
     for (final group in groups) {

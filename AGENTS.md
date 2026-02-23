@@ -136,6 +136,9 @@ UI must never:
 - Persist time decisions
 
 Local timers, tickers, or `DateTime.now()` are allowed **only for rendering or projection**, never as the source of truth.
+- Any user-visible countdown or time-remaining display must update in real time
+  while visible; stale time is unacceptable. These updates must remain
+  projection-only and never drive authoritative state.
 
 ---
 
