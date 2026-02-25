@@ -211,18 +211,21 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 9 — Task List: group name input + group summary + per-task total time + selection reset (new requirement).
 - Phase 17 — Early overlap warning (pause drift) + mirror ownership CTA + persistent conflict snackbar + auto-follow postpone (no repeat modal) + paused overlap alerts (new requirement).
 - Phase 17 — Late-start queue anchor (server time) + owner-only queue + realtime projections + activeSession creation on confirm + mirror Run Mode CTA + revalidate post-postpone overlaps (bug).
-- Phase 17 — Late-start queue Cancel all (no loop) + exit cleanly (no black screen) + anchored reopen (bug).
+- Phase 17 — Late-start queue Cancel all (no loop) + exit cleanly (no black screen) + mirror “Owner resolved” modal + zero-selection = Cancel all (bug).
 - Phase 17 — Running conflict modal must show conflicting group context (name + time range) (new requirement).
-- Phase 17 — Pre-Run auto-open is idempotent (no duplicate navigation / no Groups Hub bounce) (bug).
+- Phase 17 — Pre-Run auto-open is idempotent on owner/mirror (no duplicate navigation / no Groups Hub bounce) and must not open Resolve overlaps without a real conflict (bug).
+- Phase 17 — Postpone effective schedule must refresh on mirrors in real time (no stale schedule) (bug).
 - Phase 14 — Global sound settings (apply switch + revert) (new requirement).
 - Phase 14 — Pre-Run notice minutes setting (Account Mode sync + Settings UI; range 0–15) (new requirement).
 - Phase 15 — TaskRunGroup model updates (group name + task color snapshot + integrityMode) (new requirement).
 - Phase 6 — Account profile metadata (display name + avatar) in Firestore/Storage; Settings UI (Account Mode only); ownership UI uses Name (Platform) (new requirement).
+- Phase 6 — Logout while running/paused must never produce a black screen (return to Local Mode Task List) (bug).
 - Phase 19 — Groups Hub canceled reason details (tappable reason label) (new requirement).
 - Phase 18 — Mode-specific breaks (global long-break counter in Mode A) implemented; validation pending.
 - Phase 18 — Run Mode task transition catch-up after background/resume (validation pending).
 - Phase 18 — Run Mode lifecycle resync on resume (no transient Ready state; owner re-verify before controls) (bug).
 - Phase 18 — Run Mode task ranges must anchor to group actualStartTime + accumulated durations + pause offsets (no phaseStartedAt) (bug).
+- Phase 18 — Run Mode status boxes must match contextual list ranges (no stale ranges after pause/resume) (bug).
 - Phase 18 — Pause offsets must extend TaskRunGroup.theoreticalEndTime on resume (cross-device) (bug).
 - Phase 18 — Ownership request retry when pending exceeds stale threshold (bug).
 - Phase 18 — Run Mode shows Syncing state when activeSession is missing + manual refresh (sync icon) (bug).
@@ -236,6 +239,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 19 — Groups Hub: canceled groups visible + re-plan action (new requirement).
 - Phase 19 — Groups Hub: sticky “Go to Task List” CTA (regression).
 - Phase 19 — Task List / Groups Hub countdowns update in real time (bug).
+- Phase 19 — Groups Hub scheduled row must show run start; show “Pre-Run X min starts at …” when notice applies (no +1 min gap) (bug).
 - Phase 6 — Web auth session persistence (Chrome dev profile + Firebase Auth LOCAL persistence) (new requirement).
 - Outstanding items from specs sections 10.4.2 / 10.4.6 / 12 / 10.5 are tracked in Phases 18, 19, and 25 (not reopened).
 - Rule: if any previously completed phase is missing required behavior, list it here and resolve it before continuing in normal phase order.

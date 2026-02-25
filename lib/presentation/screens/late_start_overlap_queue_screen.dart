@@ -69,6 +69,7 @@ class _LateStartOverlapQueueScreenState
   List<String> _selectedIds = [];
   List<String> _latestConflictIds = const [];
   int? _noticeFallbackMinutes;
+  bool _ownerResolvedDialogShown = false;
 
   @override
   void initState() {
@@ -161,12 +162,34 @@ class _LateStartOverlapQueueScreenState
       anchor: anchorFromGroups,
       now: _now,
     );
-    final isOwner =
-        appMode != AppMode.account ||
-        ownerDeviceId == null ||
-        ownerDeviceId == deviceId;
+    final isAccountMode = appMode == AppMode.account;
+    final isOwner = !isAccountMode || ownerDeviceId == deviceId;
+    final allCanceled =
+        conflictGroups.isNotEmpty &&
+        conflictGroups.every((group) => group.status == TaskRunStatus.canceled);
+    if (!isOwner && allCanceled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _showOwnerResolvedDialog();
+      });
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Text(
+            'Owner resolved the conflict.',
+            style: TextStyle(color: Colors.white70),
+          ),
+        ),
+      );
+    }
+    final hasOwner = ownerDeviceId != null && ownerDeviceId.isNotEmpty;
+    final effectiveOwnerStale = !hasOwner || ownerStale;
     final shouldAutoClaim =
-        !isOwner && ownerStale && (!hasPendingRequest || isPendingForSelf);
+        isAccountMode &&
+        !allCanceled &&
+        !isOwner &&
+        (!hasOwner || ownerStale) &&
+        (!hasPendingRequest || isPendingForSelf);
     if (shouldAutoClaim) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -216,7 +239,7 @@ class _LateStartOverlapQueueScreenState
                   showWarning: showWarning,
                   isOwner: isOwner,
                   ownerDeviceId: ownerDeviceId,
-                  ownerStale: ownerStale,
+                  ownerStale: effectiveOwnerStale,
                   hasPendingRequest: hasPendingRequest,
                   requesterDeviceId: requesterDeviceId,
                 ),
@@ -514,6 +537,29 @@ class _LateStartOverlapQueueScreenState
         _selectedIds.add(groupId);
       }
     });
+  }
+
+  Future<void> _showOwnerResolvedDialog() async {
+    if (_ownerResolvedDialogShown) return;
+    _ownerResolvedDialogShown = true;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Owner resolved'),
+        content: const Text(
+          'This overlap was resolved on another device. You can re-plan '
+          'canceled groups from Groups Hub.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    context.go('/groups');
   }
 
   Future<void> _cancelAllQueue(List<TaskRunGroup> conflictGroups) async {

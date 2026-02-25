@@ -235,7 +235,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Selected group not found.")),
           );
-          Navigator.pop(context);
+          final appMode = ref.read(appModeProvider);
+          final target = appMode == AppMode.local ? '/tasks' : '/groups';
+          context.go(target);
           break;
         case PomodoroGroupLoadResult.blockedByActiveSession:
           await _handleBlockedStart();
@@ -1753,7 +1755,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           ),
         ),
       );
-      Navigator.pop(context);
+      final appMode = ref.read(appModeProvider);
+      final target = appMode == AppMode.local ? '/tasks' : '/groups';
+      context.go(target);
       return;
     }
 
@@ -1794,7 +1798,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       }
       return;
     }
-    Navigator.pop(context);
+    final appMode = ref.read(appModeProvider);
+    final target = appMode == AppMode.local ? '/tasks' : '/groups';
+    context.go(target);
   }
 
   Future<bool> _confirmExit(PomodoroState state, PomodoroViewModel vm) async {

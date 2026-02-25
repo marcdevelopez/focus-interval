@@ -663,6 +663,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       final pauseDuration = now.difference(pauseStartedAt);
       if (pauseDuration.inSeconds > 0) {
         unawaited(_applyPauseOffsetToGroup(pauseDuration, now: now));
+        _timelinePhaseStartedAt = null;
       }
     }
     _pauseStartedAt = null;
