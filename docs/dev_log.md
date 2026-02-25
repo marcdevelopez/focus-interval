@@ -7580,3 +7580,24 @@ _(none)_
 ### 🎯 Next steps:
 
 - Implement fixes listed in the 2026-02-25 plan before generating a new checklist.
+
+# 🔹 Block 460 — Screenshot review + plan update (25/02/2026)
+
+### ✔ Work completed:
+
+- Reviewed screenshots 01–20 in `docs/bugs/validation_fix_2026_02_24/screenshots`.
+- Updated the 2026-02-25 validation plan with additional issues from the report.
+- AGENTS.md updated to require screenshot review before fixes.
+
+### 🧠 Decisions made:
+
+- Treat the pre-run boundary conflict and range drift as separate fixes.
+- Android logout black screen is now explicit scope.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Implement fixes for the updated 2026-02-25 plan.

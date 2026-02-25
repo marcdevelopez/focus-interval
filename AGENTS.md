@@ -69,6 +69,7 @@ Bug validation workflow (required):
   - `quick_pass_checklist.md`
   - `plan_validacion_rapida_fix.md`
   - `screenshots/`
+- Always review the screenshots in the relevant validation folder before diagnosing or implementing fixes.
 - `quick_pass_checklist.md` is created **after** implementation and must match
   the actual changes. For a brand new validation folder, it starts empty until
   the implementation is complete.
