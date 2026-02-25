@@ -642,14 +642,19 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       activeSession: session,
       now: now,
     );
-    if (runningEnd == null ||
-        runningEnd.isBefore(preRunStart) ||
-        runningEnd.isAtSameMomentAs(preRunStart)) {
+    final overlapThreshold = resolveRunningOverlapThreshold(preRunStart);
+    final hasOverlap =
+        runningEnd != null &&
+        isRunningOverlapBeyondGrace(
+          runningEnd: runningEnd,
+          preRunStart: preRunStart,
+        );
+    if (!hasOverlap) {
       _clearRunningOverlapDecisionIfNeeded();
       _scheduleRunningOverlapRecheck(
         runningGroup: runningGroup,
         runningEnd: runningEnd,
-        preRunStart: preRunStart,
+        overlapThreshold: overlapThreshold,
         session: session,
         now: now,
       );
@@ -699,7 +704,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
   void _scheduleRunningOverlapRecheck({
     required TaskRunGroup runningGroup,
     required DateTime? runningEnd,
-    required DateTime preRunStart,
+    required DateTime overlapThreshold,
     required PomodoroSession? session,
     required DateTime now,
   }) {
@@ -708,8 +713,8 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     if (session == null) return;
     if (session.groupId != runningGroup.id) return;
     if (session.status != PomodoroStatus.paused) return;
-    if (!preRunStart.isAfter(runningEnd)) return;
-    final delay = preRunStart.difference(runningEnd);
+    if (!overlapThreshold.isAfter(runningEnd)) return;
+    final delay = overlapThreshold.difference(runningEnd);
     if (delay.inSeconds <= 0) return;
     _runningOverlapTimer = Timer(delay, () {
       if (_disposed) return;

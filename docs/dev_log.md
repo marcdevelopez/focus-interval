@@ -7717,3 +7717,23 @@ _(none)_
 ### 🎯 Next steps:
 
 - Proceed to Fix 4 (false conflict at pre-run boundary).
+
+# 🔹 Block 467 — Fix 4: pre-run boundary overlap grace (25/02/2026)
+
+### ✔ Work completed:
+
+- Updated specs to treat pre-run overlap only after a 1-minute grace beyond pre-run start.
+- Added a shared overlap-grace threshold helper for running overlap detection.
+- Running overlap decisions now respect the grace window and recheck timing uses the same threshold.
+
+### 🧠 Decisions made:
+
+- Use a 1-minute grace window to avoid false conflict modals when the running end lands in the same minute as pre-run start.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Proceed to Fix 5 (task item time ranges vs status boxes).
