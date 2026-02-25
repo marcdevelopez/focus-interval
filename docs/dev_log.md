@@ -7677,3 +7677,23 @@ _(none)_
 ### 🎯 Next steps:
 
 - Continue with Fix 2 using the new commit-tracking rule.
+
+# 🔹 Block 465 — Fix 2: Android logout black screen (25/02/2026)
+
+### ✔ Work completed:
+
+- Reordered logout flow to navigate to Task List before signing out.
+- Cleared scheduled/overlap state on logout to avoid stale navigation.
+- Used root router for logout navigation to avoid context loss.
+
+### 🧠 Decisions made:
+
+- Logout now prioritizes stable navigation to `/tasks` before sign-out.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Proceed to Fix 3 (completion must navigate to Groups Hub).

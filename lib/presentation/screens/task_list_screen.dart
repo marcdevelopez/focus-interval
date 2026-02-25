@@ -449,16 +449,20 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   Future<void> _handleLogout() async {
     final auth = ref.read(firebaseAuthServiceProvider);
     final controller = ref.read(appModeProvider.notifier);
-    await auth.signOut();
-    await controller.setLocal();
-    await _maybeShowWebLocalNotice();
     ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
+    ref.read(runningOverlapDecisionProvider.notifier).state = null;
     ref.invalidate(scheduledGroupCoordinatorProvider);
     ref.invalidate(taskListProvider);
     ref.invalidate(presetListProvider);
     ref.invalidate(presetEditorProvider);
-    if (!mounted) return;
-    context.go('/tasks');
+    await controller.setLocal();
+    await _maybeShowWebLocalNotice();
+    final rootContext =
+        GoRouter.of(context).routerDelegate.navigatorKey.currentContext;
+    final router =
+        rootContext != null ? GoRouter.of(rootContext) : GoRouter.of(context);
+    router.go('/tasks');
+    await auth.signOut();
   }
 
   @override
