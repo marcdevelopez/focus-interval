@@ -7737,3 +7737,22 @@ _(none)_
 ### 🎯 Next steps:
 
 - Proceed to Fix 5 (task item time ranges vs status boxes).
+
+# 🔹 Block 468 — Fix 5: status box ranges align with task ranges (25/02/2026)
+
+### ✔ Work completed:
+
+- Status box ranges now anchor to the phase start timestamp instead of shifting with total pause offsets.
+- Phase end now accounts for pauses after the phase starts, keeping end times accurate without moving starts.
+
+### 🧠 Decisions made:
+
+- Use phase-start time as the authoritative start for status boxes; only the end time absorbs pause offsets.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Proceed to Fix 6 (scheduled rows match on owner/mirror).

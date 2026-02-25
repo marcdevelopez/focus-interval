@@ -1543,6 +1543,8 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   DateTime? get currentPhaseStartFromGroup {
+    final phaseStart = phaseStartedAt;
+    if (phaseStart != null) return phaseStart;
     if (_timelinePhaseStartedAt != null) {
       return _timelinePhaseStartedAt;
     }
@@ -1550,6 +1552,15 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (timelineStart == null) return null;
     final offsetSeconds = _activeSecondsBeforeCurrentPhase();
     return timelineStart.add(Duration(seconds: offsetSeconds));
+  }
+
+  DateTime? get currentPhaseEndFromGroup {
+    final start = currentPhaseStartFromGroup;
+    if (start == null) return null;
+    final totalSeconds = state.totalSeconds;
+    if (totalSeconds <= 0) return null;
+    final pauseSeconds = _pauseSecondsSincePhaseStart(start);
+    return start.add(Duration(seconds: totalSeconds + pauseSeconds));
   }
 
   OwnershipRequest? get ownershipRequest {
@@ -1777,6 +1788,13 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     return total;
   }
 
+  DateTime? _expectedPhaseStart(TaskRunGroup group) {
+    final baseStart = group.actualStartTime;
+    if (baseStart == null) return null;
+    final offsetSeconds = _activeSecondsBeforeCurrentPhase();
+    return baseStart.add(Duration(seconds: offsetSeconds));
+  }
+
   int _activeSecondsBeforePhaseInTask(
     TaskRunItem item,
     PomodoroState state, {
@@ -1846,6 +1864,19 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     final pauseSinceTask =
         totalPause - (pauseBeforeTask < 0 ? 0 : pauseBeforeTask);
     return pauseSinceTask < 0 ? 0 : pauseSinceTask;
+  }
+
+  int _pauseSecondsSincePhaseStart(DateTime phaseStart) {
+    final group = _currentGroup;
+    if (group == null) return 0;
+    final totalPause = _totalPausedSecondsFromGroup(group);
+    if (totalPause <= 0) return 0;
+    final expectedPhaseStart = _expectedPhaseStart(group);
+    if (expectedPhaseStart == null) return totalPause;
+    final pauseBeforePhase = phaseStart.difference(expectedPhaseStart).inSeconds;
+    final normalizedPauseBefore = pauseBeforePhase < 0 ? 0 : pauseBeforePhase;
+    final pauseSincePhase = totalPause - normalizedPauseBefore;
+    return pauseSincePhase < 0 ? 0 : pauseSincePhase;
   }
 
   void _recordCompletedTaskRange() {

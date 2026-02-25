@@ -2448,7 +2448,7 @@ class _RunModeCenterContent extends StatelessWidget {
     final item = vm.currentItem;
     final timeFormat = DateFormat('HH:mm');
     final phaseStart = vm.currentPhaseStartFromGroup;
-    final phaseEnd = phaseStart?.add(Duration(seconds: state.totalSeconds));
+    final phaseEnd = vm.currentPhaseEndFromGroup;
 
     final remaining = _formatMMSS(state.remainingSeconds);
 
