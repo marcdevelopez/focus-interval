@@ -13,7 +13,6 @@ import '../providers.dart';
 import '../../domain/pomodoro_machine.dart';
 import '../viewmodels/pomodoro_view_model.dart';
 import '../viewmodels/pre_run_notice_view_model.dart';
-import '../viewmodels/scheduled_group_coordinator.dart';
 import '../utils/scheduled_group_timing.dart';
 import '../../data/models/task_run_group.dart';
 import '../../data/models/pomodoro_session.dart';
@@ -248,6 +247,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
   @override
   void dispose() {
+    _setCompletionDialogVisible(false);
     _stopClockTimer();
     _stopPreRunTimer();
     _stopDebugFramePing();
@@ -472,23 +472,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         _maybeAutoStartScheduled();
       }
     });
-
-    ref.listen<ScheduledGroupAction?>(
-      scheduledGroupCoordinatorProvider,
-      (_, next) {
-        if (next == null) return;
-        if (next.type == ScheduledGroupActionType.openTimer &&
-            next.groupId != null &&
-            next.groupId != widget.groupId &&
-            _finishedDialogVisible) {
-          _completionNavigationHandled = true;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            _dismissFinishedDialog();
-          });
-        }
-      },
-    );
 
     ref.listen<RunningOverlapDecision?>(runningOverlapDecisionProvider, (
       previous,
@@ -1326,6 +1309,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final totalDuration = _formatDurationLong(totalDurationSeconds);
     _finishedDialogVisible = true;
     _completionDialogHandled = true;
+    _setCompletionDialogVisible(true);
     showDialog(
       context: context,
       useRootNavigator: true,
@@ -1345,6 +1329,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           TextButton(
             onPressed: () {
               _finishedDialogVisible = false;
+              _setCompletionDialogVisible(false);
               Navigator.of(context, rootNavigator: true).pop();
               if (!mounted) return;
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1358,6 +1343,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       ),
     ).whenComplete(() {
       _finishedDialogVisible = false;
+      _setCompletionDialogVisible(false);
       if (!_completionNavigationHandled) {
         _navigateToGroupsHubAfterCompletion(reason: 'completion fallback');
       }
@@ -1739,7 +1725,12 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   void _dismissFinishedDialog() {
     if (!_finishedDialogVisible) return;
     _finishedDialogVisible = false;
+    _setCompletionDialogVisible(false);
     Navigator.of(context, rootNavigator: true).pop();
+  }
+
+  void _setCompletionDialogVisible(bool value) {
+    ref.read(completionDialogVisibleProvider.notifier).state = value;
   }
 
   Future<void> _handleBlockedStart() async {

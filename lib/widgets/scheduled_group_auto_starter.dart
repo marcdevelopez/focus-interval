@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../presentation/providers.dart';
 import '../presentation/viewmodels/scheduled_group_coordinator.dart';
 import '../presentation/screens/late_start_overlap_queue_screen.dart';
 
@@ -26,7 +27,9 @@ class _ScheduledGroupAutoStarterState
     extends ConsumerState<ScheduledGroupAutoStarter>
     with WidgetsBindingObserver {
   Timer? _navRetryTimer;
+  Timer? _deferredActionTimer;
   int _retryAttempts = 0;
+  ScheduledGroupAction? _deferredAction;
 
   @override
   void initState() {
@@ -43,6 +46,7 @@ class _ScheduledGroupAutoStarterState
   @override
   void dispose() {
     _navRetryTimer?.cancel();
+    _deferredActionTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -68,6 +72,10 @@ class _ScheduledGroupAutoStarterState
   }
 
   void _handleAction(ScheduledGroupAction action) {
+    if (ref.read(completionDialogVisibleProvider)) {
+      _deferAction(action);
+      return;
+    }
     switch (action.type) {
       case ScheduledGroupActionType.openTimer:
         final groupId = action.groupId;
@@ -85,6 +93,27 @@ class _ScheduledGroupAutoStarterState
         );
         break;
     }
+  }
+
+  void _deferAction(ScheduledGroupAction action) {
+    _deferredAction = action;
+    _scheduleDeferredAction();
+  }
+
+  void _scheduleDeferredAction() {
+    _deferredActionTimer?.cancel();
+    _deferredActionTimer = Timer(const Duration(milliseconds: 250), () {
+      if (!mounted) return;
+      if (ref.read(completionDialogVisibleProvider)) {
+        _scheduleDeferredAction();
+        return;
+      }
+      final pending = _deferredAction;
+      _deferredAction = null;
+      if (pending != null) {
+        _handleAction(pending);
+      }
+    });
   }
 
   void _navigateToTimer(String groupId) {

@@ -7697,3 +7697,23 @@ _(none)_
 ### 🎯 Next steps:
 
 - Proceed to Fix 3 (completion must navigate to Groups Hub).
+
+# 🔹 Block 466 — Fix 3: completion navigation to Groups Hub (25/02/2026)
+
+### ✔ Work completed:
+
+- Added a completion-dialog visibility guard to defer scheduled auto-open navigation.
+- TimerScreen now tracks completion dialog visibility and no longer auto-dismisses due to scheduled open-timer actions.
+- ScheduledGroupAutoStarter defers navigation actions while the completion dialog is visible.
+
+### 🧠 Decisions made:
+
+- Completion dialog now gates scheduled auto-open navigation to ensure Groups Hub is the post-completion landing.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Proceed to Fix 4 (false conflict at pre-run boundary).

@@ -298,6 +298,7 @@ class RunningOverlapDecision {
 final scheduledAutoStartGroupIdProvider = StateProvider<String?>((_) => null);
 final runningOverlapDecisionProvider =
     StateProvider<RunningOverlapDecision?>((_) => null);
+final completionDialogVisibleProvider = StateProvider<bool>((_) => false);
 
 
 //
