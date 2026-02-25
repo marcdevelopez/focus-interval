@@ -7601,3 +7601,41 @@ _(none)_
 ### 🎯 Next steps:
 
 - Implement fixes for the updated 2026-02-25 plan.
+
+# 🔹 Block 461 — Validation plan fix order (25/02/2026)
+
+### ✔ Work completed:
+
+- Added explicit fix order to the 2026-02-25 validation plan.
+- Documented one-fix-per-commit sequencing to preserve traceability.
+
+### 🧠 Decisions made:
+
+- Fixes will be implemented in the plan-defined order.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Start fix #1 in the defined order.
+
+# 🔹 Block 462 — Fix workflow enforcement (25/02/2026)
+
+### ✔ Work completed:
+
+- AGENTS.md updated to require plan updates, tests, and commit sequencing after each fix.
+- Validation plan now includes a fix-tracking section for per-fix status updates.
+
+### 🧠 Decisions made:
+
+- Each fix must update the plan before moving to the next fix.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Begin fix #1 per the plan and update tracking after completion.

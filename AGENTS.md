@@ -77,6 +77,12 @@ Bug validation workflow (required):
   completed checklist and reported bugs.
 - Keep validations isolated per folder; never mix evidence or steps across
   different validation dates.
+- After each fix:
+  - Update `plan_validacion_rapida_fix.md` to mark the fix as completed and note
+    any order changes or new findings.
+  - Run the appropriate tests (unit or integration) for the fix’s scope and
+    only proceed if they pass.
+  - Commit the fix **after** updating the plan and any supporting docs/logs.
 
 ---
 
