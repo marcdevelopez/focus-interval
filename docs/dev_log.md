@@ -7775,3 +7775,22 @@ _(none)_
 ### 🎯 Next steps:
 
 - Proceed to Fix 7 (re-plan "Start now" must always open Run Mode).
+
+# 🔹 Block 470 — Fix 7: re-plan Start now opens Run Mode (25/02/2026)
+
+### ✔ Work completed:
+
+- Groups Hub conflict cancellation now clears the active session when it references the canceled running group.
+- Owner devices clear the session authoritatively to avoid the Start now flow being blocked by a stale activeSession.
+
+### 🧠 Decisions made:
+
+- When canceling a running group from Groups Hub, clear the active session if it matches the canceled group to prevent blocked loadGroup navigation.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Update the 2026-02-25 validation checklist and run validation for Fix 1–7.

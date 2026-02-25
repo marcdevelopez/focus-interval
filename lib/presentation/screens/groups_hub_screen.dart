@@ -1096,6 +1096,20 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
         ),
       );
     }
+    final activeSession = ref.read(activePomodoroSessionProvider);
+    if (activeSession != null) {
+      final activeGroupId = activeSession.groupId;
+      final canceledIds = runningGroups.map((group) => group.id).toSet();
+      if (activeGroupId == null || canceledIds.contains(activeGroupId)) {
+        final sessionRepo = ref.read(pomodoroSessionRepositoryProvider);
+        final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
+        if (activeSession.ownerDeviceId == deviceId) {
+          await sessionRepo.clearSessionAsOwner();
+        } else {
+          await sessionRepo.clearSessionIfGroupNotRunning();
+        }
+      }
+    }
     return true;
   }
 
