@@ -61,6 +61,13 @@ This includes:
 
 If documentation and code diverge → **documentation wins**.
 
+Additional feature tracking requirement:
+- Every new feature pulled from `docs/feature_backlog.md` must have a matching
+  documentation folder under `docs/features/` created **before** implementation.
+- Use the template in `docs/features/feature_template.md`.
+- Each feature doc set must include an explicit "Backlog reference" section
+  with the exact ID and title from `docs/feature_backlog.md`.
+
 ---
 
 ## 3️⃣ Architecture invariants (must never be violated)

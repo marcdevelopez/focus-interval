@@ -22,7 +22,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **24/02/2026**
+Last update: **25/02/2026**
 
 ---
 
@@ -7559,3 +7559,23 @@ _(not yet validated on devices)_
 
 - Re-run the validation checklist on macOS + Android.
 - Verify Pre-Run auto-open idempotency, mirror cancel behavior, and logout flow.
+
+# 🔹 Block 459 — Feature docs structure (25/02/2026)
+
+### ✔ Work completed:
+
+- Added `docs/features/` with a README and a reusable feature template.
+- Template requires explicit backlog linkage to `docs/feature_backlog.md`.
+- AGENTS.md updated to enforce feature doc creation before implementation.
+
+### 🧠 Decisions made:
+
+- Feature folders must be prefixed with the exact backlog ID for traceability.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Use the template for the next feature pulled from the backlog.
