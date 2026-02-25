@@ -7639,3 +7639,22 @@ _(none)_
 ### 🎯 Next steps:
 
 - Begin fix #1 per the plan and update tracking after completion.
+
+# 🔹 Block 463 — Fix 1: late-start owner resolved gating (25/02/2026)
+
+### ✔ Work completed:
+
+- Late-start cancel-all now preserves the resolving owner ID to prevent owner-side "Owner resolved" modal.
+- Mirror-only "Owner resolved" modal now dismisses via OK using the root navigator.
+
+### 🧠 Decisions made:
+
+- Preserve `lateStartOwnerDeviceId`/heartbeat on cancel-all so mirrors can show resolution while owners are exempt.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Proceed to Fix 2 (Android logout black screen).

@@ -544,6 +544,7 @@ class _LateStartOverlapQueueScreenState
     _ownerResolvedDialogShown = true;
     await showDialog<void>(
       context: context,
+      barrierDismissible: false,
       builder: (_) => AlertDialog(
         title: const Text('Owner resolved'),
         content: const Text(
@@ -552,7 +553,8 @@ class _LateStartOverlapQueueScreenState
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () =>
+                Navigator.of(context, rootNavigator: true).pop(),
             child: const Text('OK'),
           ),
         ],
@@ -647,6 +649,7 @@ class _LateStartOverlapQueueScreenState
       final notifier = ref.read(notificationServiceProvider);
       final now = DateTime.now();
       final queueNow = _queueNow(now);
+      final isCancelAll = selectedGroups.isEmpty;
 
       final updates = <TaskRunGroup>[];
       if (selectedGroups.isNotEmpty) {
@@ -712,6 +715,8 @@ class _LateStartOverlapQueueScreenState
         final scheduledStart = group.scheduledStartTime;
         final isMissed =
             scheduledStart != null && !scheduledStart.isAfter(queueNow);
+        final resolvedByDeviceId = isCancelAll ? deviceId : null;
+        final resolvedHeartbeat = isCancelAll ? now : null;
         updates.add(
           group.copyWith(
             status: TaskRunStatus.canceled,
@@ -721,8 +726,8 @@ class _LateStartOverlapQueueScreenState
             lateStartQueueId: null,
             lateStartQueueOrder: null,
             lateStartAnchorAt: null,
-            lateStartOwnerDeviceId: null,
-            lateStartOwnerHeartbeatAt: null,
+            lateStartOwnerDeviceId: resolvedByDeviceId,
+            lateStartOwnerHeartbeatAt: resolvedHeartbeat,
             lateStartClaimRequestId: null,
             lateStartClaimRequestedByDeviceId: null,
             lateStartClaimRequestedAt: null,
