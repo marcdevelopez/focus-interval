@@ -22,7 +22,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **24/02/2026**
+Last update: **25/02/2026**
 
 ---
 
@@ -7559,3 +7559,24 @@ _(not yet validated on devices)_
 
 - Re-run the validation checklist on macOS + Android.
 - Verify Pre-Run auto-open idempotency, mirror cancel behavior, and logout flow.
+
+# 🔹 Block 459 — Validation workflow + new validation folder (25/02/2026)
+
+### ✔ Work completed:
+
+- AGENTS.md updated to formalize the bug validation workflow and folder structure.
+- Created `docs/bugs/validation_fix_2026_02_25/` with a new plan file.
+- Initialized an empty `quick_pass_checklist.md` for the next validation cycle.
+
+### 🧠 Decisions made:
+
+- Validation folders are date-based; multiple validations in one day use a `-01`, `-02` suffix.
+- Quick pass checklists are created only after implementation is complete.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Implement fixes listed in the 2026-02-25 plan before generating a new checklist.

@@ -61,6 +61,22 @@ This includes:
 
 If documentation and code diverge → **documentation wins**.
 
+Bug validation workflow (required):
+- All validation artifacts live under `docs/bugs/validation_fix_YYYY_MM_DD`
+  (use `validation_fix_YYYY_MM_DD-01`, `-02`, etc. for multiple validations
+  in the same day).
+- Each validation folder must include:
+  - `quick_pass_checklist.md`
+  - `plan_validacion_rapida_fix.md`
+  - `screenshots/`
+- `quick_pass_checklist.md` is created **after** implementation and must match
+  the actual changes. For a brand new validation folder, it starts empty until
+  the implementation is complete.
+- `plan_validacion_rapida_fix.md` is updated by the agent based on the latest
+  completed checklist and reported bugs.
+- Keep validations isolated per folder; never mix evidence or steps across
+  different validation dates.
+
 ---
 
 ## 3️⃣ Architecture invariants (must never be violated)
