@@ -65,6 +65,8 @@ Bug validation workflow (required):
 - All validation artifacts live under `docs/bugs/validation_fix_YYYY_MM_DD`
   (use `validation_fix_YYYY_MM_DD-01`, `-02`, etc. for multiple validations
   in the same day).
+- Never delete validation subdirectories in `docs/bugs`. Keep them for traceability and regression history.
+- Screenshots stay in the validation folder but are ignored by git.
 - Each validation folder must include:
   - `quick_pass_checklist.md`
   - `plan_validacion_rapida_fix.md`
@@ -84,6 +86,28 @@ Bug validation workflow (required):
     only proceed if they pass.
   - Record the commit hash and commit message in the plan tracking entry.
   - Commit the fix **after** updating the plan and any supporting docs/logs.
+
+Feature planning workflow (required):
+- All feature implementation artifacts live under `docs/features/feature_YYYY_MM_DD_slug`
+  (use `feature_YYYY_MM_DD_slug-01`, `-02`, etc. for multiple feature tracks
+  in the same day).
+- Never delete feature subdirectories in `docs/features`. Keep them for
+  traceability and regression history.
+- Screenshots stay in the feature folder but are ignored by git.
+- Each feature folder must include:
+  - `feature_plan.md` (implementation plan)
+  - `feature_checklist.md` (validation checklist, created after implementation)
+  - `screenshots/` (when relevant)
+- Every feature must be linked to `docs/feature_backlog.md` (reference the item
+  or ID in the plan).
+- In `docs/feature_backlog.md`, move the item to **In progress** (or
+  **In implementation**) and add the link to the feature directory.
+- When the feature is complete, move the item to **Done** (or
+  `feature_backlog_archive.md`) and record the final commit.
+- After each feature or subfeature:
+  - Update the plan to mark it completed.
+  - Record the commit hash and commit message in the plan tracking entry.
+  - Commit the change after updating the plan and supporting docs/logs.
 
 ---
 
@@ -300,7 +324,8 @@ Additional regression rule:
 
 ## 🔟 Language & consistency
 
-- All code, comments, UI strings, and docs are **English only**
+- All code, comments, UI strings, and shared docs are **English only**.
+- Owner-only internal folders (for example `docs/bugs/**`) may be in Spanish.
 - Naming must be:
   - Explicit
   - Consistent

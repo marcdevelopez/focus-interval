@@ -77,6 +77,26 @@ Notes:
 - IDEA-025 depends on IDEA-024.
 - IDEA-029 and IDEA-018 overlap; keep both for now and merge later if needed.
 
+## In progress
+
+When a feature starts, move the full entry here and keep its ID header. Update the fields as follows.
+1. Set `Status: in_progress`.
+2. Add `Feature folder: docs/features/feature_YYYY_MM_DD_slug/`.
+3. Add `Plan: docs/features/feature_YYYY_MM_DD_slug/feature_plan.md`.
+
+(none yet)
+
+## Done
+
+When a feature completes, move the full entry here (or to `feature_backlog_archive.md` if this grows too large).
+1. Set `Status: done`.
+2. Add `Final commit: <hash> "<message>"`.
+3. Keep the feature folder link for traceability.
+
+(none yet)
+
+## Backlog entries
+
 ## IDEA-001 — Circular group progress ring around timer
 
 ID: IDEA-001

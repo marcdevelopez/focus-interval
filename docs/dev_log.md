@@ -7794,3 +7794,41 @@ _(none)_
 ### 🎯 Next steps:
 
 - Update the 2026-02-25 validation checklist and run validation for Fix 1–7.
+
+# 🔹 Block 471 — Feature backlog workflow prep (25/02/2026)
+
+### ✔ Work completed:
+
+- Added explicit In progress/Done workflow sections to `docs/feature_backlog.md`.
+- Documented feature tracking rules in `AGENTS.md` to keep backlog items linked to feature folders and commits.
+
+### 🧠 Decisions made:
+
+- Backlog remains canonical; items move to In progress/Done instead of being deleted.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Use the new feature workflow when a backlog item moves to implementation.
+
+# 🔹 Block 472 — Versioning bug/feature docs (25/02/2026)
+
+### ✔ Work completed:
+
+- Updated `.gitignore` to version `docs/bugs` and `docs/features` while ignoring screenshots.
+- Clarified in `AGENTS.md` that screenshots stay local but are not tracked in git.
+
+### 🧠 Decisions made:
+
+- Keep bug/feature docs in git for traceability; exclude screenshots to avoid repo bloat.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Commit the doc workflow updates and proceed with validation.

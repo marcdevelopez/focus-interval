@@ -48,7 +48,12 @@ app.*.map.json
 
 # Private docs
 docs/nuevas-funcionalidades/
-docs/bugs/
+
+# Bug/feature screenshots (keep folders, ignore images)
+docs/bugs/**/screenshots/*
+!docs/bugs/**/screenshots/.gitkeep
+docs/features/**/screenshots/*
+!docs/features/**/screenshots/.gitkeep
 
 # Local env
 .env.local
