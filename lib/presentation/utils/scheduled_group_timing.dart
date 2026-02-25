@@ -204,7 +204,7 @@ DateTime? resolveEffectivePreRunStart({
     group,
     fallback: fallbackNoticeMinutes,
   );
-  if (noticeMinutes <= 0) return scheduledStart;
+  if (noticeMinutes <= 0) return null;
   return scheduledStart.subtract(Duration(minutes: noticeMinutes));
 }
 

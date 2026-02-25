@@ -7756,3 +7756,22 @@ _(none)_
 ### 🎯 Next steps:
 
 - Proceed to Fix 6 (scheduled rows match on owner/mirror).
+
+# 🔹 Block 469 — Fix 6: scheduled rows pre-run alignment (25/02/2026)
+
+### ✔ Work completed:
+
+- Scheduled cards now derive Pre-Run rows from the effective pre-run start instead of raw notice minutes.
+- Pre-Run visibility uses a shared effective pre-run helper, keeping owner/mirror rows consistent.
+
+### 🧠 Decisions made:
+
+- Pre-Run rows are shown only when an effective pre-run start exists (notice > 0).
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Proceed to Fix 7 (re-plan "Start now" must always open Run Mode).
