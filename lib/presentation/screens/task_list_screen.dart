@@ -455,12 +455,13 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     ref.invalidate(taskListProvider);
     ref.invalidate(presetListProvider);
     ref.invalidate(presetEditorProvider);
-    await controller.setLocal();
-    await _maybeShowWebLocalNotice();
     final rootContext =
         GoRouter.of(context).routerDelegate.navigatorKey.currentContext;
     final router =
         rootContext != null ? GoRouter.of(rootContext) : GoRouter.of(context);
+    await controller.setLocal();
+    await _maybeShowWebLocalNotice();
+    if (!mounted) return;
     router.go('/tasks');
     await auth.signOut();
   }

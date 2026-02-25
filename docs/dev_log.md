@@ -7832,3 +7832,23 @@ _(none)_
 ### 🎯 Next steps:
 
 - Commit the doc workflow updates and proceed with validation.
+
+# 🔹 Block 473 — Fix 8: analyzer warnings cleanup (25/02/2026)
+
+### ✔ Work completed:
+
+- Removed unnecessary non-null assertions in Groups Hub card pre-run calculations.
+- Avoided using BuildContext across async gaps in Task List logout flow.
+
+### 🧠 Decisions made:
+
+- Keep pre-run calculations explicit to satisfy analyzer and avoid null assertions.
+- Capture router before awaits and guard with `mounted` to avoid stale context.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Record the Fix 8 commit hash in the validation plan.

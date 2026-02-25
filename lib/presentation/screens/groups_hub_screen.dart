@@ -1772,13 +1772,14 @@ class _GroupCard extends StatelessWidget {
     final showScheduled =
         group.status == TaskRunStatus.scheduled && scheduledStart != null;
     final preRunStart = preRunStartOverride;
-    final showPreRun =
-        showScheduled &&
-        preRunStart != null &&
-        preRunStart.isBefore(scheduledStart!);
-    final preRunMinutes = showPreRun
-        ? scheduledStart!.difference(preRunStart).inMinutes
-        : 0;
+    var showPreRun = false;
+    var preRunMinutes = 0;
+    if (showScheduled && preRunStart != null) {
+      showPreRun = preRunStart.isBefore(scheduledStart);
+      if (showPreRun) {
+        preRunMinutes = scheduledStart.difference(preRunStart).inMinutes;
+      }
+    }
     final sessionPaused =
         activeSession?.groupId == group.id &&
         activeSession?.status == PomodoroStatus.paused;

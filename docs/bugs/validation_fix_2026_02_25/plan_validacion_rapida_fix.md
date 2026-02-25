@@ -13,6 +13,7 @@ Source: docs/bugs/validation_fix_2026_02_24/quick_pass_checklist.md + screenshot
 7. Android: black screen when leaving Timer Run -> Groups Hub -> Task List, then tapping logout in the AppBar (Chrome does not reproduce).
 8. Groups Hub scheduled rows inconsistent between devices (owner shows "Pre-Run: X min starts at HH:mm" while mirror shows "Notice: X min").
 9. Running task item time range is off by one minute compared to status boxes after pre-run/ownership transitions.
+10. Analyzer warnings: remove unnecessary non-null assertions and avoid BuildContext across async gaps.
 
 ## Decisions And Requirements
 - Cancel all must resolve the queue for **all** devices.
@@ -34,6 +35,7 @@ Each item below is a separate fix and must be committed separately.
 5. Task item time ranges must match status boxes (Scope 9).
 6. Scheduled rows must match on owner/mirror (Pre-Run vs Notice) (Scope 8).
 7. Re-plan "Start now" must always open Run Mode (Scope 5).
+8. Analyzer warnings cleanup (Scope 10).
 
 ## Fix Tracking
 Update this section after each fix.
@@ -44,6 +46,7 @@ Update this section after each fix.
 5. Fix 5 (Scope 9): Done (2026-02-25, tests: `flutter test`, commit: 34d1938 "Fix 5: align status box ranges")
 6. Fix 6 (Scope 8): Done (2026-02-25, tests: `flutter test`, commit: b99decb "Fix 6: align scheduled pre-run rows")
 7. Fix 7 (Scope 5): Done (2026-02-25, tests: `flutter test`, commit: 726d69b "Fix 7: ensure Start now opens Run Mode")
+8. Fix 8 (Scope 10): Done (2026-02-25, tests: `flutter analyze`, commit: pending)
 
 ## Plan (Docs First, Then Code)
 1. Update specs if any new edge-case rules or timing tolerances are added.
@@ -61,6 +64,7 @@ Update this section after each fix.
 7. Android logout never produces a black screen (Timer Run -> Groups Hub -> Task List -> logout).
 8. Owner and mirror show the same scheduled rows (Pre-Run line when notice applies).
 9. Task item ranges match status boxes in Run Mode.
+10. `flutter analyze` reports no warnings for the updated files.
 
 ## Validation Checklist
 - Create `quick_pass_checklist.md` **after** implementation, focused only on the bugs above.
