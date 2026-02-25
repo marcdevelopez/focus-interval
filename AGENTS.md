@@ -82,6 +82,7 @@ Bug validation workflow (required):
     any order changes or new findings.
   - Run the appropriate tests (unit or integration) for the fix’s scope and
     only proceed if they pass.
+  - Record the commit hash and commit message in the plan tracking entry.
   - Commit the fix **after** updating the plan and any supporting docs/logs.
 
 ---

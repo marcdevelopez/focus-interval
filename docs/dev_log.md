@@ -7658,3 +7658,22 @@ _(none)_
 ### 🎯 Next steps:
 
 - Proceed to Fix 2 (Android logout black screen).
+
+# 🔹 Block 464 — Fix commit traceability rule (25/02/2026)
+
+### ✔ Work completed:
+
+- AGENTS.md updated to require recording commit hash + message in the plan after each fix.
+- Fix 1 entry updated with commit metadata in the 2026-02-25 plan.
+
+### 🧠 Decisions made:
+
+- Commit metadata lives in the validation plan for per-fix traceability.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Continue with Fix 2 using the new commit-tracking rule.
