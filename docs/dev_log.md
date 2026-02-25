@@ -22,7 +22,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **23/02/2026**
+Last update: **25/02/2026**
 
 ---
 
@@ -7495,3 +7495,22 @@ _(not yet validated on devices)_
 ### 🎯 Next steps:
 
 - Validate the reason modal on macOS + Android (tap the reason label).
+
+# 🔹 Block 457 — Docs: Spanish private exception + checklist translation (25/02/2026)
+
+### ✔ Work completed:
+
+- AGENTS.md: added an exception allowing Spanish in owner-only private files/directories.
+- Translated quick_pass_checklist.md narrative text to Spanish (kept data/UI strings intact).
+
+### 🧠 Decisions made:
+
+- Keep UI strings, field names, and data blocks in English to preserve app fidelity.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Re-validate the checklist against the latest Phase 17/18 behavior after testing.
