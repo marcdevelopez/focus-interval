@@ -37,6 +37,9 @@ At the start of **every session**:
    - Append new blocks to the end of `docs/dev_log.md` in chronological order.
    - Block numbers must be strictly increasing and continue from the last block.
    - Update the "Last update" date whenever a new block is added.
+10. Never push a branch that contains known bugs or unverified fixes. If there
+    is not high confidence that a reported bug is resolved, do not push.
+    Production policy: `main` must never contain known bugs.
 
 ---
 

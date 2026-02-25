@@ -22,7 +22,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **24/02/2026**
+Last update: **25/02/2026**
 
 ---
 
@@ -7559,3 +7559,22 @@ _(not yet validated on devices)_
 
 - Re-run the validation checklist on macOS + Android.
 - Verify Pre-Run auto-open idempotency, mirror cancel behavior, and logout flow.
+
+# 🔹 Block 459 — Policy: no push with known bugs (25/02/2026)
+
+### ✔ Work completed:
+
+- AGENTS.md updated to forbid pushing branches with known bugs or unverified fixes.
+- Clarified production policy: `main` must never contain known bugs.
+
+### 🧠 Decisions made:
+
+- Push is allowed only when fixes are confirmed; otherwise changes remain local.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Continue validation on the bugfix branch before any future push.
