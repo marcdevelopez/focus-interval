@@ -55,7 +55,7 @@ Update this section after each fix.
 7. Fix 7 (Scope 5): Done (2026-02-25, tests: `flutter test`, commit: 726d69b "Fix 7: ensure Start now opens Run Mode")
 8. Fix 8 (Scope 10): Done (2026-02-25, tests: `flutter analyze`, commit: 3913cbd "Fix 8: analyzer warnings cleanup")
 9. Fix 9 (Scope 11): Done (2026-02-26, tests: `flutter analyze`, commit: dfa0048 "Fix 9: unify Run Mode start pipeline") — unified Run Mode start pipeline with in-memory snapshot; prior attempt 16d2098 superseded. Validation: Start now + Run again OK; scheduled notice 0 still bounces (needs follow-up).
-10. Fix 10 (Scope 12): Implemented (2026-02-26, tests: `flutter analyze`, commit: pending) — auto-open now marks a group as opened only after confirming `/timer/:id`, and resets when not in timer. Root cause: auto-open marked opened before route confirmation, suppressing further auto-open after a bounce.
+10. Fix 10 (Scope 12): Implemented (2026-02-26, tests: `flutter analyze`, commit: fd2a385 "Fix 10: stabilize auto-open gating") — auto-open now marks a group as opened only after confirming `/timer/:id`, and resets when not in timer. Root cause: auto-open marked opened before route confirmation, suppressing further auto-open after a bounce.
 
 ## Plan (Docs First, Then Code)
 1. Update specs if any new edge-case rules or timing tolerances are added.
