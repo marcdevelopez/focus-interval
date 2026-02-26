@@ -1395,6 +1395,9 @@ Trigger
 - On launch/resume, if there is **no running group** and at least one scheduled
   group is overdue (scheduledStartTime <= now) **and** starting now would
   overlap another scheduled group window (overdue or future).
+- On **mode switch (Local → Account)** with the app open, re-evaluate the same
+  criteria immediately; if the queue should appear, show it without requiring
+  an app restart.
 - Do **not** trigger this queue during the Pre-Run -> Running transition if the
   overdue group can start without overlapping any other scheduled group.
 

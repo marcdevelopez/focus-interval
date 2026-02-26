@@ -18,6 +18,7 @@ Source: docs/bugs/validation_fix_2026_02_24/quick_pass_checklist.md + screenshot
 12. Follow-up: Scheduled auto-start with notice 0 still bounces to Groups Hub on both devices; Run Mode opens only with manual "Open Run Mode" (validation 26/02/2026).
 13. Follow-up: Account Mode Start now / Run again can create a running TaskRunGroup without `activeSession/current`; Run Mode shows "Syncing session" or stays in Groups Hub (validation 26/02/2026).
 14. Follow-up: Late-start queue claim fails on some devices; mirror never shows Resolve overlaps or "Owner resolved" after Cancel all (validation 26/02/2026).
+15. Follow-up: Switching Local → Account with overdue groups does not trigger late-start queue; Resolve overlaps appears only after app restart (validation 26/02/2026).
 
 ## Decisions And Requirements
 - Cancel all must resolve the queue for **all** devices.
@@ -49,6 +50,7 @@ Each item below is a separate fix and must be committed separately.
 11. Follow-up: Scheduled auto-start must navigate immediately (no 1–2s Groups Hub flash) (Scope 12).
 12. Follow-up: Account Mode Start now / Run again must create `activeSession/current` (Scope 13).
 13. Follow-up: Late-start queue claim must not block mirror queue display or "Owner resolved" modal (Scope 14).
+14. Follow-up: Mode switch (Local → Account) must re-evaluate and surface late-start queue when overdue conflicts exist (Scope 15).
 
 ## Fix Tracking
 Update this section after each fix.
@@ -65,6 +67,7 @@ Update this section after each fix.
 11. Fix 11 (Scope 12 follow-up): Implemented (2026-02-26, tests: `flutter analyze`, commit: 477ef31 "Fix 11: fast scheduled auto-start navigation") — scheduled auto-start navigates to `/timer/:id` before prefetch to avoid initial Groups Hub delay.
 12. Fix 12 (Scope 13): Done (2026-02-26, tests: `flutter analyze`, commit: 7447f57 "Fix 12: auto-start running groups on load") — Account Mode Start now / Run again now auto-start on initial load and are gated to the initiating device when session is missing.
 13. Fix 13 (Scope 14): Done (2026-02-26, tests: `flutter analyze`, commit: 618706f "Fix 13: harden late-start queue claim") — late-start claim is resilient to mixed timestamp formats and still surfaces the queue on mirrors if claim fails.
+14. Fix 14 (Scope 15): Planned (2026-02-26, tests: TBD, commit: TBD) — mode switch to Account must immediately re-evaluate late-start conflicts and surface Resolve overlaps without restarting the app.
 
 ## Plan (Docs First, Then Code)
 1. Update specs if any new edge-case rules or timing tolerances are added.
