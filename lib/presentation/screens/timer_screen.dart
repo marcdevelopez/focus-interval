@@ -239,9 +239,12 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       switch (result) {
         case PomodoroGroupLoadResult.loaded:
           setState(() => _taskLoaded = true);
-          _syncPreRunInfo(
-            ref.read(pomodoroViewModelProvider.notifier).currentGroup,
-          );
+          final group =
+              ref.read(pomodoroViewModelProvider.notifier).currentGroup;
+          _syncPreRunInfo(group);
+          if (group != null) {
+            _maybeAutoStartRunningGroup(group);
+          }
           _maybeAutoStartScheduled();
           break;
         case PomodoroGroupLoadResult.notFound:
@@ -412,8 +415,41 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     debugPrint(
       '[RunModeDiag] Auto-start startFromAutoStart group=${widget.groupId}',
     );
+    _runningAutoStartHandled = true;
+    _runningAutoStartGroupId = widget.groupId;
     ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
     await vm.startFromAutoStart();
+    unawaited(_maybeShowOwnerEducation());
+  }
+
+  void _maybeAutoStartRunningGroup(TaskRunGroup group) {
+    if (group.status != TaskRunStatus.running) {
+      _runningAutoStartHandled = false;
+      _runningAutoStartGroupId = null;
+      return;
+    }
+    final vm = ref.read(pomodoroViewModelProvider.notifier);
+    final state = ref.read(pomodoroViewModelProvider);
+    final session = vm.activeSessionForCurrentGroup;
+    final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
+    final isRemoteOwner =
+        session != null &&
+        session.groupId == group.id &&
+        session.ownerDeviceId != deviceId;
+    if (state.status != PomodoroStatus.idle || isRemoteOwner) return;
+    final appMode = ref.read(appModeProvider);
+    if (appMode == AppMode.account && session == null) {
+      final initiator = group.scheduledByDeviceId;
+      if (initiator != null && initiator != deviceId) {
+        return;
+      }
+    }
+    if (_runningAutoStartHandled && _runningAutoStartGroupId == group.id) {
+      return;
+    }
+    _runningAutoStartHandled = true;
+    _runningAutoStartGroupId = group.id;
+    unawaited(vm.startFromAutoStart());
     unawaited(_maybeShowOwnerEducation());
   }
 
@@ -444,35 +480,14 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       final updated = groups.where((g) => g.id == widget.groupId).toList();
       if (updated.isEmpty) return;
       final group = updated.first;
-      if (group.status != TaskRunStatus.running) {
-        _runningAutoStartHandled = false;
-        _runningAutoStartGroupId = null;
-      }
       vm.updateGroup(group);
       _syncPreRunInfo(group);
-
-      final state = ref.read(pomodoroViewModelProvider);
-      final session = vm.activeSessionForCurrentGroup;
-      final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
-      final isRemoteOwner =
-          session != null &&
-          session.groupId == widget.groupId &&
-          session.ownerDeviceId != deviceId;
-      if (group.status == TaskRunStatus.running &&
-          state.status == PomodoroStatus.idle &&
-          !isRemoteOwner) {
-        if (_runningAutoStartHandled && _runningAutoStartGroupId == group.id) {
-        } else {
-          _runningAutoStartHandled = true;
-          _runningAutoStartGroupId = group.id;
-          unawaited(vm.startFromAutoStart());
-          unawaited(_maybeShowOwnerEducation());
-        }
-      }
+      _maybeAutoStartRunningGroup(group);
+      final currentState = ref.read(pomodoroViewModelProvider);
 
       if ((group.status == TaskRunStatus.canceled ||
               group.status == TaskRunStatus.completed) &&
-          state.status.isActiveExecution) {
+          currentState.status.isActiveExecution) {
         vm.applyRemoteCancellation();
       }
 

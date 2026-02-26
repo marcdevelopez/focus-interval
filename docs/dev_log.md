@@ -7994,3 +7994,25 @@ _(pending validation)_
 ### 🎯 Next steps:
 
 - Re-validate scheduled notice 0 on Android and macOS to confirm no Groups Hub flash.
+
+# 🔹 Block 481 — Fix 12: ensure running groups auto-start on initial load (26/02/2026)
+
+### ✔ Work completed:
+
+- Added a running-group auto-start check on initial TimerScreen load (covers Start now / Run again when the stream does not re-emit).
+- Centralized running auto-start logic and reused it for stream updates.
+- Marked scheduled auto-starts as handled to avoid duplicate start attempts.
+
+### 🧠 Decisions made:
+
+- In Account Mode with a missing activeSession, only the initiating device (scheduledByDeviceId) is allowed to auto-start the running group.
+- Avoid relying solely on stream emissions for Start now / Run again auto-start.
+
+### ⚠️ Issues found:
+
+_(pending validation)_
+
+### 🎯 Next steps:
+
+- Run `flutter analyze`.
+- Validate Account Mode Start now / Run again creates `activeSession/current` and stays in Run Mode.

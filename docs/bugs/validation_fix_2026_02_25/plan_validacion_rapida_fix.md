@@ -16,6 +16,7 @@ Source: docs/bugs/validation_fix_2026_02_24/quick_pass_checklist.md + screenshot
 10. Analyzer warnings: remove unnecessary non-null assertions and avoid BuildContext across async gaps.
 11. Timer Run Mode bounces back to Groups Hub after Start now / Run again / scheduled start (brief Timer flash, then Groups Hub). User must tap "Open Run Mode" manually. Root cause likely inconsistent entry paths into Run Mode.
 12. Follow-up: Scheduled auto-start with notice 0 still bounces to Groups Hub on both devices; Run Mode opens only with manual "Open Run Mode" (validation 26/02/2026).
+13. Follow-up: Account Mode Start now / Run again can create a running TaskRunGroup without `activeSession/current`; Run Mode shows "Syncing session" or stays in Groups Hub (validation 26/02/2026).
 
 ## Decisions And Requirements
 - Cancel all must resolve the queue for **all** devices.
@@ -30,6 +31,7 @@ Source: docs/bugs/validation_fix_2026_02_24/quick_pass_checklist.md + screenshot
 - All entry points (Start now, Run again, scheduled auto-start) must use a single Run Mode start pipeline.
 - The start pipeline must provide the new group snapshot to Run Mode to avoid read races on immediate navigation.
 - If the group truly does not exist after the unified start pipeline, show "Selected group not found" and return to the correct hub screen.
+- Account Mode Start now / Run again must publish `activeSession/current` as owner when a group transitions to running; a running group without `activeSession` is invalid.
 
 ## Fix Order (Implementation Sequence)
 Each item below is a separate fix and must be committed separately.
@@ -44,6 +46,7 @@ Each item below is a separate fix and must be committed separately.
 9. Timer Run Mode must not bounce back to Groups Hub after Start now / Run again / scheduled start by using a unified start pipeline (Scope 11).
 10. Follow-up: Scheduled auto-start notice 0 must stay in Run Mode (Scope 12).
 11. Follow-up: Scheduled auto-start must navigate immediately (no 1–2s Groups Hub flash) (Scope 12).
+12. Follow-up: Account Mode Start now / Run again must create `activeSession/current` (Scope 13).
 
 ## Fix Tracking
 Update this section after each fix.
@@ -58,6 +61,7 @@ Update this section after each fix.
 9. Fix 9 (Scope 11): Done (2026-02-26, tests: `flutter analyze`, commit: dfa0048 "Fix 9: unify Run Mode start pipeline") — unified Run Mode start pipeline with in-memory snapshot; prior attempt 16d2098 superseded. Validation: Start now + Run again OK; scheduled notice 0 still bounces (needs follow-up).
 10. Fix 10 (Scope 12): Implemented (2026-02-26, tests: `flutter analyze`, commit: fd2a385 "Fix 10: stabilize auto-open gating") — auto-open now marks a group as opened only after confirming `/timer/:id`, and resets when not in timer. Root cause: auto-open marked opened before route confirmation, suppressing further auto-open after a bounce. Follow-up: scheduled auto-start still shows 1–2s in Groups Hub due to waiting on `getById` before navigation; fix by navigating first and prefetching after.
 11. Fix 11 (Scope 12 follow-up): Implemented (2026-02-26, tests: `flutter analyze`, commit: 477ef31 "Fix 11: fast scheduled auto-start navigation") — scheduled auto-start navigates to `/timer/:id` before prefetch to avoid initial Groups Hub delay.
+12. Fix 12 (Scope 13): Planned (2026-02-26, tests: TBD, commit: TBD) — Account Mode Start now / Run again must always publish `activeSession/current` before or alongside the running transition; avoid "Syncing session" with no session doc.
 
 ## Plan (Docs First, Then Code)
 1. Update specs if any new edge-case rules or timing tolerances are added.
@@ -79,6 +83,7 @@ Update this section after each fix.
 11. Start now / Run again / scheduled auto-start keeps the user in Timer Run Mode (no bounce to Groups Hub).
 12. All entry points use the same Run Mode start path (single authoritative flow).
 13. If the group is truly missing after the unified start pipeline, show "Selected group not found" and navigate to the correct hub screen.
+14. Account Mode Start now / Run again always creates `activeSession/current` for running groups; Run Mode never stays in "Syncing session" due to a missing session doc.
 
 ## Validation Checklist
 - Create `quick_pass_checklist.md` **after** implementation, focused only on the bugs above.
