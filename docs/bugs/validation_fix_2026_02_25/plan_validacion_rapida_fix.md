@@ -15,6 +15,7 @@ Source: docs/bugs/validation_fix_2026_02_24/quick_pass_checklist.md + screenshot
 9. Running task item time range is off by one minute compared to status boxes after pre-run/ownership transitions.
 10. Analyzer warnings: remove unnecessary non-null assertions and avoid BuildContext across async gaps.
 11. Timer Run Mode bounces back to Groups Hub after Start now / Run again / scheduled start (brief Timer flash, then Groups Hub). User must tap "Open Run Mode" manually. Root cause likely inconsistent entry paths into Run Mode.
+12. Follow-up: Scheduled auto-start with notice 0 still bounces to Groups Hub on both devices; Run Mode opens only with manual "Open Run Mode" (validation 26/02/2026).
 
 ## Decisions And Requirements
 - Cancel all must resolve the queue for **all** devices.
@@ -41,6 +42,7 @@ Each item below is a separate fix and must be committed separately.
 7. Re-plan "Start now" must always open Run Mode (Scope 5).
 8. Analyzer warnings cleanup (Scope 10).
 9. Timer Run Mode must not bounce back to Groups Hub after Start now / Run again / scheduled start by using a unified start pipeline (Scope 11).
+10. Follow-up: Scheduled auto-start notice 0 must stay in Run Mode (Scope 12).
 
 ## Fix Tracking
 Update this section after each fix.
@@ -52,7 +54,8 @@ Update this section after each fix.
 6. Fix 6 (Scope 8): Done (2026-02-25, tests: `flutter test`, commit: b99decb "Fix 6: align scheduled pre-run rows")
 7. Fix 7 (Scope 5): Done (2026-02-25, tests: `flutter test`, commit: 726d69b "Fix 7: ensure Start now opens Run Mode")
 8. Fix 8 (Scope 10): Done (2026-02-25, tests: `flutter analyze`, commit: 3913cbd "Fix 8: analyzer warnings cleanup")
-9. Fix 9 (Scope 11): Done (2026-02-26, tests: `flutter analyze`, commit: dfa0048 "Fix 9: unify Run Mode start pipeline") — unified Run Mode start pipeline with in-memory snapshot; prior attempt 16d2098 superseded.
+9. Fix 9 (Scope 11): Done (2026-02-26, tests: `flutter analyze`, commit: dfa0048 "Fix 9: unify Run Mode start pipeline") — unified Run Mode start pipeline with in-memory snapshot; prior attempt 16d2098 superseded. Validation: Start now + Run again OK; scheduled notice 0 still bounces (needs follow-up).
+10. Fix 10 (Scope 12): Pending — diagnose scheduled auto-start bounce (notice 0) with instrumentation and resolve.
 
 ## Plan (Docs First, Then Code)
 1. Update specs if any new edge-case rules or timing tolerances are added.

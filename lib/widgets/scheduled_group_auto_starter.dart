@@ -122,16 +122,28 @@ class _ScheduledGroupAutoStarterState
     if (!mounted) return;
     final navigatorContext = widget.navigatorKey.currentContext;
     if (navigatorContext == null) {
+      debugPrint(
+        '[RunModeDiag] Auto-start navigatorContext null '
+        'group=$groupId retry=${_retryAttempts + 1}',
+      );
       _scheduleRetry(() => unawaited(_openTimerForGroup(groupId)));
       return;
     }
     if (!navigatorContext.mounted) {
+      debugPrint(
+        '[RunModeDiag] Auto-start navigatorContext not mounted '
+        'group=$groupId retry=${_retryAttempts + 1}',
+      );
       _scheduleRetry(() => unawaited(_openTimerForGroup(groupId)));
       return;
     }
     _retryAttempts = 0;
     final router = GoRouter.of(navigatorContext);
     final current = _currentLocation(navigatorContext);
+    debugPrint(
+      '[RunModeDiag] Auto-start navigate group=$groupId status=${group?.status.name} '
+      'route=$current',
+    );
     if (current.startsWith('/timer/')) {
       final active = current.substring('/timer/'.length).split('?').first;
       if (active == groupId) return;

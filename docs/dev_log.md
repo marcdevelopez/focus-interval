@@ -7933,3 +7933,23 @@ _(none)_
 ### 🎯 Next steps:
 
 - Commit Fix 9 and then record the commit hash in the validation plan.
+
+# 🔹 Block 478 — Fix 10 diagnostics: scheduled auto-start bounce (26/02/2026)
+
+### ✔ Work completed:
+
+- Added targeted Run Mode diagnostic logs for scheduled auto-start flows.
+- Instrumented auto-open, scheduled auto-start, and TimerScreen load outcomes to capture route + status.
+- Updated validation plan to track the scheduled notice 0 bounce as Fix 10.
+
+### 🧠 Decisions made:
+
+- Use minimal structured logs (`[RunModeDiag]`) to pinpoint route churn without changing behavior.
+
+### ⚠️ Issues found:
+
+- Validation shows scheduled notice 0 still bounces to Groups Hub on Android and macOS.
+
+### 🎯 Next steps:
+
+- Re-run the scheduled notice 0 validation with the new logs and confirm the exact exit path.

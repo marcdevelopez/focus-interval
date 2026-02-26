@@ -214,6 +214,11 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _stopPreRunTimer();
   }
 
+  String _currentRoute() {
+    if (!mounted) return 'unmounted';
+    return GoRouter.of(context).routerDelegate.currentConfiguration.uri.path;
+  }
+
   void _loadGroup(String groupId) {
     // Load group by ID
     Future.microtask(() async {
@@ -221,6 +226,15 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           .read(pomodoroViewModelProvider.notifier)
           .loadGroup(groupId);
       if (!mounted) return;
+      final currentStatus = ref
+          .read(pomodoroViewModelProvider.notifier)
+          .currentGroup
+          ?.status
+          .name;
+      debugPrint(
+        '[RunModeDiag] Timer load group=$groupId result=$result '
+        'status=$currentStatus route=${_currentRoute()}',
+      );
 
       switch (result) {
         case PomodoroGroupLoadResult.loaded:
@@ -297,10 +311,20 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
   Future<void> _attemptScheduledAutoStart() async {
     final pendingId = ref.read(scheduledAutoStartGroupIdProvider);
-    if (pendingId != widget.groupId) return;
+    if (pendingId != widget.groupId) {
+      debugPrint(
+        '[RunModeDiag] Auto-start skip pending=$pendingId '
+        'screen=${widget.groupId} route=${_currentRoute()}',
+      );
+      return;
+    }
 
     final vm = ref.read(pomodoroViewModelProvider.notifier);
     final groupRepo = ref.read(taskRunGroupRepositoryProvider);
+    debugPrint(
+      '[RunModeDiag] Auto-start attempt group=${widget.groupId} '
+      'route=${_currentRoute()}',
+    );
     final latest = await groupRepo.getById(widget.groupId);
     if (latest != null) {
       vm.updateGroup(latest);
@@ -308,6 +332,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     }
     final group = vm.currentGroup;
     if (group == null) {
+      debugPrint(
+        '[RunModeDiag] Auto-start group missing; clearing pending '
+        'group=${widget.groupId}',
+      );
       ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
       return;
     }
@@ -329,6 +357,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         await groupRepo.save(updated);
         vm.updateGroup(updated);
       } else {
+        debugPrint(
+          '[RunModeDiag] Auto-start abort (not due) '
+          'status=${group.status.name} scheduledStart=$scheduledStart now=$now',
+        );
         ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
         return;
       }
@@ -336,10 +368,18 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     if (vm.currentGroup?.status != TaskRunStatus.running) {
       if (_autoStartAttempts < 10) {
         _autoStartAttempts += 1;
+        debugPrint(
+          '[RunModeDiag] Auto-start wait for running '
+          'attempt=$_autoStartAttempts group=${widget.groupId}',
+        );
         await Future.delayed(const Duration(milliseconds: 500));
         if (!mounted) return;
         return _attemptScheduledAutoStart();
       }
+      debugPrint(
+        '[RunModeDiag] Auto-start failed to reach running '
+        'group=${widget.groupId}',
+      );
       ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
       return;
     }
@@ -352,15 +392,26 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         session.groupId == widget.groupId &&
         session.ownerDeviceId != deviceId;
     if (isRemoteOwner) {
+      debugPrint(
+        '[RunModeDiag] Auto-start abort (remote owner) '
+        'group=${widget.groupId} owner=${session.ownerDeviceId}',
+      );
       ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
       return;
     }
 
     if (state.status != PomodoroStatus.idle) {
+      debugPrint(
+        '[RunModeDiag] Auto-start abort (state not idle) '
+        'state=${state.status.name} group=${widget.groupId}',
+      );
       ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
       return;
     }
 
+    debugPrint(
+      '[RunModeDiag] Auto-start startFromAutoStart group=${widget.groupId}',
+    );
     ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
     await vm.startFromAutoStart();
     unawaited(_maybeShowOwnerEducation());
@@ -468,6 +519,11 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     });
 
     ref.listen<String?>(scheduledAutoStartGroupIdProvider, (previous, next) {
+      debugPrint(
+        '[RunModeDiag] scheduledAutoStartGroupId changed '
+        'prev=$previous next=$next screen=${widget.groupId} '
+        'route=${_currentRoute()}',
+      );
       if (next == widget.groupId) {
         _maybeAutoStartScheduled();
       }

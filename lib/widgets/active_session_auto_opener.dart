@@ -57,7 +57,22 @@ class _ActiveSessionAutoOpenerState
     return widget.child;
   }
 
+  String _currentRoute() {
+    final navigatorContext = widget.navigatorKey.currentContext;
+    if (navigatorContext == null) return 'null';
+    return GoRouter.of(navigatorContext).routerDelegate.currentConfiguration.uri.path;
+  }
+
   void _handleActiveSessionChange(PomodoroSession? session) {
+    if (session == null) {
+      debugPrint('[RunModeDiag] Active session cleared route=${_currentRoute()}');
+    } else {
+      debugPrint(
+        '[RunModeDiag] Active session change group=${session.groupId} '
+        'status=${session.status.name} owner=${session.ownerDeviceId} '
+        'route=${_currentRoute()}',
+      );
+    }
     if (session == null) {
       _autoOpenInFlight = false;
       _autoOpenedGroupId = null;
@@ -76,7 +91,10 @@ class _ActiveSessionAutoOpenerState
     }
 
     if (_autoOpenInFlight || _autoOpenedGroupId == groupId) {
-      debugPrint('Auto-open suppressed (in-flight or already opened).');
+      debugPrint(
+        '[RunModeDiag] Auto-open suppressed (in-flight=$_autoOpenInFlight '
+        'opened=$_autoOpenedGroupId route=${_currentRoute()})',
+      );
       return;
     }
 
@@ -93,7 +111,10 @@ class _ActiveSessionAutoOpenerState
 
     final appMode = ref.read(appModeProvider);
     if (appMode != AppMode.account) {
-      debugPrint('Auto-open suppressed (not in Account Mode).');
+      debugPrint(
+        '[RunModeDiag] Auto-open suppressed (not in Account Mode) '
+        'route=${_currentRoute()}',
+      );
       return;
     }
 
@@ -116,7 +137,10 @@ class _ActiveSessionAutoOpenerState
         return;
       }
 
-      debugPrint('Active session detected. Validating auto-open.');
+      debugPrint(
+        '[RunModeDiag] Active session detected. Validating auto-open '
+        'group=$groupId route=${_currentRoute()}',
+      );
       final shouldOpen = await _isValidActiveSession(session);
       if (!mounted || !shouldOpen) return;
 
@@ -132,7 +156,10 @@ class _ActiveSessionAutoOpenerState
           _autoOpenedGroupId = groupId;
           return;
         }
-        debugPrint('Attempting auto-open to TimerScreen.');
+        debugPrint(
+          '[RunModeDiag] Attempting auto-open to TimerScreen '
+          'group=$groupId route=${_currentRoute()}',
+        );
         _autoOpenedGroupId = groupId;
         navigatorContext.go('/timer/$groupId');
       });
@@ -175,12 +202,18 @@ class _ActiveSessionAutoOpenerState
   void _scheduleRetry(String groupId) {
     _retryAttempts += 1;
     if (_retryAttempts > 5) {
-      debugPrint('Auto-open suppressed (navigator not ready after retries).');
+      debugPrint(
+        '[RunModeDiag] Auto-open suppressed (navigator not ready after retries) '
+        'group=$groupId route=${_currentRoute()}',
+      );
       _retryAttempts = 0;
       _pendingGroupId = null;
       return;
     }
-    debugPrint('Navigator not ready. Retrying auto-open ($_retryAttempts).');
+    debugPrint(
+      '[RunModeDiag] Navigator not ready. Retrying auto-open '
+      'group=$groupId attempt=$_retryAttempts route=${_currentRoute()}',
+    );
     _retryTimer?.cancel();
     _retryTimer = Timer(const Duration(milliseconds: 250), () {
       if (!mounted) return;
