@@ -41,10 +41,16 @@ En Run Mode, compara los rangos de tiempo de cada task con los rangos de las sta
 Esperado: Los rangos coinciden exactamente, sin desfase de 1 minuto.
 
 8. Rebote de Run Mode (Start now / Run again / programado)
-Account Mode: Start now desde Task List y Run again desde Groups Hub.
-Local Mode: Start now desde Task List y Re-plan/Run again desde Groups Hub.
-Programado notice 0: espera el inicio automatico.
-Esperado: No vuelve a Groups Hub; permanece en Run Mode sin tener que tocar "Open Run Mode".
+Account Mode: Start now desde Task List.
+Esperado: Abre Run Mode y se mantiene ahi (no vuelve a Groups Hub).
+Account Mode: Run again desde Groups Hub (grupo completed -> Start now).
+Esperado: Abre Run Mode y se mantiene ahi.
+Account Mode: Programado con notice 0 a 2-3 minutos.
+Esperado: Al llegar la hora abre Run Mode y se mantiene ahi.
+Local Mode: Start now desde Task List.
+Esperado: Abre Run Mode y se mantiene ahi.
+Local Mode: Programado con notice 0 a 2-3 minutos.
+Esperado: Al llegar la hora abre Run Mode y se mantiene ahi.
 
 ## Notas de reproduccion previa (26/02/2026)
 1. Account Mode: Start now crea activeSession y abre Run Mode tras un breve "Syncing session", pero al usar Run again vuelve rapido a Groups Hub.
