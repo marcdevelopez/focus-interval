@@ -22,7 +22,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **25/02/2026**
+Last update: **26/02/2026**
 
 ---
 
@@ -7852,3 +7852,42 @@ _(none)_
 ### 🎯 Next steps:
 
 - Record the Fix 8 commit hash in the validation plan.
+
+# 🔹 Block 474 — Fix 9 planning: Timer Run Mode bounce (26/02/2026)
+
+### ✔ Work completed:
+
+- Added Fix 9 scope to `docs/bugs/validation_fix_2026_02_25/plan_validacion_rapida_fix.md`.
+- Updated `docs/specs.md` to document the short retry window when a just-created group is not found.
+
+### 🧠 Decisions made:
+
+- Treat "group not found" immediately after Start now / Run again / scheduled start as a transient read delay; retry briefly before navigating away.
+
+### ⚠️ Issues found:
+
+- Timer Run Mode can flash briefly then return to Groups Hub; user must tap "Open Run Mode" manually.
+
+### 🎯 Next steps:
+
+- Implement Fix 9 (short retry on group load), run `flutter analyze`, and record commit hash in the plan.
+
+# 🔹 Block 475 — Fix 9: retry group load before leaving Run Mode (26/02/2026)
+
+### ✔ Work completed:
+
+- Added a short retry window when loading a just-created group in Run Mode.
+- Cleared scheduled auto-start intent if the group truly does not exist after retries.
+- Ran `flutter analyze` (no issues).
+
+### 🧠 Decisions made:
+
+- Treat immediate "group not found" after Start now / Run again / scheduled start as a transient read delay; retry briefly before navigating away.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Record the Fix 9 commit hash in the validation plan and prepare validation steps.

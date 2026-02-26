@@ -39,3 +39,14 @@ Con noticeMinutes = 0, la fila Pre-Run se omite en ambos dispositivos.
 7. Rangos de tareas vs status boxes
 En Run Mode, compara los rangos de tiempo de cada task con los rangos de las status boxes tras pre-run/ownership transitions.
 Esperado: Los rangos coinciden exactamente, sin desfase de 1 minuto.
+
+8. Rebote de Run Mode (Start now / Run again / programado)
+Account Mode: Start now desde Task List y Run again desde Groups Hub.
+Local Mode: Start now desde Task List y Re-plan/Run again desde Groups Hub.
+Programado notice 0: espera el inicio automatico.
+Esperado: No vuelve a Groups Hub; permanece en Run Mode sin tener que tocar "Open Run Mode".
+
+## Notas de reproduccion previa (26/02/2026)
+1. Account Mode: Start now crea activeSession y abre Run Mode tras un breve "Syncing session", pero al usar Run again vuelve rapido a Groups Hub.
+2. Local Mode: Start now y Run again dejan la app en Groups Hub; Run Mode solo abre manualmente con "Open Run Mode".
+3. Programado notice 0: permite programar y al iniciar hace flash de Run Mode pero regresa a Groups Hub.
