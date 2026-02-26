@@ -52,7 +52,7 @@ Update this section after each fix.
 6. Fix 6 (Scope 8): Done (2026-02-25, tests: `flutter test`, commit: b99decb "Fix 6: align scheduled pre-run rows")
 7. Fix 7 (Scope 5): Done (2026-02-25, tests: `flutter test`, commit: 726d69b "Fix 7: ensure Start now opens Run Mode")
 8. Fix 8 (Scope 10): Done (2026-02-25, tests: `flutter analyze`, commit: 3913cbd "Fix 8: analyzer warnings cleanup")
-9. Fix 9 (Scope 11): Done (2026-02-26, tests: `flutter analyze`, commit: pending) — unified Run Mode start pipeline with in-memory snapshot; prior attempt 16d2098 superseded.
+9. Fix 9 (Scope 11): Done (2026-02-26, tests: `flutter analyze`, commit: dfa0048 "Fix 9: unify Run Mode start pipeline") — unified Run Mode start pipeline with in-memory snapshot; prior attempt 16d2098 superseded.
 
 ## Plan (Docs First, Then Code)
 1. Update specs if any new edge-case rules or timing tolerances are added.
