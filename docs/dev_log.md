@@ -8037,3 +8037,23 @@ _(pending validation)_
 
 - Run `flutter analyze`.
 - Re-validate late-start queue cancel-all on macOS + Android.
+
+# 🔹 Block 483 — Fix 14: re-evaluate late-start queue on mode switch (26/02/2026)
+
+### ✔ Work completed:
+
+- Re-evaluated scheduled groups immediately after Local → Account mode switches.
+- Removed the late-start queue grace delay so overdue overlaps are always evaluated.
+
+### 🧠 Decisions made:
+
+- Align the mode-switch behavior with the late-start queue trigger rules in `docs/specs.md`.
+
+### ⚠️ Issues found:
+
+_(pending validation)_
+
+### 🎯 Next steps:
+
+- Run `flutter analyze`.
+- Validate late-start queue appears after switching Local → Account without restarting the app.
