@@ -60,6 +60,14 @@ Local Mode (macOS): al re-planificar, notice estaba en 5 min y se ajusto a 0 min
 Programado (15:28): en ambos dispositivos se abre Groups Hub y no se queda en Run Mode; Run Mode abre manual con "Open Run Mode".
 Logs: ver docs/bugs/validation_fix_2026_02_25/logs/2026-02-26_android_RMX3771_runmode.log y 2026-02-26_macos_runmode.log (Auto-start opening TimerScreen + auto-open suppressed).
 
+Resultados (26/02/2026, Fix 12)
+Account Mode (Android): Start now OK.
+Account Mode (Android): Run again OK (se mantiene en Run Mode).
+Account Mode (Android): activeSession/current creado mientras running (verificado).
+Account Mode (Android): Programado notice 0 OK (abre en Run Mode; se ve intento de volver a Groups Hub pero termina quedando en Run Mode).
+Local Mode (macOS): Re-plan group + Start now OK (abre Run Mode y se mantiene; aparece un carrusel breve de Groups Hub antes).
+Logs: ver docs/bugs/validation_fix_2026_02_25/logs/2026-02-26_android_RMX3771_diag.log y 2026-02-26_macos_diag.log.
+
 ## Notas de reproduccion previa (26/02/2026)
 1. Account Mode: Start now crea activeSession y abre Run Mode tras un breve "Syncing session", pero al usar Run again vuelve rapido a Groups Hub.
 2. Local Mode: Start now y Run again dejan la app en Groups Hub; Run Mode solo abre manualmente con "Open Run Mode".
