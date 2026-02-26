@@ -77,6 +77,8 @@ Update this section after each fix.
 
 ## Post-Validation Follow-ups
 - Add a unit test: when a scheduled group is **in progress** (start passed, not overdue) and the next group starts after a non-overlapping gap (including pre-run), **late-start queue must not trigger**.
+- Bug: Timer Run auto-open must **not** interrupt the user while they are planning/scheduling; only auto-open for explicit entry moments (start now, scheduled start, pre-run start, resolve overlaps, app launch/resume to a running group).
+- Rule: When scheduling or re-planning (manual or automatic: resolve overlaps, postpone, re-plan), the **next scheduled start must be at least +1 minute after the previous group end** (does not change group durations; it is a scheduling constraint to avoid seconds-based overlaps).
 
 ## Acceptance Criteria
 1. Mirror shows "Owner resolved" modal after Cancel all; owner does not.
