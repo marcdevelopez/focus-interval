@@ -65,7 +65,7 @@ Account Mode (Android): Start now OK.
 Account Mode (Android): Run again OK (se mantiene en Run Mode).
 Account Mode (Android): activeSession/current creado mientras running (verificado).
 Account Mode (Android): Programado notice 0 OK (abre en Run Mode; se ve intento de volver a Groups Hub pero termina quedando en Run Mode).
-Local Mode (macOS): Re-plan group + Start now OK (abre Run Mode y se mantiene; aparece un carrusel breve de Groups Hub antes).
+Account Mode (macOS): Re-plan group + Start now OK (abre Run Mode y se mantiene; aparece un carrusel breve de Groups Hub antes).
 Logs: ver docs/bugs/validation_fix_2026_02_25/logs/2026-02-26_android_RMX3771_diag.log y 2026-02-26_macos_diag.log.
 
 ## Notas de reproduccion previa (26/02/2026)
