@@ -75,6 +75,9 @@ Update this section after each fix.
 3. Append dev log entry for decisions and scope.
 4. Implement fixes in the order listed above, one fix per commit.
 
+## Post-Validation Follow-ups
+- Add a unit test: when a scheduled group is **in progress** (start passed, not overdue) and the next group starts after a non-overlapping gap (including pre-run), **late-start queue must not trigger**.
+
 ## Acceptance Criteria
 1. Mirror shows "Owner resolved" modal after Cancel all; owner does not.
 2. Modal dismisses on OK without requiring an outside tap.
