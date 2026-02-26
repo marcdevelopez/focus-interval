@@ -7953,3 +7953,24 @@ _(none)_
 ### 🎯 Next steps:
 
 - Re-run the scheduled notice 0 validation with the new logs and confirm the exact exit path.
+
+# 🔹 Block 479 — Fix 10: stabilize auto-open after scheduled start (26/02/2026)
+
+### ✔ Work completed:
+
+- Adjusted auto-open to mark a group as opened only after confirming `/timer/:id`.
+- Reset auto-open state when the route is not `/timer` to allow re-open after a bounce.
+- Kept structured diagnostics (`[RunModeDiag]`) for validation.
+- Ran `flutter analyze` (no issues).
+
+### 🧠 Decisions made:
+
+- Prevent suppression of auto-open unless the timer route is actually active.
+
+### ⚠️ Issues found:
+
+_(pending validation)_
+
+### 🎯 Next steps:
+
+- Re-validate Run again (Android) and scheduled notice 0 with the new auto-open gating.

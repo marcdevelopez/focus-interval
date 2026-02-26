@@ -90,6 +90,25 @@ class _ActiveSessionAutoOpenerState
       return;
     }
 
+    final navigatorContext = widget.navigatorKey.currentContext;
+    if (navigatorContext != null) {
+      final inTimer = _isAlreadyInTimer(groupId);
+      if (_autoOpenedGroupId == groupId && !inTimer) {
+        debugPrint(
+          '[RunModeDiag] Auto-open state reset (not in timer) '
+          'group=$groupId route=${_currentRoute()}',
+        );
+        _autoOpenedGroupId = null;
+      }
+      if (_autoOpenedGroupId == null && inTimer) {
+        debugPrint(
+          '[RunModeDiag] Auto-open state set (already in timer) '
+          'group=$groupId route=${_currentRoute()}',
+        );
+        _autoOpenedGroupId = groupId;
+      }
+    }
+
     if (_autoOpenInFlight || _autoOpenedGroupId == groupId) {
       debugPrint(
         '[RunModeDiag] Auto-open suppressed (in-flight=$_autoOpenInFlight '
@@ -160,8 +179,22 @@ class _ActiveSessionAutoOpenerState
           '[RunModeDiag] Attempting auto-open to TimerScreen '
           'group=$groupId route=${_currentRoute()}',
         );
-        _autoOpenedGroupId = groupId;
         navigatorContext.go('/timer/$groupId');
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          if (_isAlreadyInTimer(groupId)) {
+            debugPrint(
+              '[RunModeDiag] Auto-open confirmed in timer '
+              'group=$groupId route=${_currentRoute()}',
+            );
+            _autoOpenedGroupId = groupId;
+          } else {
+            debugPrint(
+              '[RunModeDiag] Auto-open did not reach timer '
+              'group=$groupId route=${_currentRoute()}',
+            );
+          }
+        });
       });
     } finally {
       _autoOpenInFlight = false;
