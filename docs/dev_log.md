@@ -7974,3 +7974,23 @@ _(pending validation)_
 ### 🎯 Next steps:
 
 - Re-validate Run again (Android) and scheduled notice 0 with the new auto-open gating.
+
+# 🔹 Block 480 — Fix 11: scheduled auto-start navigates before prefetch (26/02/2026)
+
+### ✔ Work completed:
+
+- Moved scheduled auto-start navigation to `/timer/:id` before `getById` to remove the 1–2s Groups Hub delay.
+- Kept prefetch/prime after navigation to preserve the in-memory snapshot when available.
+- Ran `flutter analyze` (no issues).
+
+### 🧠 Decisions made:
+
+- Navigation must not be blocked by prefetch during scheduled auto-start.
+
+### ⚠️ Issues found:
+
+_(pending validation)_
+
+### 🎯 Next steps:
+
+- Re-validate scheduled notice 0 on Android and macOS to confirm no Groups Hub flash.
