@@ -8016,3 +8016,24 @@ _(pending validation)_
 
 - Run `flutter analyze`.
 - Validate Account Mode Start now / Run again creates `activeSession/current` and stays in Run Mode.
+
+# 🔹 Block 482 — Fix 13: late-start queue claim resilience (26/02/2026)
+
+### ✔ Work completed:
+
+- Hardened late-start queue claim parsing for mixed timestamp formats.
+- Added claim failure handling so the queue can still be shown.
+- Allowed late-start queue projection to fall back to heartbeat or local time when the anchor is missing.
+
+### 🧠 Decisions made:
+
+- If anchor is missing but conflicts exist, prefer showing the queue (with a fallback timebase) rather than suppressing the flow.
+
+### ⚠️ Issues found:
+
+_(pending validation)_
+
+### 🎯 Next steps:
+
+- Run `flutter analyze`.
+- Re-validate late-start queue cancel-all on macOS + Android.

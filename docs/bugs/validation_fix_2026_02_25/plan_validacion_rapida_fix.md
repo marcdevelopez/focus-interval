@@ -17,6 +17,7 @@ Source: docs/bugs/validation_fix_2026_02_24/quick_pass_checklist.md + screenshot
 11. Timer Run Mode bounces back to Groups Hub after Start now / Run again / scheduled start (brief Timer flash, then Groups Hub). User must tap "Open Run Mode" manually. Root cause likely inconsistent entry paths into Run Mode.
 12. Follow-up: Scheduled auto-start with notice 0 still bounces to Groups Hub on both devices; Run Mode opens only with manual "Open Run Mode" (validation 26/02/2026).
 13. Follow-up: Account Mode Start now / Run again can create a running TaskRunGroup without `activeSession/current`; Run Mode shows "Syncing session" or stays in Groups Hub (validation 26/02/2026).
+14. Follow-up: Late-start queue claim fails on some devices; mirror never shows Resolve overlaps or "Owner resolved" after Cancel all (validation 26/02/2026).
 
 ## Decisions And Requirements
 - Cancel all must resolve the queue for **all** devices.
@@ -47,6 +48,7 @@ Each item below is a separate fix and must be committed separately.
 10. Follow-up: Scheduled auto-start notice 0 must stay in Run Mode (Scope 12).
 11. Follow-up: Scheduled auto-start must navigate immediately (no 1–2s Groups Hub flash) (Scope 12).
 12. Follow-up: Account Mode Start now / Run again must create `activeSession/current` (Scope 13).
+13. Follow-up: Late-start queue claim must not block mirror queue display or "Owner resolved" modal (Scope 14).
 
 ## Fix Tracking
 Update this section after each fix.
@@ -62,6 +64,7 @@ Update this section after each fix.
 10. Fix 10 (Scope 12): Implemented (2026-02-26, tests: `flutter analyze`, commit: fd2a385 "Fix 10: stabilize auto-open gating") — auto-open now marks a group as opened only after confirming `/timer/:id`, and resets when not in timer. Root cause: auto-open marked opened before route confirmation, suppressing further auto-open after a bounce. Follow-up: scheduled auto-start still shows 1–2s in Groups Hub due to waiting on `getById` before navigation; fix by navigating first and prefetching after.
 11. Fix 11 (Scope 12 follow-up): Implemented (2026-02-26, tests: `flutter analyze`, commit: 477ef31 "Fix 11: fast scheduled auto-start navigation") — scheduled auto-start navigates to `/timer/:id` before prefetch to avoid initial Groups Hub delay.
 12. Fix 12 (Scope 13): Done (2026-02-26, tests: `flutter analyze`, commit: 7447f57 "Fix 12: auto-start running groups on load") — Account Mode Start now / Run again now auto-start on initial load and are gated to the initiating device when session is missing.
+13. Fix 13 (Scope 14): Planned (2026-02-26, tests: TBD, commit: TBD) — late-start claim must be resilient to mixed timestamp formats and still surface the queue on mirrors even if claim fails.
 
 ## Plan (Docs First, Then Code)
 1. Update specs if any new edge-case rules or timing tolerances are added.

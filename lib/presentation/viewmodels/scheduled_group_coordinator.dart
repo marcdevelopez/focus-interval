@@ -443,34 +443,44 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
             (!hasPendingRequest || isPendingForSelf);
         final repo = ref.read(taskRunGroupRepositoryProvider);
         if (shouldAutoClaim && ownerId != deviceId) {
-          await repo.claimLateStartQueue(
-            groups: lateStartConflicts,
-            ownerDeviceId: deviceId,
-            queueId: queueId ?? _uuid.v4(),
-            orderedIds: lateStartConflicts.map((g) => g.id).toList(),
-            allowOverride: !hasOwner || ownerStale,
-          );
-          return;
+          try {
+            await repo.claimLateStartQueue(
+              groups: lateStartConflicts,
+              ownerDeviceId: deviceId,
+              queueId: queueId ?? _uuid.v4(),
+              orderedIds: lateStartConflicts.map((g) => g.id).toList(),
+              allowOverride: !hasOwner || ownerStale,
+            );
+            return;
+          } catch (error) {
+            debugPrint('[LateStartQueue] Claim failed: $error');
+          }
         }
         if (anchor == null && ownerId == deviceId) {
-          await repo.claimLateStartQueue(
-            groups: lateStartConflicts,
-            ownerDeviceId: deviceId,
-            queueId: queueId ?? _uuid.v4(),
-            orderedIds: lateStartConflicts.map((g) => g.id).toList(),
-            allowOverride: true,
-          );
-          return;
+          try {
+            await repo.claimLateStartQueue(
+              groups: lateStartConflicts,
+              ownerDeviceId: deviceId,
+              queueId: queueId ?? _uuid.v4(),
+              orderedIds: lateStartConflicts.map((g) => g.id).toList(),
+              allowOverride: true,
+            );
+            return;
+          } catch (error) {
+            debugPrint('[LateStartQueue] Claim retry failed: $error');
+          }
         }
         _syncLateStartHeartbeat(
           lateStartConflicts,
           ownerDeviceId: ownerId,
           deviceId: deviceId,
         );
-        if (anchor == null) {
-          return;
+        final resolvedAnchor = anchor ?? ownerHeartbeat ?? now;
+        if (anchor == null && ownerHeartbeat == null && kDebugMode) {
+          debugPrint(
+            '[LateStartQueue] Missing anchor; using local time for queue',
+          );
         }
-        final resolvedAnchor = anchor;
         if (kDebugMode) {
           debugPrint(
             '[LateStartQueue] overdue=${lateStartConflicts.length} '
