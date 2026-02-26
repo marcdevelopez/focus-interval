@@ -35,7 +35,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   Timer? _debugFrameTimer;
   Timer? _inactiveRepaintTimer;
   Timer? _cancelNavRetryTimer;
-  Timer? _loadRetryTimer;
   String _currentClock = "";
   bool _taskLoaded = false;
   bool _finishedDialogVisible = false;
@@ -63,8 +62,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   bool _inactiveRepaintEnabled = false;
   bool _runningOverlapDialogVisible = false;
   RunningOverlapDecision? _pendingRunningOverlapDecision;
-  int _loadRetryAttempts = 0;
-  DateTime? _loadRetryStartedAt;
 
   @override
   void initState() {
@@ -192,13 +189,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _cancelNavRetryTimer = null;
   }
 
-  void _resetLoadRetry() {
-    _loadRetryTimer?.cancel();
-    _loadRetryTimer = null;
-    _loadRetryAttempts = 0;
-    _loadRetryStartedAt = null;
-  }
-
   void _stopPreRunTimer() {
     _preRunTimer?.cancel();
     _preRunTimer = null;
@@ -218,17 +208,13 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _cancelNavRetryAttempts = 0;
     _pendingRunningOverlapDecision = null;
     _stopCancelNavRetry();
-    _resetLoadRetry();
     _setInactiveRepaintEnabled(false);
     _preRunInfo = null;
     _preRunRemainingSeconds = 0;
     _stopPreRunTimer();
   }
 
-  void _loadGroup(String groupId, {bool isRetry = false}) {
-    if (!isRetry) {
-      _resetLoadRetry();
-    }
+  void _loadGroup(String groupId) {
     // Load group by ID
     Future.microtask(() async {
       final result = await ref
@@ -245,7 +231,12 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           _maybeAutoStartScheduled();
           break;
         case PomodoroGroupLoadResult.notFound:
-          await _handleGroupNotFound(groupId);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Selected group not found.")),
+          );
+          final appMode = ref.read(appModeProvider);
+          final target = appMode == AppMode.local ? '/tasks' : '/groups';
+          context.go(target);
           break;
         case PomodoroGroupLoadResult.blockedByActiveSession:
           await _handleBlockedStart();
@@ -262,7 +253,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _stopDebugFramePing();
     _stopInactiveRepaintTimer();
     _stopCancelNavRetry();
-    _resetLoadRetry();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -1741,45 +1731,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
   void _setCompletionDialogVisible(bool value) {
     ref.read(completionDialogVisibleProvider.notifier).state = value;
-  }
-
-  bool _shouldRetryGroupLoad(String groupId) {
-    if (!mounted) return false;
-    if (groupId != widget.groupId) return false;
-    final now = DateTime.now();
-    _loadRetryStartedAt ??= now;
-    if (_loadRetryAttempts >= 3) return false;
-    final startedAt = _loadRetryStartedAt;
-    if (startedAt == null) return false;
-    if (now.difference(startedAt) > const Duration(seconds: 2)) {
-      return false;
-    }
-    _loadRetryAttempts += 1;
-    return true;
-  }
-
-  void _scheduleGroupLoadRetry(String groupId) {
-    if (_loadRetryTimer != null) return;
-    _loadRetryTimer = Timer(const Duration(milliseconds: 350), () {
-      if (!mounted) return;
-      _loadRetryTimer = null;
-      _loadGroup(groupId, isRetry: true);
-    });
-  }
-
-  Future<void> _handleGroupNotFound(String groupId) async {
-    if (_shouldRetryGroupLoad(groupId)) {
-      _scheduleGroupLoadRetry(groupId);
-      return;
-    }
-    ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Selected group not found.")),
-    );
-    final appMode = ref.read(appModeProvider);
-    final target = appMode == AppMode.local ? '/tasks' : '/groups';
-    context.go(target);
   }
 
   Future<void> _handleBlockedStart() async {

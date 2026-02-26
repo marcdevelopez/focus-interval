@@ -17,6 +17,7 @@ import '../../widgets/task_card.dart';
 import '../providers.dart';
 import '../viewmodels/pre_run_notice_view_model.dart';
 import '../utils/scheduled_group_timing.dart';
+import '../utils/run_mode_launcher.dart';
 
 final DateFormat _lateStartTimeFormat = DateFormat('HH:mm');
 final DateFormat _lateStartDateFormat = DateFormat('MMM d');
@@ -754,7 +755,7 @@ class _LateStartOverlapQueueScreenState
               .currentConfiguration
               .uri;
           if (uri.path.startsWith('/timer/')) return;
-          context.go('/timer/${target.id}');
+          openRunModeForGroup(context, ref, target);
         });
       } else {
         context.go('/groups');

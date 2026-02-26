@@ -80,7 +80,7 @@ class _ScheduledGroupAutoStarterState
       case ScheduledGroupActionType.openTimer:
         final groupId = action.groupId;
         if (groupId == null) return;
-        _navigateToTimer(groupId);
+        unawaited(_openTimerForGroup(groupId));
         break;
       case ScheduledGroupActionType.lateStartQueue:
         final groupIds = action.groupIds;
@@ -116,20 +116,31 @@ class _ScheduledGroupAutoStarterState
     });
   }
 
-  void _navigateToTimer(String groupId) {
+  Future<void> _openTimerForGroup(String groupId) async {
+    final group =
+        await ref.read(taskRunGroupRepositoryProvider).getById(groupId);
+    if (!mounted) return;
     final navigatorContext = widget.navigatorKey.currentContext;
     if (navigatorContext == null) {
-      _scheduleRetry(() => _navigateToTimer(groupId));
+      _scheduleRetry(() => unawaited(_openTimerForGroup(groupId)));
+      return;
+    }
+    if (!navigatorContext.mounted) {
+      _scheduleRetry(() => unawaited(_openTimerForGroup(groupId)));
       return;
     }
     _retryAttempts = 0;
+    final router = GoRouter.of(navigatorContext);
     final current = _currentLocation(navigatorContext);
     if (current.startsWith('/timer/')) {
       final active = current.substring('/timer/'.length).split('?').first;
       if (active == groupId) return;
     }
+    if (group != null) {
+      ref.read(pomodoroViewModelProvider.notifier).primeGroupForLoad(group);
+    }
     debugPrint('Auto-start opening TimerScreen for scheduled group.');
-    navigatorContext.go('/timer/$groupId');
+    router.go('/timer/$groupId');
   }
 
   void _navigateToLateStartQueue(List<String> groupIds, DateTime anchor) {

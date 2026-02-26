@@ -54,6 +54,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   final Uuid _uuid = const Uuid();
   PomodoroTask? _currentTask;
   TaskRunGroup? _currentGroup;
+  TaskRunGroup? _pendingGroupOverride;
   TaskRunItem? _currentItem;
   int _currentTaskIndex = 0;
   DateTime? _currentTaskStartedAt;
@@ -136,7 +137,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     }
     _sessionMissingWhileRunning = false;
     _syncOptimisticOwnershipRequest(session);
-    final group = await _groupRepo.getById(groupId);
+    final group = _consumePendingGroup(groupId) ?? await _groupRepo.getById(groupId);
     if (group == null) return PomodoroGroupLoadResult.notFound;
     if (_hasActiveGroupConflict(session, groupId) &&
         group.status != TaskRunStatus.scheduled) {
@@ -185,6 +186,18 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     }
     unawaited(_notificationService.requestPermissions());
     return PomodoroGroupLoadResult.loaded;
+  }
+
+  void primeGroupForLoad(TaskRunGroup group) {
+    _pendingGroupOverride = group;
+  }
+
+  TaskRunGroup? _consumePendingGroup(String groupId) {
+    final pending = _pendingGroupOverride;
+    if (pending == null) return null;
+    if (pending.id != groupId) return null;
+    _pendingGroupOverride = null;
+    return pending;
   }
 
   void _primeOwnerSession(PomodoroSession? session, {required DateTime now}) {

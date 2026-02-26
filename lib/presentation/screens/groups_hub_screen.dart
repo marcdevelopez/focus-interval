@@ -17,6 +17,7 @@ import '../providers.dart';
 import '../viewmodels/pre_run_notice_view_model.dart';
 import 'task_group_planning_screen.dart';
 import '../utils/scheduled_group_timing.dart';
+import '../utils/run_mode_launcher.dart';
 import 'late_start_overlap_queue_screen.dart';
 
 final DateFormat _groupsHubTimeFormat = DateFormat('HH:mm');
@@ -428,7 +429,11 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                 actions: [
                   _GroupAction(
                     label: 'Open Run Mode',
-                    onPressed: () => context.go('/timer/${group.id}'),
+                    onPressed: () => openRunModeForGroup(
+                      context,
+                      ref,
+                      group,
+                    ),
                   ),
                 ],
                 now: now,
@@ -476,7 +481,11 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                       if (isPreRunActive)
                         _GroupAction(
                           label: 'Open Pre-Run',
-                          onPressed: () => context.go('/timer/${group.id}'),
+                          onPressed: () => openRunModeForGroup(
+                            context,
+                            ref,
+                            group,
+                          ),
                         )
                       else
                         _GroupAction(
@@ -724,7 +733,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     await repo.save(updated);
     await ref.read(notificationServiceProvider).cancelGroupPreAlert(group.id);
     if (!context.mounted) return;
-    context.go('/timer/${group.id}');
+    openRunModeForGroup(context, ref, updated);
   }
 
   Future<TaskGroupPlanningResult?> _showPlanningScreen(
@@ -905,7 +914,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
       if (status == TaskRunStatus.scheduled) {
         await _schedulePreAlertIfNeeded(ref, newGroup);
       } else {
-        context.go('/timer/${newGroup.id}');
+        openRunModeForGroup(context, ref, newGroup);
       }
     } catch (e) {
       if (!context.mounted) return;

@@ -222,10 +222,10 @@ Notes:
 - When a group transitions to running (scheduled auto-start or start now),
   set `scheduledByDeviceId` to the initiating device.
   `scheduledByDeviceId` is metadata only and must not block auto-start or ownership.
-- When navigating to Run Mode for a just-created or just-started group,
-  the app must tolerate short read delays. If the first load returns
-  "group not found", retry for a short window before returning the user
-  to the hub. Only navigate away after the retry window expires.
+- Run Mode must start through a single, unified pipeline regardless of entry
+  (Start now, Run again, scheduled auto-start). The pipeline must provide
+  the new group snapshot to Run Mode to avoid read-race bounces on immediate
+  navigation.
 - Editing a PomodoroTask after group creation does not affect a running or scheduled group.
 - TaskRunGroup names:
   - New groups must have a name. If the user leaves the name empty, auto-generate one at confirm time using local date/time in English (e.g., "Jan 1 00:00", 24h).

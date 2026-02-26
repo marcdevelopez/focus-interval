@@ -14,7 +14,7 @@ Source: docs/bugs/validation_fix_2026_02_24/quick_pass_checklist.md + screenshot
 8. Groups Hub scheduled rows inconsistent between devices (owner shows "Pre-Run: X min starts at HH:mm" while mirror shows "Notice: X min").
 9. Running task item time range is off by one minute compared to status boxes after pre-run/ownership transitions.
 10. Analyzer warnings: remove unnecessary non-null assertions and avoid BuildContext across async gaps.
-11. Timer Run Mode bounces back to Groups Hub after Start now / Run again / scheduled start (brief Timer flash, then Groups Hub). User must tap "Open Run Mode" manually.
+11. Timer Run Mode bounces back to Groups Hub after Start now / Run again / scheduled start (brief Timer flash, then Groups Hub). User must tap "Open Run Mode" manually. Root cause likely inconsistent entry paths into Run Mode.
 
 ## Decisions And Requirements
 - Cancel all must resolve the queue for **all** devices.
@@ -26,8 +26,9 @@ Source: docs/bugs/validation_fix_2026_02_24/quick_pass_checklist.md + screenshot
 - Android logout must never show a black screen; behavior must match Chrome.
 - Scheduled group rows must render the same fields on owner and mirror.
 - Task item time ranges must match authoritative status box ranges.
-- When opening Timer Run Mode for a newly created or just-started group, allow a short retry window before declaring "group not found" and navigating away.
-- If the group truly does not exist after retries, then show "Selected group not found" and return to the correct hub screen.
+- All entry points (Start now, Run again, scheduled auto-start) must use a single Run Mode start pipeline.
+- The start pipeline must provide the new group snapshot to Run Mode to avoid read races on immediate navigation.
+- If the group truly does not exist after the unified start pipeline, show "Selected group not found" and return to the correct hub screen.
 
 ## Fix Order (Implementation Sequence)
 Each item below is a separate fix and must be committed separately.
@@ -39,7 +40,7 @@ Each item below is a separate fix and must be committed separately.
 6. Scheduled rows must match on owner/mirror (Pre-Run vs Notice) (Scope 8).
 7. Re-plan "Start now" must always open Run Mode (Scope 5).
 8. Analyzer warnings cleanup (Scope 10).
-9. Timer Run Mode must not bounce back to Groups Hub after Start now / Run again / scheduled start (Scope 11).
+9. Timer Run Mode must not bounce back to Groups Hub after Start now / Run again / scheduled start by using a unified start pipeline (Scope 11).
 
 ## Fix Tracking
 Update this section after each fix.
@@ -51,7 +52,7 @@ Update this section after each fix.
 6. Fix 6 (Scope 8): Done (2026-02-25, tests: `flutter test`, commit: b99decb "Fix 6: align scheduled pre-run rows")
 7. Fix 7 (Scope 5): Done (2026-02-25, tests: `flutter test`, commit: 726d69b "Fix 7: ensure Start now opens Run Mode")
 8. Fix 8 (Scope 10): Done (2026-02-25, tests: `flutter analyze`, commit: 3913cbd "Fix 8: analyzer warnings cleanup")
-9. Fix 9 (Scope 11): Done (2026-02-26, tests: `flutter analyze`, commit: 16d2098 "Fix 9: retry group load before leaving Run Mode")
+9. Fix 9 (Scope 11): Done (2026-02-26, tests: `flutter analyze`, commit: pending) — unified Run Mode start pipeline with in-memory snapshot; prior attempt 16d2098 superseded.
 
 ## Plan (Docs First, Then Code)
 1. Update specs if any new edge-case rules or timing tolerances are added.
@@ -71,7 +72,8 @@ Update this section after each fix.
 9. Task item ranges match status boxes in Run Mode.
 10. `flutter analyze` reports no warnings for the updated files.
 11. Start now / Run again / scheduled auto-start keeps the user in Timer Run Mode (no bounce to Groups Hub).
-12. If the group is truly missing after a short retry window, show "Selected group not found" and navigate to the correct hub screen.
+12. All entry points use the same Run Mode start path (single authoritative flow).
+13. If the group is truly missing after the unified start pipeline, show "Selected group not found" and navigate to the correct hub screen.
 
 ## Validation Checklist
 - Create `quick_pass_checklist.md` **after** implementation, focused only on the bugs above.

@@ -28,6 +28,7 @@ import '../../widgets/task_card.dart';
 import '../../widgets/mode_indicator.dart';
 import 'task_group_planning_screen.dart';
 import '../utils/scheduled_group_timing.dart';
+import '../utils/run_mode_launcher.dart';
 
 enum _EmailVerificationAction { verified, resend, useLocal, signOut }
 enum _IntegritySelectionType { keepIndividual, useDefault, useStructure, cancel }
@@ -1629,7 +1630,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       }
       if (!context.mounted) return;
       if (status == TaskRunStatus.running) {
-        context.go("/timer/${group.id}");
+        openRunModeForGroup(context, ref, group);
       }
     } catch (e) {
       if (!context.mounted) return;

@@ -7891,3 +7891,45 @@ _(none)_
 ### 🎯 Next steps:
 
 - Record the Fix 9 commit hash in the validation plan and prepare validation steps.
+
+# 🔹 Block 476 — Fix 9 rework: unified Run Mode start pipeline (26/02/2026)
+
+### ✔ Work completed:
+
+- Updated the Fix 9 plan to replace retry-based handling with a unified start pipeline.
+- Updated `docs/specs.md` to require a single Run Mode start path with an in-memory snapshot.
+
+### 🧠 Decisions made:
+
+- Remove retry-based behavior in favor of a single authoritative start flow to avoid divergent entry paths.
+
+### ⚠️ Issues found:
+
+- Start now / Run again / scheduled auto-start can bounce back to Groups Hub due to inconsistent entry timing.
+
+### 🎯 Next steps:
+
+- Implement the unified Run Mode start pipeline and remove the retry logic.
+
+# 🔹 Block 477 — Fix 9: unified Run Mode start pipeline implemented (26/02/2026)
+
+### ✔ Work completed:
+
+- Removed retry-based group load handling in Run Mode.
+- Added a shared Run Mode launcher to prime the group snapshot and navigate via one entry path.
+- Added an in-memory pending group override in the ViewModel to avoid immediate read races.
+- Updated Start now / Run again / Open Run Mode / Pre-Run / auto-start to use the shared launcher.
+- Adjusted scheduled auto-start navigation to avoid BuildContext async-gap warnings.
+- Ran `flutter analyze` (no issues).
+
+### 🧠 Decisions made:
+
+- Use an in-memory snapshot to keep Run Mode entry deterministic across all entry points.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Commit Fix 9 and then record the commit hash in the validation plan.
