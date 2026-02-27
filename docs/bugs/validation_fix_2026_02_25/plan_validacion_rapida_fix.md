@@ -19,6 +19,7 @@ Source: docs/bugs/validation_fix_2026_02_24/quick_pass_checklist.md + screenshot
 13. Follow-up: Account Mode Start now / Run again can create a running TaskRunGroup without `activeSession/current`; Run Mode shows "Syncing session" or stays in Groups Hub (validation 26/02/2026).
 14. Follow-up: Late-start queue claim fails on some devices; mirror never shows Resolve overlaps or "Owner resolved" after Cancel all (validation 26/02/2026).
 15. Follow-up: Switching Local → Account with overdue groups does not trigger late-start queue; Resolve overlaps appears only after app restart (validation 26/02/2026).
+16. Auto-open de Run Mode se re-dispara e interrumpe al usuario fuera de los triggers permitidos (planificacion/edicion/modales).
 
 ## Decisions And Requirements
 - Cancel all must resolve the queue for **all** devices.
@@ -34,6 +35,7 @@ Source: docs/bugs/validation_fix_2026_02_24/quick_pass_checklist.md + screenshot
 - The start pipeline must provide the new group snapshot to Run Mode to avoid read races on immediate navigation.
 - If the group truly does not exist after the unified start pipeline, show "Selected group not found" and return to the correct hub screen.
 - Account Mode Start now / Run again must publish `activeSession/current` as owner when a group transitions to running; a running group without `activeSession` is invalid.
+- Auto-open debe ser por triggers explicitos y no re-dispararse en cada update del stream; nunca debe interrumpir planificacion/edicion/settings.
 
 ## Fix Order (Implementation Sequence)
 Each item below is a separate fix and must be committed separately.
@@ -51,6 +53,7 @@ Each item below is a separate fix and must be committed separately.
 12. Follow-up: Account Mode Start now / Run again must create `activeSession/current` (Scope 13).
 13. Follow-up: Late-start queue claim must not block mirror queue display or "Owner resolved" modal (Scope 14).
 14. Follow-up: Mode switch (Local → Account) must re-evaluate and surface late-start queue when overdue conflicts exist (Scope 15).
+15. Auto-open trigger-based y suppression en pantallas sensibles (Scope 16).
 
 ## Fix Tracking
 Update this section after each fix.
@@ -77,8 +80,28 @@ Update this section after each fix.
 
 ## Post-Validation Follow-ups
 - Add a unit test: when a scheduled group is **in progress** (start passed, not overdue) and the next group starts after a non-overlapping gap (including pre-run), **late-start queue must not trigger**.
-- Bug: Timer Run auto-open must **not** interrupt the user while they are planning/scheduling; only auto-open for explicit entry moments (start now, scheduled start, pre-run start, resolve overlaps, app launch/resume to a running group).
 - Rule: When scheduling or re-planning (manual or automatic: resolve overlaps, postpone, re-plan), the **next scheduled start must be at least +1 minute after the previous group end** (does not change group durations; it is a scheduling constraint to avoid seconds-based overlaps).
+
+## New findings — 27/02/2026 (pendientes de triage; tratar antes de nuevas features)
+Nota: estos hallazgos deben resolverse en esta rama o registrarse como bugs a corregir antes de implementar nuevas features.
+
+1. Auto-open de Run Mode se re-dispara desde cualquier pantalla (Task List, Groups Hub, planificacion, modales) sin accion directa del usuario. (Ahora en Scope 16)
+2. Account Mode: programado notice 0 deja pantalla negra en iOS al confirmar (logs: `_ios_simulator_iphone_17_pro_diag-1.log`, `2026_02_25_web_chrome_diag-1.log`).
+3. Local Mode: snackbar "Selected group not found" al entrar sin accion; en iOS queda "Loading group..." con botones Pause/Cancel visibles.
+4. Local Mode: "Open Run Mode" en Groups Hub reinicia el grupo cada vez.
+5. Local Mode: rangos inconsistentes entre Run Mode y Groups Hub (Ends no coincide con rango del item).
+6. Local Mode: cruce de datos con Account Mode (Groups Hub muestra Ends de un grupo de Account tras cancelar en Local).
+7. Local Mode: programado con notice 0 muestra error de pre-run "too soon" (incoherente).
+8. Local Mode: Start now abre Run Mode pero termina en Groups Hub; "Open Run Mode" reinicia el grupo.
+9. Account Mode iOS: documento `current` desaparece y reaparece; Run Mode aparece y rebota varias veces a Groups Hub.
+10. Planificacion: tras confirmar grupo programado no aparece snackbar en Task List; solo se ve en Groups Hub.
+11. Conflicto: snackbar de "Postpone scheduled" aparece en Groups Hub, no en Run Mode.
+12. Notice 0: hay casos donde el grupo programado no inicia al llegar la hora pero cuenta para overlaps (Android fisico).
+
+Hallazgos movidos a `docs/bug_log.md` (no bloquean esta rama, pero deben atacarse antes de nuevas features):
+- BUG-010: Mirror desincronizado unos segundos al volver desde Local (timer difiere y luego se corrige).
+- BUG-011: Pausa + background deja desfase de tiempo pausado; se corrige al cambiar de owner.
+- BUG-012: Mirror queda indefinidamente en "Syncing session"; requiere click o entrar a Groups Hub para recuperar.
 
 ## Acceptance Criteria
 1. Mirror shows "Owner resolved" modal after Cancel all; owner does not.
@@ -95,6 +118,7 @@ Update this section after each fix.
 12. All entry points use the same Run Mode start path (single authoritative flow).
 13. If the group is truly missing after the unified start pipeline, show "Selected group not found" and navigate to the correct hub screen.
 14. Account Mode Start now / Run again always creates `activeSession/current` for running groups; Run Mode never stays in "Syncing session" due to a missing session doc.
+15. Auto-open solo ocurre en triggers explicitos (launch/resume, pre-run start, scheduled start, resolve overlaps o accion del usuario) y nunca interrumpe planificacion/edicion/settings.
 
 ## Validation Checklist
 - Create `quick_pass_checklist.md` **after** implementation, focused only on the bugs above.

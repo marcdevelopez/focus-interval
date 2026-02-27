@@ -92,6 +92,41 @@ Resultado: falla el flujo esperado en mirror (no hay modal ni bloqueo).
 Resultados (26/02/2026, Paso 1 - Late-start queue, intento 2 - Fix 14)
 Validacion (Local -> Account con grupos overdue): Resolve overlaps aparece sin reiniciar la app en macOS y Android. Fix 14 validado con exito.
 
+Resultados (27/02/2026)
+Punto 4 (Navegacion tras completar): OK. Tras el dialogo de completion vuelve a Groups Hub (no aparece pantalla Ready).
+Punto 5 (Logout Android pantalla negra): OK en macOS y Android (segun reporte).
+Punto 6 (Filas programadas owner/mirror): OK en macOS y Android (segun reporte).
+Punto 7 (Rangos de tareas vs status boxes): FAIL. Tras pausa/resume, las status boxes mueven el start (+1 min) mientras el item de tarea mantiene el rango correcto (ej.: 13:03-13:18 -> 13:04-13:19; tambien 14:17-14:33 -> 14:19-14:34).
+Punto 8 (Rebote de Run Mode):
+Account Mode: Start now OK; Run again OK.
+Account Mode: Programado notice 0 FAIL (pantalla negra en iOS al confirmar; auto-apertura repetida de Run Mode interrumpe).
+Local Mode: Start now FAIL (al abrir "Open Run Mode" reinicia el grupo; snackbar "Selected group not found" al entrar en Local).
+Local Mode: Programado notice 0 FAIL (no inicia al llegar la hora y aparece error de pre-run aun con notice 0).
+
+Notas adicionales (27/02/2026) — nuevos bugs observados (fuera del checklist)
+1. Auto-open de Run Mode se re-dispara de forma periodica desde cualquier pantalla (Task List, Groups Hub, planificacion, modales). Interrumpe al usuario y reabre Run Mode aunque no haya accion directa.
+2. Account Mode: programado notice 0 genera pantalla negra en iOS tras confirmar (imagenes 02–03). Logs: `_ios_simulator_iphone_17_pro_diag-1.log` y `2026_02_25_web_chrome_diag-1.log`. Reintento con logs `*_diag-2.log`.
+3. Local Mode: al abrir aparece snackbar "Selected group not found" sin accion previa (imagenes 07 y 15). En iOS se queda en "Loading group..." con botones Pause/Cancel visibles.
+4. Local Mode: "Open Run Mode" en Groups Hub reinicia el grupo cada vez (imagenes 09–10).
+5. Local Mode: rangos de tiempo inconsistentes entre Run Mode y Groups Hub (ej.: item 14:20–16:15 vs Ends 16:13) (imagenes 11–12).
+6. Local Mode: se cruzan datos con Account Mode (Groups Hub muestra Ends de un grupo de Account tras cancelar en Local) (imagen 17).
+7. Local Mode: programado con notice 0 muestra snackbar de pre-run "too soon" (incoherente) (imagen 19).
+8. Local Mode: Start now abre Run Mode pero termina en Groups Hub; "Open Run Mode" reinicia el grupo (imagen 20 / 29).
+9. Account Mode: al volver desde Local, el mirror queda desincronizado unos segundos (timer distinto) y luego se corrige (imagenes 13–14).
+10. Account Mode iOS: al cambiar a Account, el documento `current` desaparece y reaparece; Run Mode aparece y rebota varias veces a Groups Hub.
+11. Planificacion: tras confirmar un grupo programado no aparece snackbar en Task List; solo se ve en Groups Hub (imagenes 26–27).
+12. Conflicto: modal aparece al reanudar (no cuando falta 1 min) y el snackbar de "Postpone scheduled" aparece en Groups Hub, no en Run Mode (imagenes 30–31).
+13. Account Mode notice 0: hay casos donde el grupo programado no inicia al llegar la hora, pero cuenta para overlaps (Android fisico).
+14. Pausa + background: el tiempo pausado queda desfasado tras volver a foreground; se corrige al cambiar de owner.
+15. Mirror: "Syncing session" se queda indefinidamente; requiere click o abrir Groups Hub para recuperar (macOS mirror, recurrente).
+
+Features solicitadas (27/02/2026)
+1. Modal de conflicto con informacion completa: grupo actual (nombre, inicio/fin, duracion) + grupo programado (inicio/fin, pre-run) en tarjetas y con scroll si no cabe.
+2. Groups Hub debe indicar explicitamente cuando un grupo fue "postponed".
+3. Snackbar de postponed con notice 0 no debe mostrar "pre-run at ..."; debe omitirlo o indicar "sin pre-run".
+4. Plan group debe mostrar y permitir modificar el notice (pre-run) desde la misma pantalla.
+5. Cuando un grupo nuevo comienza mientras aun se muestra el modal de completion del anterior, resaltar la tarjeta de running en Groups Hub (indicador visual).
+
 ## Notas de reproduccion previa (26/02/2026)
 1. Account Mode: Start now crea activeSession y abre Run Mode tras un breve "Syncing session", pero al usar Run again vuelve rapido a Groups Hub.
 2. Local Mode: Start now y Run again dejan la app en Groups Hub; Run Mode solo abre manualmente con "Open Run Mode".

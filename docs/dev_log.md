@@ -8077,3 +8077,26 @@ _(none)_
 ### 🎯 Next steps:
 
 - Re-validate iOS simulator login with real accounts using `--debug` + `ALLOW_PROD_IN_DEBUG=true`.
+
+# 🔹 Block 485 — Plan: auto-open trigger gating (27/02/2026)
+
+### ✔ Work completed:
+
+- Updated `docs/specs.md` to define trigger-based auto-open rules and suppression while planning/editing/settings.
+- Updated `docs/bugs/validation_fix_2026_02_25/plan_validacion_rapida_fix.md` to add Scope 16 and acceptance criteria for auto-open gating.
+
+### 🧠 Decisions made:
+
+- Auto-open is allowed only on explicit triggers (launch/resume, pre-run start, scheduled start, resolve overlaps, or user action).
+- Leaving Run Mode suppresses auto-open until a new trigger occurs.
+- Auto-open must never interrupt planning/editing/settings flows.
+
+### ⚠️ Issues found:
+
+_(pending validation)_
+
+### 🎯 Next steps:
+
+- Implement auto-open gating in `lib/widgets/active_session_auto_opener.dart`.
+- Run `flutter analyze`.
+- Validate on iOS + Web + Android (no rebound while planning, auto-open still fires on triggers).

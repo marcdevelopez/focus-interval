@@ -615,6 +615,10 @@ users/{uid}/activeSession
 - On app launch or after login, if an active session is running (pomodoroRunning/shortBreakRunning/longBreakRunning), auto-open the execution screen for that group.
 - Auto-open must apply on the owner device and on mirror devices (mirror mode with ownership requests).
 - If auto-open cannot occur (missing group data, blocked navigation, or explicit suppression), the user must see a clear entry point to the running group from the initial screen and from Groups Hub.
+- Auto-open is **trigger-based** and must not re-fire on every activeSession update:
+  - Allowed triggers: app launch/resume with an active running/paused session, pre-run window start, scheduled start, resolve overlaps entry, or explicit user actions (Start now / Run again / Open Run Mode / Open Pre-Run).
+  - If the user leaves Run Mode while a session is active, suppress auto-open until a new trigger occurs (or the user explicitly opens it).
+  - Auto-open must not interrupt planning/editing/settings flows. When suppressed, keep clear CTAs from Task List and Groups Hub.
 
 ## **8.5. TaskRunGroup retention**
 
