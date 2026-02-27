@@ -8,8 +8,10 @@ Alcance: cancelacion de cola late-start, limite de pre-run, re-plan Start now, r
 3. Guarda las capturas en docs/bugs/validation_fix_2026_02_25/screenshots.
 
 ## Validaciones
-1. Late-start queue Cancel all
-Crea dos grupos programados ya vencidos (notice = 1 minuto) para que aparezca la cola late-start en owner.
+1. Late-start queue Cancel all (nuevo contexto)
+Programa dos grupos con notice = 1 minuto, separados por 1–2 minutos.
+Abre la app cuando el **primer grupo ya este vencido** y el segundo aun no (entrara en late-start en 1–2 minutos).
+Espera a que ambos aparezcan en la cola late-start en el owner.
 Pulsa Cancel all en owner.
 Esperado: El mirror muestra el modal "Owner resolved" y el owner no.
 Esperado: El modal se cierra con OK sin necesidad de tocar fuera.
@@ -67,6 +69,28 @@ Account Mode (Android): activeSession/current creado mientras running (verificad
 Account Mode (Android): Programado notice 0 OK (abre en Run Mode; se ve intento de volver a Groups Hub pero termina quedando en Run Mode).
 Account Mode (macOS): Re-plan group + Start now OK (abre Run Mode y se mantiene; aparece un carrusel breve de Groups Hub antes).
 Logs: ver docs/bugs/validation_fix_2026_02_25/logs/2026-02-26_android_RMX3771_diag.log y 2026-02-26_macos_diag.log.
+
+Resultados (26/02/2026, Paso 2 - Limite de pre-run)
+macOS: running termina 21:19, programado 21:20 con notice 1 min.
+Mensaje: "That time doesn't leave enough pre-run space because another group is still running."
+Resultado: no deja planificar; FAIL del punto 2.
+
+Resultados (26/02/2026, Paso 3 - Re-plan Start now)
+Contexto: grupo running en macOS. En Android: Run again sobre un completed -> Start now.
+Durante el modal "Conflict with running group... Cancel running group", se reabre automaticamente el Timer Run del grupo running antes de confirmar, impidiendo cancelar.
+Segundo intento: se logra cancelar y abre Run Mode correcto, pero aparecen 3-4 pantallas de Groups Hub en cascada (carrusel visible).
+Resultado: FAIL (auto-open interrumpe cancelacion + exceso de carrusel Groups Hub).
+
+Resultados (26/02/2026, Paso 1 - Late-start queue, intento 1)
+Programado G1 (19:01) y G2 (19:17) con notice 1 min; ambos vencidos al abrir la app.
+macOS (owner inicial): no aparece Resolve overlaps ni modal de conflicto al abrir.
+Android: Resolve overlaps aparece a las 19:05:31 (lateStartOwnerDeviceId = android-633ffb6b...).
+Android: Cancel all ejecutado a las 19:06:21.
+macOS: no aparece modal "Owner resolved" tras Cancel all; no muestra nada relacionado a los grupos (como si no existieran).
+Resultado: falla el flujo esperado en mirror (no hay modal ni bloqueo).
+
+Resultados (26/02/2026, Paso 1 - Late-start queue, intento 2 - Fix 14)
+Validacion (Local -> Account con grupos overdue): Resolve overlaps aparece sin reiniciar la app en macOS y Android. Fix 14 validado con exito.
 
 ## Notas de reproduccion previa (26/02/2026)
 1. Account Mode: Start now crea activeSession y abre Run Mode tras un breve "Syncing session", pero al usar Run again vuelve rapido a Groups Hub.
