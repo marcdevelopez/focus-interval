@@ -25,16 +25,20 @@ class ActiveSessionAutoOpener extends ConsumerStatefulWidget {
 }
 
 class _ActiveSessionAutoOpenerState
-    extends ConsumerState<ActiveSessionAutoOpener> {
+    extends ConsumerState<ActiveSessionAutoOpener>
+    with WidgetsBindingObserver {
   bool _autoOpenInFlight = false;
   String? _autoOpenedGroupId;
+  String? _autoOpenSuppressedGroupId;
   String? _pendingGroupId;
   Timer? _retryTimer;
   int _retryAttempts = 0;
+  bool _resumeAutoOpenPending = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _handleActiveSessionChange(ref.read(activePomodoroSessionProvider));
     });
@@ -43,7 +47,16 @@ class _ActiveSessionAutoOpenerState
   @override
   void dispose() {
     _retryTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _resumeAutoOpenPending = true;
+      _handleActiveSessionChange(ref.read(activePomodoroSessionProvider));
+    }
   }
 
   @override
@@ -76,8 +89,10 @@ class _ActiveSessionAutoOpenerState
     if (session == null) {
       _autoOpenInFlight = false;
       _autoOpenedGroupId = null;
+      _autoOpenSuppressedGroupId = null;
       _pendingGroupId = null;
       _retryAttempts = 0;
+      _resumeAutoOpenPending = false;
       _retryTimer?.cancel();
       _retryTimer = null;
       return;
@@ -90,26 +105,32 @@ class _ActiveSessionAutoOpenerState
       return;
     }
 
+    if (_resumeAutoOpenPending) {
+      debugPrint(
+        '[RunModeDiag] Auto-open resume trigger. Clearing auto-open state '
+        'group=$groupId route=${_currentRoute()}',
+      );
+      _autoOpenedGroupId = null;
+      _autoOpenSuppressedGroupId = null;
+      _resumeAutoOpenPending = false;
+    }
+
     final navigatorContext = widget.navigatorKey.currentContext;
     if (navigatorContext != null) {
       final inTimer = _isAlreadyInTimer(groupId);
-      if (_autoOpenedGroupId == groupId && !inTimer) {
-        debugPrint(
-          '[RunModeDiag] Auto-open state reset (not in timer) '
-          'group=$groupId route=${_currentRoute()}',
-        );
-        _autoOpenedGroupId = null;
-      }
       if (_autoOpenedGroupId == null && inTimer) {
         debugPrint(
           '[RunModeDiag] Auto-open state set (already in timer) '
           'group=$groupId route=${_currentRoute()}',
         );
         _autoOpenedGroupId = groupId;
+        _autoOpenSuppressedGroupId = null;
       }
     }
 
-    if (_autoOpenInFlight || _autoOpenedGroupId == groupId) {
+    if (_autoOpenInFlight ||
+        _autoOpenedGroupId == groupId ||
+        _autoOpenSuppressedGroupId == groupId) {
       debugPrint(
         '[RunModeDiag] Auto-open suppressed (in-flight=$_autoOpenInFlight '
         'opened=$_autoOpenedGroupId route=${_currentRoute()})',
@@ -134,6 +155,16 @@ class _ActiveSessionAutoOpenerState
         '[RunModeDiag] Auto-open suppressed (not in Account Mode) '
         'route=${_currentRoute()}',
       );
+      return;
+    }
+
+    final route = _currentRoute();
+    if (_isSensitiveRoute(route)) {
+      debugPrint(
+        '[RunModeDiag] Auto-open suppressed (sensitive route) '
+        'group=$groupId route=$route',
+      );
+      _autoOpenSuppressedGroupId = groupId;
       return;
     }
 
@@ -168,6 +199,15 @@ class _ActiveSessionAutoOpenerState
         final navigatorContext = widget.navigatorKey.currentContext;
         if (navigatorContext == null) {
           _scheduleRetry(groupId);
+          return;
+        }
+        final route = _currentRoute();
+        if (_isSensitiveRoute(route)) {
+          debugPrint(
+            '[RunModeDiag] Auto-open suppressed (sensitive route) '
+            'group=$groupId route=$route',
+          );
+          _autoOpenSuppressedGroupId = groupId;
           return;
         }
         if (_isAlreadyInTimer(groupId)) {
@@ -212,6 +252,15 @@ class _ActiveSessionAutoOpenerState
     if (!location.startsWith('/timer/')) return false;
     final current = location.substring('/timer/'.length).split('?').first;
     return current == groupId;
+  }
+
+  bool _isSensitiveRoute(String route) {
+    if (route == 'null') return false;
+    return route.startsWith('/tasks/plan') ||
+        route.startsWith('/tasks/new') ||
+        route.startsWith('/tasks/edit') ||
+        route.startsWith('/settings') ||
+        route.startsWith('/groups/late-start');
   }
 
   Future<bool> _isValidActiveSession(PomodoroSession session) async {

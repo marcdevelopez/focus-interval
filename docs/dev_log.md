@@ -8100,3 +8100,26 @@ _(pending validation)_
 - Implement auto-open gating in `lib/widgets/active_session_auto_opener.dart`.
 - Run `flutter analyze`.
 - Validate on iOS + Web + Android (no rebound while planning, auto-open still fires on triggers).
+
+# 🔹 Block 486 — Fix 15: auto-open trigger gating (27/02/2026)
+
+### ✔ Work completed:
+
+- Updated `ActiveSessionAutoOpener` to stop re-opening Run Mode on every session tick.
+- Added route-sensitive suppression for planning/editing/settings/late-start flows.
+- Allowed auto-open again on app resume (explicit trigger).
+- Ran `flutter analyze` (no issues).
+
+### 🧠 Decisions made:
+
+- Leaving Run Mode while a session is active suppresses auto-open until a new trigger occurs.
+- Auto-open is suppressed on sensitive routes and relies on explicit CTAs there.
+
+### ⚠️ Issues found:
+
+_(pending validation)_
+
+### 🎯 Next steps:
+
+- Validate auto-open triggers (launch/resume, pre-run start, scheduled start) across iOS/Web/Android.
+- Confirm no re-open while planning or editing.
