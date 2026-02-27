@@ -630,6 +630,16 @@ users/{uid}/activeSession
 - Default: 7 completed groups (last week).
 - User-configurable up to 30.
 
+## **8.6. Environment configuration (APP_ENV)**
+
+- `APP_ENV` controls Firebase environment selection: `dev`, `staging`, `prod`.
+- Release builds must always run with `APP_ENV=prod`.
+- Non-release builds must not use `APP_ENV=prod`, except for a temporary, explicit iOS debug override while staging is unavailable.
+- Temporary iOS debug override (strictly opt-in):
+  - Allowed only when `ALLOW_PROD_IN_DEBUG=true` is provided.
+  - Enables production Firebase use in **debug** builds on iOS for simulator validation with real accounts.
+  - Must be removed/reverted once staging is configured and used for pre-production testing.
+
 ---
 
 # 🔐 **9. Authentication**

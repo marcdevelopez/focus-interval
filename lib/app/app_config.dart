@@ -41,6 +41,7 @@ class AppConfig {
 
   static AppConfig fromEnvironment() {
     final resolvedEnv = _resolveEnv();
+    final allowProdInDebug = _allowProdInDebug();
 
     if (kReleaseMode && resolvedEnv != AppEnv.prod) {
       throw StateError(
@@ -48,10 +49,11 @@ class AppConfig {
       );
     }
 
-    if (!kReleaseMode && resolvedEnv == AppEnv.prod) {
+    if (!kReleaseMode && resolvedEnv == AppEnv.prod && !allowProdInDebug) {
       throw StateError(
         'Non-release builds cannot use APP_ENV=prod. '
-        'Use APP_ENV=staging or APP_ENV=dev with emulators.',
+        'Use APP_ENV=staging or APP_ENV=dev with emulators. '
+        'Temporary iOS debug override: ALLOW_PROD_IN_DEBUG=true.',
       );
     }
 
@@ -77,7 +79,8 @@ class AppConfig {
     );
 
     final options = _selectFirebaseOptions(resolvedEnv);
-    final allowProdWrites = kReleaseMode && resolvedEnv == AppEnv.prod;
+    final allowProdWrites =
+        (kReleaseMode || allowProdInDebug) && resolvedEnv == AppEnv.prod;
 
     final config = AppConfig(
       appEnv: resolvedEnv,
@@ -113,6 +116,17 @@ class AppConfig {
       );
     }
     return kReleaseMode ? AppEnv.prod : AppEnv.dev;
+  }
+
+  static bool _allowProdInDebug() {
+    // Temporary override for iOS debug simulator validation with real accounts.
+    // Remove this once staging is configured and in use.
+    if (!kDebugMode) return false;
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) return false;
+    return const bool.fromEnvironment(
+      'ALLOW_PROD_IN_DEBUG',
+      defaultValue: false,
+    );
   }
 
   static FirebaseOptions _selectFirebaseOptions(AppEnv env) {

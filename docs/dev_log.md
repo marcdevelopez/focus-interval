@@ -22,7 +22,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **26/02/2026**
+Last update: **27/02/2026**
 
 ---
 
@@ -8057,3 +8057,23 @@ _(pending validation)_
 
 - Run `flutter analyze`.
 - Validate late-start queue appears after switching Local → Account without restarting the app.
+
+# 🔹 Block 484 — Temporary iOS debug prod override for simulator validation (27/02/2026)
+
+### ✔ Work completed:
+
+- Documented a temporary iOS debug override in `docs/specs.md` to allow `APP_ENV=prod` with an explicit flag while staging is unavailable.
+- Implemented `ALLOW_PROD_IN_DEBUG` (iOS debug only) to permit production Firebase use in debug builds for simulator validation.
+- Updated `docs/bugs/README.md` with the iOS simulator debug command and override note.
+
+### 🧠 Decisions made:
+
+- The override is opt-in, iOS-only, and must be removed once staging is configured.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Re-validate iOS simulator login with real accounts using `--debug` + `ALLOW_PROD_IN_DEBUG=true`.
