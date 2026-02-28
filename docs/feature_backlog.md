@@ -2675,6 +2675,8 @@ If time sync or network is unavailable, show a clear offline banner and offer a
 choice to continue locally (non-synced) while the Account Mode session continues
 unaffected on other devices. When network returns, present a reconciliation
 choice (rejoin remote session vs keep local).
+This creates a **fork** that must be labeled explicitly in UI to avoid confusion
+or accidental merges.
 
 Design / UX:
 Layout / placement:
@@ -2705,6 +2707,8 @@ Data & Logic:
 Source of truth:
 - Account Mode session remains the only authoritative timeline.
 - Local continuation never writes to Account Mode while offline.
+  - Explicitly store a local-only fork marker so it cannot be mistaken for
+    Account data.
 
 Calculations:
 - Local continuation uses Local Mode timers and storage.
@@ -2714,6 +2718,8 @@ Sync / multi-device:
 - Other devices remain in Account Mode and continue as owner/mirror.
 - Offline device does not publish to Account Mode.
 - On reconnect, allow rejoin or stay local; no auto-merge.
+  - If the user stays local, Account Mode continues separately; both timelines
+    must remain visible only in their respective modes.
 
 Edge cases:
 - If Account session completed while offline, rejoin should open Groups Hub
@@ -2721,6 +2727,8 @@ Edge cases:
 - If local continuation is active and the user re-joins, discard local state
   and restore the remote session snapshot.
 - Multiple offline devices: each must choose independently; no implicit merge.
+  - If the user stays local, the offline fork must show a persistent visual label
+    (e.g., “Offline” / “Local-only”) in Groups Hub and Run Mode.
 
 Accessibility:
 - Offline banner and modal must be announced with clear warnings.
@@ -2732,6 +2740,7 @@ Dependencies:
 Risks:
 - User confusion about which mode they are in.
 - Accidental loss of local-only progress if rejoin is chosen.
+ - Ambiguous UX if offline forks are not labeled clearly.
 
 Acceptance criteria:
 - When offline, Run Mode is not blocked; user sees clear offline banner.
@@ -2739,7 +2748,10 @@ Acceptance criteria:
   Account Mode.
 - On reconnect, user must explicitly choose rejoin or stay local.
 - No automatic merge or overwrite of Account Mode session.
+ - Offline fork is clearly labeled in Local Mode; Account Mode never shows it.
 
 Notes:
 Optional: presence signals (e.g., “Device offline”) can be added later when
 workspaces/presence are implemented.
+Before implementation, clarify UI labels, fork metadata, and reconciliation
+rules to avoid logical bugs.
