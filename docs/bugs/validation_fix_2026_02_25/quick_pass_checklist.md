@@ -103,6 +103,12 @@ Account Mode: Programado notice 0 FAIL (pantalla negra en iOS al confirmar; auto
 Local Mode: Start now FAIL (al abrir "Open Run Mode" reinicia el grupo; snackbar "Selected group not found" al entrar en Local).
 Local Mode: Programado notice 0 FAIL (no inicia al llegar la hora y aparece error de pre-run aun con notice 0).
 
+Resultados (27/02/2026, Fix 15 - Auto-open trigger gating)
+- Sesion running -> entrar a Plan group -> no auto-open: OK.
+- Pre-run / scheduled start -> auto-open: OK.
+- App resume con sesion activa -> auto-open una vez: OK.
+- Ir a Groups Hub / Task List mientras corre sesion -> no auto-open repetido: OK.
+
 Notas adicionales (27/02/2026) — nuevos bugs observados (fuera del checklist)
 1. Auto-open de Run Mode se re-dispara de forma periodica desde cualquier pantalla (Task List, Groups Hub, planificacion, modales). Interrumpe al usuario y reabre Run Mode aunque no haya accion directa.
 2. Account Mode: programado notice 0 genera pantalla negra en iOS tras confirmar (imagenes 02–03). Logs: `_ios_simulator_iphone_17_pro_diag-1.log` y `2026_02_25_web_chrome_diag-1.log`. Reintento con logs `*_diag-2.log`.
