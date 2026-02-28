@@ -129,6 +129,12 @@ Logs: docs/bugs/validation_fix_2026_02_25/logs/2026_02_28_ios_simulator_iphone_1
 2. Chrome Local → Groups Hub -> Open Run Mode (varias veces): OK (no reinicia el grupo).
 3. Chrome Local → Rangos Run Mode vs Ends en Groups Hub: OK (coinciden).
 
+Regression checks (obligatorio tras cada fix)
+1. Auto-open gating: durante Plan group no reabre Run Mode; en resume auto-open ocurre una sola vez.
+2. iOS notice 0: confirmar programado notice 0 sin pantalla negra ni errores en log.
+3. Local Mode: "Open Run Mode" no reinicia el grupo running.
+4. Completion: tras el modal de completion la app vuelve a Groups Hub (nunca Ready).
+
 Notas adicionales (27/02/2026) — nuevos bugs observados (fuera del checklist)
 1. Auto-open de Run Mode se re-dispara de forma periodica desde cualquier pantalla (Task List, Groups Hub, planificacion, modales). Interrumpe al usuario y reabre Run Mode aunque no haya accion directa.
 2. Account Mode: programado notice 0 genera pantalla negra en iOS tras confirmar (imagenes 02–03). Logs: `_ios_simulator_iphone_17_pro_diag-1.log` y `2026_02_25_web_chrome_diag-1.log`. Reintento con logs `*_diag-2.log`.

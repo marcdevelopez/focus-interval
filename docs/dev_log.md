@@ -8290,3 +8290,22 @@ _(none)_
 ### 🎯 Next steps:
 
 - Continue with the next remaining validation items in the plan.
+
+# 🔹 Block 495 — Regression smoke checks requirement (28/02/2026)
+
+### ✔ Work completed:
+
+- Added a mandatory regression smoke check requirement to `AGENTS.md`.
+- Added a fixed regression checklist to `docs/bugs/validation_fix_2026_02_25/plan_validacion_rapida_fix.md` and `quick_pass_checklist.md`.
+
+### 🧠 Decisions made:
+
+- Each fix must re-validate the most recent critical fixes to prevent silent regressions.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Apply the regression checklist after every subsequent fix in this validation track.

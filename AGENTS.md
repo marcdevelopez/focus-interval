@@ -74,6 +74,9 @@ Bug validation workflow (required):
 - Every fix must include an **Exact Repro** of the original bug scenario (steps,
   mode, device(s), timing, logs/screenshots). This repro must be executed as
   part of the rapid validation; otherwise the validation is incomplete.
+- Every fix must include a **Regression smoke check** that re-tests the most
+  recent critical fixes (3–5 items). If the regression list changes, update it
+  in both `plan_validacion_rapida_fix.md` and `quick_pass_checklist.md`.
 - Always review the screenshots in the relevant validation folder before diagnosing or implementing fixes.
 - `quick_pass_checklist.md` is created **after** implementation and must match
   the actual changes. For a brand new validation folder, it starts empty until

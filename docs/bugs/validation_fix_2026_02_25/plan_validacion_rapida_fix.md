@@ -168,6 +168,12 @@ Hallazgos movidos a `docs/bug_log.md` (no bloquean esta rama, pero deben atacars
 19. En Local Mode, los rangos en Run Mode y Groups Hub coinciden (Ends correcto).
 20. En Local Mode con notice = 0, programar no muestra el error de pre-run "too soon".
 
+## Regression checks (obligatorio en cada fix)
+1. Auto-open gating: durante Plan group no reabre Run Mode; en resume auto-open ocurre una sola vez.
+2. iOS notice 0: confirmar programado notice 0 sin pantalla negra ni errores en log.
+3. Local Mode: "Open Run Mode" no reinicia el grupo running.
+4. Completion: tras el modal de completion la app vuelve a Groups Hub (nunca Ready).
+
 ## Validation Checklist
 - Create `quick_pass_checklist.md` **after** implementation, focused only on the bugs above.
 - Validate on macOS (owner) + Android (mirror) using fresh screenshots.
