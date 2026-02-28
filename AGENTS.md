@@ -71,6 +71,9 @@ Bug validation workflow (required):
   - `quick_pass_checklist.md`
   - `plan_validacion_rapida_fix.md`
   - `screenshots/`
+- Every fix must include an **Exact Repro** of the original bug scenario (steps,
+  mode, device(s), timing, logs/screenshots). This repro must be executed as
+  part of the rapid validation; otherwise the validation is incomplete.
 - Always review the screenshots in the relevant validation folder before diagnosing or implementing fixes.
 - `quick_pass_checklist.md` is created **after** implementation and must match
   the actual changes. For a brand new validation folder, it starts empty until

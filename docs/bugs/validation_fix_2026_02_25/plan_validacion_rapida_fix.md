@@ -58,6 +58,15 @@ Each item below is a separate fix and must be committed separately.
 15. Auto-open trigger-based y suppression en pantallas sensibles (Scope 16).
 16. iOS scheduled notice 0 no black screen; asegurar navegacion estable (Scope 17).
 
+### Repro exacto (Fix 16 — iOS notice 0 black screen)
+- Modo: Account Mode en iOS simulador.
+- Contexto: grupo G1 running en iOS; termina a las 13:19.
+- Accion: planificar un grupo con notice = 0 para iniciar a las 13:20 (Plan group -> by time).
+- Momento del fallo original: 13:10:55 al pulsar OK en el dialogo de planificacion.
+- Resultado previo: pantalla negra en iOS (imagen 03). Imagen 02 justo antes de OK.
+- Firebase (current) en ese instante: ownerDeviceId = web-6fbc21ef-e489-41bc-8d55-b35917480950, status = pomodoroRunning, phaseStartedAt = 13:04:24, remainingSeconds = 514.
+- Logs asociados: `_ios_simulator_iphone_17_pro_diag-1.log` y `2026_02_25_web_chrome_diag-1.log`.
+
 ## Fix Tracking
 Update this section after each fix.
 1. Fix 1 (Scope 1–3): Done (2026-02-25, tests: `flutter test`, commit: 9f614e6 "Fix 1: late-start owner resolved gating")
