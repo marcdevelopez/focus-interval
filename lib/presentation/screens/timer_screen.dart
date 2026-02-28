@@ -31,6 +31,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     with WidgetsBindingObserver {
   static const String _ownerEducationKey = 'owner_education_seen_v1';
   Timer? _clockTimer;
+  bool _isDisposing = false;
   Timer? _preRunTimer;
   Timer? _debugFrameTimer;
   Timer? _inactiveRepaintTimer;
@@ -76,6 +77,12 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   }
 
   @override
+  void deactivate() {
+    _setCompletionDialogVisible(false);
+    super.deactivate();
+  }
+
+  @override
   void didUpdateWidget(TimerScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.groupId != widget.groupId) {
@@ -85,7 +92,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   }
 
   void _updateClock() {
-    if (!mounted) return;
+    if (!mounted || _isDisposing) return;
     final now = DateTime.now();
     setState(() {
       _currentClock =
@@ -99,11 +106,14 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final now = DateTime.now();
     final secondsUntilNextMinute = 60 - now.second;
     _clockTimer = Timer(Duration(seconds: secondsUntilNextMinute), () {
-      if (!mounted) return;
+      if (!mounted || _isDisposing) return;
       _updateClock();
       _clockTimer = Timer.periodic(
         const Duration(minutes: 1),
-        (_) => _updateClock(),
+        (_) {
+          if (!mounted || _isDisposing) return;
+          _updateClock();
+        },
       );
     });
   }
@@ -222,6 +232,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   void _loadGroup(String groupId) {
     // Load group by ID
     Future.microtask(() async {
+      if (!mounted || _isDisposing) return;
       final result = await ref
           .read(pomodoroViewModelProvider.notifier)
           .loadGroup(groupId);
@@ -264,7 +275,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
   @override
   void dispose() {
-    _setCompletionDialogVisible(false);
+    _isDisposing = true;
     _stopClockTimer();
     _stopPreRunTimer();
     _stopDebugFramePing();

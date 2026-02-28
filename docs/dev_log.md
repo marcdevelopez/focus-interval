@@ -8145,3 +8145,24 @@ _(pending validation)_
 - Review iOS/Chrome logs for the black screen repro path.
 - Implement the minimal navigation fallback to prevent black screens.
 - Run `flutter analyze` and validate on iOS + Web.
+
+# 🔹 Block 488 — Fix 16: avoid iOS black screen on scheduled notice 0 (28/02/2026)
+
+### ✔ Work completed:
+
+- Guarded `TimerScreen` timers and async loads against dispose to prevent setState/ref usage after unmount.
+- Moved completion-dialog visibility reset to `deactivate` and removed ref usage in `dispose`.
+- Ran `flutter analyze` (no issues).
+
+### 🧠 Decisions made:
+
+- Treat the iOS black screen as a lifecycle/navigation safety issue (avoid async work on unmounted state).
+- Prefer minimal guards and lifecycle-safe cleanup over navigation rewrites.
+
+### ⚠️ Issues found:
+
+_(pending validation)_
+
+### 🎯 Next steps:
+
+- Reproduce scheduled notice 0 on iOS to confirm no black screen and no console exceptions.
