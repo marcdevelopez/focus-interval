@@ -109,6 +109,10 @@ Resultados (28/02/2026, Fix 15 - Auto-open trigger gating)
 - App resume con sesion activa -> auto-open una vez: OK.
 - Ir a Groups Hub / Task List mientras corre sesion -> no auto-open repetido: OK.
 
+Resultados (28/02/2026, Fix 16 - iOS notice 0 black screen)
+- Repro exacto (Account Mode, G1 running, programado notice 0 a 13:20, OK a las 13:10:55): OK.
+- Sin pantalla negra y sin excepciones tipo setState after dispose / Using ref when unmounted en el log.
+
 Notas adicionales (27/02/2026) — nuevos bugs observados (fuera del checklist)
 1. Auto-open de Run Mode se re-dispara de forma periodica desde cualquier pantalla (Task List, Groups Hub, planificacion, modales). Interrumpe al usuario y reabre Run Mode aunque no haya accion directa.
 2. Account Mode: programado notice 0 genera pantalla negra en iOS tras confirmar (imagenes 02–03). Logs: `_ios_simulator_iphone_17_pro_diag-1.log` y `2026_02_25_web_chrome_diag-1.log`. Reintento con logs `*_diag-2.log`.
