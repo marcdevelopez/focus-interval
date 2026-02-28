@@ -8211,3 +8211,24 @@ _(pending validation)_
 ### 🎯 Next steps:
 
 - Validate Local Mode repro steps and update the checklist.
+
+# 🔹 Block 491 — Fix 17 validation results (28/02/2026)
+
+### ✔ Work completed:
+
+- Ran Local Mode validation using the exact repro steps.
+- Logged results in `docs/bugs/validation_fix_2026_02_25/quick_pass_checklist.md`.
+
+### 🧠 Decisions made:
+
+- Treat remaining Local Mode issues as follow-up fixes (Open Run Mode restarts group; Run Mode vs Groups Hub ranges mismatch).
+
+### ⚠️ Issues found:
+
+- Local Mode (Chrome): "Open Run Mode" restarts the running group each time.
+- Local Mode (Chrome): Run Mode task ranges do not match Groups Hub "Ends" after the restart.
+
+### 🎯 Next steps:
+
+- Fix Local Mode Run Mode restart on open (ensure re-open does not reset task start).
+- Align Run Mode ranges with Groups Hub after re-open.
