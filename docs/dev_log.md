@@ -8348,3 +8348,22 @@ _(pending validation)_
 - Implement the pause/resume guard in `PomodoroViewModel.resume()`.
 - Run `flutter analyze`.
 - Validate Fix 19 repro steps and regression checks.
+
+# 🔹 Block 498 — Fix 19: preserve phase start on resume (28/02/2026)
+
+### ✔ Work completed:
+
+- Kept `phaseStartedAt` stable across pause/resume to avoid shifting status box ranges.
+- Ran `flutter analyze` (no issues).
+
+### 🧠 Decisions made:
+
+- Pause/resume must extend phase end time without moving its original start.
+
+### ⚠️ Issues found:
+
+_(pending validation)_
+
+### 🎯 Next steps:
+
+- Validate Fix 19 repro steps and regression checks.

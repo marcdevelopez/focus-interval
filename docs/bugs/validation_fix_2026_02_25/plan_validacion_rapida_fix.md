@@ -122,7 +122,7 @@ Update this section after each fix.
 16. Fix 16 (Scope 17): Done (2026-02-28, tests: `flutter analyze`, commit: 9782fc3 "Fix 16: guard TimerScreen lifecycle on scheduled start") — TimerScreen now avoids ref/setState after unmount to prevent black screen.
 17. Fix 17 (Scope 3–8): Done (2026-02-28, tests: `flutter analyze`, commit: 7b2a7ed "Fix 17: local mode isolation and run stability") — Local Mode isolation + Run Mode stability. Validation (28/02/2026): partial; still fails on Local Mode "Open Run Mode" restarting the group and Run Mode vs Groups Hub ranges mismatch (Chrome).
 18. Fix 18 (Scope 18): Done (2026-02-28, tests: `flutter analyze`, commit: 55879f4 "Fix 18: prevent local run mode restart") — Local Mode Open Run Mode must not restart the group; ranges must align.
-19. Fix 19 (Scope 19): Planned (2026-02-28) — Status boxes must not shift on pause/resume; ranges must match task item.
+19. Fix 19 (Scope 19): Done (2026-02-28, tests: `flutter analyze`, commit: e7652fd "Fix 19: keep phase start on resume") — Status boxes must not shift on pause/resume; ranges must match task item.
 
 ## Plan (Docs First, Then Code)
 1. Update specs if any new edge-case rules or timing tolerances are added.
