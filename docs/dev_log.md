@@ -8189,3 +8189,25 @@ _(pending validation)_
 - Implement Local Mode fixes (Start now `actualStartTime`, mode-switch guard, local auto-open gating).
 - Run `flutter analyze`.
 - Validate Local Mode repro steps and update checklist.
+
+# 🔹 Block 490 — Fix 17: Local Mode isolation + Run Mode stability (28/02/2026)
+
+### ✔ Work completed:
+
+- Set `actualStartTime` for Start now groups created from Task List to preserve Local Mode projections.
+- Added `AppModeChangeGuard` to reset Run Mode state and return to Task List on mode switch.
+- Guarded scheduled auto-open in Local Mode by skipping navigation when the group is missing.
+- Ran `flutter analyze` (no issues).
+
+### 🧠 Decisions made:
+
+- Mode switches must hard-reset Run Mode to prevent cross-mode UI/data bleed.
+- Local scheduled auto-open should be a no-op when the group is missing to avoid false snackbars.
+
+### ⚠️ Issues found:
+
+_(pending validation)_
+
+### 🎯 Next steps:
+
+- Validate Local Mode repro steps and update the checklist.

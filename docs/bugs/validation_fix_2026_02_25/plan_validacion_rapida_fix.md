@@ -95,7 +95,7 @@ Update this section after each fix.
 14. Fix 14 (Scope 15): Done (2026-02-26, tests: `flutter analyze`, commit: 4e1b92f "Fix 14: re-evaluate late-start queue on mode switch") — mode switch to Account re-evaluates late-start conflicts and removes the grace delay so Resolve overlaps can surface without restarting the app.
 15. Fix 15 (Scope 16): Done (2026-02-27, tests: `flutter analyze`, commit: 94074b7 "Fix 15: gate Run Mode auto-open triggers") — auto-open now respects trigger-only rules and suppresses re-open on sensitive routes.
 16. Fix 16 (Scope 17): Done (2026-02-28, tests: `flutter analyze`, commit: 9782fc3 "Fix 16: guard TimerScreen lifecycle on scheduled start") — TimerScreen now avoids ref/setState after unmount to prevent black screen.
-17. Fix 17 (Scope 3–8): Planned (2026-02-28) — Local Mode isolation + Run Mode stability.
+17. Fix 17 (Scope 3–8): Done (2026-02-28, tests: `flutter analyze`, commit: 7b2a7ed "Fix 17: local mode isolation and run stability") — Local Mode isolation + Run Mode stability.
 
 ## Plan (Docs First, Then Code)
 1. Update specs if any new edge-case rules or timing tolerances are added.
