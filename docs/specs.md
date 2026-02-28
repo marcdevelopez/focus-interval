@@ -568,10 +568,13 @@ users/{uid}/activeSession
 - Only the owner device writes authoritative execution fields; others subscribe in real time and
   render progress by calculating remaining time from phaseStartedAt + phaseDurationSeconds using
   a server-time offset derived from lastUpdatedAt (do not rely on raw local clock).
-  - Compute `serverTimeOffset = lastUpdatedAt - localNow` when a snapshot arrives.
-  - Project with `serverNow = localNow + serverTimeOffset`, `elapsed = serverNow - phaseStartedAt`.
-  - Update the offset on each new snapshot; keep the last offset between ticks.
-  - If `lastUpdatedAt` is missing, keep the prior offset and do not rebase from local time alone.
+- Compute `serverTimeOffset = lastUpdatedAt - localNow` when a snapshot arrives.
+- Project with `serverNow = localNow + serverTimeOffset`, `elapsed = serverNow - phaseStartedAt`.
+- Update the offset on each new snapshot; keep the last offset between ticks.
+- If `lastUpdatedAt` is missing, keep the prior offset and do not rebase from local time alone.
+  - If no prior offset exists, derive a fallback anchor using
+    `phaseStartedAt + (phaseDurationSeconds - remainingSeconds)` and use it
+    to compute the initial offset.
 - Mirror devices may write a non-authoritative ownershipRequest field to request a transfer.
   - `requestOwnership` only creates/updates ownershipRequest; it never changes ownerDeviceId.
     Ownership changes caused by staleness must use the auto-claim transaction.

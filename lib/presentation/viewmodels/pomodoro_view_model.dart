@@ -1267,12 +1267,31 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   void _updateServerTimeOffset(PomodoroSession session, {DateTime? now}) {
     final updatedAt = session.lastUpdatedAt;
-    if (updatedAt == null) return;
+    if (updatedAt == null) {
+      if (_serverTimeOffset != null) return;
+      final derived = _deriveLastUpdatedAtFromSession(session);
+      if (derived == null) return;
+      final base = now ?? DateTime.now();
+      _serverTimeAnchor = derived;
+      _serverTimeOffset = derived.difference(base);
+      return;
+    }
     final anchor = _serverTimeAnchor;
     if (anchor != null && updatedAt.isAtSameMomentAs(anchor)) return;
     final base = now ?? DateTime.now();
     _serverTimeAnchor = updatedAt;
     _serverTimeOffset = updatedAt.difference(base);
+  }
+
+  DateTime? _deriveLastUpdatedAtFromSession(PomodoroSession session) {
+    final phaseStartedAt = session.phaseStartedAt;
+    if (phaseStartedAt == null) return null;
+    final duration = session.phaseDurationSeconds;
+    if (duration <= 0) return null;
+    var elapsed = duration - session.remainingSeconds;
+    if (elapsed < 0) elapsed = 0;
+    if (elapsed > duration) elapsed = duration;
+    return phaseStartedAt.add(Duration(seconds: elapsed));
   }
 
   void _syncKeepAliveState() {

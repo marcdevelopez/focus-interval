@@ -23,6 +23,7 @@ Source: docs/bugs/validation_fix_2026_02_24/quick_pass_checklist.md + screenshot
 17. iOS: programado notice 0 deja pantalla negra al confirmar (app queda sin ruta visible).
 18. Local Mode: "Open Run Mode" reinicia el grupo running y desalinea rangos (follow-up Fix 17).
 19. Rangos de tareas vs status boxes se desalinean tras pausa/resume (follow-up Fix 5).
+20. Mirror: al abrir la app, el timer empieza con desfase de segundos hasta el siguiente snapshot (regresion).
 
 ## Decisions And Requirements
 - Cancel all must resolve the queue for **all** devices.
@@ -61,6 +62,7 @@ Each item below is a separate fix and must be committed separately.
 16. iOS scheduled notice 0 no black screen; asegurar navegacion estable (Scope 17).
 17. Local Mode "Open Run Mode" no debe reiniciar el grupo; rangos deben coincidir (Scope 18).
 18. Rangos de tareas vs status boxes deben coincidir tras pausa/resume (Scope 19).
+19. Mirror debe iniciar ya sincronizado al abrir (sin desfase de segundos) (Scope 20).
 17. Local Mode isolation + Run Mode stability (Scope 3–8).
 
 ### Repro exacto (Fix 16 — iOS notice 0 black screen)
@@ -102,6 +104,12 @@ Each item below is a separate fix and must be committed separately.
 3. Comparar el rango del item de tarea actual con la Status Box (Pomodoro 1 of X).
    - Bug observado: la Status Box mueve el start (+1 min) mientras el item mantiene el rango correcto.
 
+### Repro exacto (Fix 20 — Mirror desfasado al iniciar)
+1. Owner (Account Mode) con grupo running en iOS.
+2. Abrir app en mirror (Chrome) mientras el grupo ya esta corriendo.
+3. Observar el timer del mirror al entrar.
+   - Bug observado: arranca con desfase de segundos y se corrige en el siguiente snapshot.
+
 ## Fix Tracking
 Update this section after each fix.
 1. Fix 1 (Scope 1–3): Done (2026-02-25, tests: `flutter test`, commit: 9f614e6 "Fix 1: late-start owner resolved gating")
@@ -123,6 +131,7 @@ Update this section after each fix.
 17. Fix 17 (Scope 3–8): Done (2026-02-28, tests: `flutter analyze`, commit: 7b2a7ed "Fix 17: local mode isolation and run stability") — Local Mode isolation + Run Mode stability. Validation (28/02/2026): partial; still fails on Local Mode "Open Run Mode" restarting the group and Run Mode vs Groups Hub ranges mismatch (Chrome).
 18. Fix 18 (Scope 18): Done (2026-02-28, tests: `flutter analyze`, commit: 55879f4 "Fix 18: prevent local run mode restart") — Local Mode Open Run Mode must not restart the group; ranges must align.
 19. Fix 19 (Scope 19): Done (2026-02-28, tests: `flutter analyze`, commit: e7652fd "Fix 19: keep phase start on resume") — Status boxes must not shift on pause/resume; ranges must match task item.
+20. Fix 20 (Scope 20): Planned (2026-02-28) — Mirror must start in sync on first render.
 
 ## Plan (Docs First, Then Code)
 1. Update specs if any new edge-case rules or timing tolerances are added.

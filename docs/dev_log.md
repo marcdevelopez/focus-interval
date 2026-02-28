@@ -8367,3 +8367,25 @@ _(pending validation)_
 ### 🎯 Next steps:
 
 - Validate Fix 19 repro steps and regression checks.
+
+# 🔹 Block 499 — Plan: Fix 20 mirror initial sync drift (28/02/2026)
+
+### ✔ Work completed:
+
+- Updated `docs/specs.md` with a fallback offset rule when `lastUpdatedAt` is missing.
+- Added Fix 20 scope + exact repro to `docs/bugs/validation_fix_2026_02_25/plan_validacion_rapida_fix.md`.
+
+### 🧠 Decisions made:
+
+- When `lastUpdatedAt` is missing, derive an initial anchor using
+  `phaseStartedAt + (phaseDurationSeconds - remainingSeconds)` to avoid a stale mirror start.
+
+### ⚠️ Issues found:
+
+_(pending validation)_
+
+### 🎯 Next steps:
+
+- Implement fallback offset derivation in `PomodoroViewModel`.
+- Run `flutter analyze`.
+- Validate Fix 20 repro steps and regression checks.
