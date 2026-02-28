@@ -8542,6 +8542,7 @@ _(pending validation)_
 - Updated scheduled auto-start + late-start queue initial session fields.
 - Updated VM tests to include new session fields and disable time sync in tests.
 - Ran `flutter test` (pause expiry, ownership request, session gap, scheduled coordinator) and `flutter analyze`.
+- Commit: 5289922 "Fix 22: time sync single-source projection".
 
 ### 🧠 Decisions made:
 
