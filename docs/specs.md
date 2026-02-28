@@ -1842,8 +1842,10 @@ The MM:SS timer must not shift horizontally:
   - **Exception (Pre-Run Countdown):** there is no owner and any device may cancel while the Pre-Run window is active.
 - activeSession includes: groupId, currentTaskId, currentTaskIndex, totalTasks.
 - Remaining time is projected from phaseStartedAt + phaseDurationSeconds using the
-  server-time offset from lastUpdatedAt (same rule as activeSession); never project
-  from raw local clock alone.
+  server-time offset derived from `users/{uid}/timeSync` (serverTimestamp). Never
+  project from raw local clock alone.
+- If the server-time offset is unavailable, show **Syncing session...** and keep
+  the last known snapshot without re-projecting until time sync is ready.
 - Mirror devices render task names/durations from the TaskRunGroup snapshot (by groupId), not from the editable task list.
 - **Single source of truth:** owner/mirror state and control gating must be derived from the same activeSession snapshot
   (groupId must match). Local flags may project state but must never override the snapshot.

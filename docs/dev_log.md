@@ -8561,3 +8561,22 @@ _(pending validation)_
 - Complete validation scenarios for Fix 22 (owner/mirror, pause/resume,
   background, Local → Account).
 - Commit Fix 22 after validation + plan updates.
+
+# 🔹 Block 508 — Firestore rules deployed + TimerScreen spec alignment (28/02/2026)
+
+### ✔ Work completed:
+
+- Deployed updated Firestore rules (timeSync path) to PROD project `focus-interval`.
+- Updated `docs/specs.md` 10.4.8 to reference timeSync-based projection and Syncing session fallback.
+
+### 🧠 Decisions made:
+
+- Keep `lastUpdatedAt` as liveness only; TimerScreen spec now aligns with timeSync.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Validate Fix 22 scenarios (owner/mirror, pause/resume, background, Local → Account).
