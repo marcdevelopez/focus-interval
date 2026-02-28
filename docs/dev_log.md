@@ -8252,3 +8252,22 @@ _(pending validation)_
 - Implement the Local Mode auto-start guard in Run Mode.
 - Run `flutter analyze`.
 - Validate Fix 18 repro steps.
+
+# 🔹 Block 493 — Fix 18: Local Mode Run Mode re-open stability (28/02/2026)
+
+### ✔ Work completed:
+
+- Prevented Local Mode auto-start when a running group already has `actualStartTime` to avoid restart on re-open.
+- Ran `flutter analyze` (no issues).
+
+### 🧠 Decisions made:
+
+- Local Mode re-open should always project from `actualStartTime` rather than re-creating the timer state.
+
+### ⚠️ Issues found:
+
+_(pending validation)_
+
+### 🎯 Next steps:
+
+- Validate Fix 18 repro steps (Open Run Mode does not restart; ranges match).
