@@ -69,13 +69,21 @@ Each item below is a separate fix and must be committed separately.
 - Logs asociados: `_ios_simulator_iphone_17_pro_diag-1.log` y `2026_02_25_web_chrome_diag-1.log`.
 
 ### Repro exacto (Fix 17 — Local Mode isolation + Run Mode stability)
-- Cambiar desde Account Mode a Local Mode sin cerrar la app.
-- Resultado observado: snackbar "Selected group not found" al entrar; en iOS aparece "Loading group..." con botones Pause/Cancel visibles.
-- Crear una tarea en Local Mode, seleccionar y usar Plan group -> Start now.
-- Resultado observado: Run Mode abre y vuelve a Groups Hub; al pulsar "Open Run Mode" el grupo reinicia.
-- En Groups Hub, el "Ends" del grupo running no coincide con el rango del item en Run Mode.
-- Tras cancelar en Local Mode y volver a Account Mode, Groups Hub muestra datos cruzados (Ends de grupo account en tarjeta local).
-- Con notice = 0 configurado en Settings, al programar en Local Mode aparece el error de "too soon" (incoherente).
+1. Preparar: Account Mode activo en iOS (owner) con un grupo **running** en curso. Mantener la app abierta.
+2. En Chrome: cambiar a Local Mode **sin cerrar la app**.
+   - Bug observado: snackbar "Selected group not found" aparece al entrar.
+3. En Chrome Local Mode: crear una tarea, seleccionarla y usar Plan group → Start now.
+   - Bug observado: Run Mode abre y vuelve a Groups Hub.
+4. En Chrome Local Mode: desde Groups Hub pulsar "Open Run Mode" varias veces.
+   - Bug observado: el grupo **reinicia** cada vez.
+5. En Chrome Local Mode: comparar rango del item en Run Mode vs "Ends" en Groups Hub.
+   - Bug observado: los rangos **no coinciden**.
+6. En iOS: cambiar a Local Mode sin cerrar la app mientras el grupo de Account sigue running.
+   - Bug observado: snackbar "Selected group not found" y estado "Loading group..." con botones Pause/Cancel visibles.
+7. En iOS Local Mode: pulsar Cancel.
+   - Bug observado: Groups Hub muestra datos cruzados (Ends de grupo de Account en tarjeta Local).
+8. En Settings (Local Mode): fijar notice = 0. Programar un grupo by time a 1–2 minutos.
+   - Bug observado: error "That start time is too soon..." (incoherente con notice 0).
 
 ## Fix Tracking
 Update this section after each fix.
