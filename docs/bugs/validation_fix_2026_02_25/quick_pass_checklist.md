@@ -123,6 +123,12 @@ Logs: docs/bugs/validation_fix_2026_02_25/logs/2026_02_28_ios_simulator_iphone_1
 6. iOS Local → Cancel: OK (sin datos cruzados de Account en Groups Hub).
 7. Local Mode Settings → notice = 0 → programar by time (1–2 min): OK (no aparece error "too soon").
 
+Resultados (28/02/2026, Fix 18 - Local Mode Open Run Mode no reinicia)
+Logs: docs/bugs/validation_fix_2026_02_25/logs/2026_02_28_ios_simulator_iphone_17_pro_diag.log y 2026_02_28_web_chrome_diag.log.
+1. Chrome Local → Plan group -> Start now: OK.
+2. Chrome Local → Groups Hub -> Open Run Mode (varias veces): OK (no reinicia el grupo).
+3. Chrome Local → Rangos Run Mode vs Ends en Groups Hub: OK (coinciden).
+
 Notas adicionales (27/02/2026) — nuevos bugs observados (fuera del checklist)
 1. Auto-open de Run Mode se re-dispara de forma periodica desde cualquier pantalla (Task List, Groups Hub, planificacion, modales). Interrumpe al usuario y reabre Run Mode aunque no haya accion directa.
 2. Account Mode: programado notice 0 genera pantalla negra en iOS tras confirmar (imagenes 02–03). Logs: `_ios_simulator_iphone_17_pro_diag-1.log` y `2026_02_25_web_chrome_diag-1.log`. Reintento con logs `*_diag-2.log`.

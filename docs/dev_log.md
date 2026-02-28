@@ -8271,3 +8271,22 @@ _(pending validation)_
 ### 🎯 Next steps:
 
 - Validate Fix 18 repro steps (Open Run Mode does not restart; ranges match).
+
+# 🔹 Block 494 — Fix 18 validation results (28/02/2026)
+
+### ✔ Work completed:
+
+- Validated Fix 18 with Local Mode re-open repro; Open Run Mode no longer restarts the group.
+- Updated `docs/bugs/validation_fix_2026_02_25/quick_pass_checklist.md` with results.
+
+### 🧠 Decisions made:
+
+- Confirmed Local Mode re-open should always project from `actualStartTime`.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Continue with the next remaining validation items in the plan.
