@@ -8166,3 +8166,26 @@ _(pending validation)_
 ### 🎯 Next steps:
 
 - Reproduce scheduled notice 0 on iOS to confirm no black screen and no console exceptions.
+
+# 🔹 Block 489 — Plan: Local Mode isolation + Run Mode stability (28/02/2026)
+
+### ✔ Work completed:
+
+- Updated `docs/specs.md` to require clearing Run Mode and returning to Task List on mode switch.
+- Updated `docs/bugs/validation_fix_2026_02_25/plan_validacion_rapida_fix.md` with Fix 17 scope, repro, and acceptance criteria.
+
+### 🧠 Decisions made:
+
+- Local Mode Start now must persist `actualStartTime` to enable correct projection and avoid Run Mode restarts.
+- Scheduled auto-open must not navigate to `/timer/:id` in Local Mode if the group is missing.
+- Mode switching should reset Run Mode state and land on Task List to prevent cross-mode UI/data bleed.
+
+### ⚠️ Issues found:
+
+_(pending validation)_
+
+### 🎯 Next steps:
+
+- Implement Local Mode fixes (Start now `actualStartTime`, mode-switch guard, local auto-open gating).
+- Run `flutter analyze`.
+- Validate Local Mode repro steps and update checklist.

@@ -1604,7 +1604,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       createdAt: planCapturedAt,
       scheduledStartTime: scheduledStart,
       scheduledByDeviceId: scheduledByDeviceId,
-      actualStartTime: null,
+      actualStartTime: isStartNow ? recalculatedStart : null,
       theoreticalEndTime: recalculatedEnd,
       status: status,
       noticeMinutes: noticeMinutes,

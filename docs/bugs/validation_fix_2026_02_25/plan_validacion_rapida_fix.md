@@ -57,6 +57,7 @@ Each item below is a separate fix and must be committed separately.
 14. Follow-up: Mode switch (Local → Account) must re-evaluate and surface late-start queue when overdue conflicts exist (Scope 15).
 15. Auto-open trigger-based y suppression en pantallas sensibles (Scope 16).
 16. iOS scheduled notice 0 no black screen; asegurar navegacion estable (Scope 17).
+17. Local Mode isolation + Run Mode stability (Scope 3–8).
 
 ### Repro exacto (Fix 16 — iOS notice 0 black screen)
 - Modo: Account Mode en iOS simulador.
@@ -66,6 +67,15 @@ Each item below is a separate fix and must be committed separately.
 - Resultado previo: pantalla negra en iOS (imagen 03). Imagen 02 justo antes de OK.
 - Firebase (current) en ese instante: ownerDeviceId = web-6fbc21ef-e489-41bc-8d55-b35917480950, status = pomodoroRunning, phaseStartedAt = 13:04:24, remainingSeconds = 514.
 - Logs asociados: `_ios_simulator_iphone_17_pro_diag-1.log` y `2026_02_25_web_chrome_diag-1.log`.
+
+### Repro exacto (Fix 17 — Local Mode isolation + Run Mode stability)
+- Cambiar desde Account Mode a Local Mode sin cerrar la app.
+- Resultado observado: snackbar "Selected group not found" al entrar; en iOS aparece "Loading group..." con botones Pause/Cancel visibles.
+- Crear una tarea en Local Mode, seleccionar y usar Plan group -> Start now.
+- Resultado observado: Run Mode abre y vuelve a Groups Hub; al pulsar "Open Run Mode" el grupo reinicia.
+- En Groups Hub, el "Ends" del grupo running no coincide con el rango del item en Run Mode.
+- Tras cancelar en Local Mode y volver a Account Mode, Groups Hub muestra datos cruzados (Ends de grupo account en tarjeta local).
+- Con notice = 0 configurado en Settings, al programar en Local Mode aparece el error de "too soon" (incoherente).
 
 ## Fix Tracking
 Update this section after each fix.
@@ -85,6 +95,7 @@ Update this section after each fix.
 14. Fix 14 (Scope 15): Done (2026-02-26, tests: `flutter analyze`, commit: 4e1b92f "Fix 14: re-evaluate late-start queue on mode switch") — mode switch to Account re-evaluates late-start conflicts and removes the grace delay so Resolve overlaps can surface without restarting the app.
 15. Fix 15 (Scope 16): Done (2026-02-27, tests: `flutter analyze`, commit: 94074b7 "Fix 15: gate Run Mode auto-open triggers") — auto-open now respects trigger-only rules and suppresses re-open on sensitive routes.
 16. Fix 16 (Scope 17): Done (2026-02-28, tests: `flutter analyze`, commit: 9782fc3 "Fix 16: guard TimerScreen lifecycle on scheduled start") — TimerScreen now avoids ref/setState after unmount to prevent black screen.
+17. Fix 17 (Scope 3–8): Planned (2026-02-28) — Local Mode isolation + Run Mode stability.
 
 ## Plan (Docs First, Then Code)
 1. Update specs if any new edge-case rules or timing tolerances are added.
@@ -134,6 +145,10 @@ Hallazgos movidos a `docs/bug_log.md` (no bloquean esta rama, pero deben atacars
 14. Account Mode Start now / Run again always creates `activeSession/current` for running groups; Run Mode never stays in "Syncing session" due to a missing session doc.
 15. Auto-open solo ocurre en triggers explicitos (launch/resume, pre-run start, scheduled start, resolve overlaps o accion del usuario) y nunca interrumpe planificacion/edicion/settings.
 16. iOS programado notice 0 nunca deja pantalla negra; tras confirmar, la app queda en Run Mode o en Groups Hub/Task List con CTA visible.
+17. Cambiar de modo (Account ↔ Local) limpia Run Mode y regresa a Task List sin snackbars de "Selected group not found".
+18. En Local Mode, Start now mantiene Run Mode abierto; "Open Run Mode" no reinicia el grupo.
+19. En Local Mode, los rangos en Run Mode y Groups Hub coinciden (Ends correcto).
+20. En Local Mode con notice = 0, programar no muestra el error de pre-run "too soon".
 
 ## Validation Checklist
 - Create `quick_pass_checklist.md` **after** implementation, focused only on the bugs above.

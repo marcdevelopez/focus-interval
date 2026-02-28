@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/services/app_mode_service.dart';
 import '../presentation/providers.dart';
 import '../presentation/viewmodels/scheduled_group_coordinator.dart';
 import '../presentation/screens/late_start_overlap_queue_screen.dart';
@@ -117,6 +118,20 @@ class _ScheduledGroupAutoStarterState
   }
 
   Future<void> _openTimerForGroup(String groupId) async {
+    final appMode = ref.read(appModeProvider);
+    if (appMode == AppMode.local) {
+      final group =
+          await ref.read(taskRunGroupRepositoryProvider).getById(groupId);
+      if (!mounted) return;
+      if (group == null) {
+        debugPrint(
+          '[RunModeDiag] Auto-start skip (missing local group) '
+          'group=$groupId route=${_currentLocationFromKey()}',
+        );
+        return;
+      }
+      ref.read(pomodoroViewModelProvider.notifier).primeGroupForLoad(group);
+    }
     final navigatorContext = widget.navigatorKey.currentContext;
     if (navigatorContext == null) {
       debugPrint(
@@ -147,11 +162,13 @@ class _ScheduledGroupAutoStarterState
     }
     debugPrint('Auto-start opening TimerScreen for scheduled group.');
     router.go('/timer/$groupId');
-    final group =
-        await ref.read(taskRunGroupRepositoryProvider).getById(groupId);
-    if (!mounted) return;
-    if (group != null) {
-      ref.read(pomodoroViewModelProvider.notifier).primeGroupForLoad(group);
+    if (appMode != AppMode.local) {
+      final group =
+          await ref.read(taskRunGroupRepositoryProvider).getById(groupId);
+      if (!mounted) return;
+      if (group != null) {
+        ref.read(pomodoroViewModelProvider.notifier).primeGroupForLoad(group);
+      }
     }
   }
 
@@ -183,6 +200,12 @@ class _ScheduledGroupAutoStarterState
       if (!mounted) return;
       action();
     });
+  }
+
+  String _currentLocationFromKey() {
+    final navigatorContext = widget.navigatorKey.currentContext;
+    if (navigatorContext == null) return 'null';
+    return _currentLocation(navigatorContext);
   }
 
   String _currentLocation(BuildContext context) {
