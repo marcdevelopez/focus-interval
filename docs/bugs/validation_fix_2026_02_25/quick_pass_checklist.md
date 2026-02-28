@@ -103,7 +103,7 @@ Account Mode: Programado notice 0 FAIL (pantalla negra en iOS al confirmar; auto
 Local Mode: Start now FAIL (al abrir "Open Run Mode" reinicia el grupo; snackbar "Selected group not found" al entrar en Local).
 Local Mode: Programado notice 0 FAIL (no inicia al llegar la hora y aparece error de pre-run aun con notice 0).
 
-Resultados (27/02/2026, Fix 15 - Auto-open trigger gating)
+Resultados (28/02/2026, Fix 15 - Auto-open trigger gating)
 - Sesion running -> entrar a Plan group -> no auto-open: OK.
 - Pre-run / scheduled start -> auto-open: OK.
 - App resume con sesion activa -> auto-open una vez: OK.

@@ -16,6 +16,7 @@ Formatting rules:
 - Append new blocks at the end of this file (chronological order).
 - Block numbers must be strictly increasing and continue from the last block.
 - Never insert new blocks above existing ones.
+- Always verify the current date (e.g., `date`) before writing any date in docs; use the verified date.
 
 ---
 
