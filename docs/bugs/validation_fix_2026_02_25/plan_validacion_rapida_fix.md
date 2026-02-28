@@ -131,7 +131,7 @@ Update this section after each fix.
 17. Fix 17 (Scope 3–8): Done (2026-02-28, tests: `flutter analyze`, commit: 7b2a7ed "Fix 17: local mode isolation and run stability") — Local Mode isolation + Run Mode stability. Validation (28/02/2026): partial; still fails on Local Mode "Open Run Mode" restarting the group and Run Mode vs Groups Hub ranges mismatch (Chrome).
 18. Fix 18 (Scope 18): Done (2026-02-28, tests: `flutter analyze`, commit: 55879f4 "Fix 18: prevent local run mode restart") — Local Mode Open Run Mode must not restart the group; ranges must align.
 19. Fix 19 (Scope 19): Done (2026-02-28, tests: `flutter analyze`, commit: e7652fd "Fix 19: keep phase start on resume") — Status boxes must not shift on pause/resume; ranges must match task item.
-20. Fix 20 (Scope 20): Planned (2026-02-28) — Mirror must start in sync on first render.
+20. Fix 20 (Scope 20): Done (2026-02-28, tests: `flutter analyze`, commit: bad12c3 "Fix 20: derive mirror offset without lastUpdatedAt") — Mirror must start in sync on first render.
 
 ## Plan (Docs First, Then Code)
 1. Update specs if any new edge-case rules or timing tolerances are added.

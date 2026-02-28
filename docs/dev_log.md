@@ -8389,3 +8389,22 @@ _(pending validation)_
 - Implement fallback offset derivation in `PomodoroViewModel`.
 - Run `flutter analyze`.
 - Validate Fix 20 repro steps and regression checks.
+
+# 🔹 Block 500 — Fix 20: mirror initial sync (28/02/2026)
+
+### ✔ Work completed:
+
+- Added a fallback offset derivation when `lastUpdatedAt` is missing to avoid mirror drift.
+- Ran `flutter analyze` (no issues).
+
+### 🧠 Decisions made:
+
+- Use `phaseStartedAt + (phaseDurationSeconds - remainingSeconds)` as the initial anchor when no offset exists.
+
+### ⚠️ Issues found:
+
+_(pending validation)_
+
+### 🎯 Next steps:
+
+- Validate Fix 20 repro steps and regression checks.
