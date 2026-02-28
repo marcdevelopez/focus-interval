@@ -21,6 +21,7 @@ Source: docs/bugs/validation_fix_2026_02_24/quick_pass_checklist.md + screenshot
 15. Follow-up: Switching Local → Account with overdue groups does not trigger late-start queue; Resolve overlaps appears only after app restart (validation 26/02/2026).
 16. Auto-open de Run Mode se re-dispara e interrumpe al usuario fuera de los triggers permitidos (planificacion/edicion/modales).
 17. iOS: programado notice 0 deja pantalla negra al confirmar (app queda sin ruta visible).
+18. Local Mode: "Open Run Mode" reinicia el grupo running y desalinea rangos (follow-up Fix 17).
 
 ## Decisions And Requirements
 - Cancel all must resolve the queue for **all** devices.
@@ -57,6 +58,7 @@ Each item below is a separate fix and must be committed separately.
 14. Follow-up: Mode switch (Local → Account) must re-evaluate and surface late-start queue when overdue conflicts exist (Scope 15).
 15. Auto-open trigger-based y suppression en pantallas sensibles (Scope 16).
 16. iOS scheduled notice 0 no black screen; asegurar navegacion estable (Scope 17).
+17. Local Mode "Open Run Mode" no debe reiniciar el grupo; rangos deben coincidir (Scope 18).
 17. Local Mode isolation + Run Mode stability (Scope 3–8).
 
 ### Repro exacto (Fix 16 — iOS notice 0 black screen)
@@ -85,6 +87,13 @@ Each item below is a separate fix and must be committed separately.
 8. En Settings (Local Mode): fijar notice = 0. Programar un grupo by time a 1–2 minutos.
    - Bug observado: error "That start time is too soon..." (incoherente con notice 0).
 
+### Repro exacto (Fix 18 — Local Mode Open Run Mode restarts group)
+1. En Chrome Local Mode: crear una tarea, seleccionar y Plan group → Start now.
+2. Ir a Groups Hub y pulsar "Open Run Mode" varias veces.
+   - Bug observado: el grupo se reinicia cada vez.
+3. Comparar rango del item en Run Mode vs "Ends" en Groups Hub.
+   - Bug observado: no coinciden tras el reinicio.
+
 ## Fix Tracking
 Update this section after each fix.
 1. Fix 1 (Scope 1–3): Done (2026-02-25, tests: `flutter test`, commit: 9f614e6 "Fix 1: late-start owner resolved gating")
@@ -104,6 +113,7 @@ Update this section after each fix.
 15. Fix 15 (Scope 16): Done (2026-02-27, tests: `flutter analyze`, commit: 94074b7 "Fix 15: gate Run Mode auto-open triggers") — auto-open now respects trigger-only rules and suppresses re-open on sensitive routes.
 16. Fix 16 (Scope 17): Done (2026-02-28, tests: `flutter analyze`, commit: 9782fc3 "Fix 16: guard TimerScreen lifecycle on scheduled start") — TimerScreen now avoids ref/setState after unmount to prevent black screen.
 17. Fix 17 (Scope 3–8): Done (2026-02-28, tests: `flutter analyze`, commit: 7b2a7ed "Fix 17: local mode isolation and run stability") — Local Mode isolation + Run Mode stability. Validation (28/02/2026): partial; still fails on Local Mode "Open Run Mode" restarting the group and Run Mode vs Groups Hub ranges mismatch (Chrome).
+18. Fix 18 (Scope 18): Planned (2026-02-28) — Local Mode Open Run Mode must not restart the group; ranges must align.
 
 ## Plan (Docs First, Then Code)
 1. Update specs if any new edge-case rules or timing tolerances are added.

@@ -449,6 +449,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         session.ownerDeviceId != deviceId;
     if (state.status != PomodoroStatus.idle || isRemoteOwner) return;
     final appMode = ref.read(appModeProvider);
+    if (appMode == AppMode.local && group.actualStartTime != null) {
+      return;
+    }
     if (appMode == AppMode.account && session == null) {
       final initiator = group.scheduledByDeviceId;
       if (initiator != null && initiator != deviceId) {

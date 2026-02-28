@@ -8232,3 +8232,23 @@ _(pending validation)_
 
 - Fix Local Mode Run Mode restart on open (ensure re-open does not reset task start).
 - Align Run Mode ranges with Groups Hub after re-open.
+
+# 🔹 Block 492 — Plan: Local Mode Run Mode re-open stability (28/02/2026)
+
+### ✔ Work completed:
+
+- Updated `docs/bugs/validation_fix_2026_02_25/plan_validacion_rapida_fix.md` with Fix 18 scope, repro, and acceptance criteria.
+
+### 🧠 Decisions made:
+
+- In Local Mode, re-opening a running group must never auto-start if `actualStartTime` already exists; use projection instead.
+
+### ⚠️ Issues found:
+
+_(pending validation)_
+
+### 🎯 Next steps:
+
+- Implement the Local Mode auto-start guard in Run Mode.
+- Run `flutter analyze`.
+- Validate Fix 18 repro steps.
