@@ -622,14 +622,19 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final isMirror = isSessionForGroup && ownerDeviceId != deviceId;
     final hasSession = isSessionForGroup;
     final isResyncing = vm.isResyncing;
+    final isTimeSyncReady = vm.isTimeSyncReady;
     final isSessionMissingWhileRunning =
         isAccountMode && vm.isSessionMissingWhileRunning;
     final shouldForceSyncUntilSession =
         isAccountMode &&
         currentGroup?.status == TaskRunStatus.running &&
         !isSessionForGroup;
+    final shouldForceTimeSync =
+        isAccountMode && hasSession && !isTimeSyncReady;
     final isSyncingSession =
-        isSessionMissingWhileRunning || shouldForceSyncUntilSession;
+        isSessionMissingWhileRunning ||
+        shouldForceSyncUntilSession ||
+        shouldForceTimeSync;
     final shouldHoldReadyWhileRunning =
         isAccountMode &&
         currentGroup?.status == TaskRunStatus.running &&

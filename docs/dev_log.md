@@ -8529,3 +8529,34 @@ _(pending validation)_
 ### 🎯 Next steps:
 
 - Re-validate Fix 21 + regression checks.
+
+# 🔹 Block 507 — Fix 22 implementation started (28/02/2026)
+
+### ✔ Work completed:
+
+- Implemented TimeSyncService (server timestamp offset) + provider wiring.
+- Added `sessionRevision` and `accumulatedPausedSeconds` to PomodoroSession.
+- Updated Firestore rules for `users/{uid}/timeSync`.
+- Refactored PomodoroViewModel projection to use server time + revision ordering
+  (lastUpdatedAt is ordering-only).
+- Updated scheduled auto-start + late-start queue initial session fields.
+- Updated VM tests to include new session fields and disable time sync in tests.
+- Ran `flutter test` (pause expiry, ownership request, session gap, scheduled coordinator) and `flutter analyze`.
+
+### 🧠 Decisions made:
+
+- Projections must derive only from `serverNow`, `phaseStartedAt`,
+  `pausedAt`, and `accumulatedPausedSeconds`.
+- Accept snapshots by `sessionRevision`; use `lastUpdatedAt` only as a
+  secondary order tie-breaker.
+
+### ⚠️ Issues found:
+
+- None during implementation (validation still pending).
+
+### 🎯 Next steps:
+
+- Run `tools/check_release_safety.sh` (Firestore schema/rules touched).
+- Complete validation scenarios for Fix 22 (owner/mirror, pause/resume,
+  background, Local → Account).
+- Commit Fix 22 after validation + plan updates.

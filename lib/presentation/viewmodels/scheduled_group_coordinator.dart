@@ -1044,7 +1044,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       if (!_canUseRef) return;
       if (latest == null) return;
       if (latest.status != TaskRunStatus.scheduled) return;
-      final now = DateTime.now();
+      final now = await _resolveServerNow(force: true);
       final scheduledStart =
           resolveEffectiveScheduledStart(
             group: latest,
@@ -1106,6 +1106,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       currentTaskIndex: 0,
       totalTasks: group.tasks.length,
       dataVersion: kCurrentDataVersion,
+      sessionRevision: 1,
       ownerDeviceId: ref.read(deviceInfoServiceProvider).deviceId,
       status: PomodoroStatus.pomodoroRunning,
       phase: PomodoroPhase.pomodoro,
@@ -1113,6 +1114,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       totalPomodoros: task.totalPomodoros,
       phaseDurationSeconds: task.pomodoroMinutes * 60,
       remainingSeconds: task.pomodoroMinutes * 60,
+      accumulatedPausedSeconds: 0,
       phaseStartedAt: startedAt,
       currentTaskStartedAt: startedAt,
       pausedAt: null,
@@ -1121,6 +1123,15 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       pauseReason: null,
     );
     await ref.read(pomodoroSessionRepositoryProvider).publishSession(session);
+  }
+
+  Future<DateTime> _resolveServerNow({bool force = false}) async {
+    final appMode = ref.read(appModeProvider);
+    if (appMode != AppMode.account) return DateTime.now();
+    final timeSync = ref.read(timeSyncServiceProvider);
+    final offset = await timeSync.refresh(force: force);
+    if (offset == null) return DateTime.now();
+    return DateTime.now().add(offset);
   }
 
   Future<void> _scheduleLocalPreAlert({

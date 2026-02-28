@@ -294,6 +294,8 @@ Notes:
 - `sessionRevision` increments on **every authoritative change** (owner-only).
   Mirrors must ignore snapshots with `revision <= lastApplied` (fallback to
   `lastUpdatedAt` ordering for legacy snapshots).
+- Backward compatibility: if `sessionRevision` or `accumulatedPausedSeconds` are
+  missing, clients must default them to `0` and continue safely.
 
 ## **5.4. UserProfile model (Account Mode only)**
 

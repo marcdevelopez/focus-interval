@@ -235,6 +235,8 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
       if (updatedAt == null) return false;
       final isStale = now.difference(updatedAt) >= _ownerStaleThreshold;
       if (!isStale) return false;
+      final currentRevision = (data['sessionRevision'] as num?)?.toInt() ?? 0;
+      final nextRevision = currentRevision + 1;
       final rawRequest = data['ownershipRequest'];
       final requestMap = rawRequest is Map<String, dynamic>
           ? rawRequest
@@ -258,6 +260,7 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
         {
           'ownerDeviceId': requesterDeviceId,
           'ownershipRequest': FieldValue.delete(),
+          'sessionRevision': nextRevision,
           'lastUpdatedAt': FieldValue.serverTimestamp(),
         },
         SetOptions(merge: true),
@@ -290,12 +293,15 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
       final status = requestMap?['status'] as String?;
       final requester = requestMap?['requesterDeviceId'] as String?;
       if (status != 'pending' || requester != requesterDeviceId) return;
+      final currentRevision = (data['sessionRevision'] as num?)?.toInt() ?? 0;
+      final nextRevision = currentRevision + 1;
       if (approved) {
         tx.set(
           docRef,
           {
             'ownerDeviceId': requesterDeviceId,
             'ownershipRequest': FieldValue.delete(),
+            'sessionRevision': nextRevision,
             'lastUpdatedAt': FieldValue.serverTimestamp(),
           },
           SetOptions(merge: true),
@@ -313,6 +319,7 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
             'respondedAt': FieldValue.serverTimestamp(),
             'respondedByDeviceId': ownerDeviceId,
           },
+          'sessionRevision': nextRevision,
           'lastUpdatedAt': FieldValue.serverTimestamp(),
         },
         SetOptions(merge: true),

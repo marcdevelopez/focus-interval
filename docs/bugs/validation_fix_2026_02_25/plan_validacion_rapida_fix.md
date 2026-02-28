@@ -145,7 +145,7 @@ Update this section after each fix.
 19. Fix 19 (Scope 19): Done (2026-02-28, tests: `flutter analyze`, commit: e7652fd "Fix 19: keep phase start on resume") — Status boxes must not shift on pause/resume; ranges must match task item.
 20. Fix 20 (Scope 20): Done (2026-02-28, tests: `flutter analyze`, commit: bad12c3 "Fix 20: derive mirror offset without lastUpdatedAt") — Mirror must start in sync on first render. Validation FAILED (28/02/2026): mirror still starts behind when `lastUpdatedAt` is stale.
 21. Fix 21 (Scope 21): In progress (2026-02-28) — attempt 1 regressed (mirror countdown accelerates); attempt 2 still desyncs after mode switch; attempt 3 (fresh-snapshot gating) still fails on iOS owner + Chrome mirror.
-22. Fix 22 (Scope 22): Planned (2026-02-28) — P0 single source of truth refactor (time sync + sessionRevision + paused offsets).
+22. Fix 22 (Scope 22): In progress (2026-02-28) — P0 single source of truth refactor (time sync + sessionRevision + paused offsets). Implementation underway; tests: `flutter test` (VM + coordinator) + `flutter analyze`. Validation pending.
 
 ### Fix 22 — Plan de implementacion (P0 single source of truth)
 1. Modelo/Firestore: añadir `sessionRevision` y `accumulatedPausedSeconds` en `PomodoroSession`; añadir `users/{uid}/timeSync` (serverTimestamp); actualizar `firestore.rules`; compatibilidad: campos ausentes -> 0.

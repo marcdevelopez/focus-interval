@@ -648,7 +648,7 @@ class _LateStartOverlapQueueScreenState
       final repo = ref.read(taskRunGroupRepositoryProvider);
       final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
       final notifier = ref.read(notificationServiceProvider);
-      final now = DateTime.now();
+      final now = await _resolveServerNow(force: true);
       final queueNow = _queueNow(now);
       final isCancelAll = selectedGroups.isEmpty;
 
@@ -839,6 +839,15 @@ class _LateStartOverlapQueueScreenState
 
   DateTime _queueNow(DateTime now) {
     return _anchor.add(now.difference(_anchorCapturedAt));
+  }
+
+  Future<DateTime> _resolveServerNow({bool force = false}) async {
+    final appMode = ref.read(appModeProvider);
+    if (appMode != AppMode.account) return DateTime.now();
+    final timeSync = ref.read(timeSyncServiceProvider);
+    final offset = await timeSync.refresh(force: force);
+    if (offset == null) return DateTime.now();
+    return DateTime.now().add(offset);
   }
 
   Widget _ownerRow(String ownerDeviceId) {
@@ -1078,6 +1087,7 @@ class _LateStartOverlapQueueScreenState
       currentTaskIndex: 0,
       totalTasks: group.tasks.length,
       dataVersion: kCurrentDataVersion,
+      sessionRevision: 1,
       ownerDeviceId: ref.read(deviceInfoServiceProvider).deviceId,
       status: PomodoroStatus.pomodoroRunning,
       phase: PomodoroPhase.pomodoro,
@@ -1085,6 +1095,7 @@ class _LateStartOverlapQueueScreenState
       totalPomodoros: task.totalPomodoros,
       phaseDurationSeconds: task.pomodoroMinutes * 60,
       remainingSeconds: task.pomodoroMinutes * 60,
+      accumulatedPausedSeconds: 0,
       phaseStartedAt: queueNow,
       currentTaskStartedAt: queueNow,
       pausedAt: null,

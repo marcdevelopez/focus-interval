@@ -31,6 +31,7 @@ import '../data/services/local_sound_overrides.dart';
 import '../data/services/task_run_retention_service.dart';
 import '../data/services/task_run_notice_service.dart';
 import '../data/services/app_mode_service.dart';
+import '../data/services/time_sync_service.dart';
 
 // VIEWMODELS
 import 'viewmodels/pomodoro_view_model.dart';
@@ -199,6 +200,22 @@ final notificationServiceProvider = Provider<NotificationService>((_) {
 // Device info (overridden in main with persisted id)
 final deviceInfoServiceProvider = Provider<DeviceInfoService>((_) {
   return DeviceInfoService.ephemeral();
+});
+
+final timeSyncServiceProvider = Provider<TimeSyncService>((ref) {
+  final appMode = ref.watch(appModeProvider);
+  final authState = ref.watch(authStateProvider).value;
+  final syncEnabled = ref.watch(accountSyncEnabledProvider);
+  if (appMode != AppMode.account || authState == null || !syncEnabled) {
+    return TimeSyncService(enabled: false);
+  }
+  final auth = ref.watch(firebaseAuthServiceProvider);
+  final firestore = ref.watch(firestoreServiceProvider);
+  return TimeSyncService(
+    authService: auth,
+    firestoreService: firestore,
+    enabled: true,
+  );
 });
 
 // Pomodoro session repository
