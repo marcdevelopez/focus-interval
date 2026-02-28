@@ -23,7 +23,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **27/02/2026**
+Last update: **28/02/2026**
 
 ---
 
@@ -8124,3 +8124,24 @@ _(pending validation)_
 
 - Validate auto-open triggers (launch/resume, pre-run start, scheduled start) across iOS/Web/Android.
 - Confirm no re-open while planning or editing.
+
+# 🔹 Block 487 — Plan: iOS scheduled notice 0 black screen (28/02/2026)
+
+### ✔ Work completed:
+
+- Updated `docs/bugs/validation_fix_2026_02_25/plan_validacion_rapida_fix.md` to add Scope 17 and fix order for the iOS black screen issue.
+
+### 🧠 Decisions made:
+
+- Address the iOS black screen before Local Mode fixes to minimize regressions and keep changes localized.
+- Treat the fix as a navigation stability issue: always land on Run Mode or a valid hub route after confirm.
+
+### ⚠️ Issues found:
+
+_(pending validation)_
+
+### 🎯 Next steps:
+
+- Review iOS/Chrome logs for the black screen repro path.
+- Implement the minimal navigation fallback to prevent black screens.
+- Run `flutter analyze` and validate on iOS + Web.

@@ -20,6 +20,7 @@ Source: docs/bugs/validation_fix_2026_02_24/quick_pass_checklist.md + screenshot
 14. Follow-up: Late-start queue claim fails on some devices; mirror never shows Resolve overlaps or "Owner resolved" after Cancel all (validation 26/02/2026).
 15. Follow-up: Switching Local → Account with overdue groups does not trigger late-start queue; Resolve overlaps appears only after app restart (validation 26/02/2026).
 16. Auto-open de Run Mode se re-dispara e interrumpe al usuario fuera de los triggers permitidos (planificacion/edicion/modales).
+17. iOS: programado notice 0 deja pantalla negra al confirmar (app queda sin ruta visible).
 
 ## Decisions And Requirements
 - Cancel all must resolve the queue for **all** devices.
@@ -36,6 +37,7 @@ Source: docs/bugs/validation_fix_2026_02_24/quick_pass_checklist.md + screenshot
 - If the group truly does not exist after the unified start pipeline, show "Selected group not found" and return to the correct hub screen.
 - Account Mode Start now / Run again must publish `activeSession/current` as owner when a group transitions to running; a running group without `activeSession` is invalid.
 - Auto-open debe ser por triggers explicitos y no re-dispararse en cada update del stream; nunca debe interrumpir planificacion/edicion/settings.
+- iOS programado notice 0 nunca debe dejar pantalla negra; la app debe quedar en Run Mode o en un hub valido con CTA.
 
 ## Fix Order (Implementation Sequence)
 Each item below is a separate fix and must be committed separately.
@@ -54,6 +56,7 @@ Each item below is a separate fix and must be committed separately.
 13. Follow-up: Late-start queue claim must not block mirror queue display or "Owner resolved" modal (Scope 14).
 14. Follow-up: Mode switch (Local → Account) must re-evaluate and surface late-start queue when overdue conflicts exist (Scope 15).
 15. Auto-open trigger-based y suppression en pantallas sensibles (Scope 16).
+16. iOS scheduled notice 0 no black screen; asegurar navegacion estable (Scope 17).
 
 ## Fix Tracking
 Update this section after each fix.
@@ -87,7 +90,7 @@ Update this section after each fix.
 Nota: estos hallazgos deben resolverse en esta rama o registrarse como bugs a corregir antes de implementar nuevas features.
 
 1. Auto-open de Run Mode se re-dispara desde cualquier pantalla (Task List, Groups Hub, planificacion, modales) sin accion directa del usuario. (Ahora en Scope 16)
-2. Account Mode: programado notice 0 deja pantalla negra en iOS al confirmar (logs: `_ios_simulator_iphone_17_pro_diag-1.log`, `2026_02_25_web_chrome_diag-1.log`).
+2. Account Mode: programado notice 0 deja pantalla negra en iOS al confirmar (logs: `_ios_simulator_iphone_17_pro_diag-1.log`, `2026_02_25_web_chrome_diag-1.log`). (Ahora en Scope 17)
 3. Local Mode: snackbar "Selected group not found" al entrar sin accion; en iOS queda "Loading group..." con botones Pause/Cancel visibles.
 4. Local Mode: "Open Run Mode" en Groups Hub reinicia el grupo cada vez.
 5. Local Mode: rangos inconsistentes entre Run Mode y Groups Hub (Ends no coincide con rango del item).
@@ -120,6 +123,7 @@ Hallazgos movidos a `docs/bug_log.md` (no bloquean esta rama, pero deben atacars
 13. If the group is truly missing after the unified start pipeline, show "Selected group not found" and navigate to the correct hub screen.
 14. Account Mode Start now / Run again always creates `activeSession/current` for running groups; Run Mode never stays in "Syncing session" due to a missing session doc.
 15. Auto-open solo ocurre en triggers explicitos (launch/resume, pre-run start, scheduled start, resolve overlaps o accion del usuario) y nunca interrumpe planificacion/edicion/settings.
+16. iOS programado notice 0 nunca deja pantalla negra; tras confirmar, la app queda en Run Mode o en Groups Hub/Task List con CTA visible.
 
 ## Validation Checklist
 - Create `quick_pass_checklist.md` **after** implementation, focused only on the bugs above.
