@@ -8309,3 +8309,22 @@ _(none)_
 ### 🎯 Next steps:
 
 - Apply the regression checklist after every subsequent fix in this validation track.
+
+# 🔹 Block 496 — Regression checks validated (28/02/2026)
+
+### ✔ Work completed:
+
+- Executed regression smoke checks after Fix 18.
+- Logged results in `docs/bugs/validation_fix_2026_02_25/quick_pass_checklist.md`.
+
+### 🧠 Decisions made:
+
+- Regression checks are required for every fix and must be recorded.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Continue with the next fix in the plan.

@@ -135,6 +135,12 @@ Regression checks (obligatorio tras cada fix)
 3. Local Mode: "Open Run Mode" no reinicia el grupo running.
 4. Completion: tras el modal de completion la app vuelve a Groups Hub (nunca Ready).
 
+Resultados (28/02/2026, Regression checks - Fix 18)
+1. Auto-open gating: OK.
+2. iOS notice 0: OK.
+3. Local Mode Open Run Mode: OK.
+4. Completion → Groups Hub: OK.
+
 Notas adicionales (27/02/2026) — nuevos bugs observados (fuera del checklist)
 1. Auto-open de Run Mode se re-dispara de forma periodica desde cualquier pantalla (Task List, Groups Hub, planificacion, modales). Interrumpe al usuario y reabre Run Mode aunque no haya accion directa.
 2. Account Mode: programado notice 0 genera pantalla negra en iOS tras confirmar (imagenes 02–03). Logs: `_ios_simulator_iphone_17_pro_diag-1.log` y `2026_02_25_web_chrome_diag-1.log`. Reintento con logs `*_diag-2.log`.
