@@ -682,7 +682,9 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _pauseStartedAt = null;
     _pauseReason = null;
     _machine.resume();
-    _markPhaseStartedFromState(_machine.state, now: now);
+    if (_localPhaseStartedAt == null) {
+      _markPhaseStartedFromState(_machine.state, now: now);
+    }
     _publishCurrentSession();
   }
 

@@ -8328,3 +8328,23 @@ _(none)_
 ### 🎯 Next steps:
 
 - Continue with the next fix in the plan.
+
+# 🔹 Block 497 — Plan: Fix 19 status box ranges after pause (28/02/2026)
+
+### ✔ Work completed:
+
+- Updated `docs/bugs/validation_fix_2026_02_25/plan_validacion_rapida_fix.md` with Fix 19 scope and exact repro.
+
+### 🧠 Decisions made:
+
+- Preserve `phaseStartedAt` across pause/resume so status boxes keep the original phase start and extend the end by the pause duration.
+
+### ⚠️ Issues found:
+
+_(pending validation)_
+
+### 🎯 Next steps:
+
+- Implement the pause/resume guard in `PomodoroViewModel.resume()`.
+- Run `flutter analyze`.
+- Validate Fix 19 repro steps and regression checks.
