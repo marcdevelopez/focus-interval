@@ -75,6 +75,7 @@ Update this section after each fix.
 13. Fix 13 (Scope 14): Done (2026-02-26, tests: `flutter analyze`, commit: 618706f "Fix 13: harden late-start queue claim") — late-start claim is resilient to mixed timestamp formats and still surfaces the queue on mirrors if claim fails.
 14. Fix 14 (Scope 15): Done (2026-02-26, tests: `flutter analyze`, commit: 4e1b92f "Fix 14: re-evaluate late-start queue on mode switch") — mode switch to Account re-evaluates late-start conflicts and removes the grace delay so Resolve overlaps can surface without restarting the app.
 15. Fix 15 (Scope 16): Done (2026-02-27, tests: `flutter analyze`, commit: 94074b7 "Fix 15: gate Run Mode auto-open triggers") — auto-open now respects trigger-only rules and suppresses re-open on sensitive routes.
+16. Fix 16 (Scope 17): Done (2026-02-28, tests: `flutter analyze`, commit: 9782fc3 "Fix 16: guard TimerScreen lifecycle on scheduled start") — TimerScreen now avoids ref/setState after unmount to prevent black screen.
 
 ## Plan (Docs First, Then Code)
 1. Update specs if any new edge-case rules or timing tolerances are added.
