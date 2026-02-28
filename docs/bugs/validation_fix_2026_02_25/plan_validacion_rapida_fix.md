@@ -24,6 +24,8 @@ Source: docs/bugs/validation_fix_2026_02_24/quick_pass_checklist.md + screenshot
 18. Local Mode: "Open Run Mode" reinicia el grupo running y desalinea rangos (follow-up Fix 17).
 19. Rangos de tareas vs status boxes se desalinean tras pausa/resume (follow-up Fix 5).
 20. Mirror: al abrir la app, el timer empieza con desfase de segundos hasta el siguiente snapshot (regresion).
+21. Mirror: al volver de background o de Local -> Account, el timer arranca desfasado si `lastUpdatedAt` es viejo; debe compensar el delta hasta el siguiente snapshot (regresion).
+22. P0: Run Mode single source of truth (time sync real + sessionRevision + paused offsets); eliminar drift y estados divergentes entre owner/mirror (regresion critica).
 
 ## Decisions And Requirements
 - Cancel all must resolve the queue for **all** devices.
@@ -63,7 +65,8 @@ Each item below is a separate fix and must be committed separately.
 17. Local Mode "Open Run Mode" no debe reiniciar el grupo; rangos deben coincidir (Scope 18).
 18. Rangos de tareas vs status boxes deben coincidir tras pausa/resume (Scope 19).
 19. Mirror debe iniciar ya sincronizado al abrir (sin desfase de segundos) (Scope 20).
-17. Local Mode isolation + Run Mode stability (Scope 3–8).
+20. Mirror debe compensar snapshots viejos al reanudar (sin desfase inicial) (Scope 21).
+21. P0: Run Mode single source of truth (time sync + revision + pause offsets) (Scope 22).
 
 ### Repro exacto (Fix 16 — iOS notice 0 black screen)
 - Modo: Account Mode en iOS simulador.
@@ -110,6 +113,15 @@ Each item below is a separate fix and must be committed separately.
 3. Observar el timer del mirror al entrar.
    - Bug observado: arranca con desfase de segundos y se corrige en el siguiente snapshot.
 
+### Repro exacto (Fix 21 — Mirror desfasado tras resume / Local -> Account)
+1. Owner (Account Mode) con grupo running en iOS.
+2. Mirror (Chrome) en Account Mode: abrir Run Mode y confirmar que esta en sync.
+3. En mirror: enviar la app a background o cambiar a Local Mode durante ~10s.
+4. Volver a Account Mode en el mirror (o foreground).
+5. Observar el timer del mirror justo al reanudar.
+   - Bug observado: arranca con desfase de segundos respecto al owner y se corrige en el siguiente snapshot.
+   - Logs: `2026_02_28_ios_simulator_iphone_17_pro_diag.log`, `2026_02_28_web_chrome_diag.log`.
+
 ## Fix Tracking
 Update this section after each fix.
 1. Fix 1 (Scope 1–3): Done (2026-02-25, tests: `flutter test`, commit: 9f614e6 "Fix 1: late-start owner resolved gating")
@@ -131,7 +143,24 @@ Update this section after each fix.
 17. Fix 17 (Scope 3–8): Done (2026-02-28, tests: `flutter analyze`, commit: 7b2a7ed "Fix 17: local mode isolation and run stability") — Local Mode isolation + Run Mode stability. Validation (28/02/2026): partial; still fails on Local Mode "Open Run Mode" restarting the group and Run Mode vs Groups Hub ranges mismatch (Chrome).
 18. Fix 18 (Scope 18): Done (2026-02-28, tests: `flutter analyze`, commit: 55879f4 "Fix 18: prevent local run mode restart") — Local Mode Open Run Mode must not restart the group; ranges must align.
 19. Fix 19 (Scope 19): Done (2026-02-28, tests: `flutter analyze`, commit: e7652fd "Fix 19: keep phase start on resume") — Status boxes must not shift on pause/resume; ranges must match task item.
-20. Fix 20 (Scope 20): Done (2026-02-28, tests: `flutter analyze`, commit: bad12c3 "Fix 20: derive mirror offset without lastUpdatedAt") — Mirror must start in sync on first render.
+20. Fix 20 (Scope 20): Done (2026-02-28, tests: `flutter analyze`, commit: bad12c3 "Fix 20: derive mirror offset without lastUpdatedAt") — Mirror must start in sync on first render. Validation FAILED (28/02/2026): mirror still starts behind when `lastUpdatedAt` is stale.
+21. Fix 21 (Scope 21): In progress (2026-02-28) — attempt 1 regressed (mirror countdown accelerates); attempt 2 still desyncs after mode switch; attempt 3 (fresh-snapshot gating) still fails on iOS owner + Chrome mirror.
+22. Fix 22 (Scope 22): Planned (2026-02-28) — P0 single source of truth refactor (time sync + sessionRevision + paused offsets).
+
+### Fix 22 — Plan de implementacion (P0 single source of truth)
+1. Modelo/Firestore: añadir `sessionRevision` y `accumulatedPausedSeconds` en `PomodoroSession`; añadir `users/{uid}/timeSync` (serverTimestamp); actualizar `firestore.rules`; compatibilidad: campos ausentes -> 0.
+2. Time sync real: crear repo/servicio para `timeSync` (write serverTimestamp + read Source.server); cachear offset; refrescar en launch/resume/mode switch con rate-limit.
+3. Proyeccion unica: usar `serverNow` para running/paused; `remainingSeconds` queda legacy; si no hay offset, mantener estado valido y mostrar syncing (sin recalcular).
+4. Orden determinista: aplicar snapshots solo si `sessionRevision` > lastApplied; para legacy, usar `lastUpdatedAt` solo como orden secundario.
+5. Writes owner-only: pause/resume/phase change actualizan `accumulatedPausedSeconds`, `pausedAt`, `phaseStartedAt` y **siempre** incrementan `sessionRevision`.
+6. Ownership transfer: el nuevo owner lee la sesion actual y publica el primer write con `revision+1`.
+7. Validacion: multi-device (owner/mirror), pause/resume, background, Local→Account; drift <=2s; sin Ready falsos ni swaps.
+
+### Fix 22 — Riesgos / fallos a vigilar
+1. Doble tick (actualizar desde dos timelines a la vez).
+2. Stale snapshots reescribiendo estado correcto (sessionRevision menor).
+3. Proyeccion desde `lastUpdatedAt` (debe quedar solo como liveness).
+4. Compatibilidad: clientes antiguos sin campos nuevos (defaults + dual-read/dual-write).
 
 ## Plan (Docs First, Then Code)
 1. Update specs if any new edge-case rules or timing tolerances are added.
@@ -185,6 +214,8 @@ Hallazgos movidos a `docs/bug_log.md` (no bloquean esta rama, pero deben atacars
 18. En Local Mode, Start now mantiene Run Mode abierto; "Open Run Mode" no reinicia el grupo.
 19. En Local Mode, los rangos en Run Mode y Groups Hub coinciden (Ends correcto).
 20. En Local Mode con notice = 0, programar no muestra el error de pre-run "too soon".
+21. En mirror, al volver de background o Local→Account, el timer arranca ya sincronizado (sin desfase inicial) y se ajusta con el siguiente snapshot.
+22. En Account Mode, owner/mirror comparten **una unica linea de tiempo** (drift ≤2s, sin swaps ni Ready falsos).
 
 ## Regression checks (obligatorio en cada fix)
 1. Auto-open gating: durante Plan group no reabre Run Mode; en resume auto-open ocurre una sola vez.

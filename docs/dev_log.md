@@ -8408,3 +8408,124 @@ _(pending validation)_
 ### 🎯 Next steps:
 
 - Validate Fix 20 repro steps and regression checks.
+
+# 🔹 Block 501 — Fix 20 validation failed; plan Fix 21 (28/02/2026)
+
+### ✔ Work completed:
+
+- Confirmed Fix 20 still fails when `lastUpdatedAt` is stale after mirror resume.
+- Updated validation plan/checklist to track the failed Fix 20 and a new Fix 21.
+- Updated specs/roadmap to include stale snapshot compensation for mirror projections.
+
+### 🧠 Decisions made:
+
+- Mirror devices must compensate stale `lastUpdatedAt` **only when running** by
+  advancing the projection with the local delta, then re-anchor on the next snapshot.
+- No compensation when paused or non-running to avoid time drift.
+
+### ⚠️ Issues found:
+
+- Mirror still starts behind after resume/Local→Account until the next heartbeat.
+
+### 🎯 Next steps:
+
+- Implement Fix 21 in `PomodoroViewModel`.
+- Run `flutter analyze`.
+- Re-validate Fix 21 repro steps and regression checks.
+
+# 🔹 Block 502 — Fix 21 attempt regressed; revise compensation strategy (28/02/2026)
+
+### ✔ Work completed:
+
+- Captured Fix 21 validation failure (mirror countdown accelerates; >1s per tick).
+- Updated checklist/plan with the regression details.
+- Revised the approach: rebase the offset once instead of adding delta per tick.
+
+### 🧠 Decisions made:
+
+- Stale mirror compensation must **not** add a delta each tick.
+- When the snapshot is stale and mirror is running, hold the existing offset
+  (or set it to zero if missing) and wait for the next snapshot to re-anchor.
+
+### ⚠️ Issues found:
+
+- Attempted compensation caused mirror to tick ~2s per second until next snapshot.
+
+### 🎯 Next steps:
+
+- Apply the revised offset-rebase logic.
+- Run `flutter analyze`.
+- Re-validate Fix 21 + regression checks.
+
+# 🔹 Block 503 — Fix 21 attempt 2 failed; switch to fresh-snapshot gating (28/02/2026)
+
+### ✔ Work completed:
+
+- Logged the new failure: owner/mirror desync persists after Local ↔ Account switches.
+- Updated plan/checklist/specs to pivot to fresh-snapshot gating.
+- Implemented fresh-snapshot gating in `PomodoroViewModel`.
+- Ran `flutter analyze` (no issues).
+
+### 🧠 Decisions made:
+
+- Stop using age-based compensation; instead gate projections on a **new**
+  `lastUpdatedAt` after resume/mode switch.
+- While waiting for a new snapshot, project from local time (no server offset).
+
+### ⚠️ Issues found:
+
+- Owner returned from Local with ~24s lag; drift persisted despite `lastUpdatedAt` updates.
+- First cancel action forced a resync but did not cancel (second cancel required).
+
+# 🔹 Block 504 — Fix 21 attempt 3 failed (28/02/2026)
+
+### ✔ Work completed:
+
+- Logged the latest validation: iOS owner + Chrome mirror still desync after Local ↔ Account.
+- Noted that Chrome logs remain incomplete post-launch.
+
+### ⚠️ Issues found:
+
+- Fresh-snapshot gating did not prevent desync on iOS owner resume.
+- Chrome mirror still fails after Local → Account.
+
+### 🎯 Next steps:
+
+- Revisit the sync/offset strategy with explicit server timestamp anchoring.
+
+# 🔹 Block 505 — P0 plan: single source of truth for Run Mode (28/02/2026)
+
+### ✔ Work completed:
+
+- Documented the P0 plan to enforce a single authoritative timeline for Run Mode.
+- Updated specs/roadmap/validation plan to add time sync, sessionRevision, and paused offsets.
+
+### 🧠 Decisions made:
+
+- Account Mode projection must derive **only** from the authoritative timeline
+  (`phaseStartedAt`, `phaseDurationSeconds`, `pausedAt`, `accumulatedPausedSeconds`)
+  and a real server time offset (timeSync).
+- `lastUpdatedAt` is liveness-only; it must not drive projection.
+- Snapshots must be ordered by `sessionRevision` (ignore stale updates).
+
+### ⚠️ Issues found:
+
+- Existing offset-based approaches (lastUpdatedAt derived) continue to diverge.
+
+### 🎯 Next steps:
+
+- Draft the implementation plan for Fix 22 (single source of truth).
+
+# 🔹 Block 506 — Fix 22 implementation plan drafted (28/02/2026)
+
+### ✔ Work completed:
+
+- Added the Fix 22 implementation plan (time sync + sessionRevision + paused offsets) to the validation plan.
+
+### 🎯 Next steps:
+
+- Review the Fix 22 plan and confirm before code changes.
+
+### 🎯 Next steps:
+
+- Re-validate Fix 21 + regression checks.

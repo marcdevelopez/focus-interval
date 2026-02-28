@@ -141,6 +141,24 @@ Resultados (28/02/2026, Regression checks - Fix 18)
 3. Local Mode Open Run Mode: OK.
 4. Completion → Groups Hub: OK.
 
+Resultados (28/02/2026, Fix 20 - Mirror initial sync drift)
+Logs: docs/bugs/validation_fix_2026_02_25/logs/2026_02_28_ios_simulator_iphone_17_pro_diag.log y 2026_02_28_web_chrome_diag.log.
+Repro: iOS owner running; Chrome mirror vuelve de Local → Account (o foreground tras ~10s).
+Resultado: FAIL. El mirror arranca con desfase de segundos respecto al owner y se corrige en el siguiente snapshot.
+
+Resultados (28/02/2026, Fix 21 - Mirror stale compensation attempt)
+Repro: Owner en Chrome running; iOS mirror pasa a Local y vuelve a Account.
+Resultado: FAIL. El mirror descuenta ~2s por tick (acelera) y el desfase crece hasta el siguiente snapshot (sincroniza temporalmente y vuelve a acelerar).
+
+Resultados (28/02/2026, Fix 21 - Attempt 2)
+Logs: docs/bugs/validation_fix_2026_02_25/logs/2026_02_28_ios_simulator_iphone_17_pro_diag.log y 2026_02_28_web_chrome_diag.log.
+Repro: Chrome owner running. iOS mirror pasa a Local y vuelve a Account (queda casi en sync). Luego el owner (Chrome) pasa a Local y vuelve a Account.
+Resultado: FAIL. El owner vuelve con ~24s menos que el mirror y el desfase sigue creciendo incluso con nuevos `lastUpdatedAt`. Al pulsar Cancel en owner, ambos se sincronizan al instante pero la sesión no se cancela (requiere un segundo cancel).
+
+Resultados (28/02/2026, Fix 21 - Attempt 3)
+Logs: docs/bugs/validation_fix_2026_02_25/logs/2026_02_28_ios_simulator_iphone_17_pro_diag.log y 2026_02_28_web_chrome_diag.log.
+Repro: iOS owner running. iOS pasa a Local y vuelve a Account: FAIL (desfase). Chrome pasa a Local y vuelve a Account: FAIL (sin solucion). Chrome logs siguen incompletos tras launch.
+
 Notas adicionales (27/02/2026) — nuevos bugs observados (fuera del checklist)
 1. Auto-open de Run Mode se re-dispara de forma periodica desde cualquier pantalla (Task List, Groups Hub, planificacion, modales). Interrumpe al usuario y reabre Run Mode aunque no haya accion directa.
 2. Account Mode: programado notice 0 genera pantalla negra en iOS tras confirmar (imagenes 02–03). Logs: `_ios_simulator_iphone_17_pro_diag-1.log` y `2026_02_25_web_chrome_diag-1.log`. Reintento con logs `*_diag-2.log`.

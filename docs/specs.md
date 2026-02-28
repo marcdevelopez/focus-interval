@@ -255,12 +255,14 @@ class PomodoroSession {
   PomodoroPhase? phase;
   int currentPomodoro;
   int totalPomodoros;
+  int sessionRevision; // monotonically increasing (owner-only)
 
   int phaseDurationSeconds; // duration of the current phase
-  int remainingSeconds;     // required for paused; running is projected from phaseStartedAt
+  int remainingSeconds;     // legacy/compat; running is projected from timeline
   DateTime phaseStartedAt;  // serverTimestamp on start/resume (phase progress only)
   DateTime? currentTaskStartedAt; // actual start of the current task (for time ranges)
   DateTime? pausedAt;       // serverTimestamp when pause begins (status == paused)
+  int accumulatedPausedSeconds; // total paused seconds for the current phase
   DateTime lastUpdatedAt;   // serverTimestamp of the last event
   DateTime? finishedAt;     // serverTimestamp when the group reaches completed
   String? pauseReason;      // optional; "user" when paused manually
@@ -287,7 +289,11 @@ Notes:
   task/group time ranges.
 - `currentTaskStartedAt` is authoritative for the active task start and must be
   published by the owner whenever the task changes.
-- `pausedAt` is required to compute cross-device pause offsets when any device resumes.
+- `pausedAt` + `accumulatedPausedSeconds` are required to compute cross-device
+  pause offsets deterministically (no local timers).
+- `sessionRevision` increments on **every authoritative change** (owner-only).
+  Mirrors must ignore snapshots with `revision <= lastApplied` (fallback to
+  `lastUpdatedAt` ordering for legacy snapshots).
 
 ## **5.4. UserProfile model (Account Mode only)**
 
@@ -521,6 +527,7 @@ Platform notes:
 - users/{uid}/tasks/{taskId}
 - users/{uid}/taskRunGroups/{groupId}
 - users/{uid}/pomodoroPresets/{presetId}
+- users/{uid}/timeSync (server time anchor; internal)
 - Linux: Firebase Auth/Firestore sync is unavailable; tasks and TaskRunGroups are stored locally (no cloud sync).
   - Rationale: FlutterFire plugins (`firebase_auth`, `cloud_firestore`) do not officially support Linux desktop,
     so Account Mode is disabled to avoid unstable behavior. Use Web (Chrome) on Linux for Account Mode.
@@ -565,16 +572,31 @@ users/{uid}/activeSession
 - Single document per user with the active session.
 - Must include groupId, currentTaskId, currentTaskIndex, and totalTasks.
 - ownerDevicePlatform is optional display metadata (presentation-only); it must not affect ownership logic.
-- Only the owner device writes authoritative execution fields; others subscribe in real time and
-  render progress by calculating remaining time from phaseStartedAt + phaseDurationSeconds using
-  a server-time offset derived from lastUpdatedAt (do not rely on raw local clock).
-- Compute `serverTimeOffset = lastUpdatedAt - localNow` when a snapshot arrives.
-- Project with `serverNow = localNow + serverTimeOffset`, `elapsed = serverNow - phaseStartedAt`.
-- Update the offset on each new snapshot; keep the last offset between ticks.
-- If `lastUpdatedAt` is missing, keep the prior offset and do not rebase from local time alone.
-  - If no prior offset exists, derive a fallback anchor using
-    `phaseStartedAt + (phaseDurationSeconds - remainingSeconds)` and use it
-    to compute the initial offset.
+- Only the owner device writes authoritative execution fields; others subscribe in real time and render progress from the **authoritative timeline** (no local timers as truth).
+- Time sync (Account Mode):
+  - Each device computes a `serverTimeOffset` using a **serverTimestamp** read
+    from Firestore (Source.server). Use a lightweight `timeSync` doc under
+    `users/{uid}/timeSync` (field: `serverTime` = serverTimestamp).
+  - Compute `serverTimeOffset = serverTime - localNow` when the snapshot is read.
+  - Refresh the offset on app launch, resume, and mode switch; rate-limit to avoid
+    excessive writes (e.g., ≥15s between syncs).
+- Projection (Account Mode):
+  - `serverNow = localNow + serverTimeOffset`
+  - If **running**:
+    - `elapsed = (serverNow - phaseStartedAt) - accumulatedPausedSeconds`
+  - If **paused**:
+    - `elapsed = (pausedAt - phaseStartedAt) - accumulatedPausedSeconds`
+  - `remaining = max(0, phaseDurationSeconds - elapsed)`
+  - `remainingSeconds` is **compat** only and must never override the projection.
+- Ordering & staleness:
+  - Use `sessionRevision` to accept snapshots in order and ignore stale updates.
+  - `lastUpdatedAt` is **liveness only** (ownership stale detection); it must **not**
+    be used to derive server time or projection.
+- Owner update rules (Account Mode):
+  - On **pause**: set `pausedAt = serverNow`, keep `accumulatedPausedSeconds` unchanged.
+  - On **resume**: `accumulatedPausedSeconds += (serverNow - pausedAt)`, then clear `pausedAt`.
+  - On **phase change**: set `phaseStartedAt = serverNow` and reset `accumulatedPausedSeconds = 0`.
+  - Increment `sessionRevision` on every authoritative change.
 - Mirror devices may write a non-authoritative ownershipRequest field to request a transfer.
   - `requestOwnership` only creates/updates ownershipRequest; it never changes ownerDeviceId.
     Ownership changes caused by staleness must use the auto-claim transaction.
