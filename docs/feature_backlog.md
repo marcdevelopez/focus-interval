@@ -66,20 +66,23 @@ execution slot.
 22. IDEA-003 — Responsive Timer Scaling (Desktop/Web)
 23. IDEA-010 — Ownership Request Explainer (Run Mode)
 24. IDEA-011 — Mirror Notifications for Active Runs
-25. IDEA-019 — Break Tasks List in Run Mode
-26. IDEA-001 — Circular group progress ring around timer
-27. IDEA-027 — Unified Mode Indicator + Session Context
-28. IDEA-021 — Account Deletion Action in Settings
-29. IDEA-022 — Verified Presence + Activity Heatmap
-30. IDEA-028 — Verified Activity Summary + Week Start Setting
-31. IDEA-023 — Resume Canceled Groups
-32. IDEA-024 — Workspaces With Shared TaskRunGroups
-33. IDEA-025 — Workspace Break Chat (Text + Deferred DM)
+25. IDEA-034 — Offline Continuation With Rejoin/Sync Choice
+26. IDEA-019 — Break Tasks List in Run Mode
+27. IDEA-001 — Circular group progress ring around timer
+28. IDEA-027 — Unified Mode Indicator + Session Context
+29. IDEA-021 — Account Deletion Action in Settings
+30. IDEA-022 — Verified Presence + Activity Heatmap
+31. IDEA-028 — Verified Activity Summary + Week Start Setting
+32. IDEA-023 — Resume Canceled Groups
+33. IDEA-024 — Workspaces With Shared TaskRunGroups
+34. IDEA-025 — Workspace Break Chat (Text + Deferred DM)
 
 Notes:
 - IDEA-028 depends on IDEA-022.
 - IDEA-025 depends on IDEA-024.
 - IDEA-029 and IDEA-018 overlap; keep both for now and merge later if needed.
+- IDEA-034 depends on Fix 22 (timeSync + single source of truth). Optional
+  presence signaling can piggyback on IDEA-022/IDEA-024.
 
 ## In progress
 
@@ -2650,3 +2653,93 @@ actions remain accessible without layout issues.
 
 Notes:
 Keep the modal readable at small phone sizes; avoid truncating critical times.
+
+---
+
+## IDEA-034 — Offline Continuation With Rejoin/Sync Choice
+
+ID: IDEA-034
+Title: Offline Continuation With Rejoin/Sync Choice
+Type: UX / Sync
+Scope: L
+Priority: P1
+Status: idea
+
+Problem / Goal:
+When a device loses network during a running or paused Account Mode session,
+the user is currently blocked in “Syncing session...”. We need a safe way to
+keep them productive without violating the single source of truth.
+
+Summary:
+If time sync or network is unavailable, show a clear offline banner and offer a
+choice to continue locally (non-synced) while the Account Mode session continues
+unaffected on other devices. When network returns, present a reconciliation
+choice (rejoin remote session vs keep local).
+
+Design / UX:
+Layout / placement:
+- Run Mode banner or pill at top: “Offline — local only”.
+- Inline CTA row: `Retry sync` and `Continue locally`.
+
+Visual states:
+- Offline banner visible when time sync is unavailable or network is down.
+- After choosing local continuation, show a persistent “Local-only” badge.
+
+Animation rules:
+- No animation required; keep steady UI to avoid confusion.
+
+Interaction:
+- `Retry sync` triggers a timeSync refresh and session fetch.
+- `Continue locally` switches to Local Mode with a local shadow group.
+- On reconnect, show a modal:
+  - “Account session changed while you were offline.”
+  - Options:
+    1) `Rejoin account session` (discard local)
+    2) `Keep local (stay Local Mode)`
+
+Text / typography:
+- Clear warnings about non-synced state and that other devices continue the
+  Account session independently.
+
+Data & Logic:
+Source of truth:
+- Account Mode session remains the only authoritative timeline.
+- Local continuation never writes to Account Mode while offline.
+
+Calculations:
+- Local continuation uses Local Mode timers and storage.
+- Account Mode session remains unchanged unless the user explicitly rejoins.
+
+Sync / multi-device:
+- Other devices remain in Account Mode and continue as owner/mirror.
+- Offline device does not publish to Account Mode.
+- On reconnect, allow rejoin or stay local; no auto-merge.
+
+Edge cases:
+- If Account session completed while offline, rejoin should open Groups Hub
+  and allow Run again / Start now actions.
+- If local continuation is active and the user re-joins, discard local state
+  and restore the remote session snapshot.
+- Multiple offline devices: each must choose independently; no implicit merge.
+
+Accessibility:
+- Offline banner and modal must be announced with clear warnings.
+
+Dependencies:
+- Fix 22 (timeSync + single source of truth).
+- Local/Account isolation rules (no silent merge).
+
+Risks:
+- User confusion about which mode they are in.
+- Accidental loss of local-only progress if rejoin is chosen.
+
+Acceptance criteria:
+- When offline, Run Mode is not blocked; user sees clear offline banner.
+- Choosing local continuation keeps the timer running without writing to
+  Account Mode.
+- On reconnect, user must explicitly choose rejoin or stay local.
+- No automatic merge or overwrite of Account Mode session.
+
+Notes:
+Optional: presence signals (e.g., “Device offline”) can be added later when
+workspaces/presence are implemented.
