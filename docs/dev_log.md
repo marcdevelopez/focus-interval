@@ -8665,3 +8665,24 @@ _(pending validation)_
 ### 🎯 Next steps:
 
 - Implement P0-3: render Run Mode from activeSession projection for owner and mirror.
+
+# 🔹 Block 513 — Spec clarification: no writes without timeSync (01/03/2026)
+
+### ✔ Work completed:
+
+- Clarified in specs that, in Account Mode, **no** authoritative writes are
+  allowed when server-time offset is unavailable (includes start/resume/auto-start,
+  heartbeats, and republish/recovery writes).
+- Clarified that heartbeat requirements apply only when time sync is ready.
+
+### 🧪 Tests:
+
+- Not applicable (documentation update).
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Implement P0-3: render Run Mode from activeSession projection for owner and mirror.

@@ -585,6 +585,12 @@ users/{uid}/activeSession
   - If the server-time offset is unavailable in Account Mode, **block** any
     start/resume/auto-start actions and show **Syncing session...**. Do not
     fall back to local time for authoritative writes.
+  - While the server-time offset is unavailable in Account Mode, **no**
+    authoritative writes are allowed, including start/resume/auto-start,
+    heartbeat publishes, and republish/recovery writes. The app may only refresh
+    time sync and keep the UI in syncing state.
+  - The heartbeat requirement applies only when time sync is ready; otherwise
+    the owner must not emit local-time heartbeats.
   - While syncing, the TimerScreen must **remain visible** when a prior snapshot
     exists. Use a non-blocking overlay (dim/blur + spinner + label) so the timer
     stays readable behind it. Only when no snapshot exists, show a full loader.
@@ -1866,6 +1872,9 @@ The MM:SS timer must not shift horizontally:
   is ready.
 - While time sync is unavailable in Account Mode, owner controls (start/resume/
   auto-start) must remain disabled; no local-time writes are permitted.
+- While time sync is unavailable, **no** authoritative writes are allowed,
+  including heartbeats and republish/recovery writes. Heartbeat enforcement
+  applies only when time sync is ready.
 - Mirror devices render task names/durations from the TaskRunGroup snapshot (by groupId), not from the editable task list.
 - **Single source of truth:** owner/mirror state and control gating must be derived from the same activeSession snapshot
   (groupId must match). Local flags may project state but must never override the snapshot.
