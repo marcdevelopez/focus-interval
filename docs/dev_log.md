@@ -8600,3 +8600,26 @@ _(pending validation)_
 ### 🎯 Next steps:
 
 - Implement P0-2: timeSync gating + intent queue + non-blocking syncing overlay.
+
+# 🔹 Block 510 — Fix 22 P0-2: timeSync gating + intent queue (01/03/2026)
+
+### ✔ Work completed:
+
+- Added timeSync gating for Start/Resume/Auto-start in Account Mode with a
+  pending intent queue.
+- Added a non-blocking Syncing overlay (timer stays visible) and retry state
+  when time sync stalls.
+- Auto-start now waits for server time; no local fallback when time sync is
+  unavailable.
+
+### 🧪 Tests:
+
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/viewmodels/scheduled_group_coordinator_test.dart` (passed)
+
+### ⚠️ Issues found:
+
+- None during implementation (validation pending).
+
+### 🎯 Next steps:
+
+- Implement P0-3: render Run Mode from activeSession projection for owner and mirror.
