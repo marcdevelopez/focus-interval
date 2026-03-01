@@ -184,6 +184,29 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
   }
 
   @override
+  Future<void> clearSessionIfInactive({String? expectedGroupId}) async {
+    final uid = await _uidOrThrow();
+    final docRef = _doc(uid);
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(docRef);
+      if (!snap.exists) return;
+      final data = snap.data();
+      if (data == null) return;
+      if (expectedGroupId != null) {
+        final groupId = data['groupId'] as String?;
+        if (groupId != expectedGroupId) return;
+      }
+      final statusRaw = data['status'] as String?;
+      final status = PomodoroStatus.values.firstWhere(
+        (e) => e.name == statusRaw,
+        orElse: () => PomodoroStatus.idle,
+      );
+      if (status.isActiveExecution) return;
+      tx.delete(docRef);
+    });
+  }
+
+  @override
   Future<void> requestOwnership({
     required String requesterDeviceId,
     required String requestId,

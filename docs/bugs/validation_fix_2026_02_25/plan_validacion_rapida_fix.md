@@ -165,6 +165,26 @@ Update this section after each fix.
     - Firebase activeSession/current queda con status=finished, remainingSeconds=0, phaseStartedAt=null.
     - Resto de pasos no validables por bloqueo del paso 1.
     - Logs: `2026_03_01_android_RMX3771_diag.log`, `2026_03_01_ios_simulator_iphone_17_pro_diag.log`.
+22h. Fix 22 (P0-4h): Clear inactive activeSession in VM + repo (01/03/2026). Tests: not run. Commit: pending. Validation (01/03/2026): PARTIAL/FAIL.
+    - Paso 1 OK tras borrar `current` finished.
+    - Al abrir la app reaparece `current` y se inicia un grupo running sin accion del usuario; termina inesperadamente y no aparece en Groups Hub.
+    - Auto-start correcto en segundo intento (session running OK).
+    - Pre-run no auto-open (se queda en Groups Hub con banner hasta tocar “Open Pre-Run”).
+    - Owner queda en “Syncing session…” varios minutos tras auto-start; se resuelve solo al salir a Groups Hub y volver.
+    - Cancel OK (se borra `activeSession/current`).
+    - Mirror OK (sin “Syncing session…” al abrir; cleanup al completar OK).
+    - Logs: `2026_03_01_android_RMX3771_diag-0.log`, `2026_03_01_ios_simulator_iphone_17_pro_diag-0.log`.
+22i. Fix 22 (P0-4i): Auto-start throttle + missing-session recovery + auto-open retry (01/03/2026). Tests: not run. Commit: pending. Validation (01/03/2026): PASS.
+    - Throttle duplicate auto-start pulses.
+    - Prime UI from last session when snapshot flickers and force resync.
+    - Retry auto-open navigation if `/timer/:id` is not reached.
+    - Auto-start duplicate (phantom running): OK.
+    - Pre-run auto-open: OK.
+    - Auto-start to Run Mode: OK (no Groups Hub bounce).
+    - Syncing session: only brief flicker, no prolonged hold.
+    - Cancel cleanup: OK (current cleared).
+    - Mirror: OK (no permanent syncing on open).
+    - Logs: `2026_03_01_android_RMX3771_diag-1.log`, `2026_03_01_ios_simulator_iphone_17_pro_diag-1.log`.
 
 ### Fix 22 — Plan de implementacion (P0 single source of truth)
 1. Modelo/Firestore: añadir `sessionRevision` y `accumulatedPausedSeconds` en `PomodoroSession`; añadir `users/{uid}/timeSync` (serverTimestamp); actualizar `firestore.rules`; compatibilidad: campos ausentes -> 0.

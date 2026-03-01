@@ -8827,3 +8827,86 @@ _(pending validation)_
 
 - Investigate why scheduled auto-start produces a finished activeSession.
 - Validate auto-start path against timeSync/sessionRevision gating.
+
+# 🔹 Block 520 — Fix 22h: clear inactive activeSession in VM + repo (01/03/2026)
+
+### ✔ Work completed:
+
+- Treat non-active activeSession snapshots (finished/canceled/idle) as null in
+  PomodoroViewModel; avoid storing them as `_latestSession`.
+- Added Firestore repository cleanup: `clearSessionIfInactive` deletes the doc
+  only when server status is not active (transactional guard).
+- Completion/cancel now clear activeSession regardless of control gating and
+  also trigger inactive cleanup for the current group.
+- Updated PomodoroSessionRepository fakes in tests to match the new interface.
+
+### 🧪 Tests:
+
+- Not run (pending validation).
+
+### ⚠️ Issues found:
+
+- Validation pending.
+
+### 🎯 Next steps:
+
+- Re-run the validation checklist (owner/mirror + auto-start).
+- If passed, record commit hash and update plan/checklist.
+
+# 🔹 Block 521 — Fix 22h validation (01/03/2026)
+
+### ✔ Work completed:
+
+- Validation run on Android + iOS with logs:
+  `2026_03_01_android_RMX3771_diag-0.log`,
+  `2026_03_01_ios_simulator_iphone_17_pro_diag-0.log`.
+
+### 🧪 Tests:
+
+- Not applicable.
+
+### ⚠️ Issues found:
+
+- A `current` session reappears on app open and starts running without user action; it finishes unexpectedly and does not appear in Groups Hub.
+- Pre-run does not auto-open; stays in Groups Hub with banner until user taps “Open Pre-Run”.
+- Owner stays in “Syncing session…” after auto-start for minutes; only resolves after navigating away (Groups Hub) and returning.
+- Auto-start succeeds on second attempt; cancel clears `activeSession/current`; mirror sync is OK.
+
+### 🎯 Next steps:
+
+- Investigate phantom auto-start on app open (stale group rehydration vs auto-start trigger).
+- Fix pre-run auto-open behavior and eliminate long “Syncing session…” holds for owner.
+
+# 🔹 Block 522 — Fix 22i: auto-start throttle + missing-session recovery + nav retry (01/03/2026)
+
+### ✔ Work completed:
+
+- Added auto-start throttling in PomodoroViewModel to prevent duplicate
+  `startFromAutoStart` calls for the same group in a short window.
+- When activeSession goes missing, keep a projected state from the last known
+  session and force a server resync to reduce prolonged “Syncing session…”.
+- Scheduled auto-start navigation now verifies route change and retries if the
+  app fails to land on `/timer/:groupId`.
+
+### 🧪 Tests:
+
+- Not run.
+
+### ⚠️ Issues found:
+
+- None during validation.
+
+### ✅ Validation (Fix 22i)
+
+- Logs: `2026_03_01_android_RMX3771_diag-1.log`,
+  `2026_03_01_ios_simulator_iphone_17_pro_diag-1.log`.
+- Auto-start duplicate (phantom running): OK.
+- Pre-run auto-open: OK.
+- Auto-start to Run Mode: OK (no bounce to Groups Hub).
+- Syncing session: only brief flicker, no prolonged hold.
+- Cancel cleanup: OK (current cleared).
+- Mirror: OK (no permanent syncing on open).
+
+### 🎯 Next steps:
+
+- Record commit hash after code + docs are committed.

@@ -104,6 +104,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   DateTime? _lastAppliedSessionUpdatedAt;
   int _accumulatedPausedSeconds = 0;
   DateTime? _lastAutoTakeoverAttemptAt;
+  bool _autoStartInFlight = false;
+  String? _autoStartInFlightGroupId;
+  DateTime? _lastAutoStartAttemptAt;
+  String? _lastAutoStartAttemptGroupId;
   bool _groupCompleted = false;
   bool _foregroundActive = false;
   String? _foregroundTitle;
@@ -645,19 +649,41 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   Future<void> startFromAutoStart() async {
-    final appMode = ref.read(appModeProvider);
-    if (appMode != AppMode.account) {
-      unawaited(_startInternal(enforceControls: true));
+    final groupId = _currentGroup?.id;
+    if (_isAutoStartThrottled(groupId)) {
+      if (kDebugMode) {
+        debugPrint(
+          '[RunModeDiag] Auto-start throttled '
+          'group=${groupId ?? 'n/a'}',
+        );
+      }
       return;
     }
-    if (!_ensureTimeSyncForIntent(_PendingIntentType.autoStart)) return;
-    await syncWithRemoteSession(refreshGroup: false);
-    final session = activeSessionForCurrentGroup;
-    if (session != null) {
-      if (session.ownerDeviceId != _deviceInfo.deviceId) return;
-      if (session.status.isActiveExecution) return;
+    _markAutoStartAttempt(groupId);
+    final appMode = ref.read(appModeProvider);
+    if (appMode != AppMode.account) {
+      try {
+        unawaited(_startInternal(enforceControls: true));
+      } finally {
+        _clearAutoStartInFlight(groupId);
+      }
+      return;
     }
-    unawaited(_startInternal(enforceControls: false));
+    if (!_ensureTimeSyncForIntent(_PendingIntentType.autoStart)) {
+      _clearAutoStartInFlight(groupId);
+      return;
+    }
+    try {
+      await syncWithRemoteSession(refreshGroup: false);
+      final session = activeSessionForCurrentGroup;
+      if (session != null) {
+        if (session.ownerDeviceId != _deviceInfo.deviceId) return;
+        if (session.status.isActiveExecution) return;
+      }
+      unawaited(_startInternal(enforceControls: false));
+    } finally {
+      _clearAutoStartInFlight(groupId);
+    }
   }
 
   Future<void> _startInternal({required bool enforceControls}) async {
@@ -690,7 +716,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   Future<bool> _ensureSessionClaimed(DateTime now) async {
     final session = _latestSession;
-    if (session != null) {
+    if (session != null && session.status.isActiveExecution) {
       _sessionRevision = session.sessionRevision;
       _accumulatedPausedSeconds = session.accumulatedPausedSeconds;
       return session.ownerDeviceId == _deviceInfo.deviceId;
@@ -836,7 +862,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     await _markGroupCanceled(
       reason: reason ?? TaskRunCanceledReason.user,
     );
-    await _sessionRepo.clearSessionAsOwner();
+    await _clearSessionIfOwned();
   }
 
   void applyRemoteCancellation() {
@@ -958,6 +984,35 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _localPhaseStartedAt = null;
     _groupCompleted = false;
     _stopPausedHeartbeat();
+    _autoStartInFlight = false;
+    _autoStartInFlightGroupId = null;
+  }
+
+  bool _isAutoStartThrottled(String? groupId) {
+    if (_autoStartInFlight && _autoStartInFlightGroupId == groupId) {
+      return true;
+    }
+    final lastAt = _lastAutoStartAttemptAt;
+    if (groupId != null &&
+        lastAt != null &&
+        _lastAutoStartAttemptGroupId == groupId &&
+        DateTime.now().difference(lastAt) < const Duration(seconds: 2)) {
+      return true;
+    }
+    return false;
+  }
+
+  void _markAutoStartAttempt(String? groupId) {
+    _autoStartInFlight = true;
+    _autoStartInFlightGroupId = groupId;
+    _lastAutoStartAttemptGroupId = groupId;
+    _lastAutoStartAttemptAt = DateTime.now();
+  }
+
+  void _clearAutoStartInFlight(String? groupId) {
+    if (_autoStartInFlightGroupId != groupId) return;
+    _autoStartInFlight = false;
+    _autoStartInFlightGroupId = null;
   }
 
   Future<void> _markGroupRunningIfNeeded({DateTime? startOverride}) async {
@@ -1010,7 +1065,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   Future<void> _clearSessionIfOwned() async {
-    if (!canControlSession) return;
     final session = _latestSession;
     final groupId = _currentGroup?.id;
     if (groupId != null &&
@@ -1020,6 +1074,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       return;
     }
     await _sessionRepo.clearSessionAsOwner();
+    await _sessionRepo.clearSessionIfInactive(expectedGroupId: groupId);
   }
 
   Future<void> _markGroupCanceled({required String reason}) async {
@@ -1308,24 +1363,32 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       (previous, next) {
         final previousSession = _latestSession;
         final wasMissing = _sessionMissingWhileRunning;
-        final session = _resolveSessionSnapshot(previous, next);
+        final rawSession = _resolveSessionSnapshot(previous, next);
+        final session = _coerceActiveSession(rawSession);
         if (session == null) {
           final shouldHoldForMissing =
               _shouldTreatMissingSessionAsRunning(previousSession);
-          if (shouldHoldForMissing) {
-            if (kDebugMode) {
-              debugPrint('[ActiveSession] Missing snapshot; holding in sync.');
-            }
-            _sessionMissingWhileRunning = true;
-            _mirrorTimer?.cancel();
-            _stopPausedHeartbeat();
-            _stopForegroundService();
-            _attemptMissingSessionRecovery(reason: 'stream-missing');
-            if (!wasMissing) {
-              _notifySessionMetaChanged();
-            }
-            return;
+        if (shouldHoldForMissing) {
+          if (kDebugMode) {
+            debugPrint('[ActiveSession] Missing snapshot; holding in sync.');
           }
+          _sessionMissingWhileRunning = true;
+          _mirrorTimer?.cancel();
+          _stopPausedHeartbeat();
+          _stopForegroundService();
+          _primeMissingSessionProjection(previousSession);
+          _attemptMissingSessionRecovery(reason: 'stream-missing');
+          unawaited(
+            syncWithRemoteSession(
+              refreshGroup: false,
+              preferServer: true,
+            ),
+          );
+          if (!wasMissing) {
+            _notifySessionMetaChanged();
+          }
+          return;
+        }
           if (kDebugMode) {
             debugPrint('[ActiveSession] Missing snapshot; clearing session.');
           }
@@ -1451,6 +1514,36 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (next is AsyncData<PomodoroSession?>) return next.value;
     if (previous is AsyncData<PomodoroSession?>) return previous.value;
     return null;
+  }
+
+  PomodoroSession? _coerceActiveSession(PomodoroSession? session) {
+    if (session == null) return null;
+    if (session.status.isActiveExecution) return session;
+    unawaited(_clearInactiveSession(session));
+    return null;
+  }
+
+  Future<void> _clearInactiveSession(PomodoroSession session) async {
+    await _sessionRepo.clearSessionIfInactive(
+      expectedGroupId: session.groupId,
+    );
+  }
+
+  void _primeMissingSessionProjection(PomodoroSession? session) {
+    if (session == null) return;
+    if (!session.status.isActiveExecution) return;
+    if (!_matchesCurrentContext(session)) return;
+    final projectionNow = _projectionNowForSession(session);
+    if (projectionNow == null) return;
+    final projected = _projectStateFromSession(
+      session,
+      projectionNow: projectionNow,
+    );
+    _applyProjectedState(
+      projected,
+      now: projectionNow,
+      syncMachine: false,
+    );
   }
 
   void _recordSessionSnapshot(PomodoroSession session, {DateTime? now}) {
@@ -2751,7 +2844,13 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   Future<PomodoroSession?> _sanitizeActiveSession(
     PomodoroSession? session,
   ) async {
-    if (session == null || !session.status.isActiveExecution) return session;
+    if (session == null) return null;
+    if (!session.status.isActiveExecution) {
+      await _sessionRepo.clearSessionIfInactive(
+        expectedGroupId: session.groupId,
+      );
+      return null;
+    }
     final groupId = session.groupId;
     if (groupId == null || groupId.isEmpty) return session;
     final now = DateTime.now();

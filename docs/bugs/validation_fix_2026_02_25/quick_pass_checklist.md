@@ -179,6 +179,15 @@ Logs: docs/bugs/validation_fix_2026_02_25/logs/2026_03_01_android_RMX3771_diag.l
    - En Firebase, activeSession/current queda en status=finished con remainingSeconds=0 y phaseStartedAt=null.
 2. Resto de pasos: no se pudo validar por el bloqueo del paso 1.
 
+Resultados (01/03/2026, Fix 22i)
+Logs: docs/bugs/validation_fix_2026_02_25/logs/2026_03_01_android_RMX3771_diag-1.log y 2026_03_01_ios_simulator_iphone_17_pro_diag-1.log.
+1. Auto-start duplicado (phantom running): OK (no se crea session fantasma al abrir).
+2. Pre-run auto-open: OK (auto-navega a TimerScreen).
+3. Auto-start a Run Mode: OK (sin rebote a Groups Hub).
+4. Syncing session: OK (solo flicker breve; no bloqueo >3–5s).
+5. Cancel cleanup: OK (activeSession/current se elimina al cancelar).
+6. Mirror: OK (al reabrir se mantiene en Run Mode sin syncing permanente).
+
 Notas adicionales (27/02/2026) — nuevos bugs observados (fuera del checklist)
 1. Auto-open de Run Mode se re-dispara de forma periodica desde cualquier pantalla (Task List, Groups Hub, planificacion, modales). Interrumpe al usuario y reabre Run Mode aunque no haya accion directa.
 2. Account Mode: programado notice 0 genera pantalla negra en iOS tras confirmar (imagenes 02–03). Logs: `_ios_simulator_iphone_17_pro_diag-1.log` y `2026_02_25_web_chrome_diag-1.log`. Reintento con logs `*_diag-2.log`.
@@ -198,6 +207,19 @@ Notas adicionales (27/02/2026) — nuevos bugs observados (fuera del checklist)
 
 Features solicitadas (27/02/2026)
 1. Modal de conflicto con informacion completa: grupo actual (nombre, inicio/fin, duracion) + grupo programado (inicio/fin, pre-run) en tarjetas y con scroll si no cabe.
+
+Resultados (01/03/2026, Fix 22h - clear inactive activeSession)
+Logs: docs/bugs/validation_fix_2026_02_25/logs/2026_03_01_android_RMX3771_diag-0.log y 2026_03_01_ios_simulator_iphone_17_pro_diag-0.log.
+1. Paso 1 (arranque limpio con current borrado): OK.
+2. Paso 2 (auto-start 1–2 min): PARTIAL.
+   - Al abrir la app reaparece `current` y comienza un grupo running sin accion del usuario; termina inesperadamente y no aparece en Groups Hub. FAIL.
+   - Segundo intento: auto-start crea `current` correcto y status running. OK.
+3. Paso 3 (no quedan sessions finished en Firebase): OK.
+4. Paso 4 (cancel): OK — al cancelar se elimina `activeSession/current`.
+5. Mirror: OK — Android mirror sincroniza al abrir sin “Syncing session…”, y el `current` se borra al completar.
+Nuevos problemas:
+- Pre-run no auto-open: el pre-run inicia pero no abre Run Mode automaticamente; se queda en Groups Hub con banner hasta tocar “Open Pre-Run”. FAIL.
+- Owner queda en “Syncing session…” varios minutos tras auto-start; solo se resuelve al salir a otra pantalla (Groups Hub) y volver. FAIL.
 2. Groups Hub debe indicar explicitamente cuando un grupo fue "postponed".
 3. Snackbar de postponed con notice 0 no debe mostrar "pre-run at ..."; debe omitirlo o indicar "sin pre-run".
 4. Plan group debe mostrar y permitir modificar el notice (pre-run) desde la misma pantalla.
