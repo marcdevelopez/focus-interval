@@ -283,7 +283,9 @@ Additional regression rule:
 
 ## 🔟 Language & consistency
 
-- All code, comments, UI strings, and docs are **English only**
+- All code, comments, UI strings, and docs are **English only**.
+- Exception: files/directories created by the project owner that are private and
+  only visible to them may be written in Spanish.
 - Naming must be:
   - Explicit
   - Consistent

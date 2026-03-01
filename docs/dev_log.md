@@ -7559,8 +7559,27 @@ _(not yet validated on devices)_
 
 - Re-run the validation checklist on macOS + Android.
 - Verify Pre-Run auto-open idempotency, mirror cancel behavior, and logout flow.
+  
+# 🔹 Block 459 — Docs: Spanish private exception + checklist translation (25/02/2026)
 
-# 🔹 Block 459 — Feature docs structure (25/02/2026)
+### ✔ Work completed:
+
+- AGENTS.md: added an exception allowing Spanish in owner-only private files/directories.
+- Translated quick_pass_checklist.md narrative text to Spanish (kept data/UI strings intact).
+
+### 🧠 Decisions made:
+
+- Keep UI strings, field names, and data blocks in English to preserve app fidelity.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Re-validate the checklist against the latest Phase 17/18 behavior after testing.
+
+# 🔹 Block 460 — Feature docs structure (25/02/2026)
 
 ### ✔ Work completed:
 
@@ -7579,3 +7598,4 @@ _(none)_
 ### 🎯 Next steps:
 
 - Use the template for the next feature pulled from the backlog.
+- Re-validate the checklist against the latest Phase 17/18 behavior after testing.
