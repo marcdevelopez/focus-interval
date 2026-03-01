@@ -7496,7 +7496,71 @@ _(not yet validated on devices)_
 
 - Validate the reason modal on macOS + Android (tap the reason label).
 
-# 🔹 Block 457 — Docs: Spanish private exception + checklist translation (25/02/2026)
+# 🔹 Block 457 — Validation plan + spec alignment (24/02/2026)
+
+### ✔ Work completed:
+
+- Added a dedicated plan file for the validation fixes:
+  `docs/bugs/plan_validacion_rapida_fix.md`.
+- Specs updated to cover:
+  - Pre-Run auto-open on owner + mirror and Run Mode auto-open at scheduled start.
+  - Late-start queue mirror resolution (Owner resolved modal) and
+    zero-selection = Cancel all behavior.
+  - Groups Hub scheduled vs Pre-Run start labeling (“Pre-Run X min starts at …”).
+  - Logout while running/paused must not produce a black screen.
+  - Effective schedule must render live on mirrors during postpone.
+  - Status boxes and contextual list ranges must remain consistent.
+- Roadmap reopened items updated to track the new validation bugs explicitly.
+
+### 🧠 Decisions made:
+
+- Mirror devices must show an explicit “Owner resolved” modal before exiting a
+  resolved late-start queue.
+- Pre-Run and Run Mode auto-open must be idempotent on **all** signed-in devices.
+
+### ⚠️ Issues found:
+
+- Validation still reports: Pre-Run bounce/duplicate nav, Resolve overlaps
+  without conflict, stale schedule on mirrors, +1 minute gaps, and logout
+  black screen.
+
+### 🎯 Next steps:
+
+- Implement the fixes in viewmodels/coordinators and UI per the updated specs.
+- Re-run the checklist in `docs/bugs/validacion_rapida.md` on macOS + Android.
+
+# 🔹 Block 458 — Validation fixes implementation (24/02/2026)
+
+### ✔ Work completed:
+
+- Late-start queue: mirror “Owner resolved” modal + action lock when all groups
+  are canceled; auto-claim suppressed once resolved.
+- ScheduledGroupCoordinator: reset on app mode changes; late-start grace window
+  added to avoid Pre-Run -> Running overlap queue races.
+- Groups Hub: scheduled row now shows run start; Pre-Run row shows
+  “Pre-Run X min starts at …” (cards + summary).
+- TimerScreen: missing group now routes to Task List (Local Mode) or Groups Hub
+  to avoid black screens.
+- PomodoroViewModel: clear timeline phase anchor on resume to keep status boxes
+  aligned with contextual ranges after pauses.
+- Task List logout: clears pending auto-start state and resets coordinator.
+
+### 🧠 Decisions made:
+
+- Use a short grace window to prevent late-start queue from pre-empting the
+  scheduled auto-start at the Pre-Run boundary.
+- Favor navigation to Task List on Local Mode fallbacks to avoid empty routes.
+
+### ⚠️ Issues found:
+
+_(not yet validated on devices)_
+
+### 🎯 Next steps:
+
+- Re-run the validation checklist on macOS + Android.
+- Verify Pre-Run auto-open idempotency, mirror cancel behavior, and logout flow.
+  
+# 🔹 Block 459 — Docs: Spanish private exception + checklist translation (25/02/2026)
 
 ### ✔ Work completed:
 
@@ -7513,4 +7577,25 @@ _(none)_
 
 ### 🎯 Next steps:
 
+- Re-validate the checklist against the latest Phase 17/18 behavior after testing.
+
+# 🔹 Block 460 — Feature docs structure (25/02/2026)
+
+### ✔ Work completed:
+
+- Added `docs/features/` with a README and a reusable feature template.
+- Template requires explicit backlog linkage to `docs/feature_backlog.md`.
+- AGENTS.md updated to enforce feature doc creation before implementation.
+
+### 🧠 Decisions made:
+
+- Feature folders must be prefixed with the exact backlog ID for traceability.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Use the template for the next feature pulled from the backlog.
 - Re-validate the checklist against the latest Phase 17/18 behavior after testing.

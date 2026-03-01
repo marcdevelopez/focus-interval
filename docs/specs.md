@@ -545,6 +545,8 @@ Platform notes:
 - Import targets the currently signed-in UID and overwrites by ID (no merge) in MVP 1.2.
 - Switching back to Local Mode keeps local data separate and usable regardless of login state.
 - Logout returns to Local Mode without auto-import or auto-sync.
+- Logout while a group is running or paused must always land on a valid Local Mode screen
+  (Task List). Never leave a blank/black screen; clear any Run Mode routes first.
 
 ## **8.3. Local cache (optional)**
 
@@ -1326,9 +1328,13 @@ Trigger
   from **any** screen (Task List, Groups Hub, etc.) and **do not** bounce back to
   the previous screen. If the user navigates away manually, the entry points above
   must remain available until the pre-run window ends.
+- Auto-open applies on **all signed-in devices** (owner or mirror) so Pre-Run is
+  visible everywhere with the same behavior.
 - Auto-open is **idempotent**: if the correct group is already visible in
   Pre-Run or Run Mode, do not push or replace routes, and never stack duplicate
   screens.
+- If the user leaves Pre-Run, Run Mode must still auto-open at scheduledStartTime
+  from any screen on **all** devices (same idempotent guard).
 
 UI (reuses Run Mode layout)
 
@@ -1385,6 +1391,8 @@ Trigger
 - On launch/resume, if there is **no running group** and at least one scheduled
   group is overdue (scheduledStartTime <= now) **and** starting now would
   overlap another scheduled group window (overdue or future).
+- Do **not** trigger this queue during the Pre-Run -> Running transition if the
+  overdue group can start without overlapping any other scheduled group.
 
 Anchor & timebase
 
@@ -1445,11 +1453,13 @@ Actions
   confirm, cancel each group using the reason rules below, clear all late-start
   queue fields (`lateStartAnchorAt`, owner/claim metadata, queue id/order), and
   return to Groups Hub. Never leave a blank/black screen.
-- If **no groups** are selected and the user taps Continue:
-  - Show a confirmation modal stating that **all listed groups will be canceled**.
-  - On confirm, cancel each group using the reason rules:
-    - scheduledStartTime <= now → canceledReason = missedSchedule
-    - scheduledStartTime > now → canceledReason = conflict
+- If the owner **resolves or cancels** the queue while a mirror is viewing it
+  (lateStart* cleared or all groups canceled), the mirror must:
+  - Disable actions immediately.
+  - Show a modal: **“Owner resolved”** with a single **OK** action.
+  - On OK, navigate to Groups Hub. Never remain on a blank screen.
+- If **no groups** are selected and the user taps Continue, treat it exactly
+  like **Cancel all** (same modal, same cancel reason rules, same cleanup).
 - If **one or more** groups are selected:
   - Show a **preview step** (same task list preview style as Plan group)
     summarizing the selected groups in order.
@@ -1534,6 +1544,8 @@ Flow
      - While the current group is running/paused, the scheduled group’s
        **effective** start tracks the current group’s projected end in real
        time (no repeat modal for the same pair).
+     - Task List and Groups Hub must render that **effective** schedule in real
+       time on all devices (owner and mirror), without requiring manual refresh.
      - When the current group ends, **lock in** the schedule (update
        `scheduledStartTime` + `theoreticalEndTime`) and clear
        `postponedAfterGroupId`.
@@ -1681,6 +1693,8 @@ Rule: the upper box always matches the current executing phase.
 Rule: time ranges shown in the status boxes are derived from
 `TaskRunGroup.actualStartTime` + accumulated durations + pause offsets.
 Once a group is running, never use `scheduledStartTime` for these ranges.
+Rule: status-box ranges and contextual list ranges must be consistent and derived
+from the same authoritative timeline; never leave stale ranges after pause/resume.
 
 ### **10.4.5. Contextual task list (below circle)**
 
@@ -1911,11 +1925,17 @@ List fields per group
   interrupted by ending a running group early). Include a note that canceled
   groups can be re-planned from Groups Hub.
 - Scheduled start time (only for scheduled groups; omit when scheduledStartTime is null)
+- Scheduled start time is the **run start** time (not the pre-run start).
+- If `postponedAfterGroupId` is set and the anchor group is running/paused, show
+  the **effective scheduled start** derived from the anchor’s projected end +
+  noticeMinutes, and update it in real time.
 - Theoretical end time
 - Number of tasks
 - Total duration
-- Pre-alert setting (e.g., "Notice 5 min before") — only for scheduled groups
-  (scheduledStartTime != null). Do not show notice/pre-run info for “Start now”.
+- Pre-Run start time (scheduled groups only):
+  - Show **“Pre-Run X min starts at HH:mm”** when noticeMinutes > 0.
+  - Omit this row when noticeMinutes = 0 or scheduledStartTime is null.
+  - Do not show a separate “Notice” row; the Pre-Run row is the notice display.
 - For any time field shown on the card, display **only HH:mm** when the date is
   today, and show **date + time** when the date is not today (scheduled or completed).
 - If a card shows a countdown or projected start (e.g., "Starts in"), it must

@@ -37,6 +37,21 @@ Flutter · Firebase Auth · Firestore · Riverpod · GoRouter · just_audio · f
   `flutter run -d chrome --web-port=5001 --web-browser-flag="--user-data-dir=$HOME/.focus_interval_chrome"`.
 - Ensure `http://localhost:5001` is listed in Google OAuth Authorized JavaScript origins.
 
+## Web testing with real accounts (Chrome)
+
+Note: `APP_ENV=prod` is blocked in debug/profile. If you need real accounts quickly in Chrome,
+use STAGING in debug, or use a release web build for PROD.
+
+Fast (debug + real accounts in STAGING):
+- `flutter run -d chrome --web-port=5001 --dart-define=APP_ENV=staging`
+- Optional stable profile:
+  `flutter run -d chrome --web-port=5001 --dart-define=APP_ENV=staging --web-browser-flag="--user-data-dir=$HOME/.focus_interval_chrome"`
+
+PROD (release only):
+- `flutter build web --release --dart-define=APP_ENV=prod`
+- `python3 -m http.server 5001 --directory build/web`
+- Open `http://localhost:5001` and capture logs from Chrome DevTools Console.
+
 ## 🧽 Local reset (macOS)
 
 Use this to wipe **local-only** data before clean ownership/sync tests. This does

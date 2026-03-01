@@ -11,6 +11,7 @@ import 'package:uuid/uuid.dart';
 import '../providers.dart';
 import '../viewmodels/task_editor_view_model.dart';
 import '../viewmodels/pre_run_notice_view_model.dart';
+import '../viewmodels/scheduled_group_coordinator.dart';
 import '../../data/models/pomodoro_session.dart';
 import '../../data/models/pomodoro_preset.dart';
 import '../../data/models/pomodoro_task.dart';
@@ -451,9 +452,13 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     await auth.signOut();
     await controller.setLocal();
     await _maybeShowWebLocalNotice();
+    ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
+    ref.invalidate(scheduledGroupCoordinatorProvider);
     ref.invalidate(taskListProvider);
     ref.invalidate(presetListProvider);
     ref.invalidate(presetEditorProvider);
+    if (!mounted) return;
+    context.go('/tasks');
   }
 
   @override

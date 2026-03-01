@@ -427,7 +427,6 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                   group,
                   fallback: _noticeFallbackMinutes,
                 ),
-                noticeFromSettings: group.noticeMinutes == null,
                 onTap: () => _showSummaryDialog(context, group),
                 actions: [
                   _GroupAction(
@@ -455,7 +454,6 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                     group,
                     fallback: _noticeFallbackMinutes,
                   );
-                  final noticeFromSettings = group.noticeMinutes == null;
                   final isPreRunActive = _isPreRunActive(
                     group,
                     now,
@@ -473,7 +471,6 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                       fallbackNoticeMinutes: _noticeFallbackMinutes,
                     ),
                     noticeMinutes: noticeMinutes,
-                    noticeFromSettings: noticeFromSettings,
                     onTap: () => _showSummaryDialog(context, group),
                     actions: [
                       if (isPreRunActive)
@@ -516,7 +513,6 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                   group,
                   fallback: _noticeFallbackMinutes,
                 ),
-                noticeFromSettings: group.noticeMinutes == null,
                 onTap: () => _showSummaryDialog(context, group),
                 actions: [
                   _GroupAction(
@@ -542,7 +538,6 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                   group,
                   fallback: _noticeFallbackMinutes,
                 ),
-                noticeFromSettings: group.noticeMinutes == null,
                 onTap: () => _showSummaryDialog(context, group),
                 actions: [
                   _GroupAction(
@@ -1184,6 +1179,8 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
       effectiveScheduledStart ?? group.scheduledStartTime,
       now,
     );
+    final scheduledStart =
+        effectiveScheduledStart ?? group.scheduledStartTime;
     final actualLabel = _formatGroupDateTime(group.actualStartTime, now);
     final endLabel = _formatGroupDateTime(
       effectiveScheduledEnd ?? group.theoreticalEndTime,
@@ -1197,11 +1194,11 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
       group,
       fallback: _noticeFallbackMinutes,
     );
-    final noticeLabel =
-        group.noticeMinutes == null ? 'Notice (settings)' : 'Notice';
+    final preRunStart = (scheduledStart != null && notice > 0)
+        ? scheduledStart.subtract(Duration(minutes: notice))
+        : null;
     final showScheduled =
         (effectiveScheduledStart ?? group.scheduledStartTime) != null;
-    final showNotice = showScheduled;
     showDialog<void>(
       context: context,
       builder: (_) => AlertDialog(
@@ -1234,10 +1231,14 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                 _summarySectionTitle('Timing'),
                 if (showScheduled)
                   _summaryRow('Scheduled start', scheduledLabel),
+                if (preRunStart != null)
+                  _summaryRow(
+                    'Pre-Run',
+                    '$notice min starts at ${_formatGroupDateTime(preRunStart, now)}',
+                  ),
                 _summaryRow('Actual start', actualLabel),
                 _summaryRow('End', endLabel),
                 _summaryRow('Total time', totalDuration),
-                if (showNotice) _summaryRow(noticeLabel, '$notice min'),
                 const SizedBox(height: 12),
                 _summarySectionTitle('Totals'),
                 _summaryRow('Tasks', totalTasks.toString()),
@@ -1724,7 +1725,6 @@ class _GroupCard extends StatelessWidget {
   final DateTime? scheduledStartOverride;
   final DateTime? scheduledEndOverride;
   final int noticeMinutes;
-  final bool noticeFromSettings;
   final VoidCallback onTap;
   final List<_GroupAction> actions;
   final DateTime now;
@@ -1735,7 +1735,6 @@ class _GroupCard extends StatelessWidget {
     this.scheduledStartOverride,
     this.scheduledEndOverride,
     required this.noticeMinutes,
-    required this.noticeFromSettings,
     required this.onTap,
     required this.actions,
     required this.now,
@@ -1751,9 +1750,15 @@ class _GroupCard extends StatelessWidget {
     final endTime = scheduledEndOverride ?? group.theoreticalEndTime;
     final showScheduled = group.status == TaskRunStatus.scheduled &&
         scheduledStart != null;
-    final showNotice = showScheduled;
-    final noticeLabel =
-        noticeFromSettings ? 'Notice (settings)' : 'Notice';
+    final showPreRun = showScheduled && noticeMinutes > 0;
+    final DateTime? preRunStart;
+    if (showPreRun) {
+      preRunStart = scheduledStart.subtract(
+        Duration(minutes: noticeMinutes),
+      );
+    } else {
+      preRunStart = null;
+    }
     final sessionPaused =
         activeSession?.groupId == group.id &&
         activeSession?.status == PomodoroStatus.paused;
@@ -1800,6 +1805,12 @@ class _GroupCard extends StatelessWidget {
                 label: 'Scheduled',
                 value: _formatGroupDateTime(scheduledStart, now),
               ),
+            if (preRunStart != null)
+              _MetaRow(
+                label: 'Pre-Run',
+                value:
+                    '$noticeMinutes min starts at ${_formatGroupDateTime(preRunStart, now)}',
+              ),
             _MetaRow(
               label: 'Ends',
               value: _formatGroupDateTime(endTime, now),
@@ -1812,11 +1823,6 @@ class _GroupCard extends StatelessWidget {
               label: 'Total time',
               value: totalDuration,
             ),
-            if (showNotice)
-              _MetaRow(
-                label: noticeLabel,
-                value: '$noticeMinutes min',
-              ),
             const SizedBox(height: 10),
             Wrap(
               spacing: 8,
