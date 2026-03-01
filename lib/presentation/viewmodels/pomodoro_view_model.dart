@@ -21,6 +21,20 @@ import '../../data/services/time_sync_service.dart';
 
 enum PomodoroGroupLoadResult { loaded, notFound, blockedByActiveSession }
 
+enum _PendingIntentType { start, resume, autoStart }
+
+class _PendingIntent {
+  final _PendingIntentType type;
+  final String? groupId;
+  final DateTime requestedAt;
+
+  const _PendingIntent({
+    required this.type,
+    required this.groupId,
+    required this.requestedAt,
+  });
+}
+
 class TaskTimeRange {
   final DateTime start;
   final DateTime end;
@@ -45,6 +59,8 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   static const Duration _inactiveResyncInterval = Duration(seconds: 15);
   static const Duration _staleSessionGrace = Duration(seconds: 45);
   static const Duration _missingSessionRecoveryCooldown = Duration(seconds: 5);
+  static const Duration _pendingIntentTtl = Duration(seconds: 15);
+  static const Duration _timeSyncTimeout = Duration(seconds: 15);
   late PomodoroMachine _machine;
   StreamSubscription<PomodoroState>? _sub;
   late SoundService _soundService;
@@ -93,6 +109,8 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   String? _foregroundTitle;
   String? _foregroundText;
   bool _resyncInProgress = false;
+  _PendingIntent? _pendingIntent;
+  DateTime? _timeSyncWaitStartedAt;
 
   @override
   PomodoroState build() {
@@ -111,6 +129,14 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       state = s;
       _syncForegroundService(s);
       _syncKeepAliveState();
+    });
+
+    ref.listen<AppMode>(appModeProvider, (previous, next) {
+      if (previous == next) return;
+      if (next != AppMode.account) {
+        _clearPendingIntent(reason: 'mode-change');
+        _clearTimeSyncWait();
+      }
     });
 
     // Clean up resources.
@@ -158,6 +184,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _pauseReason = null;
     _pauseStartedAt = null;
     _groupCompleted = false;
+    _reconcilePendingIntent(session);
     _completedTaskRanges.clear();
     _timelinePhaseStartedAt = null;
     _sessionRevision = session?.sessionRevision ?? 0;
@@ -600,6 +627,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   void start() {
+    if (!_ensureTimeSyncForIntent(_PendingIntentType.start)) return;
     unawaited(_startInternal(enforceControls: true));
   }
 
@@ -609,6 +637,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       unawaited(_startInternal(enforceControls: true));
       return;
     }
+    if (!_ensureTimeSyncForIntent(_PendingIntentType.autoStart)) return;
     await syncWithRemoteSession(refreshGroup: false);
     final session = activeSessionForCurrentGroup;
     if (session != null) {
@@ -733,6 +762,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   void resume() {
+    if (!_ensureTimeSyncForIntent(_PendingIntentType.resume)) return;
     if (!_controlsEnabled) return;
     unawaited(_resumeInternal());
   }
@@ -1270,6 +1300,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         _sessionMissingWhileRunning = false;
         _latestSession = session;
         _recordSessionSnapshot(session);
+        _reconcilePendingIntent(session);
         final optimisticChanged = _syncOptimisticOwnershipRequest(session);
         final ownershipMetaChanged =
             _didOwnershipMetaChange(previousSession, session) ||
@@ -1409,6 +1440,118 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     return !updatedAt.isBefore(lastUpdated);
   }
 
+  bool _ensureTimeSyncForIntent(_PendingIntentType type) {
+    if (ref.read(appModeProvider) != AppMode.account) return true;
+    if (isTimeSyncReady) return true;
+    _queuePendingIntent(type);
+    return false;
+  }
+
+  void _queuePendingIntent(_PendingIntentType type) {
+    final now = DateTime.now();
+    final groupId = _currentGroup?.id;
+    _pendingIntent = _PendingIntent(
+      type: type,
+      groupId: groupId,
+      requestedAt: now,
+    );
+    _markTimeSyncWaitStarted(now);
+    _notifySessionMetaChanged();
+    unawaited(
+      _refreshTimeSyncIfNeeded(
+        reason: 'pending-intent',
+        force: true,
+      ),
+    );
+  }
+
+  void _clearPendingIntent({String? reason}) {
+    if (_pendingIntent == null) return;
+    _pendingIntent = null;
+    _notifySessionMetaChanged();
+  }
+
+  bool _isPendingIntentExpired(_PendingIntent intent, DateTime now) {
+    return now.difference(intent.requestedAt) > _pendingIntentTtl;
+  }
+
+  bool _isPendingIntentContextValid(_PendingIntent intent) {
+    final groupId = _currentGroup?.id;
+    if (intent.groupId != groupId) return false;
+    if (ref.read(appModeProvider) != AppMode.account) return false;
+    final session = activeSessionForCurrentGroup;
+    if (session != null && session.ownerDeviceId != _deviceInfo.deviceId) {
+      return false;
+    }
+    return true;
+  }
+
+  void _reconcilePendingIntent(PomodoroSession? session) {
+    final intent = _pendingIntent;
+    if (intent == null) return;
+    if (!_isPendingIntentContextValid(intent)) {
+      _clearPendingIntent(reason: 'intent-context');
+      return;
+    }
+    if (session == null) return;
+    if (session.ownerDeviceId != _deviceInfo.deviceId) {
+      _clearPendingIntent(reason: 'intent-owner');
+      return;
+    }
+    if (intent.type != _PendingIntentType.resume &&
+        session.status.isActiveExecution) {
+      _clearPendingIntent(reason: 'intent-running');
+    }
+  }
+
+  Future<void> _maybeExecutePendingIntent() async {
+    final intent = _pendingIntent;
+    if (intent == null) return;
+    if (!isTimeSyncReady) return;
+    final now = DateTime.now();
+    if (_isPendingIntentExpired(intent, now)) {
+      _clearPendingIntent(reason: 'intent-expired');
+      return;
+    }
+    if (!_isPendingIntentContextValid(intent)) {
+      _clearPendingIntent(reason: 'intent-context');
+      return;
+    }
+    final session = activeSessionForCurrentGroup;
+    if (intent.type == _PendingIntentType.resume) {
+      if (session == null || session.status != PomodoroStatus.paused) {
+        _clearPendingIntent(reason: 'intent-resume-invalid');
+        return;
+      }
+      if (!_controlsEnabled) {
+        _clearPendingIntent(reason: 'intent-resume-controls');
+        return;
+      }
+      _clearPendingIntent(reason: 'intent-resume-exec');
+      await _resumeInternal();
+      return;
+    }
+    if (session != null && session.status.isActiveExecution) {
+      _clearPendingIntent(reason: 'intent-already-running');
+      return;
+    }
+    if (!_controlsEnabled && intent.type != _PendingIntentType.autoStart) {
+      _clearPendingIntent(reason: 'intent-start-controls');
+      return;
+    }
+    _clearPendingIntent(reason: 'intent-start-exec');
+    await _startInternal(enforceControls: intent.type != _PendingIntentType.autoStart);
+  }
+
+  void _markTimeSyncWaitStarted(DateTime now) {
+    if (ref.read(appModeProvider) != AppMode.account) return;
+    _timeSyncWaitStartedAt ??= now;
+  }
+
+  void _clearTimeSyncWait() {
+    _timeSyncWaitStartedAt = null;
+  }
+
   Future<void> _refreshTimeSyncIfNeeded({
     String? reason,
     bool force = false,
@@ -1417,9 +1560,14 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     final offset = await _timeSyncService.refresh(force: force);
     if (offset != null) {
       _serverTimeOffset = offset;
+      _clearTimeSyncWait();
+      unawaited(_maybeExecutePendingIntent());
       if (kDebugMode && reason != null) {
         debugPrint('[TimeSync] refreshed ($reason) offset=${offset.inMilliseconds}ms');
       }
+    } else if (_pendingIntent != null ||
+        (_latestSession?.status.isActiveExecution ?? false)) {
+      _markTimeSyncWaitStarted(DateTime.now());
     }
   }
 
@@ -1863,6 +2011,34 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   bool get isTimeSyncReady {
     if (ref.read(appModeProvider) != AppMode.account) return true;
     return (_serverTimeOffset ?? _timeSyncService.offset) != null;
+  }
+
+  bool get hasPendingIntent => _pendingIntent != null;
+
+  String? get pendingIntentLabel {
+    final intent = _pendingIntent;
+    if (intent == null) return null;
+    switch (intent.type) {
+      case _PendingIntentType.start:
+        return 'Starting when synced...';
+      case _PendingIntentType.resume:
+        return 'Resuming when synced...';
+      case _PendingIntentType.autoStart:
+        return 'Starting when synced...';
+    }
+  }
+
+  bool get isTimeSyncStalled {
+    if (ref.read(appModeProvider) != AppMode.account) return false;
+    if (isTimeSyncReady) return false;
+    final startedAt = _timeSyncWaitStartedAt;
+    if (startedAt == null) return false;
+    return DateTime.now().difference(startedAt) >= _timeSyncTimeout;
+  }
+
+  Future<void> retryTimeSync() async {
+    if (ref.read(appModeProvider) != AppMode.account) return;
+    await _refreshTimeSyncIfNeeded(reason: 'manual-retry', force: true);
   }
 
   bool get isOwnershipRequestStaleForThisDevice {
@@ -2355,6 +2531,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       _sessionMissingWhileRunning = false;
       _latestSession = session;
       _recordSessionSnapshot(session);
+      _reconcilePendingIntent(session);
       final optimisticChanged = _syncOptimisticOwnershipRequest(session);
       final ownershipMetaChanged =
           _didOwnershipMetaChange(previousSession, session) ||

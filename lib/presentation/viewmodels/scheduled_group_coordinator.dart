@@ -1044,7 +1044,11 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       if (!_canUseRef) return;
       if (latest == null) return;
       if (latest.status != TaskRunStatus.scheduled) return;
-      final now = await _resolveServerNow(force: true);
+      final now = await _resolveServerNowOrNull(force: true);
+      if (now == null) {
+        _scheduleAutoStartRetry();
+        return;
+      }
       final scheduledStart =
           resolveEffectiveScheduledStart(
             group: latest,
@@ -1125,13 +1129,21 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     await ref.read(pomodoroSessionRepositoryProvider).publishSession(session);
   }
 
-  Future<DateTime> _resolveServerNow({bool force = false}) async {
+  Future<DateTime?> _resolveServerNowOrNull({bool force = false}) async {
     final appMode = ref.read(appModeProvider);
     if (appMode != AppMode.account) return DateTime.now();
     final timeSync = ref.read(timeSyncServiceProvider);
     final offset = await timeSync.refresh(force: force);
-    if (offset == null) return DateTime.now();
+    if (offset == null) return null;
     return DateTime.now().add(offset);
+  }
+
+  void _scheduleAutoStartRetry() {
+    _scheduledTimer?.cancel();
+    _scheduledTimer = Timer(const Duration(seconds: 2), () {
+      if (_disposed) return;
+      _handleGroups(_lastGroups);
+    });
   }
 
   Future<void> _scheduleLocalPreAlert({

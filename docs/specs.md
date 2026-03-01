@@ -582,6 +582,21 @@ users/{uid}/activeSession
   - Compute `serverTimeOffset = serverTime - localNow` when the snapshot is read.
   - Refresh the offset on app launch, resume, and mode switch; rate-limit to avoid
     excessive writes (e.g., ≥15s between syncs).
+  - If the server-time offset is unavailable in Account Mode, **block** any
+    start/resume/auto-start actions and show **Syncing session...**. Do not
+    fall back to local time for authoritative writes.
+  - While syncing, the TimerScreen must **remain visible** when a prior snapshot
+    exists. Use a non-blocking overlay (dim/blur + spinner + label) so the timer
+    stays readable behind it. Only when no snapshot exists, show a full loader.
+  - If the user taps Start/Resume while time sync is unavailable, queue **one**
+    intent and execute it automatically once time sync is ready. Surface
+    feedback (e.g., “Starting when synced…”). Do not write locally.
+    - Deduplicate: only one pending intent at a time.
+    - Expire quickly (≈10–15s). If it expires, do nothing.
+    - Cancel if owner/session/group/context changes.
+    - Re-validate context before executing (same group/session, owner still valid).
+    - Execute idempotently (no-op if the action is already satisfied).
+    - If time sync stalls, show a clear “retry sync” state.
 - Projection (Account Mode):
   - `serverNow = localNow + serverTimeOffset`
   - If **running**:
@@ -1846,6 +1861,11 @@ The MM:SS timer must not shift horizontally:
   project from raw local clock alone.
 - If the server-time offset is unavailable, show **Syncing session...** and keep
   the last known snapshot without re-projecting until time sync is ready.
+- The Syncing indicator must not hide the timer when a snapshot exists; use an
+  overlay that keeps the timer visible. Controls remain disabled until time sync
+  is ready.
+- While time sync is unavailable in Account Mode, owner controls (start/resume/
+  auto-start) must remain disabled; no local-time writes are permitted.
 - Mirror devices render task names/durations from the TaskRunGroup snapshot (by groupId), not from the editable task list.
 - **Single source of truth:** owner/mirror state and control gating must be derived from the same activeSession snapshot
   (groupId must match). Local flags may project state but must never override the snapshot.

@@ -623,6 +623,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final hasSession = isSessionForGroup;
     final isResyncing = vm.isResyncing;
     final isTimeSyncReady = vm.isTimeSyncReady;
+    final hasPendingIntent = vm.hasPendingIntent;
     final isSessionMissingWhileRunning =
         isAccountMode && vm.isSessionMissingWhileRunning;
     final shouldForceSyncUntilSession =
@@ -630,7 +631,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         currentGroup?.status == TaskRunStatus.running &&
         !isSessionForGroup;
     final shouldForceTimeSync =
-        isAccountMode && hasSession && !isTimeSyncReady;
+        isAccountMode && !isTimeSyncReady && (hasSession || hasPendingIntent);
     final isSyncingSession =
         isSessionMissingWhileRunning ||
         shouldForceSyncUntilSession ||
@@ -643,6 +644,18 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         _taskLoaded &&
         !isPreRun &&
         (isResyncing || isSyncingSession || shouldHoldReadyWhileRunning);
+    final hasSessionSnapshot =
+        isSessionForGroup ||
+        state.status.isActiveExecution ||
+        state.status == PomodoroStatus.finished;
+    final hasSyncOverlayTarget = hasSessionSnapshot || hasPendingIntent;
+    final showBlockingLoader =
+        !_taskLoaded ||
+        (shouldShowResyncLoader && !hasSyncOverlayTarget);
+    final showSyncOverlay =
+        _taskLoaded && shouldShowResyncLoader && hasSyncOverlayTarget;
+    final pendingIntentLabel = vm.pendingIntentLabel;
+    final showRetrySync = vm.isTimeSyncStalled;
     _syncInactiveRepaint(state: state, isMirror: isMirror);
     final ownershipRequest = vm.ownershipRequest;
     final hasPendingOwnershipRequest = vm.hasPendingOwnershipRequest;
@@ -717,7 +730,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                 const SizedBox(height: 12),
                 Expanded(
                   child: Center(
-                    child: (!_taskLoaded || shouldShowResyncLoader)
+                    child: showBlockingLoader
                         ? Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -754,13 +767,21 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                           ),
                   ),
                 ),
-                if (_taskLoaded && !shouldShowResyncLoader)
+                if (_taskLoaded && !showBlockingLoader)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                     child: _ContextualTaskList(vm: vm, preRunInfo: preRunInfo),
                   ),
               ],
             ),
+            if (showSyncOverlay)
+              Positioned.fill(
+                child: _SyncingOverlay(
+                  label: pendingIntentLabel ?? 'Syncing session...',
+                  showRetry: showRetrySync,
+                  onRetry: showRetrySync ? vm.retryTimeSync : null,
+                ),
+              ),
             if (showOwnershipOverlay)
               Positioned(
                 left: 16,
@@ -2194,6 +2215,45 @@ class _ControlsBar extends StatelessWidget {
       onPressed: onTap,
       style: _runModeButtonStyle,
       child: child,
+    );
+  }
+}
+
+class _SyncingOverlay extends StatelessWidget {
+  final String label;
+  final bool showRetry;
+  final VoidCallback? onRetry;
+
+  const _SyncingOverlay({
+    required this.label,
+    required this.showRetry,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black.withValues(alpha: 0.45),
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 12),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white70),
+            textAlign: TextAlign.center,
+          ),
+          if (showRetry) ...[
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: onRetry,
+              child: const Text('Retry sync'),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
