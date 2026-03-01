@@ -1275,13 +1275,13 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
             _didOwnershipMetaChange(previousSession, session) ||
             optimisticChanged;
         final shouldApplyTimeline = _shouldApplySessionTimeline(session);
-        _syncSessionCounters(session, markApplied: shouldApplyTimeline);
         if (!shouldApplyTimeline) {
           if (ownershipMetaChanged) {
             _notifySessionMetaChanged();
           }
           return;
         }
+        _syncSessionCounters(session, markApplied: true);
         if (session.ownerDeviceId == _deviceInfo.deviceId) {
           _mirrorTimer?.cancel();
           _remoteOwnerId = null;
@@ -2360,8 +2360,8 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
           _didOwnershipMetaChange(previousSession, session) ||
           optimisticChanged;
       final shouldApplyTimeline = _shouldApplySessionTimeline(session);
-      _syncSessionCounters(session, markApplied: shouldApplyTimeline);
       if (shouldApplyTimeline) {
+        _syncSessionCounters(session, markApplied: true);
         final now = _serverNowFromOffset() ?? DateTime.now();
         if (session.ownerDeviceId == _deviceInfo.deviceId) {
           _primeOwnerSession(session, now: now);
