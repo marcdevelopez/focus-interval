@@ -7599,3 +7599,23 @@ _(none)_
 
 - Use the template for the next feature pulled from the backlog.
 - Re-validate the checklist against the latest Phase 17/18 behavior after testing.
+  
+# 🔹 Block 461 — Policy: no push with known bugs (25/02/2026)
+
+### ✔ Work completed:
+
+- AGENTS.md updated to forbid pushing branches with known bugs or unverified fixes.
+- Clarified production policy: `main` must never contain known bugs.
+
+### 🧠 Decisions made:
+
+- Push is allowed only when fixes are confirmed; otherwise changes remain local.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Continue validation on the bugfix branch before any future push.
+
