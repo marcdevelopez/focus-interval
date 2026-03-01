@@ -8623,3 +8623,24 @@ _(pending validation)_
 ### 🎯 Next steps:
 
 - Implement P0-3: render Run Mode from activeSession projection for owner and mirror.
+
+# 🔹 Block 511 — Fix 22 P0-2b: block publish without timeSync (01/03/2026)
+
+### ✔ Work completed:
+
+- Blocked session publish (including heartbeats) in Account Mode when timeSync is
+  unavailable; trigger refresh and mark syncing instead of writing local time.
+- Overlay now appears **only** when a snapshot exists; otherwise a full loader is
+  shown even if there is a pending intent.
+
+### 🧪 Tests:
+
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/viewmodels/scheduled_group_coordinator_test.dart` (passed)
+
+### ⚠️ Issues found:
+
+- None during implementation (validation pending).
+
+### 🎯 Next steps:
+
+- Implement P0-3: render Run Mode from activeSession projection for owner and mirror.
