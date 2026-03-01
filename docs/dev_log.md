@@ -7559,8 +7559,48 @@ _(not yet validated on devices)_
 
 - Re-run the validation checklist on macOS + Android.
 - Verify Pre-Run auto-open idempotency, mirror cancel behavior, and logout flow.
+  
+# 🔹 Block 459 — Docs: Spanish private exception + checklist translation (25/02/2026)
 
-# 🔹 Block 459 — Policy: no push with known bugs (25/02/2026)
+### ✔ Work completed:
+
+- AGENTS.md: added an exception allowing Spanish in owner-only private files/directories.
+- Translated quick_pass_checklist.md narrative text to Spanish (kept data/UI strings intact).
+
+### 🧠 Decisions made:
+
+- Keep UI strings, field names, and data blocks in English to preserve app fidelity.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Re-validate the checklist against the latest Phase 17/18 behavior after testing.
+
+# 🔹 Block 460 — Feature docs structure (25/02/2026)
+
+### ✔ Work completed:
+
+- Added `docs/features/` with a README and a reusable feature template.
+- Template requires explicit backlog linkage to `docs/feature_backlog.md`.
+- AGENTS.md updated to enforce feature doc creation before implementation.
+
+### 🧠 Decisions made:
+
+- Feature folders must be prefixed with the exact backlog ID for traceability.
+
+### ⚠️ Issues found:
+
+_(none)_
+
+### 🎯 Next steps:
+
+- Use the template for the next feature pulled from the backlog.
+- Re-validate the checklist against the latest Phase 17/18 behavior after testing.
+  
+# 🔹 Block 461 — Policy: no push with known bugs (25/02/2026)
 
 ### ✔ Work completed:
 
@@ -7578,3 +7618,4 @@ _(none)_
 ### 🎯 Next steps:
 
 - Continue validation on the bugfix branch before any future push.
+

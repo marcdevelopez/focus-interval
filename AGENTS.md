@@ -64,6 +64,13 @@ This includes:
 
 If documentation and code diverge → **documentation wins**.
 
+Additional feature tracking requirement:
+- Every new feature pulled from `docs/feature_backlog.md` must have a matching
+  documentation folder under `docs/features/` created **before** implementation.
+- Use the template in `docs/features/feature_template.md`.
+- Each feature doc set must include an explicit "Backlog reference" section
+  with the exact ID and title from `docs/feature_backlog.md`.
+
 ---
 
 ## 3️⃣ Architecture invariants (must never be violated)
@@ -279,7 +286,9 @@ Additional regression rule:
 
 ## 🔟 Language & consistency
 
-- All code, comments, UI strings, and docs are **English only**
+- All code, comments, UI strings, and docs are **English only**.
+- Exception: files/directories created by the project owner that are private and
+  only visible to them may be written in Spanish.
 - Naming must be:
   - Explicit
   - Consistent
