@@ -8909,4 +8909,4 @@ _(pending validation)_
 
 ### 🎯 Next steps:
 
-- Record commit hash after code + docs are committed.
+- Commit: fb582f6 "Fix 22i: auto-start throttle + missing-session recovery".

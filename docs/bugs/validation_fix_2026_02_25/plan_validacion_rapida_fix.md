@@ -174,7 +174,7 @@ Update this section after each fix.
     - Cancel OK (se borra `activeSession/current`).
     - Mirror OK (sin “Syncing session…” al abrir; cleanup al completar OK).
     - Logs: `2026_03_01_android_RMX3771_diag-0.log`, `2026_03_01_ios_simulator_iphone_17_pro_diag-0.log`.
-22i. Fix 22 (P0-4i): Auto-start throttle + missing-session recovery + auto-open retry (01/03/2026). Tests: not run. Commit: pending. Validation (01/03/2026): PASS.
+22i. Fix 22 (P0-4i): Auto-start throttle + missing-session recovery + auto-open retry (01/03/2026). Tests: not run. Commit: fb582f6 "Fix 22i: auto-start throttle + missing-session recovery". Validation (01/03/2026): PASS.
     - Throttle duplicate auto-start pulses.
     - Prime UI from last session when snapshot flickers and force resync.
     - Retry auto-open navigation if `/timer/:id` is not reached.
