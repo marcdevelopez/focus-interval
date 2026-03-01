@@ -27,10 +27,13 @@ class ActiveSessionAutoOpener extends ConsumerStatefulWidget {
 class _ActiveSessionAutoOpenerState
     extends ConsumerState<ActiveSessionAutoOpener>
     with WidgetsBindingObserver {
+  static const Duration _autoOpenBounceWindow = Duration(seconds: 3);
   bool _autoOpenInFlight = false;
   String? _autoOpenedGroupId;
   String? _autoOpenSuppressedGroupId;
   String? _pendingGroupId;
+  DateTime? _lastAutoOpenAttemptAt;
+  String? _lastAutoOpenAttemptGroupId;
   Timer? _retryTimer;
   int _retryAttempts = 0;
   bool _resumeAutoOpenPending = false;
@@ -91,6 +94,8 @@ class _ActiveSessionAutoOpenerState
       _autoOpenedGroupId = null;
       _autoOpenSuppressedGroupId = null;
       _pendingGroupId = null;
+      _lastAutoOpenAttemptAt = null;
+      _lastAutoOpenAttemptGroupId = null;
       _retryAttempts = 0;
       _resumeAutoOpenPending = false;
       _retryTimer?.cancel();
@@ -118,6 +123,17 @@ class _ActiveSessionAutoOpenerState
     final navigatorContext = widget.navigatorKey.currentContext;
     if (navigatorContext != null) {
       final inTimer = _isAlreadyInTimer(groupId);
+      final route = _currentRoute();
+      if (!inTimer &&
+          _autoOpenedGroupId == groupId &&
+          _shouldResetAutoOpenForBounce(route, groupId)) {
+        debugPrint(
+          '[RunModeDiag] Auto-open reset (left timer quickly) '
+          'group=$groupId route=$route',
+        );
+        _autoOpenedGroupId = null;
+        _autoOpenSuppressedGroupId = null;
+      }
       if (_autoOpenedGroupId == null && inTimer) {
         debugPrint(
           '[RunModeDiag] Auto-open state set (already in timer) '
@@ -215,6 +231,8 @@ class _ActiveSessionAutoOpenerState
           _autoOpenedGroupId = groupId;
           return;
         }
+        _lastAutoOpenAttemptAt = DateTime.now();
+        _lastAutoOpenAttemptGroupId = groupId;
         debugPrint(
           '[RunModeDiag] Attempting auto-open to TimerScreen '
           'group=$groupId route=${_currentRoute()}',
@@ -261,6 +279,14 @@ class _ActiveSessionAutoOpenerState
         route.startsWith('/tasks/edit') ||
         route.startsWith('/settings') ||
         route.startsWith('/groups/late-start');
+  }
+
+  bool _shouldResetAutoOpenForBounce(String route, String groupId) {
+    if (_isSensitiveRoute(route)) return false;
+    if (_lastAutoOpenAttemptGroupId != groupId) return false;
+    final lastAttempt = _lastAutoOpenAttemptAt;
+    if (lastAttempt == null) return false;
+    return DateTime.now().difference(lastAttempt) <= _autoOpenBounceWindow;
   }
 
   Future<bool> _isValidActiveSession(PomodoroSession session) async {

@@ -1792,7 +1792,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _cancelNavigationHandled = true;
     _cancelNavRetryAttempts = 0;
     _cancelNavTargetGroupId = widget.groupId;
-    _attemptNavigateToGroupsHub(reason);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _attemptNavigateToGroupsHub(reason);
+    });
   }
 
   void _attemptNavigateToGroupsHub(String reason) {

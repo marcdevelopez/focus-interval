@@ -163,6 +163,16 @@ Resultados (01/03/2026, Fix 22 P0-3)
 Checklist de validacion multi-dispositivo: OK (segun reporte).
 Notas: no se reportaron nuevos fallos; logs pendientes de adjuntar.
 
+Resultados (01/03/2026, Fix 22 P0-4 revalidacion tras rollback rules)
+Logs: docs/bugs/validation_fix_2026_02_25/logs/2026_03_01_ios_simulator_iphone_17_pro_diag.log y 2026_03_01_macos_diag.log.
+1. Programado notice 0 (auto-start): FAIL (macOS owner se queda en Groups Hub al comenzar el grupo planificado).
+2. Start now / Run again: FAIL (tras abrir Run Mode, ambos rebotan a Groups Hub).
+3. Pause/Resume: OK.
+4. Ownership request/transfer: OK (sin perder la sesion), pero se observa un salto visual breve del timer al solicitar owner (ver capturas).
+Notas: rangos Run Mode vs status boxes vuelven a ser incoherentes tras pausa (observado en capturas).
+Adicional: tras pausar, el grupo termina antes de tiempo como si la pausa no hubiese existido (duracion no respeta pausa).
+Adicional: en las cajas de estado, el start se desplaza mas tarde sumando el tiempo de la pausa (regresion del fix de rangos).
+
 Notas adicionales (27/02/2026) — nuevos bugs observados (fuera del checklist)
 1. Auto-open de Run Mode se re-dispara de forma periodica desde cualquier pantalla (Task List, Groups Hub, planificacion, modales). Interrumpe al usuario y reabre Run Mode aunque no haya accion directa.
 2. Account Mode: programado notice 0 genera pantalla negra en iOS tras confirmar (imagenes 02–03). Logs: `_ios_simulator_iphone_17_pro_diag-1.log` y `2026_02_25_web_chrome_diag-1.log`. Reintento con logs `*_diag-2.log`.

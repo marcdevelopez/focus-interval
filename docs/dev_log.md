@@ -8757,3 +8757,52 @@ _(pending validation)_
 ### 🎯 Next steps:
 
 - Validate P0-4 on prod rules.
+
+# \ud83d\udd39 Block 517 — Roll back activeSession rules to pre-P0-4 (01/03/2026)
+
+### \u2714 Work completed:
+
+- Reverted `activeSession` Firestore rules to pre-P0-4 permissive version
+  (same as commit `2c788c3`) after permission-denied errors in validation.
+- Redeployed rules to prod (`firebase deploy --only firestore:rules`).
+
+### \ud83e\uddea Tests:
+
+- Not applicable.
+
+### \u26a0\ufe0f Issues found:
+
+- Validation logs showed `[cloud_firestore/permission-denied]` on auto-start
+  (`2026_03_01_ios_simulator_iphone_17_pro_diag.log`).
+
+### \ud83c\udfaf Next steps:
+
+- Re-run P0-4 validation after rules rollback.
+- Design a backward-compatible monotonic rules variant before reintroducing it.
+
+# 🔹 Block 518 — Fix 22g: auto-open bounce guard + pause persistence + safe nav (01/03/2026)
+
+### ✔ Work completed:
+
+- Added a short auto-open bounce window to re-open TimerScreen only when a
+  session falls back to `/groups` shortly after auto-open, without re-enabling
+  intrusive auto-open on sensitive routes.
+- Made TimerScreen navigation to Groups Hub post-frame to avoid
+  `setState/markNeedsBuild during build` Router errors.
+- Resume now falls back to `session.pausedAt` when local `_pauseStartedAt`
+  is missing, and awaits pause offset persistence to prevent early end.
+- Group timeline projection no longer shifts task start by pause offset.
+- Enriched activeSession debug snapshot log with pause fields.
+
+### 🧪 Tests:
+
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart` (passed)
+
+### ⚠️ Issues found:
+
+- Validation pending (P0-4 regressions: bounce to Groups Hub, pause not applied,
+  status box start shift, iOS setState during build).
+
+### 🎯 Next steps:
+
+- Run targeted tests (timer screen + viewmodel) and revalidate multi-device.

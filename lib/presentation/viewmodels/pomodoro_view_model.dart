@@ -784,17 +784,22 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   Future<void> _resumeInternal() async {
     final now = await _resolveServerNow();
-    final pauseStartedAt = _pauseStartedAt;
+    final session = activeSessionForCurrentGroup;
+    final pauseStartedAt = _pauseStartedAt ?? session?.pausedAt;
     if (pauseStartedAt != null) {
       final pausedSeconds = now.difference(pauseStartedAt).inSeconds;
       if (pausedSeconds > 0) {
         _accumulatedPausedSeconds += pausedSeconds;
-        unawaited(
-          _applyPauseOffsetToGroup(
+        try {
+          await _applyPauseOffsetToGroup(
             Duration(seconds: pausedSeconds),
             now: now,
-          ),
-        );
+          );
+        } catch (error) {
+          if (kDebugMode) {
+            debugPrint('[RunModeDiag] Pause offset persist failed: $error');
+          }
+        }
         _timelinePhaseStartedAt = null;
       }
     }
@@ -1463,6 +1468,9 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         'status=${session.status.name} '
         'phase=${session.phase?.name ?? 'n/a'} '
         'remaining=${session.remainingSeconds} '
+        'pausedAt=${session.pausedAt ?? 'n/a'} '
+        'accPaused=${session.accumulatedPausedSeconds} '
+        'phaseStartedAt=${session.phaseStartedAt ?? 'n/a'} '
         'lastUpdatedAt=${session.lastUpdatedAt ?? 'n/a'} '
         'groupId=${session.groupId ?? 'n/a'}',
       );
@@ -2426,9 +2434,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
     _currentTaskIndex = projection.taskIndex;
     _currentItem = _resolveTaskItem(group, projection.taskIndex);
-    final projectedStart = pauseOffsetSeconds > 0
-        ? projection.taskStartedAt.add(Duration(seconds: pauseOffsetSeconds))
-        : projection.taskStartedAt;
+    final projectedStart = projection.taskStartedAt;
     if (!sameTask || _currentTaskStartedAt == null) {
       _currentTaskStartedAt = projectedStart;
     }
