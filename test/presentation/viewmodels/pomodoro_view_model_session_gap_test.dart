@@ -93,6 +93,8 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
       StreamController<PomodoroSession?>.broadcast();
   PomodoroSession? _lastSession;
   PomodoroSession? _initialSession;
+  int publishCount = 0;
+  PomodoroSession? lastPublished;
 
   @override
   Stream<PomodoroSession?> watchSession() async* {
@@ -115,7 +117,10 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
   }
 
   @override
-  Future<void> publishSession(PomodoroSession session) async {}
+  Future<void> publishSession(PomodoroSession session) async {
+    publishCount += 1;
+    lastPublished = session;
+  }
 
   @override
   Future<bool> tryClaimSession(PomodoroSession session) async => true;
@@ -160,6 +165,32 @@ class FakeSoundService implements SoundService {
 
   @override
   Future<void> dispose() async {}
+}
+
+class FakeTimeSyncService extends TimeSyncService {
+  FakeTimeSyncService({Duration? offset})
+      : _offsetOverride = offset,
+        super(enabled: false);
+
+  Duration? _offsetOverride;
+  int refreshCalls = 0;
+  int forcedRefreshCalls = 0;
+
+  @override
+  Duration? get offset => _offsetOverride;
+
+  @override
+  Future<Duration?> refresh({bool force = false}) async {
+    refreshCalls += 1;
+    if (force) {
+      forcedRefreshCalls += 1;
+    }
+    return _offsetOverride;
+  }
+
+  void setOffset(Duration? value) {
+    _offsetOverride = value;
+  }
 }
 
 TaskRunItem _buildItem() {
@@ -286,5 +317,56 @@ void main() {
     await _pumpQueue();
 
     expect(vm.isSessionMissingWhileRunning, isTrue);
+  });
+
+  test('Account without timeSync does not publish and forces refresh', () async {
+    final now = DateTime.now();
+    final deviceInfo = DeviceInfoService.ephemeral();
+    final group = _buildRunningGroup(id: 'group-1', start: now);
+    final session = _buildRunningSession(
+      groupId: group.id,
+      taskId: group.tasks.first.sourceTaskId,
+      ownerDeviceId: deviceInfo.deviceId,
+      now: now,
+    );
+
+    final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+    final sessionRepo = FakePomodoroSessionRepository(session);
+    final appModeService = AppModeService.memory();
+    final timeSyncService = FakeTimeSyncService(offset: null);
+
+    final container = ProviderContainer(
+      overrides: [
+        taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+        pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+        appModeServiceProvider.overrideWithValue(appModeService),
+        deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+        soundServiceProvider.overrideWithValue(FakeSoundService()),
+        timeSyncServiceProvider.overrideWithValue(timeSyncService),
+      ],
+    );
+    addTearDown(() {
+      sessionRepo.dispose();
+      container.dispose();
+    });
+
+    await container.read(appModeProvider.notifier).setAccount();
+    await _pumpQueue();
+
+    container.listen<PomodoroState>(pomodoroViewModelProvider, (_, __) {});
+    final vm = container.read(pomodoroViewModelProvider.notifier);
+    final result = await vm.loadGroup(group.id);
+    expect(result, PomodoroGroupLoadResult.loaded);
+    await _pumpQueue();
+
+    sessionRepo.publishCount = 0;
+    timeSyncService.refreshCalls = 0;
+    timeSyncService.forcedRefreshCalls = 0;
+
+    vm.pause();
+    await _pumpQueue();
+
+    expect(sessionRepo.publishCount, 0);
+    expect(timeSyncService.forcedRefreshCalls, greaterThan(0));
   });
 }
