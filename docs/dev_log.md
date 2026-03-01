@@ -8644,3 +8644,24 @@ _(pending validation)_
 ### 🎯 Next steps:
 
 - Implement P0-3: render Run Mode from activeSession projection for owner and mirror.
+
+# 🔹 Block 512 — Fix 22 P0-2b: add guardrail tests (01/03/2026)
+
+### ✔ Work completed:
+
+- Added widget test to enforce UI rule: pending intent + no snapshot shows full
+  loader (no timer visible).
+- Added VM test to ensure Account Mode with missing timeSync does not publish
+  activeSession and forces a refresh.
+
+### 🧪 Tests:
+
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart` (passed)
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Implement P0-3: render Run Mode from activeSession projection for owner and mirror.
