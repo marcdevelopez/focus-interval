@@ -23,7 +23,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **28/02/2026**
+Last update: **01/03/2026**
 
 ---
 
@@ -8580,3 +8580,23 @@ _(pending validation)_
 ### 🎯 Next steps:
 
 - Validate Fix 22 scenarios (owner/mirror, pause/resume, background, Local → Account).
+
+# 🔹 Block 509 — Fix 22 P0-1: stale snapshot guard (01/03/2026)
+
+### ✔ Work completed:
+
+- Prevented stale activeSession snapshots from updating session counters when the
+  timeline should not be applied (ignore outdated revision updates).
+- Logged Fix 22 P0-1 in the validation plan.
+
+### 🧪 Tests:
+
+- Not run (Flutter test requires sandbox approval).
+
+### ⚠️ Issues found:
+
+- None during implementation (validation pending).
+
+### 🎯 Next steps:
+
+- Implement P0-2: timeSync gating + intent queue + non-blocking syncing overlay.

@@ -146,6 +146,7 @@ Update this section after each fix.
 20. Fix 20 (Scope 20): Done (2026-02-28, tests: `flutter analyze`, commit: bad12c3 "Fix 20: derive mirror offset without lastUpdatedAt") — Mirror must start in sync on first render. Validation FAILED (28/02/2026): mirror still starts behind when `lastUpdatedAt` is stale.
 21. Fix 21 (Scope 21): In progress (2026-02-28) — attempt 1 regressed (mirror countdown accelerates); attempt 2 still desyncs after mode switch; attempt 3 (fresh-snapshot gating) still fails on iOS owner + Chrome mirror.
 22. Fix 22 (Scope 22): Implemented (2026-02-28) — P0 single source of truth refactor (time sync + sessionRevision + paused offsets). Tests: `flutter test` (VM + coordinator) + `flutter analyze`. Commit: 5289922 "Fix 22: time sync single-source projection". Validation pending.
+22a. Fix 22 (P0-1): Ignore stale session counters when timeline is not applied (01/03/2026). Tests: not run (flutter test needs approval). Commit: 0a6d3f5 "Fix 22 P0-1: ignore stale session counters".
 
 ### Fix 22 — Plan de implementacion (P0 single source of truth)
 1. Modelo/Firestore: añadir `sessionRevision` y `accumulatedPausedSeconds` en `PomodoroSession`; añadir `users/{uid}/timeSync` (serverTimestamp); actualizar `firestore.rules`; compatibilidad: campos ausentes -> 0.
