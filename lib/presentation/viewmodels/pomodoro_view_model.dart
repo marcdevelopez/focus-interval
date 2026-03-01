@@ -1213,8 +1213,18 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   void _publishCurrentSession({DateTime? now}) {
-    final resolvedNow =
-        now ?? _serverNowFromOffset() ?? DateTime.now();
+    if (ref.read(appModeProvider) == AppMode.account && !isTimeSyncReady) {
+      final localNow = DateTime.now();
+      _markTimeSyncWaitStarted(localNow);
+      unawaited(
+        _refreshTimeSyncIfNeeded(
+          reason: 'publish',
+          force: true,
+        ),
+      );
+      return;
+    }
+    final resolvedNow = now ?? _serverNowFromOffset() ?? DateTime.now();
     final session = _buildCurrentSessionSnapshot(resolvedNow);
     if (session == null) return;
     _sessionRepo.publishSession(session);

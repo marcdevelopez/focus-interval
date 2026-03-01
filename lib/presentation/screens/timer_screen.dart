@@ -648,12 +648,11 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         isSessionForGroup ||
         state.status.isActiveExecution ||
         state.status == PomodoroStatus.finished;
-    final hasSyncOverlayTarget = hasSessionSnapshot || hasPendingIntent;
     final showBlockingLoader =
         !_taskLoaded ||
-        (shouldShowResyncLoader && !hasSyncOverlayTarget);
+        (shouldShowResyncLoader && !hasSessionSnapshot);
     final showSyncOverlay =
-        _taskLoaded && shouldShowResyncLoader && hasSyncOverlayTarget;
+        _taskLoaded && shouldShowResyncLoader && hasSessionSnapshot;
     final pendingIntentLabel = vm.pendingIntentLabel;
     final showRetrySync = vm.isTimeSyncStalled;
     _syncInactiveRepaint(state: state, isMirror: isMirror);
