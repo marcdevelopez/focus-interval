@@ -173,6 +173,12 @@ Notas: rangos Run Mode vs status boxes vuelven a ser incoherentes tras pausa (ob
 Adicional: tras pausar, el grupo termina antes de tiempo como si la pausa no hubiese existido (duracion no respeta pausa).
 Adicional: en las cajas de estado, el start se desplaza mas tarde sumando el tiempo de la pausa (regresion del fix de rangos).
 
+Resultados (01/03/2026, Fix 22g)
+Logs: docs/bugs/validation_fix_2026_02_25/logs/2026_03_01_android_RMX3771_diag.log y 2026_03_01_ios_simulator_iphone_17_pro_diag.log.
+1. Programado notice 0 (auto-start): FAIL. iOS queda en “Syncing session…” con fondo negro opaco; no abre Run Mode.
+   - En Firebase, activeSession/current queda en status=finished con remainingSeconds=0 y phaseStartedAt=null.
+2. Resto de pasos: no se pudo validar por el bloqueo del paso 1.
+
 Notas adicionales (27/02/2026) — nuevos bugs observados (fuera del checklist)
 1. Auto-open de Run Mode se re-dispara de forma periodica desde cualquier pantalla (Task List, Groups Hub, planificacion, modales). Interrumpe al usuario y reabre Run Mode aunque no haya accion directa.
 2. Account Mode: programado notice 0 genera pantalla negra en iOS tras confirmar (imagenes 02–03). Logs: `_ios_simulator_iphone_17_pro_diag-1.log` y `2026_02_25_web_chrome_diag-1.log`. Reintento con logs `*_diag-2.log`.

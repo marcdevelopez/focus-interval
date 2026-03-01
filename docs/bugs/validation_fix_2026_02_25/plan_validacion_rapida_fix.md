@@ -160,7 +160,11 @@ Update this section after each fix.
     - Cajas de estado: el start se desplaza mas tarde sumando el tiempo de la pausa (regresion del fix de rangos).
     - Logs: `2026_03_01_ios_simulator_iphone_17_pro_diag.log`, `2026_03_01_macos_diag.log`.
     - Reglas Firestore P0-4 revertidas a pre-2c788c3 y redeploy realizadas tras permission-denied.
-22g. Fix 22 (P0-4g): Auto-open bounce guard + safe navigation + pause offset persistence + pause start fallback (01/03/2026). Tests: `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart` (passed). Commit: 57ed9ff "Fix 22g: auto-open bounce + pause persistence + safe nav". Validation pending.
+22g. Fix 22 (P0-4g): Auto-open bounce guard + safe navigation + pause offset persistence + pause start fallback (01/03/2026). Tests: `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart` (passed). Commit: 57ed9ff "Fix 22g: auto-open bounce + pause persistence + safe nav". Validation (01/03/2026): FAIL.
+    - Programado notice 0: iOS queda en “Syncing session…” con fondo negro; no abre Run Mode.
+    - Firebase activeSession/current queda con status=finished, remainingSeconds=0, phaseStartedAt=null.
+    - Resto de pasos no validables por bloqueo del paso 1.
+    - Logs: `2026_03_01_android_RMX3771_diag.log`, `2026_03_01_ios_simulator_iphone_17_pro_diag.log`.
 
 ### Fix 22 — Plan de implementacion (P0 single source of truth)
 1. Modelo/Firestore: añadir `sessionRevision` y `accumulatedPausedSeconds` en `PomodoroSession`; añadir `users/{uid}/timeSync` (serverTimestamp); actualizar `firestore.rules`; compatibilidad: campos ausentes -> 0.

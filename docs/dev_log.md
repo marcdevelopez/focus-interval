@@ -8806,3 +8806,24 @@ _(pending validation)_
 ### 🎯 Next steps:
 
 - Run targeted tests (timer screen + viewmodel) and revalidate multi-device.
+
+# 🔹 Block 519 — Fix 22g validation failed (01/03/2026)
+
+### ✔ Work completed:
+
+- Validation run started for Fix 22g using Android + iOS logs.
+
+### 🧪 Tests:
+
+- Not applicable.
+
+### ⚠️ Issues found:
+
+- Scheduled auto-start (notice 0) fails: iOS stuck on “Syncing session…” with black background; Run Mode never opens.
+- Firestore `activeSession/current` ends in `status=finished` with `remainingSeconds=0` and `phaseStartedAt=null`.
+- Remaining checklist steps could not be validated due to the block.
+
+### 🎯 Next steps:
+
+- Investigate why scheduled auto-start produces a finished activeSession.
+- Validate auto-start path against timeSync/sessionRevision gating.
