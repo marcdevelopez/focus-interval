@@ -1,9 +1,49 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSignedInUser(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function isDelete() {
+      return request.resource.data == null;
+    }
+
+    function hasSessionRevision(data) {
+      return data != null && data.keys().hasAny(['sessionRevision']);
+    }
+
+    function hasIncomingRevision() {
+      return request.resource.data.keys().hasAny(['sessionRevision']);
+    }
+
+    function isActiveStatus() {
+      return request.resource.data.status in [
+        'pomodoroRunning',
+        'shortBreakRunning',
+        'longBreakRunning',
+        'paused'
+      ];
+    }
+
+    function isMonotonicSessionRevision() {
+      return !hasSessionRevision(resource.data) ||
+          (hasIncomingRevision() &&
+              request.resource.data.sessionRevision >=
+                  resource.data.sessionRevision);
+    }
+
+    function hasMinimalActiveFields() {
+      return !isActiveStatus() ||
+          (request.resource.data.ownerDeviceId is string &&
+              request.resource.data.status is string);
+    }
+
     // Allows each user to read and write their active session in real time.
     match /users/{userId}/activeSession/{docId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isSignedInUser(userId);
+      allow write: if isSignedInUser(userId) &&
+        (isDelete() || (isMonotonicSessionRevision() && hasMinimalActiveFields()));
     }
 
     // Tasks scoped to the authenticated user.

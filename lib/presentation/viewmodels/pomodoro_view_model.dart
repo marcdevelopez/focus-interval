@@ -112,6 +112,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   _PendingIntent? _pendingIntent;
   DateTime? _timeSyncWaitStartedAt;
   int? _awaitingSessionRevision;
+  Future<void> _publishQueue = Future.value();
 
   @override
   PomodoroState build() {
@@ -1243,10 +1244,34 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     final resolvedNow = now ?? _serverNowFromOffset() ?? DateTime.now();
     final session = _buildCurrentSessionSnapshot(resolvedNow);
     if (session == null) return;
-    _sessionRepo.publishSession(session);
-    _lastAppliedSessionRevision = session.sessionRevision;
-    _lastAppliedSessionUpdatedAt = session.lastUpdatedAt;
-    _syncPausedHeartbeat();
+    _enqueuePublishSession(session);
+  }
+
+  void _enqueuePublishSession(PomodoroSession session) {
+    _publishQueue = _publishQueue.then((_) async {
+      if (_shouldSkipQueuedPublish(session)) return;
+      await _sessionRepo.publishSession(session);
+      _lastAppliedSessionRevision = session.sessionRevision;
+      _lastAppliedSessionUpdatedAt = session.lastUpdatedAt;
+      _syncPausedHeartbeat();
+    }).catchError((error, stack) {
+      if (kDebugMode) {
+        debugPrint('[ActiveSession] Publish failed: $error');
+      }
+    });
+  }
+
+  bool _shouldSkipQueuedPublish(PomodoroSession session) {
+    if (!_matchesCurrentContext(session)) return true;
+    if (session.ownerDeviceId != _deviceInfo.deviceId) return true;
+    if (_sessionRevision > session.sessionRevision) return true;
+    if (ref.read(appModeProvider) != AppMode.account) return false;
+    if (_sessionMissingWhileRunning) return true;
+    final latest = _latestSession;
+    if (latest != null && latest.ownerDeviceId != _deviceInfo.deviceId) {
+      return true;
+    }
+    return false;
   }
 
   int _phaseDurationForState(PomodoroState state) {

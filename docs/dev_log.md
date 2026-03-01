@@ -8714,3 +8714,28 @@ _(pending validation)_
 
 - P0-3 validation (multi-device scenarios).
 - Continue with P0-4: monotonic guard in repo/rules + write ordering.
+
+# 🔹 Block 515 — Fix 22 P0-4: monotonic guard + write serialization (01/03/2026)
+
+### ✔ Work completed:
+
+- Added monotonic sessionRevision guard in Firestore session repository
+  (incoming < current ignored; equal treated as idempotent heartbeat).
+- Added session write serialization in VM; queued publishes drop obsolete
+  writes by revision/context/ownership before sending.
+- Added Firestore rules enforcing monotonic sessionRevision (legacy allowed only
+  when the stored document lacks the field).
+- Added unit tests for the session write decision logic.
+
+### 🧪 Tests:
+
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart test/data/repositories/firestore_pomodoro_session_repository_test.dart` (passed)
+
+### ⚠️ Issues found:
+
+- None during implementation (validation pending).
+
+### 🎯 Next steps:
+
+- P0-4 validation (multi-device).
+- Continue with P0-5: discard obsolete queued writes on session/context changes.

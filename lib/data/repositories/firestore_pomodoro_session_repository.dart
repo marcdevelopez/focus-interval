@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
+import 'package:flutter/foundation.dart'
+    show debugPrint, kDebugMode, visibleForTesting;
 
 import '../../domain/pomodoro_machine.dart';
 
@@ -50,6 +51,27 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
       }
       final currentOwner = snap.data()!['ownerDeviceId'] as String?;
       if (currentOwner != null && currentOwner != session.ownerDeviceId) {
+        return;
+      }
+      final currentData = snap.data()!;
+      final currentHasRevision = currentData.containsKey('sessionRevision');
+      final currentRevision = (currentData['sessionRevision'] as num?)?.toInt();
+      final decision = evaluateSessionWrite(
+        incomingRevision: session.sessionRevision,
+        currentRevision: currentRevision,
+        currentHasRevision: currentHasRevision,
+      );
+      if (decision == SessionWriteDecision.ignore) {
+        return;
+      }
+      if (decision == SessionWriteDecision.idempotent) {
+        tx.set(
+          docRef,
+          {
+            'lastUpdatedAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true),
+        );
         return;
       }
       tx.set(docRef, data, SetOptions(merge: true));
@@ -326,4 +348,25 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
       );
     });
   }
+}
+
+enum SessionWriteDecision { ignore, idempotent, apply }
+
+@visibleForTesting
+SessionWriteDecision evaluateSessionWrite({
+  required int incomingRevision,
+  required int? currentRevision,
+  required bool currentHasRevision,
+}) {
+  if (!currentHasRevision) {
+    return SessionWriteDecision.apply;
+  }
+  final current = currentRevision ?? 0;
+  if (incomingRevision < current) {
+    return SessionWriteDecision.ignore;
+  }
+  if (incomingRevision == current) {
+    return SessionWriteDecision.idempotent;
+  }
+  return SessionWriteDecision.apply;
 }
