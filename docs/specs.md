@@ -1865,6 +1865,12 @@ The MM:SS timer must not shift horizontally:
 - Remaining time is projected from phaseStartedAt + phaseDurationSeconds using the
   server-time offset derived from `users/{uid}/timeSync` (serverTimestamp). Never
   project from raw local clock alone.
+- Render priority (Account Mode):
+  - **activeSession snapshot (valid + groupId match)** → render from remote projection (owner + mirror).
+  - **activeSession temporarily missing** while a running/paused group exists and
+    a prior snapshot is available → keep the last snapshot visible with Syncing
+    overlay; do **not** fall back to the local machine.
+  - **No snapshot yet** → show full loader until the first snapshot arrives.
 - If the server-time offset is unavailable, show **Syncing session...** and keep
   the last known snapshot without re-projecting until time sync is ready.
 - The Syncing indicator must not hide the timer when a snapshot exists; use an
@@ -1876,8 +1882,15 @@ The MM:SS timer must not shift horizontally:
   including heartbeats and republish/recovery writes. Heartbeat enforcement
   applies only when time sync is ready.
 - Mirror devices render task names/durations from the TaskRunGroup snapshot (by groupId), not from the editable task list.
-- **Single source of truth:** owner/mirror state and control gating must be derived from the same activeSession snapshot
-  (groupId must match). Local flags may project state but must never override the snapshot.
+- **Single source of truth:** owner/mirror state and control gating (start/resume/pause/cancel/ownership)
+  must be derived from the same activeSession snapshot (groupId must match). Local flags may
+  project state but must never override the snapshot.
+- After any owner action (start/resume/pause/cancel), keep the UI in a syncing/hold
+  state until the corresponding activeSession snapshot confirms the change. Do **not**
+  revert to the local machine as the render source in Account Mode.
+- Projected state must **not** trigger side effects (sounds/notifications). Only the
+  owner machine’s authoritative transitions may emit effects, and must never double-fire
+  due to projected snapshots.
 - When auto-open is triggered from launch/resume, open TimerScreen in mirror mode if the session belongs to another device.
 - On `AppLifecycleState.resumed`, force an immediate sync (activeSession + group)
   before enabling controls. While resyncing, the UI must not show a transient

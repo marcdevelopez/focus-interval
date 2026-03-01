@@ -8686,3 +8686,31 @@ _(pending validation)_
 ### 🎯 Next steps:
 
 - Implement P0-3: render Run Mode from activeSession projection for owner and mirror.
+
+# 🔹 Block 514 — Fix 22 P0-3: render from activeSession (owner + mirror) (01/03/2026)
+
+### ✔ Work completed:
+
+- In Account Mode, ignored PomodoroMachine stream updates when an activeSession
+  is present, missing, or awaiting confirmation (preventing local render drift).
+- Unified owner + mirror rendering from activeSession projection with a shared
+  projection timer (no machine-driven UI in Account Mode).
+- Added “awaiting session confirmation” gating after owner start/pause/resume
+  (syncing hold until snapshot arrives; controls disabled).
+- TimerScreen now treats “awaiting session confirmation” as syncing (overlay
+  only when a snapshot exists).
+- Added regression test to ensure machine stream does not override state when
+  an activeSession is present.
+
+### 🧪 Tests:
+
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart` (passed)
+
+### ⚠️ Issues found:
+
+- None during implementation (validation pending).
+
+### 🎯 Next steps:
+
+- P0-3 validation (multi-device scenarios).
+- Continue with P0-4: monotonic guard in repo/rules + write ordering.

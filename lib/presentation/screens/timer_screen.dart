@@ -624,6 +624,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final isResyncing = vm.isResyncing;
     final isTimeSyncReady = vm.isTimeSyncReady;
     final hasPendingIntent = vm.hasPendingIntent;
+    final isAwaitingSessionConfirmation =
+        isAccountMode && vm.isAwaitingSessionConfirmation;
     final isSessionMissingWhileRunning =
         isAccountMode && vm.isSessionMissingWhileRunning;
     final shouldForceSyncUntilSession =
@@ -635,7 +637,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final isSyncingSession =
         isSessionMissingWhileRunning ||
         shouldForceSyncUntilSession ||
-        shouldForceTimeSync;
+        shouldForceTimeSync ||
+        isAwaitingSessionConfirmation;
     final shouldHoldReadyWhileRunning =
         isAccountMode &&
         currentGroup?.status == TaskRunStatus.running &&

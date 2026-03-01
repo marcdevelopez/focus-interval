@@ -369,4 +369,57 @@ void main() {
     expect(sessionRepo.publishCount, 0);
     expect(timeSyncService.forcedRefreshCalls, greaterThan(0));
   });
+
+  test('Account session render ignores machine stream updates', () async {
+    final now = DateTime.now();
+    final deviceInfo = DeviceInfoService.ephemeral();
+    final group = _buildRunningGroup(id: 'group-1', start: now);
+    final session = _buildRunningSession(
+      groupId: group.id,
+      taskId: group.tasks.first.sourceTaskId,
+      ownerDeviceId: 'other-device',
+      now: now,
+    );
+
+    final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+    final sessionRepo = FakePomodoroSessionRepository(session);
+    final appModeService = AppModeService.memory();
+
+    final container = ProviderContainer(
+      overrides: [
+        taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+        pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+        appModeServiceProvider.overrideWithValue(appModeService),
+        deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+        soundServiceProvider.overrideWithValue(FakeSoundService()),
+        timeSyncServiceProvider.overrideWithValue(
+          FakeTimeSyncService(offset: Duration.zero),
+        ),
+      ],
+    );
+    addTearDown(() {
+      sessionRepo.dispose();
+      container.dispose();
+    });
+
+    await container.read(appModeProvider.notifier).setAccount();
+    await _pumpQueue();
+
+    container.listen<PomodoroState>(pomodoroViewModelProvider, (_, __) {});
+    final vm = container.read(pomodoroViewModelProvider.notifier);
+    final result = await vm.loadGroup(group.id);
+    expect(result, PomodoroGroupLoadResult.loaded);
+    await _pumpQueue();
+
+    final before = container.read(pomodoroViewModelProvider);
+    expect(before.status.isActiveExecution, isTrue);
+
+    final machine = container.read(pomodoroMachineProvider);
+    machine.cancel();
+    await _pumpQueue();
+
+    final after = container.read(pomodoroViewModelProvider);
+    expect(after.status.isActiveExecution, isTrue);
+    expect(after.status, isNot(PomodoroStatus.idle));
+  });
 }
