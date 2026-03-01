@@ -8739,3 +8739,21 @@ _(pending validation)_
 
 - P0-4 validation (multi-device).
 - Continue with P0-5: discard obsolete queued writes on session/context changes.
+
+# 🔹 Block 516 — Firestore rules deployed (prod) (01/03/2026)
+
+### ✔ Work completed:
+
+- Deployed `firestore.rules` to production via `firebase deploy --only firestore:rules`.
+
+### 🧪 Tests:
+
+- Not applicable.
+
+### ⚠️ Issues found:
+
+- CLI warning: `firebase.json` contains unknown property `flutter` (non-blocking).
+
+### 🎯 Next steps:
+
+- Validate P0-4 on prod rules.
