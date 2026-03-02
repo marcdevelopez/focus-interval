@@ -35,6 +35,8 @@ Scope: TimeSync deadlock + auth gating (Account Mode, web/mac).
 2. Publish:
    - `_publishCurrentSession()` no debe hacer return si falta time sync.
    - Debe publicar con `DateTime.now()` como fallback mientras reintenta sync.
+   - Permitir publish cuando falta session pero el owner esta activo (evitar freeze).
+   - Permitir heartbeats mientras esperamos confirmacion de sesion (awaiting).
 3. Specs:
    - Documentar el fallback de publish/heartbeat cuando time sync no esta listo.
    - Mantener bloqueo de start/resume/auto-start sin time sync.

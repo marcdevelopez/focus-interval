@@ -8981,3 +8981,26 @@ _(pending validation)_
 
 - Run rapid validation on Chrome/macOS debug + prod override.
 - Record commit hash in the validation plan and complete checklist.
+
+# 🔹 Block 526 — Allow owner heartbeats while awaiting/missing (02/03/2026)
+
+### ✔ Work completed:
+
+- Allowed session publish to proceed while missing session when this device is
+  the owner and execution is active (prevents `lastUpdatedAt` freeze).
+- Allowed heartbeats to publish while awaiting session confirmation to avoid
+  deadlocks during initial ownership.
+- Updated validation plan for the TimeSync deadlock fix.
+
+### 🧪 Tests:
+
+- `flutter analyze` (passed).
+
+### ⚠️ Issues found:
+
+- None yet (validation pending).
+
+### 🎯 Next steps:
+
+- Re-run rapid validation in Chrome/macOS and confirm `lastUpdatedAt` advances.
+- Update the checklist and plan tracking with the new commit hash.

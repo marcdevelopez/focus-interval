@@ -1159,8 +1159,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   bool _canPublishHeartbeatWhileSyncing() {
-    if (!_sessionMissingWhileRunning) return false;
     if (ref.read(appModeProvider) != AppMode.account) return false;
+    if (!_sessionMissingWhileRunning && _awaitingSessionRevision == null) {
+      return false;
+    }
     final session = _latestSession;
     if (session != null) {
       return session.ownerDeviceId == _deviceInfo.deviceId;
@@ -1325,7 +1327,13 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (session.ownerDeviceId != _deviceInfo.deviceId) return true;
     if (_sessionRevision > session.sessionRevision) return true;
     if (ref.read(appModeProvider) != AppMode.account) return false;
-    if (_sessionMissingWhileRunning) return true;
+    if (_sessionMissingWhileRunning) {
+      final group = _currentGroup;
+      final isActive = _machine.state.status.isActiveExecution;
+      final groupRunning = group == null || group.status == TaskRunStatus.running;
+      if (isActive && groupRunning) return false;
+      return true;
+    }
     final latest = _latestSession;
     if (latest != null && latest.ownerDeviceId != _deviceInfo.deviceId) {
       return true;
