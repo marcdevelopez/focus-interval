@@ -322,7 +322,7 @@ void main() {
     expect(vm.isSessionMissingWhileRunning, isTrue);
   });
 
-  test('Account without timeSync does not publish and forces refresh', () async {
+  test('Account without timeSync publishes and forces refresh', () async {
     final now = DateTime.now();
     final deviceInfo = DeviceInfoService.ephemeral();
     final group = _buildRunningGroup(id: 'group-1', start: now);
@@ -369,7 +369,7 @@ void main() {
     vm.pause();
     await _pumpQueue();
 
-    expect(sessionRepo.publishCount, 0);
+    expect(sessionRepo.publishCount, greaterThan(0));
     expect(timeSyncService.forcedRefreshCalls, greaterThan(0));
   });
 

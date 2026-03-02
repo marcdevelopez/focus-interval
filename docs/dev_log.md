@@ -8975,3 +8975,31 @@ _(not yet validated on devices)_
 ### 🎯 Next steps:
 
 - Complete feature checklist validation and record results.
+
+# 🔹 Block 530 — ActiveSession payload persistence + owner sync guards (02/03/2026)
+
+### ✔ Work completed:
+
+- Fixed Firestore activeSession idempotent writes to persist full payload when
+  `sessionRevision` is unchanged but session fields changed (`remainingSeconds`,
+  phase/status fields, timeline fields).
+- Stabilized owner sync flow in `PomodoroViewModel`:
+  - removed owner mirror-projection path,
+  - allowed projection local fallback when server offset is temporarily missing,
+  - added `ref.mounted` lifecycle guards on async resync/snapshot paths.
+- Updated session gap test expectations to match the current publish policy when
+  time sync is unavailable.
+
+### 🧪 Tests:
+
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` (passed).
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` (passed).
+
+### ⚠️ Issues found:
+
+- Device validation for the long-run (20–30 min) Android syncing scenario is still pending.
+
+### 🎯 Next steps:
+
+- Run long-run validation with a fresh running group (no carry-over from previous builds).
+- Record final validation evidence in `docs/bugs/validation_fix_2026_03_02-03/`.
