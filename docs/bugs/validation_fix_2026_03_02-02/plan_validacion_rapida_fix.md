@@ -48,5 +48,5 @@ Scope: TimeSync deadlock + auth gating (Account Mode, web/mac).
 3. Mirror sigue proyectando desde serverTime cuando time sync esta listo.
 
 ## Tracking
-- Estado: Pendiente.
-- Commit: TBA
+- Estado: Implementado (validacion pendiente).
+- Commit: 1945594 "Fix time sync deadlock and auth gating"
