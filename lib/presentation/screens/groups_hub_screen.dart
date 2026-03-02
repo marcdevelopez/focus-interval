@@ -11,6 +11,7 @@ import '../../data/models/task_run_group.dart';
 import '../../data/models/schema_version.dart';
 import '../../data/repositories/task_run_group_repository.dart';
 import '../../data/services/app_mode_service.dart';
+import '../../data/services/task_run_notice_service.dart';
 import '../../domain/pomodoro_machine.dart';
 import '../../widgets/mode_indicator.dart';
 import '../providers.dart';
@@ -26,7 +27,9 @@ final DateFormat _groupsHubDateTimeFormat = DateFormat('MMM d, HH:mm');
 String _formatGroupDateTime(DateTime? value, DateTime now) {
   if (value == null) return '--:--';
   final isToday =
-      value.year == now.year && value.month == now.month && value.day == now.day;
+      value.year == now.year &&
+      value.month == now.month &&
+      value.day == now.day;
   return isToday
       ? _groupsHubTimeFormat.format(value)
       : _groupsHubDateTimeFormat.format(value);
@@ -146,10 +149,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            message,
-            style: const TextStyle(color: Colors.white),
-          ),
+          Text(message, style: const TextStyle(color: Colors.white)),
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerLeft,
@@ -209,13 +209,13 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                     setState(() {
                       _dismissedOwnershipRequestKey =
                           request.requestId ?? request.requesterDeviceId;
-                      _dismissedOwnershipRequesterId =
-                          request.requestId == null
-                              ? request.requesterDeviceId
-                              : null;
+                      _dismissedOwnershipRequesterId = request.requestId == null
+                          ? request.requesterDeviceId
+                          : null;
                     });
                     unawaited(
-                      ref.read(pomodoroViewModelProvider.notifier)
+                      ref
+                          .read(pomodoroViewModelProvider.notifier)
                           .rejectOwnershipRequest(),
                     );
                   },
@@ -229,13 +229,13 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                     setState(() {
                       _dismissedOwnershipRequestKey =
                           request.requestId ?? request.requesterDeviceId;
-                      _dismissedOwnershipRequesterId =
-                          request.requestId == null
-                              ? request.requesterDeviceId
-                              : null;
+                      _dismissedOwnershipRequesterId = request.requestId == null
+                          ? request.requesterDeviceId
+                          : null;
                     });
                     unawaited(
-                      ref.read(pomodoroViewModelProvider.notifier)
+                      ref
+                          .read(pomodoroViewModelProvider.notifier)
                           .approveOwnershipRequest(),
                     );
                   },
@@ -290,8 +290,9 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     final hasPendingOwnerRequest =
         ownershipRequest?.status == OwnershipRequestStatus.pending &&
         ownershipRequest?.requesterDeviceId != deviceId;
-    final isDismissedOwnerRequest =
-        _isDismissedOwnershipRequest(ownershipRequest);
+    final isDismissedOwnerRequest = _isDismissedOwnershipRequest(
+      ownershipRequest,
+    );
     if ((_dismissedOwnershipRequestKey != null ||
             _dismissedOwnershipRequesterId != null) &&
         (ownershipRequest == null ||
@@ -307,9 +308,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: const Text('Groups Hub'),
-        actions: [
-          const ModeIndicatorAction(compact: true),
-        ],
+        actions: [const ModeIndicatorAction(compact: true)],
       ),
       body: Column(
         children: [
@@ -331,47 +330,51 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                 ),
               ),
               data: (groups) {
-                final runningGroups = groups
-                    .where((g) => g.status == TaskRunStatus.running)
-                    .toList()
-                  ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-                final scheduledGroups = groups
-                    .where((g) => g.status == TaskRunStatus.scheduled)
-                    .toList()
-                  ..sort((a, b) {
-                    final aStart =
-                        resolveEffectiveScheduledStart(
-                          group: a,
-                          allGroups: groups,
-                          activeSession: activeSession,
-                          now: now,
-                          fallbackNoticeMinutes: _noticeFallbackMinutes,
-                        ) ??
-                        a.scheduledStartTime ??
-                        a.createdAt;
-                    final bStart =
-                        resolveEffectiveScheduledStart(
-                          group: b,
-                          allGroups: groups,
-                          activeSession: activeSession,
-                          now: now,
-                          fallbackNoticeMinutes: _noticeFallbackMinutes,
-                        ) ??
-                        b.scheduledStartTime ??
-                        b.createdAt;
-                    return aStart.compareTo(bStart);
-                  });
-                final completedGroups = groups
-                    .where((g) => g.status == TaskRunStatus.completed)
-                    .toList()
-                  ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+                final runningGroups =
+                    groups
+                        .where((g) => g.status == TaskRunStatus.running)
+                        .toList()
+                      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+                final scheduledGroups =
+                    groups
+                        .where((g) => g.status == TaskRunStatus.scheduled)
+                        .toList()
+                      ..sort((a, b) {
+                        final aStart =
+                            resolveEffectiveScheduledStart(
+                              group: a,
+                              allGroups: groups,
+                              activeSession: activeSession,
+                              now: now,
+                              fallbackNoticeMinutes: _noticeFallbackMinutes,
+                            ) ??
+                            a.scheduledStartTime ??
+                            a.createdAt;
+                        final bStart =
+                            resolveEffectiveScheduledStart(
+                              group: b,
+                              allGroups: groups,
+                              activeSession: activeSession,
+                              now: now,
+                              fallbackNoticeMinutes: _noticeFallbackMinutes,
+                            ) ??
+                            b.scheduledStartTime ??
+                            b.createdAt;
+                        return aStart.compareTo(bStart);
+                      });
+                final completedGroups =
+                    groups
+                        .where((g) => g.status == TaskRunStatus.completed)
+                        .toList()
+                      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
                 final completedSlice = completedGroups
                     .take(_completedHistoryLimit)
                     .toList(growable: false);
-                final canceledGroups = groups
-                    .where((g) => g.status == TaskRunStatus.canceled)
-                    .toList()
-                  ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+                final canceledGroups =
+                    groups
+                        .where((g) => g.status == TaskRunStatus.canceled)
+                        .toList()
+                      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
                 final canceledSlice = canceledGroups
                     .take(_canceledHistoryLimit)
                     .toList(growable: false);
@@ -417,143 +420,124 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                 }
 
                 children.addAll([
-            _SectionHeader(title: 'Running / Paused'),
-            if (runningGroups.isEmpty)
-              const _EmptySection(label: 'No running groups'),
-            for (final group in runningGroups)
-              _GroupCard(
-                group: group,
-                activeSession: activeSession,
-                preRunStartOverride: null,
-                onTap: () => _showSummaryDialog(context, group),
-                actions: [
-                  _GroupAction(
-                    label: 'Open Run Mode',
-                    onPressed: () => openRunModeForGroup(
-                      context,
-                      ref,
-                      group,
-                    ),
-                  ),
-                ],
-                now: now,
-              ),
-            const SizedBox(height: 20),
-            _SectionHeader(title: 'Scheduled'),
-            if (scheduledGroups.isEmpty)
-              const _EmptySection(label: 'No scheduled groups'),
-            for (final group in scheduledGroups)
-              Builder(
-                builder: (context) {
-                  final effectiveStart = resolveEffectiveScheduledStart(
-                    group: group,
-                    allGroups: groups,
-                    activeSession: activeSession,
-                    now: now,
-                    fallbackNoticeMinutes: _noticeFallbackMinutes,
-                  );
-                  final effectivePreRunStart = resolveEffectivePreRunStart(
-                    group: group,
-                    allGroups: groups,
-                    activeSession: activeSession,
-                    now: now,
-                    fallbackNoticeMinutes: _noticeFallbackMinutes,
-                  );
-                  final isPreRunActive = _isPreRunActive(
-                    group,
-                    now,
-                    scheduledStartOverride: effectiveStart,
-                  );
-                  return _GroupCard(
-                    group: group,
-                    activeSession: activeSession,
-                    scheduledStartOverride: effectiveStart,
-                    scheduledEndOverride: resolveEffectiveScheduledEnd(
+                  _SectionHeader(title: 'Running / Paused'),
+                  if (runningGroups.isEmpty)
+                    const _EmptySection(label: 'No running groups'),
+                  for (final group in runningGroups)
+                    _GroupCard(
                       group: group,
-                      allGroups: groups,
                       activeSession: activeSession,
+                      preRunStartOverride: null,
+                      onTap: () => _showSummaryDialog(context, group),
+                      actions: [
+                        _GroupAction(
+                          label: 'Open Run Mode',
+                          onPressed: () =>
+                              openRunModeForGroup(context, ref, group),
+                        ),
+                      ],
                       now: now,
-                      fallbackNoticeMinutes: _noticeFallbackMinutes,
                     ),
-                    preRunStartOverride: effectivePreRunStart,
-                    onTap: () => _showSummaryDialog(context, group),
-                    actions: [
-                      if (isPreRunActive)
-                        _GroupAction(
-                          label: 'Open Pre-Run',
-                          onPressed: () => openRunModeForGroup(
-                            context,
-                            ref,
-                            group,
-                          ),
-                        )
-                      else
-                        _GroupAction(
-                          label: 'Start now',
-                          onPressed: () => _handleStartNow(
-                            context,
-                            ref,
-                            group,
-                          ),
-                        ),
-                      _GroupAction(
-                        label: 'Cancel schedule',
-                        outlined: true,
-                        onPressed: () => _handleCancelSchedule(
-                          context,
-                          ref,
+                  const SizedBox(height: 20),
+                  _SectionHeader(title: 'Scheduled'),
+                  if (scheduledGroups.isEmpty)
+                    const _EmptySection(label: 'No scheduled groups'),
+                  for (final group in scheduledGroups)
+                    Builder(
+                      builder: (context) {
+                        final effectiveStart = resolveEffectiveScheduledStart(
+                          group: group,
+                          allGroups: groups,
+                          activeSession: activeSession,
+                          now: now,
+                          fallbackNoticeMinutes: _noticeFallbackMinutes,
+                        );
+                        final effectivePreRunStart =
+                            resolveEffectivePreRunStart(
+                              group: group,
+                              allGroups: groups,
+                              activeSession: activeSession,
+                              now: now,
+                              fallbackNoticeMinutes: _noticeFallbackMinutes,
+                            );
+                        final isPreRunActive = _isPreRunActive(
                           group,
+                          now,
+                          scheduledStartOverride: effectiveStart,
+                        );
+                        return _GroupCard(
+                          group: group,
+                          activeSession: activeSession,
+                          scheduledStartOverride: effectiveStart,
+                          scheduledEndOverride: resolveEffectiveScheduledEnd(
+                            group: group,
+                            allGroups: groups,
+                            activeSession: activeSession,
+                            now: now,
+                            fallbackNoticeMinutes: _noticeFallbackMinutes,
+                          ),
+                          preRunStartOverride: effectivePreRunStart,
+                          onTap: () => _showSummaryDialog(context, group),
+                          actions: [
+                            if (isPreRunActive)
+                              _GroupAction(
+                                label: 'Open Pre-Run',
+                                onPressed: () =>
+                                    openRunModeForGroup(context, ref, group),
+                              )
+                            else
+                              _GroupAction(
+                                label: 'Start now',
+                                onPressed: () =>
+                                    _handleStartNow(context, ref, group),
+                              ),
+                            _GroupAction(
+                              label: 'Cancel schedule',
+                              outlined: true,
+                              onPressed: () =>
+                                  _handleCancelSchedule(context, ref, group),
+                            ),
+                          ],
+                          now: now,
+                        );
+                      },
+                    ),
+                  const SizedBox(height: 20),
+                  _SectionHeader(title: 'Completed'),
+                  if (completedSlice.isEmpty)
+                    const _EmptySection(label: 'No completed groups yet'),
+                  for (final group in completedSlice)
+                    _GroupCard(
+                      group: group,
+                      activeSession: activeSession,
+                      preRunStartOverride: null,
+                      onTap: () => _showSummaryDialog(context, group),
+                      actions: [
+                        _GroupAction(
+                          label: 'Run again',
+                          onPressed: () => _handleRunAgain(context, ref, group),
                         ),
-                      ),
-                    ],
-                    now: now,
-                  );
-                },
-              ),
-            const SizedBox(height: 20),
-            _SectionHeader(title: 'Completed'),
-            if (completedSlice.isEmpty)
-              const _EmptySection(label: 'No completed groups yet'),
-            for (final group in completedSlice)
-              _GroupCard(
-                group: group,
-                activeSession: activeSession,
-                preRunStartOverride: null,
-                onTap: () => _showSummaryDialog(context, group),
-                actions: [
-                  _GroupAction(
-                    label: 'Run again',
-                    onPressed: () => _handleRunAgain(
-                      context,
-                      ref,
-                      group,
+                      ],
+                      now: now,
                     ),
-                  ),
-                ],
-                now: now,
-              ),
-            const SizedBox(height: 20),
-            _SectionHeader(title: 'Canceled'),
-            if (canceledSlice.isEmpty)
-              const _EmptySection(label: 'No canceled groups yet'),
-            for (final group in canceledSlice)
-              _GroupCard(
-                group: group,
-                activeSession: activeSession,
-                preRunStartOverride: null,
-                onTap: () => _showSummaryDialog(context, group),
-                actions: [
-                  _GroupAction(
-                    label: 'Re-plan group',
-                    onPressed: () => _handleRunAgain(
-                      context,
-                      ref,
-                      group,
+                  const SizedBox(height: 20),
+                  _SectionHeader(title: 'Canceled'),
+                  if (canceledSlice.isEmpty)
+                    const _EmptySection(label: 'No canceled groups yet'),
+                  for (final group in canceledSlice)
+                    _GroupCard(
+                      group: group,
+                      activeSession: activeSession,
+                      preRunStartOverride: null,
+                      onTap: () => _showSummaryDialog(context, group),
+                      actions: [
+                        _GroupAction(
+                          label: 'Re-plan group',
+                          onPressed: () => _handleRunAgain(context, ref, group),
+                        ),
+                      ],
+                      now: now,
                     ),
-                  ),
-                ],
-                now: now,
-              ),
                 ]);
 
                 return ListView(
@@ -605,7 +589,10 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     await repo.save(updated);
     await ref.read(notificationServiceProvider).cancelGroupPreAlert(group.id);
     if (!context.mounted) return;
-    _showSnackBar(context, 'Schedule canceled. You can re-plan it from Canceled.');
+    _showSnackBar(
+      context,
+      'Schedule canceled. You can re-plan it from Canceled.',
+    );
   }
 
   Future<void> _handleStartNow(
@@ -632,8 +619,9 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
       return;
     }
 
-    final hasRunning =
-        existing.any((candidate) => candidate.status == TaskRunStatus.running);
+    final hasRunning = existing.any(
+      (candidate) => candidate.status == TaskRunStatus.running,
+    );
     if (!hasRunning) {
       final scheduled =
           existing
@@ -672,8 +660,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
         fallbackNoticeMinutes: _noticeFallbackMinutes,
       );
       if (lateStartConflicts.isNotEmpty) {
-        final anchor =
-            resolveLateStartAnchor(lateStartConflicts) ?? now;
+        final anchor = resolveLateStartAnchor(lateStartConflicts) ?? now;
         if (!context.mounted) return;
         context.go(
           '/groups/late-start',
@@ -740,6 +727,9 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     BuildContext context, {
     required List<TaskRunItem> items,
     required TaskRunIntegrityMode integrityMode,
+    required int initialNoticeMinutes,
+    TaskGroupPlanOption initialOption = TaskGroupPlanOption.startNow,
+    DateTime? initialScheduledStart,
   }) {
     return context.push<TaskGroupPlanningResult>(
       '/tasks/plan',
@@ -747,8 +737,171 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
         items: items,
         integrityMode: integrityMode,
         planningAnchor: DateTime.now(),
+        initialNoticeMinutes: initialNoticeMinutes,
+        initialOption: initialOption,
+        initialScheduledStart: initialScheduledStart,
       ),
     );
+  }
+
+  Future<int?> _showChangeNoticeSnackBar(
+    BuildContext context, {
+    required String message,
+    required DateTime scheduledStart,
+    required int currentNotice,
+  }) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final completer = Completer<int?>();
+    var actionInFlight = false;
+    final controller = messenger.showSnackBar(
+      SnackBar(
+        duration: const Duration(days: 1),
+        showCloseIcon: true,
+        content: Text(message),
+        action: SnackBarAction(
+          label: 'Change notice',
+          onPressed: () async {
+            if (actionInFlight) return;
+            actionInFlight = true;
+            final picked = await _showNoticePicker(
+              context,
+              current: currentNotice,
+              scheduledStart: scheduledStart,
+            );
+            if (!context.mounted) {
+              if (!completer.isCompleted) {
+                completer.complete(null);
+              }
+              return;
+            }
+            messenger.hideCurrentSnackBar();
+            if (!completer.isCompleted) {
+              completer.complete(picked);
+            }
+          },
+        ),
+      ),
+    );
+    controller.closed.then((_) {
+      if (!completer.isCompleted) {
+        completer.complete(null);
+      }
+    });
+    return completer.future;
+  }
+
+  int _suggestNoticeForStart({
+    required DateTime scheduledStart,
+    required int current,
+  }) {
+    final now = DateTime.now();
+    final seconds = scheduledStart.difference(now).inSeconds;
+    final maxAllowed = seconds <= 0
+        ? TaskRunNoticeService.minNoticeMinutes
+        : (seconds ~/ 60).clamp(
+            TaskRunNoticeService.minNoticeMinutes,
+            TaskRunNoticeService.maxNoticeMinutes,
+          );
+    return current.clamp(TaskRunNoticeService.minNoticeMinutes, maxAllowed);
+  }
+
+  int _maxNoticeAllowed(DateTime scheduledStart, DateTime now) {
+    final seconds = scheduledStart.difference(now).inSeconds;
+    if (seconds <= 0) return TaskRunNoticeService.minNoticeMinutes;
+    final maxByTime = seconds ~/ 60;
+    return maxByTime.clamp(
+      TaskRunNoticeService.minNoticeMinutes,
+      TaskRunNoticeService.maxNoticeMinutes,
+    );
+  }
+
+  Future<int?> _showNoticePicker(
+    BuildContext context, {
+    required int current,
+    required DateTime scheduledStart,
+  }) async {
+    var selected = current.clamp(
+      TaskRunNoticeService.minNoticeMinutes,
+      TaskRunNoticeService.maxNoticeMinutes,
+    );
+    var maxAllowed = _maxNoticeAllowed(scheduledStart, DateTime.now());
+    if (selected > maxAllowed) selected = maxAllowed;
+    Timer? ticker;
+    void Function(VoidCallback fn)? setModalState;
+
+    final result = await showDialog<int>(
+      context: context,
+      builder: (dialogContext) {
+        ticker ??= Timer.periodic(const Duration(seconds: 1), (_) {
+          final latestMax = _maxNoticeAllowed(scheduledStart, DateTime.now());
+          if (latestMax == maxAllowed && selected <= latestMax) return;
+          setModalState?.call(() {
+            maxAllowed = latestMax;
+            if (selected > maxAllowed) {
+              selected = maxAllowed;
+            }
+          });
+        });
+
+        return StatefulBuilder(
+          builder: (context, modalSetState) {
+            setModalState = modalSetState;
+            return AlertDialog(
+              title: const Text('Pre-run notice'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Allowed right now: 0–$maxAllowed minutes.',
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '$selected min',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (maxAllowed <= 0)
+                    const Text(
+                      'Only 0 min is currently valid for this start time.',
+                      style: TextStyle(color: Colors.white70),
+                    )
+                  else
+                    Slider(
+                      value: selected.toDouble(),
+                      min: TaskRunNoticeService.minNoticeMinutes.toDouble(),
+                      max: maxAllowed.toDouble(),
+                      divisions: maxAllowed,
+                      onChanged: (value) {
+                        modalSetState(() {
+                          selected = value.round();
+                        });
+                      },
+                    ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(selected),
+                  child: const Text('Apply'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    ticker?.cancel();
+    return result;
   }
 
   Future<void> _handleRunAgain(
@@ -757,168 +910,205 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     TaskRunGroup source,
   ) async {
     var items = _cloneRunItems(source.tasks);
-    final planningResult = await _showPlanningScreen(
-      context,
-      items: items,
-      integrityMode: source.integrityMode,
-    );
-    if (!context.mounted) return;
-    if (planningResult == null) return;
-
-    items = planningResult.items;
-    final planOption = planningResult.option;
-    final isStartNow = planOption == TaskGroupPlanOption.startNow;
-    final isSchedule = !isStartNow;
-
-    final planCapturedAt = DateTime.now();
-    DateTime? scheduledStart;
-    if (isSchedule) {
-      scheduledStart = planningResult.scheduledStart;
-      if (scheduledStart == null) {
-        _showSnackBar(context, 'Select a start time for scheduling.');
-        return;
-      }
-      if (scheduledStart.isBefore(planCapturedAt)) {
-        _showSnackBar(context, 'Scheduled time must be in the future.');
-        return;
-      }
-    }
-
-    final totalDurationSeconds = groupDurationSecondsByMode(
-      items,
-      source.integrityMode,
-    );
-    final noticeMinutes = source.noticeMinutes ??
+    var planningNoticeMinutes =
+        source.noticeMinutes ??
         await ref.read(taskRunNoticeServiceProvider).getNoticeMinutes();
     if (!context.mounted) return;
-    final conflictStart = scheduledStart ?? planCapturedAt;
-    final conflictEnd = conflictStart.add(
-      Duration(seconds: totalDurationSeconds),
-    );
+    var initialOption = TaskGroupPlanOption.startNow;
+    DateTime? initialScheduledStart;
 
-    final repo = ref.read(taskRunGroupRepositoryProvider);
-    List<TaskRunGroup> existing = const [];
-    try {
-      existing = await repo.getAll();
+    while (true) {
       if (!context.mounted) return;
-    } catch (e) {
-      if (!context.mounted) return;
-      _showSnackBar(context, "Failed to check conflicts: $e");
-      return;
-    }
-    final now = DateTime.now();
-    final activeSession = ref.read(activePomodoroSessionProvider);
-    if (isSchedule && scheduledStart != null && noticeMinutes > 0) {
-      final preRunStart = scheduledStart.subtract(
-        Duration(minutes: noticeMinutes),
+      final planningResult = await _showPlanningScreen(
+        context,
+        items: items,
+        integrityMode: source.integrityMode,
+        initialNoticeMinutes: planningNoticeMinutes,
+        initialOption: initialOption,
+        initialScheduledStart: initialScheduledStart,
       );
-      if (preRunStart.isBefore(now)) {
-        _showSnackBar(
-          context,
-          "That start time is too soon to show the full pre-run countdown. "
-          "Choose a later start or reduce the pre-run notice.",
-        );
+      if (!context.mounted) return;
+      if (planningResult == null) return;
+
+      items = planningResult.items;
+      final planOption = planningResult.option;
+      final isStartNow = planOption == TaskGroupPlanOption.startNow;
+      final isSchedule = !isStartNow;
+
+      final planCapturedAt = DateTime.now();
+      DateTime? scheduledStart;
+      if (isSchedule) {
+        scheduledStart = planningResult.scheduledStart;
+        if (scheduledStart == null) {
+          _showSnackBar(context, 'Select a start time for scheduling.');
+          return;
+        }
+        if (scheduledStart.isBefore(planCapturedAt)) {
+          _showSnackBar(context, 'Scheduled time must be in the future.');
+          return;
+        }
+      }
+
+      final totalDurationSeconds = groupDurationSecondsByMode(
+        items,
+        source.integrityMode,
+      );
+      var noticeMinutes = planningResult.noticeMinutes;
+      final conflictStart = scheduledStart ?? planCapturedAt;
+      final conflictEnd = conflictStart.add(
+        Duration(seconds: totalDurationSeconds),
+      );
+
+      final repo = ref.read(taskRunGroupRepositoryProvider);
+      List<TaskRunGroup> existing = const [];
+      try {
+        existing = await repo.getAll();
+        if (!context.mounted) return;
+      } catch (e) {
+        if (!context.mounted) return;
+        _showSnackBar(context, "Failed to check conflicts: $e");
         return;
       }
-      final preRunConflict = _findPreRunConflict(
+      final now = DateTime.now();
+      final activeSession = ref.read(activePomodoroSessionProvider);
+      if (isSchedule && scheduledStart != null) {
+        while (noticeMinutes > 0) {
+          final preRunStart = scheduledStart.subtract(
+            Duration(minutes: noticeMinutes),
+          );
+          if (preRunStart.isBefore(now)) {
+            final suggested = _suggestNoticeForStart(
+              scheduledStart: scheduledStart,
+              current: noticeMinutes,
+            );
+            final updatedNotice = await _showChangeNoticeSnackBar(
+              context,
+              message:
+                  "Notice ${noticeMinutes}m no longer fits this start. Change notice for this re-plan or dismiss.",
+              scheduledStart: scheduledStart,
+              currentNotice: suggested,
+            );
+            if (!context.mounted) return;
+            if (updatedNotice == null) return;
+            noticeMinutes = updatedNotice;
+            planningNoticeMinutes = updatedNotice;
+            continue;
+          }
+
+          final preRunConflict = _findPreRunConflict(
+            existing,
+            preRunStart: preRunStart,
+            scheduledStart: scheduledStart,
+            activeSession: activeSession,
+            now: now,
+          );
+          if (preRunConflict == null) {
+            break;
+          }
+          final message = preRunConflict == _PreRunConflictType.running
+              ? "Notice ${noticeMinutes}m overlaps with a running group. Change notice for this re-plan or dismiss."
+              : "Notice ${noticeMinutes}m overlaps with another scheduled group. Change notice for this re-plan or dismiss.";
+          final suggested = _suggestNoticeForStart(
+            scheduledStart: scheduledStart,
+            current: noticeMinutes,
+          );
+          final updatedNotice = await _showChangeNoticeSnackBar(
+            context,
+            message: message,
+            scheduledStart: scheduledStart,
+            currentNotice: suggested,
+          );
+          if (!context.mounted) return;
+          if (updatedNotice == null) return;
+          noticeMinutes = updatedNotice;
+          planningNoticeMinutes = updatedNotice;
+        }
+      }
+
+      final conflicts = _findConflicts(
         existing,
-        preRunStart: preRunStart,
-        scheduledStart: scheduledStart,
+        newStart: conflictStart,
+        newEnd: conflictEnd,
+        includeRunningAlways: isStartNow,
         activeSession: activeSession,
         now: now,
       );
-      if (preRunConflict != null) {
-        final message = preRunConflict == _PreRunConflictType.running
-            ? "That time doesn't leave enough pre-run space because another "
-                'group is still running. Choose a later start or reduce the '
-                'pre-run notice.'
-            : "That time doesn't leave enough pre-run space because another "
-                'group is scheduled earlier. Choose a later start or reduce '
-                'the pre-run notice.';
-        _showSnackBar(context, message);
+
+      try {
+        if (conflicts.running.isNotEmpty) {
+          final resolved = await _resolveRunningConflict(
+            context,
+            conflicts.running,
+            repo,
+          );
+          if (!context.mounted) return;
+          if (!resolved) return;
+        }
+
+        if (conflicts.scheduled.isNotEmpty) {
+          final resolved = await _resolveScheduledConflict(
+            context,
+            conflicts.scheduled,
+            repo,
+          );
+          if (!context.mounted) return;
+          if (!resolved) return;
+        }
+      } catch (e) {
+        if (!context.mounted) return;
+        _showSnackBar(context, "Failed to resolve conflicts: $e");
         return;
       }
-    }
 
-    final conflicts = _findConflicts(
-      existing,
-      newStart: conflictStart,
-      newEnd: conflictEnd,
-      includeRunningAlways: isStartNow,
-      activeSession: activeSession,
-      now: now,
-    );
+      final auth = ref.read(firebaseAuthServiceProvider);
+      final ownerUid = auth.currentUser?.uid ?? 'local';
+      final status = isStartNow
+          ? TaskRunStatus.running
+          : TaskRunStatus.scheduled;
+      final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
+      final scheduledByDeviceId = deviceId;
+      final recalculatedStart = scheduledStart ?? DateTime.now();
+      final recalculatedEnd = recalculatedStart.add(
+        Duration(seconds: totalDurationSeconds),
+      );
 
-    try {
-      if (conflicts.running.isNotEmpty) {
-        final resolved = await _resolveRunningConflict(
-          context,
-          conflicts.running,
-          repo,
-        );
+      final newGroup = TaskRunGroup(
+        id: const Uuid().v4(),
+        ownerUid: ownerUid,
+        dataVersion: kCurrentDataVersion,
+        integrityMode: source.integrityMode,
+        tasks: items,
+        createdAt: planCapturedAt,
+        scheduledStartTime: scheduledStart,
+        scheduledByDeviceId: scheduledByDeviceId,
+        actualStartTime: status == TaskRunStatus.running
+            ? recalculatedStart
+            : null,
+        theoreticalEndTime: recalculatedEnd,
+        status: status,
+        noticeMinutes: noticeMinutes,
+        totalTasks: items.length,
+        totalPomodoros: items.fold<int>(
+          0,
+          (total, item) => total + item.totalPomodoros,
+        ),
+        totalDurationSeconds: totalDurationSeconds,
+        updatedAt: DateTime.now(),
+      );
+
+      try {
+        await repo.save(newGroup);
         if (!context.mounted) return;
-        if (!resolved) return;
-      }
-
-      if (conflicts.scheduled.isNotEmpty) {
-        final resolved = await _resolveScheduledConflict(
-          context,
-          conflicts.scheduled,
-          repo,
-        );
+        if (status == TaskRunStatus.scheduled) {
+          await _schedulePreAlertIfNeeded(ref, newGroup);
+        } else {
+          openRunModeForGroup(context, ref, newGroup);
+        }
+      } catch (e) {
         if (!context.mounted) return;
-        if (!resolved) return;
+        _showSnackBar(context, "Failed to re-plan group: $e");
       }
-    } catch (e) {
-      if (!context.mounted) return;
-      _showSnackBar(context, "Failed to resolve conflicts: $e");
       return;
-    }
-
-    final auth = ref.read(firebaseAuthServiceProvider);
-    final ownerUid = auth.currentUser?.uid ?? 'local';
-    final status =
-        isStartNow ? TaskRunStatus.running : TaskRunStatus.scheduled;
-    final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
-    final scheduledByDeviceId = deviceId;
-    final recalculatedStart = scheduledStart ?? DateTime.now();
-    final recalculatedEnd = recalculatedStart.add(
-      Duration(seconds: totalDurationSeconds),
-    );
-
-    final newGroup = TaskRunGroup(
-      id: const Uuid().v4(),
-      ownerUid: ownerUid,
-      dataVersion: kCurrentDataVersion,
-      integrityMode: source.integrityMode,
-      tasks: items,
-      createdAt: planCapturedAt,
-      scheduledStartTime: scheduledStart,
-      scheduledByDeviceId: scheduledByDeviceId,
-      actualStartTime: status == TaskRunStatus.running ? recalculatedStart : null,
-      theoreticalEndTime: recalculatedEnd,
-      status: status,
-      noticeMinutes: noticeMinutes,
-      totalTasks: items.length,
-      totalPomodoros: items.fold<int>(
-        0,
-        (total, item) => total + item.totalPomodoros,
-      ),
-      totalDurationSeconds: totalDurationSeconds,
-      updatedAt: DateTime.now(),
-    );
-
-    try {
-      await repo.save(newGroup);
-      if (!context.mounted) return;
-      if (status == TaskRunStatus.scheduled) {
-        await _schedulePreAlertIfNeeded(ref, newGroup);
-      } else {
-        openRunModeForGroup(context, ref, newGroup);
-      }
-    } catch (e) {
-      if (!context.mounted) return;
-      _showSnackBar(context, "Failed to re-plan group: $e");
     }
   }
 
@@ -938,12 +1128,15 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
       fallback: _noticeFallbackMinutes,
     );
     if (noticeMinutes <= 0) return;
-    final preAlertStart =
-        scheduledStart.subtract(Duration(minutes: noticeMinutes));
+    final preAlertStart = scheduledStart.subtract(
+      Duration(minutes: noticeMinutes),
+    );
     final now = DateTime.now();
     if (!preAlertStart.isAfter(now)) return;
     final name = group.tasks.isNotEmpty ? group.tasks.first.name : 'Task group';
-    await ref.read(notificationServiceProvider).scheduleGroupPreAlert(
+    await ref
+        .read(notificationServiceProvider)
+        .scheduleGroupPreAlert(
           groupId: group.id,
           groupName: name,
           scheduledFor: preAlertStart,
@@ -975,29 +1168,29 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
       }
       final start = group.status == TaskRunStatus.scheduled
           ? (resolveEffectiveScheduledStart(
-                group: group,
-                allGroups: groups,
-                activeSession: activeSession,
-                now: now,
-                fallbackNoticeMinutes: _noticeFallbackMinutes,
-              ) ??
-              group.scheduledStartTime ??
-              group.createdAt)
+                  group: group,
+                  allGroups: groups,
+                  activeSession: activeSession,
+                  now: now,
+                  fallbackNoticeMinutes: _noticeFallbackMinutes,
+                ) ??
+                group.scheduledStartTime ??
+                group.createdAt)
           : (group.actualStartTime ??
-              group.scheduledStartTime ??
-              group.createdAt);
+                group.scheduledStartTime ??
+                group.createdAt);
       final end = group.status == TaskRunStatus.scheduled
           ? (resolveEffectiveScheduledEnd(
-                group: group,
-                allGroups: groups,
-                activeSession: activeSession,
-                now: now,
-                fallbackNoticeMinutes: _noticeFallbackMinutes,
-              ) ??
-              group.theoreticalEndTime)
+                  group: group,
+                  allGroups: groups,
+                  activeSession: activeSession,
+                  now: now,
+                  fallbackNoticeMinutes: _noticeFallbackMinutes,
+                ) ??
+                group.theoreticalEndTime)
           : (group.theoreticalEndTime.isBefore(start)
-              ? start
-              : group.theoreticalEndTime);
+                ? start
+                : group.theoreticalEndTime);
       if (!_overlaps(newStart, newEnd, start, end)) continue;
       if (group.status == TaskRunStatus.running) {
         running.add(group);
@@ -1025,29 +1218,29 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
       }
       final start = group.status == TaskRunStatus.scheduled
           ? (resolveEffectiveScheduledStart(
-                group: group,
-                allGroups: groups,
-                activeSession: activeSession,
-                now: now,
-                fallbackNoticeMinutes: _noticeFallbackMinutes,
-              ) ??
-              group.scheduledStartTime ??
-              group.createdAt)
+                  group: group,
+                  allGroups: groups,
+                  activeSession: activeSession,
+                  now: now,
+                  fallbackNoticeMinutes: _noticeFallbackMinutes,
+                ) ??
+                group.scheduledStartTime ??
+                group.createdAt)
           : (group.actualStartTime ??
-              group.scheduledStartTime ??
-              group.createdAt);
+                group.scheduledStartTime ??
+                group.createdAt);
       final end = group.status == TaskRunStatus.scheduled
           ? (resolveEffectiveScheduledEnd(
-                group: group,
-                allGroups: groups,
-                activeSession: activeSession,
-                now: now,
-                fallbackNoticeMinutes: _noticeFallbackMinutes,
-              ) ??
-              group.theoreticalEndTime)
+                  group: group,
+                  allGroups: groups,
+                  activeSession: activeSession,
+                  now: now,
+                  fallbackNoticeMinutes: _noticeFallbackMinutes,
+                ) ??
+                group.theoreticalEndTime)
           : (group.theoreticalEndTime.isBefore(start)
-              ? start
-              : group.theoreticalEndTime);
+                ? start
+                : group.theoreticalEndTime);
       if (!_overlaps(preRunStart, scheduledStart, start, end)) continue;
       if (group.status == TaskRunStatus.running) {
         return _PreRunConflictType.running;
@@ -1174,7 +1367,9 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
   }
 
   void _showSummaryDialog(BuildContext context, TaskRunGroup group) {
-    final title = group.tasks.isNotEmpty ? group.tasks.first.name : 'Task group';
+    final title = group.tasks.isNotEmpty
+        ? group.tasks.first.name
+        : 'Task group';
     final now = DateTime.now();
     final allGroups = ref.read(taskRunGroupStreamProvider).value ?? const [];
     final activeSession = ref.read(activePomodoroSessionProvider);
@@ -1196,8 +1391,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
       effectiveScheduledStart ?? group.scheduledStartTime,
       now,
     );
-    final scheduledStart =
-        effectiveScheduledStart ?? group.scheduledStartTime;
+    final scheduledStart = effectiveScheduledStart ?? group.scheduledStartTime;
     final actualLabel = _formatGroupDateTime(group.actualStartTime, now);
     final endLabel = _formatGroupDateTime(
       effectiveScheduledEnd ?? group.theoreticalEndTime,
@@ -1205,7 +1399,8 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     );
     final totalTasks = group.totalTasks ?? group.tasks.length;
     final totalDuration = _formatDuration(group.totalDurationSeconds ?? 0);
-    final totalPomodoros = group.totalPomodoros ??
+    final totalPomodoros =
+        group.totalPomodoros ??
         group.tasks.fold<int>(0, (total, item) => total + item.totalPomodoros);
     final preRunStart = resolveEffectivePreRunStart(
       group: group,
@@ -1214,10 +1409,9 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
       now: now,
       fallbackNoticeMinutes: _noticeFallbackMinutes,
     );
-    final preRunMinutes =
-        (preRunStart != null && scheduledStart != null)
-            ? scheduledStart.difference(preRunStart).inMinutes
-            : null;
+    final preRunMinutes = (preRunStart != null && scheduledStart != null)
+        ? scheduledStart.difference(preRunStart).inMinutes
+        : null;
     final showScheduled =
         (effectiveScheduledStart ?? group.scheduledStartTime) != null;
     showDialog<void>(
@@ -1294,7 +1488,8 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     DateTime? scheduledStartOverride,
   }) {
     if (group.status != TaskRunStatus.scheduled) return false;
-    final scheduledStart = scheduledStartOverride ??
+    final scheduledStart =
+        scheduledStartOverride ??
         resolveEffectiveScheduledStart(
           group: group,
           allGroups: ref.read(taskRunGroupStreamProvider).value ?? const [],
@@ -1349,10 +1544,7 @@ Widget _summaryRow(String label, String value) {
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(
-              color: Colors.white54,
-              fontSize: 12,
-            ),
+            style: const TextStyle(color: Colors.white54, fontSize: 12),
           ),
         ),
         Text(
@@ -1532,10 +1724,7 @@ Widget _summaryStatCard({required Widget child}) {
       borderRadius: BorderRadius.circular(12),
       border: Border.all(color: Colors.white12, width: 1),
     ),
-    child: FittedBox(
-      fit: BoxFit.scaleDown,
-      child: child,
-    ),
+    child: FittedBox(fit: BoxFit.scaleDown, child: child),
   );
 }
 
@@ -1702,10 +1891,7 @@ class _SummaryDot extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }
@@ -1741,10 +1927,7 @@ class _EmptySection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        label,
-        style: const TextStyle(color: Colors.white38),
-      ),
+      child: Text(label, style: const TextStyle(color: Colors.white38)),
     );
   }
 }
@@ -1774,8 +1957,7 @@ class _GroupCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = group.tasks.isNotEmpty ? group.tasks.first.name : 'Task group';
     final totalTasks = group.totalTasks ?? group.tasks.length;
-    final totalDuration =
-        _formatDuration(group.totalDurationSeconds ?? 0);
+    final totalDuration = _formatDuration(group.totalDurationSeconds ?? 0);
     final scheduledStart = scheduledStartOverride ?? group.scheduledStartTime;
     final endTime = scheduledEndOverride ?? group.theoreticalEndTime;
     final showScheduled =
@@ -1841,25 +2023,14 @@ class _GroupCard extends StatelessWidget {
                 value:
                     '$preRunMinutes min starts at ${_formatGroupDateTime(preRunStart, now)}',
               ),
-            _MetaRow(
-              label: 'Ends',
-              value: _formatGroupDateTime(endTime, now),
-            ),
-            _MetaRow(
-              label: 'Tasks',
-              value: totalTasks.toString(),
-            ),
-            _MetaRow(
-              label: 'Total time',
-              value: totalDuration,
-            ),
+            _MetaRow(label: 'Ends', value: _formatGroupDateTime(endTime, now)),
+            _MetaRow(label: 'Tasks', value: totalTasks.toString()),
+            _MetaRow(label: 'Total time', value: totalDuration),
             const SizedBox(height: 10),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: [
-                for (final action in actions) action,
-              ],
+              children: [for (final action in actions) action],
             ),
           ],
         ),
@@ -1912,10 +2083,7 @@ class _GroupCard extends StatelessWidget {
     }
   }
 
-  void _showCanceledReasonDialog(
-    BuildContext context,
-    TaskRunGroup group,
-  ) {
+  void _showCanceledReasonDialog(BuildContext context, TaskRunGroup group) {
     final description = _canceledReasonDescription(group);
     showDialog<void>(
       context: context,
@@ -2021,15 +2189,9 @@ class _GroupAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (outlined) {
-      return OutlinedButton(
-        onPressed: onPressed,
-        child: Text(label),
-      );
+      return OutlinedButton(onPressed: onPressed, child: Text(label));
     }
-    return ElevatedButton(
-      onPressed: onPressed,
-      child: Text(label),
-    );
+    return ElevatedButton(onPressed: onPressed, child: Text(label));
   }
 }
 

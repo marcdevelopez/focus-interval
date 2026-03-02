@@ -61,3 +61,7 @@ docs/features/**/screenshots/*
 # Local debug logs
 log-android.txt
 log-iOS.txt
+
+# Validation logs (track)
+!docs/bugs/**/logs/
+!docs/bugs/**/logs/*.log
