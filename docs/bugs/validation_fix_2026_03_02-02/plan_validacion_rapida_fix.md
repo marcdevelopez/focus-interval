@@ -49,8 +49,17 @@ Scope: TimeSync deadlock + auth gating (Account Mode, web/mac).
 2. Start/resume siguen bloqueados si time sync no esta listo.
 3. Mirror sigue proyectando desde serverTime cuando time sync esta listo.
 
+### Resultado (2026-03-02)
+- Chrome debug + prod override: `users/{uid}/timeSync/anchor` creado
+  (serverTime/updatedAt 2026-03-02 03:06:51 UTC+1).
+- Chrome debug + prod override: `activeSession/current.lastUpdatedAt` avanza y
+  `sessionRevision` sube (ej. sessionRevision=3, lastUpdatedAt=2026-03-02
+  03:08:40 UTC+1, phaseStartedAt=2026-03-02 03:01:02 UTC+1).
+- Chrome debug + prod override: no aparece "Syncing session..." al iniciar.
+- macOS debug + prod override: inicio y ejecucion correctos sin overlay de Syncing.
+
 ## Tracking
-- Estado: Implementado (validacion pendiente).
+- Estado: Validado (2026-03-02).
 - Commits:
   - 1945594 "Fix time sync deadlock and auth gating"
   - 9916204 "Allow owner heartbeats while awaiting session"

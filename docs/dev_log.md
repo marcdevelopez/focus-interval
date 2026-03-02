@@ -9004,3 +9004,25 @@ _(pending validation)_
 
 - Re-run rapid validation in Chrome/macOS and confirm `lastUpdatedAt` advances.
 - Update the checklist and plan tracking with the new commit hash.
+
+# 🔹 Block 527 — Validate TimeSync deadlock fix (02/03/2026)
+
+### ✔ Work completed:
+
+- Completed rapid validation for the TimeSync deadlock fix on Chrome (web) and macOS.
+- Confirmed `users/{uid}/timeSync/anchor` creation and advancing
+  `activeSession/current.lastUpdatedAt`.
+- Updated the validation plan and checklist for
+  `docs/bugs/validation_fix_2026_03_02-02/`.
+
+### 🧪 Tests:
+
+- Manual validation (Chrome debug + prod override, macOS debug + prod override).
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- None.
