@@ -35,4 +35,4 @@ Scope: Permitir override de prod en debug en todas las plataformas (temporal).
 
 ## Tracking
 - Estado: Implementado (validacion pendiente).
-- Commit: TBA
+- Commit: d5e08ae "Allow prod debug override on all platforms"
