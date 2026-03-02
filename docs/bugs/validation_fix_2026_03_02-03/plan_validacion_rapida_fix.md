@@ -48,7 +48,14 @@ Scope: Owner freeze while running (Account Mode).
 
 ## Tracking
 
-- Estado: En progreso.
+- Estado: Completado (validado 02/03/2026, Android owner aislado).
 - Commits:
   - `b18544914d25f08740231ef97ba9f27ca8dd6068` — Fix activeSession idempotent writes preserving remainingSeconds updates.
   - Current owner-sync stabilization commit on branch `fix-validacion-rapida-prerun-overlaps-black-screen` — lifecycle guards + owner render authority.
+
+## Evidencia de cierre
+
+- Log de validacion reportado: `docs/features/feature_2026_03_02_plan-group-notice-control/logs/2026_03_02_android_RMX3771_feature.log`.
+- Resultado observado: no se reprodujo el estado permanente de "Syncing session..." ni el congelamiento al cambiar de timer.
+- Alcance de la corrida: ejecucion aislada en Android (sin segundo dispositivo concurrente).
+- Criterio de seguimiento: si el bug reaparece, se reabre esta validacion con nueva evidencia.

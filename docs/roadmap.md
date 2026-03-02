@@ -119,10 +119,10 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
                   planning by total range/total time, global sound settings) — documentation-only.
       02/03/2026: Plan Group pre-run notice control implemented (Plan group + re-plan snackbar + auto-clamp SnackBar). Validated 02/03/2026 on Android RMX3771.
       02/03/2026: ActiveSession idempotent writes now persist payload changes on equal sessionRevision
-          (remainingSeconds and phase fields no longer dropped) (validation pending).
+          (remainingSeconds and phase fields no longer dropped). Validated 02/03/2026 on Android RMX3771 (isolated run).
       02/03/2026: Run Mode owner sync stabilization: owner keeps local machine as render authority,
           projection allows local fallback without server offset, and resync paths guard
-          against disposed provider refs (validation pending).
+          against disposed provider refs. Validated 02/03/2026 on Android RMX3771 (isolated run).
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
@@ -214,7 +214,6 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 10 — Task weight (%) is selection-scoped in Edit Task + info modal (validation pending).
 - Phase 13 — Mirror session gaps must not drop Run Mode to Ready (validation pending).
 - Phase 13 — Mirror must not start behind on resume (stale lastUpdatedAt compensation) (bug).
-- Phase 13 — Account Mode single source of truth (time sync + sessionRevision + paused offsets; no drift) (P0).
 - Phase 10 — Task Editor: total time chip + task color picker (new requirement).
 - Phase 9 — Task List: group name input + group summary + per-task total time + selection reset (new requirement).
 - Phase 17 — Early overlap warning (pause drift) + mirror ownership CTA + persistent conflict snackbar + auto-follow postpone (no repeat modal) + paused overlap alerts (new requirement).

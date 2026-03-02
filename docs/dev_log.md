@@ -9027,3 +9027,27 @@ _(not yet validated on devices)_
 ### 🎯 Next steps:
 
 - Address pending long-run Android sync validation from Block 530.
+
+# 🔹 Block 532 — Sync freeze fix validation closed (Android isolated) (02/03/2026)
+
+### ✔ Work completed:
+
+- Closed validation for Block 530 using Android execution evidence.
+- Confirmed no permanent "Syncing session..." hold and no freeze while changing
+  timer/phase during the observed run.
+- Updated roadmap and validation artifacts to mark this fix as validated.
+
+### 🧪 Tests:
+
+- Manual validation on Android RMX3771 (Account Mode, isolated run).
+- Evidence log:
+  `docs/features/feature_2026_03_02_plan-group-notice-control/logs/2026_03_02_android_RMX3771_feature.log`.
+
+### ⚠️ Issues found:
+
+- None in this run.
+
+### 🎯 Next steps:
+
+- Keep monitoring; if regression reappears (especially multi-device), reopen the
+  Phase 13 item and attach fresh validation logs.
