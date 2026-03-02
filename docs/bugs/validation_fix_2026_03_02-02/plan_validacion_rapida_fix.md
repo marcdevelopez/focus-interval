@@ -51,4 +51,6 @@ Scope: TimeSync deadlock + auth gating (Account Mode, web/mac).
 
 ## Tracking
 - Estado: Implementado (validacion pendiente).
-- Commit: 1945594 "Fix time sync deadlock and auth gating"
+- Commits:
+  - 1945594 "Fix time sync deadlock and auth gating"
+  - 9916204 "Allow owner heartbeats while awaiting session"
