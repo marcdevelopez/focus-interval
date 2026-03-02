@@ -1064,6 +1064,7 @@ _(fill in when they happen)_
 
 - None.
 
+
 # 🔹 Block 438 — Phase 17 conflict resolution + planning total duration (18/02/2026)
 
 ### ✔ Work completed:
@@ -1089,6 +1090,7 @@ _(none)_
 ### 🎯 Next steps:
 
 - Validate Phase 17 conflict resolution flows on devices (Account + Local).
+
 
 # 🔹 Block 437 — Close Phase 17 validation items (18/02/2026)
 
@@ -4715,7 +4717,6 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Update this document at the **end of each development session**
 - Use short bullet points, not long narrative
 - This allows the AI to jump in on any day and continue directly
-
 # 🔹 Block 301 — GitHub sign-in conflict code (08/02/2026)
 
 ### ✔ Work completed:
@@ -5156,6 +5157,7 @@ Mode A global long-break sequencing not fully validated (time constraints).
   ownership indicator when needed, disables request actions while syncing, and
   removed the AppBar manual sync button.
 
+
 # 🔹 Block 347 — Session-missing gating + neutral indicator (12/02/2026)
 
 ### ✔ Work completed:
@@ -5167,6 +5169,7 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Ownership indicator now distinguishes real syncing vs "no session yet" (neutral),
   and disables ownership actions when there is no session.
 
+
 # 🔹 Block 348 — Sync-gap neutralization (12/02/2026)
 
 ### ✔ Work completed:
@@ -5174,6 +5177,7 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Removed unreachable duplicate branch in session-null handling.
 - Neutralized `activeSessionForCurrentGroup` during sync gaps so mirror/owner
   derivations do not rely on stale snapshots while syncing.
+
 
 # 🔹 Block 349 — Pending indicator priority (12/02/2026)
 
@@ -5184,14 +5188,16 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Kept request button disabled during sync gaps while preserving the
   "Request sent" status text.
 
+
 # 🔹 Block 350 — Preserve optimistic request on mirror switch (12/02/2026)
 
 ### ✔ Work completed:
 
-- Prevented \_resetLocalSessionState from clearing optimistic ownership when
+- Prevented _resetLocalSessionState from clearing optimistic ownership when
   switching from owner to mirror while a local request is pending.
 - This keeps the requester indicator amber without flicker until the owner
   approves or rejects.
+
 
 # 🔹 Block 351 — Optimistic request precedence over stale rejection (12/02/2026)
 
@@ -5201,6 +5207,7 @@ Mode A global long-break sequencing not fully validated (time constraints).
   ownershipRequest snapshot (keeps requester indicator amber until confirmed).
 - OwnershipRequest getter now prefers optimistic pending when the remote request
   is older than the local request.
+
 
 # 🔹 Block 352 — Optimistic request kept over stale rejected (other requester) (12/02/2026)
 
@@ -5212,6 +5219,7 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Prefers optimistic pending when a rejected request lacks timestamps,
   avoiding flicker before Firestore writes the new pending request.
 
+
 # 🔹 Block 353 — Local pending gating for request UI (12/02/2026)
 
 ### ✔ Work completed:
@@ -5220,6 +5228,7 @@ Mode A global long-break sequencing not fully validated (time constraints).
   stays in "Request sent" immediately after tapping, even if snapshots lag.
 - Request button gating now respects local pending to prevent double taps while
   the request is in-flight.
+
 
 # 🔹 Block 354 — Ownership requestId for optimistic reconciliation (12/02/2026)
 
@@ -5230,6 +5239,7 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Optimistic pending now matches by requestId to ignore stale rejected requests,
   preventing the request indicator from flashing back to mirror.
 
+
 # 🔹 Block 355 — Pending UI held until owner responds (12/02/2026)
 
 ### ✔ Work completed:
@@ -5237,6 +5247,7 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Requester pending UI no longer clears due to intermediate snapshots.
 - Local pending is cleared only when the owner responds (accepted or rejected)
   or when another device has a pending request.
+
 
 # 🔹 Block 356 — Request action moved into ownership sheet (12/02/2026)
 
@@ -5246,6 +5257,7 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Ownership requests are now initiated only from the AppBar ownership sheet
   to reduce inconsistent UI states and simplify the flow.
 
+
 # 🔹 Block 357 — Retry CTA moved to ownership sheet (12/02/2026)
 
 ### ✔ Work completed:
@@ -5253,6 +5265,7 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Added the **Retry** label to the ownership sheet action when a pending request
   exceeds the stale threshold.
 - Keeps the retry path available without reintroducing a main control-row button.
+
 
 # 🔹 Block 358 — CRITICAL: Ownership request UI locked + stable (12/02/2026)
 
@@ -5263,6 +5276,7 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Requester pending UI now stays stable (no revert) until the owner responds.
 - This UX flow is now a **locked requirement** in specs to prevent regressions.
 
+
 # 🔹 Block 359 — Fix reject + retry state reset (12/02/2026)
 
 ### ✔ Work completed:
@@ -5271,6 +5285,7 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Ownership request keys now use requestId when available, so new requests
   are not suppressed after a prior rejection.
 
+
 # 🔹 Block 360 — Reject modal dismissal stabilized (12/02/2026)
 
 ### ✔ Work completed:
@@ -5278,6 +5293,7 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - Prevented the owner-side reject modal from reappearing due to requestId
   materializing after the initial tap by dismissing via requesterId as well.
 - Dismissal now clears only when the request resolves, avoiding flicker.
+
 
 # 🔹 Block 361 — Reject modal source unified (13/02/2026)
 
@@ -5288,6 +5304,7 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - This prevents the owner-side reject modal from reappearing after a reject
   due to stale stream/Vm timing mismatches.
 
+
 # 🔹 Block 362 — Allow repeat requests after reject (13/02/2026)
 
 ### ✔ Work completed:
@@ -5297,6 +5314,7 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - This ensures a new request from the same mirror is visible to the owner
   and is not blocked by a previous dismissal.
 
+
 # 🔹 Block 363 — Preserve new pending over old rejection (13/02/2026)
 
 ### ✔ Work completed:
@@ -5305,6 +5323,7 @@ Mode A global long-break sequencing not fully validated (time constraints).
   rejection still exists in the remote session.
 - Reconciliation now compares requestId (or timestamps for legacy requests),
   so the mirror indicator stays amber immediately after re-requesting.
+
 
 # 🔹 Block 364 — Ownership request UX postmortem & lock-in (13/02/2026)
 
@@ -5327,6 +5346,7 @@ Mode A global long-break sequencing not fully validated (time constraints).
 - `requestId` is mandatory for reliable optimistic sync; legacy timestamps are
   only a fallback.
 
+
 # 🔹 Block 365 — Auto-dismiss rejection snackbar on state change (13/02/2026)
 
 ### ✔ Work completed:
@@ -5335,6 +5355,7 @@ Mode A global long-break sequencing not fully validated (time constraints).
   or sends a new pending request, preventing stale UI.
 - Kept snackbar non-blocking with OK, but ensured it never lingers over a
   successful ownership transition.
+
 
 # 🔹 Block 366 — Selection-scoped task weight (13/02/2026)
 
@@ -5363,6 +5384,7 @@ _(fill in when they happen)_
 - Validate weight behavior across selection scenarios (1 task = 100%, 2 tasks = 50/50),
   plus Edit Task visibility and redistribution boundaries.
 
+
 # 🔹 Block 367 — Hold mirror state during session gaps (13/02/2026)
 
 ### ✔ Work completed:
@@ -5387,6 +5409,7 @@ _(fill in when they happen)_
 - Validate on Android mirror that session gaps show Syncing instead of Ready,
   including background/foreground and app-switch scenarios.
 
+
 # 🔹 Block 368 — Allow Local Mode switch from login (13/02/2026)
 
 ### ✔ Work completed:
@@ -5406,6 +5429,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Verify on Chrome and iOS that tapping the mode chip exits to Local Mode.
+
 
 # 🔹 Block 369 — Noop streams emit empty lists (13/02/2026)
 
@@ -5430,6 +5454,7 @@ _(fill in when they happen)_
 - Validate on macOS that fresh installs show the empty states + sign-in CTA
   instead of loading spinners in Account Mode with no user.
 
+
 # 🔹 Block 370 — Add centralized bug log (13/02/2026)
 
 ### ✔ Work completed:
@@ -5449,6 +5474,7 @@ _(fill in when they happen)_
 
 - Add new bug reports to docs/bug_log.md in chronological order.
 
+
 # 🔹 Block 371 — Add feature backlog (13/02/2026)
 
 ### ✔ Work completed:
@@ -5467,6 +5493,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Add the remaining feature ideas using the same template.
+
 
 # 🔹 Block 372 — Document ownership desync + mirror flicker bugs (13/02/2026)
 
@@ -5490,6 +5517,7 @@ _(fill in when they happen)_
 
 - Validate BUG-002 on Android after any ownership UI changes.
 
+
 # 🔹 Block 373 — Split ownership bugs and add timer drift/inactive window issues (13/02/2026)
 
 ### ✔ Work completed:
@@ -5512,6 +5540,7 @@ _(fill in when they happen)_
 
 - Validate BUG-004 and BUG-005 after ownership resync changes.
 
+
 # 🔹 Block 374 — Add delayed-retry rejection evidence to BUG-002 (14/02/2026)
 
 ### ✔ Work completed:
@@ -5531,6 +5560,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Re-validate BUG-002 after ownership-request handling changes.
+
 
 # 🔹 Block 375 — Define scheduling conflict resolution rules (14/02/2026)
 
@@ -5560,6 +5590,7 @@ _(fill in when they happen)_
 - Implement and validate the new conflict-resolution flows in Run Mode and
   planning/Groups Hub surfaces.
 
+
 # 🔹 Block 376 — Refine late-start conflict chooser behavior (14/02/2026)
 
 ### ✔ Work completed:
@@ -5580,6 +5611,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Verify the conflict chooser UX aligns with the catch-up queue expectations.
+
 
 # 🔹 Block 377 — Allow multi-select ordering in late-start conflicts (14/02/2026)
 
@@ -5604,6 +5636,7 @@ _(fill in when they happen)_
 - Ensure the conflict chooser preview reflects updated projected ranges and
   revalidation rules.
 
+
 # 🔹 Block 378 — Unify late-start overlap flows (14/02/2026)
 
 ### ✔ Work completed:
@@ -5625,6 +5658,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Validate the unified flow against all late-start overlap cases.
+
 
 # 🔹 Block 379 — Add write-safety rules for conflict resolution (14/02/2026)
 
@@ -5648,6 +5682,7 @@ _(fill in when they happen)_
 - Ensure implementation uses batch/transaction writes for conflict resolution
   and resume updates.
 
+
 # 🔹 Block 380 — Log status box pause anchoring bug (14/02/2026)
 
 ### ✔ Work completed:
@@ -5666,6 +5701,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Validate BUG-006 once Run Mode time-range calculations are reviewed.
+
 
 # 🔹 Block 381 — Merge Android request delay into BUG-005 (14/02/2026)
 
@@ -5686,6 +5722,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Validate BUG-005 variants alongside other ownership-request resync fixes.
+
 
 # 🔹 Block 382 — Add Ready->Run context to BUG-005 (14/02/2026)
 
@@ -5709,6 +5746,7 @@ _(fill in when they happen)_
 
 - Validate whether the Ready->Run flicker correlates with missed requests.
 
+
 # 🔹 Block 383 — Add owner background resubscribe detail (14/02/2026)
 
 ### ✔ Work completed:
@@ -5728,6 +5766,7 @@ _(fill in when they happen)_
 
 - Validate whether resume listeners consistently surface pending requests.
 
+
 # 🔹 Block 384 — Note Ready recovery without request delay (14/02/2026)
 
 ### ✔ Work completed:
@@ -5746,6 +5785,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Validate if Ready-state flicker and request delay have separate triggers.
+
 
 # 🔹 Block 385 — Clarify plan group auto-rebase wording (15/02/2026)
 
@@ -5768,6 +5808,7 @@ _(fill in when they happen)_
 
 - Commit and push IDEA-016/017 once wording is approved.
 
+
 # 🔹 Block 386 — Add paused task range live update idea (15/02/2026)
 
 ### ✔ Work completed:
@@ -5788,6 +5829,7 @@ _(fill in when they happen)_
 
 - Commit and push IDEA-018 on its own branch.
 
+
 # 🔹 Block 387 — Add break tasks list idea (15/02/2026)
 
 ### ✔ Work completed:
@@ -5806,6 +5848,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Commit and push IDEA-019 on its own branch.
+
 
 # 🔹 Block 388 — Add break-only quick chip behavior (15/02/2026)
 
@@ -5826,6 +5869,7 @@ _(fill in when they happen)_
 
 - Commit and push the updated IDEA-019.
 
+
 # 🔹 Block 389 — Add optional break tasks sharing notes (15/02/2026)
 
 ### ✔ Work completed:
@@ -5844,6 +5888,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Commit and push the updated IDEA-019 if approved.
+
 
 # 🔹 Block 390 — Clarify pomodoro completion restriction rationale (15/02/2026)
 
@@ -5864,6 +5909,7 @@ _(fill in when they happen)_
 
 - Commit and push IDEA-019 once approved.
 
+
 # 🔹 Block 391 — Clarify break tasks sharing scope (15/02/2026)
 
 ### ✔ Work completed:
@@ -5883,6 +5929,7 @@ _(fill in when they happen)_
 
 - Commit and push IDEA-019 once approved.
 
+
 # 🔹 Block 392 — Add scheduled-by field idea (15/02/2026)
 
 ### ✔ Work completed:
@@ -5901,6 +5948,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Commit and push IDEA-020 on its own branch.
+
 
 # 🔹 Block 393 — Add account deletion idea (16/02/2026)
 
@@ -5922,6 +5970,7 @@ _(fill in when they happen)_
 
 - Commit and push IDEA-021 on its own branch.
 
+
 # 🔹 Block 394 — Add verified presence + heatmap idea (16/02/2026)
 
 ### ✔ Work completed:
@@ -5942,6 +5991,7 @@ _(fill in when they happen)_
 
 - Commit and push IDEA-022 on its own branch.
 
+
 # 🔹 Block 395 — Clarify backlog scope/priority legend (16/02/2026)
 
 ### ✔ Work completed:
@@ -5960,6 +6010,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Commit and push along with IDEA-022 if approved.
+
 
 # 🔹 Block 396 — Add resume canceled groups idea (16/02/2026)
 
@@ -5981,6 +6032,7 @@ _(fill in when they happen)_
 
 - Commit and push IDEA-023 on its own branch.
 
+
 # 🔹 Block 394 — Add mirror desync after resync/phase change (16/02/2026)
 
 ### ✔ Work completed:
@@ -6001,6 +6053,7 @@ _(fill in when they happen)_
 
 - Validate whether resubscribe or phase-change handling re-bases mirror timers.
 
+
 # 🔹 Block 395 — Add Ready screen recurrence to BUG-001 (16/02/2026)
 
 ### ✔ Work completed:
@@ -6020,6 +6073,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Re-validate BUG-001 after any session-gap handling changes.
+
 
 # 🔹 Block 396 — Add ownership revert workaround to BUG-002 (16/02/2026)
 
@@ -6042,6 +6096,7 @@ _(fill in when they happen)_
 
 - Validate whether resubscribe timing prevents ownership rollback.
 
+
 # 🔹 Block 397 — Add post-ownership timer offset detail (16/02/2026)
 
 ### ✔ Work completed:
@@ -6060,6 +6115,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Verify whether ownership stabilization also re-bases mirror timers.
+
 
 # 🔹 Block 398 — Add mirror pulsing + growing drift detail (16/02/2026)
 
@@ -6080,6 +6136,7 @@ _(fill in when they happen)_
 
 - Check for competing projections or duplicate timer sources on mirror.
 
+
 # 🔹 Block 399 — Note Groups Hub resync after pulsing (16/02/2026)
 
 ### ✔ Work completed:
@@ -6098,6 +6155,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Verify if automatic resubscribe can replace manual Groups Hub refresh.
+
 
 # 🔹 Block 400 — Add workspace shared groups idea (17/02/2026)
 
@@ -6119,6 +6177,7 @@ _(fill in when they happen)_
 
 - Commit and push IDEA-024 on its own branch.
 
+
 # 🔹 Block 401 — Add workspace owner-request option (17/02/2026)
 
 ### ✔ Work completed:
@@ -6137,6 +6196,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Commit and push IDEA-024 update.
+
 
 # 🔹 Block 402 — Switch to auto-ownership option (17/02/2026)
 
@@ -6157,6 +6217,7 @@ _(fill in when they happen)_
 
 - Commit and push IDEA-024 update.
 
+
 # 🔹 Block 403 — Clarify workspace shared group scheduling (17/02/2026)
 
 ### ✔ Work completed:
@@ -6175,6 +6236,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Commit and push IDEA-024 update.
+
 
 # 🔹 Block 404 — Add workspace break chat idea (17/02/2026)
 
@@ -6196,6 +6258,7 @@ _(fill in when they happen)_
 
 - Commit and push IDEA-025 on its own branch.
 
+
 # 🔹 Block 405 — Clarify workspace chat vs DM scope (17/02/2026)
 
 ### ✔ Work completed:
@@ -6214,6 +6277,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Commit and push the IDEA-025 clarification.
+
 
 # 🔹 Block 406 — Clarify out-of-run chat access (17/02/2026)
 
@@ -6234,6 +6298,7 @@ _(fill in when they happen)_
 
 - Commit and push the IDEA-025 update.
 
+
 # 🔹 Block 407 — Clarify pomodoro vs break delivery semantics (17/02/2026)
 
 ### ✔ Work completed:
@@ -6252,6 +6317,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Commit and push the IDEA-025 clarification.
+
 
 # 🔹 Block 408 — Add total-time Ready recurrence to BUG-001 (17/02/2026)
 
@@ -6272,6 +6338,7 @@ _(fill in when they happen)_
 
 - Re-validate mirror Ready recovery paths in Run Mode.
 
+
 # 🔹 Block 409 — Add Manage Presets item UX idea (17/02/2026)
 
 ### ✔ Work completed:
@@ -6290,6 +6357,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Commit and push IDEA-026 on its own branch.
+
 
 # 🔹 Block 410 — Add unified mode indicator idea (17/02/2026)
 
@@ -6311,6 +6379,7 @@ _(fill in when they happen)_
 
 - Commit and push IDEA-027 on its own branch.
 
+
 # 🔹 Block 411 — Add verified activity summary idea (17/02/2026)
 
 ### ✔ Work completed:
@@ -6329,6 +6398,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Commit and push IDEA-028 on its own branch.
+
 
 # 🔹 Block 412 — Add live pause time ranges idea (17/02/2026)
 
@@ -6349,6 +6419,7 @@ _(fill in when they happen)_
 
 - Commit and push IDEA-029 on its own branch.
 
+
 # 🔹 Block 413 — Log owner resume drift after background crash (17/02/2026)
 
 ### ✔ Work completed:
@@ -6368,6 +6439,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Investigate resume re-anchoring and add instrumentation/tests before fix.
+
 
 # 🔹 Block 414 — Ownership sync hardening (server fetch + gap handling) (17/02/2026)
 
@@ -6392,6 +6464,7 @@ _(fill in when they happen)_
 - Validate on Android + macOS with real devices (owner background/resume, request
   flows, mirror drift scenarios).
 
+
 # 🔹 Block 415 — Short ownership request validation (17/02/2026)
 
 ### ✔ Work completed:
@@ -6414,6 +6487,7 @@ _(fill in when they happen)_
 
 - Run a long-pause test (2–3h) with both devices backgrounded; report any
   desync or ownership regressions.
+
 
 # 🔹 Block 416 — Background auto-claim validation (17/02/2026)
 
@@ -6440,6 +6514,7 @@ _(fill in when they happen)_
 - Capture precise timestamps (owner before/after, lastUpdatedAt, status) on
   long-pause tests to confirm no regressions.
 
+
 # 🔹 Block 417 — Pause resume snapshot validation (17/02/2026)
 
 ### ✔ Work completed:
@@ -6464,6 +6539,7 @@ _(fill in when they happen)_
 
 - Re-test with a longer pause window if any regression appears.
 
+
 # 🔹 Block 418 — Clarify pause duration (17/02/2026)
 
 ### ✔ Work completed:
@@ -6482,6 +6558,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - None.
+
 
 # 🔹 Block 419 — Owner heartbeat during session gaps (17/02/2026)
 
@@ -6505,6 +6582,7 @@ _(fill in when they happen)_
 
 - Re-test foreground owner stability during stream gaps (no auto-claim).
 
+
 # 🔹 Block 420 — Add macOS local reset commands to README (17/02/2026)
 
 ### ✔ Work completed:
@@ -6523,6 +6601,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - None.
+
 
 # 🔹 Block 421 — Foreground owner stability validation (alt account) (17/02/2026)
 
@@ -6547,6 +6626,7 @@ _(fill in when they happen)_
 
 - Continue long-pause/background tests on the original account to reproduce
   ownership flips or retry/accept loops.
+
 
 # 🔹 Block 422 — Long background validations + ownership loop (17/02/2026)
 
@@ -6585,6 +6665,7 @@ _(fill in when they happen)_
 - Capture system clock times on both devices during drift to confirm
   clock-skew vs projection error.
 
+
 # 🔹 Block 423 — Drift growth confirmed with matched system clocks (18/02/2026)
 
 ### ✔ Work completed:
@@ -6607,6 +6688,7 @@ _(fill in when they happen)_
 ### 🎯 Next steps:
 
 - Document a spec change for server-time offset projection before code changes.
+
 
 # 🔹 Block 424 — Specs: server-time offset projection (18/02/2026)
 
@@ -6631,6 +6713,7 @@ _(fill in when they happen)_
 - Implement server-time offset projection in Run Mode after confirming the
   spec change is acceptable.
 
+
 # 🔹 Block 425 — Implement server-time offset projection (18/02/2026)
 
 ### ✔ Work completed:
@@ -6654,6 +6737,7 @@ _(fill in when they happen)_
 
 - Validate on device that mirror drift no longer grows during long breaks.
 
+
 # 🔹 Block 426 — Keep Run Mode alive during active sessions (18/02/2026)
 
 ### ✔ Work completed:
@@ -6675,6 +6759,7 @@ _(fill in when they happen)_
 
 - Re-test Groups Hub navigation to confirm timers no longer gain seconds on
   return.
+
 
 # 🔹 Block 427 — Groups Hub jump evidence captured (18/02/2026)
 
@@ -6702,6 +6787,7 @@ _(fill in when they happen)_
 - Re-test the jump after the keep-alive change; confirm if the timer no longer
   adds seconds on return.
 
+
 # 🔹 Block 428 — Suppress local machine timer in mirror mode (18/02/2026)
 
 ### ✔ Work completed:
@@ -6726,6 +6812,7 @@ _(fill in when they happen)_
 - Validate that mirror timer flicker and late sounds no longer occur after
   ownership handoff.
 
+
 # 🔹 Block 429 — Split mirror flicker vs timer swap (18/02/2026)
 
 ### ✔ Work completed:
@@ -6744,6 +6831,7 @@ _(none)_
 ### 🎯 Next steps:
 
 - Re-test after the mirror timer suppression to confirm BUG-009 no longer appears.
+
 
 # 🔹 Block 430 — Regression found: owner freezes after accept (18/02/2026)
 
@@ -6769,6 +6857,7 @@ _(none)_
 - Revert the mirror suppression change on a dedicated branch.
 - Re-test ownership acceptance and auto-open flow after rollback.
 
+
 # 🔹 Block 431 — Ownership request delay (first delivery) validated (18/02/2026)
 
 ### ✔ Work completed:
@@ -6792,6 +6881,7 @@ _(none)_
 - Continue testing background + long pause scenarios to isolate the trigger for
   delayed ownership delivery.
 
+
 # 🔹 Block 432 — Add feature execution order list (18/02/2026)
 
 ### ✔ Work completed:
@@ -6811,6 +6901,7 @@ _(none)_
 ### 🎯 Next steps:
 
 - Revisit the order after ownership/sync bugs and Phase 17 validation close.
+
 
 # 🔹 Block 433 — Document resync overlay mitigation (18/02/2026)
 
@@ -6832,6 +6923,7 @@ _(none)_
 
 - Implement only if needed for release stability and after specs approval.
 
+
 # 🔹 Block 434 — Add pending request evidence after Ready (18/02/2026)
 
 ### ✔ Work completed:
@@ -6852,6 +6944,7 @@ _(none)_
 
 - Validate whether owner-side listeners refresh on incoming requests.
 
+
 # 🔹 Block 435 — Merge IDEA-018 into IDEA-029 (18/02/2026)
 
 ### ✔ Work completed:
@@ -6862,7 +6955,7 @@ _(none)_
 ### 🧠 Decisions made:
 
 - Keep IDEA-029 as the single source for live pause range updates (task list
-  - status boxes).
+  + status boxes).
 
 ### ⚠️ Issues found:
 
@@ -6871,6 +6964,7 @@ _(none)_
 ### 🎯 Next steps:
 
 - Update the recommended execution order if needed after Phase 17 closes.
+
 
 # 🔹 Block 436 — Restore IDEA-018 details while merged (18/02/2026)
 
@@ -6892,6 +6986,7 @@ _(none)_
 ### 🎯 Next steps:
 
 - None.
+
 
 # 🔹 Block 437 — Phase 17 test coverage + workflow rule (18/02/2026)
 
@@ -6918,6 +7013,7 @@ _(none)_
 ### 🎯 Next steps:
 
 - None.
+
 
 # 🔹 Block 438 — Account-scoped pre-run notice setting (18/02/2026)
 
@@ -6948,6 +7044,7 @@ _(none)_
 
 - Validate cross-device sync of notice minutes on two signed-in devices.
 
+
 # 🔹 Block 439 — Phase 17 reopen: early overlap warning + mirror CTA (18/02/2026)
 
 ### ✔ Work completed:
@@ -6975,6 +7072,7 @@ _(none)_
 - Implement the early overlap warning + mirror CTA + persistent SnackBar.
 - Add tests for the updated overlap detection timing and deferral rules.
 
+
 # 🔹 Block 440 — Clarify overlap notification timing (18/02/2026)
 
 ### ✔ Work completed:
@@ -6996,6 +7094,7 @@ _(none)_
 ### 🎯 Next steps:
 
 - Implement the updated timing logic in the coordinator and TimerScreen.
+
 
 # 🔹 Block 441 — Implement early overlap warning + mirror CTA (18/02/2026)
 
@@ -7080,6 +7179,7 @@ _(none)_
 ### 🎯 Next steps:
 
 - Validate pause-overlap and cancel-postponed flows on device.
+
 
 # 🔹 Block 444 — Add break-start Ready recurrence (20/02/2026)
 
@@ -8835,195 +8935,3 @@ _(pending validation)_
 - Validate debug + prod boot on Chrome and macOS with
   `ALLOW_PROD_IN_DEBUG=true`.
 - Revert the override once staging is configured and in use.
-
-# 🔹 Block 524 — Update bug log commands for debug prod override (02/03/2026)
-
-### ✔ Work completed:
-
-- Expanded `docs/bugs/README.md` with debug + prod commands (override) for all
-  supported platforms, keeping release commands available.
-- Added explicit "temporal" labeling for the override in the command sections.
-
-### 🧪 Tests:
-
-- Not applicable (docs-only change).
-
-### ⚠️ Issues found:
-
-- None.
-
-### 🎯 Next steps:
-
-- Use the debug + prod commands with `ALLOW_PROD_IN_DEBUG=true` until staging exists.
-- Revert the override commands once staging is configured.
-
-# 🔹 Block 525 — Fix TimeSync deadlock + auth gating (02/03/2026)
-
-### ✔ Work completed:
-
-- Updated specs to allow fallback heartbeats/publishes when time sync is missing,
-  while still blocking start/resume/auto-start without server offset.
-- Fixed provider gating so TimeSync and activeSession repositories stay enabled
-  when `currentUser` exists (avoid transient auth nulls downgrading to Noop).
-- Allowed `_publishCurrentSession()` to publish with local-time fallback while
-  time sync is unavailable (prevents `activeSession` from freezing).
-- Created validation folder `docs/bugs/validation_fix_2026_03_02-02/` with plan.
-
-### 🧪 Tests:
-
-- `flutter analyze` (passed).
-
-### ⚠️ Issues found:
-
-- None yet (validation pending).
-
-### 🎯 Next steps:
-
-- Run rapid validation on Chrome/macOS debug + prod override.
-- Record commit hash in the validation plan and complete checklist.
-
-# 🔹 Block 526 — Allow owner heartbeats while awaiting/missing (02/03/2026)
-
-### ✔ Work completed:
-
-- Allowed session publish to proceed while missing session when this device is
-  the owner and execution is active (prevents `lastUpdatedAt` freeze).
-- Allowed heartbeats to publish while awaiting session confirmation to avoid
-  deadlocks during initial ownership.
-- Updated validation plan for the TimeSync deadlock fix.
-
-### 🧪 Tests:
-
-- `flutter analyze` (passed).
-
-### ⚠️ Issues found:
-
-- None yet (validation pending).
-
-### 🎯 Next steps:
-
-- Re-run rapid validation in Chrome/macOS and confirm `lastUpdatedAt` advances.
-- Update the checklist and plan tracking with the new commit hash.
-
-# 🔹 Block 527 — Validate TimeSync deadlock fix (02/03/2026)
-
-### ✔ Work completed:
-
-- Completed rapid validation for the TimeSync deadlock fix on Chrome (web) and macOS.
-- Confirmed `users/{uid}/timeSync/anchor` creation and advancing
-  `activeSession/current.lastUpdatedAt`.
-- Updated the validation plan and checklist for
-  `docs/bugs/validation_fix_2026_03_02-02/`.
-
-### 🧪 Tests:
-
-- Manual validation (Chrome debug + prod override, macOS debug + prod override).
-
-### ⚠️ Issues found:
-
-- None.
-
-### 🎯 Next steps:
-
-- None.
-
-# 🔹 Block 528 — Owner local stream + no remote projection (02/03/2026)
-
-### ✔ Work completed:
-
-- Owner no longer ignores the local PomodoroMachine stream in Account Mode.
-- Removed mirror projection for owner sessions (no `_setMirrorSession` in owner paths).
-- Owner hydration now allows local-time fallback when server offset is missing.
-- Created validation folder `docs/bugs/validation_fix_2026_03_02-03/` with plan + empty checklist.
-
-### 🧠 Decisions made:
-
-- Owner must always render from the local machine; mirrors project from session snapshots.
-- If time sync is missing, owner uses local time for projection to avoid frozen UI.
-
-### 🧪 Tests:
-
-- `flutter analyze` (passed).
-- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` (passed).
-
-### ⚠️ Issues found:
-
-_(not yet validated on devices)_
-
-### 🎯 Next steps:
-
-- Run rapid validation (Android owner + macOS mirror) and update checklist.
-- Record commit hash in the validation plan.
-
-# 🔹 Block 529 — Plan Group pre-run notice control (02/03/2026)
-
-### ✔ Work completed:
-
-- Added a "Pre-run notice" row to Plan group with a realtime-valid range.
-- Planning now carries the notice value and persists it on new TaskRunGroups.
-- Re-plan snackbar offers Change notice and reopens planning with a valid suggestion.
-- Task List and Groups Hub creation flows use the selected notice consistently.
-
-### 🧪 Tests:
-
-- `flutter analyze` (passed).
-
-### ⚠️ Issues found:
-
-- None.
-
-### 🎯 Next steps:
-
-- Complete feature checklist validation and record results.
-
-# 🔹 Block 530 — ActiveSession payload persistence + owner sync guards (02/03/2026)
-
-### ✔ Work completed:
-
-- Fixed Firestore activeSession idempotent writes to persist full payload when
-  `sessionRevision` is unchanged but session fields changed (`remainingSeconds`,
-  phase/status fields, timeline fields).
-- Stabilized owner sync flow in `PomodoroViewModel`:
-  - removed owner mirror-projection path,
-  - allowed projection local fallback when server offset is temporarily missing,
-  - added `ref.mounted` lifecycle guards on async resync/snapshot paths.
-- Updated session gap test expectations to match the current publish policy when
-  time sync is unavailable.
-
-### 🧪 Tests:
-
-- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` (passed).
-- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` (passed).
-
-### ⚠️ Issues found:
-
-- Device validation for the long-run (20–30 min) Android syncing scenario is still pending.
-
-### 🎯 Next steps:
-
-- Run long-run validation with a fresh running group (no carry-over from previous builds).
-- Record final validation evidence in `docs/bugs/validation_fix_2026_03_02-03/`.
-
-# 🔹 Block 531 — IDEA-032 validated + auto-clamp SnackBar UX fix (02/03/2026)
-
-### ✔ Work completed:
-
-- Validated IDEA-032 (Plan Group Pre-Run Notice Control) on Android RMX3771,
-  debug prod, 02/03/2026.
-- All 8 checklist items passed. See
-  `docs/features/feature_2026_03_02_plan-group-notice-control/feature_checklist.md`.
-- Minor UX improvement added during validation:
-  - The 1s ticker in `task_group_planning_screen.dart` now emits a SnackBar
-    ("Pre-run notice reduced to Xm — maximum allowed before the scheduled
-    start.") whenever it auto-clamps `_noticeMinutes` to the realtime max.
-  - Covers Check 4 (notice invalid while screen open) and Check 8 (user picks
-    a start time with insufficient margin). Both confirmed working in real time.
-- `flutter analyze` — 0 issues.
-
-### 🧪 Tests:
-
-- Manual validation on device (Android RMX3771), 02/03/2026.
-
-### 🎯 Next steps:
-
-- Address pending long-run Android sync validation from Block 530.

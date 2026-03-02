@@ -119,10 +119,9 @@ class AppConfig {
   }
 
   static bool _allowProdInDebug() {
-    // Temporary override for iOS debug simulator validation with real accounts.
-    // Remove this once staging is configured and in use.
+    // TEMPORARY: allow prod Firebase in debug for real-account validation.
+    // Revert this once staging is configured and in use.
     if (!kDebugMode) return false;
-    if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) return false;
     return const bool.fromEnvironment(
       'ALLOW_PROD_IN_DEBUG',
       defaultValue: false,

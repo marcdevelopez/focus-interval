@@ -54,5 +54,5 @@ flutter run -v --release -d chrome --dart-define=APP_ENV=prod \
 - Sustituye `YYYY-MM-DD` por la fecha real del log.
 - Sustituye el id del dispositivo si cambia (ej. `RMX3771`).
 - iOS Simulator no soporta `--release` ni `--profile`; usa `--debug`.
-- `ALLOW_PROD_IN_DEBUG=true` es temporal para pruebas reales en iOS hasta que staging este configurado; al usar staging, elimina este override y usa `APP_ENV=staging`.
+- `ALLOW_PROD_IN_DEBUG=true` es temporal para pruebas reales en debug en todas las plataformas hasta que staging este configurado; al usar staging, elimina este override y usa `APP_ENV=staging`.
 - Si aparece `No pubspec.yaml`, asegurate de estar en la raiz del repo.
