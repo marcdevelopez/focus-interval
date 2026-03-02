@@ -744,27 +744,50 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     );
   }
 
-  Future<bool> _showChangeNoticeSnackBar(
+  Future<int?> _showChangeNoticeSnackBar(
     BuildContext context, {
     required String message,
+    required DateTime scheduledStart,
+    required int currentNotice,
   }) async {
     final messenger = ScaffoldMessenger.of(context);
-    var changeRequested = false;
+    final completer = Completer<int?>();
+    var actionInFlight = false;
     final controller = messenger.showSnackBar(
       SnackBar(
-        duration: const Duration(seconds: 14),
+        duration: const Duration(days: 1),
+        showCloseIcon: true,
         content: Text(message),
         action: SnackBarAction(
           label: 'Change notice',
-          onPressed: () {
-            changeRequested = true;
+          onPressed: () async {
+            if (actionInFlight) return;
+            actionInFlight = true;
+            final picked = await _showNoticePicker(
+              context,
+              current: currentNotice,
+              scheduledStart: scheduledStart,
+            );
+            if (!context.mounted) {
+              if (!completer.isCompleted) {
+                completer.complete(null);
+              }
+              return;
+            }
             messenger.hideCurrentSnackBar();
+            if (!completer.isCompleted) {
+              completer.complete(picked);
+            }
           },
         ),
       ),
     );
-    await controller.closed;
-    return changeRequested;
+    controller.closed.then((_) {
+      if (!completer.isCompleted) {
+        completer.complete(null);
+      }
+    });
+    return completer.future;
   }
 
   int _suggestNoticeForStart({
@@ -780,6 +803,105 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
             TaskRunNoticeService.maxNoticeMinutes,
           );
     return current.clamp(TaskRunNoticeService.minNoticeMinutes, maxAllowed);
+  }
+
+  int _maxNoticeAllowed(DateTime scheduledStart, DateTime now) {
+    final seconds = scheduledStart.difference(now).inSeconds;
+    if (seconds <= 0) return TaskRunNoticeService.minNoticeMinutes;
+    final maxByTime = seconds ~/ 60;
+    return maxByTime.clamp(
+      TaskRunNoticeService.minNoticeMinutes,
+      TaskRunNoticeService.maxNoticeMinutes,
+    );
+  }
+
+  Future<int?> _showNoticePicker(
+    BuildContext context, {
+    required int current,
+    required DateTime scheduledStart,
+  }) async {
+    var selected = current.clamp(
+      TaskRunNoticeService.minNoticeMinutes,
+      TaskRunNoticeService.maxNoticeMinutes,
+    );
+    var maxAllowed = _maxNoticeAllowed(scheduledStart, DateTime.now());
+    if (selected > maxAllowed) selected = maxAllowed;
+    Timer? ticker;
+    void Function(VoidCallback fn)? setModalState;
+
+    final result = await showDialog<int>(
+      context: context,
+      builder: (dialogContext) {
+        ticker ??= Timer.periodic(const Duration(seconds: 1), (_) {
+          final latestMax = _maxNoticeAllowed(scheduledStart, DateTime.now());
+          if (latestMax == maxAllowed && selected <= latestMax) return;
+          setModalState?.call(() {
+            maxAllowed = latestMax;
+            if (selected > maxAllowed) {
+              selected = maxAllowed;
+            }
+          });
+        });
+
+        return StatefulBuilder(
+          builder: (context, modalSetState) {
+            setModalState = modalSetState;
+            return AlertDialog(
+              title: const Text('Pre-run notice'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Allowed right now: 0–$maxAllowed minutes.',
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '$selected min',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (maxAllowed <= 0)
+                    const Text(
+                      'Only 0 min is currently valid for this start time.',
+                      style: TextStyle(color: Colors.white70),
+                    )
+                  else
+                    Slider(
+                      value: selected.toDouble(),
+                      min: TaskRunNoticeService.minNoticeMinutes.toDouble(),
+                      max: maxAllowed.toDouble(),
+                      divisions: maxAllowed,
+                      onChanged: (value) {
+                        modalSetState(() {
+                          selected = value.round();
+                        });
+                      },
+                    ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(selected),
+                  child: const Text('Apply'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    ticker?.cancel();
+    return result;
   }
 
   Future<void> _handleRunAgain(
@@ -831,7 +953,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
         items,
         source.integrityMode,
       );
-      final noticeMinutes = planningResult.noticeMinutes;
+      var noticeMinutes = planningResult.noticeMinutes;
       final conflictStart = scheduledStart ?? planCapturedAt;
       final conflictEnd = conflictStart.add(
         Duration(seconds: totalDurationSeconds),
@@ -849,50 +971,57 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
       }
       final now = DateTime.now();
       final activeSession = ref.read(activePomodoroSessionProvider);
-      if (isSchedule && scheduledStart != null && noticeMinutes > 0) {
-        final preRunStart = scheduledStart.subtract(
-          Duration(minutes: noticeMinutes),
-        );
-        if (preRunStart.isBefore(now)) {
-          final changeRequested = await _showChangeNoticeSnackBar(
-            context,
-            message:
-                "Notice ${noticeMinutes}m no longer fits this start. Change notice for this re-plan or dismiss.",
+      if (isSchedule && scheduledStart != null) {
+        while (noticeMinutes > 0) {
+          final preRunStart = scheduledStart.subtract(
+            Duration(minutes: noticeMinutes),
           );
-          if (!context.mounted) return;
-          if (!changeRequested) return;
-          planningNoticeMinutes = _suggestNoticeForStart(
+          if (preRunStart.isBefore(now)) {
+            final suggested = _suggestNoticeForStart(
+              scheduledStart: scheduledStart,
+              current: noticeMinutes,
+            );
+            final updatedNotice = await _showChangeNoticeSnackBar(
+              context,
+              message:
+                  "Notice ${noticeMinutes}m no longer fits this start. Change notice for this re-plan or dismiss.",
+              scheduledStart: scheduledStart,
+              currentNotice: suggested,
+            );
+            if (!context.mounted) return;
+            if (updatedNotice == null) return;
+            noticeMinutes = updatedNotice;
+            planningNoticeMinutes = updatedNotice;
+            continue;
+          }
+
+          final preRunConflict = _findPreRunConflict(
+            existing,
+            preRunStart: preRunStart,
             scheduledStart: scheduledStart,
-            current: noticeMinutes,
+            activeSession: activeSession,
+            now: now,
           );
-          initialOption = TaskGroupPlanOption.scheduleStart;
-          initialScheduledStart = scheduledStart;
-          continue;
-        }
-        final preRunConflict = _findPreRunConflict(
-          existing,
-          preRunStart: preRunStart,
-          scheduledStart: scheduledStart,
-          activeSession: activeSession,
-          now: now,
-        );
-        if (preRunConflict != null) {
+          if (preRunConflict == null) {
+            break;
+          }
           final message = preRunConflict == _PreRunConflictType.running
               ? "Notice ${noticeMinutes}m overlaps with a running group. Change notice for this re-plan or dismiss."
               : "Notice ${noticeMinutes}m overlaps with another scheduled group. Change notice for this re-plan or dismiss.";
-          final changeRequested = await _showChangeNoticeSnackBar(
-            context,
-            message: message,
-          );
-          if (!context.mounted) return;
-          if (!changeRequested) return;
-          planningNoticeMinutes = _suggestNoticeForStart(
+          final suggested = _suggestNoticeForStart(
             scheduledStart: scheduledStart,
             current: noticeMinutes,
           );
-          initialOption = TaskGroupPlanOption.scheduleStart;
-          initialScheduledStart = scheduledStart;
-          continue;
+          final updatedNotice = await _showChangeNoticeSnackBar(
+            context,
+            message: message,
+            scheduledStart: scheduledStart,
+            currentNotice: suggested,
+          );
+          if (!context.mounted) return;
+          if (updatedNotice == null) return;
+          noticeMinutes = updatedNotice;
+          planningNoticeMinutes = updatedNotice;
         }
       }
 
