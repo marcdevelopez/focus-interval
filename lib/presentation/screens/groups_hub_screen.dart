@@ -796,6 +796,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     DateTime? initialScheduledStart;
 
     while (true) {
+      if (!context.mounted) return;
       final planningResult = await _showPlanningScreen(
         context,
         items: items,

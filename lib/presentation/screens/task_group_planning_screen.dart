@@ -765,7 +765,7 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
                   Text(
                     scheduledStart == null
                         ? 'Set notice for upcoming scheduled runs.'
-                        : 'Allowed right now: 0–${maxAllowed} minutes.',
+                        : 'Allowed right now: 0–$maxAllowed minutes.',
                     style: const TextStyle(color: Colors.white70),
                   ),
                   const SizedBox(height: 12),
