@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -5,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/models/pomodoro_task.dart';
 import '../../data/models/schema_version.dart';
 import '../../data/models/task_run_group.dart';
+import '../../data/services/task_run_notice_service.dart';
 import '../../domain/task_group_planner.dart';
 import '../../widgets/task_card.dart';
 
@@ -12,11 +15,17 @@ class TaskGroupPlanningArgs {
   final List<TaskRunItem> items;
   final TaskRunIntegrityMode integrityMode;
   final DateTime planningAnchor;
+  final int initialNoticeMinutes;
+  final TaskGroupPlanOption initialOption;
+  final DateTime? initialScheduledStart;
 
   const TaskGroupPlanningArgs({
     required this.items,
     required this.integrityMode,
     required this.planningAnchor,
+    required this.initialNoticeMinutes,
+    this.initialOption = TaskGroupPlanOption.startNow,
+    this.initialScheduledStart,
   });
 }
 
@@ -31,10 +40,12 @@ class TaskGroupPlanningResult {
   final TaskGroupPlanOption option;
   final DateTime? scheduledStart;
   final List<TaskRunItem> items;
+  final int noticeMinutes;
 
   const TaskGroupPlanningResult({
     required this.option,
     required this.items,
+    required this.noticeMinutes,
     this.scheduledStart,
   });
 }
@@ -42,10 +53,7 @@ class TaskGroupPlanningResult {
 class TaskGroupPlanningScreen extends StatefulWidget {
   final TaskGroupPlanningArgs args;
 
-  const TaskGroupPlanningScreen({
-    super.key,
-    required this.args,
-  });
+  const TaskGroupPlanningScreen({super.key, required this.args});
 
   @override
   State<TaskGroupPlanningScreen> createState() =>
@@ -64,17 +72,54 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
   DateTime? _rangeEnd;
   DateTime? _totalStart;
   Duration? _totalDuration;
+  int _noticeMinutes = TaskRunNoticeService.defaultNoticeMinutes;
   bool _infoDialogVisible = false;
   bool _shiftNoticeSuppressed = false;
   bool _shiftNoticePrefLoaded = false;
+  Timer? _noticeNowTicker;
+  DateTime _noticeNow = DateTime.now();
 
   @override
   void initState() {
     super.initState();
+    _selected = widget.args.initialOption;
+    _noticeMinutes = _normalizeNotice(widget.args.initialNoticeMinutes);
+    final initialStart = widget.args.initialScheduledStart;
+    if (initialStart != null) {
+      switch (_selected) {
+        case TaskGroupPlanOption.scheduleStart:
+          _scheduledStart = initialStart;
+          break;
+        case TaskGroupPlanOption.scheduleRange:
+          _rangeStart = initialStart;
+          _rangeEnd = initialStart.add(const Duration(hours: 1));
+          break;
+        case TaskGroupPlanOption.scheduleTotal:
+          _totalStart = initialStart;
+          _totalDuration = const Duration(hours: 1);
+          break;
+        case TaskGroupPlanOption.startNow:
+          break;
+      }
+    }
+    _applyNoticeSuggestion();
+    _noticeNowTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        _noticeNow = DateTime.now();
+        _applyNoticeSuggestion();
+      });
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _maybeShowInfoDialog();
       _loadShiftNoticePreference();
     });
+  }
+
+  @override
+  void dispose() {
+    _noticeNowTicker?.cancel();
+    super.dispose();
   }
 
   Future<void> _maybeShowInfoDialog() async {
@@ -274,34 +319,30 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
     final preview = _buildPlanPreview();
 
     final startTime = preview.scheduledStart;
-    final groupStartLabel =
-        startTime == null ? '--:--' : _formatTimeOrDate(startTime);
+    final groupStartLabel = startTime == null
+        ? '--:--'
+        : _formatTimeOrDate(startTime);
     final groupEndLabel = startTime == null
         ? '--:--'
         : _formatTimeOrDate(
             startTime.add(Duration(seconds: preview.totalDurationSeconds)),
           );
-    final durations = taskDurationSecondsByMode(
-      preview.items,
-      integrityMode,
-    );
+    final durations = taskDurationSecondsByMode(preview.items, integrityMode);
     final ranges = startTime == null
         ? <int, String>{}
         : _buildTimeRanges(durations, startTime);
     final weightTotal = _weightTotal(preview.items);
     final previewTasks = _previewTasks(preview.items);
     final shiftLabel = _formatShiftLabel(preview.shiftSeconds);
-    final showShiftNotice = shiftLabel != null &&
-        _shiftNoticePrefLoaded &&
-        !_shiftNoticeSuppressed;
+    final showShiftNotice =
+        shiftLabel != null && _shiftNoticePrefLoaded && !_shiftNoticeSuppressed;
 
-    final totalDurationLabel =
-        _formatDuration(Duration(seconds: preview.totalDurationSeconds));
+    final totalDurationLabel = _formatDuration(
+      Duration(seconds: preview.totalDurationSeconds),
+    );
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Plan group'),
-      ),
+      appBar: AppBar(title: const Text('Plan group')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
@@ -341,7 +382,7 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
                     label: _rangeStart == null || _rangeEnd == null
                         ? 'Select time range'
                         : '${_formatDateTime(_rangeStart!)} to '
-                            '${_formatDateTime(_rangeEnd!)}',
+                              '${_formatDateTime(_rangeEnd!)}',
                     onPressed: _selectRangeTimes,
                   )
                 : null,
@@ -357,10 +398,25 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
                     label: _totalStart == null || _totalDuration == null
                         ? 'Select start + duration'
                         : '${_formatDateTime(_totalStart!)} · '
-                            '${_formatDuration(_totalDuration!)}',
+                              '${_formatDuration(_totalDuration!)}',
                     onPressed: _selectTotalTime,
                   )
                 : null,
+          ),
+          const SizedBox(height: 10),
+          _OptionCard(
+            title: 'Pre-run notice',
+            description: _selected == TaskGroupPlanOption.startNow
+                ? 'Not required for Start now. This value is saved for the next scheduled run.'
+                : 'Reserve countdown time before start. Notice: ${_noticeMinutes}m.',
+            selected: false,
+            onTap: _editNotice,
+            footer: _SchedulePickerRow(
+              label: _selected == TaskGroupPlanOption.startNow
+                  ? 'Current value: ${_noticeMinutes}m'
+                  : _noticeLabelForCurrentSelection(),
+              onPressed: _editNotice,
+            ),
           ),
           if (preview.error != null) ...[
             const SizedBox(height: 12),
@@ -408,7 +464,9 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: ElevatedButton(
-                onPressed: _canConfirm(preview) ? () => _handleConfirm(preview) : null,
+                onPressed: _canConfirm(preview)
+                    ? () => _handleConfirm(preview)
+                    : null,
                 child: const Text('Confirm'),
               ),
             ),
@@ -425,12 +483,14 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
   }
 
   void _handleConfirm(_PlanPreview preview) {
-    final scheduledStart =
-        _selected == TaskGroupPlanOption.startNow ? null : preview.scheduledStart;
+    final scheduledStart = _selected == TaskGroupPlanOption.startNow
+        ? null
+        : preview.scheduledStart;
     Navigator.of(context).pop(
       TaskGroupPlanningResult(
         option: _selected,
         items: preview.items,
+        noticeMinutes: _noticeMinutes,
         scheduledStart: scheduledStart,
       ),
     );
@@ -469,6 +529,15 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
             message: 'Start time must be in the future.',
           );
         }
+        final noticeError = _noticeErrorForStart(_scheduledStart!);
+        if (noticeError != null) {
+          return _PlanPreview.error(
+            option: _selected,
+            items: items,
+            totalDurationSeconds: totalSeconds,
+            message: noticeError,
+          );
+        }
         return _PlanPreview(
           option: _selected,
           items: items,
@@ -484,10 +553,7 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
             message: 'Select a start and end time for the range.',
           );
         }
-        if (!isStartTimeInFuture(
-          start: _rangeStart!,
-          now: DateTime.now(),
-        )) {
+        if (!isStartTimeInFuture(start: _rangeStart!, now: DateTime.now())) {
           return _PlanPreview.error(
             option: _selected,
             items: items,
@@ -501,6 +567,15 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
             items: items,
             totalDurationSeconds: totalSeconds,
             message: 'End time must be after start time.',
+          );
+        }
+        final noticeError = _noticeErrorForStart(_rangeStart!);
+        if (noticeError != null) {
+          return _PlanPreview.error(
+            option: _selected,
+            items: items,
+            totalDurationSeconds: totalSeconds,
+            message: noticeError,
           );
         }
         final targetSeconds = _rangeEnd!.difference(_rangeStart!).inSeconds;
@@ -533,10 +608,7 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
             message: 'Select a start time and duration.',
           );
         }
-        if (!isStartTimeInFuture(
-          start: _totalStart!,
-          now: DateTime.now(),
-        )) {
+        if (!isStartTimeInFuture(start: _totalStart!, now: DateTime.now())) {
           return _PlanPreview.error(
             option: _selected,
             items: items,
@@ -550,6 +622,15 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
             items: items,
             totalDurationSeconds: totalSeconds,
             message: 'Duration must be at least 1 minute.',
+          );
+        }
+        final noticeError = _noticeErrorForStart(_totalStart!);
+        if (noticeError != null) {
+          return _PlanPreview.error(
+            option: _selected,
+            items: items,
+            totalDurationSeconds: totalSeconds,
+            message: noticeError,
           );
         }
         final targetSeconds = _totalDuration!.inSeconds;
@@ -576,7 +657,164 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
     }
   }
 
+  int _normalizeNotice(int value) {
+    if (value < TaskRunNoticeService.minNoticeMinutes) {
+      return TaskRunNoticeService.minNoticeMinutes;
+    }
+    if (value > TaskRunNoticeService.maxNoticeMinutes) {
+      return TaskRunNoticeService.maxNoticeMinutes;
+    }
+    return value;
+  }
 
+  DateTime? _scheduledStartForCurrentSelection() {
+    switch (_selected) {
+      case TaskGroupPlanOption.startNow:
+        return null;
+      case TaskGroupPlanOption.scheduleStart:
+        return _scheduledStart;
+      case TaskGroupPlanOption.scheduleRange:
+        return _rangeStart;
+      case TaskGroupPlanOption.scheduleTotal:
+        return _totalStart;
+    }
+  }
+
+  int _maxNoticeAllowed(DateTime? scheduledStart, DateTime now) {
+    if (scheduledStart == null) return TaskRunNoticeService.maxNoticeMinutes;
+    final seconds = scheduledStart.difference(now).inSeconds;
+    if (seconds <= 0) return TaskRunNoticeService.minNoticeMinutes;
+    final maxByTime = seconds ~/ 60;
+    return maxByTime.clamp(
+      TaskRunNoticeService.minNoticeMinutes,
+      TaskRunNoticeService.maxNoticeMinutes,
+    );
+  }
+
+  void _applyNoticeSuggestion() {
+    final scheduledStart = _scheduledStartForCurrentSelection();
+    final maxAllowed = _maxNoticeAllowed(scheduledStart, _noticeNow);
+    if (_noticeMinutes > maxAllowed) {
+      _noticeMinutes = maxAllowed;
+    }
+  }
+
+  String _noticeLabelForCurrentSelection() {
+    final scheduledStart = _scheduledStartForCurrentSelection();
+    final maxAllowed = _maxNoticeAllowed(scheduledStart, _noticeNow);
+    if (scheduledStart == null) {
+      return 'Current value: ${_noticeMinutes}m (0–15m)';
+    }
+    return 'Current value: ${_noticeMinutes}m · allowed now: 0–${maxAllowed}m';
+  }
+
+  String? _noticeErrorForStart(DateTime start) {
+    final maxAllowed = _maxNoticeAllowed(start, _noticeNow);
+    if (_noticeMinutes <= maxAllowed) return null;
+    return 'This start only allows notice up to ${maxAllowed}m right now.';
+  }
+
+  Future<void> _editNotice() async {
+    final scheduledStart = _scheduledStartForCurrentSelection();
+    final picked = await _showNoticePicker(
+      context,
+      current: _noticeMinutes,
+      scheduledStart: scheduledStart,
+    );
+    if (!mounted || picked == null) return;
+    setState(() {
+      _noticeMinutes = _normalizeNotice(picked);
+      _applyNoticeSuggestion();
+    });
+  }
+
+  Future<int?> _showNoticePicker(
+    BuildContext context, {
+    required int current,
+    required DateTime? scheduledStart,
+  }) async {
+    var selected = _normalizeNotice(current);
+    var maxAllowed = _maxNoticeAllowed(scheduledStart, DateTime.now());
+    if (selected > maxAllowed) selected = maxAllowed;
+    Timer? ticker;
+    void Function(VoidCallback fn)? setModalState;
+
+    final result = await showDialog<int>(
+      context: context,
+      builder: (dialogContext) {
+        ticker ??= Timer.periodic(const Duration(seconds: 1), (_) {
+          final latestMax = _maxNoticeAllowed(scheduledStart, DateTime.now());
+          if (latestMax == maxAllowed && selected <= latestMax) return;
+          setModalState?.call(() {
+            maxAllowed = latestMax;
+            if (selected > maxAllowed) {
+              selected = maxAllowed;
+            }
+          });
+        });
+
+        return StatefulBuilder(
+          builder: (context, modalSetState) {
+            setModalState = modalSetState;
+            return AlertDialog(
+              title: const Text('Pre-run notice'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    scheduledStart == null
+                        ? 'Set notice for upcoming scheduled runs.'
+                        : 'Allowed right now: 0–${maxAllowed} minutes.',
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '$selected min',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (maxAllowed <= 0)
+                    const Text(
+                      'Only 0 min is currently valid for this start time.',
+                      style: TextStyle(color: Colors.white70),
+                    )
+                  else
+                    Slider(
+                      value: selected.toDouble(),
+                      min: TaskRunNoticeService.minNoticeMinutes.toDouble(),
+                      max: maxAllowed.toDouble(),
+                      divisions: maxAllowed,
+                      onChanged: (value) {
+                        modalSetState(() {
+                          selected = value.round();
+                        });
+                      },
+                    ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(selected),
+                  child: const Text('Apply'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    ticker?.cancel();
+    return result;
+  }
 
   Widget _sectionHeader(String text) {
     return Text(
@@ -678,11 +916,7 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
           ],
         ),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            _timeChip('Total duration', total),
-          ],
-        ),
+        Row(children: [_timeChip('Total duration', total)]),
       ],
     );
   }
@@ -729,17 +963,20 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
   String _formatTimeOrDate(DateTime value) {
     final now = DateTime.now();
     final isToday =
-        value.year == now.year && value.month == now.month && value.day == now.day;
+        value.year == now.year &&
+        value.month == now.month &&
+        value.day == now.day;
     if (isToday) return _timeFormat.format(value);
     return '${_dateFormat.format(value)}, ${_timeFormat.format(value)}';
   }
 
   String _formatRangeWithDate(DateTime start, DateTime end) {
-    final range =
-        '${_timeFormat.format(start)}–${_timeFormat.format(end)}';
+    final range = '${_timeFormat.format(start)}–${_timeFormat.format(end)}';
     final now = DateTime.now();
     final isToday =
-        start.year == now.year && start.month == now.month && start.day == now.day;
+        start.year == now.year &&
+        start.month == now.month &&
+        start.day == now.day;
     if (isToday) return range;
     return '${_dateFormat.format(start)}, $range';
   }
@@ -761,10 +998,7 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
     return 'Adjusted end: ${_formatDuration(duration)} earlier than requested.';
   }
 
-  Map<int, String> _buildTimeRanges(
-    List<int> durations,
-    DateTime start,
-  ) {
+  Map<int, String> _buildTimeRanges(List<int> durations, DateTime start) {
     final ranges = <int, String>{};
     var cursor = start;
     for (var index = 0; index < durations.length; index += 1) {
@@ -890,9 +1124,9 @@ class _PlanPreview {
     required this.items,
     required this.totalDurationSeconds,
     required String message,
-  })  : error = message,
-        scheduledStart = null,
-        targetDurationSeconds = null;
+  }) : error = message,
+       scheduledStart = null,
+       targetDurationSeconds = null;
 
   bool get isValid => error == null;
 
@@ -902,7 +1136,6 @@ class _PlanPreview {
     return diff > 0 ? diff : 0;
   }
 }
-
 
 class _OptionCard extends StatelessWidget {
   final String title;
@@ -951,10 +1184,7 @@ class _OptionCard extends StatelessWidget {
               description,
               style: TextStyle(color: subtitleColor, height: 1.35),
             ),
-            if (footer != null) ...[
-              const SizedBox(height: 10),
-              footer!,
-            ],
+            if (footer != null) ...[const SizedBox(height: 10), footer!],
           ],
         ),
       ),
@@ -966,25 +1196,16 @@ class _SchedulePickerRow extends StatelessWidget {
   final String label;
   final VoidCallback onPressed;
 
-  const _SchedulePickerRow({
-    required this.label,
-    required this.onPressed,
-  });
+  const _SchedulePickerRow({required this.label, required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(color: Colors.white70),
-          ),
+          child: Text(label, style: const TextStyle(color: Colors.white70)),
         ),
-        TextButton(
-          onPressed: onPressed,
-          child: const Text('Edit'),
-        ),
+        TextButton(onPressed: onPressed, child: const Text('Edit')),
       ],
     );
   }
