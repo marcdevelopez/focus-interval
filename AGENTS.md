@@ -37,6 +37,9 @@ At the start of **every session**:
    - Append new blocks to the end of `docs/dev_log.md` in chronological order.
    - Block numbers must be strictly increasing and continue from the last block.
    - Update the "Last update" date whenever a new block is added.
+10. Never push a branch that contains known bugs or unverified fixes. If there
+    is not high confidence that a reported bug is resolved, do not push.
+    Production policy: `main` must never contain known bugs.
 
 ---
 
@@ -61,59 +64,12 @@ This includes:
 
 If documentation and code diverge → **documentation wins**.
 
-Bug validation workflow (required):
-- All validation artifacts live under `docs/bugs/validation_fix_YYYY_MM_DD`
-  (use `validation_fix_YYYY_MM_DD-01`, `-02`, etc. for multiple validations
-  in the same day).
-- Never delete validation subdirectories in `docs/bugs`. Keep them for traceability and regression history.
-- Screenshots stay in the validation folder but are ignored by git.
-- Each validation folder must include:
-  - `quick_pass_checklist.md`
-  - `plan_validacion_rapida_fix.md`
-  - `screenshots/`
-- Every fix must include an **Exact Repro** of the original bug scenario (steps,
-  mode, device(s), timing, logs/screenshots). This repro must be executed as
-  part of the rapid validation; otherwise the validation is incomplete.
-- Every fix must include a **Regression smoke check** that re-tests the most
-  recent critical fixes (3–5 items). If the regression list changes, update it
-  in both `plan_validacion_rapida_fix.md` and `quick_pass_checklist.md`.
-- Always review the screenshots in the relevant validation folder before diagnosing or implementing fixes.
-- `quick_pass_checklist.md` is created **after** implementation and must match
-  the actual changes. For a brand new validation folder, it starts empty until
-  the implementation is complete.
-- `plan_validacion_rapida_fix.md` is updated by the agent based on the latest
-  completed checklist and reported bugs.
-- Keep validations isolated per folder; never mix evidence or steps across
-  different validation dates.
-- After each fix:
-  - Update `plan_validacion_rapida_fix.md` to mark the fix as completed and note
-    any order changes or new findings.
-  - Run the appropriate tests (unit or integration) for the fix’s scope and
-    only proceed if they pass.
-  - Record the commit hash and commit message in the plan tracking entry.
-  - Commit the fix **after** updating the plan and any supporting docs/logs.
-
-Feature planning workflow (required):
-- All feature implementation artifacts live under `docs/features/feature_YYYY_MM_DD_slug`
-  (use `feature_YYYY_MM_DD_slug-01`, `-02`, etc. for multiple feature tracks
-  in the same day).
-- Never delete feature subdirectories in `docs/features`. Keep them for
-  traceability and regression history.
-- Screenshots stay in the feature folder but are ignored by git.
-- Each feature folder must include:
-  - `feature_plan.md` (implementation plan)
-  - `feature_checklist.md` (validation checklist, created after implementation)
-  - `screenshots/` (when relevant)
-- Every feature must be linked to `docs/feature_backlog.md` (reference the item
-  or ID in the plan).
-- In `docs/feature_backlog.md`, move the item to **In progress** (or
-  **In implementation**) and add the link to the feature directory.
-- When the feature is complete, move the item to **Done** (or
-  `feature_backlog_archive.md`) and record the final commit.
-- After each feature or subfeature:
-  - Update the plan to mark it completed.
-  - Record the commit hash and commit message in the plan tracking entry.
-  - Commit the change after updating the plan and supporting docs/logs.
+Additional feature tracking requirement:
+- Every new feature pulled from `docs/feature_backlog.md` must have a matching
+  documentation folder under `docs/features/` created **before** implementation.
+- Use the template in `docs/features/feature_template.md`.
+- Each feature doc set must include an explicit "Backlog reference" section
+  with the exact ID and title from `docs/feature_backlog.md`.
 
 ---
 
@@ -330,8 +286,9 @@ Additional regression rule:
 
 ## 🔟 Language & consistency
 
-- All code, comments, UI strings, and shared docs are **English only**.
-- Owner-only internal folders (for example `docs/bugs/**`) may be in Spanish.
+- All code, comments, UI strings, and docs are **English only**.
+- Exception: files/directories created by the project owner that are private and
+  only visible to them may be written in Spanish.
 - Naming must be:
   - Explicit
   - Consistent
