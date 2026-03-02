@@ -23,7 +23,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **01/03/2026**
+Last update: **02/03/2026**
 
 ---
 
@@ -8910,3 +8910,28 @@ _(pending validation)_
 ### 🎯 Next steps:
 
 - Commit: fb582f6 "Fix 22i: auto-start throttle + missing-session recovery".
+
+# 🔹 Block 523 — Fix TimeSync deadlock + auth gating (02/03/2026)
+
+### ✔ Work completed:
+
+- Updated specs to allow fallback heartbeats/publishes when time sync is missing,
+  while still blocking start/resume/auto-start without server offset.
+- Fixed provider gating so TimeSync and activeSession repositories stay enabled
+  when `currentUser` exists (avoid transient auth nulls downgrading to Noop).
+- Allowed `_publishCurrentSession()` to publish with local-time fallback while
+  time sync is unavailable (prevents `activeSession` from freezing).
+- Created validation folder `docs/bugs/validation_fix_2026_03_02-02/` with plan.
+
+### 🧪 Tests:
+
+- `flutter analyze` (passed).
+
+### ⚠️ Issues found:
+
+- None yet (validation pending).
+
+### 🎯 Next steps:
+
+- Run rapid validation on Chrome/macOS debug + prod override.
+- Record commit hash in the validation plan and complete checklist.

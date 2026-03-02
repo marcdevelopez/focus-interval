@@ -1299,7 +1299,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
           force: true,
         ),
       );
-      return;
     }
     final resolvedNow = now ?? _serverNowFromOffset() ?? DateTime.now();
     final session = _buildCurrentSessionSnapshot(resolvedNow);

@@ -171,7 +171,7 @@ class FakeTimeSyncService extends TimeSyncService {
       : _offsetOverride = offset,
         super(enabled: false);
 
-  Duration? _offsetOverride;
+  final Duration? _offsetOverride;
 
   @override
   Duration? get offset => _offsetOverride;
