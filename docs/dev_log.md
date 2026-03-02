@@ -8935,3 +8935,24 @@ _(pending validation)_
 - Validate debug + prod boot on Chrome and macOS with
   `ALLOW_PROD_IN_DEBUG=true`.
 - Revert the override once staging is configured and in use.
+
+# 🔹 Block 524 — Update bug log commands for debug prod override (02/03/2026)
+
+### ✔ Work completed:
+
+- Expanded `docs/bugs/README.md` with debug + prod commands (override) for all
+  supported platforms, keeping release commands available.
+- Added explicit "temporal" labeling for the override in the command sections.
+
+### 🧪 Tests:
+
+- Not applicable (docs-only change).
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Use the debug + prod commands with `ALLOW_PROD_IN_DEBUG=true` until staging exists.
+- Revert the override commands once staging is configured.
