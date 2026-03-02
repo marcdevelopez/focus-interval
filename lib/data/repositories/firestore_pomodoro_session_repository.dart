@@ -23,8 +23,11 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
 
   FirebaseFirestore get _db => firestoreService.instance;
 
-  DocumentReference<Map<String, dynamic>> _doc(String uid) =>
-      _db.collection('users').doc(uid).collection('activeSession').doc('current');
+  DocumentReference<Map<String, dynamic>> _doc(String uid) => _db
+      .collection('users')
+      .doc(uid)
+      .collection('activeSession')
+      .doc('current');
 
   Future<String> _uidOrThrow() async {
     final uid = authService.currentUser?.uid;
@@ -40,7 +43,8 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
       ...session.toMap(),
       'lastUpdatedAt': FieldValue.serverTimestamp(),
     };
-    if (session.status == PomodoroStatus.finished && session.finishedAt == null) {
+    if (session.status == PomodoroStatus.finished &&
+        session.finishedAt == null) {
       data['finishedAt'] = FieldValue.serverTimestamp();
     }
     await _db.runTransaction((tx) async {
@@ -65,17 +69,48 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
         return;
       }
       if (decision == SessionWriteDecision.idempotent) {
-        tx.set(
-          docRef,
-          {
-            'lastUpdatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true),
+        final isSamePayload = _isSameSessionPayloadForRevision(
+          currentData,
+          session,
         );
+        if (!isSamePayload) {
+          tx.set(docRef, data, SetOptions(merge: true));
+          return;
+        }
+        tx.set(docRef, {
+          'lastUpdatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
         return;
       }
       tx.set(docRef, data, SetOptions(merge: true));
     });
+  }
+
+  bool _isSameSessionPayloadForRevision(
+    Map<String, dynamic> currentData,
+    PomodoroSession incoming,
+  ) {
+    final current = PomodoroSession.fromMap(currentData);
+    return current.taskId == incoming.taskId &&
+        current.groupId == incoming.groupId &&
+        current.currentTaskId == incoming.currentTaskId &&
+        current.currentTaskIndex == incoming.currentTaskIndex &&
+        current.totalTasks == incoming.totalTasks &&
+        current.dataVersion == incoming.dataVersion &&
+        current.sessionRevision == incoming.sessionRevision &&
+        current.ownerDeviceId == incoming.ownerDeviceId &&
+        current.status == incoming.status &&
+        current.phase == incoming.phase &&
+        current.currentPomodoro == incoming.currentPomodoro &&
+        current.totalPomodoros == incoming.totalPomodoros &&
+        current.phaseDurationSeconds == incoming.phaseDurationSeconds &&
+        current.remainingSeconds == incoming.remainingSeconds &&
+        current.accumulatedPausedSeconds == incoming.accumulatedPausedSeconds &&
+        current.phaseStartedAt == incoming.phaseStartedAt &&
+        current.currentTaskStartedAt == incoming.currentTaskStartedAt &&
+        current.pausedAt == incoming.pausedAt &&
+        current.finishedAt == incoming.finishedAt &&
+        current.pauseReason == incoming.pauseReason;
   }
 
   @override
@@ -120,7 +155,9 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
         snap = await docRef.get(const GetOptions(source: Source.server));
       } catch (_) {
         if (kDebugMode) {
-          debugPrint('[ActiveSession] Server fetch failed. Falling back to cache.');
+          debugPrint(
+            '[ActiveSession] Server fetch failed. Falling back to cache.',
+          );
         }
         snap = await docRef.get(const GetOptions(source: Source.cache));
       }
@@ -230,27 +267,23 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
       final requestMap = rawRequest is Map<String, dynamic>
           ? rawRequest
           : rawRequest is Map
-              ? Map<String, dynamic>.from(rawRequest)
-              : null;
+          ? Map<String, dynamic>.from(rawRequest)
+          : null;
       final requestStatus = requestMap?['status'] as String?;
       final requester = requestMap?['requesterDeviceId'] as String?;
       if (requestStatus == 'pending' && requester != requesterDeviceId) {
         return;
       }
-      tx.set(
-        docRef,
-        {
-          'ownershipRequest': {
-            'requestId': requestId,
-            'requesterDeviceId': requesterDeviceId,
-            'status': 'pending',
-            'requestedAt': FieldValue.serverTimestamp(),
-            'respondedAt': null,
-            'respondedByDeviceId': null,
-          },
+      tx.set(docRef, {
+        'ownershipRequest': {
+          'requestId': requestId,
+          'requesterDeviceId': requesterDeviceId,
+          'status': 'pending',
+          'requestedAt': FieldValue.serverTimestamp(),
+          'respondedAt': null,
+          'respondedByDeviceId': null,
         },
-        SetOptions(merge: true),
-      );
+      }, SetOptions(merge: true));
     });
   }
 
@@ -286,8 +319,8 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
       final requestMap = rawRequest is Map<String, dynamic>
           ? rawRequest
           : rawRequest is Map
-              ? Map<String, dynamic>.from(rawRequest)
-              : null;
+          ? Map<String, dynamic>.from(rawRequest)
+          : null;
       final requester = requestMap?['requesterDeviceId'] as String?;
       final requestStatus = requestMap?['status'] as String?;
       final hasPending = requestStatus == 'pending' && requester != null;
@@ -300,16 +333,12 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
           return false;
         }
       }
-      tx.set(
-        docRef,
-        {
-          'ownerDeviceId': requesterDeviceId,
-          'ownershipRequest': FieldValue.delete(),
-          'sessionRevision': nextRevision,
-          'lastUpdatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
+      tx.set(docRef, {
+        'ownerDeviceId': requesterDeviceId,
+        'ownershipRequest': FieldValue.delete(),
+        'sessionRevision': nextRevision,
+        'lastUpdatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
       return true;
     });
   }
@@ -333,42 +362,34 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
       final requestMap = rawRequest is Map<String, dynamic>
           ? rawRequest
           : rawRequest is Map
-              ? Map<String, dynamic>.from(rawRequest)
-              : null;
+          ? Map<String, dynamic>.from(rawRequest)
+          : null;
       final status = requestMap?['status'] as String?;
       final requester = requestMap?['requesterDeviceId'] as String?;
       if (status != 'pending' || requester != requesterDeviceId) return;
       final currentRevision = (data['sessionRevision'] as num?)?.toInt() ?? 0;
       final nextRevision = currentRevision + 1;
       if (approved) {
-        tx.set(
-          docRef,
-          {
-            'ownerDeviceId': requesterDeviceId,
-            'ownershipRequest': FieldValue.delete(),
-            'sessionRevision': nextRevision,
-            'lastUpdatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true),
-        );
-        return;
-      }
-      tx.set(
-        docRef,
-        {
-          'ownershipRequest': {
-            'requestId': requestMap?['requestId'],
-            'requesterDeviceId': requesterDeviceId,
-            'status': 'rejected',
-            'requestedAt': requestMap?['requestedAt'],
-            'respondedAt': FieldValue.serverTimestamp(),
-            'respondedByDeviceId': ownerDeviceId,
-          },
+        tx.set(docRef, {
+          'ownerDeviceId': requesterDeviceId,
+          'ownershipRequest': FieldValue.delete(),
           'sessionRevision': nextRevision,
           'lastUpdatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        return;
+      }
+      tx.set(docRef, {
+        'ownershipRequest': {
+          'requestId': requestMap?['requestId'],
+          'requesterDeviceId': requesterDeviceId,
+          'status': 'rejected',
+          'requestedAt': requestMap?['requestedAt'],
+          'respondedAt': FieldValue.serverTimestamp(),
+          'respondedByDeviceId': ownerDeviceId,
         },
-        SetOptions(merge: true),
-      );
+        'sessionRevision': nextRevision,
+        'lastUpdatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
     });
   }
 }
