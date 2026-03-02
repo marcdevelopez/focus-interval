@@ -21,16 +21,70 @@ mkdir -p docs/bugs/validation_fix_YYYY_MM_DD/logs
 
 ### Android (ejemplo RMX3771)
 
+Release (prod):
+
 ```bash
 flutter run -v --release -d RMX3771 --dart-define=APP_ENV=prod \
   2>&1 | tee docs/bugs/validation_fix_YYYY_MM_DD/logs/YYYY-MM-DD_android_RMX3771_diag.log
 ```
 
+Debug (prod + override temporal):
+
+```bash
+flutter run -v --debug -d RMX3771 --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee docs/bugs/validation_fix_YYYY_MM_DD/logs/YYYY-MM-DD_android_RMX3771_debug.log
+```
+
 ### macOS
+
+Release (prod):
 
 ```bash
 flutter run -v --release -d macos --dart-define=APP_ENV=prod \
   2>&1 | tee docs/bugs/validation_fix_YYYY_MM_DD/logs/YYYY-MM-DD_macos_diag.log
+```
+
+Debug (prod + override temporal):
+
+```bash
+flutter run -v --debug -d macos --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee docs/bugs/validation_fix_YYYY_MM_DD/logs/YYYY-MM-DD_macos_debug.log
+```
+
+### Windows
+
+Release (prod):
+
+```bash
+flutter run -v --release -d windows --dart-define=APP_ENV=prod \
+  2>&1 | tee docs/bugs/validation_fix_YYYY_MM_DD/logs/YYYY-MM-DD_windows_diag.log
+```
+
+Debug (prod + override temporal):
+
+```bash
+flutter run -v --debug -d windows --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee docs/bugs/validation_fix_YYYY_MM_DD/logs/YYYY-MM-DD_windows_debug.log
+```
+
+### Linux
+
+Release (prod):
+
+```bash
+flutter run -v --release -d linux --dart-define=APP_ENV=prod \
+  2>&1 | tee docs/bugs/validation_fix_YYYY_MM_DD/logs/YYYY-MM-DD_linux_diag.log
+```
+
+Debug (prod + override temporal):
+
+```bash
+flutter run -v --debug -d linux --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee docs/bugs/validation_fix_YYYY_MM_DD/logs/YYYY-MM-DD_linux_debug.log
 ```
 
 ### iOS Simulator (ejemplo iPhone 17 Pro)
@@ -43,9 +97,19 @@ flutter run -v --debug -d "iPhone 17 Pro" --dart-define=APP_ENV=prod \
 
 ### Web (Chrome)
 
+Release (prod):
+
 ```bash
 flutter run -v --release -d chrome --dart-define=APP_ENV=prod \
   2>&1 | tee docs/bugs/validation_fix_YYYY_MM_DD/logs/YYYY-MM-DD_web_chrome_diag.log
+```
+
+Debug (prod + override temporal):
+
+```bash
+flutter run -v --debug -d chrome --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee docs/bugs/validation_fix_YYYY_MM_DD/logs/YYYY-MM-DD_web_chrome_debug.log
 ```
 
 ## Notas
@@ -54,5 +118,5 @@ flutter run -v --release -d chrome --dart-define=APP_ENV=prod \
 - Sustituye `YYYY-MM-DD` por la fecha real del log.
 - Sustituye el id del dispositivo si cambia (ej. `RMX3771`).
 - iOS Simulator no soporta `--release` ni `--profile`; usa `--debug`.
-- `ALLOW_PROD_IN_DEBUG=true` es temporal para pruebas reales en iOS hasta que staging este configurado; al usar staging, elimina este override y usa `APP_ENV=staging`.
+- `ALLOW_PROD_IN_DEBUG=true` es temporal para pruebas reales en debug en todas las plataformas hasta que staging este configurado; al usar staging, elimina este override y usa `APP_ENV=staging`.
 - Si aparece `No pubspec.yaml`, asegurate de estar en la raiz del repo.

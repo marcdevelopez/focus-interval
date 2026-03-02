@@ -204,9 +204,9 @@ final deviceInfoServiceProvider = Provider<DeviceInfoService>((_) {
 
 final timeSyncServiceProvider = Provider<TimeSyncService>((ref) {
   final appMode = ref.watch(appModeProvider);
-  final authState = ref.watch(authStateProvider).value;
+  final user = ref.watch(currentUserProvider);
   final syncEnabled = ref.watch(accountSyncEnabledProvider);
-  if (appMode != AppMode.account || authState == null || !syncEnabled) {
+  if (appMode != AppMode.account || user == null || !syncEnabled) {
     return TimeSyncService(enabled: false);
   }
   final auth = ref.watch(firebaseAuthServiceProvider);
@@ -226,12 +226,12 @@ final pomodoroSessionRepositoryProvider = Provider<PomodoroSessionRepository>((
   if (appMode == AppMode.local) {
     return NoopPomodoroSessionRepository();
   }
-  final authState = ref.watch(authStateProvider).value;
+  final user = ref.watch(currentUserProvider);
   final firestore = ref.watch(firestoreServiceProvider);
   final auth = ref.watch(firebaseAuthServiceProvider);
   final deviceInfo = ref.watch(deviceInfoServiceProvider);
   final syncEnabled = ref.watch(accountSyncEnabledProvider);
-  if (authState == null || !syncEnabled) {
+  if (user == null || !syncEnabled) {
     return NoopPomodoroSessionRepository();
   }
   return FirestorePomodoroSessionRepository(

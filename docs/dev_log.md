@@ -23,7 +23,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **01/03/2026**
+Last update: **02/03/2026**
 
 ---
 
@@ -8910,3 +8910,119 @@ _(pending validation)_
 ### 🎯 Next steps:
 
 - Commit: fb582f6 "Fix 22i: auto-start throttle + missing-session recovery".
+
+# 🔹 Block 523 — Allow prod debug override on all platforms (02/03/2026)
+
+### ✔ Work completed:
+
+- Updated specs to allow a temporary `ALLOW_PROD_IN_DEBUG=true` override for
+  `APP_ENV=prod` in debug on all platforms (temporary until staging exists).
+- Removed platform restriction in `AppConfig` so the override works on web,
+  macOS, and other targets in debug.
+- Updated bug validation docs and added a new validation folder for this fix.
+- Cleaned a test analyzer lint (prefer_final_fields).
+
+### 🧪 Tests:
+
+- `flutter analyze` (passed).
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Validate debug + prod boot on Chrome and macOS with
+  `ALLOW_PROD_IN_DEBUG=true`.
+- Revert the override once staging is configured and in use.
+
+# 🔹 Block 524 — Update bug log commands for debug prod override (02/03/2026)
+
+### ✔ Work completed:
+
+- Expanded `docs/bugs/README.md` with debug + prod commands (override) for all
+  supported platforms, keeping release commands available.
+- Added explicit "temporal" labeling for the override in the command sections.
+
+### 🧪 Tests:
+
+- Not applicable (docs-only change).
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Use the debug + prod commands with `ALLOW_PROD_IN_DEBUG=true` until staging exists.
+- Revert the override commands once staging is configured.
+
+# 🔹 Block 525 — Fix TimeSync deadlock + auth gating (02/03/2026)
+
+### ✔ Work completed:
+
+- Updated specs to allow fallback heartbeats/publishes when time sync is missing,
+  while still blocking start/resume/auto-start without server offset.
+- Fixed provider gating so TimeSync and activeSession repositories stay enabled
+  when `currentUser` exists (avoid transient auth nulls downgrading to Noop).
+- Allowed `_publishCurrentSession()` to publish with local-time fallback while
+  time sync is unavailable (prevents `activeSession` from freezing).
+- Created validation folder `docs/bugs/validation_fix_2026_03_02-02/` with plan.
+
+### 🧪 Tests:
+
+- `flutter analyze` (passed).
+
+### ⚠️ Issues found:
+
+- None yet (validation pending).
+
+### 🎯 Next steps:
+
+- Run rapid validation on Chrome/macOS debug + prod override.
+- Record commit hash in the validation plan and complete checklist.
+
+# 🔹 Block 526 — Allow owner heartbeats while awaiting/missing (02/03/2026)
+
+### ✔ Work completed:
+
+- Allowed session publish to proceed while missing session when this device is
+  the owner and execution is active (prevents `lastUpdatedAt` freeze).
+- Allowed heartbeats to publish while awaiting session confirmation to avoid
+  deadlocks during initial ownership.
+- Updated validation plan for the TimeSync deadlock fix.
+
+### 🧪 Tests:
+
+- `flutter analyze` (passed).
+
+### ⚠️ Issues found:
+
+- None yet (validation pending).
+
+### 🎯 Next steps:
+
+- Re-run rapid validation in Chrome/macOS and confirm `lastUpdatedAt` advances.
+- Update the checklist and plan tracking with the new commit hash.
+
+# 🔹 Block 527 — Validate TimeSync deadlock fix (02/03/2026)
+
+### ✔ Work completed:
+
+- Completed rapid validation for the TimeSync deadlock fix on Chrome (web) and macOS.
+- Confirmed `users/{uid}/timeSync/anchor` creation and advancing
+  `activeSession/current.lastUpdatedAt`.
+- Updated the validation plan and checklist for
+  `docs/bugs/validation_fix_2026_03_02-02/`.
+
+### 🧪 Tests:
+
+- Manual validation (Chrome debug + prod override, macOS debug + prod override).
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- None.

@@ -582,15 +582,21 @@ users/{uid}/activeSession
   - Compute `serverTimeOffset = serverTime - localNow` when the snapshot is read.
   - Refresh the offset on app launch, resume, and mode switch; rate-limit to avoid
     excessive writes (e.g., ≥15s between syncs).
+  - Time sync and session services must remain enabled as long as a valid
+    `currentUser` exists and sync is enabled; transient auth stream nulls must
+    not disable sync or downgrade to Noop repositories.
   - If the server-time offset is unavailable in Account Mode, **block** any
-    start/resume/auto-start actions and show **Syncing session...**. Do not
-    fall back to local time for authoritative writes.
-  - While the server-time offset is unavailable in Account Mode, **no**
-    authoritative writes are allowed, including start/resume/auto-start,
-    heartbeat publishes, and republish/recovery writes. The app may only refresh
-    time sync and keep the UI in syncing state.
-  - The heartbeat requirement applies only when time sync is ready; otherwise
-    the owner must not emit local-time heartbeats.
+    start/resume/auto-start actions and show **Syncing session...**.
+  - While the server-time offset is unavailable in Account Mode:
+    - Do not start/resume/auto-start (no new authoritative transitions).
+    - If a session is already active (running/paused), the owner may publish
+      fallback heartbeats/snapshots using local time to keep `activeSession`
+      alive and avoid deadlocks. `lastUpdatedAt` remains a serverTimestamp.
+      Once time sync is ready, resume server-time timestamps for authoritative
+      fields.
+  - The heartbeat requirement still applies; if time sync is unavailable,
+    local-time heartbeats are allowed to prevent stale ownership while the app
+    continues retrying time sync.
   - While syncing, the TimerScreen must **remain visible** when a prior snapshot
     exists. Use a non-blocking overlay (dim/blur + spinner + label) so the timer
     stays readable behind it. Only when no snapshot exists, show a full loader.
@@ -687,10 +693,10 @@ users/{uid}/activeSession
 
 - `APP_ENV` controls Firebase environment selection: `dev`, `staging`, `prod`.
 - Release builds must always run with `APP_ENV=prod`.
-- Non-release builds must not use `APP_ENV=prod`, except for a temporary, explicit iOS debug override while staging is unavailable.
-- Temporary iOS debug override (strictly opt-in):
+- Non-release builds must not use `APP_ENV=prod`, except for a temporary, explicit debug override while staging is unavailable.
+- Temporary debug override (strictly opt-in, all platforms):
   - Allowed only when `ALLOW_PROD_IN_DEBUG=true` is provided.
-  - Enables production Firebase use in **debug** builds on iOS for simulator validation with real accounts.
+  - Enables production Firebase use in **debug** builds on all platforms for real-account validation.
   - Must be removed/reverted once staging is configured and used for pre-production testing.
 
 ---
