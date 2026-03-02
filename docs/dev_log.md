@@ -8911,7 +8911,53 @@ _(pending validation)_
 
 - Commit: fb582f6 "Fix 22i: auto-start throttle + missing-session recovery".
 
-# 🔹 Block 523 — Fix TimeSync deadlock + auth gating (02/03/2026)
+# 🔹 Block 523 — Allow prod debug override on all platforms (02/03/2026)
+
+### ✔ Work completed:
+
+- Updated specs to allow a temporary `ALLOW_PROD_IN_DEBUG=true` override for
+  `APP_ENV=prod` in debug on all platforms (temporary until staging exists).
+- Removed platform restriction in `AppConfig` so the override works on web,
+  macOS, and other targets in debug.
+- Updated bug validation docs and added a new validation folder for this fix.
+- Cleaned a test analyzer lint (prefer_final_fields).
+
+### 🧪 Tests:
+
+- `flutter analyze` (passed).
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Validate debug + prod boot on Chrome and macOS with
+  `ALLOW_PROD_IN_DEBUG=true`.
+- Revert the override once staging is configured and in use.
+
+# 🔹 Block 524 — Update bug log commands for debug prod override (02/03/2026)
+
+### ✔ Work completed:
+
+- Expanded `docs/bugs/README.md` with debug + prod commands (override) for all
+  supported platforms, keeping release commands available.
+- Added explicit "temporal" labeling for the override in the command sections.
+
+### 🧪 Tests:
+
+- Not applicable (docs-only change).
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Use the debug + prod commands with `ALLOW_PROD_IN_DEBUG=true` until staging exists.
+- Revert the override commands once staging is configured.
+
+# 🔹 Block 525 — Fix TimeSync deadlock + auth gating (02/03/2026)
 
 ### ✔ Work completed:
 
