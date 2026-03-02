@@ -222,6 +222,10 @@ Notes:
 - When a group transitions to running (scheduled auto-start or start now),
   set `scheduledByDeviceId` to the initiating device.
   `scheduledByDeviceId` is metadata only and must not block auto-start or ownership.
+- Run Mode must start through a single, unified pipeline regardless of entry
+  (Start now, Run again, scheduled auto-start). The pipeline must provide
+  the new group snapshot to Run Mode to avoid read-race bounces on immediate
+  navigation.
 - Editing a PomodoroTask after group creation does not affect a running or scheduled group.
 - TaskRunGroup names:
   - New groups must have a name. If the user leaves the name empty, auto-generate one at confirm time using local date/time in English (e.g., "Jan 1 00:00", 24h).
@@ -251,12 +255,14 @@ class PomodoroSession {
   PomodoroPhase? phase;
   int currentPomodoro;
   int totalPomodoros;
+  int sessionRevision; // monotonically increasing (owner-only)
 
   int phaseDurationSeconds; // duration of the current phase
-  int remainingSeconds;     // required for paused; running is projected from phaseStartedAt
+  int remainingSeconds;     // legacy/compat; running is projected from timeline
   DateTime phaseStartedAt;  // serverTimestamp on start/resume (phase progress only)
   DateTime? currentTaskStartedAt; // actual start of the current task (for time ranges)
   DateTime? pausedAt;       // serverTimestamp when pause begins (status == paused)
+  int accumulatedPausedSeconds; // total paused seconds for the current phase
   DateTime lastUpdatedAt;   // serverTimestamp of the last event
   DateTime? finishedAt;     // serverTimestamp when the group reaches completed
   String? pauseReason;      // optional; "user" when paused manually
@@ -283,7 +289,13 @@ Notes:
   task/group time ranges.
 - `currentTaskStartedAt` is authoritative for the active task start and must be
   published by the owner whenever the task changes.
-- `pausedAt` is required to compute cross-device pause offsets when any device resumes.
+- `pausedAt` + `accumulatedPausedSeconds` are required to compute cross-device
+  pause offsets deterministically (no local timers).
+- `sessionRevision` increments on **every authoritative change** (owner-only).
+  Mirrors must ignore snapshots with `revision <= lastApplied` (fallback to
+  `lastUpdatedAt` ordering for legacy snapshots).
+- Backward compatibility: if `sessionRevision` or `accumulatedPausedSeconds` are
+  missing, clients must default them to `0` and continue safely.
 
 ## **5.4. UserProfile model (Account Mode only)**
 
@@ -517,6 +529,7 @@ Platform notes:
 - users/{uid}/tasks/{taskId}
 - users/{uid}/taskRunGroups/{groupId}
 - users/{uid}/pomodoroPresets/{presetId}
+- users/{uid}/timeSync (server time anchor; internal)
 - Linux: Firebase Auth/Firestore sync is unavailable; tasks and TaskRunGroups are stored locally (no cloud sync).
   - Rationale: FlutterFire plugins (`firebase_auth`, `cloud_firestore`) do not officially support Linux desktop,
     so Account Mode is disabled to avoid unstable behavior. Use Web (Chrome) on Linux for Account Mode.
@@ -540,6 +553,7 @@ Platform notes:
 - While paused in Local Mode, provide a discreet info affordance near Pause/Resume that can re-open the same explanation on demand. Do not add persistent banners or vertical layout shifts on the Execution screen.
 - Local Mode scope is strictly device-local; Account Mode scope is strictly user:{uid}.
 - There is no implicit sync between scopes.
+- On mode switch, clear any active Run Mode UI and return to Task List before rendering the new scope. Never keep a Run Mode route open across modes.
 - Switching to Account Mode can offer a one-time import of local data (tasks, groups, presets)
   only after explicit user confirmation.
 - Import targets the currently signed-in UID and overwrites by ID (no merge) in MVP 1.2.
@@ -560,13 +574,58 @@ users/{uid}/activeSession
 - Single document per user with the active session.
 - Must include groupId, currentTaskId, currentTaskIndex, and totalTasks.
 - ownerDevicePlatform is optional display metadata (presentation-only); it must not affect ownership logic.
-- Only the owner device writes authoritative execution fields; others subscribe in real time and
-  render progress by calculating remaining time from phaseStartedAt + phaseDurationSeconds using
-  a server-time offset derived from lastUpdatedAt (do not rely on raw local clock).
-  - Compute `serverTimeOffset = lastUpdatedAt - localNow` when a snapshot arrives.
-  - Project with `serverNow = localNow + serverTimeOffset`, `elapsed = serverNow - phaseStartedAt`.
-  - Update the offset on each new snapshot; keep the last offset between ticks.
-  - If `lastUpdatedAt` is missing, keep the prior offset and do not rebase from local time alone.
+- Only the owner device writes authoritative execution fields; others subscribe in real time and render progress from the **authoritative timeline** (no local timers as truth).
+- Time sync (Account Mode):
+  - Each device computes a `serverTimeOffset` using a **serverTimestamp** read
+    from Firestore (Source.server). Use a lightweight `timeSync` doc under
+    `users/{uid}/timeSync` (field: `serverTime` = serverTimestamp).
+  - Compute `serverTimeOffset = serverTime - localNow` when the snapshot is read.
+  - Refresh the offset on app launch, resume, and mode switch; rate-limit to avoid
+    excessive writes (e.g., ≥15s between syncs).
+  - Time sync and session services must remain enabled as long as a valid
+    `currentUser` exists and sync is enabled; transient auth stream nulls must
+    not disable sync or downgrade to Noop repositories.
+  - If the server-time offset is unavailable in Account Mode, **block** any
+    start/resume/auto-start actions and show **Syncing session...**.
+  - While the server-time offset is unavailable in Account Mode:
+    - Do not start/resume/auto-start (no new authoritative transitions).
+    - If a session is already active (running/paused), the owner may publish
+      fallback heartbeats/snapshots using local time to keep `activeSession`
+      alive and avoid deadlocks. `lastUpdatedAt` remains a serverTimestamp.
+      Once time sync is ready, resume server-time timestamps for authoritative
+      fields.
+  - The heartbeat requirement still applies; if time sync is unavailable,
+    local-time heartbeats are allowed to prevent stale ownership while the app
+    continues retrying time sync.
+  - While syncing, the TimerScreen must **remain visible** when a prior snapshot
+    exists. Use a non-blocking overlay (dim/blur + spinner + label) so the timer
+    stays readable behind it. Only when no snapshot exists, show a full loader.
+  - If the user taps Start/Resume while time sync is unavailable, queue **one**
+    intent and execute it automatically once time sync is ready. Surface
+    feedback (e.g., “Starting when synced…”). Do not write locally.
+    - Deduplicate: only one pending intent at a time.
+    - Expire quickly (≈10–15s). If it expires, do nothing.
+    - Cancel if owner/session/group/context changes.
+    - Re-validate context before executing (same group/session, owner still valid).
+    - Execute idempotently (no-op if the action is already satisfied).
+    - If time sync stalls, show a clear “retry sync” state.
+- Projection (Account Mode):
+  - `serverNow = localNow + serverTimeOffset`
+  - If **running**:
+    - `elapsed = (serverNow - phaseStartedAt) - accumulatedPausedSeconds`
+  - If **paused**:
+    - `elapsed = (pausedAt - phaseStartedAt) - accumulatedPausedSeconds`
+  - `remaining = max(0, phaseDurationSeconds - elapsed)`
+  - `remainingSeconds` is **compat** only and must never override the projection.
+- Ordering & staleness:
+  - Use `sessionRevision` to accept snapshots in order and ignore stale updates.
+  - `lastUpdatedAt` is **liveness only** (ownership stale detection); it must **not**
+    be used to derive server time or projection.
+- Owner update rules (Account Mode):
+  - On **pause**: set `pausedAt = serverNow`, keep `accumulatedPausedSeconds` unchanged.
+  - On **resume**: `accumulatedPausedSeconds += (serverNow - pausedAt)`, then clear `pausedAt`.
+  - On **phase change**: set `phaseStartedAt = serverNow` and reset `accumulatedPausedSeconds = 0`.
+  - Increment `sessionRevision` on every authoritative change.
 - Mirror devices may write a non-authoritative ownershipRequest field to request a transfer.
   - `requestOwnership` only creates/updates ownershipRequest; it never changes ownerDeviceId.
     Ownership changes caused by staleness must use the auto-claim transaction.
@@ -611,6 +670,10 @@ users/{uid}/activeSession
 - On app launch or after login, if an active session is running (pomodoroRunning/shortBreakRunning/longBreakRunning), auto-open the execution screen for that group.
 - Auto-open must apply on the owner device and on mirror devices (mirror mode with ownership requests).
 - If auto-open cannot occur (missing group data, blocked navigation, or explicit suppression), the user must see a clear entry point to the running group from the initial screen and from Groups Hub.
+- Auto-open is **trigger-based** and must not re-fire on every activeSession update:
+  - Allowed triggers: app launch/resume with an active running/paused session, pre-run window start, scheduled start, resolve overlaps entry, or explicit user actions (Start now / Run again / Open Run Mode / Open Pre-Run).
+  - If the user leaves Run Mode while a session is active, suppress auto-open until a new trigger occurs (or the user explicitly opens it).
+  - Auto-open must not interrupt planning/editing/settings flows. When suppressed, keep clear CTAs from Task List and Groups Hub.
 
 ## **8.5. TaskRunGroup retention**
 
@@ -625,6 +688,16 @@ users/{uid}/activeSession
 - N is finite and configurable.
 - Default: 7 completed groups (last week).
 - User-configurable up to 30.
+
+## **8.6. Environment configuration (APP_ENV)**
+
+- `APP_ENV` controls Firebase environment selection: `dev`, `staging`, `prod`.
+- Release builds must always run with `APP_ENV=prod`.
+- Non-release builds must not use `APP_ENV=prod`, except for a temporary, explicit debug override while staging is unavailable.
+- Temporary debug override (strictly opt-in, all platforms):
+  - Allowed only when `ALLOW_PROD_IN_DEBUG=true` is provided.
+  - Enables production Firebase use in **debug** builds on all platforms for real-account validation.
+  - Must be removed/reverted once staging is configured and used for pre-production testing.
 
 ---
 
@@ -1391,6 +1464,9 @@ Trigger
 - On launch/resume, if there is **no running group** and at least one scheduled
   group is overdue (scheduledStartTime <= now) **and** starting now would
   overlap another scheduled group window (overdue or future).
+- On **mode switch (Local → Account)** with the app open, re-evaluate the same
+  criteria immediately; if the queue should appear, show it without requiring
+  an app restart.
 - Do **not** trigger this queue during the Pre-Run -> Running transition if the
   overdue group can start without overlapping any other scheduled group.
 
@@ -1509,12 +1585,16 @@ Trigger
   conflict is detected immediately **even before** the pre-run window begins.
 - While paused, use the **projected end** (theoreticalEndTime + elapsed pause)
   for overlap detection. Trigger as soon as the projected end reaches the
-  pre-run start; do **not** wait for resume.
+  pre-run overlap threshold (pre-run start + 1 minute grace); do **not** wait
+  for resume.
 
 Timing of the decision UI
 
-- The moment an overlap becomes possible (runningEnd >= preRunStart), begin
-  conflict notification timing. Do **not** wait for the pre-run to start.
+- The moment an overlap becomes possible (runningEnd >= preRunStart + 1 minute
+  grace), begin conflict notification timing. Do **not** wait for the pre-run
+  to start.
+- Because schedules are minute-based, a running end that lands within the same
+  minute as the pre-run start is **not** considered a conflict.
 - The decision modal should appear **during a break** when possible to avoid
   interrupting focus time.
 - If the overlap is detected while the user is already in a **break** (short
@@ -1789,11 +1869,34 @@ The MM:SS timer must not shift horizontally:
   - **Exception (Pre-Run Countdown):** there is no owner and any device may cancel while the Pre-Run window is active.
 - activeSession includes: groupId, currentTaskId, currentTaskIndex, totalTasks.
 - Remaining time is projected from phaseStartedAt + phaseDurationSeconds using the
-  server-time offset from lastUpdatedAt (same rule as activeSession); never project
-  from raw local clock alone.
+  server-time offset derived from `users/{uid}/timeSync` (serverTimestamp). Never
+  project from raw local clock alone.
+- Render priority (Account Mode):
+  - **activeSession snapshot (valid + groupId match)** → render from remote projection (owner + mirror).
+  - **activeSession temporarily missing** while a running/paused group exists and
+    a prior snapshot is available → keep the last snapshot visible with Syncing
+    overlay; do **not** fall back to the local machine.
+  - **No snapshot yet** → show full loader until the first snapshot arrives.
+- If the server-time offset is unavailable, show **Syncing session...** and keep
+  the last known snapshot without re-projecting until time sync is ready.
+- The Syncing indicator must not hide the timer when a snapshot exists; use an
+  overlay that keeps the timer visible. Controls remain disabled until time sync
+  is ready.
+- While time sync is unavailable in Account Mode, owner controls (start/resume/
+  auto-start) must remain disabled; no local-time writes are permitted.
+- While time sync is unavailable, **no** authoritative writes are allowed,
+  including heartbeats and republish/recovery writes. Heartbeat enforcement
+  applies only when time sync is ready.
 - Mirror devices render task names/durations from the TaskRunGroup snapshot (by groupId), not from the editable task list.
-- **Single source of truth:** owner/mirror state and control gating must be derived from the same activeSession snapshot
-  (groupId must match). Local flags may project state but must never override the snapshot.
+- **Single source of truth:** owner/mirror state and control gating (start/resume/pause/cancel/ownership)
+  must be derived from the same activeSession snapshot (groupId must match). Local flags may
+  project state but must never override the snapshot.
+- After any owner action (start/resume/pause/cancel), keep the UI in a syncing/hold
+  state until the corresponding activeSession snapshot confirms the change. Do **not**
+  revert to the local machine as the render source in Account Mode.
+- Projected state must **not** trigger side effects (sounds/notifications). Only the
+  owner machine’s authoritative transitions may emit effects, and must never double-fire
+  due to projected snapshots.
 - When auto-open is triggered from launch/resume, open TimerScreen in mirror mode if the session belongs to another device.
 - On `AppLifecycleState.resumed`, force an immediate sync (activeSession + group)
   before enabling controls. While resyncing, the UI must not show a transient

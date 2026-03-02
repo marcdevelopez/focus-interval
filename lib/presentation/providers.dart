@@ -31,6 +31,7 @@ import '../data/services/local_sound_overrides.dart';
 import '../data/services/task_run_retention_service.dart';
 import '../data/services/task_run_notice_service.dart';
 import '../data/services/app_mode_service.dart';
+import '../data/services/time_sync_service.dart';
 
 // VIEWMODELS
 import 'viewmodels/pomodoro_view_model.dart';
@@ -201,6 +202,22 @@ final deviceInfoServiceProvider = Provider<DeviceInfoService>((_) {
   return DeviceInfoService.ephemeral();
 });
 
+final timeSyncServiceProvider = Provider<TimeSyncService>((ref) {
+  final appMode = ref.watch(appModeProvider);
+  final user = ref.watch(currentUserProvider);
+  final syncEnabled = ref.watch(accountSyncEnabledProvider);
+  if (appMode != AppMode.account || user == null || !syncEnabled) {
+    return TimeSyncService(enabled: false);
+  }
+  final auth = ref.watch(firebaseAuthServiceProvider);
+  final firestore = ref.watch(firestoreServiceProvider);
+  return TimeSyncService(
+    authService: auth,
+    firestoreService: firestore,
+    enabled: true,
+  );
+});
+
 // Pomodoro session repository
 final pomodoroSessionRepositoryProvider = Provider<PomodoroSessionRepository>((
   ref,
@@ -209,12 +226,12 @@ final pomodoroSessionRepositoryProvider = Provider<PomodoroSessionRepository>((
   if (appMode == AppMode.local) {
     return NoopPomodoroSessionRepository();
   }
-  final authState = ref.watch(authStateProvider).value;
+  final user = ref.watch(currentUserProvider);
   final firestore = ref.watch(firestoreServiceProvider);
   final auth = ref.watch(firebaseAuthServiceProvider);
   final deviceInfo = ref.watch(deviceInfoServiceProvider);
   final syncEnabled = ref.watch(accountSyncEnabledProvider);
-  if (authState == null || !syncEnabled) {
+  if (user == null || !syncEnabled) {
     return NoopPomodoroSessionRepository();
   }
   return FirestorePomodoroSessionRepository(
@@ -298,6 +315,7 @@ class RunningOverlapDecision {
 final scheduledAutoStartGroupIdProvider = StateProvider<String?>((_) => null);
 final runningOverlapDecisionProvider =
     StateProvider<RunningOverlapDecision?>((_) => null);
+final completionDialogVisibleProvider = StateProvider<bool>((_) => false);
 
 
 //

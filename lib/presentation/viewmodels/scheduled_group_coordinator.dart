@@ -47,7 +47,6 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
   static const Duration _lateStartOwnerStale = Duration(seconds: 45);
   static const Duration _lateStartHeartbeatInterval = Duration(seconds: 20);
   static const Duration _noticeFallbackTtl = Duration(seconds: 30);
-  static const Duration _lateStartQueueGrace = Duration(seconds: 10);
 
   Timer? _scheduledTimer;
   Timer? _preAlertTimer;
@@ -106,6 +105,8 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     ref.listen<AppMode>(appModeProvider, (previous, next) {
       if (previous == next) return;
       _resetForModeChange();
+      final groups = ref.read(taskRunGroupStreamProvider).value ?? const [];
+      _handleGroups(groups);
     });
     ref.listen<AsyncValue<PomodoroSession?>>(
       pomodoroSessionStreamProvider,
@@ -159,29 +160,6 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     if (state != null) state = null;
     ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
     _clearRunningOverlapDecisionIfNeeded();
-  }
-
-  bool _shouldDelayLateStartQueue({
-    required List<TaskRunGroup> scheduled,
-    required List<TaskRunGroup> allGroups,
-    required PomodoroSession? activeSession,
-    required DateTime now,
-    int? noticeFallbackMinutes,
-  }) {
-    if (scheduled.isEmpty) return false;
-    final first = scheduled.first;
-    final start =
-        resolveEffectiveScheduledStart(
-          group: first,
-          allGroups: allGroups,
-          activeSession: activeSession,
-          now: now,
-          fallbackNoticeMinutes: noticeFallbackMinutes,
-        ) ??
-        first.scheduledStartTime;
-    if (start == null) return false;
-    if (start.isAfter(now)) return false;
-    return now.difference(start) <= _lateStartQueueGrace;
   }
 
   void _emitOpenTimer(String groupId) {
@@ -396,53 +374,45 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       return;
     }
 
-    final skipLateStartQueue = _shouldDelayLateStartQueue(
+    final lateStartConflicts = resolveLateStartConflictSet(
       scheduled: scheduled,
       allGroups: groups,
       activeSession: session,
       now: now,
-      noticeFallbackMinutes: noticeFallback,
+      fallbackNoticeMinutes: noticeFallback,
     );
-    if (!skipLateStartQueue) {
-      final lateStartConflicts = resolveLateStartConflictSet(
-        scheduled: scheduled,
-        allGroups: groups,
-        activeSession: session,
+    if (lateStartConflicts.isNotEmpty) {
+      final anchor = resolveLateStartAnchor(lateStartConflicts);
+      final queueId = resolveLateStartQueueId(lateStartConflicts);
+      final ownerId = resolveLateStartOwnerDeviceId(lateStartConflicts);
+      final ownerHeartbeat = resolveLateStartOwnerHeartbeat(lateStartConflicts);
+      final pendingRequestId =
+          resolveLateStartClaimRequestId(lateStartConflicts);
+      final pendingRequester =
+          resolveLateStartClaimRequesterDeviceId(lateStartConflicts);
+      final hasPendingRequest =
+          pendingRequestId != null && pendingRequester != null;
+      final isPendingForSelf = hasPendingRequest && pendingRequester == deviceId;
+      final hasOwner = ownerId != null && ownerId.isNotEmpty;
+      final staleByHeartbeat =
+          ownerHeartbeat != null &&
+          now.difference(ownerHeartbeat) >= _lateStartOwnerStale;
+      final staleByAnchor =
+          ownerHeartbeat == null &&
+          anchor != null &&
+          now.difference(anchor) >= _lateStartOwnerStale;
+      final ownerStale = _isLateStartOwnerStale(
+        ownerDeviceId: ownerId,
+        ownerHeartbeat: ownerHeartbeat,
+        anchor: anchor,
         now: now,
-        fallbackNoticeMinutes: noticeFallback,
       );
-      if (lateStartConflicts.isNotEmpty) {
-        final anchor = resolveLateStartAnchor(lateStartConflicts);
-        final queueId = resolveLateStartQueueId(lateStartConflicts);
-        final ownerId = resolveLateStartOwnerDeviceId(lateStartConflicts);
-        final ownerHeartbeat = resolveLateStartOwnerHeartbeat(lateStartConflicts);
-        final pendingRequestId =
-            resolveLateStartClaimRequestId(lateStartConflicts);
-        final pendingRequester =
-            resolveLateStartClaimRequesterDeviceId(lateStartConflicts);
-        final hasPendingRequest =
-            pendingRequestId != null && pendingRequester != null;
-        final isPendingForSelf =
-            hasPendingRequest && pendingRequester == deviceId;
-        final hasOwner = ownerId != null && ownerId.isNotEmpty;
-        final staleByHeartbeat =
-            ownerHeartbeat != null &&
-            now.difference(ownerHeartbeat) >= _lateStartOwnerStale;
-        final staleByAnchor =
-            ownerHeartbeat == null &&
-            anchor != null &&
-            now.difference(anchor) >= _lateStartOwnerStale;
-        final ownerStale = _isLateStartOwnerStale(
-          ownerDeviceId: ownerId,
-          ownerHeartbeat: ownerHeartbeat,
-          anchor: anchor,
-          now: now,
-        );
-        final shouldAutoClaim =
-            (!hasOwner || staleByHeartbeat || staleByAnchor) &&
-            (!hasPendingRequest || isPendingForSelf);
-        final repo = ref.read(taskRunGroupRepositoryProvider);
-        if (shouldAutoClaim && ownerId != deviceId) {
+      final shouldAutoClaim =
+          (!hasOwner || staleByHeartbeat || staleByAnchor) &&
+          (!hasPendingRequest || isPendingForSelf);
+      final repo = ref.read(taskRunGroupRepositoryProvider);
+      if (shouldAutoClaim && ownerId != deviceId) {
+        try {
           await repo.claimLateStartQueue(
             groups: lateStartConflicts,
             ownerDeviceId: deviceId,
@@ -451,8 +421,12 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
             allowOverride: !hasOwner || ownerStale,
           );
           return;
+        } catch (error) {
+          debugPrint('[LateStartQueue] Claim failed: $error');
         }
-        if (anchor == null && ownerId == deviceId) {
+      }
+      if (anchor == null && ownerId == deviceId) {
+        try {
           await repo.claimLateStartQueue(
             groups: lateStartConflicts,
             ownerDeviceId: deviceId,
@@ -461,34 +435,36 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
             allowOverride: true,
           );
           return;
+        } catch (error) {
+          debugPrint('[LateStartQueue] Claim retry failed: $error');
         }
-        _syncLateStartHeartbeat(
-          lateStartConflicts,
-          ownerDeviceId: ownerId,
-          deviceId: deviceId,
-        );
-        if (anchor == null) {
-          return;
-        }
-        final resolvedAnchor = anchor;
-        if (kDebugMode) {
-          debugPrint(
-            '[LateStartQueue] overdue=${lateStartConflicts.length} '
-            'owner=${ownerId ?? 'n/a'} '
-            'anchor=$resolvedAnchor '
-            'groupIds=${lateStartConflicts.map((g) => g.id).join(',')}',
-          );
-        }
-        final key = _lateStartQueueKey(lateStartConflicts);
-        if (key != _lastLateStartQueueKey) {
-          _lastLateStartQueueKey = key;
-          _emitLateStartQueue(
-            lateStartConflicts.map((g) => g.id).toList(),
-            resolvedAnchor,
-          );
-        }
-        return;
       }
+      _syncLateStartHeartbeat(
+        lateStartConflicts,
+        ownerDeviceId: ownerId,
+        deviceId: deviceId,
+      );
+      final resolvedAnchor = anchor ?? ownerHeartbeat ?? now;
+      if (anchor == null && ownerHeartbeat == null && kDebugMode) {
+        debugPrint('[LateStartQueue] Missing anchor; using local time for queue');
+      }
+      if (kDebugMode) {
+        debugPrint(
+          '[LateStartQueue] overdue=${lateStartConflicts.length} '
+          'owner=${ownerId ?? 'n/a'} '
+          'anchor=$resolvedAnchor '
+          'groupIds=${lateStartConflicts.map((g) => g.id).join(',')}',
+        );
+      }
+      final key = _lateStartQueueKey(lateStartConflicts);
+      if (key != _lastLateStartQueueKey) {
+        _lastLateStartQueueKey = key;
+        _emitLateStartQueue(
+          lateStartConflicts.map((g) => g.id).toList(),
+          resolvedAnchor,
+        );
+      }
+      return;
     }
     _stopLateStartHeartbeat();
     _lastLateStartQueueKey = null;
@@ -642,14 +618,19 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       activeSession: session,
       now: now,
     );
-    if (runningEnd == null ||
-        runningEnd.isBefore(preRunStart) ||
-        runningEnd.isAtSameMomentAs(preRunStart)) {
+    final overlapThreshold = resolveRunningOverlapThreshold(preRunStart);
+    final hasOverlap =
+        runningEnd != null &&
+        isRunningOverlapBeyondGrace(
+          runningEnd: runningEnd,
+          preRunStart: preRunStart,
+        );
+    if (!hasOverlap) {
       _clearRunningOverlapDecisionIfNeeded();
       _scheduleRunningOverlapRecheck(
         runningGroup: runningGroup,
         runningEnd: runningEnd,
-        preRunStart: preRunStart,
+        overlapThreshold: overlapThreshold,
         session: session,
         now: now,
       );
@@ -699,7 +680,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
   void _scheduleRunningOverlapRecheck({
     required TaskRunGroup runningGroup,
     required DateTime? runningEnd,
-    required DateTime preRunStart,
+    required DateTime overlapThreshold,
     required PomodoroSession? session,
     required DateTime now,
   }) {
@@ -708,8 +689,8 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     if (session == null) return;
     if (session.groupId != runningGroup.id) return;
     if (session.status != PomodoroStatus.paused) return;
-    if (!preRunStart.isAfter(runningEnd)) return;
-    final delay = preRunStart.difference(runningEnd);
+    if (!overlapThreshold.isAfter(runningEnd)) return;
+    final delay = overlapThreshold.difference(runningEnd);
     if (delay.inSeconds <= 0) return;
     _runningOverlapTimer = Timer(delay, () {
       if (_disposed) return;
@@ -1063,7 +1044,11 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       if (!_canUseRef) return;
       if (latest == null) return;
       if (latest.status != TaskRunStatus.scheduled) return;
-      final now = DateTime.now();
+      final now = await _resolveServerNowOrNull(force: true);
+      if (now == null) {
+        _scheduleAutoStartRetry();
+        return;
+      }
       final scheduledStart =
           resolveEffectiveScheduledStart(
             group: latest,
@@ -1125,6 +1110,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       currentTaskIndex: 0,
       totalTasks: group.tasks.length,
       dataVersion: kCurrentDataVersion,
+      sessionRevision: 1,
       ownerDeviceId: ref.read(deviceInfoServiceProvider).deviceId,
       status: PomodoroStatus.pomodoroRunning,
       phase: PomodoroPhase.pomodoro,
@@ -1132,6 +1118,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       totalPomodoros: task.totalPomodoros,
       phaseDurationSeconds: task.pomodoroMinutes * 60,
       remainingSeconds: task.pomodoroMinutes * 60,
+      accumulatedPausedSeconds: 0,
       phaseStartedAt: startedAt,
       currentTaskStartedAt: startedAt,
       pausedAt: null,
@@ -1140,6 +1127,23 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       pauseReason: null,
     );
     await ref.read(pomodoroSessionRepositoryProvider).publishSession(session);
+  }
+
+  Future<DateTime?> _resolveServerNowOrNull({bool force = false}) async {
+    final appMode = ref.read(appModeProvider);
+    if (appMode != AppMode.account) return DateTime.now();
+    final timeSync = ref.read(timeSyncServiceProvider);
+    final offset = await timeSync.refresh(force: force);
+    if (offset == null) return null;
+    return DateTime.now().add(offset);
+  }
+
+  void _scheduleAutoStartRetry() {
+    _scheduledTimer?.cancel();
+    _scheduledTimer = Timer(const Duration(seconds: 2), () {
+      if (_disposed) return;
+      _handleGroups(_lastGroups);
+    });
   }
 
   Future<void> _scheduleLocalPreAlert({

@@ -13,7 +13,6 @@ import '../providers.dart';
 import '../../domain/pomodoro_machine.dart';
 import '../viewmodels/pomodoro_view_model.dart';
 import '../viewmodels/pre_run_notice_view_model.dart';
-import '../viewmodels/scheduled_group_coordinator.dart';
 import '../utils/scheduled_group_timing.dart';
 import '../../data/models/task_run_group.dart';
 import '../../data/models/pomodoro_session.dart';
@@ -32,6 +31,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     with WidgetsBindingObserver {
   static const String _ownerEducationKey = 'owner_education_seen_v1';
   Timer? _clockTimer;
+  bool _isDisposing = false;
   Timer? _preRunTimer;
   Timer? _debugFrameTimer;
   Timer? _inactiveRepaintTimer;
@@ -77,6 +77,12 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   }
 
   @override
+  void deactivate() {
+    _setCompletionDialogVisible(false);
+    super.deactivate();
+  }
+
+  @override
   void didUpdateWidget(TimerScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.groupId != widget.groupId) {
@@ -86,7 +92,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   }
 
   void _updateClock() {
-    if (!mounted) return;
+    if (!mounted || _isDisposing) return;
     final now = DateTime.now();
     setState(() {
       _currentClock =
@@ -100,11 +106,14 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final now = DateTime.now();
     final secondsUntilNextMinute = 60 - now.second;
     _clockTimer = Timer(Duration(seconds: secondsUntilNextMinute), () {
-      if (!mounted) return;
+      if (!mounted || _isDisposing) return;
       _updateClock();
       _clockTimer = Timer.periodic(
         const Duration(minutes: 1),
-        (_) => _updateClock(),
+        (_) {
+          if (!mounted || _isDisposing) return;
+          _updateClock();
+        },
       );
     });
   }
@@ -215,20 +224,38 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _stopPreRunTimer();
   }
 
+  String _currentRoute() {
+    if (!mounted) return 'unmounted';
+    return GoRouter.of(context).routerDelegate.currentConfiguration.uri.path;
+  }
+
   void _loadGroup(String groupId) {
     // Load group by ID
     Future.microtask(() async {
+      if (!mounted || _isDisposing) return;
       final result = await ref
           .read(pomodoroViewModelProvider.notifier)
           .loadGroup(groupId);
       if (!mounted) return;
+      final currentStatus = ref
+          .read(pomodoroViewModelProvider.notifier)
+          .currentGroup
+          ?.status
+          .name;
+      debugPrint(
+        '[RunModeDiag] Timer load group=$groupId result=$result '
+        'status=$currentStatus route=${_currentRoute()}',
+      );
 
       switch (result) {
         case PomodoroGroupLoadResult.loaded:
           setState(() => _taskLoaded = true);
-          _syncPreRunInfo(
-            ref.read(pomodoroViewModelProvider.notifier).currentGroup,
-          );
+          final group =
+              ref.read(pomodoroViewModelProvider.notifier).currentGroup;
+          _syncPreRunInfo(group);
+          if (group != null) {
+            _maybeAutoStartRunningGroup(group);
+          }
           _maybeAutoStartScheduled();
           break;
         case PomodoroGroupLoadResult.notFound:
@@ -248,6 +275,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
   @override
   void dispose() {
+    _isDisposing = true;
     _stopClockTimer();
     _stopPreRunTimer();
     _stopDebugFramePing();
@@ -297,10 +325,20 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
   Future<void> _attemptScheduledAutoStart() async {
     final pendingId = ref.read(scheduledAutoStartGroupIdProvider);
-    if (pendingId != widget.groupId) return;
+    if (pendingId != widget.groupId) {
+      debugPrint(
+        '[RunModeDiag] Auto-start skip pending=$pendingId '
+        'screen=${widget.groupId} route=${_currentRoute()}',
+      );
+      return;
+    }
 
     final vm = ref.read(pomodoroViewModelProvider.notifier);
     final groupRepo = ref.read(taskRunGroupRepositoryProvider);
+    debugPrint(
+      '[RunModeDiag] Auto-start attempt group=${widget.groupId} '
+      'route=${_currentRoute()}',
+    );
     final latest = await groupRepo.getById(widget.groupId);
     if (latest != null) {
       vm.updateGroup(latest);
@@ -308,6 +346,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     }
     final group = vm.currentGroup;
     if (group == null) {
+      debugPrint(
+        '[RunModeDiag] Auto-start group missing; clearing pending '
+        'group=${widget.groupId}',
+      );
       ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
       return;
     }
@@ -329,6 +371,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         await groupRepo.save(updated);
         vm.updateGroup(updated);
       } else {
+        debugPrint(
+          '[RunModeDiag] Auto-start abort (not due) '
+          'status=${group.status.name} scheduledStart=$scheduledStart now=$now',
+        );
         ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
         return;
       }
@@ -336,10 +382,18 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     if (vm.currentGroup?.status != TaskRunStatus.running) {
       if (_autoStartAttempts < 10) {
         _autoStartAttempts += 1;
+        debugPrint(
+          '[RunModeDiag] Auto-start wait for running '
+          'attempt=$_autoStartAttempts group=${widget.groupId}',
+        );
         await Future.delayed(const Duration(milliseconds: 500));
         if (!mounted) return;
         return _attemptScheduledAutoStart();
       }
+      debugPrint(
+        '[RunModeDiag] Auto-start failed to reach running '
+        'group=${widget.groupId}',
+      );
       ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
       return;
     }
@@ -352,17 +406,64 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         session.groupId == widget.groupId &&
         session.ownerDeviceId != deviceId;
     if (isRemoteOwner) {
+      debugPrint(
+        '[RunModeDiag] Auto-start abort (remote owner) '
+        'group=${widget.groupId} owner=${session.ownerDeviceId}',
+      );
       ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
       return;
     }
 
     if (state.status != PomodoroStatus.idle) {
+      debugPrint(
+        '[RunModeDiag] Auto-start abort (state not idle) '
+        'state=${state.status.name} group=${widget.groupId}',
+      );
       ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
       return;
     }
 
+    debugPrint(
+      '[RunModeDiag] Auto-start startFromAutoStart group=${widget.groupId}',
+    );
+    _runningAutoStartHandled = true;
+    _runningAutoStartGroupId = widget.groupId;
     ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
     await vm.startFromAutoStart();
+    unawaited(_maybeShowOwnerEducation());
+  }
+
+  void _maybeAutoStartRunningGroup(TaskRunGroup group) {
+    if (group.status != TaskRunStatus.running) {
+      _runningAutoStartHandled = false;
+      _runningAutoStartGroupId = null;
+      return;
+    }
+    final vm = ref.read(pomodoroViewModelProvider.notifier);
+    final state = ref.read(pomodoroViewModelProvider);
+    final session = vm.activeSessionForCurrentGroup;
+    final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
+    final isRemoteOwner =
+        session != null &&
+        session.groupId == group.id &&
+        session.ownerDeviceId != deviceId;
+    if (state.status != PomodoroStatus.idle || isRemoteOwner) return;
+    final appMode = ref.read(appModeProvider);
+    if (appMode == AppMode.local && group.actualStartTime != null) {
+      return;
+    }
+    if (appMode == AppMode.account && session == null) {
+      final initiator = group.scheduledByDeviceId;
+      if (initiator != null && initiator != deviceId) {
+        return;
+      }
+    }
+    if (_runningAutoStartHandled && _runningAutoStartGroupId == group.id) {
+      return;
+    }
+    _runningAutoStartHandled = true;
+    _runningAutoStartGroupId = group.id;
+    unawaited(vm.startFromAutoStart());
     unawaited(_maybeShowOwnerEducation());
   }
 
@@ -393,35 +494,14 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       final updated = groups.where((g) => g.id == widget.groupId).toList();
       if (updated.isEmpty) return;
       final group = updated.first;
-      if (group.status != TaskRunStatus.running) {
-        _runningAutoStartHandled = false;
-        _runningAutoStartGroupId = null;
-      }
       vm.updateGroup(group);
       _syncPreRunInfo(group);
-
-      final state = ref.read(pomodoroViewModelProvider);
-      final session = vm.activeSessionForCurrentGroup;
-      final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
-      final isRemoteOwner =
-          session != null &&
-          session.groupId == widget.groupId &&
-          session.ownerDeviceId != deviceId;
-      if (group.status == TaskRunStatus.running &&
-          state.status == PomodoroStatus.idle &&
-          !isRemoteOwner) {
-        if (_runningAutoStartHandled && _runningAutoStartGroupId == group.id) {
-        } else {
-          _runningAutoStartHandled = true;
-          _runningAutoStartGroupId = group.id;
-          unawaited(vm.startFromAutoStart());
-          unawaited(_maybeShowOwnerEducation());
-        }
-      }
+      _maybeAutoStartRunningGroup(group);
+      final currentState = ref.read(pomodoroViewModelProvider);
 
       if ((group.status == TaskRunStatus.canceled ||
               group.status == TaskRunStatus.completed) &&
-          state.status.isActiveExecution) {
+          currentState.status.isActiveExecution) {
         vm.applyRemoteCancellation();
       }
 
@@ -468,27 +548,15 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     });
 
     ref.listen<String?>(scheduledAutoStartGroupIdProvider, (previous, next) {
+      debugPrint(
+        '[RunModeDiag] scheduledAutoStartGroupId changed '
+        'prev=$previous next=$next screen=${widget.groupId} '
+        'route=${_currentRoute()}',
+      );
       if (next == widget.groupId) {
         _maybeAutoStartScheduled();
       }
     });
-
-    ref.listen<ScheduledGroupAction?>(
-      scheduledGroupCoordinatorProvider,
-      (_, next) {
-        if (next == null) return;
-        if (next.type == ScheduledGroupActionType.openTimer &&
-            next.groupId != null &&
-            next.groupId != widget.groupId &&
-            _finishedDialogVisible) {
-          _completionNavigationHandled = true;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            _dismissFinishedDialog();
-          });
-        }
-      },
-    );
 
     ref.listen<RunningOverlapDecision?>(runningOverlapDecisionProvider, (
       previous,
@@ -554,14 +622,23 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final isMirror = isSessionForGroup && ownerDeviceId != deviceId;
     final hasSession = isSessionForGroup;
     final isResyncing = vm.isResyncing;
+    final isTimeSyncReady = vm.isTimeSyncReady;
+    final hasPendingIntent = vm.hasPendingIntent;
+    final isAwaitingSessionConfirmation =
+        isAccountMode && vm.isAwaitingSessionConfirmation;
     final isSessionMissingWhileRunning =
         isAccountMode && vm.isSessionMissingWhileRunning;
     final shouldForceSyncUntilSession =
         isAccountMode &&
         currentGroup?.status == TaskRunStatus.running &&
         !isSessionForGroup;
+    final shouldForceTimeSync =
+        isAccountMode && !isTimeSyncReady && (hasSession || hasPendingIntent);
     final isSyncingSession =
-        isSessionMissingWhileRunning || shouldForceSyncUntilSession;
+        isSessionMissingWhileRunning ||
+        shouldForceSyncUntilSession ||
+        shouldForceTimeSync ||
+        isAwaitingSessionConfirmation;
     final shouldHoldReadyWhileRunning =
         isAccountMode &&
         currentGroup?.status == TaskRunStatus.running &&
@@ -570,6 +647,17 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         _taskLoaded &&
         !isPreRun &&
         (isResyncing || isSyncingSession || shouldHoldReadyWhileRunning);
+    final hasSessionSnapshot =
+        isSessionForGroup ||
+        state.status.isActiveExecution ||
+        state.status == PomodoroStatus.finished;
+    final showBlockingLoader =
+        !_taskLoaded ||
+        (shouldShowResyncLoader && !hasSessionSnapshot);
+    final showSyncOverlay =
+        _taskLoaded && shouldShowResyncLoader && hasSessionSnapshot;
+    final pendingIntentLabel = vm.pendingIntentLabel;
+    final showRetrySync = vm.isTimeSyncStalled;
     _syncInactiveRepaint(state: state, isMirror: isMirror);
     final ownershipRequest = vm.ownershipRequest;
     final hasPendingOwnershipRequest = vm.hasPendingOwnershipRequest;
@@ -644,7 +732,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                 const SizedBox(height: 12),
                 Expanded(
                   child: Center(
-                    child: (!_taskLoaded || shouldShowResyncLoader)
+                    child: showBlockingLoader
                         ? Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -681,13 +769,21 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                           ),
                   ),
                 ),
-                if (_taskLoaded && !shouldShowResyncLoader)
+                if (_taskLoaded && !showBlockingLoader)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                     child: _ContextualTaskList(vm: vm, preRunInfo: preRunInfo),
                   ),
               ],
             ),
+            if (showSyncOverlay)
+              Positioned.fill(
+                child: _SyncingOverlay(
+                  label: pendingIntentLabel ?? 'Syncing session...',
+                  showRetry: showRetrySync,
+                  onRetry: showRetrySync ? vm.retryTimeSync : null,
+                ),
+              ),
             if (showOwnershipOverlay)
               Positioned(
                 left: 16,
@@ -1326,6 +1422,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final totalDuration = _formatDurationLong(totalDurationSeconds);
     _finishedDialogVisible = true;
     _completionDialogHandled = true;
+    _setCompletionDialogVisible(true);
     showDialog(
       context: context,
       useRootNavigator: true,
@@ -1345,6 +1442,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           TextButton(
             onPressed: () {
               _finishedDialogVisible = false;
+              _setCompletionDialogVisible(false);
               Navigator.of(context, rootNavigator: true).pop();
               if (!mounted) return;
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1358,6 +1456,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       ),
     ).whenComplete(() {
       _finishedDialogVisible = false;
+      _setCompletionDialogVisible(false);
       if (!_completionNavigationHandled) {
         _navigateToGroupsHubAfterCompletion(reason: 'completion fallback');
       }
@@ -1693,7 +1792,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _cancelNavigationHandled = true;
     _cancelNavRetryAttempts = 0;
     _cancelNavTargetGroupId = widget.groupId;
-    _attemptNavigateToGroupsHub(reason);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _attemptNavigateToGroupsHub(reason);
+    });
   }
 
   void _attemptNavigateToGroupsHub(String reason) {
@@ -1739,7 +1841,12 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   void _dismissFinishedDialog() {
     if (!_finishedDialogVisible) return;
     _finishedDialogVisible = false;
+    _setCompletionDialogVisible(false);
     Navigator.of(context, rootNavigator: true).pop();
+  }
+
+  void _setCompletionDialogVisible(bool value) {
+    ref.read(completionDialogVisibleProvider.notifier).state = value;
   }
 
   Future<void> _handleBlockedStart() async {
@@ -2117,6 +2224,45 @@ class _ControlsBar extends StatelessWidget {
   }
 }
 
+class _SyncingOverlay extends StatelessWidget {
+  final String label;
+  final bool showRetry;
+  final VoidCallback? onRetry;
+
+  const _SyncingOverlay({
+    required this.label,
+    required this.showRetry,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black.withValues(alpha: 0.45),
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 12),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white70),
+            textAlign: TextAlign.center,
+          ),
+          if (showRetry) ...[
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: onRetry,
+              child: const Text('Retry sync'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _OwnershipRequestBanner extends StatelessWidget {
   final String requesterLabel;
   final VoidCallback onApprove;
@@ -2457,7 +2603,7 @@ class _RunModeCenterContent extends StatelessWidget {
     final item = vm.currentItem;
     final timeFormat = DateFormat('HH:mm');
     final phaseStart = vm.currentPhaseStartFromGroup;
-    final phaseEnd = phaseStart?.add(Duration(seconds: state.totalSeconds));
+    final phaseEnd = vm.currentPhaseEndFromGroup;
 
     final remaining = _formatMMSS(state.remainingSeconds);
 

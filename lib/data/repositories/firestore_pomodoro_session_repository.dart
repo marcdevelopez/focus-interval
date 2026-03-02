@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
+import 'package:flutter/foundation.dart'
+    show debugPrint, kDebugMode, visibleForTesting;
 
 import '../../domain/pomodoro_machine.dart';
 
@@ -50,6 +51,27 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
       }
       final currentOwner = snap.data()!['ownerDeviceId'] as String?;
       if (currentOwner != null && currentOwner != session.ownerDeviceId) {
+        return;
+      }
+      final currentData = snap.data()!;
+      final currentHasRevision = currentData.containsKey('sessionRevision');
+      final currentRevision = (currentData['sessionRevision'] as num?)?.toInt();
+      final decision = evaluateSessionWrite(
+        incomingRevision: session.sessionRevision,
+        currentRevision: currentRevision,
+        currentHasRevision: currentHasRevision,
+      );
+      if (decision == SessionWriteDecision.ignore) {
+        return;
+      }
+      if (decision == SessionWriteDecision.idempotent) {
+        tx.set(
+          docRef,
+          {
+            'lastUpdatedAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true),
+        );
         return;
       }
       tx.set(docRef, data, SetOptions(merge: true));
@@ -162,6 +184,29 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
   }
 
   @override
+  Future<void> clearSessionIfInactive({String? expectedGroupId}) async {
+    final uid = await _uidOrThrow();
+    final docRef = _doc(uid);
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(docRef);
+      if (!snap.exists) return;
+      final data = snap.data();
+      if (data == null) return;
+      if (expectedGroupId != null) {
+        final groupId = data['groupId'] as String?;
+        if (groupId != expectedGroupId) return;
+      }
+      final statusRaw = data['status'] as String?;
+      final status = PomodoroStatus.values.firstWhere(
+        (e) => e.name == statusRaw,
+        orElse: () => PomodoroStatus.idle,
+      );
+      if (status.isActiveExecution) return;
+      tx.delete(docRef);
+    });
+  }
+
+  @override
   Future<void> requestOwnership({
     required String requesterDeviceId,
     required String requestId,
@@ -235,6 +280,8 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
       if (updatedAt == null) return false;
       final isStale = now.difference(updatedAt) >= _ownerStaleThreshold;
       if (!isStale) return false;
+      final currentRevision = (data['sessionRevision'] as num?)?.toInt() ?? 0;
+      final nextRevision = currentRevision + 1;
       final rawRequest = data['ownershipRequest'];
       final requestMap = rawRequest is Map<String, dynamic>
           ? rawRequest
@@ -258,6 +305,7 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
         {
           'ownerDeviceId': requesterDeviceId,
           'ownershipRequest': FieldValue.delete(),
+          'sessionRevision': nextRevision,
           'lastUpdatedAt': FieldValue.serverTimestamp(),
         },
         SetOptions(merge: true),
@@ -290,12 +338,15 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
       final status = requestMap?['status'] as String?;
       final requester = requestMap?['requesterDeviceId'] as String?;
       if (status != 'pending' || requester != requesterDeviceId) return;
+      final currentRevision = (data['sessionRevision'] as num?)?.toInt() ?? 0;
+      final nextRevision = currentRevision + 1;
       if (approved) {
         tx.set(
           docRef,
           {
             'ownerDeviceId': requesterDeviceId,
             'ownershipRequest': FieldValue.delete(),
+            'sessionRevision': nextRevision,
             'lastUpdatedAt': FieldValue.serverTimestamp(),
           },
           SetOptions(merge: true),
@@ -313,10 +364,32 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
             'respondedAt': FieldValue.serverTimestamp(),
             'respondedByDeviceId': ownerDeviceId,
           },
+          'sessionRevision': nextRevision,
           'lastUpdatedAt': FieldValue.serverTimestamp(),
         },
         SetOptions(merge: true),
       );
     });
   }
+}
+
+enum SessionWriteDecision { ignore, idempotent, apply }
+
+@visibleForTesting
+SessionWriteDecision evaluateSessionWrite({
+  required int incomingRevision,
+  required int? currentRevision,
+  required bool currentHasRevision,
+}) {
+  if (!currentHasRevision) {
+    return SessionWriteDecision.apply;
+  }
+  final current = currentRevision ?? 0;
+  if (incomingRevision < current) {
+    return SessionWriteDecision.ignore;
+  }
+  if (incomingRevision == current) {
+    return SessionWriteDecision.idempotent;
+  }
+  return SessionWriteDecision.apply;
 }

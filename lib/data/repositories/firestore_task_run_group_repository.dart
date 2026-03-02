@@ -23,6 +23,11 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
 
   FirebaseFirestore get _db => firestoreService.instance;
 
+  static String _readString(dynamic value) {
+    if (value is String) return value.trim();
+    return '';
+  }
+
   CollectionReference<Map<String, dynamic>> _collection(String uid) =>
       _db.collection('users').doc(uid).collection('taskRunGroups');
 
@@ -203,18 +208,18 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
       final snap = await tx.get(firstRef);
       final data = snap.data();
       final existingAnchor = data?['lateStartAnchorAt'];
-      final existingOwner =
-          (data?['lateStartOwnerDeviceId'] as String?)?.trim() ?? '';
+      final anchorTime = _parseDateTime(existingAnchor);
+      final hasAnchor = anchorTime != null;
+      final existingOwner = _readString(data?['lateStartOwnerDeviceId']);
       final existingHeartbeat =
-          (data?['lateStartOwnerHeartbeatAt'] as Timestamp?)?.toDate();
-      final anchorTime = (existingAnchor as Timestamp?)?.toDate();
+          _parseDateTime(data?['lateStartOwnerHeartbeatAt']);
       final existingRequestId =
-          (data?['lateStartClaimRequestId'] as String?)?.trim() ?? '';
+          _readString(data?['lateStartClaimRequestId']);
       final existingRequester =
-          (data?['lateStartClaimRequestedByDeviceId'] as String?)?.trim() ?? '';
+          _readString(data?['lateStartClaimRequestedByDeviceId']);
       final hasPendingRequest =
           existingRequestId.isNotEmpty && existingRequester.isNotEmpty;
-      if (existingAnchor != null && !allowOverride) {
+      if (hasAnchor && !allowOverride) {
         return;
       }
       if (allowOverride && existingOwner.isNotEmpty && existingOwner != ownerDeviceId) {
@@ -229,13 +234,12 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
           return;
         }
       }
-      final existingQueueId =
-          (data?['lateStartQueueId'] as String?)?.trim() ?? '';
+      final existingQueueId = _readString(data?['lateStartQueueId']);
       final resolvedQueueId = existingQueueId.isNotEmpty
           ? existingQueueId
           : (localQueueId.isNotEmpty ? localQueueId : queueId);
       final anchorValue =
-          existingAnchor ?? FieldValue.serverTimestamp();
+          hasAnchor ? existingAnchor : FieldValue.serverTimestamp();
       for (final group in groups) {
         final order = orderLookup[group.id];
         tx.set(_collection(uid).doc(group.id), {
@@ -264,8 +268,7 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
         final ref = _collection(uid).doc(group.id);
         final snap = await tx.get(ref);
         final data = snap.data();
-        final currentOwner =
-            (data?['lateStartOwnerDeviceId'] as String?)?.trim() ?? '';
+        final currentOwner = _readString(data?['lateStartOwnerDeviceId']);
         if (currentOwner != ownerDeviceId) continue;
         tx.set(ref, {
           'lateStartOwnerHeartbeatAt': FieldValue.serverTimestamp(),
@@ -288,10 +291,9 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
         final snap = await tx.get(ref);
         final data = snap.data();
         final existingRequestId =
-            (data?['lateStartClaimRequestId'] as String?)?.trim() ?? '';
+            _readString(data?['lateStartClaimRequestId']);
         final existingRequester =
-            (data?['lateStartClaimRequestedByDeviceId'] as String?)?.trim() ??
-                '';
+            _readString(data?['lateStartClaimRequestedByDeviceId']);
         final hasPending =
             existingRequestId.isNotEmpty && existingRequester.isNotEmpty;
         if (hasPending && existingRequester != requesterDeviceId) {

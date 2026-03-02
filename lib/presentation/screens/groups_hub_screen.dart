@@ -17,6 +17,7 @@ import '../providers.dart';
 import '../viewmodels/pre_run_notice_view_model.dart';
 import 'task_group_planning_screen.dart';
 import '../utils/scheduled_group_timing.dart';
+import '../utils/run_mode_launcher.dart';
 import 'late_start_overlap_queue_screen.dart';
 
 final DateFormat _groupsHubTimeFormat = DateFormat('HH:mm');
@@ -423,15 +424,16 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
               _GroupCard(
                 group: group,
                 activeSession: activeSession,
-                noticeMinutes: resolveNoticeMinutes(
-                  group,
-                  fallback: _noticeFallbackMinutes,
-                ),
+                preRunStartOverride: null,
                 onTap: () => _showSummaryDialog(context, group),
                 actions: [
                   _GroupAction(
                     label: 'Open Run Mode',
-                    onPressed: () => context.go('/timer/${group.id}'),
+                    onPressed: () => openRunModeForGroup(
+                      context,
+                      ref,
+                      group,
+                    ),
                   ),
                 ],
                 now: now,
@@ -450,9 +452,12 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                     now: now,
                     fallbackNoticeMinutes: _noticeFallbackMinutes,
                   );
-                  final noticeMinutes = resolveNoticeMinutes(
-                    group,
-                    fallback: _noticeFallbackMinutes,
+                  final effectivePreRunStart = resolveEffectivePreRunStart(
+                    group: group,
+                    allGroups: groups,
+                    activeSession: activeSession,
+                    now: now,
+                    fallbackNoticeMinutes: _noticeFallbackMinutes,
                   );
                   final isPreRunActive = _isPreRunActive(
                     group,
@@ -470,13 +475,17 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                       now: now,
                       fallbackNoticeMinutes: _noticeFallbackMinutes,
                     ),
-                    noticeMinutes: noticeMinutes,
+                    preRunStartOverride: effectivePreRunStart,
                     onTap: () => _showSummaryDialog(context, group),
                     actions: [
                       if (isPreRunActive)
                         _GroupAction(
                           label: 'Open Pre-Run',
-                          onPressed: () => context.go('/timer/${group.id}'),
+                          onPressed: () => openRunModeForGroup(
+                            context,
+                            ref,
+                            group,
+                          ),
                         )
                       else
                         _GroupAction(
@@ -509,10 +518,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
               _GroupCard(
                 group: group,
                 activeSession: activeSession,
-                noticeMinutes: resolveNoticeMinutes(
-                  group,
-                  fallback: _noticeFallbackMinutes,
-                ),
+                preRunStartOverride: null,
                 onTap: () => _showSummaryDialog(context, group),
                 actions: [
                   _GroupAction(
@@ -534,10 +540,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
               _GroupCard(
                 group: group,
                 activeSession: activeSession,
-                noticeMinutes: resolveNoticeMinutes(
-                  group,
-                  fallback: _noticeFallbackMinutes,
-                ),
+                preRunStartOverride: null,
                 onTap: () => _showSummaryDialog(context, group),
                 actions: [
                   _GroupAction(
@@ -730,7 +733,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     await repo.save(updated);
     await ref.read(notificationServiceProvider).cancelGroupPreAlert(group.id);
     if (!context.mounted) return;
-    context.go('/timer/${group.id}');
+    openRunModeForGroup(context, ref, updated);
   }
 
   Future<TaskGroupPlanningResult?> _showPlanningScreen(
@@ -911,7 +914,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
       if (status == TaskRunStatus.scheduled) {
         await _schedulePreAlertIfNeeded(ref, newGroup);
       } else {
-        context.go('/timer/${newGroup.id}');
+        openRunModeForGroup(context, ref, newGroup);
       }
     } catch (e) {
       if (!context.mounted) return;
@@ -1102,6 +1105,20 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
         ),
       );
     }
+    final activeSession = ref.read(activePomodoroSessionProvider);
+    if (activeSession != null) {
+      final activeGroupId = activeSession.groupId;
+      final canceledIds = runningGroups.map((group) => group.id).toSet();
+      if (activeGroupId == null || canceledIds.contains(activeGroupId)) {
+        final sessionRepo = ref.read(pomodoroSessionRepositoryProvider);
+        final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
+        if (activeSession.ownerDeviceId == deviceId) {
+          await sessionRepo.clearSessionAsOwner();
+        } else {
+          await sessionRepo.clearSessionIfGroupNotRunning();
+        }
+      }
+    }
     return true;
   }
 
@@ -1190,13 +1207,17 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     final totalDuration = _formatDuration(group.totalDurationSeconds ?? 0);
     final totalPomodoros = group.totalPomodoros ??
         group.tasks.fold<int>(0, (total, item) => total + item.totalPomodoros);
-    final notice = resolveNoticeMinutes(
-      group,
-      fallback: _noticeFallbackMinutes,
+    final preRunStart = resolveEffectivePreRunStart(
+      group: group,
+      allGroups: allGroups,
+      activeSession: activeSession,
+      now: now,
+      fallbackNoticeMinutes: _noticeFallbackMinutes,
     );
-    final preRunStart = (scheduledStart != null && notice > 0)
-        ? scheduledStart.subtract(Duration(minutes: notice))
-        : null;
+    final preRunMinutes =
+        (preRunStart != null && scheduledStart != null)
+            ? scheduledStart.difference(preRunStart).inMinutes
+            : null;
     final showScheduled =
         (effectiveScheduledStart ?? group.scheduledStartTime) != null;
     showDialog<void>(
@@ -1231,10 +1252,12 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                 _summarySectionTitle('Timing'),
                 if (showScheduled)
                   _summaryRow('Scheduled start', scheduledLabel),
-                if (preRunStart != null)
+                if (preRunStart != null &&
+                    preRunMinutes != null &&
+                    preRunMinutes > 0)
                   _summaryRow(
                     'Pre-Run',
-                    '$notice min starts at ${_formatGroupDateTime(preRunStart, now)}',
+                    '$preRunMinutes min starts at ${_formatGroupDateTime(preRunStart, now)}',
                   ),
                 _summaryRow('Actual start', actualLabel),
                 _summaryRow('End', endLabel),
@@ -1271,16 +1294,23 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     DateTime? scheduledStartOverride,
   }) {
     if (group.status != TaskRunStatus.scheduled) return false;
-    final scheduledStart = scheduledStartOverride ?? group.scheduledStartTime;
+    final scheduledStart = scheduledStartOverride ??
+        resolveEffectiveScheduledStart(
+          group: group,
+          allGroups: ref.read(taskRunGroupStreamProvider).value ?? const [],
+          activeSession: ref.read(activePomodoroSessionProvider),
+          now: now,
+          fallbackNoticeMinutes: _noticeFallbackMinutes,
+        );
     if (scheduledStart == null) return false;
-    final noticeMinutes = resolveNoticeMinutes(
-      group,
-      fallback: _noticeFallbackMinutes,
+    final preRunStart = resolveEffectivePreRunStart(
+      group: group,
+      allGroups: ref.read(taskRunGroupStreamProvider).value ?? const [],
+      activeSession: ref.read(activePomodoroSessionProvider),
+      now: now,
+      fallbackNoticeMinutes: _noticeFallbackMinutes,
     );
-    if (noticeMinutes <= 0) return false;
-    final preRunStart = scheduledStart.subtract(
-      Duration(minutes: noticeMinutes),
-    );
+    if (preRunStart == null) return false;
     return !now.isBefore(preRunStart) && now.isBefore(scheduledStart);
   }
 
@@ -1724,7 +1754,7 @@ class _GroupCard extends StatelessWidget {
   final PomodoroSession? activeSession;
   final DateTime? scheduledStartOverride;
   final DateTime? scheduledEndOverride;
-  final int noticeMinutes;
+  final DateTime? preRunStartOverride;
   final VoidCallback onTap;
   final List<_GroupAction> actions;
   final DateTime now;
@@ -1734,7 +1764,7 @@ class _GroupCard extends StatelessWidget {
     required this.activeSession,
     this.scheduledStartOverride,
     this.scheduledEndOverride,
-    required this.noticeMinutes,
+    required this.preRunStartOverride,
     required this.onTap,
     required this.actions,
     required this.now,
@@ -1748,16 +1778,16 @@ class _GroupCard extends StatelessWidget {
         _formatDuration(group.totalDurationSeconds ?? 0);
     final scheduledStart = scheduledStartOverride ?? group.scheduledStartTime;
     final endTime = scheduledEndOverride ?? group.theoreticalEndTime;
-    final showScheduled = group.status == TaskRunStatus.scheduled &&
-        scheduledStart != null;
-    final showPreRun = showScheduled && noticeMinutes > 0;
-    final DateTime? preRunStart;
-    if (showPreRun) {
-      preRunStart = scheduledStart.subtract(
-        Duration(minutes: noticeMinutes),
-      );
-    } else {
-      preRunStart = null;
+    final showScheduled =
+        group.status == TaskRunStatus.scheduled && scheduledStart != null;
+    final preRunStart = preRunStartOverride;
+    var showPreRun = false;
+    var preRunMinutes = 0;
+    if (showScheduled && preRunStart != null) {
+      showPreRun = preRunStart.isBefore(scheduledStart);
+      if (showPreRun) {
+        preRunMinutes = scheduledStart.difference(preRunStart).inMinutes;
+      }
     }
     final sessionPaused =
         activeSession?.groupId == group.id &&
@@ -1805,11 +1835,11 @@ class _GroupCard extends StatelessWidget {
                 label: 'Scheduled',
                 value: _formatGroupDateTime(scheduledStart, now),
               ),
-            if (preRunStart != null)
+            if (showPreRun && preRunMinutes > 0)
               _MetaRow(
                 label: 'Pre-Run',
                 value:
-                    '$noticeMinutes min starts at ${_formatGroupDateTime(preRunStart, now)}',
+                    '$preRunMinutes min starts at ${_formatGroupDateTime(preRunStart, now)}',
               ),
             _MetaRow(
               label: 'Ends',

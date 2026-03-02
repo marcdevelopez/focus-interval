@@ -28,6 +28,7 @@ import '../../widgets/task_card.dart';
 import '../../widgets/mode_indicator.dart';
 import 'task_group_planning_screen.dart';
 import '../utils/scheduled_group_timing.dart';
+import '../utils/run_mode_launcher.dart';
 
 enum _EmailVerificationAction { verified, resend, useLocal, signOut }
 enum _IntegritySelectionType { keepIndividual, useDefault, useStructure, cancel }
@@ -449,16 +450,21 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   Future<void> _handleLogout() async {
     final auth = ref.read(firebaseAuthServiceProvider);
     final controller = ref.read(appModeProvider.notifier);
-    await auth.signOut();
-    await controller.setLocal();
-    await _maybeShowWebLocalNotice();
     ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
+    ref.read(runningOverlapDecisionProvider.notifier).state = null;
     ref.invalidate(scheduledGroupCoordinatorProvider);
     ref.invalidate(taskListProvider);
     ref.invalidate(presetListProvider);
     ref.invalidate(presetEditorProvider);
+    final rootContext =
+        GoRouter.of(context).routerDelegate.navigatorKey.currentContext;
+    final router =
+        rootContext != null ? GoRouter.of(rootContext) : GoRouter.of(context);
+    await controller.setLocal();
+    await _maybeShowWebLocalNotice();
     if (!mounted) return;
-    context.go('/tasks');
+    router.go('/tasks');
+    await auth.signOut();
   }
 
   @override
@@ -1598,7 +1604,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       createdAt: planCapturedAt,
       scheduledStartTime: scheduledStart,
       scheduledByDeviceId: scheduledByDeviceId,
-      actualStartTime: null,
+      actualStartTime: isStartNow ? recalculatedStart : null,
       theoreticalEndTime: recalculatedEnd,
       status: status,
       noticeMinutes: noticeMinutes,
@@ -1624,7 +1630,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       }
       if (!context.mounted) return;
       if (status == TaskRunStatus.running) {
-        context.go("/timer/${group.id}");
+        openRunModeForGroup(context, ref, group);
       }
     } catch (e) {
       if (!context.mounted) return;

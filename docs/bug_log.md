@@ -432,6 +432,138 @@ Open. Medium priority (visible correctness issue).
 
 ---
 
+## BUG-010 — Mirror desync after Local → Account switch (short-lived)
+
+ID: BUG-010
+Date: 27/02/2026 (UTC+1)
+Platforms: iOS owner + Web (Chrome) mirror
+Context: User switched Chrome from Local Mode back to Account Mode while a group
+was running on iOS (owner). Mirror was previously in Local Mode.
+
+Repro steps:
+- Start a running group on iOS (owner) in Account Mode.
+- On Chrome, switch to Local Mode and interact (create a task/group).
+- Cancel the Local Mode run and switch back to Account Mode.
+- Observe the Run Mode timer on Chrome vs iOS immediately after the switch.
+
+Symptom:
+Mirror shows a different remaining time for several seconds, then re-syncs.
+
+Observed behavior:
+Chrome showed ~25s more remaining than iOS (e.g., 10:53 vs 10:28) right after
+switching back to Account Mode; within seconds it corrected to match the owner.
+
+Expected behavior:
+Mirror should re-anchor immediately from activeSession without a visible
+timer mismatch after a mode switch.
+
+Evidence:
+- Screenshots 13–14 show the temporary mismatch and subsequent sync.
+
+Workaround:
+Wait a few seconds; it auto-corrects.
+
+Hypothesis:
+Mode switch triggers a brief local projection using stale anchors before the
+activeSession snapshot is re-applied.
+
+Fix applied:
+None.
+
+Status:
+Open. Low priority (brief visual inconsistency).
+
+---
+
+## BUG-011 — Pause offset drifts after background/foreground
+
+ID: BUG-011
+Date: 27/02/2026 (UTC+1)
+Platforms: macOS + Android (real devices)
+Context: Group paused and resumed, then owner device backgrounded for ~4 minutes
+and returned to foreground.
+
+Repro steps:
+- Pause a running group, resume it.
+- Background the owner device for ~4 minutes (app not killed).
+- Return to foreground and observe remaining time vs expected.
+
+Symptom:
+Paused time offset appears incorrect after returning to foreground.
+
+Observed behavior:
+Remaining time reflects an incorrect pause offset until an ownership change
+occurs; switching owner re-syncs and fixes the offset.
+
+Expected behavior:
+Pause offset should remain accurate across background/foreground transitions
+without requiring ownership changes.
+
+Evidence:
+- User report from real devices (macOS + Android), 27/02/2026.
+
+Workaround:
+Trigger ownership change or force a resubscribe (navigate away and back).
+
+Hypothesis:
+Resume path reuses stale pause anchors or misses pause offset recomputation
+after backgrounding.
+
+Fix applied:
+None.
+
+Status:
+Open. Medium priority (time correctness).
+
+---
+
+## BUG-012 — Mirror stuck on "Syncing session" until interaction
+
+ID: BUG-012
+Date: 27/02/2026 (UTC+1)
+Platforms: macOS mirror + Android/macOS owners (reports)
+Context: Mirror device shows "Syncing session" indefinitely while a group is
+running; timer does not appear until user interacts.
+
+Repro steps:
+- Start a running group on an owner device.
+- Open Run Mode on a mirror (macOS or Android).
+- Observe the mirror state without interacting.
+
+Symptom:
+Mirror remains in "Syncing session" indefinitely and does not return to the
+timer view.
+
+Observed behavior:
+Run Mode stays in Syncing until user clicks inside the app window or navigates
+to Groups Hub and back. This happens repeatedly, especially on macOS mirrors.
+On Android, tapping the screen does **not** recover; navigation to Groups Hub
+and back is required.
+
+Expected behavior:
+Mirror should exit Syncing automatically once activeSession snapshots resume,
+without requiring user interaction.
+
+Evidence:
+- User report: macOS mirror stuck multiple times; click inside the window
+restores the timer. Android mirror also stuck once with macOS owner.
+
+Workaround:
+macOS: click the app window or enter Groups Hub and return to Run Mode.
+Android: enter Groups Hub and return to Run Mode (tap does not recover).
+
+Hypothesis:
+Session stream subscriptions pause or debounce while the window is inactive,
+and the UI never rebinds until a user event triggers a resubscribe.
+
+Fix applied:
+None.
+
+Status:
+Open. Medium priority (mirror usability).
+
+---
+
 ## BUG-009 — Late-start queue desync + ownership gaps in Account Mode
 
 ID: BUG-009  
@@ -538,6 +670,16 @@ Add a lightweight "Syncing..." overlay in Run Mode that triggers:
 - a controlled resubscribe to the activeSession stream
 This should be used only when an inconsistency is detected (or via a manual
 user action), to avoid unnecessary UI jumps.
+Note:
+Do not reuse the ActiveSession auto-opener for this mitigation. It only
+navigates to `/timer/:id` and does not force a resubscribe; it cannot recover
+from a frozen Syncing state.
+
+Interaction options (pick one or combine):
+- Tap anywhere on the Syncing screen to trigger the resync.
+- Pull-to-refresh gesture on the Syncing state (if feasible in the layout).
+- Explicit "Sync now" CTA or sync icon in the header while syncing.
+Android: prefer an explicit "Sync now" CTA (tap-anywhere is unreliable).
 
 When to use:
 - Release fallback if ownership/sync bugs persist near MVP launch.
