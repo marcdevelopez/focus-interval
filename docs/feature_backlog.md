@@ -54,30 +54,30 @@ execution slot.
 10. IDEA-020 — Show "Scheduled By" in Group Summary
 11. IDEA-030 — Postpone UX Clarity (Groups Hub + Snackbar)
 12. IDEA-031 — Highlight Running Card After Completion Modal
-13. IDEA-032 — Plan Group Pre-Run Notice Control
-14. IDEA-033 — Conflict Modal Context Details
-15. IDEA-029 — Live Pause Time Ranges (Forward-Only)
-16. IDEA-018 — Live Pause Time Range Updates in Run Mode Task List
-17. IDEA-005 — Pause Time Visibility (Run Mode + Groups Hub)
-18. IDEA-013 — Global Group Remaining Time + Pending Tasks
-19. IDEA-009 — Sticky "Go to Task List" CTA in Groups Hub
-20. IDEA-008 — Collapsible Groups Hub Sections + Counts
-21. IDEA-002 — Simplification of Status Boxes in Run Mode
-22. IDEA-003 — Responsive Timer Scaling (Desktop/Web)
-23. IDEA-010 — Ownership Request Explainer (Run Mode)
-24. IDEA-011 — Mirror Notifications for Active Runs
-25. IDEA-034 — Offline Continuation With Rejoin/Sync Choice
-26. IDEA-019 — Break Tasks List in Run Mode
-27. IDEA-001 — Circular group progress ring around timer
-28. IDEA-027 — Unified Mode Indicator + Session Context
-29. IDEA-021 — Account Deletion Action in Settings
-30. IDEA-022 — Verified Presence + Activity Heatmap
-31. IDEA-028 — Verified Activity Summary + Week Start Setting
-32. IDEA-023 — Resume Canceled Groups
-33. IDEA-024 — Workspaces With Shared TaskRunGroups
-34. IDEA-025 — Workspace Break Chat (Text + Deferred DM)
+13. IDEA-033 — Conflict Modal Context Details
+14. IDEA-029 — Live Pause Time Ranges (Forward-Only)
+15. IDEA-018 — Live Pause Time Range Updates in Run Mode Task List
+16. IDEA-005 — Pause Time Visibility (Run Mode + Groups Hub)
+17. IDEA-013 — Global Group Remaining Time + Pending Tasks
+18. IDEA-009 — Sticky "Go to Task List" CTA in Groups Hub
+19. IDEA-008 — Collapsible Groups Hub Sections + Counts
+20. IDEA-002 — Simplification of Status Boxes in Run Mode
+21. IDEA-003 — Responsive Timer Scaling (Desktop/Web)
+22. IDEA-010 — Ownership Request Explainer (Run Mode)
+23. IDEA-011 — Mirror Notifications for Active Runs
+24. IDEA-034 — Offline Continuation With Rejoin/Sync Choice
+25. IDEA-019 — Break Tasks List in Run Mode
+26. IDEA-001 — Circular group progress ring around timer
+27. IDEA-027 — Unified Mode Indicator + Session Context
+28. IDEA-021 — Account Deletion Action in Settings
+29. IDEA-022 — Verified Presence + Activity Heatmap
+30. IDEA-028 — Verified Activity Summary + Week Start Setting
+31. IDEA-023 — Resume Canceled Groups
+32. IDEA-024 — Workspaces With Shared TaskRunGroups
+33. IDEA-025 — Workspace Break Chat (Text + Deferred DM)
 
 Notes:
+
 - IDEA-028 depends on IDEA-022.
 - IDEA-025 depends on IDEA-024.
 - IDEA-029 and IDEA-018 overlap; keep both for now and merge later if needed.
@@ -87,6 +87,7 @@ Notes:
 ## In progress
 
 When a feature starts, move the full entry here and keep its ID header. Update the fields as follows.
+
 1. Set `Status: in_progress`.
 2. Add `Feature folder: docs/features/feature_YYYY_MM_DD_slug/`.
 3. Add `Plan: docs/features/feature_YYYY_MM_DD_slug/feature_plan.md`.
@@ -96,11 +97,82 @@ When a feature starts, move the full entry here and keep its ID header. Update t
 ## Done
 
 When a feature completes, move the full entry here (or to `feature_backlog_archive.md` if this grows too large).
+
 1. Set `Status: done`.
 2. Add `Final commit: <hash> "<message>"`.
 3. Keep the feature folder link for traceability.
 
-(none yet)
+## IDEA-032 — Plan Group Pre-Run Notice Control
+
+ID: IDEA-032
+Title: Plan Group Pre-Run Notice Control
+Type: UX
+Scope: M
+Priority: P1
+Status: done
+
+Feature folder: docs/features/feature_2026_03_02_plan-group-notice-control/
+Plan: docs/features/feature_2026_03_02_plan-group-notice-control/feature_plan.md
+Final commit: aa73004 "Fix re-plan notice coherence with editable planning notice"
+
+Problem / Goal:
+Users cannot see or adjust the pre-run notice during planning, leading to
+confusion when noticeMinutes is 0 or when timing constraints apply.
+
+Summary:
+Expose the effective pre-run notice in Plan Group and allow per-group override
+for scheduled runs (0–15 minutes).
+
+Design / UX:
+Layout / placement:
+Add a "Pre-run notice" row in Plan Group (Planning options or Group preview),
+with a value and an edit affordance.
+
+Visual states:
+Shows the current effective notice value. When set to 0, the UI clarifies that
+no pre-run will appear.
+
+Animation rules:
+None.
+
+Interaction:
+Tap opens a small picker or stepper to set the notice minutes. Changes update
+the preview immediately.
+
+Text / typography:
+Use existing field labels; keep copy short.
+
+Data & Logic:
+Source of truth:
+Use the global notice setting as default and store overrides in
+TaskRunGroup.noticeMinutes.
+
+Calculations:
+Scheduling validation and preview ranges must re-calculate using the selected
+notice value.
+
+Sync / multi-device:
+Notice overrides are stored per group and visible on all devices.
+
+Edge cases:
+Start-now groups should show "Not applicable" or hide the row. For scheduled
+starts too soon, keep the existing validation behavior.
+
+Accessibility:
+Picker must be keyboard and screen-reader accessible.
+
+Dependencies:
+Phase 14 pre-run notice settings (Account Mode + Settings).
+
+Risks:
+Duplicating notice logic across screens; keep a shared helper.
+
+Acceptance criteria:
+Users can view and edit pre-run notice during planning; the preview and
+validation respect the selected notice; notice=0 hides pre-run messaging.
+
+Notes:
+Prefer reusing the Settings notice picker styling.
 
 ## Backlog entries
 
@@ -632,7 +704,8 @@ None.
 Text / typography:
 Use clear, compact labels:
 < 24h: "Starts in: HH h MM min"
->= 24h: "Starts in: DD d HH h MM min"
+
+> = 24h: "Starts in: DD d HH h MM min"
 
 Data & Logic:
 Source of truth:
@@ -852,6 +925,7 @@ info affordance available.
 
 Text / typography:
 Use short, user-friendly bullets aligned to current rules:
+
 - If the owner is active, your request stays pending until they approve/reject.
 - If the owner is stale and the session is running, a mirror may auto-claim.
   If a request exists, the requester has priority; otherwise the first mirror
@@ -1014,9 +1088,10 @@ to keep preview and execution aligned.
 Calculations:
 If the exact end falls inside the last pomodoro, shorten that final pomodoro.
 If the exact end falls inside the last break:
+
 - Short break: convert the final break into final work time until the exact end.
 - Long break: convert to a short break, then final work time until the exact end.
-Only the final segment is adjusted; the rest of the group remains standard.
+  Only the final segment is adjusted; the rest of the group remains standard.
 
 Sync / multi-device:
 No new sync rules, but execution must follow the stored exact-end flag so owner
@@ -2517,76 +2592,6 @@ Should not trigger on manual Run Mode navigation.
 
 ---
 
-## IDEA-032 — Plan Group Pre-Run Notice Control
-
-ID: IDEA-032
-Title: Plan Group Pre-Run Notice Control
-Type: UX
-Scope: M
-Priority: P1
-Status: idea
-
-Problem / Goal:
-Users cannot see or adjust the pre-run notice during planning, leading to
-confusion when noticeMinutes is 0 or when timing constraints apply.
-
-Summary:
-Expose the effective pre-run notice in Plan Group and allow per-group override
-for scheduled runs (0–15 minutes).
-
-Design / UX:
-Layout / placement:
-Add a "Pre-run notice" row in Plan Group (Planning options or Group preview),
-with a value and an edit affordance.
-
-Visual states:
-Shows the current effective notice value. When set to 0, the UI clarifies that
-no pre-run will appear.
-
-Animation rules:
-None.
-
-Interaction:
-Tap opens a small picker or stepper to set the notice minutes. Changes update
-the preview immediately.
-
-Text / typography:
-Use existing field labels; keep copy short.
-
-Data & Logic:
-Source of truth:
-Use the global notice setting as default and store overrides in
-TaskRunGroup.noticeMinutes.
-
-Calculations:
-Scheduling validation and preview ranges must re-calculate using the selected
-notice value.
-
-Sync / multi-device:
-Notice overrides are stored per group and visible on all devices.
-
-Edge cases:
-Start-now groups should show "Not applicable" or hide the row. For scheduled
-starts too soon, keep the existing validation behavior.
-
-Accessibility:
-Picker must be keyboard and screen-reader accessible.
-
-Dependencies:
-Phase 14 pre-run notice settings (Account Mode + Settings).
-
-Risks:
-Duplicating notice logic across screens; keep a shared helper.
-
-Acceptance criteria:
-Users can view and edit pre-run notice during planning; the preview and
-validation respect the selected notice; notice=0 hides pre-run messaging.
-
-Notes:
-Prefer reusing the Settings notice picker styling.
-
----
-
 ## IDEA-033 — Conflict Modal Context Details
 
 ID: IDEA-033
@@ -2680,41 +2685,49 @@ or accidental merges.
 
 Design / UX:
 Layout / placement:
+
 - Run Mode banner or pill at top: “Offline — local only”.
 - Inline CTA row: `Retry sync` and `Continue locally`.
 
 Visual states:
+
 - Offline banner visible when time sync is unavailable or network is down.
 - After choosing local continuation, show a persistent “Local-only” badge.
 
 Animation rules:
+
 - No animation required; keep steady UI to avoid confusion.
 
 Interaction:
+
 - `Retry sync` triggers a timeSync refresh and session fetch.
 - `Continue locally` switches to Local Mode with a local shadow group.
 - On reconnect, show a modal:
   - “Account session changed while you were offline.”
   - Options:
-    1) `Rejoin account session` (discard local)
-    2) `Keep local (stay Local Mode)`
+    1. `Rejoin account session` (discard local)
+    2. `Keep local (stay Local Mode)`
 
 Text / typography:
+
 - Clear warnings about non-synced state and that other devices continue the
   Account session independently.
 
 Data & Logic:
 Source of truth:
+
 - Account Mode session remains the only authoritative timeline.
 - Local continuation never writes to Account Mode while offline.
   - Explicitly store a local-only fork marker so it cannot be mistaken for
     Account data.
 
 Calculations:
+
 - Local continuation uses Local Mode timers and storage.
 - Account Mode session remains unchanged unless the user explicitly rejoins.
 
 Sync / multi-device:
+
 - Other devices remain in Account Mode and continue as owner/mirror.
 - Offline device does not publish to Account Mode.
 - On reconnect, allow rejoin or stay local; no auto-merge.
@@ -2722,6 +2735,7 @@ Sync / multi-device:
     must remain visible only in their respective modes.
 
 Edge cases:
+
 - If Account session completed while offline, rejoin should open Groups Hub
   and allow Run again / Start now actions.
 - If local continuation is active and the user re-joins, discard local state
@@ -2731,24 +2745,28 @@ Edge cases:
     (e.g., “Offline” / “Local-only”) in Groups Hub and Run Mode.
 
 Accessibility:
+
 - Offline banner and modal must be announced with clear warnings.
 
 Dependencies:
+
 - Fix 22 (timeSync + single source of truth).
 - Local/Account isolation rules (no silent merge).
 
 Risks:
+
 - User confusion about which mode they are in.
 - Accidental loss of local-only progress if rejoin is chosen.
- - Ambiguous UX if offline forks are not labeled clearly.
+- Ambiguous UX if offline forks are not labeled clearly.
 
 Acceptance criteria:
+
 - When offline, Run Mode is not blocked; user sees clear offline banner.
 - Choosing local continuation keeps the timer running without writing to
   Account Mode.
 - On reconnect, user must explicitly choose rejoin or stay local.
 - No automatic merge or overwrite of Account Mode session.
- - Offline fork is clearly labeled in Local Mode; Account Mode never shows it.
+- Offline fork is clearly labeled in Local Mode; Account Mode never shows it.
 
 Notes:
 Optional: presence signals (e.g., “Device offline”) can be added later when

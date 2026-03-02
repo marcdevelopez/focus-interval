@@ -117,6 +117,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       04/02/2026: Phase 19 validation completed (multi-platform) and phase closed.
       04/02/2026: Specs/roadmap updated (group naming, task colors, group progress bar,
                   planning by total range/total time, global sound settings) — documentation-only.
+      02/03/2026: Plan Group pre-run notice control implemented (Plan group + re-plan snackbar) (validation pending).
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
