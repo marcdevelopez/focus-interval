@@ -117,7 +117,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       04/02/2026: Phase 19 validation completed (multi-platform) and phase closed.
       04/02/2026: Specs/roadmap updated (group naming, task colors, group progress bar,
                   planning by total range/total time, global sound settings) — documentation-only.
-      02/03/2026: Plan Group pre-run notice control implemented (Plan group + re-plan snackbar) (validation pending).
+      02/03/2026: Plan Group pre-run notice control implemented (Plan group + re-plan snackbar + auto-clamp SnackBar). Validated 02/03/2026 on Android RMX3771.
       02/03/2026: ActiveSession idempotent writes now persist payload changes on equal sessionRevision
           (remainingSeconds and phase fields no longer dropped) (validation pending).
       02/03/2026: Run Mode owner sync stabilization: owner keeps local machine as render authority,

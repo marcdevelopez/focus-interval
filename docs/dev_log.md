@@ -9003,3 +9003,27 @@ _(not yet validated on devices)_
 
 - Run long-run validation with a fresh running group (no carry-over from previous builds).
 - Record final validation evidence in `docs/bugs/validation_fix_2026_03_02-03/`.
+
+# 🔹 Block 531 — IDEA-032 validated + auto-clamp SnackBar UX fix (02/03/2026)
+
+### ✔ Work completed:
+
+- Validated IDEA-032 (Plan Group Pre-Run Notice Control) on Android RMX3771,
+  debug prod, 02/03/2026.
+- All 8 checklist items passed. See
+  `docs/features/feature_2026_03_02_plan-group-notice-control/feature_checklist.md`.
+- Minor UX improvement added during validation:
+  - The 1s ticker in `task_group_planning_screen.dart` now emits a SnackBar
+    ("Pre-run notice reduced to Xm — maximum allowed before the scheduled
+    start.") whenever it auto-clamps `_noticeMinutes` to the realtime max.
+  - Covers Check 4 (notice invalid while screen open) and Check 8 (user picks
+    a start time with insufficient margin). Both confirmed working in real time.
+- `flutter analyze` — 0 issues.
+
+### 🧪 Tests:
+
+- Manual validation on device (Android RMX3771), 02/03/2026.
+
+### 🎯 Next steps:
+
+- Address pending long-run Android sync validation from Block 530.

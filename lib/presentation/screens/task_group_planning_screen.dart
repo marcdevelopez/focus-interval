@@ -105,10 +105,24 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
     _applyNoticeSuggestion();
     _noticeNowTicker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
+      final beforeNotice = _noticeMinutes;
       setState(() {
         _noticeNow = DateTime.now();
         _applyNoticeSuggestion();
       });
+      final adjustedNotice = _noticeMinutes;
+      if (adjustedNotice != beforeNotice && mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Pre-run notice reduced to ${adjustedNotice}m'
+              ' — maximum allowed before the scheduled start.',
+            ),
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _maybeShowInfoDialog();
