@@ -123,6 +123,11 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       02/03/2026: Run Mode owner sync stabilization: owner keeps local machine as render authority,
           projection allows local fallback without server offset, and resync paths guard
           against disposed provider refs. Validated 02/03/2026 on Android RMX3771 (isolated run).
+      03/03/2026: Account → Local Mode now cancels pending Account pre-run OS notifications;
+          ScheduledGroupCoordinator adds a bounded account-mode recheck burst after
+          mode switch, fixes late-start heartbeat transaction ordering, removes
+          logout invalidation of the coordinator to preserve scheduled timers, and
+          includes debug instrumentation for late-start evaluation (validation pending).
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling

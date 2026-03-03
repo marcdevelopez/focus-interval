@@ -451,7 +451,6 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final controller = ref.read(appModeProvider.notifier);
     ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
     ref.read(runningOverlapDecisionProvider.notifier).state = null;
-    ref.invalidate(scheduledGroupCoordinatorProvider);
     ref.invalidate(taskListProvider);
     ref.invalidate(presetListProvider);
     ref.invalidate(presetEditorProvider);

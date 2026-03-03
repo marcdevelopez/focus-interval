@@ -1,3 +1,78 @@
+# Rapid Validation Checklist — One-Pass (2026-02-24)
+
+Date: 2026-03-03
+Scope: Late-start queue, Resolve overlaps, pre-run auto-open, Run Mode auto-open, ranges, Groups Hub rows, logout safety, mirror sync.
+Goal: Validate all pending items in a single pass using two 15-minute groups.
+Status: Pending re-run after fix (previous attempt failed on Step 2).
+
+## Preparation
+1. [ ] Account Mode on both devices (macOS owner, Android mirror). Open Groups Hub on both.
+2. [ ] Task template: 1 pomodoro x 15 min, totalPomodoros=1 (no breaks needed).
+3. [ ] Global notice = 1 min.
+4. [ ] Start logs on both devices and save under:
+   `docs/bugs/validation_fix_2026_02_24/logs/2026_03_02_android_RMX3771_debug.log`
+   `docs/bugs/validation_fix_2026_02_24/logs/2026_03_02_macos_debug.log`
+5. [ ] Note the current time to schedule relative starts.
+
+## One-pass sequence (Account Mode, two groups: G1 and G2)
+1. [ ] Create G1 scheduled at now+2 min (notice=1). Create G2 scheduled at now+4 min (notice=1).
+   Expected: Both appear as scheduled in Groups Hub.
+2. [x] Close both apps OR switch Local Mode → Account Mode on both devices.
+   Wait until now > G2 scheduled start by ~1 min. Reopen if closed.
+   Expected: Late-start queue / Resolve overlaps appears on owner.
+   Evidence: 2026-03-03 03:03 Resolve overlaps on owner; mirror read-only with Request ownership.
+3. [x] In Resolve overlaps, select no groups and confirm.
+   Expected: Same result as Cancel all; mirror shows "Owner resolved" modal, owner does not; OK dismisses; mirror cannot proceed with queue actions.
+   Evidence: 2026-03-03 03:04 both devices returned to Groups Hub after Cancel all (modal not explicitly observed).
+4. [x] From Groups Hub, Run again on canceled G1 and choose Start now.
+   Expected: Run Mode opens and stays (no bounce to Groups Hub).
+   Evidence: 2026-03-03 03:06 Run Mode opened on both devices.
+5. [x] Mirror drift checks while G1 is running: close mirror app and reopen to Run Mode, then background mirror for ~10s and resume.
+   Expected: Mirror timer is in sync immediately (no visible drift or fast catch-up).
+6. [ ] Pause G1 for 30–60s, then resume.
+   Expected: Task item range and status boxes match exactly; end time reflects pause.
+   Evidence: range OK after pause/resume, but timer desync after navigating to
+   Groups Hub and returning to Run Mode (screenshots at ~03:09 and ~03:12).
+   Android log lost after app close in Step 5.
+7. [ ] While G1 is running, schedule G2 with notice=1 and start time = G1 expected end + 1 min (so pre-run starts exactly at G1 end).
+   Expected: Planning accepts with no conflict modal.
+8. [ ] Verify Groups Hub scheduled row on both devices.
+   Expected: "Pre-Run 1 min starts at HH:mm" on both (no "Notice: 1 min" mismatch).
+9. [ ] At G2 pre-run time, allow auto-open on both devices.
+   Expected: Pre-Run opens once per device, no Resolve overlaps, no duplicate navigation.
+10. [ ] Let G1 complete.
+    Expected: Completion modal returns to Groups Hub (never Ready screen).
+11. [ ] At G2 scheduled start, allow auto-open to Run Mode.
+    Expected: Run Mode opens and stays (no bounce). Cancel after verification if needed.
+12. [ ] Logout safety (Android).
+    Expected: No black screen; app returns to login or Local Task List.
+
+13. [ ] Switch to Local Mode before the scheduled pre-run time (macOS).
+    Expected: No Account pre-run notification fires while in Local Mode.
+
+## Previous attempt (2026-03-03)
+- Flow used Local Mode → Account Mode switch (no app close). Groups were re-planned from canceled entries (no brand-new groups).
+- Result: FAIL at Step 2. No late-start queue or Resolve overlaps surfaced. Both groups remained `status=scheduled` after scheduledStartTime.
+- Evidence: Screenshot 21 + logs in:
+  `docs/bugs/validation_fix_2026_02_24/logs/2026_03_02_android_RMX3771_debug.log`
+  `docs/bugs/validation_fix_2026_02_24/logs/2026_03_02_macos_debug.log`
+
+## Notice=0 scheduled start (required to close remaining items)
+1. [ ] Set global notice = 0.
+2. [ ] Run again on G2 (or G1) and schedule start at now+2 min.
+   Expected: No Pre-Run row; auto-start goes straight to Run Mode and stays.
+   Evidence: Groups Hub + Run Mode screenshots.
+
+## Optional Local Mode mini-pass (only if Local Mode issues must be revalidated)
+1. [ ] Switch to Local Mode. Start now with the same 15-min task.
+   Expected: Run Mode opens and stays; Open Run Mode does not restart the group.
+2. [ ] Schedule a Local group with notice=0 at now+2 min.
+   Expected: Auto-start to Run Mode with no pre-run error.
+
+---
+
+# Legacy notes (original Spanish checklist below, kept verbatim for traceability)
+
 # Lista de verificación rápida - Corrección de validación 2026-02-24
 
 Alcance: flujos de cancelación de la cola de late-start, auto-apertura de Pre-Run, auto-apertura de Run Mode, etiquetas de Groups Hub, actualizaciones en vivo de la programación, alineación de las cajas de estado y logout sin pantalla negra.

@@ -554,6 +554,8 @@ Platform notes:
 - Local Mode scope is strictly device-local; Account Mode scope is strictly user:{uid}.
 - There is no implicit sync between scopes.
 - On mode switch, clear any active Run Mode UI and return to Task List before rendering the new scope. Never keep a Run Mode route open across modes.
+- On switch to Local Mode, cancel any pending **Account Mode** pre-run system notifications on the device. OS-level scheduled notifications must not fire while Local Mode is active.
+- On switch to Account Mode, re-evaluate scheduled groups once streams and time sync are ready, then perform a short **bounded** recheck burst (a few retries over seconds) to recover from mode-switch disposal; no continuous polling.
 - Switching to Account Mode can offer a one-time import of local data (tasks, groups, presets)
   only after explicit user confirmation.
 - Import targets the currently signed-in UID and overwrites by ID (no merge) in MVP 1.2.

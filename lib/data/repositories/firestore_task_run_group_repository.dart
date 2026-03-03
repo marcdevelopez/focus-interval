@@ -264,12 +264,16 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
     if (groups.isEmpty) return;
     final uid = await _uidOrThrow();
     await _db.runTransaction((tx) async {
+      final refs = <DocumentReference<Map<String, dynamic>>>[];
       for (final group in groups) {
-        final ref = _collection(uid).doc(group.id);
-        final snap = await tx.get(ref);
-        final data = snap.data();
+        refs.add(_collection(uid).doc(group.id));
+      }
+      final snaps = await Future.wait(refs.map(tx.get));
+      for (var index = 0; index < snaps.length; index += 1) {
+        final data = snaps[index].data();
         final currentOwner = _readString(data?['lateStartOwnerDeviceId']);
         if (currentOwner != ownerDeviceId) continue;
+        final ref = refs[index];
         tx.set(ref, {
           'lateStartOwnerHeartbeatAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -43,6 +44,9 @@ class _AppModeChangeGuardState extends ConsumerState<AppModeChangeGuard> {
   }
 
   void _handleModeChange() {
+    if (kDebugMode) {
+      debugPrint('[AppModeGuard] Mode change detected; invalidating providers.');
+    }
     ref.invalidate(pomodoroViewModelProvider);
     ref.invalidate(taskRunGroupStreamProvider);
     ref.invalidate(preRunNoticeMinutesProvider);

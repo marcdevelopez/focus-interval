@@ -1,38 +1,51 @@
 # Plan — Rapid Validation Fix (2026-03-02)
 
 Date: 2026-03-02
-Scope: Permitir override de prod en debug en todas las plataformas (temporal).
+Scope: Allow prod override in debug on all platforms (temporary).
 
-## Contexto
-- En debug, `APP_ENV=prod` esta bloqueado y la app queda en "Starting Focus Interval...".
-- Se necesita un override temporal en debug para pruebas reales mientras no hay staging.
+## Context
+- In debug, `APP_ENV=prod` is blocked and the app stays on "Starting Focus Interval...".
+- We need a temporary override in debug for real Firebase testing while staging is not available.
 
-## Repro exacto (antes del fix)
-1. Ejecuta en Chrome (debug):
+## Exact Repro (before the fix)
+1. Run on Chrome (debug):
    `flutter run -d chrome --dart-define=APP_ENV=prod`
-2. Ejecuta en macOS (debug):
+2. Run on macOS (debug):
    `flutter run -d macos --dart-define=APP_ENV=prod`
-3. Resultado actual: la app queda en "Starting Focus Interval...".
+3. Current result: the app stays on "Starting Focus Interval...".
 
-## Cambio requerido
-- Permitir `APP_ENV=prod` en debug solo cuando `ALLOW_PROD_IN_DEBUG=true`.
-- Mantener el bloqueo cuando el flag no esta presente.
-- Debe revertirse cuando exista staging.
+## Required change
+- Allow `APP_ENV=prod` in debug only when `ALLOW_PROD_IN_DEBUG=true`.
+- Keep the block when the flag is not present.
+- Must be reverted once staging exists.
 
-## Validacion rapida (despues del fix)
-1. Chrome debug con prod + override:
+## Rapid validation (after the fix)
+1. Chrome debug with prod + override:
    `flutter run -d chrome --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true`
-   Esperado: la app inicia y permite login en Account Mode.
-2. macOS debug con prod + override:
+   Expected: app boots and allows Account Mode login.
+2. macOS debug with prod + override:
    `flutter run -d macos --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true`
-   Esperado: la app inicia y permite login en Account Mode.
-3. Chrome debug con prod sin override:
+   Expected: app boots and allows Account Mode login.
+3. Chrome debug with prod without override:
    `flutter run -d chrome --dart-define=APP_ENV=prod`
-   Esperado: sigue bloqueando prod en debug (StateError).
-4. Release prod sin override:
+   Expected: still blocked in debug (StateError).
+4. Chrome release prod without override:
    `flutter run -d chrome --release --dart-define=APP_ENV=prod`
-   Esperado: comportamiento sin cambios.
+   Expected: behavior unchanged.
+
+## Result (2026-03-02)
+- Chrome debug + prod + override: boots and allows Account Mode login.
+- macOS debug + prod + override: boots and allows Account Mode login.
+- Chrome debug + prod without override: remains blocked (expected).
+- Chrome release + prod: unchanged (expected).
+
+## Evidence
+- Chrome debug log:
+  `docs/bugs/validation_fix_2026_03_02-01/logs/2026-03-02_web_chrome_debug.log`
+- macOS debug log:
+  `docs/bugs/validation_fix_2026_03_02-03/logs/2026_03_02_macos_debug.log`
+- Manual confirmations: debug without override, release prod (no logs recorded).
 
 ## Tracking
-- Estado: Implementado (validacion pendiente).
+- State: Validated (2026-03-02).
 - Commit: d5e08ae "Allow prod debug override on all platforms"

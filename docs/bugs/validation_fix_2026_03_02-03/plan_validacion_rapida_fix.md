@@ -51,7 +51,7 @@ Scope: Owner freeze while running (Account Mode).
 - Estado: Completado (validado 02/03/2026, Android owner aislado).
 - Commits:
   - `b18544914d25f08740231ef97ba9f27ca8dd6068` — Fix activeSession idempotent writes preserving remainingSeconds updates.
-  - Current owner-sync stabilization commit on branch `fix-validacion-rapida-prerun-overlaps-black-screen` — lifecycle guards + owner render authority.
+  - `cdbf8b58d824f80b21305eea699f06029aba7707` — Stabilize owner sync flow and document validation tracking.
 
 ## Evidencia de cierre
 
