@@ -9259,3 +9259,28 @@ _(not yet validated on devices)_
 ### 🎯 Next steps:
 
 - Record commit hash in plan/roadmap and proceed with remaining checklist items.
+
+# 🔹 Block 542 — Quick pass steps 7–13 validated (04/03/2026)
+
+### ✔ Work completed:
+
+- Completed Steps 7–13 of `docs/bugs/validation_fix_2026_02_24/quick_pass_checklist.md`.
+- Confirmed scheduling auto-shift (+1 min when needed), correct scheduled row,
+  pre-run auto-open, start-time auto-open, cancel → Groups Hub, logout safety,
+  and Local Mode pre-run suppression.
+
+### 🧪 Tests:
+
+- Manual validation (iOS owner + Chrome mirror, Android logout check).
+- Logs:
+  - `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_ios_simulator_postfix2_debug.log`
+  - `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_chrome_postfix2_debug.log`
+
+### ⚠️ Issues found:
+
+- None reported in Steps 7–13.
+
+### 🎯 Next steps:
+
+- Continue with any remaining checklist items if needed and decide whether to
+  archive this validation set.

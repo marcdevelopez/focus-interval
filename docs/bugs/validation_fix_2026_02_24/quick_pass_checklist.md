@@ -3,7 +3,7 @@
 Date: 2026-03-04
 Scope: Late-start queue, Resolve overlaps, pre-run auto-open, Run Mode auto-open, ranges, Groups Hub rows, logout safety, mirror sync.
 Goal: Validate all pending items in a single pass using two 15-minute groups.
-Status: Partial — Step 6 validated; remaining steps pending.
+Status: Complete — Steps 2–13 validated (prep steps not re-logged).
 
 ## Preparation
 1. [ ] Account Mode on both devices (macOS owner, Android mirror). Open Groups Hub on both.
@@ -56,21 +56,29 @@ Status: Partial — Step 6 validated; remaining steps pending.
    aligned (no drift after navigation). Logs:
    `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_ios_simulator_postfix2_debug.log`,
    `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_chrome_postfix2_debug.log`.
-7. [ ] While G1 is running, schedule G2 with notice=1 and start time = G1 expected end + 1 min (so pre-run starts exactly at G1 end).
+7. [x] While G1 is running, schedule G2 with notice=1 and start time = G1 expected end + 1 min (so pre-run starts exactly at G1 end).
    Expected: Planning accepts with no conflict modal.
-8. [ ] Verify Groups Hub scheduled row on both devices.
+   Evidence (2026-03-04): if schedule conflicts by seconds, app warns and
+   auto-shifts to +1 min; accepts. Notice handled from Groups Hub.
+8. [x] Verify Groups Hub scheduled row on both devices.
    Expected: "Pre-Run 1 min starts at HH:mm" on both (no "Notice: 1 min" mismatch).
-9. [ ] At G2 pre-run time, allow auto-open on both devices.
+   Evidence (2026-03-04): scheduled row matches; pre-run time shown correctly.
+9. [x] At G2 pre-run time, allow auto-open on both devices.
    Expected: Pre-Run opens once per device, no Resolve overlaps, no duplicate navigation.
-10. [ ] Let G1 complete.
+   Evidence (2026-03-04): pre-run auto-opened at ~00:12 as expected.
+10. [x] Let G1 complete.
     Expected: Completion modal returns to Groups Hub (never Ready screen).
-11. [ ] At G2 scheduled start, allow auto-open to Run Mode.
+    Evidence (2026-03-04): completion waited until pre-run time in Groups Hub.
+11. [x] At G2 scheduled start, allow auto-open to Run Mode.
     Expected: Run Mode opens and stays (no bounce). Cancel after verification if needed.
-12. [ ] Logout safety (Android).
+    Evidence (2026-03-04): start time auto-opened; cancel returned to Groups Hub.
+12. [x] Logout safety (Android).
     Expected: No black screen; app returns to login or Local Task List.
 
-13. [ ] Switch to Local Mode before the scheduled pre-run time (macOS).
+    Evidence (2026-03-04): Android device OK; iOS log OK; Chrome OK (Local Mode).
+13. [x] Switch to Local Mode before the scheduled pre-run time (macOS).
     Expected: No Account pre-run notification fires while in Local Mode.
+    Evidence (2026-03-04): pre-run suppressed in Local Mode.
 
 ## Previous attempt (2026-03-03)
 - Flow used Local Mode → Account Mode switch (no app close). Groups were re-planned from canceled entries (no brand-new groups).

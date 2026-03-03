@@ -155,6 +155,19 @@ Source: docs/bugs/validacion_rapida.md and docs/bugs/capturas-validacion
   - `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_chrome_postfix2_debug.log`
 - Commit: `ead72fb` — Fix account session hydrate drift and validate step 6.
 
+### 2026-03-04 — Steps 7–13 pass (post-fix2)
+- Step 7: scheduling accepts; if it cannot align by seconds, warning appears and
+  auto-shifts to +1 minute (notice handled from Groups Hub).
+- Step 8: Groups Hub scheduled row matches (Pre-Run 1 min starts at HH:mm).
+- Step 9: G2 pre-run auto-opened correctly (~00:12).
+- Step 10: G1 completion waited until pre-run time in Groups Hub; OK.
+- Step 11: G2 start time auto-opened; cancel returned to Groups Hub.
+- Step 12: Logout safety OK on Android; iOS + Chrome also OK (Local Mode).
+- Step 13: Local Mode pre-run suppression OK.
+- Logs (shared with Step 6 run):
+  - `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_ios_simulator_postfix2_debug.log`
+  - `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_chrome_postfix2_debug.log`
+
 ## Root Cause (Confirmed)
 - `_resetForModeChange()` clears in-memory timers and `_scheduledNotices`, but does
   **not** cancel OS-level scheduled notifications via `NotificationService`.
