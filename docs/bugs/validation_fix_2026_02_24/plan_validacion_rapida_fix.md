@@ -153,6 +153,7 @@ Source: docs/bugs/validacion_rapida.md and docs/bugs/capturas-validacion
 - Logs:
   - `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_ios_simulator_postfix2_debug.log`
   - `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_chrome_postfix2_debug.log`
+- Commit: `ead72fb` — Fix account session hydrate drift and validate step 6.
 
 ## Root Cause (Confirmed)
 - `_resetForModeChange()` clears in-memory timers and `_scheduledNotices`, but does
@@ -231,3 +232,4 @@ Source: docs/bugs/validacion_rapida.md and docs/bugs/capturas-validacion
    Owner and mirror timers must stay aligned (<=2s drift). **DONE 03/04/2026.**
 4. **Record state:** update this plan, `docs/dev_log.md`, and
    `docs/roadmap.md` with the final commit hash + validation outcome.
+   **DONE 03/04/2026 — `ead72fb`.**
