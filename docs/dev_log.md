@@ -9211,3 +9211,22 @@ _(not yet validated on devices)_
 - Re-run Step 6 (pause → Groups Hub → return) and confirm owner/mirror drift
   stays within tolerance.
 - Record final commit hash + validation results in plan/roadmap/dev log.
+
+# 🔹 Block 540 — Remove unused Task List import (03/03/2026)
+
+### ✔ Work completed:
+
+- Removed an unused `scheduled_group_coordinator.dart` import from
+  `TaskListScreen`.
+
+### 🧪 Tests:
+
+- `flutter analyze`
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Continue with the pending validation workstreams in the current plan.
