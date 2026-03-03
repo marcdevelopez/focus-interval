@@ -11,7 +11,6 @@ import 'package:uuid/uuid.dart';
 import '../providers.dart';
 import '../viewmodels/task_editor_view_model.dart';
 import '../viewmodels/pre_run_notice_view_model.dart';
-import '../viewmodels/scheduled_group_coordinator.dart';
 import '../../data/models/pomodoro_session.dart';
 import '../../data/models/pomodoro_preset.dart';
 import '../../data/models/pomodoro_task.dart';

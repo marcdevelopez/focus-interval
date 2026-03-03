@@ -23,7 +23,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **03/03/2026**
+Last update: **04/03/2026**
 
 ---
 
@@ -9211,3 +9211,50 @@ _(not yet validated on devices)_
 - Re-run Step 6 (pause → Groups Hub → return) and confirm owner/mirror drift
   stays within tolerance.
 - Record final commit hash + validation results in plan/roadmap/dev log.
+
+# 🔹 Block 540 — Account Mode hydrate anchor (03/03/2026)
+
+### ✔ Work completed:
+
+- Updated `PomodoroViewModel._hydrateOwnerSession` to anchor running/paused
+  phases to `session.phaseStartedAt` in **Account Mode** and skip publishing
+  during hydration to prevent monotonic drift on owner screen returns.
+- Updated `docs/bugs/validation_fix_2026_02_24/plan_validacion_rapida_fix.md`
+  with the confirmed drift root cause and fix status.
+
+### 🧪 Tests:
+
+- `flutter analyze` — no issues.
+
+### ⚠️ Issues found:
+
+- Validation pending for Step 6 (owner leaves to Groups Hub/Task List and
+  returns). Needs multi-device repro to confirm drift is gone.
+
+### 🎯 Next steps:
+
+- Re-run Step 6 with iOS + Chrome (swap roles if needed), capture logs and
+  screenshots, then update plan/roadmap with the commit hash after validation.
+
+# 🔹 Block 541 — Step 6 validation pass (Account Mode drift) (04/03/2026)
+
+### ✔ Work completed:
+
+- Validated Step 6 (pause → Groups Hub → Run Mode return) with iOS owner and
+  Chrome mirror after the Account Mode hydrate anchor fix.
+- Updated validation plan/checklist with the successful run and new logs.
+
+### 🧪 Tests:
+
+- Manual validation (Account Mode, iOS owner + Chrome mirror).
+- Logs:
+  - `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_ios_simulator_postfix2_debug.log`
+  - `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_chrome_postfix2_debug.log`
+
+### ⚠️ Issues found:
+
+- None observed in Step 6 (timers stayed aligned after pause + navigation).
+
+### 🎯 Next steps:
+
+- Record commit hash in plan/roadmap and proceed with remaining checklist items.

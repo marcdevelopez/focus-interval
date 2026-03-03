@@ -75,6 +75,7 @@ execution slot.
 31. IDEA-023 — Resume Canceled Groups
 32. IDEA-024 — Workspaces With Shared TaskRunGroups
 33. IDEA-025 — Workspace Break Chat (Text + Deferred DM)
+34. IDEA-035 — Groups Hub Status Borders + Offline Completion Highlight
 
 Notes:
 
@@ -2773,3 +2774,82 @@ Optional: presence signals (e.g., “Device offline”) can be added later when
 workspaces/presence are implemented.
 Before implementation, clarify UI labels, fork metadata, and reconciliation
 rules to avoid logical bugs.
+
+---
+
+## IDEA-035 — Groups Hub Status Borders + Offline Completion Highlight
+
+ID: IDEA-035
+Title: Groups Hub Status Borders + Offline Completion Highlight
+Type: UI/UX
+Scope: M
+Priority: P1
+Status: idea
+
+Problem / Goal:
+Groups Hub cards do not consistently communicate status at a glance. Completed
+cards sometimes show inconsistent colors (green vs amber), and canceled groups
+are not visually distinct. Users also need a clear visual cue when a group
+completed while no device was open (offline completion).
+
+Summary:
+Unify Groups Hub card border colors by status (scheduled/complete/canceled) and
+add an offline-completion highlight (amber or green↔amber alternation). Ensure
+completed color matches the Run Mode completion color consistently.
+
+Design / UX:
+Layout / placement:
+Apply border stroke color on Groups Hub cards based on status.
+
+Visual states:
+- Scheduled: keep current neutral grey.
+- Completed: always use the standard completed green (same as Run Mode).
+- Canceled: red (negative state).
+- Completed while no device was open: amber highlight or smooth alternation
+  between green and amber (preferred), without flashing.
+
+Animation rules:
+If alternation is used, transition smoothly (slow, subtle), no strobing.
+If animation is not feasible, show static amber.
+
+Interaction:
+No new interaction; visual-only.
+
+Text / typography:
+No changes.
+
+Data & Logic:
+Source of truth:
+TaskRunGroup status + completion-reconciled flag for “completed while offline”.
+
+Calculations:
+None beyond status + offline-completion detection.
+
+Sync / multi-device:
+Presentation only; no new sync writes.
+
+Edge cases:
+- If completion state is reconciled on open, the first render must already
+  show the offline-completion highlight.
+- Ensure canceled overrides any completion styling.
+
+Accessibility:
+Colors must meet contrast guidelines; use semantic labels in accessibility
+for status where applicable.
+
+Dependencies:
+- IDEA-008 (Collapsible Groups Hub Sections + Counts) for section grouping.
+- Requires an explicit “completed while offline” signal or derivation rule.
+
+Risks:
+Overuse of color; ensure it remains subtle and does not conflict with existing
+card content.
+
+Acceptance criteria:
+- Scheduled cards remain neutral grey.
+- Completed cards always use the same green as Run Mode completion.
+- Canceled cards use red.
+- Completed while offline shows amber (or smooth green↔amber alternation).
+
+Notes:
+This feature complements IDEA-008 and does not change section structure.

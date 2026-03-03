@@ -1893,6 +1893,11 @@ The MM:SS timer must not shift horizontally:
 - **Single source of truth:** owner/mirror state and control gating (start/resume/pause/cancel/ownership)
   must be derived from the same activeSession snapshot (groupId must match). Local flags may
   project state but must never override the snapshot.
+- **Account Mode timeline rule:** when an activeSession exists, **do not** apply
+  TaskRunGroup timeline projections (owner or mirror). Both must render
+  **exclusively** from the activeSession projection. TaskRunGroup timeline
+  projection is **Local Mode only** or allowed when **no** session exists
+  (preview/initial UI).
 - After any owner action (start/resume/pause/cancel), keep the UI in a syncing/hold
   state until the corresponding activeSession snapshot confirms the change. Do **not**
   revert to the local machine as the render source in Account Mode.
@@ -1923,6 +1928,28 @@ The MM:SS timer must not shift horizontally:
 - Initial ownership is deterministic: the device that **initiates the run**
   (Start now or auto-start) must be the first owner.
 - For scheduled runs, `scheduledByDeviceId` is **metadata only** and must not block
+
+### **10.4.8.a. No-foreground owner / all devices closed**
+
+When no device has the app open (foreground or background), **time must still
+advance** based on the authoritative session timestamps. The absence of a
+foreground owner must **not** freeze progression.
+
+- If the group is **running** and the elapsed time reaches the natural end,
+  the group is considered **completed** even if no device was open. This
+  completion is **reconciled on the next app open** using server time +
+  `accumulatedPausedSeconds`.
+- When the user opens the app **after** the group should have completed, **do
+  not** open Run Mode in a “completed” state. Instead, navigate directly to
+  **Groups Hub** and show the group as completed with the standard completed
+  styling (see Groups Hub UI styling rules).
+- When the user opens the app **before** the group should complete, reopen Run
+  Mode at the correct projected phase/time.
+- If the group was **paused** when all devices closed, time **does not**
+  advance. On reopen, the session remains paused until the owner resumes.
+- If a scheduled group’s start time passes while no device is open, follow the
+  existing auto-start / resolve-overlaps rules (start on open if no conflicts;
+  show Resolve overlaps if conflicts exist).
   auto-start or ownership; any device can claim at the scheduled time.
 - For Start now, only the initiating device (`scheduledByDeviceId`) should claim
   the initial session; other devices wait for the activeSession.

@@ -1,9 +1,9 @@
 # Rapid Validation Checklist — One-Pass (2026-02-24)
 
-Date: 2026-03-03
+Date: 2026-03-04
 Scope: Late-start queue, Resolve overlaps, pre-run auto-open, Run Mode auto-open, ranges, Groups Hub rows, logout safety, mirror sync.
 Goal: Validate all pending items in a single pass using two 15-minute groups.
-Status: Pending re-run after fix (previous attempt failed on Step 2).
+Status: Partial — Step 6 validated; remaining steps pending.
 
 ## Preparation
 1. [ ] Account Mode on both devices (macOS owner, Android mirror). Open Groups Hub on both.
@@ -29,11 +29,33 @@ Status: Pending re-run after fix (previous attempt failed on Step 2).
    Evidence: 2026-03-03 03:06 Run Mode opened on both devices.
 5. [x] Mirror drift checks while G1 is running: close mirror app and reopen to Run Mode, then background mirror for ~10s and resume.
    Expected: Mirror timer is in sync immediately (no visible drift or fast catch-up).
-6. [ ] Pause G1 for 30–60s, then resume.
+6. [x] Pause G1 for 30–60s, then resume.
    Expected: Task item range and status boxes match exactly; end time reflects pause.
-   Evidence: range OK after pause/resume, but timer desync after navigating to
-   Groups Hub and returning to Run Mode (screenshots at ~03:09 and ~03:12).
-   Android log lost after app close in Step 5.
+   Evidence (03/03/2026, iOS owner + Chrome mirror): Reopen on iOS synced correctly and
+   owner snapshot looked valid. Pause ~60s: mirror showed “Syncing session...” for ~30s,
+   then recovered. After returning from Groups Hub (as performed), remainingSeconds/phaseStartedAt
+   shifted forward repeatedly; drift increased with each Groups Hub → Run Mode
+   round-trip until remainingSeconds reset to 900 (screens at ~20:12–20:15).
+   Chrome mirror froze at 15:00, then resumed ticking but remained desynced.
+   The drift increases monotonically by a similar delta on each return
+   (08:39 vs 09:43 → 09:33 vs 10:37 → 10:30 vs 11:34 → 11:26 vs 12:30).
+   Also reproduces when the **owner** leaves to other screens (e.g., Task List)
+   and returns, not only when visiting Groups Hub.
+   Logs: `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_ios_simulator_debug.log`,
+   `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_chrome_debug.log`.
+   Evidence (03/03/2026, post-fix, Chrome owner + iOS mirror): ownership request
+   needed two taps to accept on macOS (21:18). Pause at ~21:19 led to ~60s
+   “Syncing session...”. After Groups Hub → Run Mode (and other screen returns),
+   drift compounded across ~6 round-trips; Chrome froze at 15:00 then resumed
+   desynced. Logs: `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_ios_simulator_postfix_debug.log`,
+   `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_chrome_postfix_debug.log`.
+   Screenshots: 27–35.
+   Evidence (2026-03-04, post-fix2): iOS owner started G1, ownership handed to
+   macOS on request, iOS closed/reopened, backgrounded ~10s, then Groups Hub →
+   Run Mode return stayed in sync. Paused ~60s and resumed; timers remained
+   aligned (no drift after navigation). Logs:
+   `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_ios_simulator_postfix2_debug.log`,
+   `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_chrome_postfix2_debug.log`.
 7. [ ] While G1 is running, schedule G2 with notice=1 and start time = G1 expected end + 1 min (so pre-run starts exactly at G1 end).
    Expected: Planning accepts with no conflict modal.
 8. [ ] Verify Groups Hub scheduled row on both devices.
