@@ -5637,3 +5637,19 @@
 [        ] flutter: [ScheduledGroups][no-scheduled] mode=account now=2026-03-03 23:53:29.683237 scheduled=0 overdue=0 activeSession=n/a sample=n/a
 [ +376 ms] Another exception was thrown: A KeyDownEvent is dispatched, but the state shows that the physical key is already pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyDownEvent#36c6e(physicalKey: PhysicalKeyboardKey#f0183(usbHidUsage: "0x000700e2", debugName: "Alt Left"), logicalKey: LogicalKeyboardKey#e5ce6(keyId: "0x200000104", keyLabel: "Alt Left", debugName: "Alt Left"), character: null, timeStamp: 5:49:37.716463)
 [ +161 ms] Another exception was thrown: A KeyDownEvent is dispatched, but the state shows that the physical key is already pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyDownEvent#36c6e(physicalKey: PhysicalKeyboardKey#f0183(usbHidUsage: "0x000700e2", debugName: "Alt Left"), logicalKey: LogicalKeyboardKey#e5ce6(keyId: "0x200000104", keyLabel: "Alt Left", debugName: "Alt Left"), character: null, timeStamp: 5:49:37.716463)
+[+1377924 ms] flutter: [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[   +8 ms] flutter: [RunModeDiag] Active session cleared route=/tasks
+[  +89 ms] flutter: [ScheduledGroups][evaluate] mode=account now=2026-03-04 00:16:28.140845 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[        ] flutter: [ScheduledGroups][no-scheduled] mode=account now=2026-03-04 00:16:28.140845 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[+127025 ms] flutter: [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[   +2 ms] flutter: [RunModeDiag] Active session cleared route=/tasks
+[ +127 ms] flutter: [ScheduledGroups][evaluate] mode=account now=2026-03-04 00:18:35.270496 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[   +1 ms] flutter: [ScheduledGroups][no-scheduled] mode=account now=2026-03-04 00:18:35.270496 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[+6360 ms] Service protocol connection closed.
+[   +1 ms] Lost connection to device.
+[  +10 ms] DevFS: Deleting filesystem on the device (file:///Users/devcodex/Library/Containers/com.marcdevelopez.focusinterval.macos/Data/tmp/focus_intervalQwEuxJ/focus_interval/)
+[   +6 ms] DevFS: Deleted filesystem on the device (file:///Users/devcodex/Library/Containers/com.marcdevelopez.focusinterval.macos/Data/tmp/focus_intervalQwEuxJ/focus_interval/)
+[  +28 ms] "flutter run" took 1.612.187ms.
+[ +198 ms] Running 3 shutdown hooks
+[  +11 ms] Shutdown hooks complete
+[ +155 ms] exiting with code 0

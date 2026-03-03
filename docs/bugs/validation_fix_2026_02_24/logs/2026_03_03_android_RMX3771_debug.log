@@ -6928,3 +6928,435 @@
 [   +4 ms] W/Firestore( 2902): (25.1.4) [Firestore]: Listen for Query(target=Query(users/JKCwF7OCyBdplbpqwZLaJUhgIBH3/settings/preferences order by __name__);limitType=LIMIT_TO_FIRST) failed: Status{code=PERMISSION_DENIED, description=Missing or insufficient permissions., cause=null}
 [   +7 ms] I/flutter ( 2902): [ScheduledGroups][evaluate] mode=local now=2026-03-04 00:14:23.867277 scheduled=0 overdue=0 activeSession=n/a sample=n/a
 [        ] I/flutter ( 2902): [ScheduledGroups][no-scheduled] mode=local now=2026-03-04 00:14:23.867277 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[+10034 ms] D/ViewRootImplExtImpl( 2902): the up motion event handled by client, just return
+[ +164 ms] W/WindowOnBackDispatcher( 2902): OnBackInvokedCallback is not enabled for the application.
+[        ] W/WindowOnBackDispatcher( 2902): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+[+1313 ms] D/ViewRootImplExtImpl( 2902): the up motion event handled by client, just return
+[ +460 ms] I/Quality ( 2902): GetResourcesInfo:61384384,/data/app/~~tSaUurSqUHlD_VydJWZUQg==/cn.wps.moffice_eng-d_Lv5ujkEQ4pVpKmPbLzdA==/base.apk
+[ +350 ms] W/WindowOnBackDispatcher( 2902): OnBackInvokedCallback is not enabled for the application.
+[        ] W/WindowOnBackDispatcher( 2902): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+[+1415 ms] D/ViewRootImplExtImpl( 2902): the up motion event handled by client, just return
+[ +111 ms] D/callGcSupression( 2902): java.lang.NullPointerException: Attempt to invoke virtual method 'java.lang.Object java.lang.reflect.Method.invoke(java.lang.Object, java.lang.Object[])' on a null object reference
+[        ] D/ScrollOptim [SceneManager]( 2902): updateCurrentActivity: mCurrentActivityName=null, isOptEnable=true, isAnimAheadEnable=true, isFrameInsertEnable=true, InsertNum=1, isEnabledForScrollChanged=false
+[  +21 ms] D/callGcSupression( 2902): java.lang.NullPointerException: Attempt to invoke virtual method 'java.lang.Object java.lang.reflect.Method.invoke(java.lang.Object, java.lang.Object[])' on a null object reference
+[   +6 ms] D/ResourcesManagerExtImpl( 2902): applyConfigurationToAppResourcesLocked app.getDisplayId() return callback.displayId:0
+[  +54 ms] D/ScrollOptim [SceneManager]( 2902): updateCurrentActivity: mCurrentActivityName=com.google.android.gms.auth.api.signin.internal.SignInHubActivity, isOptEnable=true, isAnimAheadEnable=true, isFrameInsertEnable=true, InsertNum=1, isEnabledForScrollChanged=false
+[        ] D/ActivityThread( 2902): ComponentInfo{com.marcdevelopez.focusinterval/com.google.android.gms.auth.api.signin.internal.SignInHubActivity} checkFinished=false 2
+[        ] D/ResourcesManagerExtImpl( 2902): applyConfigurationToAppResourcesLocked app.getDisplayId() return callback.displayId:0
+[   +7 ms] D/WindowManager( 2902): Add to mViews: com.android.internal.policy.DecorView{8145915 I.E...... R.....I. 0,0-0,0 alpha=1.0 viewInfo = }[SignInHubActivity],pkg= com.marcdevelopez.focusinterval
+[        ] D/skia    ( 2902): setRusSupported enable 0
+[        ] D/ViewRootImplExtImpl( 2902): onDisplayChanged -1 for VRI android.view.ViewRootImpl@e138fb8
+[  +62 ms] D/VRI[MainActivity]( 2902): onFocusEvent false
+[        ] D/callGcSupression( 2902): java.lang.NullPointerException: Attempt to invoke virtual method 'java.lang.Object java.lang.reflect.Method.invoke(java.lang.Object, java.lang.Object[])' on a null object reference
+[        ] D/ResourcesManagerExtImpl( 2902): applyConfigurationToAppResourcesLocked app.getDisplayId() return callback.displayId:0
+[        ] D/callGcSupression( 2902): java.lang.NullPointerException: Attempt to invoke virtual method 'java.lang.Object java.lang.reflect.Method.invoke(java.lang.Object, java.lang.Object[])' on a null object reference
+[        ] D/ScrollOptim [SceneManager]( 2902): updateCurrentActivity: mCurrentActivityName=null, isOptEnable=true, isAnimAheadEnable=true, isFrameInsertEnable=true, InsertNum=1, isEnabledForScrollChanged=false
+[  +36 ms] E/OplusBracketLog( 2902): [OplusViewMirrorManager] updateHostViewRootIfNeeded, not support android.view.ViewRootImpl@e138fb8
+[        ] D/ViewRootImplExtImpl( 2902): wrapConfigInfoIntoFlags rotation=0, smallestScreenWidthDp=360, relayoutAsync=false, flags=0, newFlags=23592960, residentWS=false, title=com.marcdevelopez.focusinterval/com.google.android.gms.auth.api.signin.internal.SignInHubActivity
+[  +16 ms] D/VRI[SignInHubActivity]( 2902): relayoutWindow result, sizeChanged:true, surfaceControlChanged:true, transformHintChanged:false, mSurfaceSize:Point(1080, 2412), mLastSurfaceSize:Point(0, 0), mWidth:-1, mHeight:-1, requestedWidth:1080, requestedHeight:2412, transformHint:0, installOrientation:0, displayRotation:0, isSurfaceValid:true, attr.flag:25231616, tmpFrames:ClientWindowFrames{frame=[0,0][1080,2412] display=[0,0][1080,2412] parentFrame=[0,0][0,0]}, relayoutAsync:false, mSyncSeqId:0
+[        ] W/VRI[SignInHubActivity]( 2902): updateBlastSurfaceIfNeeded, surfaceSize:Point(1080, 2412), lastSurfaceSize:Point(0, 0), format:-2, blastBufferQueue:null
+[        ] D/BufferQueueConsumer( 2902): [](id:b5600000002,api:0,p:-1,c:2902) connect: controlledByApp=false
+[  +18 ms] I/SurfaceControl( 2902):  setExtendedRangeBrightness sc=Surface(name=com.marcdevelopez.focusinterval/com.google.android.gms.auth.api.signin.internal.SignInHubActivity)/@0x37795cd,currentBufferRatio=1.0,desiredRatio=1.0
+[  +46 ms] D/BLASTBufferQueue( 2902): [VRI[SignInHubActivity]#2](f:0,a:1) acquireNextBufferLocked size=1080x2412 mFrameNumber=1 applyTransaction=true mTimestamp=763437757244734(auto) mPendingTransactions.size=0 graphicBufferId=12463995093012 transform=0
+[        ] D/VRI[SignInHubActivity]( 2902): Received frameCommittedCallback lastAttemptedDrawFrameNum=1 didProduceBuffer=true syncBuffer=false
+[        ] D/VRI[SignInHubActivity]( 2902): draw finished. seqId=0
+[        ] D/ViewRootImplExtImpl( 2902): setMaxDequeuedBufferCount: 2
+[  +37 ms] D/callGcSupression( 2902): java.lang.NullPointerException: Attempt to invoke virtual method 'java.lang.Object java.lang.reflect.Method.invoke(java.lang.Object, java.lang.Object[])' on a null object reference
+[        ] W/VRI[SignInHubActivity]( 2902): handleResized, msg:, frameChanged:false, configChanged:false, displayChanged:false, attachedFrameChanged:false, compatScaleChanged:false, pendingDragResizing=false
+[        ] D/VRI[SignInHubActivity]( 2902): Received frameCommittedCallback lastAttemptedDrawFrameNum=2 didProduceBuffer=false syncBuffer=false
+[        ] D/VRI[SignInHubActivity]( 2902): draw finished. seqId=0
+[ +461 ms] D/OplusSystemUINavigationGestureExtImpl( 2902): regionString = null
+[  +34 ms] D/OplusSystemUINavigationGestureExtImpl( 2902): regionString = null
+[ +498 ms] D/OplusScrollToTopManager( 2902): com.marcdevelopez.focusinterval/com.marcdevelopez.focusinterval.MainActivity,This com.android.internal.policy.DecorView{e14b8be V.E...... R....... 0,0-1080,2412 aid=0 alpha=1.0 viewInfo = }[MainActivity] change focus to false
+[+4104 ms] D/callGcSupression( 2902): java.lang.NullPointerException: Attempt to invoke virtual method 'java.lang.Object java.lang.reflect.Method.invoke(java.lang.Object, java.lang.Object[])' on a null object reference
+[  +11 ms] D/ScrollOptim [SceneManager]( 2902): updateCurrentActivity: mCurrentActivityName=com.google.android.gms.auth.api.signin.internal.SignInHubActivity, isOptEnable=true, isAnimAheadEnable=true, isFrameInsertEnable=true, InsertNum=1, isEnabledForScrollChanged=false
+[        ] D/ActivityThread( 2902): ComponentInfo{com.marcdevelopez.focusinterval/com.google.android.gms.auth.api.signin.internal.SignInHubActivity} checkFinished=false 4
+[        ] D/ResourcesManagerExtImpl( 2902): applyConfigurationToAppResourcesLocked app.getDisplayId() return callback.displayId:0
+[  +21 ms] D/ViewRootImplExtImpl( 2902): wrapConfigInfoIntoFlags rotation=0, smallestScreenWidthDp=360, relayoutAsync=true, flags=0, newFlags=23592960, residentWS=false, title=com.marcdevelopez.focusinterval/com.google.android.gms.auth.api.signin.internal.SignInHubActivity
+[        ] D/VRI[SignInHubActivity]( 2902): relayoutWindow result, sizeChanged:false, surfaceControlChanged:false, transformHintChanged:false, mSurfaceSize:Point(1080, 2412), mLastSurfaceSize:Point(1080, 2412), mWidth:1080, mHeight:2412, requestedWidth:1080, requestedHeight:2412, transformHint:0, installOrientation:0, displayRotation:0, isSurfaceValid:true, attr.flag:25231616, tmpFrames:ClientWindowFrames{frame=[0,0][1080,2412] display=[0,0][1080,2412] parentFrame=[0,0][1080,2412]}, relayoutAsync:true, mSyncSeqId:0
+[        ] W/VRI[SignInHubActivity]( 2902): updateBlastSurfaceIfNeeded, surfaceSize:Point(1080, 2412), lastSurfaceSize:Point(1080, 2412), format:-2, blastBufferQueue:android.graphics.BLASTBufferQueue@ae24d83
+[        ] D/VRI[SignInHubActivity]( 2902): onFocusEvent true
+[  +67 ms] D/callGcSupression( 2902): java.lang.NullPointerException: Attempt to invoke virtual method 'java.lang.Object java.lang.reflect.Method.invoke(java.lang.Object, java.lang.Object[])' on a null object reference
+[        ] D/ScrollOptim [SceneManager]( 2902): updateCurrentActivity: mCurrentActivityName=null, isOptEnable=true, isAnimAheadEnable=true, isFrameInsertEnable=true, InsertNum=1, isEnabledForScrollChanged=false
+[  +27 ms] D/VRI[SignInHubActivity]( 2902): onFocusEvent false
+[        ] D/callGcSupression( 2902): java.lang.NullPointerException: Attempt to invoke virtual method 'java.lang.Object java.lang.reflect.Method.invoke(java.lang.Object, java.lang.Object[])' on a null object reference
+[        ] D/ScrollOptim [SceneManager]( 2902): updateCurrentActivity: mCurrentActivityName=com.marcdevelopez.focusinterval.MainActivity, isOptEnable=true, isAnimAheadEnable=true, isFrameInsertEnable=true, InsertNum=1, isEnabledForScrollChanged=false
+[        ] D/ActivityThread( 2902): ComponentInfo{com.marcdevelopez.focusinterval/com.marcdevelopez.focusinterval.MainActivity} checkFinished=false 4
+[        ] D/ResourcesManagerExtImpl( 2902): applyConfigurationToAppResourcesLocked app.getDisplayId() return callback.displayId:0
+[  +10 ms] D/callGcSupression( 2902): java.lang.NullPointerException: Attempt to invoke virtual method 'java.lang.Object java.lang.reflect.Method.invoke(java.lang.Object, java.lang.Object[])' on a null object reference
+[        ] D/VRI[SignInHubActivity]( 2902): setWindowStopped stopped:true
+[  +33 ms] D/VRI[SignInHubActivity]( 2902): dispatchAppVisibility visible:false
+[        ] D/OplusScrollToTopManager( 2902): com.marcdevelopez.focusinterval/com.google.android.gms.auth.api.signin.internal.SignInHubActivity,window dying
+[        ] D/OplusScrollToTopManager( 2902): com.marcdevelopez.focusinterval/com.google.android.gms.auth.api.signin.internal.SignInHubActivity,unregisterSystemUIBroadcastReceiver 
+[        ] D/OplusScrollToTopManager( 2902): com.marcdevelopez.focusinterval/com.google.android.gms.auth.api.signin.internal.SignInHubActivity, unregisterSystemUIBroadcastReceiver failed java.lang.IllegalArgumentException: Receiver not registered: android.view.OplusScrollToTopManager$2@cf5ea56
+[        ] W/WindowOnBackDispatcher( 2902): sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@53be4f7
+[        ] D/HWUI    ( 2902): RenderProxy::destroy: this=0xb4000070560ff300, mContext=0xb40000701cc63540
+[        ] D/HWUI    ( 2902): SkiaVulkanPipeline::setSurface: this=0xb4000070560a4ec0, surface=NULL
+[        ] D/BLASTBufferQueue( 2902): [VRI[SignInHubActivity]#2](f:0,a:1) destructor()
+[        ] D/BufferQueueConsumer( 2902): [VRI[SignInHubActivity]#2(BLAST Consumer)2](id:b5600000002,api:0,p:-1,c:2902) disconnect
+[        ] D/VRI[MainActivity]( 2902): onFocusEvent true
+[        ] I/flutter ( 2902): [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[  +16 ms] I/flutter ( 2902): [RunModeDiag] Active session cleared route=/login
+[   +8 ms] I/flutter ( 2902): [ScheduledGroups][no-groups] mode=local now=2026-03-04 00:14:43.532798 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[ +161 ms] W/System  ( 2902): Ignoring header X-Firebase-Locale because its value was null.
+[ +280 ms] W/System  ( 2902): Ignoring header X-Firebase-Locale because its value was null.
+[ +167 ms] D/FirebaseAuth( 2902): Notifying id token listeners about user ( JKCwF7OCyBdplbpqwZLaJUhgIBH3 ).
+[        ] D/FirebaseAuth( 2902): Notifying auth state listeners about user ( JKCwF7OCyBdplbpqwZLaJUhgIBH3 ).
+[  +97 ms] W/WindowOnBackDispatcher( 2902): OnBackInvokedCallback is not enabled for the application.
+[        ] W/WindowOnBackDispatcher( 2902): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+[ +255 ms] D/OplusScrollToTopManager( 2902): com.marcdevelopez.focusinterval/com.marcdevelopez.focusinterval.MainActivity,This com.android.internal.policy.DecorView{e14b8be V.E...... R....... 0,0-1080,2412 aid=0 alpha=1.0 viewInfo = }[MainActivity] change focus to true
+[ +924 ms] D/ViewRootImplExtImpl( 2902): the up motion event handled by client, just return
+[        ] I/flutter ( 2902): [ScheduledGroups] timer-state reason=mode-change scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[        ] I/flutter ( 2902): [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[        ] I/flutter ( 2902): [AppModeGuard] Mode change detected; invalidating providers.
+[        ] I/flutter ( 2902): [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[        ] I/flutter ( 2902): [ScheduledGroups][no-groups] mode=account now=2026-03-04 00:14:45.443815 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[        ] I/flutter ( 2902): [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[        ] I/flutter ( 2902): [ScheduledGroups][no-groups] mode=account now=2026-03-04 00:14:45.446106 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[        ] I/flutter ( 2902): [ScheduledGroups][no-groups] mode=account now=2026-03-04 00:14:45.452575 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[        ] I/flutter ( 2902): [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[ +109 ms] I/flutter ( 2902): [ScheduledGroups][no-groups] mode=account now=2026-03-04 00:14:45.456532 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[   +7 ms] W/WindowOnBackDispatcher( 2902): OnBackInvokedCallback is not enabled for the application.
+[        ] W/WindowOnBackDispatcher( 2902): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+[  +51 ms] I/flutter ( 2902): [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[        ] I/flutter ( 2902): [ScheduledGroups][no-groups] mode=account now=2026-03-04 00:14:45.627937 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[  +28 ms] W/z.focusinterval( 2902): Cleared Reference was only reachable from finalizer (only reported once)
+[  +18 ms] W/z.focusinterval( 2902): Reducing the number of considered missed Gc histogram windows from 117 to 100
+[   +7 ms] D/HWUI    ( 2902): SkiaVulkanPipeline::setSurface: this=0xb4000070560a4ec0, surface=NULL
+[        ] I/flutter ( 2902): [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[   +7 ms] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~VqKFlPboqTguQdhkBY8WNA==/com.google.android.marvin.talkback-K1ZB3nFlJjNbfvyjjxVN_g==/base.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~VqKFlPboqTguQdhkBY8WNA==/com.google.android.marvin.talkback-K1ZB3nFlJjNbfvyjjxVN_g==/split_config.arm64_v8a.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~tSaUurSqUHlD_VydJWZUQg==/cn.wps.moffice_eng-d_Lv5ujkEQ4pVpKmPbLzdA==/base.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~tSaUurSqUHlD_VydJWZUQg==/cn.wps.moffice_eng-d_Lv5ujkEQ4pVpKmPbLzdA==/split_config.arm64_v8a.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~tSaUurSqUHlD_VydJWZUQg==/cn.wps.moffice_eng-d_Lv5ujkEQ4pVpKmPbLzdA==/split_config.en.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~tSaUurSqUHlD_VydJWZUQg==/cn.wps.moffice_eng-d_Lv5ujkEQ4pVpKmPbLzdA==/split_config.es.apk' with 1 weak references
+[        ] I/flutter ( 2902): [ScheduledGroups][evaluate] mode=account now=2026-03-04 00:14:45.680207 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[        ] I/flutter ( 2902): [ScheduledGroups][no-scheduled] mode=account now=2026-03-04 00:14:45.680207 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~tSaUurSqUHlD_VydJWZUQg==/cn.wps.moffice_eng-d_Lv5ujkEQ4pVpKmPbLzdA==/split_config.pt.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~tSaUurSqUHlD_VydJWZUQg==/cn.wps.moffice_eng-d_Lv5ujkEQ4pVpKmPbLzdA==/split_config.xxhdpi.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~ddfbAsHfj3HgCwT_7NaRrg==/com.anthropic.claude-8QHWAEBACNlUGQTzKrw4ew==/base.apk' with 1 weak references
+[   +6 ms] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~ddfbAsHfj3HgCwT_7NaRrg==/com.anthropic.claude-8QHWAEBACNlUGQTzKrw4ew==/split_config.arm64_v8a.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~ddfbAsHfj3HgCwT_7NaRrg==/com.anthropic.claude-8QHWAEBACNlUGQTzKrw4ew==/split_config.en.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~ddfbAsHfj3HgCwT_7NaRrg==/com.anthropic.claude-8QHWAEBACNlUGQTzKrw4ew==/split_config.es.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~ddfbAsHfj3HgCwT_7NaRrg==/com.anthropic.claude-8QHWAEBACNlUGQTzKrw4ew==/split_config.pt.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~ddfbAsHfj3HgCwT_7NaRrg==/com.anthropic.claude-8QHWAEBACNlUGQTzKrw4ew==/split_config.xxhdpi.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/OppoNote2/OppoNote2.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~auhBCbJxHvptKf4DAMCKIw==/com.facebook.stella-3LsSAqkH-eP0vb50mgZgfg==/base.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~hbyqhfzUc9eBjFg-DOJO2A==/com.google.android.apps.translate-9DZetopkDYSqYE8i34xBcQ==/base.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~kAYUSerYfAKxE0Cq1RBV3g==/com.hyperionics.avar-fdJhlg2WDVZki0fBYoGupQ==/base.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~kAYUSerYfAKxE0Cq1RBV3g==/com.hyperionics.avar-fdJhlg2WDVZki0fBYoGupQ==/split_config.arm64_v8a.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~kAYUSerYfAKxE0Cq1RBV3g==/com.hyperionics.avar-fdJhlg2WDVZki0fBYoGupQ==/split_config.en.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~kAYUSerYfAKxE0Cq1RBV3g==/com.hyperionics.avar-fdJhlg2WDVZki0fBYoGupQ==/split_config.es.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~kAYUSerYfAKxE0Cq1RBV3g==/com.hyperionics.avar-fdJhlg2WDVZki0fBYoGupQ==/split_config.pt.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~kAYUSerYfAKxE0Cq1RBV3g==/com.hyperionics.avar-fdJhlg2WDVZki0fBYoGupQ==/split_config.xxhdpi.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~CK_I0qkYsUyU5bWgGQ2m-Q==/com.microsoft.copilot--bUnG80pHSXuKnjX6_4dfQ==/base.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~CK_I0qkYsUyU5bWgGQ2m-Q==/com.microsoft.copilot--bUnG80pHSXuKnjX6_4dfQ==/split_config.arm64_v8a.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~CK_I0qkYsUyU5bWgGQ2m-Q==/com.microsoft.copilot--bUnG80pHSXuKnjX6_4dfQ==/split_config.en.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~CK_I0qkYsUyU5bWgGQ2m-Q==/com.microsoft.copilot--bUnG80pHSXuKnjX6_4dfQ==/split_config.es.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~CK_I0qkYsUyU5bWgGQ2m-Q==/com.microsoft.copilot--bUnG80pHSXuKnjX6_4dfQ==/split_config.pt.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~CK_I0qkYsUyU5bWgGQ2m-Q==/com.microsoft.copilot--bUnG80pHSXuKnjX6_4dfQ==/split_config.xxhdpi.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~bQbUEE3DBj6TqODGPQ7dXQ==/com.openai.chatgpt-8YhN6Yy-m52I1157VAmMgA==/base.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~bQbUEE3DBj6TqODGPQ7dXQ==/com.openai.chatgpt-8YhN6Yy-m52I1157VAmMgA==/split_config.arm64_v8a.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~bQbUEE3DBj6TqODGPQ7dXQ==/com.openai.chatgpt-8YhN6Yy-m52I1157VAmMgA==/split_config.en.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~bQbUEE3DBj6TqODGPQ7dXQ==/com.openai.chatgpt-8YhN6Yy-m52I1157VAmMgA==/split_config.es.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~bQbUEE3DBj6TqODGPQ7dXQ==/com.openai.chatgpt-8YhN6Yy-m52I1157VAmMgA==/split_config.pt.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~bQbUEE3DBj6TqODGPQ7dXQ==/com.openai.chatgpt-8YhN6Yy-m52I1157VAmMgA==/split_config.xxhdpi.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~9B-Ug0RkylqmHPQEjwRALw==/com.touchtype.swiftkey-7uQswwX_STRFzermiL-6bg==/base.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~9B-Ug0RkylqmHPQEjwRALw==/com.touchtype.swiftkey-7uQswwX_STRFzermiL-6bg==/split_config.arm64_v8a.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~9B-Ug0RkylqmHPQEjwRALw==/com.touchtype.swiftkey-7uQswwX_STRFzermiL-6bg==/split_config.en.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~9B-Ug0RkylqmHPQEjwRALw==/com.touchtype.swiftkey-7uQswwX_STRFzermiL-6bg==/split_config.es.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~9B-Ug0RkylqmHPQEjwRALw==/com.touchtype.swiftkey-7uQswwX_STRFzermiL-6bg==/split_config.pt.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~9B-Ug0RkylqmHPQEjwRALw==/com.touchtype.swiftkey-7uQswwX_STRFzermiL-6bg==/split_config.xxhdpi.apk' with 1 weak references
+[   +1 ms] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~UqRRxFQ5QUHNxfQ7HDQxyw==/free.translate.all.language.translator-0UCZ_DanFApNju8YgoaZZQ==/base.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~UqRRxFQ5QUHNxfQ7HDQxyw==/free.translate.all.language.translator-0UCZ_DanFApNju8YgoaZZQ==/split_config.arm64_v8a.apk' with 1 weak references
+[        ] W/z.focusinterval( 2902): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~UqRRxFQ5QUHNxfQ7HDQxyw==/free.translate.all.language.translator-0UCZ_DanFApNju8YgoaZZQ==/split_config.xxhdpi.apk' with 1 weak references
+[ +265 ms] I/flutter ( 2902): [TimeSync] offset=-121ms local=2026-03-04 00:14:45.965570 server=2026-03-04 00:14:45.703
+[        ] I/flutter ( 2902): [ScheduledGroups] Account recheck after mode switch timeSyncReady=true
+[        ] I/flutter ( 2902): [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[   +7 ms] I/flutter ( 2902): [ScheduledGroups][evaluate] mode=account now=2026-03-04 00:14:45.970808 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[        ] I/flutter ( 2902): [ScheduledGroups][no-scheduled] mode=account now=2026-03-04 00:14:45.970808 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[+1997 ms] I/flutter ( 2902): [ScheduledGroups] Account recheck burst remaining=2
+[        ] I/flutter ( 2902): [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[        ] I/flutter ( 2902): [ScheduledGroups][evaluate] mode=account now=2026-03-04 00:14:47.975816 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[        ] I/flutter ( 2902): [ScheduledGroups][no-scheduled] mode=account now=2026-03-04 00:14:47.975816 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[+2005 ms] I/flutter ( 2902): [ScheduledGroups] Account recheck burst remaining=1
+[        ] I/flutter ( 2902): [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[        ] I/flutter ( 2902): [ScheduledGroups][evaluate] mode=account now=2026-03-04 00:14:49.980016 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[        ] I/flutter ( 2902): [ScheduledGroups][no-scheduled] mode=account now=2026-03-04 00:14:49.980016 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[+2004 ms] I/flutter ( 2902): [ScheduledGroups] Account recheck burst remaining=0
+[        ] I/flutter ( 2902): [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[        ] I/flutter ( 2902): [ScheduledGroups][evaluate] mode=account now=2026-03-04 00:14:51.983682 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[        ] I/flutter ( 2902): [ScheduledGroups][no-scheduled] mode=account now=2026-03-04 00:14:51.983682 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[+151828 ms] D/callGcSupression( 2902): java.lang.NullPointerException: Attempt to invoke virtual method 'java.lang.Object java.lang.reflect.Method.invoke(java.lang.Object, java.lang.Object[])' on a null object reference
+[ +215 ms] D/VRI[MainActivity]( 2902): onFocusEvent false
+[ +732 ms] D/callGcSupression( 2902): java.lang.NullPointerException: Attempt to invoke virtual method 'java.lang.Object java.lang.reflect.Method.invoke(java.lang.Object, java.lang.Object[])' on a null object reference
+[        ] D/ScrollOptim [SceneManager]( 2902): updateCurrentActivity: mCurrentActivityName=null, isOptEnable=true, isAnimAheadEnable=true, isFrameInsertEnable=true, InsertNum=1, isEnabledForScrollChanged=false
+[        ] D/VRI[MainActivity]( 2902): setWindowStopped stopped:true
+[        ] I/SurfaceView( 2902): 120548894 surfaceDestroyed
+[        ] D/BLASTBufferQueue( 2902): [SurfaceView[com.marcdevelopez.focusinterval/com.marcdevelopez.focusinterval.MainActivity]#1](f:0,a:5) destructor()
+[        ] D/BufferQueueConsumer( 2902): [SurfaceView[com.marcdevelopez.focusinterval/com.marcdevelopez.focusinterval.MainActivity]#1(BLAST Consumer)1](id:b5600000001,api:0,p:-1,c:2902) disconnect
+[        ] D/HWUI    ( 2902): RenderProxy::destroy: this=0xb40000710eae9400, mContext=0xb400007056254fc0
+[        ] D/HWUI    ( 2902): SkiaVulkanPipeline::setSurface: this=0xb40000710ea8cf80, surface=NULL
+[        ] D/BLASTBufferQueue( 2902): [VRI[MainActivity]#0](f:0,a:1) destructor()
+[        ] D/BufferQueueConsumer( 2902): [VRI[MainActivity]#0(BLAST Consumer)0](id:b5600000000,api:0,p:-1,c:2902) disconnect
+[   +4 ms] D/ViewRootImplExtImpl( 2902): wrapConfigInfoIntoFlags rotation=0, smallestScreenWidthDp=360, relayoutAsync=false, flags=0, newFlags=23592960, residentWS=false, title=com.marcdevelopez.focusinterval/com.marcdevelopez.focusinterval.MainActivity
+[        ] D/VRI[MainActivity]( 2902): relayoutWindow result, sizeChanged:false, surfaceControlChanged:true, transformHintChanged:false, mSurfaceSize:Point(1080, 2412), mLastSurfaceSize:Point(1080, 2412), mWidth:1080, mHeight:2412, requestedWidth:1080, requestedHeight:2412, transformHint:0, installOrientation:0, displayRotation:0, isSurfaceValid:false, attr.flag:-2122252032, tmpFrames:ClientWindowFrames{frame=[0,0][1080,2412] display=[0,0][1080,2412] parentFrame=[0,0][0,0]}, relayoutAsync:false, mSyncSeqId:0
+[   +7 ms] I/z.focusinterval( 2902): Waiting for a blocking GC ProfileSaver
+[  +67 ms] D/VRI[MainActivity]( 2902): dispatchAppVisibility visible:false
+[  +54 ms] I/z.focusinterval( 2902): WaitForGcToComplete blocked ProfileSaver on CollectorTransition for 107.796ms
+[ +118 ms] D/OplusScrollToTopManager( 2902): com.marcdevelopez.focusinterval/com.marcdevelopez.focusinterval.MainActivity,This com.android.internal.policy.DecorView{e14b8be I.E...... R.....ID 0,0-1080,2412 aid=0 alpha=1.0 viewInfo = }[MainActivity] change focus to false
+[+2003 ms] D/ActivityThread( 2902): do gfx trim 40 success
+[        ] D/HWUI    ( 2902): RenderThread::destroyRenderingContext: this=0xb400007170cd8800
+[        ] D/HWUI    ( 2902): SkiaVulkanPipeline::onContextDestroyed: this=0xb40000710ea8cf80
+[+2784 ms] V/NativeCrypto( 2902): Read error: ssl=0xb400007039045e48: I/O error during system call, Software caused connection abort
+[        ] V/NativeCrypto( 2902): Write error: ssl=0xb400007039045e48: I/O error during system call, Broken pipe
+[        ] W/ManagedChannelImpl( 2902): [{0}] Failed to resolve name. status={1}
+[        ] W/Firestore( 2902): (25.1.4) [WatchStream]: (25b4b08) Stream closed with status: Status{code=UNAVAILABLE, description=End of stream or IOException, cause=null}.
+[        ] V/NativeCrypto( 2902): SSL shutdown failed: ssl=0xb400007039045e48: I/O error during system call, Success
+[        ] W/Firestore( 2902): (25.1.4) [WatchStream]: (25b4b08) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+[        ] W/Firestore( 2902): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1154)
+[        ] W/Firestore( 2902): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:652)
+[        ] W/Firestore( 2902): 	at java.lang.Thread.run(Thread.java:1564)
+[        ] W/Firestore( 2902): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+[        ] W/Firestore( 2902): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:156)
+[        ] W/Firestore( 2902): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+[        ] W/Firestore( 2902): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+[        ] W/Firestore( 2902): 	... 5 more
+[        ] W/Firestore( 2902): Caused by: android.system.GaiException: android_getaddrinfo failed: EAI_NODATA (No address associated with hostname)
+[        ] W/Firestore( 2902): 	at libcore.io.Linux.android_getaddrinfo(Native Method)
+[        ] W/Firestore( 2902): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+[        ] W/Firestore( 2902): 	at libcore.io.BlockGuardOs.android_getaddrinfo(BlockGuardOs.java:222)
+[        ] W/Firestore( 2902): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+[        ] W/Firestore( 2902): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:135)
+[        ] W/Firestore( 2902): 	... 9 more
+[        ] W/Firestore( 2902): }.
+[ +858 ms] W/ManagedChannelImpl( 2902): [{0}] Failed to resolve name. status={1}
+[ +197 ms] W/Firestore( 2902): (25.1.4) [WatchStream]: (25b4b08) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+[        ] W/Firestore( 2902): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1154)
+[        ] W/Firestore( 2902): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:652)
+[        ] W/Firestore( 2902): 	at java.lang.Thread.run(Thread.java:1564)
+[        ] W/Firestore( 2902): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+[        ] W/Firestore( 2902): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:124)
+[   +1 ms] W/Firestore( 2902): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+[        ] W/Firestore( 2902): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+[        ] W/Firestore( 2902): 	... 5 more
+[        ] W/Firestore( 2902): }.
+[+1234 ms] W/Firestore( 2902): (25.1.4) [WatchStream]: (25b4b08) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+[        ] W/Firestore( 2902): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1154)
+[        ] W/Firestore( 2902): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:652)
+[        ] W/Firestore( 2902): 	at java.lang.Thread.run(Thread.java:1564)
+[        ] W/Firestore( 2902): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+[        ] W/Firestore( 2902): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:124)
+[        ] W/Firestore( 2902): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+[        ] W/Firestore( 2902): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+[        ] W/Firestore( 2902): 	... 5 more
+[        ] W/Firestore( 2902): }.
+[ +292 ms] W/ManagedChannelImpl( 2902): [{0}] Failed to resolve name. status={1}
+[ +897 ms] W/Firestore( 2902): (25.1.4) [WatchStream]: (25b4b08) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+[        ] W/Firestore( 2902): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1154)
+[        ] W/Firestore( 2902): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:652)
+[        ] W/Firestore( 2902): 	at java.lang.Thread.run(Thread.java:1564)
+[        ] W/Firestore( 2902): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+[        ] W/Firestore( 2902): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:156)
+[        ] W/Firestore( 2902): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+[        ] W/Firestore( 2902): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+[        ] W/Firestore( 2902): 	... 5 more
+[        ] W/Firestore( 2902): Caused by: android.system.GaiException: android_getaddrinfo failed: EAI_NODATA (No address associated with hostname)
+[        ] W/Firestore( 2902): 	at libcore.io.Linux.android_getaddrinfo(Native Method)
+[        ] W/Firestore( 2902): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+[        ] W/Firestore( 2902): 	at libcore.io.BlockGuardOs.android_getaddrinfo(BlockGuardOs.java:222)
+[        ] W/Firestore( 2902): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+[        ] W/Firestore( 2902): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:135)
+[        ] W/Firestore( 2902): 	... 9 more
+[        ] W/Firestore( 2902): }.
+[+1463 ms] W/ManagedChannelImpl( 2902): [{0}] Failed to resolve name. status={1}
+[+7162 ms] D/VRI[MainActivity]( 2902): dispatchAppVisibility visible:true
+[  +32 ms] D/callGcSupression( 2902): java.lang.NullPointerException: Attempt to invoke virtual method 'java.lang.Object java.lang.reflect.Method.invoke(java.lang.Object, java.lang.Object[])' on a null object reference
+[        ] D/VRI[MainActivity]( 2902): setWindowStopped stopped:false
+[        ] W/Firestore( 2902): (25.1.4) [WatchStream]: (25b4b08) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+[   +1 ms] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+[        ] W/Firestore( 2902): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1154)
+[        ] W/Firestore( 2902): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:652)
+[        ] W/Firestore( 2902): 	at java.lang.Thread.run(Thread.java:1564)
+[        ] W/Firestore( 2902): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+[        ] W/Firestore( 2902): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:156)
+[        ] W/Firestore( 2902): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+[        ] W/Firestore( 2902): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+[        ] W/Firestore( 2902): 	... 5 more
+[        ] W/Firestore( 2902): Caused by: android.system.GaiException: android_getaddrinfo failed: EAI_NODATA (No address associated with hostname)
+[        ] W/Firestore( 2902): 	at libcore.io.Linux.android_getaddrinfo(Native Method)
+[        ] W/Firestore( 2902): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+[        ] W/Firestore( 2902): 	at libcore.io.BlockGuardOs.android_getaddrinfo(BlockGuardOs.java:222)
+[        ] W/Firestore( 2902): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+[        ] W/Firestore( 2902): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:135)
+[        ] W/Firestore( 2902): 	... 9 more
+[        ] W/Firestore( 2902): }.
+[        ] D/ScrollOptim [SceneManager]( 2902): updateCurrentActivity: mCurrentActivityName=com.marcdevelopez.focusinterval.MainActivity, isOptEnable=true, isAnimAheadEnable=true, isFrameInsertEnable=true, InsertNum=1, isEnabledForScrollChanged=false
+[        ] D/ActivityThread( 2902): ComponentInfo{com.marcdevelopez.focusinterval/com.marcdevelopez.focusinterval.MainActivity} checkFinished=false 2
+[        ] D/ResourcesManagerExtImpl( 2902): applyConfigurationToAppResourcesLocked app.getDisplayId() return callback.displayId:0
+[   +7 ms] D/ViewRootImplExtImpl( 2902): wrapConfigInfoIntoFlags rotation=0, smallestScreenWidthDp=360, relayoutAsync=false, flags=0, newFlags=23592960, residentWS=false, title=com.marcdevelopez.focusinterval/com.marcdevelopez.focusinterval.MainActivity
+[  +17 ms] D/VRI[MainActivity]( 2902): relayoutWindow result, sizeChanged:false, surfaceControlChanged:true, transformHintChanged:false, mSurfaceSize:Point(1080, 2412), mLastSurfaceSize:Point(1080, 2412), mWidth:1080, mHeight:2412, requestedWidth:1080, requestedHeight:2412, transformHint:0, installOrientation:0, displayRotation:0, isSurfaceValid:true, attr.flag:-2122252032, tmpFrames:ClientWindowFrames{frame=[0,0][1080,2412] display=[0,0][1080,2412] parentFrame=[0,0][0,0]}, relayoutAsync:false, mSyncSeqId:0
+[        ] W/VRI[MainActivity]( 2902): updateBlastSurfaceIfNeeded, surfaceSize:Point(1080, 2412), lastSurfaceSize:Point(1080, 2412), format:-3, blastBufferQueue:null
+[        ] D/BufferQueueConsumer( 2902): [](id:b5600000003,api:0,p:-1,c:2902) connect: controlledByApp=false
+[        ] D/vulkan  ( 2902): searching for layers in '/data/app/~~nhXzSD05bQTd0WwmBUpUrw==/com.marcdevelopez.focusinterval-bMdUZwkkfalQcZI1S_hMnA==/lib/arm64'
+[        ] D/vulkan  ( 2902): searching for layers in '/data/app/~~nhXzSD05bQTd0WwmBUpUrw==/com.marcdevelopez.focusinterval-bMdUZwkkfalQcZI1S_hMnA==/base.apk!/lib/arm64-v8a'
+[        ] D/BufferQueueConsumer( 2902): [](id:b5600000004,api:0,p:-1,c:2902) connect: controlledByApp=false
+[        ] D/colorx  ( 2902): I can't find colorx layer , let's enumerate colorx layers first.
+[        ] I/SurfaceView( 2902): 120548894 visibleChanged -- surfaceCreated 
+[  +68 ms] D/MMUD    ( 2902): mtk_memory_debug_init com.marcdevelopez.focusinterval 0xb400007056343000
+[  +34 ms] D/SurfaceView( 2902): 120548894 handleSyncNoBuffer
+[        ] I/SurfaceControl( 2902):  setExtendedRangeBrightness sc=Surface(name=com.marcdevelopez.focusinterval/com.marcdevelopez.focusinterval.MainActivity)/@0xd914ef9,currentBufferRatio=1.0,desiredRatio=1.0
+[   +1 ms] D/SurfaceView( 2902): 120548894 dispatchDraw mDrawFinished true isAboveParent false (mPrivateFlags & PFLAG_SKIP_DRAW) 128
+[        ] D/SurfaceView( 2902): 120548894 clearSurfaceViewPort mCornerRadius 0.0
+[  +24 ms] D/BLASTBufferQueue( 2902): [VRI[MainActivity]#3](f:0,a:1) acquireNextBufferLocked size=1080x2412 mFrameNumber=1 applyTransaction=true mTimestamp=763621640315207(auto) mPendingTransactions.size=0 graphicBufferId=12463995093039 transform=0
+[        ] D/VRI[MainActivity]( 2902): Received frameCommittedCallback lastAttemptedDrawFrameNum=1 didProduceBuffer=true syncBuffer=false
+[        ] D/ViewRootImplExtImpl( 2902): setMaxDequeuedBufferCount: 2
+[        ] D/callGcSupression( 2902): java.lang.NullPointerException: Attempt to invoke virtual method 'java.lang.Object java.lang.reflect.Method.invoke(java.lang.Object, java.lang.Object[])' on a null object reference
+[        ] D/ResourcesManagerExtImpl( 2902): applyConfigurationToAppResourcesLocked app.getDisplayId() return callback.displayId:0
+[  +38 ms] D/BLASTBufferQueue( 2902): [SurfaceView[com.marcdevelopez.focusinterval/com.marcdevelopez.focusinterval.MainActivity]#4](f:0,a:1) acquireNextBufferLocked size=1080x2412 mFrameNumber=1 applyTransaction=true mTimestamp=763621659758591(auto) mPendingTransactions.size=0 graphicBufferId=12463995093030 transform=0
+[        ] D/VRI[MainActivity]( 2902): draw finished. seqId=0
+[        ] D/SurfaceView( 2902): 120548894 finishedDrawing
+[        ] D/SurfaceView( 2902): 120548894 performDrawFinished mAttachedToWindow true
+[        ] D/SurfaceView( 2902): 120548894 dispatchDraw mDrawFinished true isAboveParent false (mPrivateFlags & PFLAG_SKIP_DRAW) 128
+[        ] D/SurfaceView( 2902): 120548894 clearSurfaceViewPort mCornerRadius 0.0
+[  +31 ms] D/VRI[MainActivity]( 2902): onFocusEvent true
+[        ] I/flutter ( 2902): [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[        ] I/flutter ( 2902): [RunModeDiag] Active session cleared route=/tasks
+[  +42 ms] D/callGcSupression( 2902): java.lang.NullPointerException: Attempt to invoke virtual method 'java.lang.Object java.lang.reflect.Method.invoke(java.lang.Object, java.lang.Object[])' on a null object reference
+[   +1 ms] W/VRI[MainActivity]( 2902): handleResized abandoned!
+[  +87 ms] I/flutter ( 2902): [ScheduledGroups][evaluate] mode=account now=2026-03-04 00:17:42.182006 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[        ] I/flutter ( 2902): [ScheduledGroups][no-scheduled] mode=account now=2026-03-04 00:17:42.182006 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[ +859 ms] D/OplusScrollToTopManager( 2902): com.marcdevelopez.focusinterval/com.marcdevelopez.focusinterval.MainActivity,This com.android.internal.policy.DecorView{e14b8be V.E...... R....... 0,0-1080,2412 aid=0 alpha=1.0 viewInfo = }[MainActivity] change focus to true
+[+121001 ms] V/NativeCrypto( 2902): SSL shutdown failed: ssl=0xb40000703ec672c8: I/O error during system call, Software caused connection abort
+[+905130 ms] I/flutter ( 2902): [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[  +97 ms] I/flutter ( 2902): [ScheduledGroups][evaluate] mode=account now=2026-03-04 00:34:49.335537 scheduled=1 overdue=0 activeSession=n/a sample=d73c5dcb-eab4-4ed0-9532-209526104b75:2026-03-04T00:37:00.000|2026-03-04T00:37:00.000
+[   +8 ms] I/flutter ( 2902): [ScheduledGroups] schedule-prealert-timer group=d73c5dcb-eab4-4ed0-9532-209526104b75 preAlertStart=2026-03-04 00:36:00.000 delay=70s
+[        ] I/flutter ( 2902): [ScheduledGroups] schedule-start-timer group=d73c5dcb-eab4-4ed0-9532-209526104b75 start=2026-03-04 00:37:00.000 delay=130s
+[+70666 ms] I/flutter ( 2902): [ScheduledGroups] prealert-timer-fired group=d73c5dcb-eab4-4ed0-9532-209526104b75 now=2026-03-04 00:36:00.109758
+[        ] I/flutter ( 2902): [ScheduledGroups] timer-state reason=handle-groups scheduled=true preAlert=true runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[ +112 ms] I/flutter ( 2902): [ScheduledGroups][evaluate] mode=account now=2026-03-04 00:36:00.111245 scheduled=1 overdue=0 activeSession=n/a sample=d73c5dcb-eab4-4ed0-9532-209526104b75:2026-03-04T00:37:00.000|2026-03-04T00:37:00.000
+[ +245 ms] I/flutter ( 2902): [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[        ] I/flutter ( 2902): [ScheduledGroups][evaluate] mode=account now=2026-03-04 00:36:00.463205 scheduled=1 overdue=0 activeSession=n/a sample=d73c5dcb-eab4-4ed0-9532-209526104b75:2026-03-04T00:37:00.000|2026-03-04T00:37:00.000
+[ +122 ms] I/flutter ( 2902): [RunModeDiag] Auto-start navigate group=d73c5dcb-eab4-4ed0-9532-209526104b75 route=/tasks
+[        ] I/flutter ( 2902): Auto-start opening TimerScreen for scheduled group.
+[   +7 ms] I/flutter ( 2902): [ScheduledGroups] schedule-start-timer group=d73c5dcb-eab4-4ed0-9532-209526104b75 start=2026-03-04 00:37:00.000 delay=59s
+[ +168 ms] I/flutter ( 2902): [RunModeDiag] Auto-start navigate group=d73c5dcb-eab4-4ed0-9532-209526104b75 route=/timer/d73c5dcb-eab4-4ed0-9532-209526104b75
+[   +5 ms] I/flutter ( 2902): [ScheduledGroups] schedule-start-timer group=d73c5dcb-eab4-4ed0-9532-209526104b75 start=2026-03-04 00:37:00.000 delay=59s
+[  +27 ms] W/WindowOnBackDispatcher( 2902): OnBackInvokedCallback is not enabled for the application.
+[        ] W/WindowOnBackDispatcher( 2902): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+[ +216 ms] I/flutter ( 2902): [TimeSync] offset=-215ms local=2026-03-04 00:36:01.019634 server=2026-03-04 00:36:00.704
+[        ] I/flutter ( 2902): [TimeSync] refreshed (load-group) offset=-215ms
+[  +20 ms] I/flutter ( 2902): [ActiveSession] Missing snapshot; clearing session.
+[        ] I/flutter ( 2902): [RunModeDiag] Timer load group=d73c5dcb-eab4-4ed0-9532-209526104b75 result=PomodoroGroupLoadResult.loaded status=scheduled route=/timer/d73c5dcb-eab4-4ed0-9532-209526104b75
+[+8142 ms] D/ViewRootImplExtImpl( 2902): the up motion event handled by client, just return
+[  +22 ms] W/WindowOnBackDispatcher( 2902): OnBackInvokedCallback is not enabled for the application.
+[        ] W/WindowOnBackDispatcher( 2902): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+[+1701 ms] D/ViewRootImplExtImpl( 2902): the up motion event handled by client, just return
+[  +34 ms] I/flutter ( 2902): Cancel nav: vm canceled (attempt 0, root=true)
+[  +27 ms] I/flutter ( 2902): [ScheduledGroups] timer-state reason=handle-groups scheduled=true preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[   +5 ms] I/flutter ( 2902): [ScheduledGroups][evaluate] mode=account now=2026-03-04 00:36:10.970505 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[        ] I/flutter ( 2902): [ScheduledGroups][no-scheduled] mode=account now=2026-03-04 00:36:10.970505 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[ +144 ms] W/WindowOnBackDispatcher( 2902): OnBackInvokedCallback is not enabled for the application.
+[        ] W/WindowOnBackDispatcher( 2902): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+[ +127 ms] I/flutter ( 2902): [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[        ] I/flutter ( 2902): [ScheduledGroups][evaluate] mode=account now=2026-03-04 00:36:11.244903 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[        ] I/flutter ( 2902): [ScheduledGroups][no-scheduled] mode=account now=2026-03-04 00:36:11.244903 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[ +298 ms] W/z.focusinterval( 2902): Reducing the number of considered missed Gc histogram windows from 113 to 100
+[+48600 ms] I/flutter ( 2902): [ScheduledGroups] start-timer-fired group=d73c5dcb-eab4-4ed0-9532-209526104b75 now=2026-03-04 00:37:00.137824
+[        ] I/flutter ( 2902): [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[ +116 ms] I/flutter ( 2902): [ScheduledGroups][evaluate] mode=account now=2026-03-04 00:37:00.139380 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[        ] I/flutter ( 2902): [ScheduledGroups][no-scheduled] mode=account now=2026-03-04 00:37:00.139380 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[+54316 ms] D/callGcSupression( 2902): java.lang.NullPointerException: Attempt to invoke virtual method 'java.lang.Object java.lang.reflect.Method.invoke(java.lang.Object, java.lang.Object[])' on a null object reference
+[ +273 ms] D/VRI[MainActivity]( 2902): onFocusEvent false
+[ +972 ms] D/OplusScrollToTopManager( 2902): com.marcdevelopez.focusinterval/com.marcdevelopez.focusinterval.MainActivity,This com.android.internal.policy.DecorView{e14b8be V.E...... R....... 0,0-1080,2412 aid=0 alpha=1.0 viewInfo = }[MainActivity] change focus to false
+[ +126 ms] D/VRI[MainActivity]( 2902): onFocusEvent true
+[        ] I/flutter ( 2902): [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[        ] I/flutter ( 2902): [RunModeDiag] Active session cleared route=/groups
+[  +38 ms] D/callGcSupression( 2902): java.lang.NullPointerException: Attempt to invoke virtual method 'java.lang.Object java.lang.reflect.Method.invoke(java.lang.Object, java.lang.Object[])' on a null object reference
+[        ] D/ResourcesManagerExtImpl( 2902): applyConfigurationToAppResourcesLocked app.getDisplayId() return callback.displayId:0
+[  +91 ms] I/flutter ( 2902): [ScheduledGroups][evaluate] mode=account now=2026-03-04 00:37:55.944204 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[        ] I/flutter ( 2902): [ScheduledGroups][no-scheduled] mode=account now=2026-03-04 00:37:55.944204 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[ +865 ms] D/OplusScrollToTopManager( 2902): com.marcdevelopez.focusinterval/com.marcdevelopez.focusinterval.MainActivity,This com.android.internal.policy.DecorView{e14b8be V.E...... R....... 0,0-1080,2412 aid=0 alpha=1.0 viewInfo = }[MainActivity] change focus to true
+[ +950 ms] D/callGcSupression( 2902): java.lang.NullPointerException: Attempt to invoke virtual method 'java.lang.Object java.lang.reflect.Method.invoke(java.lang.Object, java.lang.Object[])' on a null object reference
+[ +110 ms] D/VRI[MainActivity]( 2902): onFocusEvent false
+[ +669 ms] D/callGcSupression( 2902): java.lang.NullPointerException: Attempt to invoke virtual method 'java.lang.Object java.lang.reflect.Method.invoke(java.lang.Object, java.lang.Object[])' on a null object reference
+[        ] D/ScrollOptim [SceneManager]( 2902): updateCurrentActivity: mCurrentActivityName=null, isOptEnable=true, isAnimAheadEnable=true, isFrameInsertEnable=true, InsertNum=1, isEnabledForScrollChanged=false
+[  +13 ms] D/VRI[MainActivity]( 2902): setWindowStopped stopped:true
+[        ] I/SurfaceView( 2902): 120548894 surfaceDestroyed
+[  +41 ms] D/BLASTBufferQueue( 2902): [SurfaceView[com.marcdevelopez.focusinterval/com.marcdevelopez.focusinterval.MainActivity]#4](f:0,a:5) destructor()
+[        ] D/BufferQueueConsumer( 2902): [SurfaceView[com.marcdevelopez.focusinterval/com.marcdevelopez.focusinterval.MainActivity]#4(BLAST Consumer)4](id:b5600000004,api:0,p:-1,c:2902) disconnect
+[  +17 ms] D/HWUI    ( 2902): RenderProxy::destroy: this=0xb40000710eae9400, mContext=0xb400007056254fc0
+[  +13 ms] D/HWUI    ( 2902): SkiaVulkanPipeline::setSurface: this=0xb40000710ea8cf80, surface=NULL
+[        ] D/BLASTBufferQueue( 2902): [VRI[MainActivity]#3](f:0,a:2) destructor()
+[        ] D/BufferQueueConsumer( 2902): [VRI[MainActivity]#3(BLAST Consumer)3](id:b5600000003,api:0,p:-1,c:2902) disconnect
+[        ] D/ViewRootImplExtImpl( 2902): wrapConfigInfoIntoFlags rotation=0, smallestScreenWidthDp=360, relayoutAsync=false, flags=0, newFlags=23592960, residentWS=false, title=com.marcdevelopez.focusinterval/com.marcdevelopez.focusinterval.MainActivity
+[  +14 ms] D/VRI[MainActivity]( 2902): relayoutWindow result, sizeChanged:false, surfaceControlChanged:true, transformHintChanged:false, mSurfaceSize:Point(1080, 2412), mLastSurfaceSize:Point(1080, 2412), mWidth:1080, mHeight:2412, requestedWidth:1080, requestedHeight:2412, transformHint:0, installOrientation:0, displayRotation:0, isSurfaceValid:false, attr.flag:-2122252032, tmpFrames:ClientWindowFrames{frame=[0,0][1080,2412] display=[0,0][1080,2412] parentFrame=[0,0][0,0]}, relayoutAsync:false, mSyncSeqId:0
+[  +18 ms] D/VRI[MainActivity]( 2902): dispatchAppVisibility visible:false
+[ +347 ms] D/OplusScrollToTopManager( 2902): com.marcdevelopez.focusinterval/com.marcdevelopez.focusinterval.MainActivity,This com.android.internal.policy.DecorView{e14b8be I.E...... R.....ID 0,0-1080,2412 aid=0 alpha=1.0 viewInfo = }[MainActivity] change focus to false
+[+4566 ms] V/NativeCrypto( 2902): Read error: ssl=0xb40000705665fc08: I/O error during system call, Software caused connection abort
+[   +6 ms] V/NativeCrypto( 2902): Write error: ssl=0xb40000705665fc08: I/O error during system call, Broken pipe
+[   +9 ms] W/ManagedChannelImpl( 2902): [{0}] Failed to resolve name. status={1}
+[        ] W/Firestore( 2902): (25.1.4) [WatchStream]: (25b4b08) Stream closed with status: Status{code=UNAVAILABLE, description=End of stream or IOException, cause=null}.
+[        ] V/NativeCrypto( 2902): SSL shutdown failed: ssl=0xb40000705665fc08: I/O error during system call, Success
+[  +14 ms] W/Firestore( 2902): (25.1.4) [WatchStream]: (25b4b08) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+[        ] W/Firestore( 2902): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1154)
+[        ] W/Firestore( 2902): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:652)
+[        ] W/Firestore( 2902): 	at java.lang.Thread.run(Thread.java:1564)
+[        ] W/Firestore( 2902): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+[        ] W/Firestore( 2902): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:156)
+[        ] W/Firestore( 2902): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+[        ] W/Firestore( 2902): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+[        ] W/Firestore( 2902): 	... 5 more
+[        ] W/Firestore( 2902): Caused by: android.system.GaiException: android_getaddrinfo failed: EAI_NODATA (No address associated with hostname)
+[        ] W/Firestore( 2902): 	at libcore.io.Linux.android_getaddrinfo(Native Method)
+[        ] W/Firestore( 2902): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+[        ] W/Firestore( 2902): 	at libcore.io.BlockGuardOs.android_getaddrinfo(BlockGuardOs.java:222)
+[        ] W/Firestore( 2902): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+[        ] W/Firestore( 2902): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:135)
+[        ] W/Firestore( 2902): 	... 9 more
+[        ] W/Firestore( 2902): }.
+[ +855 ms] W/ManagedChannelImpl( 2902): [{0}] Failed to resolve name. status={1}
+[  +56 ms] W/Firestore( 2902): (25.1.4) [WatchStream]: (25b4b08) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+[        ] W/Firestore( 2902): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1154)
+[        ] W/Firestore( 2902): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:652)
+[        ] W/Firestore( 2902): 	at java.lang.Thread.run(Thread.java:1564)
+[        ] W/Firestore( 2902): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+[        ] W/Firestore( 2902): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:124)
+[        ] W/Firestore( 2902): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+[        ] W/Firestore( 2902): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+[        ] W/Firestore( 2902): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+[        ] W/Firestore( 2902): 	... 5 more
+[        ] W/Firestore( 2902): }.

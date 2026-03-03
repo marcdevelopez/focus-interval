@@ -2713,3 +2713,20 @@
 [        ] [TimeSync] offset=-62ms local=2026-03-04 00:13:47.450 server=2026-03-04 00:13:47.284
 [        ] [TimeSync] refreshed (resync) offset=-62ms
 [        ] [ActiveSession] Resync missing; holding state.
+[+101333 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[   +5 ms] [RunModeDiag] Active session cleared route=/groups
+[ +699 ms] [ScheduledGroups][evaluate] mode=account now=2026-03-04 00:15:28.836 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[        ] [ScheduledGroups][no-scheduled] mode=account now=2026-03-04 00:15:28.836 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[ +774 ms] [ScheduledGroups] timer-state reason=mode-change scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[        ] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[        ] [AppModeGuard] Mode change detected; invalidating providers.
+[   +6 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[   +6 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[  +13 ms] [ScheduledGroups][evaluate] mode=local now=2026-03-04 00:15:30.318 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[        ] [ScheduledGroups][no-scheduled] mode=local now=2026-03-04 00:15:30.318 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[        ] [ScheduledGroups][evaluate] mode=local now=2026-03-04 00:15:30.324 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[        ] [ScheduledGroups][no-scheduled] mode=local now=2026-03-04 00:15:30.324 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[        ] [ScheduledGroups][evaluate] mode=local now=2026-03-04 00:15:30.332 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[        ] [ScheduledGroups][no-scheduled] mode=local now=2026-03-04 00:15:30.332 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+[ +320 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[        ] [ScheduledGroups][no-groups] mode=local now=2026-03-04 00:15:30.440 scheduled=0 overdue=0 activeSession=n/a sample=n/a
