@@ -23,7 +23,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **02/03/2026**
+Last update: **03/03/2026**
 
 ---
 
@@ -9051,3 +9051,163 @@ _(not yet validated on devices)_
 
 - Keep monitoring; if regression reappears (especially multi-device), reopen the
   Phase 13 item and attach fresh validation logs.
+
+# 🔹 Block 533 — Account pre-run notification cancellation + late-start recheck instrumentation (03/03/2026)
+
+### ✔ Work completed:
+
+- Documented Account → Local notification cancellation rule in `docs/specs.md`.
+- Updated validation plan and checklist for `docs/bugs/validation_fix_2026_02_24/`.
+- Implemented Account → Local pre-run notification cancellation in `AppModeController`.
+- Added debug instrumentation and account-mode recheck trigger in `ScheduledGroupCoordinator`.
+- Updated roadmap entry for the fix (validation pending).
+
+### 🧪 Tests:
+
+- Not run (manual validation pending).
+
+### ⚠️ Issues found:
+
+- Validation pending for late-start queue after Local → Account and Local Mode notification suppression.
+
+### 🎯 Next steps:
+
+- Run the one-pass checklist in `docs/bugs/validation_fix_2026_02_24/quick_pass_checklist.md` and capture logs/screenshots.
+
+# 🔹 Block 534 — Late-start retry instrumentation + cancel fix moved to coordinator (03/03/2026)
+
+### ✔ Work completed:
+
+- Moved Account → Local pre-run notification cancellation into `ScheduledGroupCoordinator`
+  to avoid provider circular dependency.
+- Added debug logs for scheduled/pre-alert timers and auto-start retry timers.
+- Updated validation plan to reflect the implementation shift.
+
+### 🧪 Tests:
+
+- Not run (manual validation pending).
+
+### ⚠️ Issues found:
+
+- Late-start queue still not triggering in the latest attempt; logs showed no
+  evaluation near the scheduled start and the pre-run cancellation path hit a
+  circular dependency (now fixed).
+
+### 🎯 Next steps:
+
+- Re-run the late-start checklist path and capture fresh logs to confirm timer
+  scheduling and overdue detection behavior.
+
+# 🔹 Block 535 — Timer cancellation diagnostics for late-start regression (03/03/2026)
+
+### ✔ Work completed:
+
+- Added debug logs to trace timer cancellation and provider invalidation during
+  mode changes and scheduled group evaluation.
+- Updated validation plan with the new diagnostic instrumentation.
+
+### 🧪 Tests:
+
+- Not run (manual validation pending).
+
+### ⚠️ Issues found:
+
+- Late-start queue still not triggering; investigation now focused on timer
+  cancellation or coordinator disposal.
+
+### 🎯 Next steps:
+
+- Re-run the late-start scenario and capture logs with the new
+  `timer-state` and `AppModeGuard` markers.
+
+# 🔹 Block 536 — Account recheck burst + late-start heartbeat transaction fix (03/03/2026)
+
+### ✔ Work completed:
+
+- Added a bounded account-mode recheck burst after Local → Account mode switches
+  to re-evaluate scheduled groups and recover timers after provider disposal.
+- Fixed Firestore late-start heartbeat updates to read all docs before writes,
+  preventing transaction ordering crashes.
+- Updated specs and bug validation plan with the new behavior and root-cause notes.
+
+### 🧪 Tests:
+
+- Not run (manual validation pending).
+
+### ⚠️ Issues found:
+
+- Validation pending for late-start queue and scheduled auto-start after mode switch.
+
+### 🎯 Next steps:
+
+- Run `docs/bugs/validation_fix_2026_02_24/quick_pass_checklist.md` and capture
+  fresh logs/screenshots.
+
+# 🔹 Block 537 — Preserve coordinator on logout (03/03/2026)
+
+### ✔ Work completed:
+
+- Removed logout invalidation of `scheduledGroupCoordinatorProvider` so the
+  coordinator is not disposed mid-schedule; mode changes now rely on the
+  coordinator reset hook to clear timers safely.
+- Updated the validation plan and roadmap entries accordingly.
+
+### 🧪 Tests:
+
+- Not run (manual validation pending).
+
+### ⚠️ Issues found:
+
+- Validation pending for late-start queue and scheduled auto-start after mode switch.
+
+### 🎯 Next steps:
+
+- Re-run the Local → Account late-start scenario with fresh logs to confirm
+  timers survive and the queue appears.
+
+# 🔹 Block 538 — Mirror late-start queue resolves after owner action (03/03/2026)
+
+### ✔ Work completed:
+
+- Mirror now treats a resolved late-start queue (anchor/owner cleared) as
+  "Owner resolved" and exits to Groups Hub.
+- Suppressed mirror auto-claim once the queue is already resolved so actions
+  remain read-only until ownership is explicitly requested or stale.
+
+### 🧪 Tests:
+
+- Not run (manual validation pending).
+
+### ⚠️ Issues found:
+
+- Validation pending for mirror ownership behavior in late-start resolution.
+
+### 🎯 Next steps:
+
+- Re-run the late-start queue on owner + mirror and confirm mirror is blocked
+  after owner resolves the queue.
+
+# 🔹 Block 539 — Urgent pending: single source of truth breach (03/03/2026)
+
+### ✔ Work completed:
+
+- Documented the urgent pending items and next steps in
+  `docs/bugs/validation_fix_2026_02_24/plan_validacion_rapida_fix.md` to prevent
+  partial implementations from being lost.
+
+### ⚠️ Issues found:
+
+- Run Mode in Account Mode can apply two timelines: `PomodoroSession` projection
+  plus `TaskRunGroup` projection, which ignores `accumulatedPausedSeconds` and
+  causes timer drift after pause (observed when returning from Groups Hub).
+- P0-4 validation failed and rules were rolled back; P0-5 remains unimplemented.
+
+### 🎯 Next steps:
+
+- Update `docs/specs.md` to make `PomodoroSession` the sole timeline in Account
+  Mode when a session exists (group timeline projection only in Local Mode).
+- Fix `PomodoroViewModel._hydrateOwnerSession` to skip
+  `_applyGroupTimelineProjection` in Account Mode.
+- Re-run Step 6 (pause → Groups Hub → return) and confirm owner/mirror drift
+  stays within tolerance.
+- Record final commit hash + validation results in plan/roadmap/dev log.
