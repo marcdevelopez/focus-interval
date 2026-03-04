@@ -9243,7 +9243,7 @@ _(not yet validated on devices)_
 - Validated Step 6 (pause → Groups Hub → Run Mode return) with iOS owner and
   Chrome mirror after the Account Mode hydrate anchor fix.
 - Updated validation plan/checklist with the successful run and new logs.
-- Commit: `ead72fb` — Fix account session hydrate drift and validate step 6.
+- Commit: `c13c0f6` — Fix account session hydrate drift and validate step 6.
 
 ### 🧪 Tests:
 

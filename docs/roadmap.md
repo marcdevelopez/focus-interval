@@ -131,7 +131,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       03/03/2026: Account Mode owner hydration now anchors running/paused phases
           to `session.phaseStartedAt` and skips publish-on-hydrate to prevent
           monotonic drift after owner screen returns (validated 04/03/2026; commit
-          ead72fb).
+          c13c0f6).
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
