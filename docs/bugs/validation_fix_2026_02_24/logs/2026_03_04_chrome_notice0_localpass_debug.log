@@ -1,7 +1,7 @@
-[  +90 ms] executing: sysctl hw.optional.arm64
-[  +18 ms] Exit code 1 from: sysctl hw.optional.arm64
-[        ] sysctl: unknown oid 'hw.optional.arm64'
-[  +22 ms] Artifact Instance of 'MaterialFonts' is not required, skipping update.
+[ +180 ms] executing: sysctl hw.optional.arm64
+[  +20 ms] Exit code 1 from: sysctl hw.optional.arm64
+[   +1 ms] sysctl: unknown oid 'hw.optional.arm64'
+[  +27 ms] Artifact Instance of 'MaterialFonts' is not required, skipping update.
 [        ] Artifact Instance of 'GradleWrapper' is not required, skipping update.
 [        ] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
 [        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
@@ -25,249 +25,249 @@
 [        ] Artifact Instance of 'FontSubsetArtifacts' is not required, skipping update.
 [        ] Artifact Instance of 'PubDependencies' is not required, skipping update.
 [   +2 ms] executing: [/Users/devcodex/development/flutter/] git -c log.showSignature=false log HEAD -n 1 --pretty=format:%ad --date=iso
-[  +78 ms] Exit code 0 from: git -c log.showSignature=false log HEAD -n 1 --pretty=format:%ad --date=iso
+[ +128 ms] Exit code 0 from: git -c log.showSignature=false log HEAD -n 1 --pretty=format:%ad --date=iso
 [        ] 2026-02-18 13:54:59 -0800
-[  +89 ms] executing: sysctl hw.optional.arm64
-[  +18 ms] Exit code 1 from: sysctl hw.optional.arm64
+[ +136 ms] executing: sysctl hw.optional.arm64
+[  +29 ms] Exit code 1 from: sysctl hw.optional.arm64
 [        ] sysctl: unknown oid 'hw.optional.arm64'
 [        ] executing: xcrun xcodebuild -version
-[ +262 ms] Exit code 0 from: xcrun xcodebuild -version
-[   +1 ms] Xcode 26.3
+[ +972 ms] Exit code 0 from: xcrun xcodebuild -version
+[        ] Xcode 26.3
            Build version 17C529
-[   +4 ms] executing: xcrun xcdevice list --timeout 5
-[  +12 ms] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[   +6 ms] executing: xcrun xcdevice list --timeout 5
+[  +17 ms] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
 [        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
 [        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
 [        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
 [        ] Artifact Instance of 'FlutterEngineStamp' is not required, skipping update.
 [        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
-[   +4 ms] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[   +6 ms] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
 [        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
 [        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
 [        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
-[        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[   +1 ms] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
 [        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
 [        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
-[ +120 ms] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[ +119 ms] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
 [        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
 [        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
-[   +3 ms] Artifact Instance of 'FlutterEngineStamp' is not required, skipping update.
-[  +26 ms] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[   +1 ms] Artifact Instance of 'FlutterEngineStamp' is not required, skipping update.
+[  +32 ms] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
 [        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
 [        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
 [        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
 [        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
 [        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
 [        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
-[  +85 ms] Skipping pub get: version match.
-[ +161 ms] Found plugin url_launcher at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher-6.3.2/
-[   +9 ms] Found plugin url_launcher_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_windows-3.1.5/
-[  +14 ms] Found plugin url_launcher_web at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_web-2.4.2/
-[   +9 ms] Found plugin url_launcher_macos at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_macos-3.2.5/
-[   +5 ms] Found plugin url_launcher_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_linux-3.2.2/
-[   +8 ms] Found plugin url_launcher_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_ios-6.3.6/
-[   +5 ms] Found plugin url_launcher_android at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.28/
-[   +8 ms] Found plugin shared_preferences at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences-2.5.3/
-[   +4 ms] Found plugin shared_preferences_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_windows-2.4.1/
-[   +7 ms] Found plugin path_provider_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/
-[  +12 ms] Found plugin shared_preferences_web at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_web-2.4.3/
-[   +6 ms] Found plugin shared_preferences_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_linux-2.4.1/
-[   +2 ms] Found plugin path_provider_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_linux-2.2.1/
-[   +5 ms] Found plugin shared_preferences_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.4/
-[   +3 ms] Found plugin shared_preferences_android at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.13/
+[ +120 ms] Skipping pub get: version match.
+[ +301 ms] Found plugin url_launcher at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher-6.3.2/
+[  +26 ms] Found plugin url_launcher_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_windows-3.1.5/
+[  +26 ms] Found plugin url_launcher_web at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_web-2.4.2/
+[  +17 ms] Found plugin url_launcher_macos at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_macos-3.2.5/
+[   +7 ms] Found plugin url_launcher_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_linux-3.2.2/
+[  +10 ms] Found plugin url_launcher_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_ios-6.3.6/
+[   +9 ms] Found plugin url_launcher_android at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.28/
+[  +18 ms] Found plugin shared_preferences at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences-2.5.3/
+[   +9 ms] Found plugin shared_preferences_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_windows-2.4.1/
+[  +16 ms] Found plugin path_provider_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/
+[  +19 ms] Found plugin shared_preferences_web at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_web-2.4.3/
+[   +9 ms] Found plugin shared_preferences_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_linux-2.4.1/
+[   +9 ms] Found plugin path_provider_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_linux-2.2.1/
+[   +9 ms] Found plugin shared_preferences_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.4/
+[   +4 ms] Found plugin shared_preferences_android at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.13/
 [   +5 ms] Found plugin path_provider at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider-2.1.5/
-[   +4 ms] Found plugin path_provider_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.2/
-[   +3 ms] Found plugin path_provider_android at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_android-2.2.19/
-[   +3 ms] Found plugin local_notifier at /Users/devcodex/.pub-cache/hosted/pub.dev/local_notifier-0.1.6/
-[   +4 ms] Found plugin just_audio at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio-0.9.46/
-[   +6 ms] Found plugin just_audio_web at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio_web-0.4.16/
-[  +16 ms] Found plugin audio_session at /Users/devcodex/.pub-cache/hosted/pub.dev/audio_session-0.1.25/
-[  +14 ms] Found plugin google_sign_in at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in-6.3.0/
-[   +4 ms] Found plugin google_sign_in_web at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_web-0.12.4+4/
-[  +11 ms] Found plugin google_sign_in_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_ios-5.9.0/
+[   +7 ms] Found plugin path_provider_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.2/
+[   +5 ms] Found plugin path_provider_android at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_android-2.2.19/
+[   +6 ms] Found plugin local_notifier at /Users/devcodex/.pub-cache/hosted/pub.dev/local_notifier-0.1.6/
+[  +10 ms] Found plugin just_audio at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio-0.9.46/
+[  +46 ms] Found plugin just_audio_web at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio_web-0.4.16/
+[  +17 ms] Found plugin audio_session at /Users/devcodex/.pub-cache/hosted/pub.dev/audio_session-0.1.25/
+[  +37 ms] Found plugin google_sign_in at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in-6.3.0/
+[  +10 ms] Found plugin google_sign_in_web at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_web-0.12.4+4/
+[  +18 ms] Found plugin google_sign_in_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_ios-5.9.0/
 [   +3 ms] Found plugin google_sign_in_android at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_android-6.2.1/
-[  +86 ms] Found plugin flutter_local_notifications at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications-17.2.4/
-[   +9 ms] Found plugin flutter_local_notifications_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications_linux-4.0.1/
-[  +14 ms] Found plugin firebase_core at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core-3.15.2/
+[ +122 ms] Found plugin flutter_local_notifications at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications-17.2.4/
+[   +7 ms] Found plugin flutter_local_notifications_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications_linux-4.0.1/
+[  +15 ms] Found plugin firebase_core at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core-3.15.2/
 [   +4 ms] Found plugin firebase_core_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core_web-2.24.1/
-[   +6 ms] Found plugin firebase_auth at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth-5.7.0/
-[   +5 ms] Found plugin firebase_auth_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth_web-5.15.3/
-[   +9 ms] Found plugin file_picker at /Users/devcodex/.pub-cache/hosted/pub.dev/file_picker-8.3.7/
-[  +59 ms] Found plugin flutter_plugin_android_lifecycle at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.33/
-[  +28 ms] Found plugin cloud_firestore at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore-5.6.12/
-[   +4 ms] Found plugin cloud_firestore_web at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore_web-4.4.12/
-[   +8 ms] Found plugin audioplayers at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers-6.5.1/
+[  +14 ms] Found plugin firebase_auth at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth-5.7.0/
+[   +3 ms] Found plugin firebase_auth_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth_web-5.15.3/
+[  +15 ms] Found plugin file_picker at /Users/devcodex/.pub-cache/hosted/pub.dev/file_picker-8.3.7/
+[  +44 ms] Found plugin flutter_plugin_android_lifecycle at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.33/
+[  +23 ms] Found plugin cloud_firestore at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore-5.6.12/
+[  +10 ms] Found plugin cloud_firestore_web at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore_web-4.4.12/
+[  +21 ms] Found plugin audioplayers at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers-6.5.1/
 [   +4 ms] Found plugin audioplayers_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_windows-4.2.1/
-[   +6 ms] Found plugin audioplayers_web at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_web-5.1.1/
-[   +3 ms] Found plugin audioplayers_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_linux-4.2.1/
+[   +9 ms] Found plugin audioplayers_web at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_web-5.1.1/
+[   +4 ms] Found plugin audioplayers_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_linux-4.2.1/
+[   +4 ms] Found plugin audioplayers_darwin at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_darwin-6.3.0/
+[  +10 ms] Found plugin audioplayers_android at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_android-5.2.1/
+[  +11 ms] Found plugin android_alarm_manager_plus at /Users/devcodex/.pub-cache/hosted/pub.dev/android_alarm_manager_plus-4.0.8/
+[ +308 ms] Found plugin url_launcher at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher-6.3.2/
+[   +3 ms] Found plugin url_launcher_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_windows-3.1.5/
+[   +7 ms] Found plugin url_launcher_web at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_web-2.4.2/
+[   +7 ms] Found plugin url_launcher_macos at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_macos-3.2.5/
+[   +3 ms] Found plugin url_launcher_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_linux-3.2.2/
+[   +3 ms] Found plugin url_launcher_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_ios-6.3.6/
+[   +3 ms] Found plugin url_launcher_android at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.28/
+[   +4 ms] Found plugin shared_preferences at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences-2.5.3/
+[   +3 ms] Found plugin shared_preferences_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_windows-2.4.1/
+[   +6 ms] Found plugin path_provider_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/
+[  +16 ms] Found plugin shared_preferences_web at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_web-2.4.3/
+[   +4 ms] Found plugin shared_preferences_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_linux-2.4.1/
+[   +7 ms] Found plugin path_provider_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_linux-2.2.1/
+[  +12 ms] Found plugin shared_preferences_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.4/
+[   +3 ms] Found plugin shared_preferences_android at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.13/
+[   +6 ms] Found plugin path_provider at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider-2.1.5/
+[   +3 ms] Found plugin path_provider_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.2/
+[   +3 ms] Found plugin path_provider_android at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_android-2.2.19/
+[   +9 ms] Found plugin local_notifier at /Users/devcodex/.pub-cache/hosted/pub.dev/local_notifier-0.1.6/
+[   +4 ms] Found plugin just_audio at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio-0.9.46/
+[   +4 ms] Found plugin just_audio_web at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio_web-0.4.16/
+[   +7 ms] Found plugin audio_session at /Users/devcodex/.pub-cache/hosted/pub.dev/audio_session-0.1.25/
+[   +6 ms] Found plugin google_sign_in at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in-6.3.0/
+[   +3 ms] Found plugin google_sign_in_web at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_web-0.12.4+4/
+[  +10 ms] Found plugin google_sign_in_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_ios-5.9.0/
+[   +3 ms] Found plugin google_sign_in_android at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_android-6.2.1/
+[ +129 ms] Found plugin flutter_local_notifications at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications-17.2.4/
+[   +4 ms] Found plugin flutter_local_notifications_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications_linux-4.0.1/
+[   +9 ms] Found plugin firebase_core at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core-3.15.2/
+[   +2 ms] Found plugin firebase_core_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core_web-2.24.1/
+[   +3 ms] Found plugin firebase_auth at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth-5.7.0/
+[   +2 ms] Found plugin firebase_auth_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth_web-5.15.3/
+[  +20 ms] Found plugin file_picker at /Users/devcodex/.pub-cache/hosted/pub.dev/file_picker-8.3.7/
+[  +23 ms] Found plugin flutter_plugin_android_lifecycle at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.33/
+[   +8 ms] Found plugin cloud_firestore at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore-5.6.12/
+[   +7 ms] Found plugin cloud_firestore_web at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore_web-4.4.12/
+[   +5 ms] Found plugin audioplayers at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers-6.5.1/
+[   +8 ms] Found plugin audioplayers_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_windows-4.2.1/
+[  +12 ms] Found plugin audioplayers_web at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_web-5.1.1/
+[   +6 ms] Found plugin audioplayers_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_linux-4.2.1/
 [   +2 ms] Found plugin audioplayers_darwin at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_darwin-6.3.0/
-[   +4 ms] Found plugin audioplayers_android at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_android-5.2.1/
-[   +3 ms] Found plugin android_alarm_manager_plus at /Users/devcodex/.pub-cache/hosted/pub.dev/android_alarm_manager_plus-4.0.8/
-[ +104 ms] Found plugin url_launcher at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher-6.3.2/
-[   +1 ms] Found plugin url_launcher_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_windows-3.1.5/
+[   +6 ms] Found plugin audioplayers_android at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_android-5.2.1/
+[   +7 ms] Found plugin android_alarm_manager_plus at /Users/devcodex/.pub-cache/hosted/pub.dev/android_alarm_manager_plus-4.0.8/
+[  +50 ms] Skipping generating web_plugin_registrant.dart because it is up-to-date.
+[ +162 ms] Found plugin url_launcher at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher-6.3.2/
+[   +4 ms] Found plugin url_launcher_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_windows-3.1.5/
 [   +6 ms] Found plugin url_launcher_web at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_web-2.4.2/
-[   +4 ms] Found plugin url_launcher_macos at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_macos-3.2.5/
+[   +9 ms] Found plugin url_launcher_macos at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_macos-3.2.5/
 [   +2 ms] Found plugin url_launcher_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_linux-3.2.2/
-[   +1 ms] Found plugin url_launcher_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_ios-6.3.6/
+[   +2 ms] Found plugin url_launcher_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_ios-6.3.6/
+[   +2 ms] Found plugin url_launcher_android at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.28/
+[   +4 ms] Found plugin shared_preferences at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences-2.5.3/
+[   +5 ms] Found plugin shared_preferences_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_windows-2.4.1/
+[   +4 ms] Found plugin path_provider_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/
+[  +10 ms] Found plugin shared_preferences_web at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_web-2.4.3/
+[   +2 ms] Found plugin shared_preferences_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_linux-2.4.1/
+[   +2 ms] Found plugin path_provider_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_linux-2.2.1/
+[   +4 ms] Found plugin shared_preferences_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.4/
+[   +2 ms] Found plugin shared_preferences_android at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.13/
+[   +3 ms] Found plugin path_provider at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider-2.1.5/
+[   +4 ms] Found plugin path_provider_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.2/
+[   +1 ms] Found plugin path_provider_android at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_android-2.2.19/
+[   +1 ms] Found plugin local_notifier at /Users/devcodex/.pub-cache/hosted/pub.dev/local_notifier-0.1.6/
+[   +2 ms] Found plugin just_audio at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio-0.9.46/
+[   +9 ms] Found plugin just_audio_web at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio_web-0.4.16/
+[   +9 ms] Found plugin audio_session at /Users/devcodex/.pub-cache/hosted/pub.dev/audio_session-0.1.25/
+[  +10 ms] Found plugin google_sign_in at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in-6.3.0/
+[   +2 ms] Found plugin google_sign_in_web at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_web-0.12.4+4/
+[  +10 ms] Found plugin google_sign_in_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_ios-5.9.0/
+[   +3 ms] Found plugin google_sign_in_android at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_android-6.2.1/
+[  +70 ms] Found plugin flutter_local_notifications at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications-17.2.4/
+[   +3 ms] Found plugin flutter_local_notifications_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications_linux-4.0.1/
+[   +8 ms] Found plugin firebase_core at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core-3.15.2/
+[   +2 ms] Found plugin firebase_core_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core_web-2.24.1/
+[   +5 ms] Found plugin firebase_auth at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth-5.7.0/
+[   +2 ms] Found plugin firebase_auth_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth_web-5.15.3/
+[   +6 ms] Found plugin file_picker at /Users/devcodex/.pub-cache/hosted/pub.dev/file_picker-8.3.7/
+[   +4 ms] Found plugin flutter_plugin_android_lifecycle at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.33/
+[   +8 ms] Found plugin cloud_firestore at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore-5.6.12/
+[   +2 ms] Found plugin cloud_firestore_web at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore_web-4.4.12/
+[   +3 ms] Found plugin audioplayers at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers-6.5.1/
+[   +2 ms] Found plugin audioplayers_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_windows-4.2.1/
+[   +3 ms] Found plugin audioplayers_web at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_web-5.1.1/
+[   +2 ms] Found plugin audioplayers_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_linux-4.2.1/
+[   +2 ms] Found plugin audioplayers_darwin at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_darwin-6.3.0/
+[   +2 ms] Found plugin audioplayers_android at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_android-5.2.1/
+[   +1 ms] Found plugin android_alarm_manager_plus at /Users/devcodex/.pub-cache/hosted/pub.dev/android_alarm_manager_plus-4.0.8/
+[  +36 ms] Generating /Users/devcodex/development/focus_interval/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+[   +4 ms] Skipping generating GeneratedPluginRegistrant.java because it is up-to-date.
+[  +16 ms] Skipping generating generated_plugin_registrant.h because it is up-to-date.
+[   +5 ms] Skipping generating generated_plugin_registrant.cc because it is up-to-date.
+[   +3 ms] Skipping generating generated_plugins.cmake because it is up-to-date.
+[   +6 ms] Skipping generating generated_plugin_registrant.h because it is up-to-date.
+[   +5 ms] Skipping generating generated_plugin_registrant.cc because it is up-to-date.
+[   +3 ms] Skipping generating generated_plugins.cmake because it is up-to-date.
+[   +6 ms] Skipping generating GeneratedPluginRegistrant.h because it is up-to-date.
+[   +3 ms] Skipping generating GeneratedPluginRegistrant.m because it is up-to-date.
+[   +7 ms] Skipping generating GeneratedPluginRegistrant.swift because it is up-to-date.
+[ +634 ms] Launching lib/main.dart on Chrome in debug mode...
+[ +304 ms] Initializing file store
+[   +3 ms] Done initializing file store
+[  +38 ms] Skipping target: gen_localizations
+[   +4 ms] Skipping target: gen_dart_plugin_registrant
+[   +1 ms] Skipping target: _composite
+[   +3 ms] complete
+[   +4 ms] Updating assets
+[   +5 ms] runHooks() with {TargetFile: /Users/devcodex/development/focus_interval/lib/main.dart, BuildMode: debug} and TargetPlatform.web_javascript
+[        ] runHooks() - will perform dart build
+[   +2 ms] Initializing file store
+[        ] Done initializing file store
+[  +41 ms] Skipping target: dart_build
+[   +1 ms] Persisting file store
+[   +7 ms] Done persisting file store
+[  +65 ms] runHooks() - done
+[ +946 ms] Manifest contained wildcard assets. Inserting missing file into build graph to force rerun. for more information see #56466.
+[  +24 ms] Waiting for connection from debug service on Chrome...
+[  +72 ms] Found plugin url_launcher at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher-6.3.2/
+[   +2 ms] Found plugin url_launcher_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_windows-3.1.5/
+[   +6 ms] Found plugin url_launcher_web at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_web-2.4.2/
+[   +6 ms] Found plugin url_launcher_macos at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_macos-3.2.5/
+[   +2 ms] Found plugin url_launcher_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_linux-3.2.2/
+[   +2 ms] Found plugin url_launcher_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_ios-6.3.6/
 [   +1 ms] Found plugin url_launcher_android at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.28/
 [   +3 ms] Found plugin shared_preferences at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences-2.5.3/
 [   +2 ms] Found plugin shared_preferences_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_windows-2.4.1/
 [   +3 ms] Found plugin path_provider_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/
-[   +7 ms] Found plugin shared_preferences_web at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_web-2.4.3/
-[   +2 ms] Found plugin shared_preferences_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_linux-2.4.1/
-[   +2 ms] Found plugin path_provider_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_linux-2.2.1/
-[   +5 ms] Found plugin shared_preferences_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.4/
-[   +2 ms] Found plugin shared_preferences_android at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.13/
-[   +1 ms] Found plugin path_provider at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider-2.1.5/
-[   +1 ms] Found plugin path_provider_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.2/
-[   +1 ms] Found plugin path_provider_android at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_android-2.2.19/
-[   +2 ms] Found plugin local_notifier at /Users/devcodex/.pub-cache/hosted/pub.dev/local_notifier-0.1.6/
-[   +5 ms] Found plugin just_audio at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio-0.9.46/
-[   +3 ms] Found plugin just_audio_web at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio_web-0.4.16/
-[   +7 ms] Found plugin audio_session at /Users/devcodex/.pub-cache/hosted/pub.dev/audio_session-0.1.25/
-[   +6 ms] Found plugin google_sign_in at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in-6.3.0/
-[   +2 ms] Found plugin google_sign_in_web at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_web-0.12.4+4/
-[   +5 ms] Found plugin google_sign_in_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_ios-5.9.0/
-[   +2 ms] Found plugin google_sign_in_android at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_android-6.2.1/
-[  +39 ms] Found plugin flutter_local_notifications at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications-17.2.4/
-[   +2 ms] Found plugin flutter_local_notifications_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications_linux-4.0.1/
-[   +6 ms] Found plugin firebase_core at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core-3.15.2/
-[   +2 ms] Found plugin firebase_core_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core_web-2.24.1/
-[   +2 ms] Found plugin firebase_auth at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth-5.7.0/
-[   +2 ms] Found plugin firebase_auth_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth_web-5.15.3/
-[   +5 ms] Found plugin file_picker at /Users/devcodex/.pub-cache/hosted/pub.dev/file_picker-8.3.7/
-[   +5 ms] Found plugin flutter_plugin_android_lifecycle at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.33/
-[   +4 ms] Found plugin cloud_firestore at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore-5.6.12/
-[   +1 ms] Found plugin cloud_firestore_web at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore_web-4.4.12/
-[   +3 ms] Found plugin audioplayers at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers-6.5.1/
-[   +1 ms] Found plugin audioplayers_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_windows-4.2.1/
-[   +5 ms] Found plugin audioplayers_web at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_web-5.1.1/
-[   +2 ms] Found plugin audioplayers_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_linux-4.2.1/
-[   +2 ms] Found plugin audioplayers_darwin at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_darwin-6.3.0/
-[   +5 ms] Found plugin audioplayers_android at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_android-5.2.1/
-[   +2 ms] Found plugin android_alarm_manager_plus at /Users/devcodex/.pub-cache/hosted/pub.dev/android_alarm_manager_plus-4.0.8/
-[  +35 ms] Skipping generating web_plugin_registrant.dart because it is up-to-date.
-[  +60 ms] Found plugin url_launcher at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher-6.3.2/
-[   +1 ms] Found plugin url_launcher_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_windows-3.1.5/
-[   +4 ms] Found plugin url_launcher_web at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_web-2.4.2/
-[   +3 ms] Found plugin url_launcher_macos at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_macos-3.2.5/
-[   +1 ms] Found plugin url_launcher_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_linux-3.2.2/
-[   +1 ms] Found plugin url_launcher_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_ios-6.3.6/
-[   +2 ms] Found plugin url_launcher_android at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.28/
-[   +3 ms] Found plugin shared_preferences at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences-2.5.3/
-[   +1 ms] Found plugin shared_preferences_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_windows-2.4.1/
-[   +4 ms] Found plugin path_provider_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/
-[   +4 ms] Found plugin shared_preferences_web at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_web-2.4.3/
+[   +9 ms] Found plugin shared_preferences_web at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_web-2.4.3/
 [   +1 ms] Found plugin shared_preferences_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_linux-2.4.1/
 [   +1 ms] Found plugin path_provider_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_linux-2.2.1/
-[   +1 ms] Found plugin shared_preferences_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.4/
-[   +1 ms] Found plugin shared_preferences_android at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.13/
-[   +1 ms] Found plugin path_provider at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider-2.1.5/
-[   +4 ms] Found plugin path_provider_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.2/
-[   +2 ms] Found plugin path_provider_android at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_android-2.2.19/
-[   +1 ms] Found plugin local_notifier at /Users/devcodex/.pub-cache/hosted/pub.dev/local_notifier-0.1.6/
-[   +2 ms] Found plugin just_audio at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio-0.9.46/
-[   +3 ms] Found plugin just_audio_web at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio_web-0.4.16/
-[   +5 ms] Found plugin audio_session at /Users/devcodex/.pub-cache/hosted/pub.dev/audio_session-0.1.25/
-[   +7 ms] Found plugin google_sign_in at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in-6.3.0/
-[   +2 ms] Found plugin google_sign_in_web at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_web-0.12.4+4/
-[   +6 ms] Found plugin google_sign_in_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_ios-5.9.0/
-[   +2 ms] Found plugin google_sign_in_android at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_android-6.2.1/
-[  +44 ms] Found plugin flutter_local_notifications at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications-17.2.4/
-[   +4 ms] Found plugin flutter_local_notifications_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications_linux-4.0.1/
-[   +6 ms] Found plugin firebase_core at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core-3.15.2/
-[   +2 ms] Found plugin firebase_core_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core_web-2.24.1/
-[   +3 ms] Found plugin firebase_auth at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth-5.7.0/
-[   +1 ms] Found plugin firebase_auth_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth_web-5.15.3/
-[   +5 ms] Found plugin file_picker at /Users/devcodex/.pub-cache/hosted/pub.dev/file_picker-8.3.7/
-[   +3 ms] Found plugin flutter_plugin_android_lifecycle at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.33/
-[   +4 ms] Found plugin cloud_firestore at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore-5.6.12/
-[   +2 ms] Found plugin cloud_firestore_web at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore_web-4.4.12/
-[   +4 ms] Found plugin audioplayers at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers-6.5.1/
-[   +1 ms] Found plugin audioplayers_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_windows-4.2.1/
-[   +2 ms] Found plugin audioplayers_web at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_web-5.1.1/
-[   +1 ms] Found plugin audioplayers_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_linux-4.2.1/
-[   +2 ms] Found plugin audioplayers_darwin at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_darwin-6.3.0/
-[   +2 ms] Found plugin audioplayers_android at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_android-5.2.1/
-[   +1 ms] Found plugin android_alarm_manager_plus at /Users/devcodex/.pub-cache/hosted/pub.dev/android_alarm_manager_plus-4.0.8/
-[  +21 ms] Generating /Users/devcodex/development/focus_interval/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
-[   +3 ms] Skipping generating GeneratedPluginRegistrant.java because it is up-to-date.
-[  +10 ms] Skipping generating generated_plugin_registrant.h because it is up-to-date.
-[   +2 ms] Skipping generating generated_plugin_registrant.cc because it is up-to-date.
-[   +3 ms] Skipping generating generated_plugins.cmake because it is up-to-date.
-[   +5 ms] Skipping generating generated_plugin_registrant.h because it is up-to-date.
-[   +2 ms] Skipping generating generated_plugin_registrant.cc because it is up-to-date.
-[   +3 ms] Skipping generating generated_plugins.cmake because it is up-to-date.
-[   +5 ms] Skipping generating GeneratedPluginRegistrant.h because it is up-to-date.
-[   +2 ms] Skipping generating GeneratedPluginRegistrant.m because it is up-to-date.
-[   +3 ms] Skipping generating GeneratedPluginRegistrant.swift because it is up-to-date.
-[ +389 ms] Launching lib/main.dart on Chrome in debug mode...
-[ +202 ms] Initializing file store
-[   +2 ms] Done initializing file store
-[  +22 ms] Skipping target: gen_localizations
-[   +2 ms] Skipping target: gen_dart_plugin_registrant
-[   +2 ms] Skipping target: _composite
-[   +3 ms] complete
-[   +2 ms] Updating assets
-[   +3 ms] runHooks() with {TargetFile: /Users/devcodex/development/focus_interval/lib/main.dart, BuildMode: debug} and TargetPlatform.web_javascript
-[        ] runHooks() - will perform dart build
-[   +2 ms] Initializing file store
-[        ] Done initializing file store
-[  +23 ms] Skipping target: dart_build
-[   +1 ms] Persisting file store
-[   +3 ms] Done persisting file store
-[   +7 ms] runHooks() - done
-[ +387 ms] Manifest contained wildcard assets. Inserting missing file into build graph to force rerun. for more information see #56466.
-[  +19 ms] Waiting for connection from debug service on Chrome...
-[  +65 ms] Found plugin url_launcher at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher-6.3.2/
-[   +1 ms] Found plugin url_launcher_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_windows-3.1.5/
-[   +5 ms] Found plugin url_launcher_web at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_web-2.4.2/
-[   +4 ms] Found plugin url_launcher_macos at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_macos-3.2.5/
-[   +2 ms] Found plugin url_launcher_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_linux-3.2.2/
-[   +1 ms] Found plugin url_launcher_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_ios-6.3.6/
-[   +1 ms] Found plugin url_launcher_android at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.28/
-[   +3 ms] Found plugin shared_preferences at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences-2.5.3/
-[   +2 ms] Found plugin shared_preferences_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_windows-2.4.1/
-[   +4 ms] Found plugin path_provider_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/
-[   +8 ms] Found plugin shared_preferences_web at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_web-2.4.3/
-[   +2 ms] Found plugin shared_preferences_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_linux-2.4.1/
-[   +2 ms] Found plugin path_provider_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_linux-2.2.1/
-[   +5 ms] Found plugin shared_preferences_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.4/
-[   +2 ms] Found plugin shared_preferences_android at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.13/
+[   +3 ms] Found plugin shared_preferences_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.4/
+[   +4 ms] Found plugin shared_preferences_android at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.13/
 [   +2 ms] Found plugin path_provider at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider-2.1.5/
 [   +2 ms] Found plugin path_provider_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.2/
-[   +1 ms] Found plugin path_provider_android at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_android-2.2.19/
-[   +1 ms] Found plugin local_notifier at /Users/devcodex/.pub-cache/hosted/pub.dev/local_notifier-0.1.6/
+[   +2 ms] Found plugin path_provider_android at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_android-2.2.19/
+[   +2 ms] Found plugin local_notifier at /Users/devcodex/.pub-cache/hosted/pub.dev/local_notifier-0.1.6/
 [   +2 ms] Found plugin just_audio at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio-0.9.46/
 [   +5 ms] Found plugin just_audio_web at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio_web-0.4.16/
 [   +5 ms] Found plugin audio_session at /Users/devcodex/.pub-cache/hosted/pub.dev/audio_session-0.1.25/
-[   +6 ms] Found plugin google_sign_in at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in-6.3.0/
+[   +7 ms] Found plugin google_sign_in at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in-6.3.0/
 [   +3 ms] Found plugin google_sign_in_web at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_web-0.12.4+4/
 [   +5 ms] Found plugin google_sign_in_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_ios-5.9.0/
 [   +2 ms] Found plugin google_sign_in_android at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_android-6.2.1/
-[  +51 ms] Found plugin flutter_local_notifications at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications-17.2.4/
+[  +52 ms] Found plugin flutter_local_notifications at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications-17.2.4/
 [   +2 ms] Found plugin flutter_local_notifications_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications_linux-4.0.1/
-[   +5 ms] Found plugin firebase_core at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core-3.15.2/
+[   +7 ms] Found plugin firebase_core at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core-3.15.2/
 [   +1 ms] Found plugin firebase_core_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core_web-2.24.1/
 [   +3 ms] Found plugin firebase_auth at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth-5.7.0/
-[   +2 ms] Found plugin firebase_auth_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth_web-5.15.3/
-[   +6 ms] Found plugin file_picker at /Users/devcodex/.pub-cache/hosted/pub.dev/file_picker-8.3.7/
+[   +1 ms] Found plugin firebase_auth_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth_web-5.15.3/
+[   +7 ms] Found plugin file_picker at /Users/devcodex/.pub-cache/hosted/pub.dev/file_picker-8.3.7/
 [   +3 ms] Found plugin flutter_plugin_android_lifecycle at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.33/
 [   +4 ms] Found plugin cloud_firestore at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore-5.6.12/
 [   +2 ms] Found plugin cloud_firestore_web at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore_web-4.4.12/
-[   +4 ms] Found plugin audioplayers at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers-6.5.1/
+[   +7 ms] Found plugin audioplayers at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers-6.5.1/
 [   +2 ms] Found plugin audioplayers_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_windows-4.2.1/
-[   +2 ms] Found plugin audioplayers_web at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_web-5.1.1/
-[   +1 ms] Found plugin audioplayers_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_linux-4.2.1/
-[   +1 ms] Found plugin audioplayers_darwin at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_darwin-6.3.0/
-[   +1 ms] Found plugin audioplayers_android at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_android-5.2.1/
-[   +1 ms] Found plugin android_alarm_manager_plus at /Users/devcodex/.pub-cache/hosted/pub.dev/android_alarm_manager_plus-4.0.8/
-[  +66 ms] shaderc command: [/Users/devcodex/development/flutter/bin/cache/artifacts/engine/darwin-x64/impellerc, --sksl, --iplr, --json, --sl=build/flutter_assets/shaders/ink_sparkle.frag, --spirv=build/flutter_assets/shaders/ink_sparkle.frag.spirv, --input=/Users/devcodex/development/flutter/packages/flutter/lib/src/material/shaders/ink_sparkle.frag, --input-type=frag, --include=/Users/devcodex/development/flutter/packages/flutter/lib/src/material/shaders, --include=/Users/devcodex/development/flutter/bin/cache/artifacts/engine/darwin-x64/shader_lib]
+[   +3 ms] Found plugin audioplayers_web at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_web-5.1.1/
+[   +2 ms] Found plugin audioplayers_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_linux-4.2.1/
+[   +5 ms] Found plugin audioplayers_darwin at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_darwin-6.3.0/
+[   +2 ms] Found plugin audioplayers_android at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_android-5.2.1/
+[   +2 ms] Found plugin android_alarm_manager_plus at /Users/devcodex/.pub-cache/hosted/pub.dev/android_alarm_manager_plus-4.0.8/
+[  +80 ms] shaderc command: [/Users/devcodex/development/flutter/bin/cache/artifacts/engine/darwin-x64/impellerc, --sksl, --iplr, --json, --sl=build/flutter_assets/shaders/ink_sparkle.frag, --spirv=build/flutter_assets/shaders/ink_sparkle.frag.spirv, --input=/Users/devcodex/development/flutter/packages/flutter/lib/src/material/shaders/ink_sparkle.frag, --input-type=frag, --include=/Users/devcodex/development/flutter/packages/flutter/lib/src/material/shaders, --include=/Users/devcodex/development/flutter/bin/cache/artifacts/engine/darwin-x64/shader_lib]
 [   +2 ms] shaderc command: [/Users/devcodex/development/flutter/bin/cache/artifacts/engine/darwin-x64/impellerc, --sksl, --iplr, --json, --sl=build/flutter_assets/shaders/stretch_effect.frag, --spirv=build/flutter_assets/shaders/stretch_effect.frag.spirv, --input=/Users/devcodex/development/flutter/packages/flutter/lib/src/material/shaders/stretch_effect.frag, --input-type=frag, --include=/Users/devcodex/development/flutter/packages/flutter/lib/src/material/shaders, --include=/Users/devcodex/development/flutter/bin/cache/artifacts/engine/darwin-x64/shader_lib]
-[ +604 ms] <- reset
-[   +9 ms] /Users/devcodex/development/flutter/bin/cache/dart-sdk/bin/dartaotruntime /Users/devcodex/development/flutter/bin/cache/dart-sdk/bin/snapshots/frontend_server_aot.dart.snapshot --sdk-root /Users/devcodex/development/flutter/bin/cache/flutter_web_sdk/ --incremental --target=dartdevc --experimental-emit-debug-metadata -DAPP_ENV=prod -DALLOW_PROD_IN_DEBUG=true -DFLUTTER_VERSION=3.41.2 -DFLUTTER_CHANNEL=stable -DFLUTTER_GIT_URL=https://github.com/flutter/flutter.git -DFLUTTER_FRAMEWORK_REVISION=90673a4eef -DFLUTTER_ENGINE_REVISION=6c0baaebf7 -DFLUTTER_DART_VERSION=3.11.0 --output-dill /var/folders/xf/w6ghptys0vs0w03ys34g0y7h0000gp/T/flutter_tools.uTtsQR/flutter_tool.0lvGbY/app.dill --packages /Users/devcodex/development/focus_interval/.dart_tool/package_config.json -Ddart.vm.profile=false -Ddart.vm.product=false --enable-asserts --track-widget-creation --filesystem-root /var/folders/xf/w6ghptys0vs0w03ys34g0y7h0000gp/T/flutter_tools.uTtsQR/flutter_tools.LQyqhv --filesystem-scheme org-dartlang-app --initialize-from-dill build/724fdf90f04e9eeae770ff41aeb7fbf0.cache.dill.track.dill --platform file:///Users/devcodex/development/flutter/bin/cache/flutter_web_sdk/kernel/ddc_outline.dill --verbosity=error --dartdevc-canary --dartdevc-module-format=ddc
-[  +20 ms] <- compile org-dartlang-app:/web_entrypoint.dart
-[+5514 ms] [
+[ +732 ms] <- reset
+[  +13 ms] /Users/devcodex/development/flutter/bin/cache/dart-sdk/bin/dartaotruntime /Users/devcodex/development/flutter/bin/cache/dart-sdk/bin/snapshots/frontend_server_aot.dart.snapshot --sdk-root /Users/devcodex/development/flutter/bin/cache/flutter_web_sdk/ --incremental --target=dartdevc --experimental-emit-debug-metadata -DAPP_ENV=prod -DALLOW_PROD_IN_DEBUG=true -DFLUTTER_VERSION=3.41.2 -DFLUTTER_CHANNEL=stable -DFLUTTER_GIT_URL=https://github.com/flutter/flutter.git -DFLUTTER_FRAMEWORK_REVISION=90673a4eef -DFLUTTER_ENGINE_REVISION=6c0baaebf7 -DFLUTTER_DART_VERSION=3.11.0 --output-dill /var/folders/xf/w6ghptys0vs0w03ys34g0y7h0000gp/T/flutter_tools.PvlGWF/flutter_tool.sQIl9s/app.dill --packages /Users/devcodex/development/focus_interval/.dart_tool/package_config.json -Ddart.vm.profile=false -Ddart.vm.product=false --enable-asserts --track-widget-creation --filesystem-root /var/folders/xf/w6ghptys0vs0w03ys34g0y7h0000gp/T/flutter_tools.PvlGWF/flutter_tools.nqQM4f --filesystem-scheme org-dartlang-app --initialize-from-dill build/724fdf90f04e9eeae770ff41aeb7fbf0.cache.dill.track.dill --platform file:///Users/devcodex/development/flutter/bin/cache/flutter_web_sdk/kernel/ddc_outline.dill --verbosity=error --dartdevc-canary --dartdevc-module-format=ddc
+[  +25 ms] <- compile org-dartlang-app:/web_entrypoint.dart
+[+7499 ms] [
              {
                "simulator" : true,
                "operatingSystemVersion" : "18.1 (22B81)",
@@ -803,29 +803,29 @@
                "ignored" : false
              }
            ]
-[+49907 ms] Waiting for connection from debug service on Chrome... (completed in 56,4s)
-[   +1 ms] Synced 109.1MB.
-[        ] <- accept
+[+88146 ms] Waiting for connection from debug service on Chrome... (completed in 96,8s)
+[   +2 ms] Synced 109.1MB.
+[   +1 ms] <- accept
 [        ] Caching compiled dill
-[  +88 ms] Launching Chromium (url = http://localhost:53818, headless = false, skipCheck = false, debugPort = null)
+[ +109 ms] Launching Chromium (url = http://localhost:54821, headless = false, skipCheck = false, debugPort = null)
 [        ] Will use Chromium executable at /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
-[ +130 ms] Using Google Chrome 145.0.7632.117 
+[ +182 ms] Using Google Chrome 145.0.7632.117 
 
-[ +225 ms] executing: sysctl hw.optional.arm64
-[  +15 ms] Exit code 1 from: sysctl hw.optional.arm64
+[ +417 ms] executing: sysctl hw.optional.arm64
+[  +22 ms] Exit code 1 from: sysctl hw.optional.arm64
 [        ] sysctl: unknown oid 'hw.optional.arm64'
-[+1273 ms] [CHROME]: 
-[   +1 ms] [CHROME]: DevTools listening on ws://127.0.0.1:53852/devtools/browser/f3f3513e-3363-481a-93de-37c12d852c4d
-[+1392 ms] Flutter run key commands.
-[   +3 ms] r Hot reload. 🔥🔥🔥
-[   +1 ms] R Hot restart.
+[+1841 ms] [CHROME]: 
+[   +3 ms] [CHROME]: DevTools listening on ws://127.0.0.1:54887/devtools/browser/3b6c50b3-f52b-40e1-8101-3a6d156e2962
+[+2499 ms] Flutter run key commands.
+[   +4 ms] r Hot reload. 🔥🔥🔥
+[   +2 ms] R Hot restart.
 [        ] h List all available interactive commands.
 [        ] d Detach (terminate "flutter run" but leave application running).
-[        ] c Clear the screen
+[   +1 ms] c Clear the screen
 [        ] q Quit (terminate the application on the device).
-[ +920 ms] DwdsInjector: Received request for entrypoint at http://localhost:53818/main_module.bootstrap.js
-[  +14 ms] MetadataProvider: Loading debug metadata...
-[  +13 ms] MetadataProvider: Loaded debug metadata for module: web_entrypoint.dart
+[+1691 ms] DwdsInjector: Received request for entrypoint at http://localhost:54821/main_module.bootstrap.js
+[  +16 ms] MetadataProvider: Loading debug metadata...
+[  +14 ms] MetadataProvider: Loaded debug metadata for module: web_entrypoint.dart
 [        ] MetadataProvider: Loaded debug metadata for module: web_plugin_registrant.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter_web_plugins/flutter_web_plugins.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter_web_plugins/src/plugin_registry.dart
@@ -841,7 +841,7 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/foundation/stack_frame.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/foundation/object.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/foundation/service_extensions.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/foundation/serialization.dart
+[   +1 ms] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/foundation/serialization.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/foundation/print.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/foundation/_platform_web.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/foundation/basic_types.dart
@@ -850,15 +850,15 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/foundation/node.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/foundation/licenses.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/foundation/key.dart
-[   +1 ms] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/foundation/_isolates_web.dart
+[        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/foundation/_isolates_web.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/foundation/consolidate_response.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/foundation/collections.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/foundation/change_notifier.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/foundation/capabilities.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/foundation/_capabilities_web.dart
+[   +2 ms] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/foundation/_capabilities_web.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/foundation/_bitfield_web.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/foundation/binding.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/foundation/annotations.dart
+[   +1 ms] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/foundation/annotations.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/services/text_layout_metrics.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/services/text_editing.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/services/text_editing_delta.dart
@@ -901,11 +901,11 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/characters/src/extensions.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/characters/src/characters_impl.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/characters/src/grapheme_clusters/table.dart
-[   +4 ms] MetadataProvider: Loaded debug metadata for module: packages/characters/src/grapheme_clusters/constants.dart
+[        ] MetadataProvider: Loaded debug metadata for module: packages/characters/src/grapheme_clusters/constants.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/characters/src/grapheme_clusters/breaks.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/services/text_boundary.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/services/system_sound.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/services/system_navigator.dart
+[   +3 ms] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/services/system_navigator.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/services/spell_check.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/services/sensitive_content.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/services/scribe.dart
@@ -931,7 +931,7 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/gestures/tap.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/gestures/recognizer.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/gestures/gesture_details.dart
-[   +1 ms] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/gestures/scale.dart
+[        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/gestures/scale.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/gestures/monodrag.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/gestures/drag_details.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/gestures/drag.dart
@@ -949,8 +949,8 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/services/flavor.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/services/deferred_component.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/services/browser_context_menu.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/services/asset_manifest.dart
-[   +1 ms] MetadataProvider: Loaded debug metadata for module: packages/flutter_web_plugins/src/plugin_event_channel.dart
+[   +2 ms] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/services/asset_manifest.dart
+[        ] MetadataProvider: Loaded debug metadata for module: packages/flutter_web_plugins/src/plugin_event_channel.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter_web_plugins/src/navigation/utils.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter_web_plugins/src/navigation/url_strategy.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/url_launcher_web/url_launcher_web.dart
@@ -1021,13 +1021,13 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/touch_events.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/svg_animations.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/sanitizer_api.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/saa_non_cookie_storage.dart
+[   +1 ms] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/saa_non_cookie_storage.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/resize_observer.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/reporting.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/pointerevents.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/paint_timing.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/ovr_multiview2.dart
-[   +2 ms] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/orientation_sensor.dart
+[        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/orientation_sensor.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/generic_sensor.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/orientation_event.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/oes_vertex_array_object.dart
@@ -1036,7 +1036,7 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/oes_texture_float_linear.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/oes_texture_float.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/oes_standard_derivatives.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/oes_fbo_render_mipmap.dart
+[   +1 ms] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/oes_fbo_render_mipmap.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/oes_element_index_uint.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/oes_draw_buffers_indexed.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/mediastream_recording.dart
@@ -1051,13 +1051,13 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/ext_texture_norm16.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/ext_texture_filter_anisotropic.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/ext_texture_compression_rgtc.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/ext_texture_compression_bptc.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/ext_srgb.dart
+[   +1 ms] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/ext_texture_compression_bptc.dart
+[   +1 ms] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/ext_srgb.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/ext_shader_texture_lod.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/ext_frag_depth.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/ext_float_blend.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/ext_disjoint_timer_query_webgl2.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/ext_disjoint_timer_query.dart
+[   +2 ms] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/ext_disjoint_timer_query_webgl2.dart
+[   +1 ms] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/ext_disjoint_timer_query.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/ext_color_buffer_half_float.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/ext_color_buffer_float.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/web/src/dom/ext_blend_minmax.dart
@@ -1089,10 +1089,10 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/url_launcher_platform_interface/method_channel_url_launcher.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/url_launcher_platform_interface/src/types.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/url_launcher_platform_interface/link.dart
-[   +2 ms] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/cupertino/text_form_field_row.dart
+[   +1 ms] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/cupertino/text_form_field_row.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/painting.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/painting/placeholder_span.dart
-[   +1 ms] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/painting/text_scaler.dart
+[        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/painting/text_scaler.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/painting/basic_types.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/painting/colors.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/painting/star_border.dart
@@ -1103,7 +1103,7 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/painting/edge_insets.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/painting/debug.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/painting/border_radius.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/painting/shape_decoration.dart
+[   +4 ms] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/painting/shape_decoration.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/painting/_network_image_web.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/painting/image_stream.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/painting/image_cache.dart
@@ -1133,7 +1133,7 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/painting/clip.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/painting/beveled_rectangle_border.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/rendering/service_extensions.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/semantics.dart
+[   +1 ms] MetadataProvider: Loaded debug metadata for module: packages/flutter/semantics.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/semantics/semantics_service.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/semantics/semantics_event.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/semantics/semantics.dart
@@ -1147,7 +1147,7 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/physics/gravity_simulation.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/physics/friction_simulation.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/physics/clamped_simulation.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/widgets/scroll_simulation.dart
+[   +3 ms] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/widgets/scroll_simulation.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/widgets/service_extensions.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/widgets/constants.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/widgets/_web_browser_detection_web.dart
@@ -1197,7 +1197,7 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/material_color_utilities/quantize/src/point_provider.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/material_color_utilities/quantize/quantizer_celebi.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/material_color_utilities/blend/blend.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/material/material_state.dart
+[   +2 ms] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/material/material_state.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/material/input_border.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/material/constants.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/material/tooltip_visibility.dart
@@ -1216,7 +1216,7 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/material/text_selection.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/material/text_selection_toolbar_text_button.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/material/text_selection_toolbar.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/material/spell_check_suggestions_toolbar.dart
+[  +14 ms] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/material/spell_check_suggestions_toolbar.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/material/spell_check_suggestions_toolbar_layout_delegate.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/material/adaptive_text_selection_toolbar.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/material/desktop_text_selection_toolbar_button.dart
@@ -1270,8 +1270,8 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/material/badge.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/material/autocomplete.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/material/arc.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/material/app.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/material/animated_icons.dart
+[   +2 ms] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/material/app.dart
+[   +1 ms] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/material/animated_icons.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/material/action_chip.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter/src/material/about.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/shared_preferences_web/shared_preferences_web.dart
@@ -1308,7 +1308,7 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/term_glyph/src/generated/top_level.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/term_glyph/src/generated/glyph_set.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/term_glyph/src/generated/unicode_glyph_set.dart
-[   +1 ms] MetadataProvider: Loaded debug metadata for module: packages/term_glyph/src/generated/ascii_glyph_set.dart
+[        ] MetadataProvider: Loaded debug metadata for module: packages/term_glyph/src/generated/ascii_glyph_set.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/path/src/path_set.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/path/src/utils.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/path/src/characters.dart
@@ -1324,7 +1324,7 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/http_parser/src/http_date.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/http_parser/src/chunked_coding.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/http_parser/src/chunked_coding/encoder.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/http_parser/src/chunked_coding/charcodes.dart
+[   +1 ms] MetadataProvider: Loaded debug metadata for module: packages/http_parser/src/chunked_coding/charcodes.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/http_parser/src/chunked_coding/decoder.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/typed_data/typed_data.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/typed_data/typed_buffers.dart
@@ -1381,9 +1381,9 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/cloud_firestore_platform_interface/src/vector_value.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/cloud_firestore_platform_interface/src/timestamp.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/cloud_firestore_platform_interface/src/snapshot_metadata.dart
-[   +1 ms] MetadataProvider: Loaded debug metadata for module: packages/cloud_firestore_platform_interface/src/settings.dart
+[        ] MetadataProvider: Loaded debug metadata for module: packages/cloud_firestore_platform_interface/src/settings.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/cloud_firestore_platform_interface/src/set_options.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/cloud_firestore_platform_interface/src/field_path.dart
+[   +2 ms] MetadataProvider: Loaded debug metadata for module: packages/cloud_firestore_platform_interface/src/field_path.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/cloud_firestore_platform_interface/src/field_path_type.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/cloud_firestore_platform_interface/src/platform_interface/platform_interface_persistent_cache_index_manager.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/cloud_firestore_platform_interface/src/platform_interface/platform_interface_load_bundle_task.dart
@@ -1511,7 +1511,7 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/async/src/stream_queue.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/async/src/stream_completer.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/async/src/cancelable_operation.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/async/src/stream_group.dart
+[   +1 ms] MetadataProvider: Loaded debug metadata for module: packages/async/src/stream_group.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/async/src/stream_extensions.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/async/src/stream_closer.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/async/src/sink_base.dart
@@ -1519,7 +1519,7 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/async/src/result/future.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/async/src/delegate/future.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/async/src/restartable_timer.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/async/src/lazy_stream.dart
+[   +2 ms] MetadataProvider: Loaded debug metadata for module: packages/async/src/lazy_stream.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/async/src/delegate/stream_consumer.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/async/src/delegate/stream.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/async/src/delegate/sink.dart
@@ -1537,7 +1537,7 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/test_core/src/runner/compiler_selection.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/test_api/backend.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/test_api/src/backend/stack_trace_mapper.dart
-[   +2 ms] MetadataProvider: Loaded debug metadata for module: packages/test_api/src/backend/stack_trace_formatter.dart
+[        ] MetadataProvider: Loaded debug metadata for module: packages/test_api/src/backend/stack_trace_formatter.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/test_api/src/backend/remote_listener.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/test_api/src/backend/suite_channel_manager.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/test_core/src/runner/runner_suite.dart
@@ -1580,7 +1580,7 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/clock/src/stopwatch.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/clock/src/utils.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/riverpod/src/common/internal_lints.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/riverpod/src/providers/legacy/state_controller.dart
+[   +2 ms] MetadataProvider: Loaded debug metadata for module: packages/riverpod/src/providers/legacy/state_controller.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter_test/flutter_test.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter_test/src/window.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter_test/src/test_text_input_key_handler.dart
@@ -1659,7 +1659,7 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/rxdart/src/utils/forwarding_stream.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/rxdart/src/utils/forwarding_sink.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/rxdart/src/utils/collection_extensions.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/rxdart/src/transformers/where_type.dart
+[   +2 ms] MetadataProvider: Loaded debug metadata for module: packages/rxdart/src/transformers/where_type.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/rxdart/src/transformers/where_not_null.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/rxdart/src/transformers/timestamp.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/rxdart/src/transformers/time_interval.dart
@@ -1704,7 +1704,7 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/rxdart/src/streams/replay_stream.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/rxdart/src/streams/repeat.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/rxdart/src/streams/range.dart
-[   +1 ms] MetadataProvider: Loaded debug metadata for module: packages/rxdart/src/streams/race.dart
+[        ] MetadataProvider: Loaded debug metadata for module: packages/rxdart/src/streams/race.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/rxdart/src/streams/never.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/rxdart/src/streams/merge.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/rxdart/src/streams/from_callable.dart
@@ -1740,11 +1740,11 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/focus_interval/data/repositories/pomodoro_preset_repository.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/focus_interval/presentation/viewmodels/task_selection_view_model.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/focus_interval/domain/pomodoro_machine.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/focus_interval/data/models/pomodoro_session.dart
+[   +1 ms] MetadataProvider: Loaded debug metadata for module: packages/focus_interval/data/models/pomodoro_session.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/focus_interval/data/repositories/task_repository.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/focus_interval/data/services/time_sync_service.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/focus_interval/data/services/firestore_service.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/focus_interval/data/services/firebase_auth_service.dart
+[   +2 ms] MetadataProvider: Loaded debug metadata for module: packages/focus_interval/data/services/firebase_auth_service.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/focus_interval/data/services/github_oauth_service.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/focus_interval/data/services/github_oauth_service_stub.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/focus_interval/data/services/github_oauth_models.dart
@@ -1793,7 +1793,7 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter_local_notifications/src/platform_flutter_local_notifications.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter_local_notifications/src/tz_datetime_mapper.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/timezone/timezone.dart
-[   +1 ms] MetadataProvider: Loaded debug metadata for module: packages/timezone/src/location_database.dart
+[        ] MetadataProvider: Loaded debug metadata for module: packages/timezone/src/location_database.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/timezone/src/location.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/timezone/src/exceptions.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/timezone/src/env.dart
@@ -1811,8 +1811,8 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter_local_notifications_linux/flutter_local_notifications_linux.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter_local_notifications_linux/src/model/timeout.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter_local_notifications_linux/src/model/sound.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/flutter_local_notifications_linux/src/model/enums.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/flutter_local_notifications_linux/src/model/notification_details.dart
+[   +2 ms] MetadataProvider: Loaded debug metadata for module: packages/flutter_local_notifications_linux/src/model/enums.dart
+[   +1 ms] MetadataProvider: Loaded debug metadata for module: packages/flutter_local_notifications_linux/src/model/notification_details.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter_local_notifications_linux/src/model/location.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter_local_notifications_linux/src/model/hint.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/flutter_local_notifications_linux/src/model/initialization_settings.dart
@@ -1869,7 +1869,7 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/intl/src/intl/micro_money.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/intl/src/intl/date_format.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/intl/src/intl/regexp.dart
-[        ] MetadataProvider: Loaded debug metadata for module: packages/intl/src/intl/date_computation.dart
+[   +2 ms] MetadataProvider: Loaded debug metadata for module: packages/intl/src/intl/date_computation.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/intl/src/intl/date_builder.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/intl/src/date_format_internal.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/intl/date_symbols.dart
@@ -1902,373 +1902,15 @@
 [        ] MetadataProvider: Loaded debug metadata for module: packages/focus_interval/app/app_config.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/focus_interval/firebase_options_staging.dart
 [        ] MetadataProvider: Loaded debug metadata for module: packages/focus_interval/firebase_options.dart
-[  +46 ms] DwdsInjector: Injected debugging metadata for entrypoint at http://localhost:53818/main_module.bootstrap.js
-[+4771 ms] DevHandler: VmService proxy responded with an error:
-           {jsonrpc: 2.0, id: 3, error: {code: -32602, message: The stream `Timer` is not supported on web devices}}
-[  +54 ms] DwdsVmClient: Registering service extension: ext.dwds.emitEvent
+[  +38 ms] DwdsInjector: Injected debugging metadata for entrypoint at http://localhost:54821/main_module.bootstrap.js
+[+11198 ms] DevHandler: VmService proxy responded with an error:
+            {jsonrpc: 2.0, id: 3, error: {code: -32602, message: The stream `Timer` is not supported on web devices}}
+[  +81 ms] DwdsVmClient: Registering service extension: ext.dwds.emitEvent
 [   +1 ms] DwdsVmClient: Registering service extension: ext.dwds.reload
 [        ] DwdsVmClient: Registering service extension: ext.dwds.restart
 [        ] DwdsVmClient: Registering service extension: ext.dwds.screenshot
 [        ] DwdsVmClient: Registering service extension: ext.dwds.sendEvent
 [        ] DwdsVmClient: Registering service extension: _flutter.listViews
-[  +47 ms] DevHandler: Debug service listening on ws://127.0.0.1:53906/rHIPXoWIwcg=/ws
+[  +51 ms] DevHandler: Debug service listening on ws://127.0.0.1:54956/gWaiOE3QAy0=/ws
 
-[+4895 ms] ChromeProxyService: Initializing expression compiler for main_module.bootstrap.js
-[ +139 ms] DevHandler: Chrome proxy service initialized successfully
-[   +3 ms] ChromeProxyService: Caching package:flutter/src/widgets/widget_inspector.dart in expression compiler worker
-[  +10 ms] DevHandler: VmService proxy responded with an error:
-           {jsonrpc: 2.0, id: 10, error: {code: -32601, message: Method not found, data: {jsonrpc: 2.0, method: _setStreamIncludePrivateMembers, id: 10, params: {streamId: Stdout, includePrivateMembers: false}}}}
-[   +1 ms] DevHandler: VmService proxy responded with an error:
-           {jsonrpc: 2.0, id: 11, error: {code: -32601, message: Method not found, data: {jsonrpc: 2.0, method: _setStreamIncludePrivateMembers, id: 11, params: {streamId: Stderr, includePrivateMembers: false}}}}
-[  +12 ms] DevHandler: VmService proxy responded with an error:
-           {jsonrpc: 2.0, id: 13, error: {code: -32601, message: Method not found, data: {jsonrpc: 2.0, method: _setStreamIncludePrivateMembers, id: 13, params: {streamId: Isolate, includePrivateMembers: false}}}}
-[   +3 ms] DevHandler: VmService proxy responded with an error:
-           {jsonrpc: 2.0, id: 14, error: {code: -32601, message: Method not found, data: {jsonrpc: 2.0, method: _setStreamIncludePrivateMembers, id: 14, params: {streamId: Extension, includePrivateMembers: false}}}}
-[   +3 ms] Debug service listening on ws://127.0.0.1:53906/rHIPXoWIwcg=/ws
-[        ] A Dart VM Service on Chrome is available at: http://127.0.0.1:53906/rHIPXoWIwcg=
-[   +1 ms] The Flutter DevTools debugger and profiler on Chrome is available at: http://127.0.0.1:53906/rHIPXoWIwcg=/devtools/?uri=ws://127.0.0.1:53906/rHIPXoWIwcg=/ws
-[  +20 ms] Starting application from main method in: org-dartlang-app:/web_entrypoint.dart.
-[ +217 ms] ExpressionEvaluator: Evaluating "() { return true; }" at packages/flutter/src/cupertino/text_form_field_row.dart
-[  +26 ms] ExpressionEvaluator: Evaluating JS: "function () {
-             try {
-               return ((() => {var sentinel = {}; var output = function() {
-                   let dart = dartDevEmbedder.importLibrary("dart:_runtime", function(lib) {
-                     dart = lib;
-                   });
-                   let dart_rti = dartDevEmbedder.importLibrary("dart:_rti", function(lib) {
-                     dart_rti = lib;
-                   });
-                   let dartx = dartDevEmbedder.importLibrary("dartx", function(lib) {
-                     dartx = lib;
-                   });
-                   var T = {
-                     VoidTobool: () => (T.VoidTobool = dart.constFn(dart_rti._Universe.eval(dart.typeUniverse, "core|bool()", true)))()
-                   };
-                   return dart.fn(() => true, T.VoidTobool());
-                 }(); if (output === sentinel) throw Error("Value not found in scope");return output?._boundMethod || output;})())();
-             } catch (error) {
-               return error.name + ": " + error.message;
-             }
-           }" with scope: {}
-[ +180 ms] ExpressionEvaluator: Evaluated "() { return true; }" to "{type: boolean, value: true}"
-[  +14 ms] AppConfig: env=prod project=focus-interval emulator=false host=localhost ports=auth:9099,firestore:8080
-[+1153 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[ +357 ms] [RunModeDiag] Active session cleared route=/tasks
-[   +8 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[   +9 ms] [GSI_LOGGER]: Experiment enable_itp_optimization set to 0.
-[        ] [GSI_LOGGER]: Evaluating FedCM mode support.
-[        ] [GSI_LOGGER]: FedCM mode supported.
-[        ] [GSI_LOGGER-TOKEN_CLIENT]: Instantiated.
-[ +148 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[        ] [ScheduledGroups][no-groups] mode=local now=2026-03-04 14:00:27.542 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[        ] [ScheduledGroups][no-groups] mode=local now=2026-03-04 14:00:27.908 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[        ] [ScheduledGroups][no-groups] mode=local now=2026-03-04 14:00:28.018 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[+2584 ms] [ScheduledGroups] timer-state reason=mode-change scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[   +2 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[   +7 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[        ] [AppModeGuard] Mode change detected; invalidating providers.
-[   +7 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[        ] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[   +9 ms] [ScheduledGroups] Account recheck after mode switch timeSyncReady=false
-[        ] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[        ] [ScheduledGroups][no-groups] mode=account now=2026-03-04 14:00:30.655 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[        ] [ScheduledGroups][no-groups] mode=account now=2026-03-04 14:00:30.661 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[        ] [ScheduledGroups][no-groups] mode=account now=2026-03-04 14:00:30.669 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[        ] [ScheduledGroups][no-groups] mode=account now=2026-03-04 14:00:30.670 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[        ] [ScheduledGroups][no-groups] mode=account now=2026-03-04 14:00:30.676 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[+1783 ms] The `signIn` method is discouraged on the web because it can't reliably provide an `idToken`.
-           Use `signInSilently` and `renderButton` to authenticate your users instead.
-           Read more: https://pub.dev/packages/google_sign_in_web
-[        ] The google_sign_in plugin `signIn` method is deprecated on the web, and will be removed in Q2 2024. Please use `renderButton` instead. See: https://pub.dev/packages/google_sign_in_web#migrating-to-v011-and-v012-google-identity-services
-[        ] [GSI_LOGGER-TOKEN_CLIENT]: Starting popup flow.
-[ +444 ms] [GSI_LOGGER-OAUTH2_CLIENT]: Starting popup timer.
-[   +4 ms] [ScheduledGroups] Account recheck burst remaining=2
-[        ] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[        ] [ScheduledGroups][no-groups] mode=account now=2026-03-04 14:00:32.742 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[ +149 ms] [GSI_LOGGER-OAUTH2_CLIENT]: Checking popup closed.
-[ +506 ms] [GSI_LOGGER-OAUTH2_CLIENT]: Checking popup closed.
-[ +565 ms] [GSI_LOGGER-OAUTH2_CLIENT]: Checking popup closed.
-[ +661 ms] [GSI_LOGGER-OAUTH2_CLIENT]: Checking popup closed.
-[        ] [ScheduledGroups] Account recheck burst remaining=1
-[        ] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[        ] [ScheduledGroups][no-groups] mode=account now=2026-03-04 14:00:34.744 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[ +298 ms] [GSI_LOGGER-OAUTH2_CLIENT]: Checking popup closed.
-[ +475 ms] [GSI_LOGGER-OAUTH2_CLIENT]: Checking popup closed.
-[ +661 ms] [GSI_LOGGER-OAUTH2_CLIENT]: Checking popup closed.
-[ +340 ms] [GSI_LOGGER-OAUTH2_CLIENT]: Checking popup closed.
-[ +189 ms] [ScheduledGroups] Account recheck burst remaining=0
-[        ] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[        ] [ScheduledGroups][no-groups] mode=account now=2026-03-04 14:00:36.757 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[ +314 ms] [GSI_LOGGER-OAUTH2_CLIENT]: Checking popup closed.
-[ +567 ms] [GSI_LOGGER-OAUTH2_CLIENT]: Checking popup closed.
-[ +440 ms] [GSI_LOGGER-OAUTH2_CLIENT]: Checking popup closed.
-[ +501 ms] [GSI_LOGGER-OAUTH2_CLIENT]: Checking popup closed.
-[ +391 ms] [GSI_LOGGER-TOKEN_CLIENT]: Handling response. {"iss":"https://accounts.google.com","":"[REDACTED]","token_type":"Bearer","expires_in":3599,"scope":"email profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile openid","authuser":"1","prompt":"none"}
-[        ] [GSI_LOGGER-OAUTH2_CLIENT]: Popup timer stopped.
-[        ] [GSI_LOGGER-TOKEN_CLIENT]: Trying to set gapi client token.
-[        ] [GSI_LOGGER-TOKEN_CLIENT]: The OAuth token was not passed to gapi.client, since the gapi.client library is not loaded in your page.
-[ +970 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[ +226 ms] [ScheduledGroups][no-groups] mode=account now=2026-03-04 14:00:39.950 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[ +286 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[   +1 ms] [ScheduledGroups][no-groups] mode=account now=2026-03-04 14:00:40.463 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[  +18 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[   +3 ms] [ScheduledGroups][evaluate] mode=account now=2026-03-04 14:00:40.484 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[        ] [ScheduledGroups][no-scheduled] mode=account now=2026-03-04 14:00:40.484 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[+61285 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[        ] [RunModeDiag] Active session cleared route=/tasks
-[ +406 ms] [ScheduledGroups][evaluate] mode=account now=2026-03-04 14:01:41.729 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[        ] [ScheduledGroups][no-scheduled] mode=account now=2026-03-04 14:01:41.729 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[+245211 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[  +41 ms] [ScheduledGroups][evaluate] mode=account now=2026-03-04 14:05:47.395 scheduled=1 overdue=0 activeSession=n/a sample=3af24311-4b1a-42d6-8831-770108271127:2026-03-04T14:08:00.000|2026-03-04T14:08:00.000
-[   +1 ms] [ScheduledGroups] schedule-prealert-timer group=3af24311-4b1a-42d6-8831-770108271127 preAlertStart=2026-03-04 14:07:00.000 delay=72s
-[        ] [ScheduledGroups] schedule-start-timer group=3af24311-4b1a-42d6-8831-770108271127 start=2026-03-04 14:08:00.000 delay=132s
-[+46199 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=true preAlert=true runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[  +60 ms] [ScheduledGroups][evaluate] mode=account now=2026-03-04 14:06:33.647 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[        ] [ScheduledGroups][no-scheduled] mode=account now=2026-03-04 14:06:33.647 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[  +93 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[   +2 ms] [ScheduledGroups][evaluate] mode=account now=2026-03-04 14:06:33.801 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[        ] [ScheduledGroups][no-scheduled] mode=account now=2026-03-04 14:06:33.801 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[+22345 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[        ] [ScheduledGroups][evaluate] mode=account now=2026-03-04 14:06:56.144 scheduled=1 overdue=0 activeSession=n/a sample=1111c4b9-2aa6-445d-a470-731c1f260777:2026-03-04T14:09:00.000|2026-03-04T14:09:00.000
-[        ] [ScheduledGroups] schedule-start-timer group=1111c4b9-2aa6-445d-a470-731c1f260777 start=2026-03-04 14:09:00.000 delay=123s
-[+64957 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=true preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[        ] [RunModeDiag] Active session cleared route=/tasks
-[ +336 ms] [ScheduledGroups][evaluate] mode=account now=2026-03-04 14:08:01.090 scheduled=1 overdue=0 activeSession=n/a sample=1111c4b9-2aa6-445d-a470-731c1f260777:2026-03-04T14:09:00.000|2026-03-04T14:09:00.000
-[        ] [ScheduledGroups] schedule-start-timer group=1111c4b9-2aa6-445d-a470-731c1f260777 start=2026-03-04 14:09:00.000 delay=58s
-[+8281 ms] [ScheduledGroups] timer-state reason=mode-change scheduled=true preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[   +3 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[        ] [AppModeGuard] Mode change detected; invalidating providers.
-[   +3 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[   +3 ms] [ScheduledGroups] Canceled account pre-run notifications count=1
-[   +8 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[   +7 ms] [ScheduledGroups][evaluate] mode=local now=2026-03-04 14:08:09.731 scheduled=1 overdue=0 activeSession=n/a sample=1111c4b9-2aa6-445d-a470-731c1f260777:2026-03-04T14:09:00.000|2026-03-04T14:09:00.000
-[        ] [ScheduledGroups][evaluate] mode=local now=2026-03-04 14:08:09.737 scheduled=1 overdue=0 activeSession=n/a sample=1111c4b9-2aa6-445d-a470-731c1f260777:2026-03-04T14:09:00.000|2026-03-04T14:09:00.000
-[   +1 ms] [ScheduledGroups][evaluate] mode=local now=2026-03-04 14:08:09.746 scheduled=1 overdue=0 activeSession=n/a sample=1111c4b9-2aa6-445d-a470-731c1f260777:2026-03-04T14:09:00.000|2026-03-04T14:09:00.000
-[        ] [ScheduledGroups] schedule-start-timer group=1111c4b9-2aa6-445d-a470-731c1f260777 start=2026-03-04 14:09:00.000 delay=50s
-[        ] [ScheduledGroups] schedule-start-timer group=1111c4b9-2aa6-445d-a470-731c1f260777 start=2026-03-04 14:09:00.000 delay=50s
-[        ] [ScheduledGroups] schedule-start-timer group=1111c4b9-2aa6-445d-a470-731c1f260777 start=2026-03-04 14:09:00.000 delay=50s
-[  +84 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=true preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[   +1 ms] [ScheduledGroups][no-groups] mode=local now=2026-03-04 14:08:09.845 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[+21628 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[   +5 ms] [ScheduledGroups][evaluate] mode=local now=2026-03-04 14:08:31.475 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[   +2 ms] [ExpiryCheck][skip-expiry-no-active-session] now=2026-03-04 14:08:31.475 groupId=n/a groupStatus=n/a theoreticalEndTime=n/a endDeltaSeconds=n/a sessionStatus=n/a sessionGroupId=n/a isRunning=false isStale=n/a pausedAt=n/a phaseStartedAt=n/a remainingSeconds=n/a lastUpdatedAt=n/a ownerDeviceId=n/a
-[   +1 ms] [ScheduledGroups][running-open-timer] mode=local now=2026-03-04 14:08:31.475 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[   +5 ms] [RunModeDiag] Auto-start navigate group=6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a route=/timer/6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a
-[ +438 ms] [ActiveSession] Missing snapshot; holding in sync.
-[   +4 ms] [RunModeDiag] Timer load group=6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a result=PomodoroGroupLoadResult.loaded status=running route=/timer/6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a
-[   +7 ms] [ActiveSession] Resync missing; holding state.
-[ +172 ms] [RunModeDiag] Auto-start attempt group=6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a route=/timer/6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a
-[   +5 ms] [RunModeDiag] Auto-start abort (state not idle) state=pomodoroRunning group=6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a
-[        ] [RunModeDiag] scheduledAutoStartGroupId changed prev=6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a next=null screen=6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a route=/timer/6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a
-[+1881 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[   +6 ms] [RunModeDiag] Active session cleared route=/timer/6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a
-[        ] [ScheduledGroups][evaluate] mode=local now=2026-03-04 14:08:33.932 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[        ] [ExpiryCheck][skip-expiry-no-active-session] now=2026-03-04 14:08:33.932 groupId=n/a groupStatus=n/a theoreticalEndTime=n/a endDeltaSeconds=n/a sessionStatus=n/a sessionGroupId=n/a isRunning=false isStale=n/a pausedAt=n/a phaseStartedAt=n/a remainingSeconds=n/a lastUpdatedAt=n/a ownerDeviceId=n/a
-[        ] [ScheduledGroups][running-open-timer] mode=local now=2026-03-04 14:08:33.932 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[        ] [RunModeDiag] scheduledAutoStartGroupId changed prev=null next=6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a screen=6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a route=/timer/6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a
-[        ] [RunModeDiag] Auto-start navigate group=6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a route=/timer/6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a
-[+6932 ms] [ActiveSession] Missing snapshot; holding in sync.
-[        ] [RunModeDiag] Timer load group=6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a result=PomodoroGroupLoadResult.loaded status=running route=/timer/6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a
-[        ] [ActiveSession] Resync missing; holding state.
-[        ] [RunModeDiag] Auto-start attempt group=6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a route=/timer/6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a
-[        ] [RunModeDiag] Auto-start abort (state not idle) state=pomodoroRunning group=6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a
-[        ] [RunModeDiag] scheduledAutoStartGroupId changed prev=6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a next=null screen=6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a route=/timer/6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a
-[+15609 ms] [ActiveSession] Missing snapshot; holding in sync.
-[        ] [RunModeDiag] Timer load group=6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a result=PomodoroGroupLoadResult.loaded status=running route=/timer/6a1fbe21-411f-4b96-89ed-6fa44cdb9b0a
-[        ] [ActiveSession] Resync missing; holding state.
-[+2152 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[   +1 ms] [ScheduledGroups][evaluate] mode=local now=2026-03-04 14:08:58.706 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[        ] [ScheduledGroups][no-scheduled] mode=local now=2026-03-04 14:08:58.706 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[  +43 ms] Cancel nav: vm canceled (attempt 0, root=true)
-[+1274 ms] [ScheduledGroups] start-timer-fired group=1111c4b9-2aa6-445d-a470-731c1f260777 now=2026-03-04 14:09:00.024
-[        ] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[        ] [ScheduledGroups][evaluate] mode=local now=2026-03-04 14:09:00.024 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[        ] [ScheduledGroups][no-scheduled] mode=local now=2026-03-04 14:09:00.024 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[   +2 ms] [ScheduledGroups] start-timer-fired group=1111c4b9-2aa6-445d-a470-731c1f260777 now=2026-03-04 14:09:00.028
-[        ] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[        ] [ScheduledGroups][evaluate] mode=local now=2026-03-04 14:09:00.029 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[        ] [ScheduledGroups][no-scheduled] mode=local now=2026-03-04 14:09:00.029 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[+4698 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[        ] [RunModeDiag] Active session cleared route=/groups
-[        ] [ScheduledGroups][evaluate] mode=local now=2026-03-04 14:09:04.676 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[        ] [ScheduledGroups][no-scheduled] mode=local now=2026-03-04 14:09:04.676 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[+6467 ms] [ScheduledGroups] timer-state reason=mode-change scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[   +2 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[   +3 ms] [AppModeGuard] Mode change detected; invalidating providers.
-[        ] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[  +11 ms] [ScheduledGroups][evaluate] mode=account now=2026-03-04 14:09:11.197 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[        ] [ScheduledGroups][no-scheduled] mode=account now=2026-03-04 14:09:11.197 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[        ] [ScheduledGroups][evaluate] mode=account now=2026-03-04 14:09:11.201 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[        ] [ScheduledGroups][no-scheduled] mode=account now=2026-03-04 14:09:11.201 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[  +95 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[   +2 ms] [ScheduledGroups][evaluate] mode=account now=2026-03-04 14:09:11.313 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[        ] [ScheduledGroups][no-scheduled] mode=account now=2026-03-04 14:09:11.313 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[  +13 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[   +8 ms] [ScheduledGroups][evaluate] mode=account now=2026-03-04 14:09:11.329 scheduled=1 overdue=1 activeSession=n/a sample=1111c4b9-2aa6-445d-a470-731c1f260777:2026-03-04T14:09:00.000|2026-03-04T14:09:00.000
-[ +221 ms] [RunModeDiag] Active session change group=1111c4b9-2aa6-445d-a470-731c1f260777 status=pomodoroRunning owner=iOS-c83a9305-222e-41f8-a7a9-321fd71f4c2b route=/tasks
-[   +1 ms] [RunModeDiag] Active session detected. Validating auto-open group=1111c4b9-2aa6-445d-a470-731c1f260777 route=/tasks
-[ +117 ms] [RunModeDiag] Attempting auto-open to TimerScreen group=1111c4b9-2aa6-445d-a470-731c1f260777 route=/tasks
-[ +108 ms] [RunModeDiag] Auto-open confirmed in timer group=1111c4b9-2aa6-445d-a470-731c1f260777 route=/timer/1111c4b9-2aa6-445d-a470-731c1f260777
-[ +241 ms] [TimeSync] offset=86ms local=2026-03-04 14:09:11.905 server=2026-03-04 14:09:11.704
-[        ] [ScheduledGroups] Account recheck after mode switch timeSyncReady=true
-[        ] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[        ] [ScheduledGroups][evaluate] mode=account now=2026-03-04 14:09:11.907 scheduled=0 overdue=0 activeSession=1111c4b9-2aa6-445d-a470-731c1f260777 sample=n/a
-[        ] Scheduled auto-start suppressed (running group active).
-[        ] [ActiveSession][snapshot] owner=iOS-c83a9305-222e-41f8-a7a9-321fd71f4c2b status=pomodoroRunning phase=pomodoro remaining=899 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-04 14:09:00.325999 lastUpdatedAt=2026-03-04 14:09:01.981 groupId=1111c4b9-2aa6-445d-a470-731c1f260777
-[        ] [TimeSync] refreshed (session-snapshot) offset=86ms
-[  +47 ms] [TimeSync] refreshed (load-group) offset=86ms
-[        ] [ActiveSession][snapshot] owner=iOS-c83a9305-222e-41f8-a7a9-321fd71f4c2b status=pomodoroRunning phase=pomodoro remaining=899 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-04 14:09:00.325999 lastUpdatedAt=2026-03-04 14:09:01.981 groupId=1111c4b9-2aa6-445d-a470-731c1f260777
-[        ] [RunModeDiag] Timer load group=1111c4b9-2aa6-445d-a470-731c1f260777 result=PomodoroGroupLoadResult.loaded status=running route=/timer/1111c4b9-2aa6-445d-a470-731c1f260777
-[        ] [TimeSync] refreshed (session-snapshot) offset=86ms
-[+1842 ms] [ScheduledGroups] Account recheck burst remaining=2
-[        ] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=true runningOverlap=false lateStartHeartbeat=false
-[        ] [ScheduledGroups][evaluate] mode=account now=2026-03-04 14:09:13.913 scheduled=0 overdue=0 activeSession=1111c4b9-2aa6-445d-a470-731c1f260777 sample=n/a
-[        ] Scheduled auto-start suppressed (running group active).
-[+1999 ms] [ScheduledGroups] Account recheck burst remaining=1
-[        ] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=true runningOverlap=false lateStartHeartbeat=false
-[        ] [ScheduledGroups][evaluate] mode=account now=2026-03-04 14:09:15.915 scheduled=0 overdue=0 activeSession=1111c4b9-2aa6-445d-a470-731c1f260777 sample=n/a
-[        ] Scheduled auto-start suppressed (running group active).
-[+2009 ms] [ScheduledGroups] Account recheck burst remaining=0
-[        ] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=true runningOverlap=false lateStartHeartbeat=false
-[        ] [ScheduledGroups][evaluate] mode=account now=2026-03-04 14:09:17.929 scheduled=0 overdue=0 activeSession=1111c4b9-2aa6-445d-a470-731c1f260777 sample=n/a
-[   +2 ms] Scheduled auto-start suppressed (running group active).
-[+7204 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=true runningOverlap=false lateStartHeartbeat=false
-[  +20 ms] Cancel nav: group stream canceled (attempt 0, root=true)
-[ +464 ms] [2026-03-04T13:09:25.576Z]  @firebase/firestore:
-[        ] [ActiveSession] Missing snapshot; holding in sync.
-[  +13 ms] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[        ] [RunModeDiag] Active session cleared route=/groups
-[  +75 ms] [ScheduledGroups][evaluate] mode=account now=2026-03-04 14:09:25.628 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[        ] [ScheduledGroups][no-scheduled] mode=account now=2026-03-04 14:09:25.628 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[        ] [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
-[        ] [ScheduledGroups][evaluate] mode=account now=2026-03-04 14:09:25.685 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[        ] [ScheduledGroups][no-scheduled] mode=account now=2026-03-04 14:09:25.685 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[  +91 ms] [TimeSync] offset=-42ms local=2026-03-04 14:09:25.802 server=2026-03-04 14:09:25.669
-[        ] [TimeSync] refreshed (resync) offset=-42ms
-[   +6 ms] [ActiveSession] Resync missing; holding state.
-[ +150 ms] [ScheduledGroups][evaluate] mode=account now=2026-03-04 14:09:25.138 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[        ] [ScheduledGroups][no-scheduled] mode=account now=2026-03-04 14:09:25.138 scheduled=0 overdue=0 activeSession=n/a sample=n/a
-[+12927 ms] [ActiveSession] Resync start (inactive-resync).
-[  +82 ms] [TimeSync] offset=8ms local=2026-03-04 14:09:38.970 server=2026-03-04 14:09:38.938
-[        ] [TimeSync] refreshed (inactive-resync) offset=8ms
-[   +4 ms] [ActiveSession] Resync missing; holding state.
-[+14910 ms] [ActiveSession] Resync start (inactive-resync).
-[  +86 ms] [TimeSync] offset=5ms local=2026-03-04 14:09:53.974 server=2026-03-04 14:09:53.937
-[        ] [TimeSync] refreshed (inactive-resync) offset=5ms
-[   +5 ms] [ActiveSession] Resync missing; clearing state.
-[+14911 ms] [ActiveSession] Resync start (inactive-resync).
-[  +95 ms] [TimeSync] offset=2ms local=2026-03-04 14:10:08.987 server=2026-03-04 14:10:08.942
-[        ] [TimeSync] refreshed (inactive-resync) offset=2ms
-[   +4 ms] [ActiveSession] Resync missing; clearing state.
-[+14896 ms] [ActiveSession] Resync start (inactive-resync).
-[  +80 ms] [TimeSync] offset=8ms local=2026-03-04 14:10:23.969 server=2026-03-04 14:10:23.938
-[        ] [TimeSync] refreshed (inactive-resync) offset=8ms
-[   +4 ms] [ActiveSession] Resync missing; clearing state.
-[+14913 ms] [ActiveSession] Resync start (inactive-resync).
-[ +101 ms] [TimeSync] offset=-2ms local=2026-03-04 14:10:38.990 server=2026-03-04 14:10:38.938
-[        ] [TimeSync] refreshed (inactive-resync) offset=-2ms
-[   +4 ms] [ActiveSession] Resync missing; clearing state.
-[+14895 ms] [ActiveSession] Resync start (inactive-resync).
-[  +79 ms] [TimeSync] offset=8ms local=2026-03-04 14:10:53.970 server=2026-03-04 14:10:53.939
-[        ] [TimeSync] refreshed (inactive-resync) offset=8ms
-[   +3 ms] [ActiveSession] Resync missing; clearing state.
-[+14916 ms] [ActiveSession] Resync start (inactive-resync).
-[  +89 ms] [TimeSync] offset=3ms local=2026-03-04 14:11:08.980 server=2026-03-04 14:11:08.939
-[        ] [TimeSync] refreshed (inactive-resync) offset=3ms
-[   +4 ms] [ActiveSession] Resync missing; clearing state.
-[+14905 ms] [ActiveSession] Resync start (inactive-resync).
-[ +115 ms] [TimeSync] offset=-7ms local=2026-03-04 14:11:24.005 server=2026-03-04 14:11:23.941
-[        ] [TimeSync] refreshed (inactive-resync) offset=-7ms
-[   +3 ms] [ActiveSession] Resync missing; clearing state.
-[+14879 ms] [ActiveSession] Resync start (inactive-resync).
-[  +78 ms] [TimeSync] offset=9ms local=2026-03-04 14:11:38.969 server=2026-03-04 14:11:38.940
-[        ] [TimeSync] refreshed (inactive-resync) offset=9ms
-[   +3 ms] [ActiveSession] Resync missing; clearing state.
-[+14919 ms] [ActiveSession] Resync start (inactive-resync).
-[  +90 ms] [TimeSync] offset=3ms local=2026-03-04 14:11:53.983 server=2026-03-04 14:11:53.942
-[        ] [TimeSync] refreshed (inactive-resync) offset=3ms
-[   +4 ms] [ActiveSession] Resync missing; clearing state.
-[+14902 ms] [ActiveSession] Resync start (inactive-resync).
-[  +81 ms] [TimeSync] offset=9ms local=2026-03-04 14:12:08.973 server=2026-03-04 14:12:08.942
-[        ] [TimeSync] refreshed (inactive-resync) offset=9ms
-[   +3 ms] [ActiveSession] Resync missing; clearing state.
-[+14913 ms] [ActiveSession] Resync start (inactive-resync).
-[  +81 ms] [TimeSync] offset=8ms local=2026-03-04 14:12:23.972 server=2026-03-04 14:12:23.941
-[        ] [TimeSync] refreshed (inactive-resync) offset=8ms
-[   +5 ms] [ActiveSession] Resync missing; clearing state.
-[+14912 ms] [ActiveSession] Resync start (inactive-resync).
-[  +78 ms] [TimeSync] offset=8ms local=2026-03-04 14:12:38.969 server=2026-03-04 14:12:38.939
-[        ] [TimeSync] refreshed (inactive-resync) offset=8ms
-[   +5 ms] [ActiveSession] Resync missing; clearing state.
-[+14915 ms] [ActiveSession] Resync start (inactive-resync).
-[ +118 ms] [TimeSync] offset=-8ms local=2026-03-04 14:12:54.005 server=2026-03-04 14:12:53.940
-[        ] [TimeSync] refreshed (inactive-resync) offset=-8ms
-[   +3 ms] [ActiveSession] Resync missing; clearing state.
-[+14880 ms] [ActiveSession] Resync start (inactive-resync).
-[  +82 ms] [TimeSync] offset=9ms local=2026-03-04 14:13:08.974 server=2026-03-04 14:13:08.943
-[        ] [TimeSync] refreshed (inactive-resync) offset=9ms
-[   +3 ms] [ActiveSession] Resync missing; clearing state.
-[+14912 ms] [ActiveSession] Resync start (inactive-resync).
-[  +90 ms] [TimeSync] offset=3ms local=2026-03-04 14:13:23.982 server=2026-03-04 14:13:23.941
-[        ] [TimeSync] refreshed (inactive-resync) offset=3ms
-[   +7 ms] [ActiveSession] Resync missing; clearing state.
-[+14901 ms] [ActiveSession] Resync start (inactive-resync).
-[  +92 ms] [TimeSync] offset=2ms local=2026-03-04 14:13:38.985 server=2026-03-04 14:13:38.942
-[        ] [TimeSync] refreshed (inactive-resync) offset=2ms
-[   +7 ms] [ActiveSession] Resync missing; clearing state.
-[+14900 ms] [ActiveSession] Resync start (inactive-resync).
-[  +92 ms] [TimeSync] offset=3ms local=2026-03-04 14:13:53.986 server=2026-03-04 14:13:53.944
-[        ] [TimeSync] refreshed (inactive-resync) offset=3ms
-[   +6 ms] [ActiveSession] Resync missing; clearing state.
-[+14901 ms] [ActiveSession] Resync start (inactive-resync).
-[ +105 ms] [TimeSync] offset=-4ms local=2026-03-04 14:14:08.998 server=2026-03-04 14:14:08.943
-[        ] [TimeSync] refreshed (inactive-resync) offset=-4ms
-[   +5 ms] [ActiveSession] Resync missing; clearing state.
-[+14887 ms] [ActiveSession] Resync start (inactive-resync).
-[ +144 ms] [TimeSync] offset=-22ms local=2026-03-04 14:14:24.037 server=2026-03-04 14:14:23.944
-[        ] [TimeSync] refreshed (inactive-resync) offset=-22ms
-[   +5 ms] [ActiveSession] Resync missing; clearing state.
-[+14849 ms] [ActiveSession] Resync start (inactive-resync).
-[  +92 ms] [TimeSync] offset=5ms local=2026-03-04 14:14:38.978 server=2026-03-04 14:14:38.942
-[        ] [TimeSync] refreshed (inactive-resync) offset=5ms
-[   +5 ms] [ActiveSession] Resync missing; clearing state.
-[+14900 ms] [ActiveSession] Resync start (inactive-resync).
-[  +82 ms] [TimeSync] offset=8ms local=2026-03-04 14:14:53.974 server=2026-03-04 14:14:53.943
-[        ] [TimeSync] refreshed (inactive-resync) offset=8ms
-[   +3 ms] [ActiveSession] Resync missing; clearing state.
-[+14925 ms] [ActiveSession] Resync start (inactive-resync).
-[  +89 ms] [TimeSync] offset=7ms local=2026-03-04 14:15:08.991 server=2026-03-04 14:15:08.951
-[        ] [TimeSync] refreshed (inactive-resync) offset=7ms
-[  +22 ms] [ActiveSession] Resync missing; clearing state.
-[+14876 ms] [ActiveSession] Resync start (inactive-resync).
-[ +107 ms] [TimeSync] offset=-5ms local=2026-03-04 14:15:24.001 server=2026-03-04 14:15:23.943
-[        ] [TimeSync] refreshed (inactive-resync) offset=-5ms
-[   +4 ms] [ActiveSession] Resync missing; clearing state.
-[+14887 ms] [ActiveSession] Resync start (inactive-resync).
-[  +90 ms] [TimeSync] offset=6ms local=2026-03-04 14:15:38.984 server=2026-03-04 14:15:38.946
-[        ] [TimeSync] refreshed (inactive-resync) offset=6ms
-[   +4 ms] [ActiveSession] Resync missing; clearing state.
-[+14907 ms] [ActiveSession] Resync start (inactive-resync).
-[ +141 ms] [TimeSync] offset=-7ms local=2026-03-04 14:15:54.036 server=2026-03-04 14:15:53.960
-[        ] [TimeSync] refreshed (inactive-resync) offset=-7ms
-[   +8 ms] [ActiveSession] Resync missing; clearing state.
-[+14848 ms] [ActiveSession] Resync start (inactive-resync).
-[  +90 ms] [TimeSync] offset=2ms local=2026-03-04 14:16:08.987 server=2026-03-04 14:16:08.945
-[        ] [TimeSync] refreshed (inactive-resync) offset=2ms
-[  +10 ms] [ActiveSession] Resync missing; clearing state.
-[+14897 ms] [ActiveSession] Resync start (inactive-resync).
-[  +84 ms] [TimeSync] offset=6ms local=2026-03-04 14:16:23.981 server=2026-03-04 14:16:23.946
-[        ] [TimeSync] refreshed (inactive-resync) offset=6ms
-[   +4 ms] [ActiveSession] Resync missing; clearing state.
-[+14909 ms] [ActiveSession] Resync start (inactive-resync).
-[  +80 ms] [TimeSync] offset=9ms local=2026-03-04 14:16:38.975 server=2026-03-04 14:16:38.945
-[   +2 ms] [TimeSync] refreshed (inactive-resync) offset=9ms
-[   +2 ms] [ActiveSession] Resync missing; clearing state.
-[+14915 ms] [ActiveSession] Resync start (inactive-resync).
-[  +84 ms] [TimeSync] offset=8ms local=2026-03-04 14:16:53.980 server=2026-03-04 14:16:53.947
-[        ] [TimeSync] refreshed (inactive-resync) offset=8ms
-[   +4 ms] [ActiveSession] Resync missing; clearing state.
-[+14909 ms] [ActiveSession] Resync start (inactive-resync).
-[ +104 ms] [TimeSync] offset=-2ms local=2026-03-04 14:17:09.000 server=2026-03-04 14:17:08.947
-[        ] [TimeSync] refreshed (inactive-resync) offset=-2ms
-[   +4 ms] [ActiveSession] Resync missing; clearing state.
+[+10240 ms] ChromeProxyService: 306949506 Destroying isolate
