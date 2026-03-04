@@ -87,13 +87,14 @@ Notes:
 
 ## In progress
 
-When a feature starts, move the full entry here and keep its ID header. Update the fields as follows.
+When a feature starts, list it here and update its full entry in the ordered IDEA section below.
 
-1. Set `Status: in_progress`.
+1. Set `Status: in_progress` in the IDEA entry.
 2. Add `Feature folder: docs/features/feature_YYYY_MM_DD_slug/`.
 3. Add `Plan: docs/features/feature_YYYY_MM_DD_slug/feature_plan.md`.
 
-(none yet)
+Active:
+- IDEA-034 — Offline Continuation With Rejoin/Sync Choice (Feature folder: docs/features/feature_2026_03_04_offline-continuation-rejoin-choice/; Plan: docs/features/feature_2026_03_04_offline-continuation-rejoin-choice/feature_plan.md)
 
 ## Done
 
@@ -103,77 +104,11 @@ When a feature completes, move the full entry here (or to `feature_backlog_archi
 2. Add `Final commit: <hash> "<message>"`.
 3. Keep the feature folder link for traceability.
 
-## IDEA-032 — Plan Group Pre-Run Notice Control
-
-ID: IDEA-032
-Title: Plan Group Pre-Run Notice Control
-Type: UX
-Scope: M
-Priority: P1
-Status: done
-
-Feature folder: docs/features/feature_2026_03_02_plan-group-notice-control/
-Plan: docs/features/feature_2026_03_02_plan-group-notice-control/feature_plan.md
-Final commit: aa73004 "Fix re-plan notice coherence with editable planning notice"
-
-Problem / Goal:
-Users cannot see or adjust the pre-run notice during planning, leading to
-confusion when noticeMinutes is 0 or when timing constraints apply.
-
-Summary:
-Expose the effective pre-run notice in Plan Group and allow per-group override
-for scheduled runs (0–15 minutes).
-
-Design / UX:
-Layout / placement:
-Add a "Pre-run notice" row in Plan Group (Planning options or Group preview),
-with a value and an edit affordance.
-
-Visual states:
-Shows the current effective notice value. When set to 0, the UI clarifies that
-no pre-run will appear.
-
-Animation rules:
-None.
-
-Interaction:
-Tap opens a small picker or stepper to set the notice minutes. Changes update
-the preview immediately.
-
-Text / typography:
-Use existing field labels; keep copy short.
-
-Data & Logic:
-Source of truth:
-Use the global notice setting as default and store overrides in
-TaskRunGroup.noticeMinutes.
-
-Calculations:
-Scheduling validation and preview ranges must re-calculate using the selected
-notice value.
-
-Sync / multi-device:
-Notice overrides are stored per group and visible on all devices.
-
-Edge cases:
-Start-now groups should show "Not applicable" or hide the row. For scheduled
-starts too soon, keep the existing validation behavior.
-
-Accessibility:
-Picker must be keyboard and screen-reader accessible.
-
-Dependencies:
-Phase 14 pre-run notice settings (Account Mode + Settings).
-
-Risks:
-Duplicating notice logic across screens; keep a shared helper.
-
-Acceptance criteria:
-Users can view and edit pre-run notice during planning; the preview and
-validation respect the selected notice; notice=0 hides pre-run messaging.
-
-Notes:
-Prefer reusing the Settings notice picker styling.
+Completed:
+- IDEA-032 — Plan Group Pre-Run Notice Control
+  (Feature folder: docs/features/feature_2026_03_02_plan-group-notice-control/;
+  Plan: docs/features/feature_2026_03_02_plan-group-notice-control/feature_plan.md;
+  Final commit: aa73004 "Fix re-plan notice coherence with editable planning notice")
 
 ## Backlog entries
 
@@ -2593,6 +2528,80 @@ Should not trigger on manual Run Mode navigation.
 
 ---
 
+## IDEA-032 — Plan Group Pre-Run Notice Control
+
+ID: IDEA-032
+Title: Plan Group Pre-Run Notice Control
+Type: UX
+Scope: M
+Priority: P1
+Status: done
+
+Feature folder: docs/features/feature_2026_03_02_plan-group-notice-control/
+Plan: docs/features/feature_2026_03_02_plan-group-notice-control/feature_plan.md
+Final commit: aa73004 "Fix re-plan notice coherence with editable planning notice"
+
+Problem / Goal:
+Users cannot see or adjust the pre-run notice during planning, leading to
+confusion when noticeMinutes is 0 or when timing constraints apply.
+
+Summary:
+Expose the effective pre-run notice in Plan Group and allow per-group override
+for scheduled runs (0–15 minutes).
+
+Design / UX:
+Layout / placement:
+Add a "Pre-run notice" row in Plan Group (Planning options or Group preview),
+with a value and an edit affordance.
+
+Visual states:
+Shows the current effective notice value. When set to 0, the UI clarifies that
+no pre-run will appear.
+
+Animation rules:
+None.
+
+Interaction:
+Tap opens a small picker or stepper to set the notice minutes. Changes update
+the preview immediately.
+
+Text / typography:
+Use existing field labels; keep copy short.
+
+Data & Logic:
+Source of truth:
+Use the global notice setting as default and store overrides in
+TaskRunGroup.noticeMinutes.
+
+Calculations:
+Scheduling validation and preview ranges must re-calculate using the selected
+notice value.
+
+Sync / multi-device:
+Notice overrides are stored per group and visible on all devices.
+
+Edge cases:
+Start-now groups should show "Not applicable" or hide the row. For scheduled
+starts too soon, keep the existing validation behavior.
+
+Accessibility:
+Picker must be keyboard and screen-reader accessible.
+
+Dependencies:
+Phase 14 pre-run notice settings (Account Mode + Settings).
+
+Risks:
+Duplicating notice logic across screens; keep a shared helper.
+
+Acceptance criteria:
+Users can view and edit pre-run notice during planning; the preview and
+validation respect the selected notice; notice=0 hides pre-run messaging.
+
+Notes:
+Prefer reusing the Settings notice picker styling.
+
+---
+
 ## IDEA-033 — Conflict Modal Context Details
 
 ID: IDEA-033
@@ -2669,7 +2678,10 @@ Title: Offline Continuation With Rejoin/Sync Choice
 Type: UX / Sync
 Scope: L
 Priority: P1
-Status: idea
+Status: in_progress
+
+Feature folder: docs/features/feature_2026_03_04_offline-continuation-rejoin-choice/
+Plan: docs/features/feature_2026_03_04_offline-continuation-rejoin-choice/feature_plan.md
 
 Problem / Goal:
 When a device loses network during a running or paused Account Mode session,

@@ -1889,6 +1889,24 @@ The MM:SS timer must not shift horizontally:
 - While time sync is unavailable, **no** authoritative writes are allowed,
   including heartbeats and republish/recovery writes. Heartbeat enforcement
   applies only when time sync is ready.
+- **Offline vs Syncing (Account Mode):**
+  - **Syncing** is used when connectivity appears available but time sync or
+    activeSession snapshots are not ready yet.
+  - **Offline** must only be shown with evidence of missing network or repeated
+    remote fetch failure (connectivity check + timeSync/activeSession refresh
+    failure). Do **not** show Offline if connectivity is available.
+  - When Offline is detected, show a persistent banner/pill in Run Mode:
+    `Offline — local only`, plus CTA row: `Retry sync` / `Continue locally`.
+  - **No automatic mode switch.** Continue locally only after explicit user
+    confirmation.
+  - If the user chooses **Continue locally**, switch to Local Mode and create a
+    **local-only fork** (never writes to Account Mode). Mark it with a persistent
+    “Local‑only / Offline” badge in Run Mode and Groups Hub.
+  - If the user stays in Account Mode while Offline, keep the last snapshot
+    visible with a Syncing overlay and controls disabled until time sync returns.
+  - On reconnect, if a local-only fork exists, show a reconciliation choice:
+    `Rejoin account session` (discard local) or `Keep local (stay Local Mode)`.
+    No implicit merge or overwrite is allowed.
 - Mirror devices render task names/durations from the TaskRunGroup snapshot (by groupId), not from the editable task list.
 - **Single source of truth:** owner/mirror state and control gating (start/resume/pause/cancel/ownership)
   must be derived from the same activeSession snapshot (groupId must match). Local flags may

@@ -9328,3 +9328,44 @@ _(not yet validated on devices)_
 
 - Decide whether to capture logs for the brief Groups Hub flash and schedule a
   targeted fix, then proceed with P0‑4/P0‑4g/P0‑4h work.
+
+# 🔹 Block 545 — Offline continuation feature planning (04/03/2026)
+
+### ✔ Work completed:
+
+- Documented Offline vs Syncing behavior in `docs/specs.md` (explicit offline
+  detection, no auto-switch, explicit Local continuation, and reconnect choice).
+- Created feature plan for IDEA-034.
+- Moved IDEA-034 to **In progress** in `docs/feature_backlog.md` with links.
+
+### 🧠 Decisions made:
+
+- Offline continuation must remain **explicit** (no automatic switch to Local
+  Mode) to preserve Local/Account isolation.
+
+### ⚠️ Issues found:
+
+- None during documentation updates.
+
+### 🎯 Next steps:
+
+- Implement after Fix 22 (timeSync + single source of truth) and current P0
+  bug fixes; validate with offline/online reconnection flows.
+
+# 🔹 Block 546 — Feature backlog ordering cleanup (04/03/2026)
+
+### ✔ Work completed:
+
+- Reordered the full IDEA entries in `docs/feature_backlog.md` so they follow
+  numeric ID order (IDEA-001 → IDEA-035), including moving IDEA-032 into place.
+- Converted the Done section to an index list to avoid breaking the ordered
+  IDEA sequence.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Continue with P0 bug fixes and validations; feature backlog now stays
+  ordered for easier lookup.
