@@ -2004,7 +2004,7 @@
 [        ] [ScheduledGroups][no-groups] mode=account now=2026-03-03 19:44:22.274 scheduled=0 overdue=0 activeSession=n/a sample=n/a
 [  +14 ms] [GSI_LOGGER-OAUTH2_CLIENT]: Checking popup closed.
 [ +501 ms] [GSI_LOGGER-OAUTH2_CLIENT]: Checking popup closed.
-[ +611 ms] [GSI_LOGGER-TOKEN_CLIENT]: Handling response. {"iss":"https://accounts.google.com","access_token":"[REDACTED_GOOGLE_OAUTH_TOKEN]","token_type":"Bearer","expires_in":3599,"scope":"email profile openid https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email","authuser":"1","prompt":"none"}
+[ +611 ms] [GSI_LOGGER-TOKEN_CLIENT]: Handling response. {"iss":"https://accounts.google.com","":"[REDACTED]","token_type":"Bearer","expires_in":3599,"scope":"email profile openid https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email","authuser":"1","prompt":"none"}
 [        ] [GSI_LOGGER-OAUTH2_CLIENT]: Popup timer stopped.
 [        ] [GSI_LOGGER-TOKEN_CLIENT]: Trying to set gapi client token.
 [        ] [GSI_LOGGER-TOKEN_CLIENT]: The OAuth token was not passed to gapi.client, since the gapi.client library is not loaded in your page.

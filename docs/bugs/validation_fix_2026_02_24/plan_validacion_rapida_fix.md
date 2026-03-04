@@ -168,6 +168,27 @@ Source: docs/bugs/validacion_rapida.md and docs/bugs/capturas-validacion
   - `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_ios_simulator_postfix2_debug.log`
   - `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_chrome_postfix2_debug.log`
 
+### 2026-03-04 — New finding (mirror background resync delay)
+- Scenario: Android mirror left in background for several minutes (e.g. WhatsApp)
+  while macOS owner continues running.
+- Observed: on return to foreground, mirror timer is desynced for a short window
+  (drift roughly proportional to time in background) and only re-aligns after the
+  next Firebase snapshot; it does **not** resync immediately on foreground.
+- Expected: mirror should resync immediately on foreground.
+- Logs:
+  - `docs/bugs/validation_fix_2026_02_24/logs/2026_03_04_android_RMX3771_debug.log`
+  - `docs/bugs/validation_fix_2026_02_24/logs/2026_03_04_macos_debug.log`
+- TimeSync anchor confirmed OK:
+  `serverTime=2026-03-04 13:53:56 UTC+1`, `updatedAt=2026-03-04 13:53:56 UTC+1`.
+
+### 2026-03-04 — Notice=0 + Local Mode mini-pass (close-out)
+- Notice=0 scheduled start: PASS (no Pre-Run row; auto-start stayed in Run Mode).
+- Local Mode mini-pass: PASS (Run Mode stayed open; Open Run Mode did not restart;
+  notice=0 auto-started without pre-run errors).
+- Logs:
+  - `docs/bugs/validation_fix_2026_02_24/logs/2026_03_04_ios_notice0_localpass_debug.log`
+  - `docs/bugs/validation_fix_2026_02_24/logs/2026_03_04_chrome_notice0_localpass_debug.log`
+
 ## Root Cause (Confirmed)
 - `_resetForModeChange()` clears in-memory timers and `_scheduledNotices`, but does
   **not** cancel OS-level scheduled notifications via `NotificationService`.

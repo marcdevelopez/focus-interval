@@ -80,6 +80,13 @@ Status: Complete — Steps 2–13 validated (prep steps not re-logged).
     Expected: No Account pre-run notification fires while in Local Mode.
     Evidence (2026-03-04): pre-run suppressed in Local Mode.
 
+## New finding (2026-03-04)
+- Mirror background resync delay: Android mirror left in background for several
+  minutes returns desynced and only corrects after the next Firebase update.
+  Expected: immediate resync on foreground. Logs:
+  `docs/bugs/validation_fix_2026_02_24/logs/2026_03_04_android_RMX3771_debug.log`,
+  `docs/bugs/validation_fix_2026_02_24/logs/2026_03_04_macos_debug.log`.
+
 ## Previous attempt (2026-03-03)
 - Flow used Local Mode → Account Mode switch (no app close). Groups were re-planned from canceled entries (no brand-new groups).
 - Result: FAIL at Step 2. No late-start queue or Resolve overlaps surfaced. Both groups remained `status=scheduled` after scheduledStartTime.
@@ -88,16 +95,25 @@ Status: Complete — Steps 2–13 validated (prep steps not re-logged).
   `docs/bugs/validation_fix_2026_02_24/logs/2026_03_02_macos_debug.log`
 
 ## Notice=0 scheduled start (required to close remaining items)
-1. [ ] Set global notice = 0.
-2. [ ] Run again on G2 (or G1) and schedule start at now+2 min.
+1. [x] Set global notice = 0.
+2. [x] Run again on G2 (or G1) and schedule start at now+2 min.
    Expected: No Pre-Run row; auto-start goes straight to Run Mode and stays.
-   Evidence: Groups Hub + Run Mode screenshots.
+   Evidence (2026-03-04): Pass; no Pre-Run row and auto-start stayed in Run Mode.
+   Logs:
+   `docs/bugs/validation_fix_2026_02_24/logs/2026_03_04_ios_notice0_localpass_debug.log`,
+   `docs/bugs/validation_fix_2026_02_24/logs/2026_03_04_chrome_notice0_localpass_debug.log`.
+   Screenshots: none (no anomalies observed).
 
 ## Optional Local Mode mini-pass (only if Local Mode issues must be revalidated)
-1. [ ] Switch to Local Mode. Start now with the same 15-min task.
+1. [x] Switch to Local Mode. Start now with the same 15-min task.
    Expected: Run Mode opens and stays; Open Run Mode does not restart the group.
-2. [ ] Schedule a Local group with notice=0 at now+2 min.
+2. [x] Schedule a Local group with notice=0 at now+2 min.
    Expected: Auto-start to Run Mode with no pre-run error.
+   Evidence (2026-03-04): Pass; Run Mode stayed open and auto-started without
+   pre-run. Logs:
+   `docs/bugs/validation_fix_2026_02_24/logs/2026_03_04_ios_notice0_localpass_debug.log`,
+   `docs/bugs/validation_fix_2026_02_24/logs/2026_03_04_chrome_notice0_localpass_debug.log`.
+   Screenshots: none (no anomalies observed).
 
 ---
 

@@ -9284,3 +9284,22 @@ _(not yet validated on devices)_
 
 - Continue with any remaining checklist items if needed and decide whether to
   archive this validation set.
+
+# 🔹 Block 543 — Notice=0 + Local Mode mini-pass validated (04/03/2026)
+
+### ✔ Work completed:
+
+- Closed the remaining Notice=0 scheduled start and Local Mode mini-pass checks
+  for `validation_fix_2026_02_24`.
+- Confirmed no Pre-Run row, auto-start stays in Run Mode, and Local Mode “Open
+  Run Mode” does not restart the group.
+
+### 🧪 Tests:
+
+- Manual validation (iOS + Chrome). Logs:
+  - `docs/bugs/validation_fix_2026_02_24/logs/2026_03_04_ios_notice0_localpass_debug.log`
+  - `docs/bugs/validation_fix_2026_02_24/logs/2026_03_04_chrome_notice0_localpass_debug.log`
+
+### ⚠️ Issues found:
+
+- None observed in these checks.
