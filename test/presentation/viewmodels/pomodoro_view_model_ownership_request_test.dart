@@ -12,6 +12,7 @@ import 'package:focus_interval/data/repositories/task_run_group_repository.dart'
 import 'package:focus_interval/data/services/app_mode_service.dart';
 import 'package:focus_interval/data/services/device_info_service.dart';
 import 'package:focus_interval/data/services/sound_service.dart';
+import 'package:focus_interval/data/services/time_sync_service.dart';
 import 'package:focus_interval/domain/pomodoro_machine.dart';
 import 'package:focus_interval/presentation/providers.dart';
 import 'package:focus_interval/presentation/viewmodels/pomodoro_view_model.dart';
@@ -115,6 +116,9 @@ class RecordingSessionRepository implements PomodoroSessionRepository {
   Future<void> clearSessionIfGroupNotRunning() async {}
 
   @override
+  Future<void> clearSessionIfInactive({String? expectedGroupId}) async {}
+
+  @override
   Future<void> requestOwnership({
     required String requesterDeviceId,
     required String requestId,
@@ -198,6 +202,7 @@ PomodoroSession _buildRunningSession({
     currentTaskIndex: 0,
     totalTasks: 1,
     dataVersion: kCurrentDataVersion,
+    sessionRevision: 1,
     ownerDeviceId: ownerDeviceId,
     status: PomodoroStatus.pomodoroRunning,
     phase: PomodoroPhase.pomodoro,
@@ -205,6 +210,7 @@ PomodoroSession _buildRunningSession({
     totalPomodoros: 2,
     phaseDurationSeconds: 25 * 60,
     remainingSeconds: 1200,
+    accumulatedPausedSeconds: 0,
     phaseStartedAt: now.subtract(const Duration(minutes: 5)),
     currentTaskStartedAt: now.subtract(const Duration(minutes: 5)),
     pausedAt: null,
@@ -242,6 +248,9 @@ void main() {
         appModeServiceProvider.overrideWithValue(appModeService),
         deviceInfoServiceProvider.overrideWithValue(deviceInfo),
         soundServiceProvider.overrideWithValue(FakeSoundService()),
+        timeSyncServiceProvider.overrideWithValue(
+          TimeSyncService(enabled: false),
+        ),
       ],
     );
     addTearDown(container.dispose);
@@ -288,6 +297,7 @@ void main() {
       currentTaskIndex: 0,
       totalTasks: 1,
       dataVersion: kCurrentDataVersion,
+      sessionRevision: 1,
       ownerDeviceId: 'other-device',
       status: PomodoroStatus.pomodoroRunning,
       phase: PomodoroPhase.pomodoro,
@@ -295,6 +305,7 @@ void main() {
       totalPomodoros: 2,
       phaseDurationSeconds: 25 * 60,
       remainingSeconds: 1200,
+      accumulatedPausedSeconds: 0,
       phaseStartedAt: now.subtract(const Duration(minutes: 5)),
       currentTaskStartedAt: now.subtract(const Duration(minutes: 5)),
       pausedAt: null,
@@ -315,6 +326,9 @@ void main() {
         appModeServiceProvider.overrideWithValue(appModeService),
         deviceInfoServiceProvider.overrideWithValue(deviceInfo),
         soundServiceProvider.overrideWithValue(FakeSoundService()),
+        timeSyncServiceProvider.overrideWithValue(
+          TimeSyncService(enabled: false),
+        ),
       ],
     );
     addTearDown(container.dispose);

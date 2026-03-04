@@ -10,6 +10,7 @@ class PomodoroSession {
   final int? currentTaskIndex;
   final int? totalTasks;
   final int dataVersion;
+  final int sessionRevision;
   final String ownerDeviceId;
   final PomodoroStatus status;
   final PomodoroPhase? phase;
@@ -17,6 +18,7 @@ class PomodoroSession {
   final int totalPomodoros;
   final int phaseDurationSeconds;
   final int remainingSeconds;
+  final int accumulatedPausedSeconds;
   final DateTime? phaseStartedAt;
   final DateTime? currentTaskStartedAt;
   final DateTime? pausedAt;
@@ -32,6 +34,7 @@ class PomodoroSession {
     this.currentTaskIndex,
     this.totalTasks,
     required this.dataVersion,
+    required this.sessionRevision,
     required this.ownerDeviceId,
     required this.status,
     required this.phase,
@@ -39,6 +42,7 @@ class PomodoroSession {
     required this.totalPomodoros,
     required this.phaseDurationSeconds,
     required this.remainingSeconds,
+    required this.accumulatedPausedSeconds,
     required this.phaseStartedAt,
     required this.currentTaskStartedAt,
     required this.pausedAt,
@@ -55,6 +59,7 @@ class PomodoroSession {
     'currentTaskIndex': currentTaskIndex,
     'totalTasks': totalTasks,
     'dataVersion': dataVersion,
+    'sessionRevision': sessionRevision,
     'ownerDeviceId': ownerDeviceId,
     'status': status.name,
     'phase': phase?.name,
@@ -62,6 +67,7 @@ class PomodoroSession {
     'totalPomodoros': totalPomodoros,
     'phaseDurationSeconds': phaseDurationSeconds,
     'remainingSeconds': remainingSeconds,
+    'accumulatedPausedSeconds': accumulatedPausedSeconds,
     'phaseStartedAt': phaseStartedAt,
     'currentTaskStartedAt': currentTaskStartedAt,
     'pausedAt': pausedAt,
@@ -82,6 +88,7 @@ class PomodoroSession {
       currentTaskIndex: _readInt(map, 'currentTaskIndex'),
       totalTasks: _readInt(map, 'totalTasks'),
       dataVersion: dataVersion,
+      sessionRevision: _readInt(map, 'sessionRevision') ?? 0,
       ownerDeviceId: map['ownerDeviceId'] as String? ?? '',
       status: PomodoroStatus.values.firstWhere(
         (e) => e.name == statusRaw,
@@ -97,6 +104,7 @@ class PomodoroSession {
       totalPomodoros: _readInt(map, 'totalPomodoros') ?? 0,
       phaseDurationSeconds: _readInt(map, 'phaseDurationSeconds') ?? 0,
       remainingSeconds: _readInt(map, 'remainingSeconds') ?? 0,
+      accumulatedPausedSeconds: _readInt(map, 'accumulatedPausedSeconds') ?? 0,
       phaseStartedAt: _readDateTime(map['phaseStartedAt']),
       currentTaskStartedAt: _readDateTime(map['currentTaskStartedAt']),
       pausedAt: _readDateTime(map['pausedAt']),

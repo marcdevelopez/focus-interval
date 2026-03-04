@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/services/app_mode_service.dart';
+import '../presentation/providers.dart';
 import '../presentation/viewmodels/scheduled_group_coordinator.dart';
 import '../presentation/screens/late_start_overlap_queue_screen.dart';
 
@@ -26,7 +28,9 @@ class _ScheduledGroupAutoStarterState
     extends ConsumerState<ScheduledGroupAutoStarter>
     with WidgetsBindingObserver {
   Timer? _navRetryTimer;
+  Timer? _deferredActionTimer;
   int _retryAttempts = 0;
+  ScheduledGroupAction? _deferredAction;
 
   @override
   void initState() {
@@ -43,6 +47,7 @@ class _ScheduledGroupAutoStarterState
   @override
   void dispose() {
     _navRetryTimer?.cancel();
+    _deferredActionTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -68,11 +73,15 @@ class _ScheduledGroupAutoStarterState
   }
 
   void _handleAction(ScheduledGroupAction action) {
+    if (ref.read(completionDialogVisibleProvider)) {
+      _deferAction(action);
+      return;
+    }
     switch (action.type) {
       case ScheduledGroupActionType.openTimer:
         final groupId = action.groupId;
         if (groupId == null) return;
-        _navigateToTimer(groupId);
+        unawaited(_openTimerForGroup(groupId));
         break;
       case ScheduledGroupActionType.lateStartQueue:
         final groupIds = action.groupIds;
@@ -87,20 +96,101 @@ class _ScheduledGroupAutoStarterState
     }
   }
 
-  void _navigateToTimer(String groupId) {
+  void _deferAction(ScheduledGroupAction action) {
+    _deferredAction = action;
+    _scheduleDeferredAction();
+  }
+
+  void _scheduleDeferredAction() {
+    _deferredActionTimer?.cancel();
+    _deferredActionTimer = Timer(const Duration(milliseconds: 250), () {
+      if (!mounted) return;
+      if (ref.read(completionDialogVisibleProvider)) {
+        _scheduleDeferredAction();
+        return;
+      }
+      final pending = _deferredAction;
+      _deferredAction = null;
+      if (pending != null) {
+        _handleAction(pending);
+      }
+    });
+  }
+
+  Future<void> _openTimerForGroup(String groupId) async {
+    final appMode = ref.read(appModeProvider);
+    if (appMode == AppMode.local) {
+      final group =
+          await ref.read(taskRunGroupRepositoryProvider).getById(groupId);
+      if (!mounted) return;
+      if (group == null) {
+        debugPrint(
+          '[RunModeDiag] Auto-start skip (missing local group) '
+          'group=$groupId route=${_currentLocationFromKey()}',
+        );
+        return;
+      }
+      ref.read(pomodoroViewModelProvider.notifier).primeGroupForLoad(group);
+    }
     final navigatorContext = widget.navigatorKey.currentContext;
     if (navigatorContext == null) {
-      _scheduleRetry(() => _navigateToTimer(groupId));
+      debugPrint(
+        '[RunModeDiag] Auto-start navigatorContext null '
+        'group=$groupId retry=${_retryAttempts + 1}',
+      );
+      _scheduleRetry(() => unawaited(_openTimerForGroup(groupId)));
+      return;
+    }
+    if (!navigatorContext.mounted) {
+      debugPrint(
+        '[RunModeDiag] Auto-start navigatorContext not mounted '
+        'group=$groupId retry=${_retryAttempts + 1}',
+      );
+      _scheduleRetry(() => unawaited(_openTimerForGroup(groupId)));
       return;
     }
     _retryAttempts = 0;
+    final router = GoRouter.of(navigatorContext);
     final current = _currentLocation(navigatorContext);
+    debugPrint(
+      '[RunModeDiag] Auto-start navigate group=$groupId '
+      'route=$current',
+    );
     if (current.startsWith('/timer/')) {
       final active = current.substring('/timer/'.length).split('?').first;
       if (active == groupId) return;
     }
     debugPrint('Auto-start opening TimerScreen for scheduled group.');
-    navigatorContext.go('/timer/$groupId');
+    router.go('/timer/$groupId');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final currentRoute = _currentLocationFromKey();
+      if (!currentRoute.startsWith('/timer/')) {
+        debugPrint(
+          '[RunModeDiag] Auto-start navigation not in timer '
+          'group=$groupId route=$currentRoute',
+        );
+        _scheduleRetry(() => unawaited(_openTimerForGroup(groupId)));
+        return;
+      }
+      final activeId =
+          currentRoute.substring('/timer/'.length).split('?').first;
+      if (activeId != groupId) {
+        debugPrint(
+          '[RunModeDiag] Auto-start navigation mismatch '
+          'expected=$groupId actual=$activeId',
+        );
+        _scheduleRetry(() => unawaited(_openTimerForGroup(groupId)));
+      }
+    });
+    if (appMode != AppMode.local) {
+      final group =
+          await ref.read(taskRunGroupRepositoryProvider).getById(groupId);
+      if (!mounted) return;
+      if (group != null) {
+        ref.read(pomodoroViewModelProvider.notifier).primeGroupForLoad(group);
+      }
+    }
   }
 
   void _navigateToLateStartQueue(List<String> groupIds, DateTime anchor) {
@@ -131,6 +221,12 @@ class _ScheduledGroupAutoStarterState
       if (!mounted) return;
       action();
     });
+  }
+
+  String _currentLocationFromKey() {
+    final navigatorContext = widget.navigatorKey.currentContext;
+    if (navigatorContext == null) return 'null';
+    return _currentLocation(navigatorContext);
   }
 
   String _currentLocation(BuildContext context) {

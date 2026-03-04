@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart'
 import 'router.dart';
 import 'theme.dart';
 import '../widgets/active_session_auto_opener.dart';
+import '../widgets/app_mode_change_guard.dart';
 import '../widgets/linux_dependency_gate.dart';
 import '../widgets/preset_sync_coordinator.dart';
 import '../widgets/scheduled_group_auto_starter.dart';
@@ -20,9 +21,13 @@ class FocusIntervalApp extends StatelessWidget {
       theme: buildDarkTheme(),
       builder: (context, child) {
         final content = child ?? const SizedBox.shrink();
-        final wrapped = ActiveSessionAutoOpener(
+        final modeWrapped = AppModeChangeGuard(
           navigatorKey: rootNavigatorKey,
           child: content,
+        );
+        final wrapped = ActiveSessionAutoOpener(
+          navigatorKey: rootNavigatorKey,
+          child: modeWrapped,
         );
         final presetSyncWrapped = PresetSyncCoordinator(child: wrapped);
         final scheduledWrapped = ScheduledGroupAutoStarter(

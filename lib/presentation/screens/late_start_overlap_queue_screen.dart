@@ -17,6 +17,7 @@ import '../../widgets/task_card.dart';
 import '../providers.dart';
 import '../viewmodels/pre_run_notice_view_model.dart';
 import '../utils/scheduled_group_timing.dart';
+import '../utils/run_mode_launcher.dart';
 
 final DateFormat _lateStartTimeFormat = DateFormat('HH:mm');
 final DateFormat _lateStartDateFormat = DateFormat('MMM d');
@@ -164,10 +165,15 @@ class _LateStartOverlapQueueScreenState
     );
     final isAccountMode = appMode == AppMode.account;
     final isOwner = !isAccountMode || ownerDeviceId == deviceId;
+    final queueResolved =
+        anchorFromGroups == null &&
+        ownerDeviceId == null &&
+        requestId == null &&
+        requesterDeviceId == null;
     final allCanceled =
         conflictGroups.isNotEmpty &&
         conflictGroups.every((group) => group.status == TaskRunStatus.canceled);
-    if (!isOwner && allCanceled) {
+    if (!isOwner && (allCanceled || queueResolved)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _showOwnerResolvedDialog();
@@ -187,6 +193,7 @@ class _LateStartOverlapQueueScreenState
     final shouldAutoClaim =
         isAccountMode &&
         !allCanceled &&
+        !queueResolved &&
         !isOwner &&
         (!hasOwner || ownerStale) &&
         (!hasPendingRequest || isPendingForSelf);
@@ -544,6 +551,7 @@ class _LateStartOverlapQueueScreenState
     _ownerResolvedDialogShown = true;
     await showDialog<void>(
       context: context,
+      barrierDismissible: false,
       builder: (_) => AlertDialog(
         title: const Text('Owner resolved'),
         content: const Text(
@@ -552,7 +560,8 @@ class _LateStartOverlapQueueScreenState
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () =>
+                Navigator.of(context, rootNavigator: true).pop(),
             child: const Text('OK'),
           ),
         ],
@@ -645,8 +654,9 @@ class _LateStartOverlapQueueScreenState
       final repo = ref.read(taskRunGroupRepositoryProvider);
       final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
       final notifier = ref.read(notificationServiceProvider);
-      final now = DateTime.now();
+      final now = await _resolveServerNow(force: true);
       final queueNow = _queueNow(now);
+      final isCancelAll = selectedGroups.isEmpty;
 
       final updates = <TaskRunGroup>[];
       if (selectedGroups.isNotEmpty) {
@@ -712,6 +722,8 @@ class _LateStartOverlapQueueScreenState
         final scheduledStart = group.scheduledStartTime;
         final isMissed =
             scheduledStart != null && !scheduledStart.isAfter(queueNow);
+        final resolvedByDeviceId = isCancelAll ? deviceId : null;
+        final resolvedHeartbeat = isCancelAll ? now : null;
         updates.add(
           group.copyWith(
             status: TaskRunStatus.canceled,
@@ -721,8 +733,8 @@ class _LateStartOverlapQueueScreenState
             lateStartQueueId: null,
             lateStartQueueOrder: null,
             lateStartAnchorAt: null,
-            lateStartOwnerDeviceId: null,
-            lateStartOwnerHeartbeatAt: null,
+            lateStartOwnerDeviceId: resolvedByDeviceId,
+            lateStartOwnerHeartbeatAt: resolvedHeartbeat,
             lateStartClaimRequestId: null,
             lateStartClaimRequestedByDeviceId: null,
             lateStartClaimRequestedAt: null,
@@ -749,7 +761,7 @@ class _LateStartOverlapQueueScreenState
               .currentConfiguration
               .uri;
           if (uri.path.startsWith('/timer/')) return;
-          context.go('/timer/${target.id}');
+          openRunModeForGroup(context, ref, target);
         });
       } else {
         context.go('/groups');
@@ -833,6 +845,15 @@ class _LateStartOverlapQueueScreenState
 
   DateTime _queueNow(DateTime now) {
     return _anchor.add(now.difference(_anchorCapturedAt));
+  }
+
+  Future<DateTime> _resolveServerNow({bool force = false}) async {
+    final appMode = ref.read(appModeProvider);
+    if (appMode != AppMode.account) return DateTime.now();
+    final timeSync = ref.read(timeSyncServiceProvider);
+    final offset = await timeSync.refresh(force: force);
+    if (offset == null) return DateTime.now();
+    return DateTime.now().add(offset);
   }
 
   Widget _ownerRow(String ownerDeviceId) {
@@ -1072,6 +1093,7 @@ class _LateStartOverlapQueueScreenState
       currentTaskIndex: 0,
       totalTasks: group.tasks.length,
       dataVersion: kCurrentDataVersion,
+      sessionRevision: 1,
       ownerDeviceId: ref.read(deviceInfoServiceProvider).deviceId,
       status: PomodoroStatus.pomodoroRunning,
       phase: PomodoroPhase.pomodoro,
@@ -1079,6 +1101,7 @@ class _LateStartOverlapQueueScreenState
       totalPomodoros: task.totalPomodoros,
       phaseDurationSeconds: task.pomodoroMinutes * 60,
       remainingSeconds: task.pomodoroMinutes * 60,
+      accumulatedPausedSeconds: 0,
       phaseStartedAt: queueNow,
       currentTaskStartedAt: queueNow,
       pausedAt: null,

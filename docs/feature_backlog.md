@@ -35,7 +35,7 @@ Notes:
 
 ---
 
-## Recommended execution order (updated 18/02/2026)
+## Recommended execution order (updated 27/02/2026)
 
 This section defines the recommended implementation order. The idea entries
 below remain in chronological order; new ideas must be appended at the end.
@@ -52,30 +52,65 @@ execution slot.
 8. IDEA-012 — Exact End Time Option for Scheduled Planning
 9. IDEA-006 — Scheduled vs Actual End in Groups Hub Summary
 10. IDEA-020 — Show "Scheduled By" in Group Summary
-11. IDEA-029 — Live Pause Time Ranges (Forward-Only)
-12. IDEA-018 — Live Pause Time Range Updates in Run Mode Task List
-13. IDEA-005 — Pause Time Visibility (Run Mode + Groups Hub)
-14. IDEA-013 — Global Group Remaining Time + Pending Tasks
-15. IDEA-009 — Sticky "Go to Task List" CTA in Groups Hub
-16. IDEA-008 — Collapsible Groups Hub Sections + Counts
-17. IDEA-002 — Simplification of Status Boxes in Run Mode
-18. IDEA-003 — Responsive Timer Scaling (Desktop/Web)
-19. IDEA-010 — Ownership Request Explainer (Run Mode)
-20. IDEA-011 — Mirror Notifications for Active Runs
-21. IDEA-019 — Break Tasks List in Run Mode
-22. IDEA-001 — Circular group progress ring around timer
-23. IDEA-027 — Unified Mode Indicator + Session Context
-24. IDEA-021 — Account Deletion Action in Settings
-25. IDEA-022 — Verified Presence + Activity Heatmap
-26. IDEA-028 — Verified Activity Summary + Week Start Setting
-27. IDEA-023 — Resume Canceled Groups
-28. IDEA-024 — Workspaces With Shared TaskRunGroups
-29. IDEA-025 — Workspace Break Chat (Text + Deferred DM)
+11. IDEA-030 — Postpone UX Clarity (Groups Hub + Snackbar)
+12. IDEA-031 — Highlight Running Card After Completion Modal
+13. IDEA-033 — Conflict Modal Context Details
+14. IDEA-029 — Live Pause Time Ranges (Forward-Only)
+15. IDEA-018 — Live Pause Time Range Updates in Run Mode Task List
+16. IDEA-005 — Pause Time Visibility (Run Mode + Groups Hub)
+17. IDEA-013 — Global Group Remaining Time + Pending Tasks
+18. IDEA-009 — Sticky "Go to Task List" CTA in Groups Hub
+19. IDEA-008 — Collapsible Groups Hub Sections + Counts
+20. IDEA-002 — Simplification of Status Boxes in Run Mode
+21. IDEA-003 — Responsive Timer Scaling (Desktop/Web)
+22. IDEA-010 — Ownership Request Explainer (Run Mode)
+23. IDEA-011 — Mirror Notifications for Active Runs
+24. IDEA-034 — Offline Continuation With Rejoin/Sync Choice
+25. IDEA-019 — Break Tasks List in Run Mode
+26. IDEA-001 — Circular group progress ring around timer
+27. IDEA-027 — Unified Mode Indicator + Session Context
+28. IDEA-021 — Account Deletion Action in Settings
+29. IDEA-022 — Verified Presence + Activity Heatmap
+30. IDEA-028 — Verified Activity Summary + Week Start Setting
+31. IDEA-023 — Resume Canceled Groups
+32. IDEA-024 — Workspaces With Shared TaskRunGroups
+33. IDEA-025 — Workspace Break Chat (Text + Deferred DM)
+34. IDEA-035 — Groups Hub Status Borders + Offline Completion Highlight
 
 Notes:
+
 - IDEA-028 depends on IDEA-022.
 - IDEA-025 depends on IDEA-024.
 - IDEA-029 and IDEA-018 overlap; keep both for now and merge later if needed.
+- IDEA-034 depends on Fix 22 (timeSync + single source of truth). Optional
+  presence signaling can piggyback on IDEA-022/IDEA-024.
+
+## In progress
+
+When a feature starts, list it here and update its full entry in the ordered IDEA section below.
+
+1. Set `Status: in_progress` in the IDEA entry.
+2. Add `Feature folder: docs/features/feature_YYYY_MM_DD_slug/`.
+3. Add `Plan: docs/features/feature_YYYY_MM_DD_slug/feature_plan.md`.
+
+Active:
+- IDEA-034 — Offline Continuation With Rejoin/Sync Choice (Feature folder: docs/features/feature_2026_03_04_offline-continuation-rejoin-choice/; Plan: docs/features/feature_2026_03_04_offline-continuation-rejoin-choice/feature_plan.md)
+
+## Done
+
+When a feature completes, move the full entry here (or to `feature_backlog_archive.md` if this grows too large).
+
+1. Set `Status: done`.
+2. Add `Final commit: <hash> "<message>"`.
+3. Keep the feature folder link for traceability.
+
+Completed:
+- IDEA-032 — Plan Group Pre-Run Notice Control
+  (Feature folder: docs/features/feature_2026_03_02_plan-group-notice-control/;
+  Plan: docs/features/feature_2026_03_02_plan-group-notice-control/feature_plan.md;
+  Final commit: aa73004 "Fix re-plan notice coherence with editable planning notice")
+
+## Backlog entries
 
 ## IDEA-001 — Circular group progress ring around timer
 
@@ -605,7 +640,8 @@ None.
 Text / typography:
 Use clear, compact labels:
 < 24h: "Starts in: HH h MM min"
->= 24h: "Starts in: DD d HH h MM min"
+
+> = 24h: "Starts in: DD d HH h MM min"
 
 Data & Logic:
 Source of truth:
@@ -825,6 +861,7 @@ info affordance available.
 
 Text / typography:
 Use short, user-friendly bullets aligned to current rules:
+
 - If the owner is active, your request stays pending until they approve/reject.
 - If the owner is stale and the session is running, a mirror may auto-claim.
   If a request exists, the requester has priority; otherwise the first mirror
@@ -987,9 +1024,10 @@ to keep preview and execution aligned.
 Calculations:
 If the exact end falls inside the last pomodoro, shorten that final pomodoro.
 If the exact end falls inside the last break:
+
 - Short break: convert the final break into final work time until the exact end.
 - Long break: convert to a short break, then final work time until the exact end.
-Only the final segment is adjusted; the rest of the group remains standard.
+  Only the final segment is adjusted; the rest of the group remains standard.
 
 Sync / multi-device:
 No new sync rules, but execution must follow the stored exact-end flag so owner
@@ -2347,3 +2385,483 @@ and shifting only forward. Task items and status boxes stay consistent.
 
 Notes:
 Consistency fix for pause offsets during paused state.
+
+---
+
+## IDEA-030 — Postpone UX Clarity (Groups Hub + Snackbar)
+
+ID: IDEA-030
+Title: Postpone UX Clarity (Groups Hub + Snackbar)
+Type: UI/UX
+Scope: S
+Priority: P1
+Status: idea
+
+Problem / Goal:
+Postponed scheduled groups are indistinguishable in Groups Hub, and the
+postpone snackbar incorrectly references pre-run when noticeMinutes is 0.
+
+Summary:
+Add a "Postponed" indicator on scheduled cards when the schedule was moved by
+the conflict modal. Adjust the postpone snackbar copy so it omits pre-run when
+noticeMinutes = 0.
+
+Design / UX:
+Layout / placement:
+Groups Hub scheduled card: add a small "Postponed" badge or inline label near
+the Status/Scheduled row.
+
+Visual states:
+Scheduled (normal): no badge.
+Scheduled (postponed): shows "Postponed" label/badge.
+Snackbar: "Scheduled start moved to HH:mm." (noticeMinutes = 0)
+Snackbar: "Scheduled start moved to HH:mm (pre-run at HH:mm)." (noticeMinutes > 0)
+
+Animation rules:
+None.
+
+Interaction:
+None.
+
+Text / typography:
+Use existing snackbar and label styles; keep copy concise.
+
+Data & Logic:
+Source of truth:
+Use TaskRunGroup scheduling fields plus a postponed signal. Prefer existing
+`postponedAfterGroupId` or an explicit postponed flag if present; if not, add a
+derived flag at the time of postpone and persist it on the group.
+
+Calculations:
+No new calculations beyond formatting times.
+
+Sync / multi-device:
+Postponed label and snackbar copy must render consistently on owner and mirror.
+
+Edge cases:
+Multiple postpones should keep the label. Start-now groups never show the label.
+
+Accessibility:
+Badge should be included in semantics labels for the card.
+
+Dependencies:
+Requires a reliable postponed signal on TaskRunGroup.
+
+Risks:
+If postponed signal is not persisted, mirrors may render inconsistent states.
+
+Acceptance criteria:
+Postponed scheduled groups show a clear "Postponed" indicator in Groups Hub.
+Snackbar omits pre-run when noticeMinutes = 0 and includes it when > 0.
+
+Notes:
+Consider folding the badge into the existing status line to avoid layout shift.
+
+---
+
+## IDEA-031 — Highlight Running Card After Completion Modal
+
+ID: IDEA-031
+Title: Highlight Running Card After Completion Modal
+Type: UI/UX
+Scope: S
+Priority: P2
+Status: idea
+
+Problem / Goal:
+When a new group starts while the completion modal is still visible, the user
+can miss that a new run has begun.
+
+Summary:
+If a group starts while the completion modal is shown, highlight the Running /
+Paused card in Groups Hub after the modal is dismissed to draw attention to the
+new active group.
+
+Design / UX:
+Layout / placement:
+Groups Hub Running/Paused card only.
+
+Visual states:
+Add a temporary accent border, glow, or pulse that fades after a short time
+(e.g., 5–8 seconds).
+
+Animation rules:
+Single pulse or soft glow; no layout shifts.
+
+Interaction:
+None.
+
+Text / typography:
+No text changes.
+
+Data & Logic:
+Source of truth:
+Derived UI state from activeSession + completion modal lifecycle.
+
+Calculations:
+Set a transient "highlight" flag when a new group starts while the completion
+modal is on screen; clear after timeout or when user opens Run Mode.
+
+Sync / multi-device:
+Local-only UI affordance; should work on owner and mirror.
+
+Edge cases:
+If user never visits Groups Hub, no highlight is shown. Multiple auto-starts
+should reset the highlight timer for the newest running group.
+
+Accessibility:
+Provide a subtle semantics announcement such as "New group running" when the
+highlight first appears.
+
+Dependencies:
+None.
+
+Risks:
+Overuse of motion; keep it subtle and time-limited.
+
+Acceptance criteria:
+When a new group starts behind the completion modal, the Groups Hub running
+card is visually emphasized after the modal is dismissed.
+
+Notes:
+Should not trigger on manual Run Mode navigation.
+
+---
+
+## IDEA-032 — Plan Group Pre-Run Notice Control
+
+ID: IDEA-032
+Title: Plan Group Pre-Run Notice Control
+Type: UX
+Scope: M
+Priority: P1
+Status: done
+
+Feature folder: docs/features/feature_2026_03_02_plan-group-notice-control/
+Plan: docs/features/feature_2026_03_02_plan-group-notice-control/feature_plan.md
+Final commit: aa73004 "Fix re-plan notice coherence with editable planning notice"
+
+Problem / Goal:
+Users cannot see or adjust the pre-run notice during planning, leading to
+confusion when noticeMinutes is 0 or when timing constraints apply.
+
+Summary:
+Expose the effective pre-run notice in Plan Group and allow per-group override
+for scheduled runs (0–15 minutes).
+
+Design / UX:
+Layout / placement:
+Add a "Pre-run notice" row in Plan Group (Planning options or Group preview),
+with a value and an edit affordance.
+
+Visual states:
+Shows the current effective notice value. When set to 0, the UI clarifies that
+no pre-run will appear.
+
+Animation rules:
+None.
+
+Interaction:
+Tap opens a small picker or stepper to set the notice minutes. Changes update
+the preview immediately.
+
+Text / typography:
+Use existing field labels; keep copy short.
+
+Data & Logic:
+Source of truth:
+Use the global notice setting as default and store overrides in
+TaskRunGroup.noticeMinutes.
+
+Calculations:
+Scheduling validation and preview ranges must re-calculate using the selected
+notice value.
+
+Sync / multi-device:
+Notice overrides are stored per group and visible on all devices.
+
+Edge cases:
+Start-now groups should show "Not applicable" or hide the row. For scheduled
+starts too soon, keep the existing validation behavior.
+
+Accessibility:
+Picker must be keyboard and screen-reader accessible.
+
+Dependencies:
+Phase 14 pre-run notice settings (Account Mode + Settings).
+
+Risks:
+Duplicating notice logic across screens; keep a shared helper.
+
+Acceptance criteria:
+Users can view and edit pre-run notice during planning; the preview and
+validation respect the selected notice; notice=0 hides pre-run messaging.
+
+Notes:
+Prefer reusing the Settings notice picker styling.
+
+---
+
+## IDEA-033 — Conflict Modal Context Details
+
+ID: IDEA-033
+Title: Conflict Modal Context Details
+Type: UI/UX
+Scope: M
+Priority: P1
+Status: idea
+
+Problem / Goal:
+The scheduling conflict modal lacks context, so users cannot see which groups
+are involved or their time ranges.
+
+Summary:
+Expand the conflict modal to include two contextual cards: the current running
+group and the scheduled group, each with name, time range, and duration. If
+noticeMinutes > 0, include the pre-run start for the scheduled group.
+
+Design / UX:
+Layout / placement:
+Modal body contains two stacked cards with clear headings and a divider.
+If space is tight, wrap content in a scrollable area.
+
+Visual states:
+Running card shows "Running" or "Paused" state. Scheduled card shows scheduled
+start/end and optional pre-run.
+
+Animation rules:
+None.
+
+Interaction:
+Actions remain the same (End current group, Postpone scheduled, Cancel scheduled).
+
+Text / typography:
+Use existing card styles and time-range formatting (HH:mm–HH:mm).
+
+Data & Logic:
+Source of truth:
+Use TaskRunGroup data for both running and scheduled groups.
+
+Calculations:
+Time ranges must reflect authoritative actualStartTime + pause offsets for the
+running group and the effective scheduled start for the scheduled group.
+
+Sync / multi-device:
+Owner and mirror should see identical context.
+
+Edge cases:
+If group name is missing, fall back to a generic label (e.g., "Group"). If any
+range is unavailable, show "--:--" but keep actions enabled.
+
+Accessibility:
+Cards must be announced with group name and time range details.
+
+Dependencies:
+Phase 20 group naming + Phase 18 time-range correctness.
+
+Risks:
+Overcrowded modal on small screens; enforce scrolling.
+
+Acceptance criteria:
+Conflict modal shows clear context for both groups with correct ranges, and
+actions remain accessible without layout issues.
+
+Notes:
+Keep the modal readable at small phone sizes; avoid truncating critical times.
+
+---
+
+## IDEA-034 — Offline Continuation With Rejoin/Sync Choice
+
+ID: IDEA-034
+Title: Offline Continuation With Rejoin/Sync Choice
+Type: UX / Sync
+Scope: L
+Priority: P1
+Status: in_progress
+
+Feature folder: docs/features/feature_2026_03_04_offline-continuation-rejoin-choice/
+Plan: docs/features/feature_2026_03_04_offline-continuation-rejoin-choice/feature_plan.md
+
+Problem / Goal:
+When a device loses network during a running or paused Account Mode session,
+the user is currently blocked in “Syncing session...”. We need a safe way to
+keep them productive without violating the single source of truth.
+
+Summary:
+If time sync or network is unavailable, show a clear offline banner and offer a
+choice to continue locally (non-synced) while the Account Mode session continues
+unaffected on other devices. When network returns, present a reconciliation
+choice (rejoin remote session vs keep local).
+This creates a **fork** that must be labeled explicitly in UI to avoid confusion
+or accidental merges.
+
+Design / UX:
+Layout / placement:
+
+- Run Mode banner or pill at top: “Offline — local only”.
+- Inline CTA row: `Retry sync` and `Continue locally`.
+
+Visual states:
+
+- Offline banner visible when time sync is unavailable or network is down.
+- After choosing local continuation, show a persistent “Local-only” badge.
+
+Animation rules:
+
+- No animation required; keep steady UI to avoid confusion.
+
+Interaction:
+
+- `Retry sync` triggers a timeSync refresh and session fetch.
+- `Continue locally` switches to Local Mode with a local shadow group.
+- On reconnect, show a modal:
+  - “Account session changed while you were offline.”
+  - Options:
+    1. `Rejoin account session` (discard local)
+    2. `Keep local (stay Local Mode)`
+
+Text / typography:
+
+- Clear warnings about non-synced state and that other devices continue the
+  Account session independently.
+
+Data & Logic:
+Source of truth:
+
+- Account Mode session remains the only authoritative timeline.
+- Local continuation never writes to Account Mode while offline.
+  - Explicitly store a local-only fork marker so it cannot be mistaken for
+    Account data.
+
+Calculations:
+
+- Local continuation uses Local Mode timers and storage.
+- Account Mode session remains unchanged unless the user explicitly rejoins.
+
+Sync / multi-device:
+
+- Other devices remain in Account Mode and continue as owner/mirror.
+- Offline device does not publish to Account Mode.
+- On reconnect, allow rejoin or stay local; no auto-merge.
+  - If the user stays local, Account Mode continues separately; both timelines
+    must remain visible only in their respective modes.
+
+Edge cases:
+
+- If Account session completed while offline, rejoin should open Groups Hub
+  and allow Run again / Start now actions.
+- If local continuation is active and the user re-joins, discard local state
+  and restore the remote session snapshot.
+- Multiple offline devices: each must choose independently; no implicit merge.
+  - If the user stays local, the offline fork must show a persistent visual label
+    (e.g., “Offline” / “Local-only”) in Groups Hub and Run Mode.
+
+Accessibility:
+
+- Offline banner and modal must be announced with clear warnings.
+
+Dependencies:
+
+- Fix 22 (timeSync + single source of truth).
+- Local/Account isolation rules (no silent merge).
+
+Risks:
+
+- User confusion about which mode they are in.
+- Accidental loss of local-only progress if rejoin is chosen.
+- Ambiguous UX if offline forks are not labeled clearly.
+
+Acceptance criteria:
+
+- When offline, Run Mode is not blocked; user sees clear offline banner.
+- Choosing local continuation keeps the timer running without writing to
+  Account Mode.
+- On reconnect, user must explicitly choose rejoin or stay local.
+- No automatic merge or overwrite of Account Mode session.
+- Offline fork is clearly labeled in Local Mode; Account Mode never shows it.
+
+Notes:
+Optional: presence signals (e.g., “Device offline”) can be added later when
+workspaces/presence are implemented.
+Before implementation, clarify UI labels, fork metadata, and reconciliation
+rules to avoid logical bugs.
+
+---
+
+## IDEA-035 — Groups Hub Status Borders + Offline Completion Highlight
+
+ID: IDEA-035
+Title: Groups Hub Status Borders + Offline Completion Highlight
+Type: UI/UX
+Scope: M
+Priority: P1
+Status: idea
+
+Problem / Goal:
+Groups Hub cards do not consistently communicate status at a glance. Completed
+cards sometimes show inconsistent colors (green vs amber), and canceled groups
+are not visually distinct. Users also need a clear visual cue when a group
+completed while no device was open (offline completion).
+
+Summary:
+Unify Groups Hub card border colors by status (scheduled/complete/canceled) and
+add an offline-completion highlight (amber or green↔amber alternation). Ensure
+completed color matches the Run Mode completion color consistently.
+
+Design / UX:
+Layout / placement:
+Apply border stroke color on Groups Hub cards based on status.
+
+Visual states:
+- Scheduled: keep current neutral grey.
+- Completed: always use the standard completed green (same as Run Mode).
+- Canceled: red (negative state).
+- Completed while no device was open: amber highlight or smooth alternation
+  between green and amber (preferred), without flashing.
+
+Animation rules:
+If alternation is used, transition smoothly (slow, subtle), no strobing.
+If animation is not feasible, show static amber.
+
+Interaction:
+No new interaction; visual-only.
+
+Text / typography:
+No changes.
+
+Data & Logic:
+Source of truth:
+TaskRunGroup status + completion-reconciled flag for “completed while offline”.
+
+Calculations:
+None beyond status + offline-completion detection.
+
+Sync / multi-device:
+Presentation only; no new sync writes.
+
+Edge cases:
+- If completion state is reconciled on open, the first render must already
+  show the offline-completion highlight.
+- Ensure canceled overrides any completion styling.
+
+Accessibility:
+Colors must meet contrast guidelines; use semantic labels in accessibility
+for status where applicable.
+
+Dependencies:
+- IDEA-008 (Collapsible Groups Hub Sections + Counts) for section grouping.
+- Requires an explicit “completed while offline” signal or derivation rule.
+
+Risks:
+Overuse of color; ensure it remains subtle and does not conflict with existing
+card content.
+
+Acceptance criteria:
+- Scheduled cards remain neutral grey.
+- Completed cards always use the same green as Run Mode completion.
+- Canceled cards use red.
+- Completed while offline shows amber (or smooth green↔amber alternation).
+
+Notes:
+This feature complements IDEA-008 and does not change section structure.

@@ -117,6 +117,21 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       04/02/2026: Phase 19 validation completed (multi-platform) and phase closed.
       04/02/2026: Specs/roadmap updated (group naming, task colors, group progress bar,
                   planning by total range/total time, global sound settings) — documentation-only.
+      02/03/2026: Plan Group pre-run notice control implemented (Plan group + re-plan snackbar + auto-clamp SnackBar). Validated 02/03/2026 on Android RMX3771.
+      02/03/2026: ActiveSession idempotent writes now persist payload changes on equal sessionRevision
+          (remainingSeconds and phase fields no longer dropped). Validated 02/03/2026 on Android RMX3771 (isolated run).
+      02/03/2026: Run Mode owner sync stabilization: owner keeps local machine as render authority,
+          projection allows local fallback without server offset, and resync paths guard
+          against disposed provider refs. Validated 02/03/2026 on Android RMX3771 (isolated run).
+      03/03/2026: Account → Local Mode now cancels pending Account pre-run OS notifications;
+          ScheduledGroupCoordinator adds a bounded account-mode recheck burst after
+          mode switch, fixes late-start heartbeat transaction ordering, removes
+          logout invalidation of the coordinator to preserve scheduled timers, and
+          includes debug instrumentation for late-start evaluation (validation pending).
+      03/03/2026: Account Mode owner hydration now anchors running/paused phases
+          to `session.phaseStartedAt` and skips publish-on-hydrate to prevent
+          monotonic drift after owner screen returns (validated 04/03/2026; commit
+          c13c0f6).
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
@@ -207,6 +222,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 10 — Auto-adjust breaks on valid pomodoro changes and break edits (focus-loss adjustment; Task Editor + Edit Preset) (validation pending).
 - Phase 10 — Task weight (%) is selection-scoped in Edit Task + info modal (validation pending).
 - Phase 13 — Mirror session gaps must not drop Run Mode to Ready (validation pending).
+- Phase 13 — Mirror must not start behind on resume (stale lastUpdatedAt compensation) (bug).
 - Phase 10 — Task Editor: total time chip + task color picker (new requirement).
 - Phase 9 — Task List: group name input + group summary + per-task total time + selection reset (new requirement).
 - Phase 17 — Early overlap warning (pause drift) + mirror ownership CTA + persistent conflict snackbar + auto-follow postpone (no repeat modal) + paused overlap alerts (new requirement).

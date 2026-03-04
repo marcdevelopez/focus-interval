@@ -155,6 +155,9 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
   Future<void> clearSessionIfGroupNotRunning() async {}
 
   @override
+  Future<void> clearSessionIfInactive({String? expectedGroupId}) async {}
+
+  @override
   Future<void> requestOwnership({
     required String requesterDeviceId,
     required String requestId,
@@ -266,6 +269,7 @@ PomodoroSession _buildPausedSession({
     currentTaskIndex: 0,
     totalTasks: 1,
     dataVersion: kCurrentDataVersion,
+    sessionRevision: 1,
     ownerDeviceId: ownerId,
     status: PomodoroStatus.paused,
     phase: PomodoroPhase.pomodoro,
@@ -273,6 +277,7 @@ PomodoroSession _buildPausedSession({
     totalPomodoros: 2,
     phaseDurationSeconds: 25 * 60,
     remainingSeconds: 1200,
+    accumulatedPausedSeconds: 0,
     phaseStartedAt: now.subtract(const Duration(minutes: 10)),
     currentTaskStartedAt: now.subtract(const Duration(minutes: 10)),
     pausedAt: now.subtract(const Duration(minutes: 5)),
@@ -294,6 +299,7 @@ PomodoroSession _buildRunningSession({
     currentTaskIndex: 0,
     totalTasks: 1,
     dataVersion: kCurrentDataVersion,
+    sessionRevision: 1,
     ownerDeviceId: ownerId,
     status: PomodoroStatus.pomodoroRunning,
     phase: PomodoroPhase.pomodoro,
@@ -301,6 +307,7 @@ PomodoroSession _buildRunningSession({
     totalPomodoros: 2,
     phaseDurationSeconds: 25 * 60,
     remainingSeconds: 1200,
+    accumulatedPausedSeconds: 0,
     phaseStartedAt: now.subtract(const Duration(minutes: 10)),
     currentTaskStartedAt: now.subtract(const Duration(minutes: 10)),
     pausedAt: null,

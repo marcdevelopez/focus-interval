@@ -43,6 +43,21 @@ DateTime ceilToMinute(DateTime value) {
   ).add(const Duration(minutes: 1));
 }
 
+const Duration runningOverlapGrace = Duration(minutes: 1);
+
+DateTime resolveRunningOverlapThreshold(DateTime preRunStart) {
+  return preRunStart.add(runningOverlapGrace);
+}
+
+bool isRunningOverlapBeyondGrace({
+  required DateTime runningEnd,
+  required DateTime preRunStart,
+}) {
+  final threshold = resolveRunningOverlapThreshold(preRunStart);
+  return runningEnd.isAfter(threshold) ||
+      runningEnd.isAtSameMomentAs(threshold);
+}
+
 DateTime? resolveGroupBaseEnd(TaskRunGroup group) {
   final start = group.actualStartTime;
   if (start == null) return null;
@@ -136,11 +151,10 @@ bool isRunningOverlapStillValid({
     now: now,
   );
   if (runningEnd == null) return false;
-  if (runningEnd.isBefore(preRunStart) ||
-      runningEnd.isAtSameMomentAs(preRunStart)) {
-    return false;
-  }
-  return true;
+  return isRunningOverlapBeyondGrace(
+    runningEnd: runningEnd,
+    preRunStart: preRunStart,
+  );
 }
 
 DateTime? resolveEffectiveScheduledStart({
@@ -190,7 +204,7 @@ DateTime? resolveEffectivePreRunStart({
     group,
     fallback: fallbackNoticeMinutes,
   );
-  if (noticeMinutes <= 0) return scheduledStart;
+  if (noticeMinutes <= 0) return null;
   return scheduledStart.subtract(Duration(minutes: noticeMinutes));
 }
 
