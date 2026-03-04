@@ -244,6 +244,8 @@ Nota: estos hallazgos deben resolverse en esta rama o registrarse como bugs a co
   - `docs/bugs/validation_fix_2026_02_25/logs/2026_03_04_triage_ios_debug.log`
   - `docs/bugs/validation_fix_2026_02_25/logs/2026_03_04_triage_chrome_debug.log`
 - Screenshot: `docs/bugs/validation_fix_2026_02_25/screenshots/37.png`
+- Timestamp + evidence: 2026-03-04 16:21:01; screenshot
+  `docs/bugs/validation_fix_2026_02_25/screenshots/38.png`.
 
 Hallazgos movidos a `docs/bug_log.md` (no bloquean esta rama, pero deben atacarse antes de nuevas features):
 - BUG-010: Mirror desincronizado unos segundos al volver desde Local (timer difiere y luego se corrige).
