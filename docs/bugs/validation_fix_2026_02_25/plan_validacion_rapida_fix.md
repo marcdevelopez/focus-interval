@@ -227,6 +227,24 @@ Nota: estos hallazgos deben resolverse en esta rama o registrarse como bugs a co
 11. Conflicto: snackbar de "Postpone scheduled" aparece en Groups Hub, no en Run Mode.
 12. Notice 0: hay casos donde el grupo programado no inicia al llegar la hora pero cuenta para overlaps (Android fisico).
 
+### Triage — 04/03/2026 (Account + Local)
+- A1 (auto-open re-trigger desde cualquier pantalla): **OK** (no re-trigger observado).
+- A2 (notice 0 black screen iOS): **OK**, pero se observó **salto breve por Groups Hub**
+  antes de abrir Run Mode cuando la app estaba en Task List (owner + mirror). Debería
+  navegar **directo** al Timer Run desde la pantalla actual, sin pasar por Groups Hub.
+- B (Local Mode mini checks): **OK**; en Local Mode la transición fue directa a Run Mode
+  desde Task List (mejor que Account Mode).
+- C (Local → Account): **OK**; transición suave y sin desync visible.
+- D (pause → Syncing session on owner): **Observed**. Owner iOS shows
+  “Syncing session…” for ~30s right after pausing (still paused). Mirror is macOS.
+  Follow-up: user reports it **always** occurs on pause, minimum ~30s.
+  Additional: timer desyncs by a few seconds during the syncing window; navigating
+  away and back re-syncs and clears the syncing state.
+- Logs:
+  - `docs/bugs/validation_fix_2026_02_25/logs/2026_03_04_triage_ios_debug.log`
+  - `docs/bugs/validation_fix_2026_02_25/logs/2026_03_04_triage_chrome_debug.log`
+- Screenshot: `docs/bugs/validation_fix_2026_02_25/screenshots/37.png`
+
 Hallazgos movidos a `docs/bug_log.md` (no bloquean esta rama, pero deben atacarse antes de nuevas features):
 - BUG-010: Mirror desincronizado unos segundos al volver desde Local (timer difiere y luego se corrige).
 - BUG-011: Pausa + background deja desfase de tiempo pausado; se corrige al cambiar de owner.

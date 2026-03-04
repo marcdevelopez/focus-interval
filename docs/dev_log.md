@@ -9303,3 +9303,28 @@ _(not yet validated on devices)_
 ### ⚠️ Issues found:
 
 - None observed in these checks.
+
+# 🔹 Block 544 — Triage results for 27/02 findings (04/03/2026)
+
+### ✔ Work completed:
+
+- Ran a quick triage pass on the “New findings — 27/02/2026” list
+  (`validation_fix_2026_02_25`).
+- Account Mode notice=0 did **not** show a black screen, but auto-open to Run
+  Mode briefly routes through Groups Hub when starting from Task List (owner +
+  mirror). This should be direct-to-Run Mode.
+- Local Mode transitions were direct (no intermediate Groups Hub flash).
+- Local → Account transition was smooth.
+
+### 🧪 Tests:
+
+- Manual triage (Account + Local). Logs not captured in this pass.
+
+### ⚠️ Issues found:
+
+- Account Mode auto-open briefly shows Groups Hub before Run Mode (from Task List).
+
+### 🎯 Next steps:
+
+- Decide whether to capture logs for the brief Groups Hub flash and schedule a
+  targeted fix, then proceed with P0‑4/P0‑4g/P0‑4h work.
