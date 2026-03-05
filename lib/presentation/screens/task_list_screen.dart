@@ -1459,10 +1459,16 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         : TaskRunIntegrityMode.shared;
     if (!context.mounted) return;
 
+    final initialNoticeMinutes = await ref
+        .read(taskRunNoticeServiceProvider)
+        .getNoticeMinutes();
+    if (!context.mounted) return;
+
     final planningResult = await _showPlanningScreen(
       context,
       items: items,
       integrityMode: integrityMode,
+      initialNoticeMinutes: initialNoticeMinutes,
     );
     if (!context.mounted) return;
     if (planningResult == null) return;
@@ -1668,6 +1674,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     BuildContext context, {
     required List<TaskRunItem> items,
     required TaskRunIntegrityMode integrityMode,
+    required int initialNoticeMinutes,
   }) {
     return context.push<TaskGroupPlanningResult>(
       '/tasks/plan',
@@ -1675,6 +1682,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         items: items,
         integrityMode: integrityMode,
         planningAnchor: _planningAnchor,
+        initialNoticeMinutes: initialNoticeMinutes,
       ),
     );
   }

@@ -8956,3 +8956,54 @@ _(pending validation)_
 
 - Use the debug + prod commands with `ALLOW_PROD_IN_DEBUG=true` until staging exists.
 - Revert the override commands once staging is configured.
+
+# 🔹 Block 525 — Reset to P0-3 baseline + re-apply notice features (05/03/2026)
+
+### ✔ Work completed:
+
+- Reset the branch to `2c788c3` (Fix 22 P0-3 validation baseline) to remove
+  post‑P0‑3 regressions.
+- Cherry-picked the Plan Group notice control features:
+  - `7bb19a3` (notice picker flow)
+  - `856c356` (re-plan notice coherence)
+  - `ddcf0ba` (auto-clamp SnackBar)
+- Cherry-picked debug-prod override support:
+  - `d5e08ae` (allow prod in debug)
+  - `cf2e722` (debug prod log commands)
+- Resolved cherry-pick conflicts by taking incoming feature versions of
+  `groups_hub_screen.dart` and `task_group_planning_screen.dart`.
+- Updated Task List planning flow to pass `initialNoticeMinutes`.
+
+### 🧪 Tests:
+
+- `flutter analyze`
+
+### ⚠️ Issues found:
+
+- Validation pending after rollback (pause syncing and other regressions to
+  be re-checked under the restored baseline).
+
+### 🎯 Next steps:
+
+- Re-run the pause repro on the restored baseline and confirm whether the
+  prolonged "Syncing session" still occurs.
+
+# 🔹 Block 526 — Pause syncing regression resolved after rollback (05/03/2026)
+
+### ✔ Work completed:
+
+- Validated the pause flow after the rollback to `2c788c3` baseline with the
+  re-applied Plan Group notice features + debug prod override.
+- User confirmed the prolonged "Syncing session" no longer reproduces.
+
+### 🧪 Tests:
+
+- Manual validation (no logs captured for this pass).
+
+### ⚠️ Issues found:
+
+- None reported in the pause flow after rollback.
+
+### 🎯 Next steps:
+
+- Continue remaining validations on this restored baseline.

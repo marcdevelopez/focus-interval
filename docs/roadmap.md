@@ -123,6 +123,10 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       02/03/2026: Run Mode owner sync stabilization: owner keeps local machine as render authority,
           projection allows local fallback without server offset, and resync paths guard
           against disposed provider refs (validation pending).
+      05/03/2026: Branch reset to `2c788c3` (Fix 22 P0-3 baseline) to remove
+          post‑P0‑3 regressions; re-applied Plan Group notice control features
+          and debug prod override. Pause syncing regression reported resolved
+          after rollback (manual validation, no logs).
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling

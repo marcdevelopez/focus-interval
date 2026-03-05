@@ -3,6 +3,15 @@
 Date: 2026-02-25
 Source: docs/bugs/validation_fix_2026_02_24/quick_pass_checklist.md + screenshots
 
+## Rollback Note (05/03/2026)
+Branch reset to commit `2c788c3` (Fix 22 P0-3 validation baseline) to eliminate
+post‑P0‑3 regressions. Only **Plan Group notice control** features and the
+**debug prod override** were re‑applied. Any fixes introduced **after** P0‑3
+must be treated as **not present** in this branch and should be re‑implemented
+or re‑validated before closing related scopes.
+Validation (05/03/2026): user confirmed the pause syncing regression no longer
+reproduces after the reset (no logs captured in this pass).
+
 ## Scope (Bugs To Fix)
 1. Late-start queue Cancel all: mirror does not show the "Owner resolved" modal; owner shows it instead.
 2. After Cancel all, mirror can still act as owner and continue Resolve overlaps.
