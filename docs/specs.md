@@ -1351,10 +1351,45 @@ Redistribution rules (shared)
     is treated as blocked time.
   - It must not overlap any running group or any previously scheduled group’s
     execution window.
-  - If the full Pre-Run window cannot be reserved (including when it would
-    start in the past), scheduling is blocked and the user is shown a clear,
-    non-technical explanation (e.g., “That time doesn’t leave enough pre‑run
-    time. Choose a later start or reduce the pre‑run notice.”).
+- If the full Pre-Run window cannot be reserved **only because the selected
+  start time is too soon** (the pre-run start would be in the past), **auto-clamp**
+  the effective notice for this group to the maximum allowed window:
+  - `effectiveNotice = clamp(0, globalNotice, minutesUntilStart)`
+  - The group is scheduled using `effectiveNotice`.
+  - This is **not** an error; do **not** show a red warning.
+  - Show a lightweight notice that is easy to read:
+    - In Plan Group, show a **persistent info line** in the Pre‑Run notice card
+      stating the effective notice (e.g., “Pre‑run notice reduced to 2m — maximum
+      allowed before the scheduled start.”).
+    - Show a **persistent snackbar** (until the user taps OK) the first time the
+      auto‑clamp occurs in that planning session. It includes:
+      - A “Don’t show again” checkbox (stored per device).
+      - An OK button to dismiss.
+    - If the user opts out, the snackbar is not shown again; the card info line
+      remains the only indicator.
+  - After scheduling, show a lightweight notice (snackbar) that:
+    - States the effective notice applied **for this group**.
+    - Clarifies that the **global notice** is the default for future scheduled
+      groups and remains unchanged unless the user opts in.
+    - Offers an action to **apply this value to the global notice**.
+    - If the user accepts, update the global notice immediately (Account or Local
+      scope as appropriate).
+    - If the user declines, keep the global notice unchanged.
+- If the user keeps Plan group open and the selected **start time passes**, the
+  planner auto-updates the start time to **now** (same minute) and sets the
+  effective pre-run notice to **0m**. The user is informed with a persistent
+  info line (e.g., “Start time updated to now. Pre-run set to 0m. Tap Edit to
+  choose another time.”). This applies to all scheduled modes:
+  - **Schedule by start time:** start is updated to now.
+  - **Schedule by total range time:** start is updated to now; end remains as
+    selected. If the end becomes invalid (≤ start), show a blocking error and
+    require the user to edit the range.
+  - **Schedule by total time:** start is updated to now; duration remains
+    unchanged.
+- If the full Pre-Run window cannot be reserved due to **other conflicts**
+  (running group, scheduled overlap), scheduling is blocked and the user is
+  shown a clear, non-technical explanation (e.g., “That time doesn’t leave enough
+  pre‑run time. Choose a later start or reduce the pre‑run notice.”).
 - If a schedule is set:
   - Recalculate theoretical start/end times using the selected start time
   - Save as scheduled and add to Groups Hub
@@ -1377,6 +1412,9 @@ Redistribution rules (shared)
     - On next launch/resume of any signed-in device, if scheduledStartTime <= now and there is no active conflict,
       auto-start immediately using actualStartTime = now (scheduledStartTime remains unchanged)
   - The timer remains stopped until the scheduled start
+  - When scheduling sequential groups, ensure the next group’s pre-run start
+    is **at least +1 minute after** the previous group’s end (minute boundary
+    equality is not allowed).
 
 ### **10.4.1.a. Pre-Run Countdown Mode (scheduled groups only)**
 
@@ -2193,8 +2231,12 @@ Content
   - Range: **0–15 min** (0 disables Pre-Run Countdown Mode entirely).
   - Account Mode: stored **per account** and synced across devices.
   - Local Mode: stored **per device** (local only).
-  - Applies to **new scheduled groups**; each TaskRunGroup stores the noticeMinutes
-    snapshot at scheduling time.
+  - The **global notice** is the default applied to **new scheduled groups**.
+  - Each TaskRunGroup stores the **effective noticeMinutes** used at scheduling time.
+  - If the selected start time is too soon to fit the full pre-run window, the
+    planner may **auto-clamp** the effective notice for that group (see section
+    10.4 Scheduling). This does **not** change the global notice unless the user
+    explicitly accepts the snackbar action to apply it globally.
   - If a legacy scheduled group is missing noticeMinutes, resolve it from the
     current settings at evaluation time and treat that value as the group notice
     (UI should display the resolved notice to avoid confusion).

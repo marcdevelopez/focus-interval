@@ -38,6 +38,12 @@ At the start of **every session**:
    - Block numbers must be strictly increasing and continue from the last block.
    - Update the "Last update" date whenever a new block is added.
 
+Daily specs hygiene (hard rule):
+- At least once per day, review `docs/specs.md` end-to-end to detect
+  incoherencies, contradictions, or missing edge cases.
+- If issues are found, record them immediately and propose fixes before
+  implementing new behavior. Specs are the app's supreme source of truth.
+
 ---
 
 ## 2️⃣ Documentation-first rule (hard rule)
@@ -60,6 +66,12 @@ This includes:
 - UX decisions that affect state
 
 If documentation and code diverge → **documentation wins**.
+
+Additional requirement:
+- If the user requests a change that is not yet in specs, the agent must
+  proactively propose the spec update in the very next response and ask for
+  confirmation. Do not ignore or defer the request without offering the
+  documentation path forward.
 
 Bug validation workflow (required):
 - All validation artifacts live under `docs/bugs/validation_fix_YYYY_MM_DD`
@@ -414,6 +426,15 @@ Renaming core concepts requires:
 - Spec update
 - Global refactor
 - Explicit justification
+
+---
+
+## 1️⃣0️⃣A Code quality & UI consistency (non-negotiable)
+
+- Code must be clean, modular, and scalable by default.
+- Prefer reusable components and shared styling utilities over ad-hoc UI.
+- When a UI style is reused (e.g., SnackBar/Banner), create or plan a theme
+  entry to keep the visual language unified.
 
 ---
 

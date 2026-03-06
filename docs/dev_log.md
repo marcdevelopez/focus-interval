@@ -23,7 +23,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **02/03/2026**
+Last update: **06/03/2026**
 
 ---
 
@@ -9007,3 +9007,281 @@ _(pending validation)_
 ### 🎯 Next steps:
 
 - Continue remaining validations on this restored baseline.
+
+# 🔹 Block 527 — Keep backup branch for reference (05/03/2026)
+
+### ✔ Work completed:
+
+- Kept `backup_pre_reset_2026_03_05` as a reference branch to preserve prior
+  implementations during the next validation cycle.
+
+### 🧪 Tests:
+
+- Not applicable.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Remove the backup branch once the next validation pass is fully closed.
+
+# 🔹 Block 528 — Revalidation post-rollback findings (05/03/2026)
+
+### ✔ Work completed:
+
+- Re-validated key items after rollback to `2c788c3` baseline.
+- Organized new screenshots into per-bug folders under
+  `docs/bugs/validation_fix_2026_02_25/screenshots/`.
+
+### 🧪 Tests:
+
+- Manual validation (iOS owner, Chrome mirror).
+
+### ⚠️ Issues found:
+
+- Pre-run notice clamp does not apply to the planned group: snackbar reduces the
+  notice but confirm still fails with “That start time is too soon...”.
+- Owner adds paused time once after leaving and re-entering Timer Run
+  (timer jumps backward on first return).
+- Resolve overlaps appears without a real conflict after Local → Account;
+  Request ownership does not reach the owner and ownership flips automatically.
+
+### 🎯 Next steps:
+
+- Document and prioritize reintroduced issues in the 2026-02-25 validation plan.
+- Re-run targeted repros with logs for additional observations reported today.
+
+# 🔹 Block 529 — Move 05/03 revalidation evidence into new validation folder (05/03/2026)
+
+### ✔ Work completed:
+
+- Created `docs/bugs/validation_fix_2026_03_05/plan_validacion_rapida_fix.md` and
+  `docs/bugs/validation_fix_2026_03_05/quick_pass_checklist.md`.
+- Moved 05/03 screenshots into `docs/bugs/validation_fix_2026_03_05/screenshots/`
+  (notice clamp, owner pause jump, overlaps false conflict, other observations).
+- Moved 05/03 logs into `docs/bugs/validation_fix_2026_03_05/logs/`.
+- Removed the 05/03 revalidation sections from the 02/25 plan and checklist to
+  keep validations isolated by date.
+
+### 🧪 Tests:
+
+- Not applicable (docs organization only).
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Proceed with Fixes 23–25 under the 2026-03-05 validation folder.
+
+# 🔹 Block 530 — Specs update for notice auto-clamp + global action (05/03/2026)
+
+### ✔ Work completed:
+
+- Updated `docs/specs.md` to define notice auto-clamp behavior when the scheduled
+  start is too soon, including the snackbar with an action to apply the effective
+  notice to the global default.
+- Added the +1 minute rule between a group’s end and the next group’s pre-run start.
+- Clarified global vs per-group notice behavior in the Pre-Run notice section.
+- Updated `docs/bugs/validation_fix_2026_03_05/plan_validacion_rapida_fix.md`
+  with the snackbar + global action requirement.
+
+### 🧪 Tests:
+
+- Not applicable (docs-only update).
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Implement Fix 23 in code using `planningResult.noticeMinutes` for validation and
+  group creation, and wire the snackbar action to optionally update the global notice.
+
+# 🔹 Block 531 — Fix 23 notice clamp + global action (code) (05/03/2026)
+
+### ✔ Work completed:
+
+- Task List: use `planningResult.noticeMinutes` for validation and group creation.
+- Added clamp snackbar with “Apply globally” action and global notice explanation.
+- Groups Hub re-plan: fetch global notice once, keep clamped notice, and show
+  the same clamp snackbar with global action.
+- Global notice action now updates the Pre-run notice provider so Settings
+  reflects the new value immediately.
+
+### 🧪 Tests:
+
+- `flutter analyze`
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Run Fix 23 validation in `docs/bugs/validation_fix_2026_03_05/quick_pass_checklist.md`.
+- Update the plan with commit hash once validation passes.
+
+# 🔹 Block 532 — Notice clamp UX refinement + log alignment (05/03/2026)
+
+### ✔ Work completed:
+
+- Made the notice auto-clamp snackbar non-dismissible until OK; “Don’t show again” remains available and the info line persists in the card.
+- Moved pause-syncing logs into the 2026-03-05 validation folder to keep evidence aligned with the correct date.
+
+### 🧪 Tests:
+
+- `flutter analyze`
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Re-run Fix 23 validation in `docs/bugs/validation_fix_2026_03_05/quick_pass_checklist.md`.
+- Update the plan with the new commit hash once validation passes.
+
+# 🔹 Block 533 — Fix notice clamp snackbar controls + live text (05/03/2026)
+
+### ✔ Work completed:
+
+- Notice clamp snackbar now renders checkbox + OK, is non-dismissible, and updates its message live while visible.
+- Snackbar hides properly on OK and respects “Don’t show again”.
+
+### 🧪 Tests:
+
+- `flutter analyze`
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Re-run the Fix 23 validation flow (auto-clamp + apply global) and record results in the 2026-03-05 checklist.
+
+# 🔹 Block 534 — Notice clamp snackbar visibility fix (05/03/2026)
+
+### ✔ Work completed:
+
+- Ensured the notice clamp snackbar renders its checkbox + OK controls visibly on web/mobile.
+- Snackbar text now stops showing when the scheduled start is in the past.
+- Updated checkbox styling to use WidgetStateProperty and current Flutter color APIs.
+
+### 🧪 Tests:
+
+- `flutter analyze`
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Re-validate the notice clamp flow in Plan group (Chrome + iOS) and confirm controls are visible.
+
+# 🔹 Block 535 — Auto-update passed schedule + responsive notice clamp banner (06/03/2026)
+
+### ✔ Work completed:
+
+- Added auto-update for past scheduled starts: shifts start to now (minute floor) and forces pre-run to 0m.
+- Added a clear “start auto-adjusted” message in Plan group when the schedule is corrected.
+- Made the notice clamp snackbar responsive (floating + margin/padding) so checkbox/OK are always visible.
+
+### 🧪 Tests:
+
+- `flutter analyze`
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Re-validate Fix 23 with the new auto-update behavior and snackbar visibility on iOS + Chrome.
+
+# 🔹 Block 536 — SnackBar color alignment + AGENTS hygiene updates (06/03/2026)
+
+### ✔ Work completed:
+
+- Aligned the notice clamp snackbar to the app’s light snackbar style (white background, dark text).
+- Added a Feature Backlog idea for global SnackBar theming and unified UI messaging.
+- Updated AGENTS.md with daily specs hygiene and code quality / UI consistency rules.
+
+### 🧪 Tests:
+
+- Not run (UI styling change + doc updates only).
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Re-validate the notice clamp snackbar visuals and controls on iOS + Chrome.
+
+# 🔹 Block 537 — Feature backlog entry for i18n foundation (06/03/2026)
+
+### ✔ Work completed:
+
+- Added `IDEA-036 — Runtime Internationalization (l10n) Foundation` to
+  `docs/feature_backlog.md`.
+- Updated the recommended execution order with IDEA-036.
+
+### 🧪 Tests:
+
+- Not applicable (documentation update only).
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Start docs-first implementation planning for IDEA-036 (l10n infrastructure and phased migration).
+
+# 🔹 Block 538 — Reprioritize IDEA-036 to execution slot #1 (06/03/2026)
+
+### ✔ Work completed:
+
+- Reordered `docs/feature_backlog.md` recommended execution list to place
+  `IDEA-036 — Runtime Internationalization (l10n) Foundation` at position #1.
+- Updated the section header date for recommended execution order to `06/03/2026`.
+
+### 🧪 Tests:
+
+- Not applicable (documentation update only).
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Keep fixes in progress on the active bug-validation branch.
+- Start `IDEA-036` only after current critical sync fixes are validated and closed.
+
+# 🔹 Block 539 — Fix notice clamp banner action visibility (06/03/2026)
+
+### ✔ Work completed:
+
+- Fixed the persistent notice-clamp snackbar layout so `OK` is always visible.
+- Kept `Don't show again` interactive across web/mobile by making the whole row tappable.
+- Preserved current behavior: snackbar auto-hides when the selected start is no longer valid.
+
+### 🧪 Tests:
+
+- `flutter analyze`
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Re-validate Fix 23 UX flow (notice clamp + global apply + persistent banner controls).
