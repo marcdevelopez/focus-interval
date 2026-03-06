@@ -126,6 +126,7 @@ Each item below is a separate fix and must be committed separately.
   ownership stale.
 - Fecha: 06/03/2026.
 - Estado: **Closed/OK** (06/03/2026).
+- Code commit: `bdb89ad` (`fix: harden missing-session recovery and close fix26 validation`).
 - Implementacion aplicada:
   1. Endurecer `missing-session hold` para no mantener syncing en grupos
      terminales o sin evidencia fresca de la sesion activa.

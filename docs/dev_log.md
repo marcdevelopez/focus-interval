@@ -9388,6 +9388,7 @@ _(pending validation)_
 
 ### ✔ Work completed:
 
+- Commit: `bdb89ad` — `fix: harden missing-session recovery and close fix26 validation`.
 - Closed Fix 26 in `docs/bugs/validation_fix_2026_03_05` after PASS validation.
 - Updated:
   - `docs/bugs/validation_fix_2026_03_05/plan_validacion_rapida_fix.md`
