@@ -162,6 +162,27 @@ class _ScheduledGroupAutoStarterState
     }
     debugPrint('Auto-start opening TimerScreen for scheduled group.');
     router.go('/timer/$groupId');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final currentRoute = _currentLocationFromKey();
+      if (!currentRoute.startsWith('/timer/')) {
+        debugPrint(
+          '[RunModeDiag] Auto-start navigation not in timer '
+          'group=$groupId route=$currentRoute',
+        );
+        _scheduleRetry(() => unawaited(_openTimerForGroup(groupId)));
+        return;
+      }
+      final activeId =
+          currentRoute.substring('/timer/'.length).split('?').first;
+      if (activeId != groupId) {
+        debugPrint(
+          '[RunModeDiag] Auto-start navigation mismatch '
+          'expected=$groupId actual=$activeId',
+        );
+        _scheduleRetry(() => unawaited(_openTimerForGroup(groupId)));
+      }
+    });
     if (appMode != AppMode.local) {
       final group =
           await ref.read(taskRunGroupRepositoryProvider).getById(groupId);

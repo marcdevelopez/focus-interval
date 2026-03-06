@@ -1,3 +1,124 @@
+# Rapid Validation Checklist — One-Pass (2026-02-24)
+
+Date: 2026-03-04
+Scope: Late-start queue, Resolve overlaps, pre-run auto-open, Run Mode auto-open, ranges, Groups Hub rows, logout safety, mirror sync.
+Goal: Validate all pending items in a single pass using two 15-minute groups.
+Status: Complete — Steps 2–13 validated (prep steps not re-logged).
+
+## Preparation
+1. [ ] Account Mode on both devices (macOS owner, Android mirror). Open Groups Hub on both.
+2. [ ] Task template: 1 pomodoro x 15 min, totalPomodoros=1 (no breaks needed).
+3. [ ] Global notice = 1 min.
+4. [ ] Start logs on both devices and save under:
+   `docs/bugs/validation_fix_2026_02_24/logs/2026_03_02_android_RMX3771_debug.log`
+   `docs/bugs/validation_fix_2026_02_24/logs/2026_03_02_macos_debug.log`
+5. [ ] Note the current time to schedule relative starts.
+
+## One-pass sequence (Account Mode, two groups: G1 and G2)
+1. [ ] Create G1 scheduled at now+2 min (notice=1). Create G2 scheduled at now+4 min (notice=1).
+   Expected: Both appear as scheduled in Groups Hub.
+2. [x] Close both apps OR switch Local Mode → Account Mode on both devices.
+   Wait until now > G2 scheduled start by ~1 min. Reopen if closed.
+   Expected: Late-start queue / Resolve overlaps appears on owner.
+   Evidence: 2026-03-03 03:03 Resolve overlaps on owner; mirror read-only with Request ownership.
+3. [x] In Resolve overlaps, select no groups and confirm.
+   Expected: Same result as Cancel all; mirror shows "Owner resolved" modal, owner does not; OK dismisses; mirror cannot proceed with queue actions.
+   Evidence: 2026-03-03 03:04 both devices returned to Groups Hub after Cancel all (modal not explicitly observed).
+4. [x] From Groups Hub, Run again on canceled G1 and choose Start now.
+   Expected: Run Mode opens and stays (no bounce to Groups Hub).
+   Evidence: 2026-03-03 03:06 Run Mode opened on both devices.
+5. [x] Mirror drift checks while G1 is running: close mirror app and reopen to Run Mode, then background mirror for ~10s and resume.
+   Expected: Mirror timer is in sync immediately (no visible drift or fast catch-up).
+6. [x] Pause G1 for 30–60s, then resume.
+   Expected: Task item range and status boxes match exactly; end time reflects pause.
+   Evidence (03/03/2026, iOS owner + Chrome mirror): Reopen on iOS synced correctly and
+   owner snapshot looked valid. Pause ~60s: mirror showed “Syncing session...” for ~30s,
+   then recovered. After returning from Groups Hub (as performed), remainingSeconds/phaseStartedAt
+   shifted forward repeatedly; drift increased with each Groups Hub → Run Mode
+   round-trip until remainingSeconds reset to 900 (screens at ~20:12–20:15).
+   Chrome mirror froze at 15:00, then resumed ticking but remained desynced.
+   The drift increases monotonically by a similar delta on each return
+   (08:39 vs 09:43 → 09:33 vs 10:37 → 10:30 vs 11:34 → 11:26 vs 12:30).
+   Also reproduces when the **owner** leaves to other screens (e.g., Task List)
+   and returns, not only when visiting Groups Hub.
+   Logs: `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_ios_simulator_debug.log`,
+   `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_chrome_debug.log`.
+   Evidence (03/03/2026, post-fix, Chrome owner + iOS mirror): ownership request
+   needed two taps to accept on macOS (21:18). Pause at ~21:19 led to ~60s
+   “Syncing session...”. After Groups Hub → Run Mode (and other screen returns),
+   drift compounded across ~6 round-trips; Chrome froze at 15:00 then resumed
+   desynced. Logs: `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_ios_simulator_postfix_debug.log`,
+   `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_chrome_postfix_debug.log`.
+   Screenshots: 27–35.
+   Evidence (2026-03-04, post-fix2): iOS owner started G1, ownership handed to
+   macOS on request, iOS closed/reopened, backgrounded ~10s, then Groups Hub →
+   Run Mode return stayed in sync. Paused ~60s and resumed; timers remained
+   aligned (no drift after navigation). Logs:
+   `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_ios_simulator_postfix2_debug.log`,
+   `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_chrome_postfix2_debug.log`.
+7. [x] While G1 is running, schedule G2 with notice=1 and start time = G1 expected end + 1 min (so pre-run starts exactly at G1 end).
+   Expected: Planning accepts with no conflict modal.
+   Evidence (2026-03-04): if schedule conflicts by seconds, app warns and
+   auto-shifts to +1 min; accepts. Notice handled from Groups Hub.
+8. [x] Verify Groups Hub scheduled row on both devices.
+   Expected: "Pre-Run 1 min starts at HH:mm" on both (no "Notice: 1 min" mismatch).
+   Evidence (2026-03-04): scheduled row matches; pre-run time shown correctly.
+9. [x] At G2 pre-run time, allow auto-open on both devices.
+   Expected: Pre-Run opens once per device, no Resolve overlaps, no duplicate navigation.
+   Evidence (2026-03-04): pre-run auto-opened at ~00:12 as expected.
+10. [x] Let G1 complete.
+    Expected: Completion modal returns to Groups Hub (never Ready screen).
+    Evidence (2026-03-04): completion waited until pre-run time in Groups Hub.
+11. [x] At G2 scheduled start, allow auto-open to Run Mode.
+    Expected: Run Mode opens and stays (no bounce). Cancel after verification if needed.
+    Evidence (2026-03-04): start time auto-opened; cancel returned to Groups Hub.
+12. [x] Logout safety (Android).
+    Expected: No black screen; app returns to login or Local Task List.
+
+    Evidence (2026-03-04): Android device OK; iOS log OK; Chrome OK (Local Mode).
+13. [x] Switch to Local Mode before the scheduled pre-run time (macOS).
+    Expected: No Account pre-run notification fires while in Local Mode.
+    Evidence (2026-03-04): pre-run suppressed in Local Mode.
+
+## New finding (2026-03-04)
+- Mirror background resync delay: Android mirror left in background for several
+  minutes returns desynced and only corrects after the next Firebase update.
+  Expected: immediate resync on foreground. Logs:
+  `docs/bugs/validation_fix_2026_02_24/logs/2026_03_04_android_RMX3771_debug.log`,
+  `docs/bugs/validation_fix_2026_02_24/logs/2026_03_04_macos_debug.log`.
+
+## Previous attempt (2026-03-03)
+- Flow used Local Mode → Account Mode switch (no app close). Groups were re-planned from canceled entries (no brand-new groups).
+- Result: FAIL at Step 2. No late-start queue or Resolve overlaps surfaced. Both groups remained `status=scheduled` after scheduledStartTime.
+- Evidence: Screenshot 21 + logs in:
+  `docs/bugs/validation_fix_2026_02_24/logs/2026_03_02_android_RMX3771_debug.log`
+  `docs/bugs/validation_fix_2026_02_24/logs/2026_03_02_macos_debug.log`
+
+## Notice=0 scheduled start (required to close remaining items)
+1. [x] Set global notice = 0.
+2. [x] Run again on G2 (or G1) and schedule start at now+2 min.
+   Expected: No Pre-Run row; auto-start goes straight to Run Mode and stays.
+   Evidence (2026-03-04): Pass; no Pre-Run row and auto-start stayed in Run Mode.
+   Logs:
+   `docs/bugs/validation_fix_2026_02_24/logs/2026_03_04_ios_notice0_localpass_debug.log`,
+   `docs/bugs/validation_fix_2026_02_24/logs/2026_03_04_chrome_notice0_localpass_debug.log`.
+   Screenshots: none (no anomalies observed).
+
+## Optional Local Mode mini-pass (only if Local Mode issues must be revalidated)
+1. [x] Switch to Local Mode. Start now with the same 15-min task.
+   Expected: Run Mode opens and stays; Open Run Mode does not restart the group.
+2. [x] Schedule a Local group with notice=0 at now+2 min.
+   Expected: Auto-start to Run Mode with no pre-run error.
+   Evidence (2026-03-04): Pass; Run Mode stayed open and auto-started without
+   pre-run. Logs:
+   `docs/bugs/validation_fix_2026_02_24/logs/2026_03_04_ios_notice0_localpass_debug.log`,
+   `docs/bugs/validation_fix_2026_02_24/logs/2026_03_04_chrome_notice0_localpass_debug.log`.
+   Screenshots: none (no anomalies observed).
+
+---
+
+# Legacy notes (original Spanish checklist below, kept verbatim for traceability)
+
 # Lista de verificación rápida - Corrección de validación 2026-02-24
 
 Alcance: flujos de cancelación de la cola de late-start, auto-apertura de Pre-Run, auto-apertura de Run Mode, etiquetas de Groups Hub, actualizaciones en vivo de la programación, alineación de las cajas de estado y logout sin pantalla negra.

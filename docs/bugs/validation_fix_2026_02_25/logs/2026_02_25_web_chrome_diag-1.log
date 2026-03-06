@@ -1,0 +1,824 @@
+[  +39 ms] executing: sysctl hw.optional.arm64
+[   +9 ms] Exit code 1 from: sysctl hw.optional.arm64
+[        ] sysctl: unknown oid 'hw.optional.arm64'
+[  +12 ms] Artifact Instance of 'MaterialFonts' is not required, skipping update.
+[        ] Artifact Instance of 'GradleWrapper' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterSdk' is not required, skipping update.
+[        ] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FontSubsetArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'PubDependencies' is not required, skipping update.
+[        ] executing: [/Users/devcodex/development/flutter/] git -c log.showSignature=false log HEAD -n 1 --pretty=format:%ad --date=iso
+[  +35 ms] Exit code 0 from: git -c log.showSignature=false log HEAD -n 1 --pretty=format:%ad --date=iso
+[        ] 2026-02-18 13:54:59 -0800
+[  +48 ms] executing: sysctl hw.optional.arm64
+[   +9 ms] Exit code 1 from: sysctl hw.optional.arm64
+[        ] sysctl: unknown oid 'hw.optional.arm64'
+[        ] executing: xcrun xcodebuild -version
+[ +290 ms] Exit code 0 from: xcrun xcodebuild -version
+[        ] Xcode 26.2
+           Build version 17C52
+[   +3 ms] executing: xcrun xcdevice list --timeout 5
+[   +9 ms] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterEngineStamp' is not required, skipping update.
+[        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[   +1 ms] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[ +104 ms] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[   +1 ms] Artifact Instance of 'FlutterEngineStamp' is not required, skipping update.
+[  +14 ms] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[  +46 ms] Skipping pub get: version match.
+[  +83 ms] Found plugin url_launcher at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher-6.3.2/
+[   +6 ms] Found plugin url_launcher_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_windows-3.1.5/
+[   +6 ms] Found plugin url_launcher_web at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_web-2.4.2/
+[   +4 ms] Found plugin url_launcher_macos at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_macos-3.2.5/
+[   +2 ms] Found plugin url_launcher_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_linux-3.2.2/
+[   +5 ms] Found plugin url_launcher_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_ios-6.3.6/
+[   +2 ms] Found plugin url_launcher_android at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.28/
+[   +3 ms] Found plugin shared_preferences at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences-2.5.3/
+[   +2 ms] Found plugin shared_preferences_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_windows-2.4.1/
+[   +2 ms] Found plugin path_provider_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/
+[   +6 ms] Found plugin shared_preferences_web at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_web-2.4.3/
+[   +1 ms] Found plugin shared_preferences_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_linux-2.4.1/
+[   +1 ms] Found plugin path_provider_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_linux-2.2.1/
+[   +4 ms] Found plugin shared_preferences_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.4/
+[   +1 ms] Found plugin shared_preferences_android at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.13/
+[   +1 ms] Found plugin path_provider at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider-2.1.5/
+[   +2 ms] Found plugin path_provider_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.2/
+[   +2 ms] Found plugin path_provider_android at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_android-2.2.19/
+[   +1 ms] Found plugin local_notifier at /Users/devcodex/.pub-cache/hosted/pub.dev/local_notifier-0.1.6/
+[   +3 ms] Found plugin just_audio at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio-0.9.46/
+[   +6 ms] Found plugin just_audio_web at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio_web-0.4.16/
+[  +10 ms] Found plugin audio_session at /Users/devcodex/.pub-cache/hosted/pub.dev/audio_session-0.1.25/
+[  +13 ms] Found plugin google_sign_in at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in-6.3.0/
+[   +3 ms] Found plugin google_sign_in_web at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_web-0.12.4+4/
+[   +7 ms] Found plugin google_sign_in_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_ios-5.9.0/
+[   +3 ms] Found plugin google_sign_in_android at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_android-6.2.1/
+[  +45 ms] Found plugin flutter_local_notifications at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications-17.2.4/
+[   +3 ms] Found plugin flutter_local_notifications_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications_linux-4.0.1/
+[   +3 ms] Found plugin firebase_core at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core-3.15.2/
+[        ] Found plugin firebase_core_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core_web-2.24.1/
+[   +1 ms] Found plugin firebase_auth at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth-5.7.0/
+[   +1 ms] Found plugin firebase_auth_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth_web-5.15.3/
+[   +3 ms] Found plugin file_picker at /Users/devcodex/.pub-cache/hosted/pub.dev/file_picker-8.3.7/
+[   +6 ms] Found plugin flutter_plugin_android_lifecycle at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.33/
+[   +4 ms] Found plugin cloud_firestore at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore-5.6.12/
+[   +1 ms] Found plugin cloud_firestore_web at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore_web-4.4.12/
+[   +3 ms] Found plugin audioplayers at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers-6.5.1/
+[   +1 ms] Found plugin audioplayers_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_windows-4.2.1/
+[   +2 ms] Found plugin audioplayers_web at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_web-5.1.1/
+[   +2 ms] Found plugin audioplayers_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_linux-4.2.1/
+[   +1 ms] Found plugin audioplayers_darwin at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_darwin-6.3.0/
+[   +1 ms] Found plugin audioplayers_android at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_android-5.2.1/
+[   +1 ms] Found plugin android_alarm_manager_plus at /Users/devcodex/.pub-cache/hosted/pub.dev/android_alarm_manager_plus-4.0.8/
+[  +60 ms] Found plugin url_launcher at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher-6.3.2/
+[   +1 ms] Found plugin url_launcher_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_windows-3.1.5/
+[   +2 ms] Found plugin url_launcher_web at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_web-2.4.2/
+[   +2 ms] Found plugin url_launcher_macos at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_macos-3.2.5/
+[   +1 ms] Found plugin url_launcher_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_linux-3.2.2/
+[   +1 ms] Found plugin url_launcher_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_ios-6.3.6/
+[   +1 ms] Found plugin url_launcher_android at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.28/
+[   +2 ms] Found plugin shared_preferences at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences-2.5.3/
+[   +1 ms] Found plugin shared_preferences_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_windows-2.4.1/
+[   +1 ms] Found plugin path_provider_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/
+[   +4 ms] Found plugin shared_preferences_web at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_web-2.4.3/
+[        ] Found plugin shared_preferences_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_linux-2.4.1/
+[   +1 ms] Found plugin path_provider_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_linux-2.2.1/
+[   +2 ms] Found plugin shared_preferences_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.4/
+[   +1 ms] Found plugin shared_preferences_android at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.13/
+[   +1 ms] Found plugin path_provider at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider-2.1.5/
+[   +1 ms] Found plugin path_provider_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.2/
+[   +1 ms] Found plugin path_provider_android at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_android-2.2.19/
+[   +1 ms] Found plugin local_notifier at /Users/devcodex/.pub-cache/hosted/pub.dev/local_notifier-0.1.6/
+[   +1 ms] Found plugin just_audio at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio-0.9.46/
+[   +4 ms] Found plugin just_audio_web at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio_web-0.4.16/
+[   +2 ms] Found plugin audio_session at /Users/devcodex/.pub-cache/hosted/pub.dev/audio_session-0.1.25/
+[   +3 ms] Found plugin google_sign_in at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in-6.3.0/
+[   +2 ms] Found plugin google_sign_in_web at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_web-0.12.4+4/
+[   +3 ms] Found plugin google_sign_in_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_ios-5.9.0/
+[   +1 ms] Found plugin google_sign_in_android at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_android-6.2.1/
+[  +25 ms] Found plugin flutter_local_notifications at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications-17.2.4/
+[   +1 ms] Found plugin flutter_local_notifications_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications_linux-4.0.1/
+[   +2 ms] Found plugin firebase_core at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core-3.15.2/
+[        ] Found plugin firebase_core_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core_web-2.24.1/
+[   +1 ms] Found plugin firebase_auth at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth-5.7.0/
+[   +1 ms] Found plugin firebase_auth_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth_web-5.15.3/
+[   +3 ms] Found plugin file_picker at /Users/devcodex/.pub-cache/hosted/pub.dev/file_picker-8.3.7/
+[   +1 ms] Found plugin flutter_plugin_android_lifecycle at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.33/
+[   +1 ms] Found plugin cloud_firestore at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore-5.6.12/
+[   +1 ms] Found plugin cloud_firestore_web at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore_web-4.4.12/
+[   +2 ms] Found plugin audioplayers at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers-6.5.1/
+[   +1 ms] Found plugin audioplayers_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_windows-4.2.1/
+[   +2 ms] Found plugin audioplayers_web at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_web-5.1.1/
+[   +1 ms] Found plugin audioplayers_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_linux-4.2.1/
+[        ] Found plugin audioplayers_darwin at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_darwin-6.3.0/
+[   +1 ms] Found plugin audioplayers_android at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_android-5.2.1/
+[   +2 ms] Found plugin android_alarm_manager_plus at /Users/devcodex/.pub-cache/hosted/pub.dev/android_alarm_manager_plus-4.0.8/
+[  +20 ms] Skipping generating web_plugin_registrant.dart because it is up-to-date.
+[  +30 ms] Found plugin url_launcher at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher-6.3.2/
+[        ] Found plugin url_launcher_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_windows-3.1.5/
+[   +2 ms] Found plugin url_launcher_web at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_web-2.4.2/
+[   +2 ms] Found plugin url_launcher_macos at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_macos-3.2.5/
+[        ] Found plugin url_launcher_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_linux-3.2.2/
+[        ] Found plugin url_launcher_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_ios-6.3.6/
+[        ] Found plugin url_launcher_android at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.28/
+[   +1 ms] Found plugin shared_preferences at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences-2.5.3/
+[        ] Found plugin shared_preferences_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_windows-2.4.1/
+[   +1 ms] Found plugin path_provider_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/
+[   +3 ms] Found plugin shared_preferences_web at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_web-2.4.3/
+[        ] Found plugin shared_preferences_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_linux-2.4.1/
+[   +1 ms] Found plugin path_provider_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_linux-2.2.1/
+[   +1 ms] Found plugin shared_preferences_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.4/
+[        ] Found plugin shared_preferences_android at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.13/
+[        ] Found plugin path_provider at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider-2.1.5/
+[        ] Found plugin path_provider_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.2/
+[        ] Found plugin path_provider_android at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_android-2.2.19/
+[        ] Found plugin local_notifier at /Users/devcodex/.pub-cache/hosted/pub.dev/local_notifier-0.1.6/
+[   +1 ms] Found plugin just_audio at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio-0.9.46/
+[   +1 ms] Found plugin just_audio_web at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio_web-0.4.16/
+[   +2 ms] Found plugin audio_session at /Users/devcodex/.pub-cache/hosted/pub.dev/audio_session-0.1.25/
+[   +4 ms] Found plugin google_sign_in at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in-6.3.0/
+[   +1 ms] Found plugin google_sign_in_web at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_web-0.12.4+4/
+[   +2 ms] Found plugin google_sign_in_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_ios-5.9.0/
+[        ] Found plugin google_sign_in_android at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_android-6.2.1/
+[  +24 ms] Found plugin flutter_local_notifications at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications-17.2.4/
+[   +1 ms] Found plugin flutter_local_notifications_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications_linux-4.0.1/
+[   +3 ms] Found plugin firebase_core at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core-3.15.2/
+[        ] Found plugin firebase_core_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core_web-2.24.1/
+[   +1 ms] Found plugin firebase_auth at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth-5.7.0/
+[        ] Found plugin firebase_auth_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth_web-5.15.3/
+[   +1 ms] Found plugin file_picker at /Users/devcodex/.pub-cache/hosted/pub.dev/file_picker-8.3.7/
+[   +1 ms] Found plugin flutter_plugin_android_lifecycle at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.33/
+[   +2 ms] Found plugin cloud_firestore at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore-5.6.12/
+[   +1 ms] Found plugin cloud_firestore_web at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore_web-4.4.12/
+[   +1 ms] Found plugin audioplayers at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers-6.5.1/
+[   +1 ms] Found plugin audioplayers_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_windows-4.2.1/
+[   +2 ms] Found plugin audioplayers_web at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_web-5.1.1/
+[   +1 ms] Found plugin audioplayers_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_linux-4.2.1/
+[        ] Found plugin audioplayers_darwin at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_darwin-6.3.0/
+[        ] Found plugin audioplayers_android at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_android-5.2.1/
+[        ] Found plugin android_alarm_manager_plus at /Users/devcodex/.pub-cache/hosted/pub.dev/android_alarm_manager_plus-4.0.8/
+[  +11 ms] Generating /Users/devcodex/development/focus_interval/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+[   +2 ms] Skipping generating GeneratedPluginRegistrant.java because it is up-to-date.
+[   +8 ms] Skipping generating generated_plugin_registrant.h because it is up-to-date.
+[   +1 ms] Skipping generating generated_plugin_registrant.cc because it is up-to-date.
+[   +1 ms] Skipping generating generated_plugins.cmake because it is up-to-date.
+[   +3 ms] Skipping generating generated_plugin_registrant.h because it is up-to-date.
+[   +2 ms] Skipping generating generated_plugin_registrant.cc because it is up-to-date.
+[   +2 ms] Skipping generating generated_plugins.cmake because it is up-to-date.
+[   +4 ms] Skipping generating GeneratedPluginRegistrant.h because it is up-to-date.
+[   +1 ms] Skipping generating GeneratedPluginRegistrant.m because it is up-to-date.
+[   +1 ms] Skipping generating GeneratedPluginRegistrant.swift because it is up-to-date.
+[ +275 ms] Launching lib/main.dart on Chrome in release mode...
+[  +85 ms] The --pwa-strategy option is deprecated and will be removed in a future Flutter release.
+           For more information, see: https://github.com/flutter/flutter/issues/156910
+[  +39 ms] Found plugin url_launcher at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher-6.3.2/
+[   +2 ms] Found plugin url_launcher_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_windows-3.1.5/
+[   +3 ms] Found plugin url_launcher_web at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_web-2.4.2/
+[   +1 ms] Found plugin url_launcher_macos at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_macos-3.2.5/
+[        ] Found plugin url_launcher_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_linux-3.2.2/
+[   +7 ms] Found plugin url_launcher_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_ios-6.3.6/
+[   +2 ms] Found plugin url_launcher_android at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.28/
+[   +2 ms] Found plugin shared_preferences at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences-2.5.3/
+[   +1 ms] Found plugin shared_preferences_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_windows-2.4.1/
+[   +1 ms] Found plugin path_provider_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/
+[   +2 ms] Found plugin shared_preferences_web at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_web-2.4.3/
+[   +1 ms] Found plugin shared_preferences_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_linux-2.4.1/
+[   +1 ms] Found plugin path_provider_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_linux-2.2.1/
+[   +1 ms] Found plugin shared_preferences_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.4/
+[        ] Found plugin shared_preferences_android at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.13/
+[        ] Found plugin path_provider at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider-2.1.5/
+[        ] Found plugin path_provider_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.2/
+[   +1 ms] Found plugin path_provider_android at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_android-2.2.19/
+[   +4 ms] Found plugin local_notifier at /Users/devcodex/.pub-cache/hosted/pub.dev/local_notifier-0.1.6/
+[   +2 ms] Found plugin just_audio at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio-0.9.46/
+[   +1 ms] Found plugin just_audio_web at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio_web-0.4.16/
+[   +5 ms] Found plugin audio_session at /Users/devcodex/.pub-cache/hosted/pub.dev/audio_session-0.1.25/
+[   +5 ms] Found plugin google_sign_in at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in-6.3.0/
+[   +2 ms] Found plugin google_sign_in_web at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_web-0.12.4+4/
+[   +5 ms] Found plugin google_sign_in_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_ios-5.9.0/
+[   +1 ms] Found plugin google_sign_in_android at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_android-6.2.1/
+[  +45 ms] Found plugin flutter_local_notifications at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications-17.2.4/
+[   +2 ms] Found plugin flutter_local_notifications_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications_linux-4.0.1/
+[   +3 ms] Found plugin firebase_core at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core-3.15.2/
+[   +1 ms] Found plugin firebase_core_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core_web-2.24.1/
+[   +2 ms] Found plugin firebase_auth at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth-5.7.0/
+[   +2 ms] Found plugin firebase_auth_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth_web-5.15.3/
+[   +5 ms] Found plugin file_picker at /Users/devcodex/.pub-cache/hosted/pub.dev/file_picker-8.3.7/
+[   +2 ms] Found plugin flutter_plugin_android_lifecycle at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.33/
+[   +3 ms] Found plugin cloud_firestore at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore-5.6.12/
+[   +1 ms] Found plugin cloud_firestore_web at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore_web-4.4.12/
+[   +3 ms] Found plugin audioplayers at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers-6.5.1/
+[   +1 ms] Found plugin audioplayers_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_windows-4.2.1/
+[   +2 ms] Found plugin audioplayers_web at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_web-5.1.1/
+[   +1 ms] Found plugin audioplayers_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_linux-4.2.1/
+[   +1 ms] Found plugin audioplayers_darwin at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_darwin-6.3.0/
+[   +1 ms] Found plugin audioplayers_android at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_android-5.2.1/
+[   +1 ms] Found plugin android_alarm_manager_plus at /Users/devcodex/.pub-cache/hosted/pub.dev/android_alarm_manager_plus-4.0.8/
+[   +2 ms] generated_plugin_registrant.dart not found. Skipping.
+[   +2 ms] Compiling lib/main.dart for the Web...
+[   +6 ms] Initializing file store
+[   +6 ms] Done initializing file store
+[  +62 ms] Skipping target: web_entrypoint
+[   +2 ms] invalidated build due to missing files: /Users/devcodex/development/focus_interval/web/*/index.html, /Users/devcodex/development/focus_interval/web/flutter_bootstrap.js
+[   +1 ms] Skipping target: dart_build
+[        ] Skipping target: gen_localizations
+[   +2 ms] web_templated_files: Starting due to {InvalidatedReasonKind.outputMissing: The following outputs were missing: /Users/devcodex/development/focus_interval/build/web/*/index.html, InvalidatedReasonKind.inputMissing: The following inputs were missing: /Users/devcodex/development/focus_interval/web/*/index.html,/Users/devcodex/development/focus_interval/web/flutter_bootstrap.js}
+[   +2 ms] web_static_assets: Starting due to {InvalidatedReasonKind.outputMissing: The following outputs were missing: /Users/devcodex/development/focus_interval/.dart_tool/flutter_build/50e7b8e47190d76b5853b19a6f06183c/flutter.js,/Users/devcodex/development/focus_interval/.dart_tool/flutter_build/50e7b8e47190d76b5853b19a6f06183c/canvaskit/wimp.wasm,/Users/devcodex/development/focus_interval/.dart_tool/flutter_build/50e7b8e47190d76b5853b19a6f06183c/canvaskit/skwasm.js,/Users/devcodex/development/focus_interval/.dart_tool/flutter_build/50e7b8e47190d76b5853b19a6f06183c/canvaskit/skwasm_heavy.js,/Users/devcodex/development/focus_interval/.dart_tool/flutter_build/50e7b8e47190d76b5853b19a6f06183c/canvaskit/skwasm.js.symbols,/Users/devcodex/development/focus_interval/.dart_tool/flutter_build/50e7b8e47190d76b5853b19a6f06183c/canvaskit/canvaskit.js.symbols,/Users/devcodex/development/focus_interval/.dart_tool/flutter_build/50e7b8e47190d76b5853b19a6f06183c/canvaskit/skwasm_heavy.js.symbols,/Users/devcodex/development/focus_interval/.dart_tool/flutter_build/50e7b8e47190d76b5853b19a6f06183c/canvaskit/skwasm.wasm,/Users/devcodex/development/focus_interval/.dart_tool/flutter_build/50e7b8e47190d76b5853b19a6f06183c/canvaskit/chromium/canvaskit.js.symbols,/Users/devcodex/development/focus_interval/.dart_tool/flutter_build/50e7b8e47190d76b5853b19a6f06183c/canvaskit/chromium/canvaskit.js,/Users/devcodex/development/focus_interval/.dart_tool/flutter_build/50e7b8e47190d76b5853b19a6f06183c/canvaskit/chromium/canvaskit.wasm,/Users/devcodex/development/focus_interval/.dart_tool/flutter_build/50e7b8e47190d76b5853b19a6f06183c/canvaskit/canvaskit.js,/Users/devcodex/development/focus_interval/.dart_tool/flutter_build/50e7b8e47190d76b5853b19a6f06183c/canvaskit/wimp.js,/Users/devcodex/development/focus_interval/.dart_tool/flutter_build/50e7b8e47190d76b5853b19a6f06183c/canvaskit/canvaskit.wasm,/Users/devcodex/development/focus_interval/.dart_tool/flutter_build/50e7b8e47190d76b5853b19a6f06183c/canvaskit/wimp.js.symbols,/Users/devcodex/development/focus_interval/.dart_tool/flutter_build/50e7b8e47190d76b5853b19a6f06183c/canvaskit/skwasm_heavy.wasm}
+[+1267 ms] Skipping target: dart2js
+[   +5 ms] web_static_assets: Complete
+[  +27 ms] web_templated_files: Complete
+[   +2 ms] invalidated build due to missing files: /Users/devcodex/development/focus_interval/DOES_NOT_EXIST_RERUN_FOR_WILDCARD26718186
+[ +104 ms] web_release_bundle: Starting due to {InvalidatedReasonKind.inputMissing: The following inputs were missing: /Users/devcodex/development/focus_interval/DOES_NOT_EXIST_RERUN_FOR_WILDCARD26718186}
+[ +151 ms] Manifest contained wildcard assets. Inserting missing file into build graph to force rerun. for more information see #56466.
+[  +18 ms] shaderc command: [/Users/devcodex/development/flutter/bin/cache/artifacts/engine/darwin-x64/impellerc, --sksl, --iplr, --json, --sl=/Users/devcodex/development/focus_interval/build/web/assets/shaders/ink_sparkle.frag, --spirv=/Users/devcodex/development/focus_interval/build/web/assets/shaders/ink_sparkle.frag.spirv, --input=/Users/devcodex/development/flutter/packages/flutter/lib/src/material/shaders/ink_sparkle.frag, --input-type=frag, --include=/Users/devcodex/development/flutter/packages/flutter/lib/src/material/shaders, --include=/Users/devcodex/development/flutter/bin/cache/artifacts/engine/darwin-x64/shader_lib]
+[   +1 ms] shaderc command: [/Users/devcodex/development/flutter/bin/cache/artifacts/engine/darwin-x64/impellerc, --sksl, --iplr, --json, --sl=/Users/devcodex/development/focus_interval/build/web/assets/shaders/stretch_effect.frag, --spirv=/Users/devcodex/development/focus_interval/build/web/assets/shaders/stretch_effect.frag.spirv, --input=/Users/devcodex/development/flutter/packages/flutter/lib/src/material/shaders/stretch_effect.frag, --input-type=frag, --include=/Users/devcodex/development/flutter/packages/flutter/lib/src/material/shaders, --include=/Users/devcodex/development/flutter/bin/cache/artifacts/engine/darwin-x64/shader_lib]
+[ +339 ms] web_release_bundle: Complete
+[ +301 ms] Skipping target: web_service_worker
+[        ] Persisting file store
+[  +13 ms] Done persisting file store
+[  +32 ms] Compiling lib/main.dart for the Web... (completed in 2.350ms)
+[   +1 ms] ✓ Built build/web
+[ +105 ms] Launching Chromium (url = http://localhost:54947, headless = false, skipCheck = false, debugPort = null)
+[        ] Will use Chromium executable at /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+[  +72 ms] Using Google Chrome 145.0.7632.117 
+
+[  +20 ms] executing: sysctl hw.optional.arm64
+[  +11 ms] Exit code 1 from: sysctl hw.optional.arm64
+[        ] sysctl: unknown oid 'hw.optional.arm64'
+[ +621 ms] [CHROME]: 
+[        ] [CHROME]: DevTools listening on ws://127.0.0.1:54954/devtools/browser/1116ae84-c032-48e3-902c-30622985a8f6
+[ +878 ms] Flutter run key commands.
+[   +2 ms] r Hot reload. 🔥🔥🔥
+[        ] h List all available interactive commands.
+[        ] d Detach (terminate "flutter run" but leave application running).
+[        ] c Clear the screen
+[        ] q Quit (terminate the application on the device).
+[+2093 ms] [
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,4",
+               "identifier" : "C20C534F-1AFB-48AC-8B3A-C9D513194D5A",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-plus-1",
+               "modelName" : "iPhone 16 Plus",
+               "name" : "iPhone 16 Plus",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,5",
+               "identifier" : "D51D5F29-FE65-4B02-950B-8D143F6015AF",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m3-13-1",
+               "modelName" : "iPad Air 13-inch (M3)",
+               "name" : "iPad Air 13-inch (M3)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,3",
+               "identifier" : "3B96DCB0-8E01-4477-9F0E-3348EC487AD2",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m3-1",
+               "modelName" : "iPad Air 11-inch (M3)",
+               "name" : "iPad Air 11-inch (M3)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,3",
+               "identifier" : "08215FD6-E8E7-48DC-813C-B6D7AC0DD3AD",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-1",
+               "modelName" : "iPhone 16",
+               "name" : "iPhone 16",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch7,5",
+               "identifier" : "52986FD7-C6F2-44F9-8184-135163ADB5AE",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-u2-8",
+               "modelName" : "Apple Watch Ultra 2 (49mm)",
+               "name" : "Apple Watch Ultra 2 (49mm)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,3",
+               "identifier" : "284106F3-DF1D-48FC-AB4F-168DEABDAC57",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-1",
+               "modelName" : "iPhone 16",
+               "name" : "iPhone 16",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch7,8",
+               "identifier" : "23A5AEB1-BD11-4065-B272-EB1D59302B5F",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-series10-4",
+               "modelName" : "Apple Watch Series 10 (42mm)",
+               "name" : "Apple Watch Series 10 (42mm)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone18,2",
+               "identifier" : "F34A2114-E4C0-4F53-90DC-46B3FF51A7E1",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.iphone-17-pro-max-2",
+               "modelName" : "iPhone 17 Pro Max",
+               "name" : "iPhone 17 Pro Max",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,6",
+               "identifier" : "B0C31D10-C712-4E87-BBC7-04134924132B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-pro-m4-13-1",
+               "modelName" : "iPad Pro 13-inch (M4)",
+               "name" : "iPad Pro 13-inch (M4)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,2",
+               "identifier" : "7682B1B1-3FAA-4396-8ED1-38D58C2D507B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-pro-max-1",
+               "modelName" : "iPhone 16 Pro Max",
+               "name" : "iPhone 16 Pro Max",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22J578)",
+               "available" : true,
+               "platform" : "com.apple.platform.appletvsimulator",
+               "modelCode" : "AppleTV5,3",
+               "identifier" : "92E44CA8-9C75-4D0B-80CE-3EF66405B32B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.apple-tv-4",
+               "modelName" : "Apple TV",
+               "name" : "Apple TV",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22J578)",
+               "available" : true,
+               "platform" : "com.apple.platform.appletvsimulator",
+               "modelCode" : "AppleTV14,1",
+               "identifier" : "CF865824-7BBD-4971-BAF5-A0B33E3D927F",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.apple-tv-4k-3rd",
+               "modelName" : "Apple TV 4K (3rd generation)",
+               "name" : "Apple TV 4K (3rd generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,5",
+               "identifier" : "446359A7-A997-48B2-A53B-D7FCA108449E",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-e-1",
+               "modelName" : "iPhone 16e",
+               "name" : "iPhone 16e",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,4",
+               "identifier" : "DE949815-CD56-4DC7-AF3A-0310ED55ED4A",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-pro-m4-1",
+               "modelName" : "iPad Pro 11-inch (M4)",
+               "name" : "iPad Pro 11-inch (M4)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad14,11",
+               "identifier" : "EE02B49D-E925-49A5-BE54-E8F872CFDFAF",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m2-13-1",
+               "modelName" : "iPad Air 13-inch (M2)",
+               "name" : "iPad Air 13-inch (M2)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,5",
+               "identifier" : "DED847BD-AA25-45A4-B3F8-DAC60D92CE08",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-e-1",
+               "modelName" : "iPhone 16e",
+               "name" : "iPhone 16e",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone14,6",
+               "identifier" : "955D663F-FFDC-427D-A693-887E69F5B1BA",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-se3-1",
+               "modelName" : "iPhone SE (3rd generation)",
+               "name" : "iPhone SE (3rd generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone18,4",
+               "identifier" : "185AD710-BB9D-4F05-AC30-1105B3338E78",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.iphone-air-1",
+               "modelName" : "iPhone Air",
+               "name" : "iPhone Air",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,3",
+               "identifier" : "E125AB3A-53E1-41E1-8469-B984F5217419",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m3-1",
+               "modelName" : "iPad Air 11-inch (M3)",
+               "name" : "iPad Air 11-inch (M3)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad17,2",
+               "identifier" : "F98C0FC9-2BD6-4279-9D88-7A6E161D668B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.ipad-pro-11-inch-m5-1",
+               "modelName" : "iPad Pro 11-inch (M5)",
+               "name" : "iPad Pro 11-inch (M5)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad13,18",
+               "identifier" : "E2700927-1973-46ED-AD4C-470032780D5B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-10-1",
+               "modelName" : "iPad (10th generation)",
+               "name" : "iPad (10th generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone18,1",
+               "identifier" : "9A6B6687-8DE2-4573-A939-E4FFD0190E1A",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.iphone-17-pro-2",
+               "modelName" : "iPhone 17 Pro",
+               "name" : "iPhone 17 Pro",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch7,9",
+               "identifier" : "6E0D3EE3-0FA1-470C-AD72-C9375FA7C0F6",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-series10-4",
+               "modelName" : "Apple Watch Series 10 (46mm)",
+               "name" : "Apple Watch Series 10 (46mm)",
+               "ignored" : false
+             },
+             {
+               "ignored" : false,
+               "modelCode" : "MacBookPro16,1",
+               "simulator" : false,
+               "modelName" : "MacBook Pro",
+               "operatingSystemVersion" : "15.7.4 (24G517)",
+               "identifier" : "80550D2C-713D-5411-8754-44777FB80AB4",
+               "platform" : "com.apple.platform.macosx",
+               "architecture" : "x86_64h",
+               "interface" : "usb",
+               "available" : true,
+               "name" : "My Mac",
+               "modelUTI" : "com.apple.macbookpro-16"
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,2",
+               "identifier" : "244F195E-DD92-4C57-A822-A91BDFA5823F",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-mini-a17-1",
+               "modelName" : "iPad mini (A17 Pro)",
+               "name" : "iPad mini (A17 Pro)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone18,3",
+               "identifier" : "47E79B36-2B8D-4DDD-8A76-B2CA8B7B7F1E",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.iphone-17-2",
+               "modelName" : "iPhone 17",
+               "name" : "iPhone 17",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,1",
+               "identifier" : "8F63858E-5673-4CBB-813C-42BF25381FFB",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-pro-1",
+               "modelName" : "iPhone 16 Pro",
+               "name" : "iPhone 16 Pro",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad17,4",
+               "identifier" : "CFB538D5-72B8-4D7A-B01F-8815B2C9EEB4",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.ipad-pro-13-inch-m5-1",
+               "modelName" : "iPad Pro 13-inch (M5)",
+               "name" : "iPad Pro 13-inch (M5)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch6,13",
+               "identifier" : "9B0B9E3C-B325-4ECF-A4DE-8AA283A4E356",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-se-2nd-1",
+               "modelName" : "Apple Watch SE (44mm) (2nd generation)",
+               "name" : "Apple Watch SE (44mm) (2nd generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,2",
+               "identifier" : "94DFB47E-9A14-46C0-8F12-6A6CD513FF6A",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-mini-a17-1",
+               "modelName" : "iPad mini (A17 Pro)",
+               "name" : "iPad mini (A17 Pro)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,1",
+               "identifier" : "1835A5D0-AF1A-4D0B-8CF2-4EE06C0707C4",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-pro-1",
+               "modelName" : "iPhone 16 Pro",
+               "name" : "iPhone 16 Pro",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,4",
+               "identifier" : "132647C4-11D5-475D-85FA-2D68A05AE405",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-pro-m4-1",
+               "modelName" : "iPad Pro 11-inch (M4)",
+               "name" : "iPad Pro 11-inch (M4)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,7",
+               "identifier" : "EE4B788F-BD5A-437D-AE99-82CB18F1F7AB",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-a16-1",
+               "modelName" : "iPad (A16)",
+               "name" : "iPad (A16)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,7",
+               "identifier" : "D34ACD36-E0D7-470C-AEB0-1A9559A1917F",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-a16-1",
+               "modelName" : "iPad (A16)",
+               "name" : "iPad (A16)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch6,12",
+               "identifier" : "AD7CA81E-EF8C-4914-BE8D-09F42C93ADFD",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-se-2nd-1",
+               "modelName" : "Apple Watch SE (40mm) (2nd generation)",
+               "name" : "Apple Watch SE (40mm) (2nd generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad14,9",
+               "identifier" : "42291EF5-3456-44DF-968E-975F54B8868D",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m2-1",
+               "modelName" : "iPad Air 11-inch (M2)",
+               "name" : "iPad Air 11-inch (M2)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,5",
+               "identifier" : "7B696BBD-1BEE-4EDB-B4C5-9F2A4FFA8D24",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m3-13-1",
+               "modelName" : "iPad Air 13-inch (M3)",
+               "name" : "iPad Air 13-inch (M3)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,2",
+               "identifier" : "3DDD7683-59C1-4BEB-91E4-A81989E35A9C",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-mini-a17-1",
+               "modelName" : "iPad mini (A17 Pro)",
+               "name" : "iPad mini (A17 Pro)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,2",
+               "identifier" : "89CB1423-5EEA-4625-905C-FB7558FBB8C2",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-pro-max-1",
+               "modelName" : "iPhone 16 Pro Max",
+               "name" : "iPhone 16 Pro Max",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22J578)",
+               "available" : true,
+               "platform" : "com.apple.platform.appletvsimulator",
+               "modelCode" : "AppleTV14,1",
+               "identifier" : "8FE517B9-8789-49F1-8460-84F3A50B8507",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.apple-tv-4k-3rd",
+               "modelName" : "Apple TV 4K (3rd generation) (at 1080p)",
+               "name" : "Apple TV 4K (3rd generation) (at 1080p)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,6",
+               "identifier" : "A80C020F-BE29-4EC1-A814-EBBABB8DD2DE",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-pro-m4-13-1",
+               "modelName" : "iPad Pro 13-inch (M4)",
+               "name" : "iPad Pro 13-inch (M4)",
+               "ignored" : false
+             }
+           ]

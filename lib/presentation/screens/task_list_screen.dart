@@ -11,7 +11,6 @@ import 'package:uuid/uuid.dart';
 import '../providers.dart';
 import '../viewmodels/task_editor_view_model.dart';
 import '../viewmodels/pre_run_notice_view_model.dart';
-import '../viewmodels/scheduled_group_coordinator.dart';
 import '../../data/models/pomodoro_session.dart';
 import '../../data/models/pomodoro_preset.dart';
 import '../../data/models/pomodoro_task.dart';
@@ -32,30 +31,30 @@ import '../utils/scheduled_group_timing.dart';
 import '../utils/run_mode_launcher.dart';
 
 enum _EmailVerificationAction { verified, resend, useLocal, signOut }
-enum _IntegritySelectionType { keepIndividual, useDefault, useStructure, cancel }
+
+enum _IntegritySelectionType {
+  keepIndividual,
+  useDefault,
+  useStructure,
+  cancel,
+}
 
 class _IntegritySelection {
   final _IntegritySelectionType type;
   final String? masterTaskId;
 
-  const _IntegritySelection._(
-    this.type, {
-    this.masterTaskId,
-  });
+  const _IntegritySelection._(this.type, {this.masterTaskId});
 
   const _IntegritySelection.keepIndividual()
-      : this._(_IntegritySelectionType.keepIndividual);
+    : this._(_IntegritySelectionType.keepIndividual);
 
   const _IntegritySelection.useDefault()
-      : this._(_IntegritySelectionType.useDefault);
+    : this._(_IntegritySelectionType.useDefault);
 
   const _IntegritySelection.cancel() : this._(_IntegritySelectionType.cancel);
 
   const _IntegritySelection.useStructure(String taskId)
-      : this._(
-          _IntegritySelectionType.useStructure,
-          masterTaskId: taskId,
-        );
+    : this._(_IntegritySelectionType.useStructure, masterTaskId: taskId);
 }
 
 class _StructureKey {
@@ -92,11 +91,11 @@ class _StructureKey {
 
   @override
   int get hashCode => Object.hash(
-        pomodoroMinutes,
-        shortBreakMinutes,
-        longBreakMinutes,
-        longBreakInterval,
-      );
+    pomodoroMinutes,
+    shortBreakMinutes,
+    longBreakMinutes,
+    longBreakInterval,
+  );
 }
 
 class _StructureOption {
@@ -104,10 +103,8 @@ class _StructureOption {
   final PomodoroTask masterTask;
   final List<PomodoroTask> tasks;
 
-  _StructureOption({
-    required this.key,
-    required this.masterTask,
-  }) : tasks = [masterTask];
+  _StructureOption({required this.key, required this.masterTask})
+    : tasks = [masterTask];
 
   void addTask(PomodoroTask task) {
     tasks.add(task);
@@ -131,8 +128,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   final _dateFormat = DateFormat('MMM d');
   final GlobalKey _taskListViewportKey = GlobalKey();
   final ScrollController _taskListScrollController = ScrollController();
-  final ValueNotifier<DateTime> _nowTicker =
-      ValueNotifier<DateTime>(DateTime.now());
+  final ValueNotifier<DateTime> _nowTicker = ValueNotifier<DateTime>(
+    DateTime.now(),
+  );
   Timer? _nowTickTimer;
   bool _syncNoticeChecked = false;
   bool _webLocalNoticeChecked = false;
@@ -453,14 +451,15 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final controller = ref.read(appModeProvider.notifier);
     ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
     ref.read(runningOverlapDecisionProvider.notifier).state = null;
-    ref.invalidate(scheduledGroupCoordinatorProvider);
     ref.invalidate(taskListProvider);
     ref.invalidate(presetListProvider);
     ref.invalidate(presetEditorProvider);
-    final rootContext =
-        GoRouter.of(context).routerDelegate.navigatorKey.currentContext;
-    final router =
-        rootContext != null ? GoRouter.of(rootContext) : GoRouter.of(context);
+    final rootContext = GoRouter.of(
+      context,
+    ).routerDelegate.navigatorKey.currentContext;
+    final router = rootContext != null
+        ? GoRouter.of(rootContext)
+        : GoRouter.of(context);
     await controller.setLocal();
     await _maybeShowWebLocalNotice();
     if (!mounted) return;
@@ -498,8 +497,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final overlapDecision = ref.watch(runningOverlapDecisionProvider);
     final groupsAsync = ref.watch(taskRunGroupStreamProvider);
     final selectedIds = ref.watch(taskSelectionProvider);
-    final selectedWeightPercents =
-        ref.watch(selectedTaskWeightPercentsProvider);
+    final selectedWeightPercents = ref.watch(
+      selectedTaskWeightPercentsProvider,
+    );
     final selection = ref.read(taskSelectionProvider.notifier);
     final deviceId = ref.watch(deviceInfoServiceProvider).deviceId;
     final isCompact = MediaQuery.of(context).size.width < 360;
@@ -528,10 +528,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     const actionIconWidth = 36.0;
     const actionRightPadding = 8.0;
     final actionIconCount =
-        1 +
-        (showLogout ? 1 : 0) +
-        (showLogin ? 1 : 0) +
-        (showInfo ? 1 : 0);
+        1 + (showLogout ? 1 : 0) + (showLogin ? 1 : 0) + (showInfo ? 1 : 0);
     final actionReservedWidth =
         (actionIconCount * actionIconWidth) +
         actionRightPadding +
@@ -570,8 +567,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final hasPendingOwnerRequest =
         ownershipRequest?.status == OwnershipRequestStatus.pending &&
         ownershipRequest?.requesterDeviceId != deviceId;
-    final isDismissedOwnerRequest =
-        _isDismissedOwnershipRequest(ownershipRequest);
+    final isDismissedOwnerRequest = _isDismissedOwnershipRequest(
+      ownershipRequest,
+    );
     if ((_dismissedOwnershipRequestKey != null ||
             _dismissedOwnershipRequesterId != null) &&
         (ownershipRequest == null ||
@@ -662,9 +660,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                       ),
                       if (showAccountLabel)
                         ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxWidth: maxEmailWidth,
-                          ),
+                          constraints: BoxConstraints(maxWidth: maxEmailWidth),
                           child: Text(
                             accountLabel,
                             style: const TextStyle(fontSize: 12),
@@ -946,8 +942,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                               );
                               return;
                             }
-                            _confirmDeleteTask(context, t)
-                                .then((shouldDelete) {
+                            _confirmDeleteTask(context, t).then((shouldDelete) {
                               if (!shouldDelete) return;
                               ref
                                   .read(taskListProvider.notifier)
@@ -1047,10 +1042,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            message,
-            style: const TextStyle(color: Colors.white),
-          ),
+          Text(message, style: const TextStyle(color: Colors.white)),
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerLeft,
@@ -1110,13 +1102,13 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                     setState(() {
                       _dismissedOwnershipRequestKey =
                           request.requestId ?? request.requesterDeviceId;
-                      _dismissedOwnershipRequesterId =
-                          request.requestId == null
-                              ? request.requesterDeviceId
-                              : null;
+                      _dismissedOwnershipRequesterId = request.requestId == null
+                          ? request.requesterDeviceId
+                          : null;
                     });
                     unawaited(
-                      ref.read(pomodoroViewModelProvider.notifier)
+                      ref
+                          .read(pomodoroViewModelProvider.notifier)
                           .rejectOwnershipRequest(),
                     );
                   },
@@ -1130,13 +1122,13 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                     setState(() {
                       _dismissedOwnershipRequestKey =
                           request.requestId ?? request.requesterDeviceId;
-                      _dismissedOwnershipRequesterId =
-                          request.requestId == null
-                              ? request.requesterDeviceId
-                              : null;
+                      _dismissedOwnershipRequesterId = request.requestId == null
+                          ? request.requesterDeviceId
+                          : null;
                     });
                     unawaited(
-                      ref.read(pomodoroViewModelProvider.notifier)
+                      ref
+                          .read(pomodoroViewModelProvider.notifier)
                           .approveOwnershipRequest(),
                     );
                   },
@@ -1178,10 +1170,10 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     }
     if (group == null) return null;
     final groupId = group.id;
-    final name =
-        group.tasks.isNotEmpty ? group.tasks.first.name : 'Task group';
-    final statusLabel =
-        activeSession?.status == PomodoroStatus.paused ? 'Paused' : 'Running';
+    final name = group.tasks.isNotEmpty ? group.tasks.first.name : 'Task group';
+    final statusLabel = activeSession?.status == PomodoroStatus.paused
+        ? 'Paused'
+        : 'Running';
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -1281,9 +1273,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.black,
-        border: Border.all(
-          color: Colors.amber.shade300.withValues(alpha: 0.5),
-        ),
+        border: Border.all(color: Colors.amber.shade300.withValues(alpha: 0.5)),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -1447,16 +1437,13 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         );
       } else if (integritySelection.type ==
           _IntegritySelectionType.useDefault) {
-        items = await _applySharedStructure(
-          items,
-          forceDefault: true,
-        );
+        items = await _applySharedStructure(items, forceDefault: true);
       }
     }
     final integrityMode = hasMixedStructure
         ? (integritySelection.type == _IntegritySelectionType.keepIndividual
-            ? TaskRunIntegrityMode.individual
-            : TaskRunIntegrityMode.shared)
+              ? TaskRunIntegrityMode.individual
+              : TaskRunIntegrityMode.shared)
         : TaskRunIntegrityMode.shared;
     if (!context.mounted) return;
 
@@ -1548,11 +1535,11 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       if (preRunConflict != null) {
         final message = preRunConflict == _PreRunConflictType.running
             ? "That time doesn't leave enough pre-run space because another "
-                'group is still running. Choose a later start or reduce the '
-                'pre-run notice.'
+                  'group is still running. Choose a later start or reduce the '
+                  'pre-run notice.'
             : "That time doesn't leave enough pre-run space because another "
-                'group is scheduled earlier. Choose a later start or reduce '
-                'the pre-run notice.';
+                  'group is scheduled earlier. Choose a later start or reduce '
+                  'the pre-run notice.';
         _showSnackBar(context, message);
         return;
       }
@@ -1665,12 +1652,15 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       fallback: _noticeFallbackMinutes,
     );
     if (noticeMinutes <= 0) return;
-    final preAlertStart =
-        scheduledStart.subtract(Duration(minutes: noticeMinutes));
+    final preAlertStart = scheduledStart.subtract(
+      Duration(minutes: noticeMinutes),
+    );
     final now = DateTime.now();
     if (!preAlertStart.isAfter(now)) return;
     final name = group.tasks.isNotEmpty ? group.tasks.first.name : 'Task group';
-    await ref.read(notificationServiceProvider).scheduleGroupPreAlert(
+    await ref
+        .read(notificationServiceProvider)
+        .scheduleGroupPreAlert(
           groupId: group.id,
           groupName: name,
           scheduledFor: preAlertStart,
@@ -1717,29 +1707,29 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       }
       final start = group.status == TaskRunStatus.scheduled
           ? (resolveEffectiveScheduledStart(
-                group: group,
-                allGroups: groups,
-                activeSession: activeSession,
-                now: now,
-                fallbackNoticeMinutes: _noticeFallbackMinutes,
-              ) ??
-              group.scheduledStartTime ??
-              group.createdAt)
+                  group: group,
+                  allGroups: groups,
+                  activeSession: activeSession,
+                  now: now,
+                  fallbackNoticeMinutes: _noticeFallbackMinutes,
+                ) ??
+                group.scheduledStartTime ??
+                group.createdAt)
           : (group.actualStartTime ??
-              group.scheduledStartTime ??
-              group.createdAt);
+                group.scheduledStartTime ??
+                group.createdAt);
       final end = group.status == TaskRunStatus.scheduled
           ? (resolveEffectiveScheduledEnd(
-                group: group,
-                allGroups: groups,
-                activeSession: activeSession,
-                now: now,
-                fallbackNoticeMinutes: _noticeFallbackMinutes,
-              ) ??
-              group.theoreticalEndTime)
+                  group: group,
+                  allGroups: groups,
+                  activeSession: activeSession,
+                  now: now,
+                  fallbackNoticeMinutes: _noticeFallbackMinutes,
+                ) ??
+                group.theoreticalEndTime)
           : (group.theoreticalEndTime.isBefore(start)
-              ? start
-              : group.theoreticalEndTime);
+                ? start
+                : group.theoreticalEndTime);
       if (!_overlaps(newStart, newEnd, start, end)) continue;
       if (group.status == TaskRunStatus.running) {
         running.add(group);
@@ -1767,29 +1757,29 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       }
       final start = group.status == TaskRunStatus.scheduled
           ? (resolveEffectiveScheduledStart(
-                group: group,
-                allGroups: groups,
-                activeSession: activeSession,
-                now: now,
-                fallbackNoticeMinutes: _noticeFallbackMinutes,
-              ) ??
-              group.scheduledStartTime ??
-              group.createdAt)
+                  group: group,
+                  allGroups: groups,
+                  activeSession: activeSession,
+                  now: now,
+                  fallbackNoticeMinutes: _noticeFallbackMinutes,
+                ) ??
+                group.scheduledStartTime ??
+                group.createdAt)
           : (group.actualStartTime ??
-              group.scheduledStartTime ??
-              group.createdAt);
+                group.scheduledStartTime ??
+                group.createdAt);
       final end = group.status == TaskRunStatus.scheduled
           ? (resolveEffectiveScheduledEnd(
-                group: group,
-                allGroups: groups,
-                activeSession: activeSession,
-                now: now,
-                fallbackNoticeMinutes: _noticeFallbackMinutes,
-              ) ??
-              group.theoreticalEndTime)
+                  group: group,
+                  allGroups: groups,
+                  activeSession: activeSession,
+                  now: now,
+                  fallbackNoticeMinutes: _noticeFallbackMinutes,
+                ) ??
+                group.theoreticalEndTime)
           : (group.theoreticalEndTime.isBefore(start)
-              ? start
-              : group.theoreticalEndTime);
+                ? start
+                : group.theoreticalEndTime);
       if (!_overlaps(preRunStart, scheduledStart, start, end)) continue;
       if (group.status == TaskRunStatus.running) {
         return _PreRunConflictType.running;
@@ -2023,10 +2013,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final integrityMode = _hasMixedStructure(selectedTasks)
         ? TaskRunIntegrityMode.individual
         : TaskRunIntegrityMode.shared;
-    final durations = _previewTaskDurations(
-      selectedTasks,
-      integrityMode,
-    );
+    final durations = _previewTaskDurations(selectedTasks, integrityMode);
     var cursor = start;
     for (var index = 0; index < selectedTasks.length; index += 1) {
       final task = selectedTasks[index];
@@ -2039,11 +2026,12 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   }
 
   String _formatRangeWithDate(DateTime start, DateTime end) {
-    final range =
-        '${_timeFormat.format(start)}–${_timeFormat.format(end)}';
+    final range = '${_timeFormat.format(start)}–${_timeFormat.format(end)}';
     final now = DateTime.now();
     final isToday =
-        start.year == now.year && start.month == now.month && start.day == now.day;
+        start.year == now.year &&
+        start.month == now.month &&
+        start.day == now.day;
     if (isToday) return range;
     return '${_dateFormat.format(start)}, $range';
   }
@@ -2079,9 +2067,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
           }
           optionWidgets.add(
             _integrityOptionCard(
-              onTap: () => Navigator.of(context).pop(
-                _IntegritySelection.useStructure(option.masterTask.id),
-              ),
+              onTap: () => Navigator.of(
+                context,
+              ).pop(_IntegritySelection.useStructure(option.masterTask.id)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -2124,9 +2112,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                   return;
                 }
                 if (!context.mounted) return;
-                Navigator.of(context).pop(
-                  const _IntegritySelection.useDefault(),
-                );
+                Navigator.of(
+                  context,
+                ).pop(const _IntegritySelection.useDefault());
               },
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2166,9 +2154,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         }
         optionWidgets.add(
           _integrityOptionCard(
-            onTap: () => Navigator.of(context).pop(
-              const _IntegritySelection.keepIndividual(),
-            ),
+            onTap: () => Navigator.of(
+              context,
+            ).pop(const _IntegritySelection.keepIndividual()),
             child: const Text(
               'Keep individual configurations',
               style: TextStyle(
@@ -2181,8 +2169,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         );
 
         final screenWidth = MediaQuery.of(context).size.width;
-        final dialogWidth =
-            (screenWidth * 0.86).clamp(280.0, 360.0).toDouble();
+        final dialogWidth = (screenWidth * 0.86).clamp(280.0, 360.0).toDouble();
         return AlertDialog(
           backgroundColor: Colors.black,
           shape: RoundedRectangleBorder(
@@ -2225,18 +2212,13 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     return result ?? const _IntegritySelection.cancel();
   }
 
-  List<_StructureOption> _buildStructureOptions(
-    List<PomodoroTask> selected,
-  ) {
+  List<_StructureOption> _buildStructureOptions(List<PomodoroTask> selected) {
     final options = <_StructureKey, _StructureOption>{};
     for (final task in selected) {
       final key = _StructureKey.fromTask(task);
       final existing = options[key];
       if (existing == null) {
-        options[key] = _StructureOption(
-          key: key,
-          masterTask: task,
-        );
+        options[key] = _StructureOption(key: key, masterTask: task);
       } else {
         existing.addTask(task);
       }
@@ -2315,9 +2297,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         ),
         const SizedBox(width: 6),
         Expanded(
-          child: _miniStatCard(
-            child: _miniBreakDots(longBreakInterval),
-          ),
+          child: _miniStatCard(child: _miniBreakDots(longBreakInterval)),
         ),
       ],
     );
@@ -2726,9 +2706,11 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     var globalIndex = 0;
     for (final task in tasks) {
       var taskTotal = 0;
-      for (var localIndex = 0;
-          localIndex < task.totalPomodoros;
-          localIndex += 1) {
+      for (
+        var localIndex = 0;
+        localIndex < task.totalPomodoros;
+        localIndex += 1
+      ) {
         globalIndex += 1;
         taskTotal += pomodoroSeconds;
         if (globalIndex >= totalPomodoros) {
@@ -2807,10 +2789,7 @@ class _MiniDot extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }

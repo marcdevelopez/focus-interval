@@ -155,6 +155,40 @@ Update this section after each fix.
 22c. Fix 22 (P0-2b): Block session publish (including heartbeats) when timeSync is missing in Account Mode; overlay only when snapshot exists (01/03/2026). Tests: `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/viewmodels/scheduled_group_coordinator_test.dart` (passed). Commit: ce42e96 "Fix 22 P0-2b: block publish without time sync".
 22d. Fix 22 (P0-2b tests): Add tests for loader UI rule (pending intent + no snapshot) and for blocking publish without timeSync (01/03/2026). Tests: `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart` (passed). Commit: 32da381 "Tests: cover timeSync publish guard + loader rule".
 22e. Fix 22 (P0-3): Render Run Mode from activeSession for owner + mirror; ignore machine stream when session is active/missing/awaiting; add awaiting-session hold after owner actions; add regression test (01/03/2026). Tests: `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart` (passed). Commit: 6da4b8b "Fix 22 P0-3: render from activeSession". Validation (01/03/2026): PASS (multi-device checklist). Logs pending.
+22f. Fix 22 (P0-4): Monotonic sessionRevision guard in repo + Firestore rules; serialize VM publishes with stale-write drop; add decision tests (01/03/2026). Tests: `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart test/data/repositories/firestore_pomodoro_session_repository_test.dart` (passed). Commit: db66a9f "Fix 22 P0-4: monotonic guard + write serialization". Validation (01/03/2026): FAIL. 
+    - Programado notice 0: macOS owner se queda en Groups Hub al comenzar (rebote).
+    - Start now / Run again: ambos rebotan a Groups Hub tras abrir Run Mode.
+    - Pause/Resume OK; ownership OK, pero se observa salto visual breve del timer al solicitar owner.
+    - Tras pausar, el grupo termina antes de tiempo como si la pausa no hubiese existido (duracion no respeta pausa).
+    - Rangos Run Mode vs status boxes incoherentes tras pausa (ver capturas).
+    - Cajas de estado: el start se desplaza mas tarde sumando el tiempo de la pausa (regresion del fix de rangos).
+    - Logs: `2026_03_01_ios_simulator_iphone_17_pro_diag.log`, `2026_03_01_macos_diag.log`.
+    - Reglas Firestore P0-4 revertidas a pre-2c788c3 y redeploy realizadas tras permission-denied.
+22g. Fix 22 (P0-4g): Auto-open bounce guard + safe navigation + pause offset persistence + pause start fallback (01/03/2026). Tests: `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart` (passed). Commit: 57ed9ff "Fix 22g: auto-open bounce + pause persistence + safe nav". Validation (01/03/2026): FAIL.
+    - Programado notice 0: iOS queda en “Syncing session…” con fondo negro; no abre Run Mode.
+    - Firebase activeSession/current queda con status=finished, remainingSeconds=0, phaseStartedAt=null.
+    - Resto de pasos no validables por bloqueo del paso 1.
+    - Logs: `2026_03_01_android_RMX3771_diag.log`, `2026_03_01_ios_simulator_iphone_17_pro_diag.log`.
+22h. Fix 22 (P0-4h): Clear inactive activeSession in VM + repo (01/03/2026). Tests: not run. Commit: pending. Validation (01/03/2026): PARTIAL/FAIL.
+    - Paso 1 OK tras borrar `current` finished.
+    - Al abrir la app reaparece `current` y se inicia un grupo running sin accion del usuario; termina inesperadamente y no aparece en Groups Hub.
+    - Auto-start correcto en segundo intento (session running OK).
+    - Pre-run no auto-open (se queda en Groups Hub con banner hasta tocar “Open Pre-Run”).
+    - Owner queda en “Syncing session…” varios minutos tras auto-start; se resuelve solo al salir a Groups Hub y volver.
+    - Cancel OK (se borra `activeSession/current`).
+    - Mirror OK (sin “Syncing session…” al abrir; cleanup al completar OK).
+    - Logs: `2026_03_01_android_RMX3771_diag-0.log`, `2026_03_01_ios_simulator_iphone_17_pro_diag-0.log`.
+22i. Fix 22 (P0-4i): Auto-start throttle + missing-session recovery + auto-open retry (01/03/2026). Tests: not run. Commit: fb582f6 "Fix 22i: auto-start throttle + missing-session recovery". Validation (01/03/2026): PASS.
+    - Throttle duplicate auto-start pulses.
+    - Prime UI from last session when snapshot flickers and force resync.
+    - Retry auto-open navigation if `/timer/:id` is not reached.
+    - Auto-start duplicate (phantom running): OK.
+    - Pre-run auto-open: OK.
+    - Auto-start to Run Mode: OK (no Groups Hub bounce).
+    - Syncing session: only brief flicker, no prolonged hold.
+    - Cancel cleanup: OK (current cleared).
+    - Mirror: OK (no permanent syncing on open).
+    - Logs: `2026_03_01_android_RMX3771_diag-1.log`, `2026_03_01_ios_simulator_iphone_17_pro_diag-1.log`.
 
 ### Fix 22 — Plan de implementacion (P0 single source of truth)
 1. Modelo/Firestore: añadir `sessionRevision` y `accumulatedPausedSeconds` en `PomodoroSession`; añadir `users/{uid}/timeSync` (serverTimestamp); actualizar `firestore.rules`; compatibilidad: campos ausentes -> 0.
@@ -196,6 +230,26 @@ Nota: estos hallazgos deben resolverse en esta rama o registrarse como bugs a co
 10. Planificacion: tras confirmar grupo programado no aparece snackbar en Task List; solo se ve en Groups Hub.
 11. Conflicto: snackbar de "Postpone scheduled" aparece en Groups Hub, no en Run Mode.
 12. Notice 0: hay casos donde el grupo programado no inicia al llegar la hora pero cuenta para overlaps (Android fisico).
+
+### Triage — 04/03/2026 (Account + Local)
+- A1 (auto-open re-trigger desde cualquier pantalla): **OK** (no re-trigger observado).
+- A2 (notice 0 black screen iOS): **OK**, pero se observó **salto breve por Groups Hub**
+  antes de abrir Run Mode cuando la app estaba en Task List (owner + mirror). Debería
+  navegar **directo** al Timer Run desde la pantalla actual, sin pasar por Groups Hub.
+- B (Local Mode mini checks): **OK**; en Local Mode la transición fue directa a Run Mode
+  desde Task List (mejor que Account Mode).
+- C (Local → Account): **OK**; transición suave y sin desync visible.
+- D (pause → Syncing session on owner): **Observed**. Owner iOS shows
+  “Syncing session…” for ~30s right after pausing (still paused). Mirror is macOS.
+  Follow-up: user reports it **always** occurs on pause, minimum ~30s.
+  Additional: timer desyncs by a few seconds during the syncing window; navigating
+  away and back re-syncs and clears the syncing state.
+- Logs:
+  - `docs/bugs/validation_fix_2026_02_25/logs/2026_03_04_triage_ios_debug.log`
+  - `docs/bugs/validation_fix_2026_02_25/logs/2026_03_04_triage_chrome_debug.log`
+- Screenshot: `docs/bugs/validation_fix_2026_02_25/screenshots/37.png`
+- Timestamp + evidence: 2026-03-04 16:21:01; screenshot
+  `docs/bugs/validation_fix_2026_02_25/screenshots/38.png`.
 
 Hallazgos movidos a `docs/bug_log.md` (no bloquean esta rama, pero deben atacarse antes de nuevas features):
 - BUG-010: Mirror desincronizado unos segundos al volver desde Local (timer difiere y luego se corrige).

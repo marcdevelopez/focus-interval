@@ -554,6 +554,8 @@ Platform notes:
 - Local Mode scope is strictly device-local; Account Mode scope is strictly user:{uid}.
 - There is no implicit sync between scopes.
 - On mode switch, clear any active Run Mode UI and return to Task List before rendering the new scope. Never keep a Run Mode route open across modes.
+- On switch to Local Mode, cancel any pending **Account Mode** pre-run system notifications on the device. OS-level scheduled notifications must not fire while Local Mode is active.
+- On switch to Account Mode, re-evaluate scheduled groups once streams and time sync are ready, then perform a short **bounded** recheck burst (a few retries over seconds) to recover from mode-switch disposal; no continuous polling.
 - Switching to Account Mode can offer a one-time import of local data (tasks, groups, presets)
   only after explicit user confirmation.
 - Import targets the currently signed-in UID and overwrites by ID (no merge) in MVP 1.2.
@@ -582,15 +584,21 @@ users/{uid}/activeSession
   - Compute `serverTimeOffset = serverTime - localNow` when the snapshot is read.
   - Refresh the offset on app launch, resume, and mode switch; rate-limit to avoid
     excessive writes (e.g., ≥15s between syncs).
+  - Time sync and session services must remain enabled as long as a valid
+    `currentUser` exists and sync is enabled; transient auth stream nulls must
+    not disable sync or downgrade to Noop repositories.
   - If the server-time offset is unavailable in Account Mode, **block** any
-    start/resume/auto-start actions and show **Syncing session...**. Do not
-    fall back to local time for authoritative writes.
-  - While the server-time offset is unavailable in Account Mode, **no**
-    authoritative writes are allowed, including start/resume/auto-start,
-    heartbeat publishes, and republish/recovery writes. The app may only refresh
-    time sync and keep the UI in syncing state.
-  - The heartbeat requirement applies only when time sync is ready; otherwise
-    the owner must not emit local-time heartbeats.
+    start/resume/auto-start actions and show **Syncing session...**.
+  - While the server-time offset is unavailable in Account Mode:
+    - Do not start/resume/auto-start (no new authoritative transitions).
+    - If a session is already active (running/paused), the owner may publish
+      fallback heartbeats/snapshots using local time to keep `activeSession`
+      alive and avoid deadlocks. `lastUpdatedAt` remains a serverTimestamp.
+      Once time sync is ready, resume server-time timestamps for authoritative
+      fields.
+  - The heartbeat requirement still applies; if time sync is unavailable,
+    local-time heartbeats are allowed to prevent stale ownership while the app
+    continues retrying time sync.
   - While syncing, the TimerScreen must **remain visible** when a prior snapshot
     exists. Use a non-blocking overlay (dim/blur + spinner + label) so the timer
     stays readable behind it. Only when no snapshot exists, show a full loader.
@@ -1919,10 +1927,33 @@ The MM:SS timer must not shift horizontally:
 - While time sync is unavailable, **no** authoritative writes are allowed,
   including heartbeats and republish/recovery writes. Heartbeat enforcement
   applies only when time sync is ready.
+- **Offline vs Syncing (Account Mode):**
+  - **Syncing** is used when connectivity appears available but time sync or
+    activeSession snapshots are not ready yet.
+  - **Offline** must only be shown with evidence of missing network or repeated
+    remote fetch failure (connectivity check + timeSync/activeSession refresh
+    failure). Do **not** show Offline if connectivity is available.
+  - When Offline is detected, show a persistent banner/pill in Run Mode:
+    `Offline — local only`, plus CTA row: `Retry sync` / `Continue locally`.
+  - **No automatic mode switch.** Continue locally only after explicit user
+    confirmation.
+  - If the user chooses **Continue locally**, switch to Local Mode and create a
+    **local-only fork** (never writes to Account Mode). Mark it with a persistent
+    “Local‑only / Offline” badge in Run Mode and Groups Hub.
+  - If the user stays in Account Mode while Offline, keep the last snapshot
+    visible with a Syncing overlay and controls disabled until time sync returns.
+  - On reconnect, if a local-only fork exists, show a reconciliation choice:
+    `Rejoin account session` (discard local) or `Keep local (stay Local Mode)`.
+    No implicit merge or overwrite is allowed.
 - Mirror devices render task names/durations from the TaskRunGroup snapshot (by groupId), not from the editable task list.
 - **Single source of truth:** owner/mirror state and control gating (start/resume/pause/cancel/ownership)
   must be derived from the same activeSession snapshot (groupId must match). Local flags may
   project state but must never override the snapshot.
+- **Account Mode timeline rule:** when an activeSession exists, **do not** apply
+  TaskRunGroup timeline projections (owner or mirror). Both must render
+  **exclusively** from the activeSession projection. TaskRunGroup timeline
+  projection is **Local Mode only** or allowed when **no** session exists
+  (preview/initial UI).
 - After any owner action (start/resume/pause/cancel), keep the UI in a syncing/hold
   state until the corresponding activeSession snapshot confirms the change. Do **not**
   revert to the local machine as the render source in Account Mode.
@@ -1953,6 +1984,28 @@ The MM:SS timer must not shift horizontally:
 - Initial ownership is deterministic: the device that **initiates the run**
   (Start now or auto-start) must be the first owner.
 - For scheduled runs, `scheduledByDeviceId` is **metadata only** and must not block
+
+### **10.4.8.a. No-foreground owner / all devices closed**
+
+When no device has the app open (foreground or background), **time must still
+advance** based on the authoritative session timestamps. The absence of a
+foreground owner must **not** freeze progression.
+
+- If the group is **running** and the elapsed time reaches the natural end,
+  the group is considered **completed** even if no device was open. This
+  completion is **reconciled on the next app open** using server time +
+  `accumulatedPausedSeconds`.
+- When the user opens the app **after** the group should have completed, **do
+  not** open Run Mode in a “completed” state. Instead, navigate directly to
+  **Groups Hub** and show the group as completed with the standard completed
+  styling (see Groups Hub UI styling rules).
+- When the user opens the app **before** the group should complete, reopen Run
+  Mode at the correct projected phase/time.
+- If the group was **paused** when all devices closed, time **does not**
+  advance. On reopen, the session remains paused until the owner resumes.
+- If a scheduled group’s start time passes while no device is open, follow the
+  existing auto-start / resolve-overlaps rules (start on open if no conflicts;
+  show Resolve overlaps if conflicts exist).
   auto-start or ownership; any device can claim at the scheduled time.
 - For Start now, only the initiating device (`scheduledByDeviceId`) should claim
   the initial session; other devices wait for the activeSession.
