@@ -20,8 +20,27 @@ Gate:
    - scheduling succeeds (no "too soon" block),
    - `Apply globally` action updates global notice,
    - planned group visible in Groups Hub with effective pre-run.
-2. [ ] Owner no re-suma pausa al volver al Timer Run (Fix 24).
+2. [x] Owner no re-suma pausa al volver al Timer Run (Fix 24) — **Closed/OK** (06/03/2026).
+   Evidence:
+   - Logs:
+     - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix24_ios_debug.log`
+     - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix24_chrome_debug.log`
+   - Screenshots:
+     - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_01.png`
+     - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_02.png`
+     - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_03.png`
+     - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_04.png`
+     - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_05.png`
 3. [ ] Local → Account sin overlaps falsos; request ownership llega (Fix 25).
+
+## New finding (outside Fix 24 scope)
+- [x] Fix 26 — Mirror/owner no queda en `Syncing session...` tras cancel y en
+  recovery de background (Closed/OK, 06/03/2026).
+  Evidence:
+  - Logs:
+    - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix26_ios_debug.log`
+    - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix26_chrome_debug.log`
+  - Screenshots: not required (PASS flow with no visible error states).
 
 ## Regression checks
 1. [x] Auto-open gating: durante Plan group no reabre Run Mode; en resume auto-open ocurre una sola vez.

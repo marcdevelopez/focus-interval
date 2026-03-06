@@ -9383,3 +9383,34 @@ _(pending validation)_
 ### 🎯 Next steps:
 
 - Run Fix 24 validation on owner iOS + mirror Chrome.
+
+# 🔹 Block 544 — Fix 26 validated and closed (06/03/2026)
+
+### ✔ Work completed:
+
+- Commit: `bdb89ad` — `fix: harden missing-session recovery and close fix26 validation`.
+- Closed Fix 26 in `docs/bugs/validation_fix_2026_03_05` after PASS validation.
+- Updated:
+  - `docs/bugs/validation_fix_2026_03_05/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_fix_2026_03_05/quick_pass_checklist.md`
+  - `docs/roadmap.md`
+- Validation outcome recorded:
+  - Exact repro (iOS owner + Chrome mirror) PASS:
+    `start -> pause -> resume -> Groups Hub -> back to Run Mode -> cancel`,
+    owner/mirror return correctly to Groups Hub without indefinite syncing.
+  - Extended run (Android + macOS, background/foreground + pause/resume/cancel) PASS.
+- Reviewed new logs for critical errors and confirmed no unhandled exceptions in the Fix 26 validation run:
+  - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix26_ios_debug.log`
+  - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix26_chrome_debug.log`
+
+### 🧪 Tests:
+
+- `flutter analyze` (pass).
+
+### ⚠️ Issues found:
+
+- None in Fix 26 validation scope.
+
+### 🎯 Next steps:
+
+- Continue with Fix 25 (`overlaps falsos + ownership erratico`), keeping the feature gate active until Fix 25 and regression checks are closed.

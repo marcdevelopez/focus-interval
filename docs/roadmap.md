@@ -132,6 +132,9 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           checks passing.
       06/03/2026: `validation_fix_2026_03_05` Fix 23 (notice clamp coherence)
           validated and closed (owner iOS + mirror Chrome).
+      06/03/2026: `validation_fix_2026_03_05` Fix 26 (syncing hold after
+          cancel/background recovery) validated and closed (iOS+Chrome repro
+          pass, plus Android+macOS extended run pass). Commit: `bdb89ad`.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling

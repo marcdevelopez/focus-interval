@@ -102,11 +102,52 @@ Each item below is a separate fix and must be committed separately.
     - planned group appears in Groups Hub with effective pre-run.
   - Regression smoke checks: PASS (all 4 checklist items).
 - Fix 24 (Scope 2): Code updated in isolated branch `fix24-owner-pause-reentry-jump`
-  (06/03/2026). Tests: `flutter analyze` (pass). Validation pending.
-  Notes:
-  - Owner hydration now pins `_localPhaseStartedAt` from `session.phaseStartedAt`
-    for both running and paused states.
-  - Owner hydration no longer applies group timeline projection in Account Mode.
+  (06/03/2026). **Closed/OK**.
+  - Code commit: `abb053d` (`fix: stabilize owner hydration after pause re-entry`).
+  - Tests: `flutter analyze` (pass).
+  - Validation: PASS (owner iOS + mirror Chrome), including:
+    - pause/resume,
+    - navigate to Groups Hub and return to Timer Run,
+    - owner timer does not jump backward adding paused time.
+  - Evidence:
+    - Logs:
+      - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix24_ios_debug.log`
+      - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix24_chrome_debug.log`
+    - Screenshots:
+      - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_01.png`
+      - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_02.png`
+      - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_03.png`
+      - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_04.png`
+      - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_05.png`
+
+## Fix 26 — Syncing hold after cancel/background recovery
+- Scope: owner/mirror queda en `Syncing session...` por hold stale cuando la
+  sesion ya no existe o hay errores transitorios de Firestore al recuperar
+  ownership stale.
+- Fecha: 06/03/2026.
+- Estado: **Closed/OK** (06/03/2026).
+- Code commit: `bdb89ad` (`fix: harden missing-session recovery and close fix26 validation`).
+- Implementacion aplicada:
+  1. Endurecer `missing-session hold` para no mantener syncing en grupos
+     terminales o sin evidencia fresca de la sesion activa.
+  2. Limpiar confirmaciones locales pendientes al perder ownership para evitar
+     flags stale.
+  3. Blindar `tryAutoClaimStaleOwner` con catch + backoff (sin unhandled
+     exceptions en `cloud_firestore/unavailable`).
+  4. Resync con refresh de grupo cuando hay missing-session activo.
+- Validacion reportada (owner):
+  - Prueba exacta en iOS+Chrome:
+    `start -> pause (~10s) -> resume -> Groups Hub -> volver Run Mode -> cancel`.
+    Resultado: owner y mirror pasan a Groups Hub correctamente, sin syncing
+    indefinido.
+  - Revalidacion extendida en Android+macOS (~1 hora con background/foreground,
+    pause/resume/cancel):
+    sin reproduccion del bug de syncing indefinido ni flip alterno de ownership.
+- Evidencia:
+  - Logs:
+    - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix26_ios_debug.log`
+    - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix26_chrome_debug.log`
+  - Screenshots: no requeridas (flow PASS sin errores visibles).
 
 ## Acceptance Criteria
 1. Si el notice es auto-clamped, el grupo se planifica con el notice efectivo y el snackbar:
@@ -133,7 +174,8 @@ Each item below is a separate fix and must be committed separately.
 1. Owner iOS inicia Start now.
 2. Pausar ~10s y reanudar.
 3. Salir a otra pantalla (Groups Hub) y volver al Timer Run.
-   - Resultado actual: el timer retrocede sumando el tiempo pausado (solo primera vez).
+   - Resultado esperado/actual (06/03/2026): PASS. El owner mantiene timeline
+     correcta y no suma de nuevo los segundos pausados.
 
 ## Exact Repro (Fix 25 — overlaps falsos + ownership erratico)
 1. Programar dos grupos seguidos sin solapamiento real.
