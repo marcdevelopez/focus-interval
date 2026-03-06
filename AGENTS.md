@@ -89,6 +89,15 @@ Bug validation workflow (required):
 - Every fix must include a **Regression smoke check** that re-tests the most
   recent critical fixes (3–5 items). If the regression list changes, update it
   in both `plan_validacion_rapida_fix.md` and `quick_pass_checklist.md`.
+- Fix closure rule (mandatory): when a fix is implemented, validated with
+  evidence, and no regressions are detected, mark it immediately as
+  **Closed/OK** in the validation docs. Do this automatically; do not ask for
+  extra confirmation.
+- A fix can be closed only if these three conditions are true:
+  - Exact Repro passes.
+  - Regression smoke checks pass.
+  - Evidence is recorded (at minimum checklist result + logs/screenshots when
+    applicable).
 - Always review the screenshots in the relevant validation folder before diagnosing or implementing fixes.
 - `quick_pass_checklist.md` is created **after** implementation and must match
   the actual changes. For a brand new validation folder, it starts empty until
@@ -144,6 +153,15 @@ Bug validation workflow (required):
 - Every fix must include a **Regression smoke check** that re-tests the most
   recent critical fixes (3–5 items). If the regression list changes, update it
   in both `plan_validacion_rapida_fix.md` and `quick_pass_checklist.md`.
+- Fix closure rule (mandatory): when a fix is implemented, validated with
+  evidence, and no regressions are detected, mark it immediately as
+  **Closed/OK** in the validation docs. Do this automatically; do not ask for
+  extra confirmation.
+- A fix can be closed only if these three conditions are true:
+  - Exact Repro passes.
+  - Regression smoke checks pass.
+  - Evidence is recorded (at minimum checklist result + logs/screenshots when
+    applicable).
 - Always review the screenshots in the relevant validation folder before diagnosing or implementing fixes.
 - `quick_pass_checklist.md` is created **after** implementation and must match
   the actual changes. For a brand new validation folder, it starts empty until

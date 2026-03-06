@@ -9285,3 +9285,75 @@ _(pending validation)_
 ### 🎯 Next steps:
 
 - Re-validate Fix 23 UX flow (notice clamp + global apply + persistent banner controls).
+
+# 🔹 Block 540 — Set execution gate before new feature work (06/03/2026)
+
+### ✔ Work completed:
+
+- Added an explicit execution gate to
+  `docs/bugs/validation_fix_2026_03_05/plan_validacion_rapida_fix.md`:
+  no new feature work until Fix 24 + Fix 25 are validated and regression checks pass.
+- Added the same gate note to
+  `docs/bugs/validation_fix_2026_03_05/quick_pass_checklist.md`.
+- Updated `docs/roadmap.md` global status notes to reflect the active gate.
+
+### 🧪 Tests:
+
+- Not applicable (documentation update only).
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Implement Fix 24 next (owner pause re-entry jump), then run required regression checks.
+
+# 🔹 Block 541 — Enforce automatic fix closure policy (06/03/2026)
+
+### ✔ Work completed:
+
+- Added a mandatory rule in `AGENTS.md`:
+  if a fix has Exact Repro PASS + Regression checks PASS + evidence recorded,
+  it must be marked `Closed/OK` automatically (no extra confirmation request).
+- Added the same closure rule to `docs/bugs/README.md`.
+- Added the closure rule to:
+  - `docs/bugs/validation_fix_2026_03_05/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_fix_2026_03_05/quick_pass_checklist.md`
+
+### 🧪 Tests:
+
+- Not applicable (documentation/policy updates only).
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Apply this rule consistently while closing Fix 23/24/25 validations.
+
+# 🔹 Block 542 — Close Fix 23 (notice clamp) in validation docs (06/03/2026)
+
+### ✔ Work completed:
+
+- Closed Fix 23 as **OK** in:
+  - `docs/bugs/validation_fix_2026_03_05/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_fix_2026_03_05/quick_pass_checklist.md`
+- Updated Fix 23 status with:
+  - code commit reference (`a884c94`),
+  - PASS result,
+  - regression smoke checks PASS.
+- Updated `docs/roadmap.md` with explicit note that Fix 23 is validated/closed.
+
+### 🧪 Tests:
+
+- Not run (documentation closure update based on completed validation evidence).
+
+### ⚠️ Issues found:
+
+- Fix 24 and Fix 25 remain open and keep the feature execution gate active.
+
+### 🎯 Next steps:
+
+- Implement and validate Fix 24.

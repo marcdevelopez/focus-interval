@@ -120,3 +120,12 @@ flutter run -v --debug -d chrome --dart-define=APP_ENV=prod \
 - iOS Simulator no soporta `--release` ni `--profile`; usa `--debug`.
 - `ALLOW_PROD_IN_DEBUG=true` es temporal para pruebas reales en debug en todas las plataformas hasta que staging este configurado; al usar staging, elimina este override y usa `APP_ENV=staging`.
 - Si aparece `No pubspec.yaml`, asegurate de estar en la raiz del repo.
+
+## Cierre de fix (obligatorio)
+
+- Si un fix cumple estas 3 condiciones, se marca **Closed/OK** automaticamente
+  (sin pedir confirmacion adicional):
+  1. Exact Repro en verde.
+  2. Regression smoke checks en verde.
+  3. Evidencia registrada (checklist + logs/screenshots cuando aplique).
+- Si falta cualquiera de las 3, el fix queda en `pending/fail` y no se cierra.

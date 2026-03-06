@@ -78,9 +78,29 @@ Each item below is a separate fix and must be committed separately.
 2. Fix 24 — evitar re-suma de pausa al rehidratar el owner tras navegar (Scope 2).
 3. Fix 25 — eliminar overlaps falsos y asegurar entrega de request ownership (Scope 3).
 
+## Execution Gate (mandatory)
+- No iniciar nuevas features de `docs/feature_backlog.md` hasta cerrar:
+  1. Fix 24 validado.
+  2. Fix 25 validado.
+  3. Regression checks (los 4 items) en verde para el estado post-fix.
+- Si alguno falla, se mantiene bloqueado el trabajo de features y se prioriza el fix.
+
+## Fix Closure Policy (mandatory)
+- Un fix se marca **Closed/OK** automaticamente cuando:
+  1. Exact Repro pasa.
+  2. Regression checks pasan.
+  3. Hay evidencia registrada (checklist + logs/screenshots cuando aplique).
+- No se pide confirmacion extra para cerrar un fix cuando se cumplen esas 3 condiciones.
+
 ## Fix Status
-- Fix 23 (Scope 1): Code updated (2026-03-05). Tests: `flutter analyze` (pass).
-  Validation pending. Commit: TBA.
+- Fix 23 (Scope 1): **Closed/OK** (06/03/2026).
+  - Code commit: `a884c94` (`feat: clamp planning notice with global apply and fix persistent banner actions`).
+  - Validation: PASS (owner iOS + mirror Chrome), including:
+    - notice auto-clamp applied to the planned group,
+    - schedule confirmation succeeds without "too soon" false block,
+    - `Apply globally` action updates global notice default,
+    - planned group appears in Groups Hub with effective pre-run.
+  - Regression smoke checks: PASS (all 4 checklist items).
 
 ## Acceptance Criteria
 1. Si el notice es auto-clamped, el grupo se planifica con el notice efectivo y el snackbar:
@@ -100,7 +120,8 @@ Each item below is a separate fix and must be committed separately.
 2. Planificar grupo a now+2 min.
 3. Ver snackbar “Pre-run notice reduced to 2m”.
 4. Confirmar planificacion.
-   - Resultado actual: aparece “That start time is too soon...” y no planifica.
+   - Resultado esperado/actual (06/03/2026): el grupo se planifica con notice
+     efectivo, no bloquea con "too soon", y permite `Apply globally`.
 
 ## Exact Repro (Fix 24 — owner suma pausa al re-entrar)
 1. Owner iOS inicia Start now.

@@ -127,6 +127,11 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           post‑P0‑3 regressions; re-applied Plan Group notice control features
           and debug prod override. Pause syncing regression reported resolved
           after rollback (manual validation, no logs).
+      06/03/2026: Feature execution gate active — no new feature work until
+          `validation_fix_2026_03_05` closes Fix 24 and Fix 25 with regression
+          checks passing.
+      06/03/2026: `validation_fix_2026_03_05` Fix 23 (notice clamp coherence)
+          validated and closed (owner iOS + mirror Chrome).
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
