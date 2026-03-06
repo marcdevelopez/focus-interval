@@ -35,47 +35,49 @@ Notes:
 
 ---
 
-## Recommended execution order (updated 27/02/2026)
+## Recommended execution order (updated 06/03/2026)
 
 This section defines the recommended implementation order. The idea entries
 below remain in chronological order; new ideas must be appended at the end.
 When a new idea is added, update this list to place it in the appropriate
 execution slot.
 
-1. IDEA-014 — Disable Task Weight When Only One Task Is Selected
-2. IDEA-026 — Manage Presets Item UX Consistency
-3. IDEA-015 — Live "Start Now" Time Ranges in Task List
-4. IDEA-004 — Schedule Auto-Start Conditions Disclosure (Planning UX)
-5. IDEA-017 — Start Time Picker Minimum Valid Time (Pre-Run Aware)
-6. IDEA-007 — Time Until Scheduled Start (Plan Group + Groups Hub Summary)
-7. IDEA-016 — Live Plan Group Preview + Real-Time Conflict Gating
-8. IDEA-012 — Exact End Time Option for Scheduled Planning
-9. IDEA-006 — Scheduled vs Actual End in Groups Hub Summary
-10. IDEA-020 — Show "Scheduled By" in Group Summary
-11. IDEA-030 — Postpone UX Clarity (Groups Hub + Snackbar)
-12. IDEA-031 — Highlight Running Card After Completion Modal
-13. IDEA-033 — Conflict Modal Context Details
-14. IDEA-029 — Live Pause Time Ranges (Forward-Only)
-15. IDEA-018 — Live Pause Time Range Updates in Run Mode Task List
-16. IDEA-005 — Pause Time Visibility (Run Mode + Groups Hub)
-17. IDEA-013 — Global Group Remaining Time + Pending Tasks
-18. IDEA-009 — Sticky "Go to Task List" CTA in Groups Hub
-19. IDEA-008 — Collapsible Groups Hub Sections + Counts
-20. IDEA-002 — Simplification of Status Boxes in Run Mode
-21. IDEA-003 — Responsive Timer Scaling (Desktop/Web)
-22. IDEA-010 — Ownership Request Explainer (Run Mode)
-23. IDEA-011 — Mirror Notifications for Active Runs
-24. IDEA-034 — Offline Continuation With Rejoin/Sync Choice
-25. IDEA-019 — Break Tasks List in Run Mode
-26. IDEA-001 — Circular group progress ring around timer
-27. IDEA-027 — Unified Mode Indicator + Session Context
-28. IDEA-021 — Account Deletion Action in Settings
-29. IDEA-022 — Verified Presence + Activity Heatmap
-30. IDEA-028 — Verified Activity Summary + Week Start Setting
-31. IDEA-023 — Resume Canceled Groups
-32. IDEA-024 — Workspaces With Shared TaskRunGroups
-33. IDEA-025 — Workspace Break Chat (Text + Deferred DM)
-34. IDEA-035 — Groups Hub Status Borders + Offline Completion Highlight
+1. IDEA-036 — Runtime Internationalization (l10n) Foundation
+2. IDEA-014 — Disable Task Weight When Only One Task Is Selected
+3. IDEA-026 — Manage Presets Item UX Consistency
+4. IDEA-015 — Live "Start Now" Time Ranges in Task List
+5. IDEA-004 — Schedule Auto-Start Conditions Disclosure (Planning UX)
+6. IDEA-017 — Start Time Picker Minimum Valid Time (Pre-Run Aware)
+7. IDEA-007 — Time Until Scheduled Start (Plan Group + Groups Hub Summary)
+8. IDEA-016 — Live Plan Group Preview + Real-Time Conflict Gating
+9. IDEA-012 — Exact End Time Option for Scheduled Planning
+10. IDEA-006 — Scheduled vs Actual End in Groups Hub Summary
+11. IDEA-020 — Show "Scheduled By" in Group Summary
+12. IDEA-030 — Postpone UX Clarity (Groups Hub + Snackbar)
+13. IDEA-031 — Highlight Running Card After Completion Modal
+14. IDEA-032 — Plan Group Pre-Run Notice Control
+15. IDEA-033 — Conflict Modal Context Details
+16. IDEA-029 — Live Pause Time Ranges (Forward-Only)
+17. IDEA-018 — Live Pause Time Range Updates in Run Mode Task List
+18. IDEA-005 — Pause Time Visibility (Run Mode + Groups Hub)
+19. IDEA-013 — Global Group Remaining Time + Pending Tasks
+20. IDEA-009 — Sticky "Go to Task List" CTA in Groups Hub
+21. IDEA-008 — Collapsible Groups Hub Sections + Counts
+22. IDEA-002 — Simplification of Status Boxes in Run Mode
+23. IDEA-003 — Responsive Timer Scaling (Desktop/Web)
+24. IDEA-010 — Ownership Request Explainer (Run Mode)
+25. IDEA-011 — Mirror Notifications for Active Runs
+26. IDEA-034 — Offline Continuation With Rejoin/Sync Choice
+27. IDEA-019 — Break Tasks List in Run Mode
+28. IDEA-001 — Circular group progress ring around timer
+29. IDEA-027 — Unified Mode Indicator + Session Context
+30. IDEA-021 — Account Deletion Action in Settings
+31. IDEA-022 — Verified Presence + Activity Heatmap
+32. IDEA-028 — Verified Activity Summary + Week Start Setting
+33. IDEA-023 — Resume Canceled Groups
+34. IDEA-024 — Workspaces With Shared TaskRunGroups
+35. IDEA-025 — Workspace Break Chat (Text + Deferred DM)
+36. IDEA-035 — Global SnackBar Theme + Unified UI Messaging
 
 Notes:
 
@@ -2789,79 +2791,146 @@ rules to avoid logical bugs.
 
 ---
 
-## IDEA-035 — Groups Hub Status Borders + Offline Completion Highlight
+## IDEA-035 — Global SnackBar Theme + Unified UI Messaging
 
 ID: IDEA-035
-Title: Groups Hub Status Borders + Offline Completion Highlight
+Title: Global SnackBar Theme + Unified UI Messaging
 Type: UI/UX
-Scope: M
+Scope: S
 Priority: P1
 Status: idea
 
 Problem / Goal:
-Groups Hub cards do not consistently communicate status at a glance. Completed
-cards sometimes show inconsistent colors (green vs amber), and canceled groups
-are not visually distinct. Users also need a clear visual cue when a group
-completed while no device was open (offline completion).
+Snackbars and inline notices are not visually consistent across screens. This
+causes mixed colors, spacing, and action placement. We need a unified style
+and reusable component for transient messages.
 
 Summary:
-Unify Groups Hub card border colors by status (scheduled/complete/canceled) and
-add an offline-completion highlight (amber or green↔amber alternation). Ensure
-completed color matches the Run Mode completion color consistently.
+Create a shared SnackBarTheme (background, text, padding, margin, action
+placement) and a small UI helper for common “notice + action” layouts.
 
 Design / UX:
 Layout / placement:
-Apply border stroke color on Groups Hub cards based on status.
+Use a floating snackbar with consistent horizontal margins and padding. Actions
+should be aligned consistently (below text, left-aligned).
 
 Visual states:
-- Scheduled: keep current neutral grey.
-- Completed: always use the standard completed green (same as Run Mode).
-- Canceled: red (negative state).
-- Completed while no device was open: amber highlight or smooth alternation
-  between green and amber (preferred), without flashing.
+Default: light surface background with dark text (per current app style).
+Warning: tinted background (soft amber) with dark text.
+Error: tinted background (soft red) with dark text.
 
 Animation rules:
-If alternation is used, transition smoothly (slow, subtle), no strobing.
-If animation is not feasible, show static amber.
+Use standard SnackBar transitions; no custom animation required.
 
 Interaction:
-No new interaction; visual-only.
+Support optional action CTA and optional checkbox (“Don’t show again”).
 
 Text / typography:
-No changes.
+Body uses standard app text style; avoid truncation on small screens.
 
 Data & Logic:
 Source of truth:
-TaskRunGroup status + completion-reconciled flag for “completed while offline”.
+Theme + UI helper only. No new authoritative state.
 
 Calculations:
-None beyond status + offline-completion detection.
+None.
 
 Sync / multi-device:
-Presentation only; no new sync writes.
+None.
 
 Edge cases:
-- If completion state is reconciled on open, the first render must already
-  show the offline-completion highlight.
-- Ensure canceled overrides any completion styling.
+Long text wraps gracefully without clipping.
+Action button remains visible on small screens.
 
 Accessibility:
-Colors must meet contrast guidelines; use semantic labels in accessibility
-for status where applicable.
+Ensure contrast and accessible labels for actions and toggles.
 
 Dependencies:
-- IDEA-008 (Collapsible Groups Hub Sections + Counts) for section grouping.
-- Requires an explicit “completed while offline” signal or derivation rule.
+App theme file.
 
 Risks:
-Overuse of color; ensure it remains subtle and does not conflict with existing
-card content.
+Minimal; UI-only change.
 
 Acceptance criteria:
-- Scheduled cards remain neutral grey.
-- Completed cards always use the same green as Run Mode completion.
-- Canceled cards use red.
-- Completed while offline shows amber (or smooth green↔amber alternation).
+All snackbars follow the same visual system across screens.
+Action placement and spacing are consistent and readable on small screens.
+No snackbars render off-screen or overlap critical controls.
 
 Notes:
-This feature complements IDEA-008 and does not change section structure.
+This is a UI consistency feature and should not alter business logic.
+
+---
+
+## IDEA-036 — Runtime Internationalization (l10n) Foundation
+
+ID: IDEA-036
+Title: Runtime Internationalization (l10n) Foundation
+Type: Architecture / UX
+Scope: L
+Priority: P0
+Status: idea
+
+Problem / Goal:
+User-visible strings are currently hardcoded across screens. This blocks
+runtime translation by device locale and raises future migration cost.
+
+Summary:
+Introduce a full Flutter l10n foundation (ARB + delegates + supported locales)
+and migrate user-facing strings to localization keys in phases.
+
+Design / UX:
+Layout / placement:
+No layout redesign required. Existing UI remains intact while text sources move
+to localized resources.
+
+Visual states:
+Language should follow system locale by default, with optional manual override
+in Settings.
+
+Animation rules:
+None.
+
+Interaction:
+Language switch (when enabled) should update UI text without app restart where
+supported by Flutter localization flow.
+
+Text / typography:
+All user-facing text must be sourced from localization keys, including dialogs,
+buttons, snackbars, tooltips, and validation errors.
+
+Data & Logic:
+Source of truth:
+Generated localization resources (`AppLocalizations`) and ARB files.
+
+Calculations:
+Pluralization, interpolation, and date/time formatting must use locale-aware
+APIs.
+
+Sync / multi-device:
+No sync changes. Localization is client-side presentation only.
+
+Edge cases:
+Fallback locale behavior when translation keys are missing.
+Long translated strings must not break critical layouts.
+
+Accessibility:
+Localized semantics labels and announcements must match visible text.
+
+Dependencies:
+`flutter_localizations`, `l10n.yaml`, generated l10n classes, and migration of
+hardcoded strings in presentation/widgets.
+
+Risks:
+Partial migration may create mixed-language screens until completed.
+Potential regressions in overflow-prone layouts with longer translations.
+
+Acceptance criteria:
+App config includes localization delegates and supported locales.
+Primary screens no longer use hardcoded user-facing strings.
+Runtime language follows device locale; fallback behavior is deterministic.
+Settings language option can be connected to locale override without refactor.
+
+Notes:
+Implement in phased rollouts to reduce regression risk:
+1) infrastructure, 2) core screens, 3) remaining UI, 4) cleanup/lint guard
+against new hardcoded UI strings.

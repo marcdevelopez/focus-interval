@@ -119,19 +119,14 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
                   planning by total range/total time, global sound settings) — documentation-only.
       02/03/2026: Plan Group pre-run notice control implemented (Plan group + re-plan snackbar + auto-clamp SnackBar). Validated 02/03/2026 on Android RMX3771.
       02/03/2026: ActiveSession idempotent writes now persist payload changes on equal sessionRevision
-          (remainingSeconds and phase fields no longer dropped). Validated 02/03/2026 on Android RMX3771 (isolated run).
+          (remainingSeconds and phase fields no longer dropped) (validation pending).
       02/03/2026: Run Mode owner sync stabilization: owner keeps local machine as render authority,
           projection allows local fallback without server offset, and resync paths guard
-          against disposed provider refs. Validated 02/03/2026 on Android RMX3771 (isolated run).
-      03/03/2026: Account → Local Mode now cancels pending Account pre-run OS notifications;
-          ScheduledGroupCoordinator adds a bounded account-mode recheck burst after
-          mode switch, fixes late-start heartbeat transaction ordering, removes
-          logout invalidation of the coordinator to preserve scheduled timers, and
-          includes debug instrumentation for late-start evaluation (validation pending).
-      03/03/2026: Account Mode owner hydration now anchors running/paused phases
-          to `session.phaseStartedAt` and skips publish-on-hydrate to prevent
-          monotonic drift after owner screen returns (validated 04/03/2026; commit
-          c13c0f6).
+          against disposed provider refs (validation pending).
+      05/03/2026: Branch reset to `2c788c3` (Fix 22 P0-3 baseline) to remove
+          post‑P0‑3 regressions; re-applied Plan Group notice control features
+          and debug prod override. Pause syncing regression reported resolved
+          after rollback (manual validation, no logs).
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling

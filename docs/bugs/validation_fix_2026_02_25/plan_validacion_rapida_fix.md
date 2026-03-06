@@ -3,6 +3,10 @@
 Date: 2026-02-25
 Source: docs/bugs/validation_fix_2026_02_24/quick_pass_checklist.md + screenshots
 
+Nota: la revalidacion post-rollback (05/03/2026) se movio a
+`docs/bugs/validation_fix_2026_03_05/plan_validacion_rapida_fix.md` para
+mantener las validaciones aisladas por fecha.
+
 ## Scope (Bugs To Fix)
 1. Late-start queue Cancel all: mirror does not show the "Owner resolved" modal; owner shows it instead.
 2. After Cancel all, mirror can still act as owner and continue Resolve overlaps.

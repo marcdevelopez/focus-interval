@@ -815,6 +815,61 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     );
   }
 
+  bool _shouldOfferNoticeGlobal({
+    required DateTime scheduledStart,
+    required DateTime capturedAt,
+    required int globalNoticeMinutes,
+    required int effectiveNoticeMinutes,
+  }) {
+    if (globalNoticeMinutes <= effectiveNoticeMinutes) return false;
+    final maxAllowed = _maxNoticeAllowed(scheduledStart, capturedAt);
+    return effectiveNoticeMinutes == maxAllowed;
+  }
+
+  void _showNoticeClampSnackBar(
+    BuildContext context, {
+    required int effectiveNoticeMinutes,
+    required int globalNoticeMinutes,
+  }) {
+    if (effectiveNoticeMinutes == globalNoticeMinutes) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 8),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Pre-run notice set to ${effectiveNoticeMinutes}m for this group. '
+              'Global notice (default for future groups) is '
+              '${globalNoticeMinutes}m.',
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () async {
+                final applied = await ref
+                    .read(preRunNoticeMinutesProvider.notifier)
+                    .setNoticeMinutes(effectiveNoticeMinutes);
+                if (!context.mounted) return;
+                messenger.clearSnackBars();
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Global pre-run notice set to ${applied}m.',
+                    ),
+                  ),
+                );
+              },
+              child: const Text('Apply globally'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<int?> _showNoticePicker(
     BuildContext context, {
     required int current,
@@ -910,10 +965,10 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     TaskRunGroup source,
   ) async {
     var items = _cloneRunItems(source.tasks);
-    var planningNoticeMinutes =
-        source.noticeMinutes ??
+    final globalNoticeMinutes =
         await ref.read(taskRunNoticeServiceProvider).getNoticeMinutes();
     if (!context.mounted) return;
+    var planningNoticeMinutes = source.noticeMinutes ?? globalNoticeMinutes;
     var initialOption = TaskGroupPlanOption.startNow;
     DateTime? initialScheduledStart;
 
@@ -1025,6 +1080,15 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
         }
       }
 
+      final shouldOfferGlobalNotice =
+          isSchedule &&
+          scheduledStart != null &&
+          _shouldOfferNoticeGlobal(
+            scheduledStart: scheduledStart,
+            capturedAt: planCapturedAt,
+            globalNoticeMinutes: globalNoticeMinutes,
+            effectiveNoticeMinutes: noticeMinutes,
+          );
       final conflicts = _findConflicts(
         existing,
         newStart: conflictStart,
@@ -1100,6 +1164,13 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
         await repo.save(newGroup);
         if (!context.mounted) return;
         if (status == TaskRunStatus.scheduled) {
+          if (shouldOfferGlobalNotice) {
+            _showNoticeClampSnackBar(
+              context,
+              effectiveNoticeMinutes: noticeMinutes,
+              globalNoticeMinutes: globalNoticeMinutes,
+            );
+          }
           await _schedulePreAlertIfNeeded(ref, newGroup);
         } else {
           openRunModeForGroup(context, ref, newGroup);

@@ -63,6 +63,7 @@ class TaskGroupPlanningScreen extends StatefulWidget {
 class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
   static const String _infoSeenKey = 'planning_info_seen_v1';
   static const String _shiftNoticeKey = 'planning_range_shift_notice_v1';
+  static const String _noticeClampKey = 'planning_notice_clamp_notice_v1';
   static final DateFormat _timeFormat = DateFormat('HH:mm');
   static final DateFormat _dateFormat = DateFormat('MMM d');
 
@@ -76,6 +77,13 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
   bool _infoDialogVisible = false;
   bool _shiftNoticeSuppressed = false;
   bool _shiftNoticePrefLoaded = false;
+  bool _noticeClampSuppressed = false;
+  bool _noticeClampPrefLoaded = false;
+  bool _noticeClampSnackShown = false;
+  bool _noticeClampSnackVisible = false;
+  bool _startAutoAdjusted = false;
+  final ValueNotifier<String?> _noticeClampMessageNotifier =
+      ValueNotifier<String?>(null);
   Timer? _noticeNowTicker;
   DateTime _noticeNow = DateTime.now();
 
@@ -102,37 +110,29 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
           break;
       }
     }
+    _applyStartAutoUpdate();
     _applyNoticeSuggestion();
     _noticeNowTicker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
-      final beforeNotice = _noticeMinutes;
       setState(() {
         _noticeNow = DateTime.now();
+        _applyStartAutoUpdate();
         _applyNoticeSuggestion();
       });
-      final adjustedNotice = _noticeMinutes;
-      if (adjustedNotice != beforeNotice && mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Pre-run notice reduced to ${adjustedNotice}m'
-              ' — maximum allowed before the scheduled start.',
-            ),
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
+      if (!mounted) return;
+      _maybeShowNoticeClampSnackBar();
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _maybeShowInfoDialog();
       _loadShiftNoticePreference();
+      _loadNoticeClampPreference();
     });
   }
 
   @override
   void dispose() {
     _noticeNowTicker?.cancel();
+    _noticeClampMessageNotifier.dispose();
     super.dispose();
   }
 
@@ -231,9 +231,29 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
     });
   }
 
+  Future<void> _loadNoticeClampPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final seen = prefs.getBool(_noticeClampKey) ?? false;
+    if (!mounted) return;
+    setState(() {
+      _noticeClampSuppressed = seen;
+      _noticeClampPrefLoaded = true;
+    });
+    _maybeShowNoticeClampSnackBar();
+  }
+
   Future<void> _setShiftNoticeSuppressed(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_shiftNoticeKey, value);
+  }
+
+  Future<void> _setNoticeClampSuppressed(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_noticeClampKey, value);
+    if (!mounted) return;
+    setState(() {
+      _noticeClampSuppressed = value;
+    });
   }
 
   Future<void> _selectScheduleStart() async {
@@ -248,6 +268,7 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
     setState(() {
       _selected = TaskGroupPlanOption.scheduleStart;
       _scheduledStart = picked;
+      _startAutoAdjusted = false;
     });
   }
 
@@ -278,6 +299,7 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
       _selected = TaskGroupPlanOption.scheduleRange;
       _rangeStart = start;
       _rangeEnd = end;
+      _startAutoAdjusted = false;
     });
   }
 
@@ -305,6 +327,7 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
       _selected = TaskGroupPlanOption.scheduleTotal;
       _totalStart = start;
       _totalDuration = duration;
+      _startAutoAdjusted = false;
     });
   }
 
@@ -331,6 +354,8 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
   Widget build(BuildContext context) {
     final integrityMode = widget.args.integrityMode;
     final preview = _buildPlanPreview();
+    final noticeClampMessage = _noticeClampMessage();
+    final startAutoAdjustMessage = _startAutoAdjustMessage();
 
     final startTime = preview.scheduledStart;
     final groupStartLabel = startTime == null
@@ -425,11 +450,27 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
                 : 'Reserve countdown time before start. Notice: ${_noticeMinutes}m.',
             selected: false,
             onTap: _editNotice,
-            footer: _SchedulePickerRow(
-              label: _selected == TaskGroupPlanOption.startNow
-                  ? 'Current value: ${_noticeMinutes}m'
-                  : _noticeLabelForCurrentSelection(),
-              onPressed: _editNotice,
+            footer: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _SchedulePickerRow(
+                  label: _selected == TaskGroupPlanOption.startNow
+                      ? 'Current value: ${_noticeMinutes}m'
+                      : _noticeLabelForCurrentSelection(),
+                  onPressed: _editNotice,
+                ),
+                if (startAutoAdjustMessage != null ||
+                    noticeClampMessage != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    startAutoAdjustMessage ?? noticeClampMessage ?? '',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
           if (preview.error != null) ...[
@@ -514,6 +555,7 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
     final items = widget.args.items;
     final integrityMode = widget.args.integrityMode;
     final totalSeconds = groupDurationSecondsByMode(items, integrityMode);
+    final now = _floorToMinute(_noticeNow);
 
     switch (_selected) {
       case TaskGroupPlanOption.startNow:
@@ -534,7 +576,7 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
         }
         if (!isStartTimeInFuture(
           start: _scheduledStart!,
-          now: DateTime.now(),
+          now: now,
         )) {
           return _PlanPreview.error(
             option: _selected,
@@ -567,7 +609,7 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
             message: 'Select a start and end time for the range.',
           );
         }
-        if (!isStartTimeInFuture(start: _rangeStart!, now: DateTime.now())) {
+        if (!isStartTimeInFuture(start: _rangeStart!, now: now)) {
           return _PlanPreview.error(
             option: _selected,
             items: items,
@@ -622,7 +664,7 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
             message: 'Select a start time and duration.',
           );
         }
-        if (!isStartTimeInFuture(start: _totalStart!, now: DateTime.now())) {
+        if (!isStartTimeInFuture(start: _totalStart!, now: now)) {
           return _PlanPreview.error(
             option: _selected,
             items: items,
@@ -681,6 +723,51 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
     return value;
   }
 
+  DateTime _floorToMinute(DateTime value) {
+    return DateTime(value.year, value.month, value.day, value.hour, value.minute);
+  }
+
+  void _applyStartAutoUpdate() {
+    if (_selected == TaskGroupPlanOption.startNow) return;
+    final now = _floorToMinute(_noticeNow);
+    var adjusted = false;
+
+    switch (_selected) {
+      case TaskGroupPlanOption.scheduleStart:
+        if (_scheduledStart != null && _scheduledStart!.isBefore(now)) {
+          _scheduledStart = now;
+          adjusted = true;
+        }
+        break;
+      case TaskGroupPlanOption.scheduleRange:
+        if (_rangeStart != null && _rangeStart!.isBefore(now)) {
+          _rangeStart = now;
+          adjusted = true;
+        }
+        break;
+      case TaskGroupPlanOption.scheduleTotal:
+        if (_totalStart != null && _totalStart!.isBefore(now)) {
+          _totalStart = now;
+          adjusted = true;
+        }
+        break;
+      case TaskGroupPlanOption.startNow:
+        break;
+    }
+
+    if (adjusted) {
+      _noticeMinutes = TaskRunNoticeService.minNoticeMinutes;
+      _startAutoAdjusted = true;
+    }
+  }
+
+  String? _startAutoAdjustMessage() {
+    if (!_startAutoAdjusted) return null;
+    if (_selected == TaskGroupPlanOption.startNow) return null;
+    return 'Start time updated to now and pre-run set to 0m. '
+        'Edit the schedule if you want another time.';
+  }
+
   DateTime? _scheduledStartForCurrentSelection() {
     switch (_selected) {
       case TaskGroupPlanOption.startNow:
@@ -713,6 +800,133 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
     }
   }
 
+  String? _noticeClampMessage() {
+    final scheduledStart = _scheduledStartForCurrentSelection();
+    if (scheduledStart == null) return null;
+    if (!scheduledStart.isAfter(_noticeNow)) return null;
+    final maxAllowed = _maxNoticeAllowed(scheduledStart, _noticeNow);
+    final globalNotice = _normalizeNotice(widget.args.initialNoticeMinutes);
+    if (globalNotice <= maxAllowed) return null;
+    if (_noticeMinutes != maxAllowed) return null;
+    return 'Pre-run notice reduced to ${_noticeMinutes}m '
+        '— maximum allowed before the scheduled start.';
+  }
+
+  void _maybeShowNoticeClampSnackBar() {
+    if (!_noticeClampPrefLoaded) return;
+    final message = _noticeClampMessage();
+    if (message == null || _noticeClampSuppressed) {
+      _noticeClampMessageNotifier.value = null;
+      if (_noticeClampSnackVisible) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        _noticeClampSnackVisible = false;
+      }
+      return;
+    }
+    if (_noticeClampMessageNotifier.value != message) {
+      _noticeClampMessageNotifier.value = message;
+    }
+    if (_noticeClampSnackShown) return;
+    _noticeClampSnackShown = true;
+    _noticeClampSnackVisible = true;
+    _showNoticeClampSnackBar();
+  }
+
+  void _showNoticeClampSnackBar() {
+    const onSurface = Colors.black87;
+    const primary = Colors.black;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    var dontShowAgain = false;
+    messenger.showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(days: 1),
+        dismissDirection: DismissDirection.none,
+        backgroundColor: Colors.white,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        content: StatefulBuilder(
+          builder: (context, setSnackState) {
+            return DefaultTextStyle.merge(
+              style: const TextStyle(color: onSurface),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ValueListenableBuilder<String?>(
+                    valueListenable: _noticeClampMessageNotifier,
+                    builder: (context, currentMessage, _) {
+                      return Text(currentMessage ?? '');
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () {
+                            setSnackState(() {
+                              dontShowAgain = !dontShowAgain;
+                            });
+                          },
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Checkbox(
+                                value: dontShowAgain,
+                                checkColor: onSurface,
+                                fillColor: WidgetStateProperty.resolveWith(
+                                  (states) =>
+                                      states.contains(WidgetState.selected)
+                                          ? primary
+                                          : onSurface.withValues(alpha: 0.2),
+                                ),
+                                onChanged: (value) {
+                                  setSnackState(() {
+                                    dontShowAgain = value ?? false;
+                                  });
+                                },
+                              ),
+                              const SizedBox(width: 4),
+                              const Expanded(child: Text("Don't show again")),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton(
+                        style: TextButton.styleFrom(
+                          foregroundColor: primary,
+                          minimumSize: const Size(48, 36),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        onPressed: () async {
+                          if (dontShowAgain) {
+                            await _setNoticeClampSuppressed(true);
+                          }
+                          if (!mounted) return;
+                          messenger.hideCurrentSnackBar();
+                          _noticeClampSnackVisible = false;
+                        },
+                        child: const Text('OK'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   String _noticeLabelForCurrentSelection() {
     final scheduledStart = _scheduledStartForCurrentSelection();
     final maxAllowed = _maxNoticeAllowed(scheduledStart, _noticeNow);
@@ -720,12 +934,6 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
       return 'Current value: ${_noticeMinutes}m (0–15m)';
     }
     return 'Current value: ${_noticeMinutes}m · allowed now: 0–${maxAllowed}m';
-  }
-
-  String? _noticeErrorForStart(DateTime start) {
-    final maxAllowed = _maxNoticeAllowed(start, _noticeNow);
-    if (_noticeMinutes <= maxAllowed) return null;
-    return 'This start only allows notice up to ${maxAllowed}m right now.';
   }
 
   Future<void> _editNotice() async {

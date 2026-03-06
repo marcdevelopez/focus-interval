@@ -23,7 +23,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **04/03/2026**
+Last update: **06/03/2026**
 
 ---
 
@@ -8857,67 +8857,67 @@ _(pending validation)_
 - Use the debug + prod commands with `ALLOW_PROD_IN_DEBUG=true` until staging exists.
 - Revert the override commands once staging is configured.
 
-# 🔹 Block 525 — Fix TimeSync deadlock + auth gating (02/03/2026)
+# 🔹 Block 525 — Reset to P0-3 baseline + re-apply notice features (05/03/2026)
 
 ### ✔ Work completed:
 
-- Updated specs to allow fallback heartbeats/publishes when time sync is missing,
-  while still blocking start/resume/auto-start without server offset.
-- Fixed provider gating so TimeSync and activeSession repositories stay enabled
-  when `currentUser` exists (avoid transient auth nulls downgrading to Noop).
-- Allowed `_publishCurrentSession()` to publish with local-time fallback while
-  time sync is unavailable (prevents `activeSession` from freezing).
-- Created validation folder `docs/bugs/validation_fix_2026_03_02-02/` with plan.
+- Reset the branch to `2c788c3` (Fix 22 P0-3 validation baseline) to remove
+  post‑P0‑3 regressions.
+- Cherry-picked the Plan Group notice control features:
+  - `7bb19a3` (notice picker flow)
+  - `856c356` (re-plan notice coherence)
+  - `ddcf0ba` (auto-clamp SnackBar)
+- Cherry-picked debug-prod override support:
+  - `d5e08ae` (allow prod in debug)
+  - `cf2e722` (debug prod log commands)
+- Resolved cherry-pick conflicts by taking incoming feature versions of
+  `groups_hub_screen.dart` and `task_group_planning_screen.dart`.
+- Updated Task List planning flow to pass `initialNoticeMinutes`.
 
 ### 🧪 Tests:
 
-- `flutter analyze` (passed).
+- `flutter analyze`
 
 ### ⚠️ Issues found:
 
-- None yet (validation pending).
+- Validation pending after rollback (pause syncing and other regressions to
+  be re-checked under the restored baseline).
 
 ### 🎯 Next steps:
 
-- Run rapid validation on Chrome/macOS debug + prod override.
-- Record commit hash in the validation plan and complete checklist.
+- Re-run the pause repro on the restored baseline and confirm whether the
+  prolonged "Syncing session" still occurs.
 
-# 🔹 Block 526 — Allow owner heartbeats while awaiting/missing (02/03/2026)
+# 🔹 Block 526 — Pause syncing regression resolved after rollback (05/03/2026)
 
 ### ✔ Work completed:
 
-- Allowed session publish to proceed while missing session when this device is
-  the owner and execution is active (prevents `lastUpdatedAt` freeze).
-- Allowed heartbeats to publish while awaiting session confirmation to avoid
-  deadlocks during initial ownership.
-- Updated validation plan for the TimeSync deadlock fix.
+- Validated the pause flow after the rollback to `2c788c3` baseline with the
+  re-applied Plan Group notice features + debug prod override.
+- User confirmed the prolonged "Syncing session" no longer reproduces.
 
 ### 🧪 Tests:
 
-- `flutter analyze` (passed).
+- Manual validation (no logs captured for this pass).
 
 ### ⚠️ Issues found:
 
-- None yet (validation pending).
+- None reported in the pause flow after rollback.
 
 ### 🎯 Next steps:
 
-- Re-run rapid validation in Chrome/macOS and confirm `lastUpdatedAt` advances.
-- Update the checklist and plan tracking with the new commit hash.
+- Continue remaining validations on this restored baseline.
 
-# 🔹 Block 527 — Validate TimeSync deadlock fix (02/03/2026)
+# 🔹 Block 527 — Keep backup branch for reference (05/03/2026)
 
 ### ✔ Work completed:
 
-- Completed rapid validation for the TimeSync deadlock fix on Chrome (web) and macOS.
-- Confirmed `users/{uid}/timeSync/anchor` creation and advancing
-  `activeSession/current.lastUpdatedAt`.
-- Updated the validation plan and checklist for
-  `docs/bugs/validation_fix_2026_03_02-02/`.
+- Kept `backup_pre_reset_2026_03_05` as a reference branch to preserve prior
+  implementations during the next validation cycle.
 
 ### 🧪 Tests:
 
-- Manual validation (Chrome debug + prod override, macOS debug + prod override).
+- Not applicable.
 
 ### ⚠️ Issues found:
 
@@ -8925,441 +8925,49 @@ _(pending validation)_
 
 ### 🎯 Next steps:
 
-- None.
+- Remove the backup branch once the next validation pass is fully closed.
 
-# 🔹 Block 528 — Owner local stream + no remote projection (02/03/2026)
+# 🔹 Block 528 — Revalidation post-rollback findings (05/03/2026)
 
 ### ✔ Work completed:
 
-- Owner no longer ignores the local PomodoroMachine stream in Account Mode.
-- Removed mirror projection for owner sessions (no `_setMirrorSession` in owner paths).
-- Owner hydration now allows local-time fallback when server offset is missing.
-- Created validation folder `docs/bugs/validation_fix_2026_03_02-03/` with plan + empty checklist.
-
-### 🧠 Decisions made:
-
-- Owner must always render from the local machine; mirrors project from session snapshots.
-- If time sync is missing, owner uses local time for projection to avoid frozen UI.
+- Re-validated key items after rollback to `2c788c3` baseline.
+- Organized new screenshots into per-bug folders under
+  `docs/bugs/validation_fix_2026_02_25/screenshots/`.
 
 ### 🧪 Tests:
 
-- `flutter analyze` (passed).
-- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` (passed).
+- Manual validation (iOS owner, Chrome mirror).
 
 ### ⚠️ Issues found:
 
-_(not yet validated on devices)_
+- Pre-run notice clamp does not apply to the planned group: snackbar reduces the
+  notice but confirm still fails with “That start time is too soon...”.
+- Owner adds paused time once after leaving and re-entering Timer Run
+  (timer jumps backward on first return).
+- Resolve overlaps appears without a real conflict after Local → Account;
+  Request ownership does not reach the owner and ownership flips automatically.
 
 ### 🎯 Next steps:
 
-- Run rapid validation (Android owner + macOS mirror) and update checklist.
-- Record commit hash in the validation plan.
+- Document and prioritize reintroduced issues in the 2026-02-25 validation plan.
+- Re-run targeted repros with logs for additional observations reported today.
 
-# 🔹 Block 529 — Plan Group pre-run notice control (02/03/2026)
+# 🔹 Block 529 — Move 05/03 revalidation evidence into new validation folder (05/03/2026)
 
 ### ✔ Work completed:
 
-- Added a "Pre-run notice" row to Plan group with a realtime-valid range.
-- Planning now carries the notice value and persists it on new TaskRunGroups.
-- Re-plan snackbar offers Change notice and reopens planning with a valid suggestion.
-- Task List and Groups Hub creation flows use the selected notice consistently.
+- Created `docs/bugs/validation_fix_2026_03_05/plan_validacion_rapida_fix.md` and
+  `docs/bugs/validation_fix_2026_03_05/quick_pass_checklist.md`.
+- Moved 05/03 screenshots into `docs/bugs/validation_fix_2026_03_05/screenshots/`
+  (notice clamp, owner pause jump, overlaps false conflict, other observations).
+- Moved 05/03 logs into `docs/bugs/validation_fix_2026_03_05/logs/`.
+- Removed the 05/03 revalidation sections from the 02/25 plan and checklist to
+  keep validations isolated by date.
 
 ### 🧪 Tests:
 
-- `flutter analyze` (passed).
-
-### ⚠️ Issues found:
-
-- None.
-
-### 🎯 Next steps:
-
-- Complete feature checklist validation and record results.
-
-# 🔹 Block 530 — ActiveSession payload persistence + owner sync guards (02/03/2026)
-
-### ✔ Work completed:
-
-- Fixed Firestore activeSession idempotent writes to persist full payload when
-  `sessionRevision` is unchanged but session fields changed (`remainingSeconds`,
-  phase/status fields, timeline fields).
-- Stabilized owner sync flow in `PomodoroViewModel`:
-  - removed owner mirror-projection path,
-  - allowed projection local fallback when server offset is temporarily missing,
-  - added `ref.mounted` lifecycle guards on async resync/snapshot paths.
-- Updated session gap test expectations to match the current publish policy when
-  time sync is unavailable.
-
-### 🧪 Tests:
-
-- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` (passed).
-- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` (passed).
-
-### ⚠️ Issues found:
-
-- Device validation for the long-run (20–30 min) Android syncing scenario is still pending.
-
-### 🎯 Next steps:
-
-- Run long-run validation with a fresh running group (no carry-over from previous builds).
-- Record final validation evidence in `docs/bugs/validation_fix_2026_03_02-03/`.
-
-# 🔹 Block 531 — IDEA-032 validated + auto-clamp SnackBar UX fix (02/03/2026)
-
-### ✔ Work completed:
-
-- Validated IDEA-032 (Plan Group Pre-Run Notice Control) on Android RMX3771,
-  debug prod, 02/03/2026.
-- All 8 checklist items passed. See
-  `docs/features/feature_2026_03_02_plan-group-notice-control/feature_checklist.md`.
-- Minor UX improvement added during validation:
-  - The 1s ticker in `task_group_planning_screen.dart` now emits a SnackBar
-    ("Pre-run notice reduced to Xm — maximum allowed before the scheduled
-    start.") whenever it auto-clamps `_noticeMinutes` to the realtime max.
-  - Covers Check 4 (notice invalid while screen open) and Check 8 (user picks
-    a start time with insufficient margin). Both confirmed working in real time.
-- `flutter analyze` — 0 issues.
-
-### 🧪 Tests:
-
-- Manual validation on device (Android RMX3771), 02/03/2026.
-
-### 🎯 Next steps:
-
-- Address pending long-run Android sync validation from Block 530.
-
-# 🔹 Block 532 — Sync freeze fix validation closed (Android isolated) (02/03/2026)
-
-### ✔ Work completed:
-
-- Closed validation for Block 530 using Android execution evidence.
-- Confirmed no permanent "Syncing session..." hold and no freeze while changing
-  timer/phase during the observed run.
-- Updated roadmap and validation artifacts to mark this fix as validated.
-
-### 🧪 Tests:
-
-- Manual validation on Android RMX3771 (Account Mode, isolated run).
-- Evidence log:
-  `docs/features/feature_2026_03_02_plan-group-notice-control/logs/2026_03_02_android_RMX3771_feature.log`.
-
-### ⚠️ Issues found:
-
-- None in this run.
-
-### 🎯 Next steps:
-
-- Keep monitoring; if regression reappears (especially multi-device), reopen the
-  Phase 13 item and attach fresh validation logs.
-
-# 🔹 Block 533 — Account pre-run notification cancellation + late-start recheck instrumentation (03/03/2026)
-
-### ✔ Work completed:
-
-- Documented Account → Local notification cancellation rule in `docs/specs.md`.
-- Updated validation plan and checklist for `docs/bugs/validation_fix_2026_02_24/`.
-- Implemented Account → Local pre-run notification cancellation in `AppModeController`.
-- Added debug instrumentation and account-mode recheck trigger in `ScheduledGroupCoordinator`.
-- Updated roadmap entry for the fix (validation pending).
-
-### 🧪 Tests:
-
-- Not run (manual validation pending).
-
-### ⚠️ Issues found:
-
-- Validation pending for late-start queue after Local → Account and Local Mode notification suppression.
-
-### 🎯 Next steps:
-
-- Run the one-pass checklist in `docs/bugs/validation_fix_2026_02_24/quick_pass_checklist.md` and capture logs/screenshots.
-
-# 🔹 Block 534 — Late-start retry instrumentation + cancel fix moved to coordinator (03/03/2026)
-
-### ✔ Work completed:
-
-- Moved Account → Local pre-run notification cancellation into `ScheduledGroupCoordinator`
-  to avoid provider circular dependency.
-- Added debug logs for scheduled/pre-alert timers and auto-start retry timers.
-- Updated validation plan to reflect the implementation shift.
-
-### 🧪 Tests:
-
-- Not run (manual validation pending).
-
-### ⚠️ Issues found:
-
-- Late-start queue still not triggering in the latest attempt; logs showed no
-  evaluation near the scheduled start and the pre-run cancellation path hit a
-  circular dependency (now fixed).
-
-### 🎯 Next steps:
-
-- Re-run the late-start checklist path and capture fresh logs to confirm timer
-  scheduling and overdue detection behavior.
-
-# 🔹 Block 535 — Timer cancellation diagnostics for late-start regression (03/03/2026)
-
-### ✔ Work completed:
-
-- Added debug logs to trace timer cancellation and provider invalidation during
-  mode changes and scheduled group evaluation.
-- Updated validation plan with the new diagnostic instrumentation.
-
-### 🧪 Tests:
-
-- Not run (manual validation pending).
-
-### ⚠️ Issues found:
-
-- Late-start queue still not triggering; investigation now focused on timer
-  cancellation or coordinator disposal.
-
-### 🎯 Next steps:
-
-- Re-run the late-start scenario and capture logs with the new
-  `timer-state` and `AppModeGuard` markers.
-
-# 🔹 Block 536 — Account recheck burst + late-start heartbeat transaction fix (03/03/2026)
-
-### ✔ Work completed:
-
-- Added a bounded account-mode recheck burst after Local → Account mode switches
-  to re-evaluate scheduled groups and recover timers after provider disposal.
-- Fixed Firestore late-start heartbeat updates to read all docs before writes,
-  preventing transaction ordering crashes.
-- Updated specs and bug validation plan with the new behavior and root-cause notes.
-
-### 🧪 Tests:
-
-- Not run (manual validation pending).
-
-### ⚠️ Issues found:
-
-- Validation pending for late-start queue and scheduled auto-start after mode switch.
-
-### 🎯 Next steps:
-
-- Run `docs/bugs/validation_fix_2026_02_24/quick_pass_checklist.md` and capture
-  fresh logs/screenshots.
-
-# 🔹 Block 537 — Preserve coordinator on logout (03/03/2026)
-
-### ✔ Work completed:
-
-- Removed logout invalidation of `scheduledGroupCoordinatorProvider` so the
-  coordinator is not disposed mid-schedule; mode changes now rely on the
-  coordinator reset hook to clear timers safely.
-- Updated the validation plan and roadmap entries accordingly.
-
-### 🧪 Tests:
-
-- Not run (manual validation pending).
-
-### ⚠️ Issues found:
-
-- Validation pending for late-start queue and scheduled auto-start after mode switch.
-
-### 🎯 Next steps:
-
-- Re-run the Local → Account late-start scenario with fresh logs to confirm
-  timers survive and the queue appears.
-
-# 🔹 Block 538 — Mirror late-start queue resolves after owner action (03/03/2026)
-
-### ✔ Work completed:
-
-- Mirror now treats a resolved late-start queue (anchor/owner cleared) as
-  "Owner resolved" and exits to Groups Hub.
-- Suppressed mirror auto-claim once the queue is already resolved so actions
-  remain read-only until ownership is explicitly requested or stale.
-
-### 🧪 Tests:
-
-- Not run (manual validation pending).
-
-### ⚠️ Issues found:
-
-- Validation pending for mirror ownership behavior in late-start resolution.
-
-### 🎯 Next steps:
-
-- Re-run the late-start queue on owner + mirror and confirm mirror is blocked
-  after owner resolves the queue.
-
-# 🔹 Block 539 — Urgent pending: single source of truth breach (03/03/2026)
-
-### ✔ Work completed:
-
-- Documented the urgent pending items and next steps in
-  `docs/bugs/validation_fix_2026_02_24/plan_validacion_rapida_fix.md` to prevent
-  partial implementations from being lost.
-
-### ⚠️ Issues found:
-
-- Run Mode in Account Mode can apply two timelines: `PomodoroSession` projection
-  plus `TaskRunGroup` projection, which ignores `accumulatedPausedSeconds` and
-  causes timer drift after pause (observed when returning from Groups Hub).
-- P0-4 validation failed and rules were rolled back; P0-5 remains unimplemented.
-
-### 🎯 Next steps:
-
-- Update `docs/specs.md` to make `PomodoroSession` the sole timeline in Account
-  Mode when a session exists (group timeline projection only in Local Mode).
-- Fix `PomodoroViewModel._hydrateOwnerSession` to skip
-  `_applyGroupTimelineProjection` in Account Mode.
-- Re-run Step 6 (pause → Groups Hub → return) and confirm owner/mirror drift
-  stays within tolerance.
-- Record final commit hash + validation results in plan/roadmap/dev log.
-
-# 🔹 Block 540 — Account Mode hydrate anchor (03/03/2026)
-
-### ✔ Work completed:
-
-- Updated `PomodoroViewModel._hydrateOwnerSession` to anchor running/paused
-  phases to `session.phaseStartedAt` in **Account Mode** and skip publishing
-  during hydration to prevent monotonic drift on owner screen returns.
-- Updated `docs/bugs/validation_fix_2026_02_24/plan_validacion_rapida_fix.md`
-  with the confirmed drift root cause and fix status.
-
-### 🧪 Tests:
-
-- `flutter analyze` — no issues.
-
-### ⚠️ Issues found:
-
-- Validation pending for Step 6 (owner leaves to Groups Hub/Task List and
-  returns). Needs multi-device repro to confirm drift is gone.
-
-### 🎯 Next steps:
-
-- Re-run Step 6 with iOS + Chrome (swap roles if needed), capture logs and
-  screenshots, then update plan/roadmap with the commit hash after validation.
-
-# 🔹 Block 541 — Step 6 validation pass (Account Mode drift) (04/03/2026)
-
-### ✔ Work completed:
-
-- Validated Step 6 (pause → Groups Hub → Run Mode return) with iOS owner and
-  Chrome mirror after the Account Mode hydrate anchor fix.
-- Updated validation plan/checklist with the successful run and new logs.
-- Commit: `c13c0f6` — Fix account session hydrate drift and validate step 6.
-
-### 🧪 Tests:
-
-- Manual validation (Account Mode, iOS owner + Chrome mirror).
-- Logs:
-  - `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_ios_simulator_postfix2_debug.log`
-  - `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_chrome_postfix2_debug.log`
-
-### ⚠️ Issues found:
-
-- None observed in Step 6 (timers stayed aligned after pause + navigation).
-
-### 🎯 Next steps:
-
-- Record commit hash in plan/roadmap and proceed with remaining checklist items.
-
-# 🔹 Block 542 — Quick pass steps 7–13 validated (04/03/2026)
-
-### ✔ Work completed:
-
-- Completed Steps 7–13 of `docs/bugs/validation_fix_2026_02_24/quick_pass_checklist.md`.
-- Confirmed scheduling auto-shift (+1 min when needed), correct scheduled row,
-  pre-run auto-open, start-time auto-open, cancel → Groups Hub, logout safety,
-  and Local Mode pre-run suppression.
-
-### 🧪 Tests:
-
-- Manual validation (iOS owner + Chrome mirror, Android logout check).
-- Logs:
-  - `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_ios_simulator_postfix2_debug.log`
-  - `docs/bugs/validation_fix_2026_02_24/logs/2026_03_03_chrome_postfix2_debug.log`
-
-### ⚠️ Issues found:
-
-- None reported in Steps 7–13.
-
-### 🎯 Next steps:
-
-- Continue with any remaining checklist items if needed and decide whether to
-  archive this validation set.
-
-# 🔹 Block 543 — Notice=0 + Local Mode mini-pass validated (04/03/2026)
-
-### ✔ Work completed:
-
-- Closed the remaining Notice=0 scheduled start and Local Mode mini-pass checks
-  for `validation_fix_2026_02_24`.
-- Confirmed no Pre-Run row, auto-start stays in Run Mode, and Local Mode “Open
-  Run Mode” does not restart the group.
-
-### 🧪 Tests:
-
-- Manual validation (iOS + Chrome). Logs:
-  - `docs/bugs/validation_fix_2026_02_24/logs/2026_03_04_ios_notice0_localpass_debug.log`
-  - `docs/bugs/validation_fix_2026_02_24/logs/2026_03_04_chrome_notice0_localpass_debug.log`
-
-### ⚠️ Issues found:
-
-- None observed in these checks.
-
-# 🔹 Block 544 — Triage results for 27/02 findings (04/03/2026)
-
-### ✔ Work completed:
-
-- Ran a quick triage pass on the “New findings — 27/02/2026” list
-  (`validation_fix_2026_02_25`).
-- Account Mode notice=0 did **not** show a black screen, but auto-open to Run
-  Mode briefly routes through Groups Hub when starting from Task List (owner +
-  mirror). This should be direct-to-Run Mode.
-- Local Mode transitions were direct (no intermediate Groups Hub flash).
-- Local → Account transition was smooth.
-
-### 🧪 Tests:
-
-- Manual triage (Account + Local). Logs not captured in this pass.
-
-### ⚠️ Issues found:
-
-- Account Mode auto-open briefly shows Groups Hub before Run Mode (from Task List).
-
-### 🎯 Next steps:
-
-- Decide whether to capture logs for the brief Groups Hub flash and schedule a
-  targeted fix, then proceed with P0‑4/P0‑4g/P0‑4h work.
-
-# 🔹 Block 545 — Offline continuation feature planning (04/03/2026)
-
-### ✔ Work completed:
-
-- Documented Offline vs Syncing behavior in `docs/specs.md` (explicit offline
-  detection, no auto-switch, explicit Local continuation, and reconnect choice).
-- Created feature plan for IDEA-034.
-- Moved IDEA-034 to **In progress** in `docs/feature_backlog.md` with links.
-
-### 🧠 Decisions made:
-
-- Offline continuation must remain **explicit** (no automatic switch to Local
-  Mode) to preserve Local/Account isolation.
-
-### ⚠️ Issues found:
-
-- None during documentation updates.
-
-### 🎯 Next steps:
-
-- Implement after Fix 22 (timeSync + single source of truth) and current P0
-  bug fixes; validate with offline/online reconnection flows.
-
-# 🔹 Block 546 — Feature backlog ordering cleanup (04/03/2026)
-
-### ✔ Work completed:
-
-- Reordered the full IDEA entries in `docs/feature_backlog.md` so they follow
-  numeric ID order (IDEA-001 → IDEA-035), including moving IDEA-032 into place.
-- Converted the Done section to an index list to avoid breaking the ordered
-  IDEA sequence.
+- Not applicable (docs organization only).
 
 ### ⚠️ Issues found:
 
@@ -9367,5 +8975,213 @@ _(not yet validated on devices)_
 
 ### 🎯 Next steps:
 
-- Continue with P0 bug fixes and validations; feature backlog now stays
-  ordered for easier lookup.
+- Proceed with Fixes 23–25 under the 2026-03-05 validation folder.
+
+# 🔹 Block 530 — Specs update for notice auto-clamp + global action (05/03/2026)
+
+### ✔ Work completed:
+
+- Updated `docs/specs.md` to define notice auto-clamp behavior when the scheduled
+  start is too soon, including the snackbar with an action to apply the effective
+  notice to the global default.
+- Added the +1 minute rule between a group’s end and the next group’s pre-run start.
+- Clarified global vs per-group notice behavior in the Pre-Run notice section.
+- Updated `docs/bugs/validation_fix_2026_03_05/plan_validacion_rapida_fix.md`
+  with the snackbar + global action requirement.
+
+### 🧪 Tests:
+
+- Not applicable (docs-only update).
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Implement Fix 23 in code using `planningResult.noticeMinutes` for validation and
+  group creation, and wire the snackbar action to optionally update the global notice.
+
+# 🔹 Block 531 — Fix 23 notice clamp + global action (code) (05/03/2026)
+
+### ✔ Work completed:
+
+- Task List: use `planningResult.noticeMinutes` for validation and group creation.
+- Added clamp snackbar with “Apply globally” action and global notice explanation.
+- Groups Hub re-plan: fetch global notice once, keep clamped notice, and show
+  the same clamp snackbar with global action.
+- Global notice action now updates the Pre-run notice provider so Settings
+  reflects the new value immediately.
+
+### 🧪 Tests:
+
+- `flutter analyze`
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Run Fix 23 validation in `docs/bugs/validation_fix_2026_03_05/quick_pass_checklist.md`.
+- Update the plan with commit hash once validation passes.
+
+# 🔹 Block 532 — Notice clamp UX refinement + log alignment (05/03/2026)
+
+### ✔ Work completed:
+
+- Made the notice auto-clamp snackbar non-dismissible until OK; “Don’t show again” remains available and the info line persists in the card.
+- Moved pause-syncing logs into the 2026-03-05 validation folder to keep evidence aligned with the correct date.
+
+### 🧪 Tests:
+
+- `flutter analyze`
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Re-run Fix 23 validation in `docs/bugs/validation_fix_2026_03_05/quick_pass_checklist.md`.
+- Update the plan with the new commit hash once validation passes.
+
+# 🔹 Block 533 — Fix notice clamp snackbar controls + live text (05/03/2026)
+
+### ✔ Work completed:
+
+- Notice clamp snackbar now renders checkbox + OK, is non-dismissible, and updates its message live while visible.
+- Snackbar hides properly on OK and respects “Don’t show again”.
+
+### 🧪 Tests:
+
+- `flutter analyze`
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Re-run the Fix 23 validation flow (auto-clamp + apply global) and record results in the 2026-03-05 checklist.
+
+# 🔹 Block 534 — Notice clamp snackbar visibility fix (05/03/2026)
+
+### ✔ Work completed:
+
+- Ensured the notice clamp snackbar renders its checkbox + OK controls visibly on web/mobile.
+- Snackbar text now stops showing when the scheduled start is in the past.
+- Updated checkbox styling to use WidgetStateProperty and current Flutter color APIs.
+
+### 🧪 Tests:
+
+- `flutter analyze`
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Re-validate the notice clamp flow in Plan group (Chrome + iOS) and confirm controls are visible.
+
+# 🔹 Block 535 — Auto-update passed schedule + responsive notice clamp banner (06/03/2026)
+
+### ✔ Work completed:
+
+- Added auto-update for past scheduled starts: shifts start to now (minute floor) and forces pre-run to 0m.
+- Added a clear “start auto-adjusted” message in Plan group when the schedule is corrected.
+- Made the notice clamp snackbar responsive (floating + margin/padding) so checkbox/OK are always visible.
+
+### 🧪 Tests:
+
+- `flutter analyze`
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Re-validate Fix 23 with the new auto-update behavior and snackbar visibility on iOS + Chrome.
+
+# 🔹 Block 536 — SnackBar color alignment + AGENTS hygiene updates (06/03/2026)
+
+### ✔ Work completed:
+
+- Aligned the notice clamp snackbar to the app’s light snackbar style (white background, dark text).
+- Added a Feature Backlog idea for global SnackBar theming and unified UI messaging.
+- Updated AGENTS.md with daily specs hygiene and code quality / UI consistency rules.
+
+### 🧪 Tests:
+
+- Not run (UI styling change + doc updates only).
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Re-validate the notice clamp snackbar visuals and controls on iOS + Chrome.
+
+# 🔹 Block 537 — Feature backlog entry for i18n foundation (06/03/2026)
+
+### ✔ Work completed:
+
+- Added `IDEA-036 — Runtime Internationalization (l10n) Foundation` to
+  `docs/feature_backlog.md`.
+- Updated the recommended execution order with IDEA-036.
+
+### 🧪 Tests:
+
+- Not applicable (documentation update only).
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Start docs-first implementation planning for IDEA-036 (l10n infrastructure and phased migration).
+
+# 🔹 Block 538 — Reprioritize IDEA-036 to execution slot #1 (06/03/2026)
+
+### ✔ Work completed:
+
+- Reordered `docs/feature_backlog.md` recommended execution list to place
+  `IDEA-036 — Runtime Internationalization (l10n) Foundation` at position #1.
+- Updated the section header date for recommended execution order to `06/03/2026`.
+
+### 🧪 Tests:
+
+- Not applicable (documentation update only).
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Keep fixes in progress on the active bug-validation branch.
+- Start `IDEA-036` only after current critical sync fixes are validated and closed.
+
+# 🔹 Block 539 — Fix notice clamp banner action visibility (06/03/2026)
+
+### ✔ Work completed:
+
+- Fixed the persistent notice-clamp snackbar layout so `OK` is always visible.
+- Kept `Don't show again` interactive across web/mobile by making the whole row tappable.
+- Preserved current behavior: snackbar auto-hides when the selected start is no longer valid.
+
+### 🧪 Tests:
+
+- `flutter analyze`
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Re-validate Fix 23 UX flow (notice clamp + global apply + persistent banner controls).

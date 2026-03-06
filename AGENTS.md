@@ -41,6 +41,12 @@ At the start of **every session**:
     is not high confidence that a reported bug is resolved, do not push.
     Production policy: `main` must never contain known bugs.
 
+Daily specs hygiene (hard rule):
+- At least once per day, review `docs/specs.md` end-to-end to detect
+  incoherencies, contradictions, or missing edge cases.
+- If issues are found, record them immediately and propose fixes before
+  implementing new behavior. Specs are the app's supreme source of truth.
+
 ---
 
 ## 2️⃣ Documentation-first rule (hard rule)
@@ -64,12 +70,65 @@ This includes:
 
 If documentation and code diverge → **documentation wins**.
 
-Additional feature tracking requirement:
-- Every new feature pulled from `docs/feature_backlog.md` must have a matching
-  documentation folder under `docs/features/` created **before** implementation.
-- Use the template in `docs/features/feature_template.md`.
-- Each feature doc set must include an explicit "Backlog reference" section
-  with the exact ID and title from `docs/feature_backlog.md`.
+Additional requirement:
+- If the user requests a change that is not yet in specs, the agent must
+  proactively propose the spec update in the very next response and ask for
+  confirmation. Do not ignore or defer the request without offering the
+  documentation path forward.
+
+Bug validation workflow (required):
+- All validation artifacts live under `docs/bugs/validation_fix_YYYY_MM_DD`
+  (use `validation_fix_YYYY_MM_DD-01`, `-02`, etc. for multiple validations
+  in the same day).
+- Never delete validation subdirectories in `docs/bugs`. Keep them for traceability and regression history.
+- Screenshots stay in the validation folder but are ignored by git.
+- Each validation folder must include:
+  - `quick_pass_checklist.md`
+  - `plan_validacion_rapida_fix.md`
+  - `screenshots/`
+- Every fix must include an **Exact Repro** of the original bug scenario (steps,
+  mode, device(s), timing, logs/screenshots). This repro must be executed as
+  part of the rapid validation; otherwise the validation is incomplete.
+- Every fix must include a **Regression smoke check** that re-tests the most
+  recent critical fixes (3–5 items). If the regression list changes, update it
+  in both `plan_validacion_rapida_fix.md` and `quick_pass_checklist.md`.
+- Always review the screenshots in the relevant validation folder before diagnosing or implementing fixes.
+- `quick_pass_checklist.md` is created **after** implementation and must match
+  the actual changes. For a brand new validation folder, it starts empty until
+  the implementation is complete.
+- `plan_validacion_rapida_fix.md` is updated by the agent based on the latest
+  completed checklist and reported bugs.
+- Keep validations isolated per folder; never mix evidence or steps across
+  different validation dates.
+- After each fix:
+  - Update `plan_validacion_rapida_fix.md` to mark the fix as completed and note
+    any order changes or new findings.
+  - Run the appropriate tests (unit or integration) for the fix’s scope and
+    only proceed if they pass.
+  - Record the commit hash and commit message in the plan tracking entry.
+  - Commit the fix **after** updating the plan and any supporting docs/logs.
+
+Feature planning workflow (required):
+- All feature implementation artifacts live under `docs/features/feature_YYYY_MM_DD_slug`
+  (use `feature_YYYY_MM_DD_slug-01`, `-02`, etc. for multiple feature tracks
+  in the same day).
+- Never delete feature subdirectories in `docs/features`. Keep them for
+  traceability and regression history.
+- Screenshots stay in the feature folder but are ignored by git.
+- Each feature folder must include:
+  - `feature_plan.md` (implementation plan)
+  - `feature_checklist.md` (validation checklist, created after implementation)
+  - `screenshots/` (when relevant)
+- Every feature must be linked to `docs/feature_backlog.md` (reference the item
+  or ID in the plan).
+- In `docs/feature_backlog.md`, move the item to **In progress** (or
+  **In implementation**) and add the link to the feature directory.
+- When the feature is complete, move the item to **Done** (or
+  `feature_backlog_archive.md`) and record the final commit.
+- After each feature or subfeature:
+  - Update the plan to mark it completed.
+  - Record the commit hash and commit message in the plan tracking entry.
+  - Commit the change after updating the plan and supporting docs/logs.
 
 Bug validation workflow (required):
 
@@ -371,6 +430,15 @@ Renaming core concepts requires:
 - Spec update
 - Global refactor
 - Explicit justification
+
+---
+
+## 1️⃣0️⃣A Code quality & UI consistency (non-negotiable)
+
+- Code must be clean, modular, and scalable by default.
+- Prefer reusable components and shared styling utilities over ad-hoc UI.
+- When a UI style is reused (e.g., SnackBar/Banner), create or plan a theme
+  entry to keep the visual language unified.
 
 ---
 
