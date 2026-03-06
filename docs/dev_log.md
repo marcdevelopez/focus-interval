@@ -9357,3 +9357,29 @@ _(pending validation)_
 ### 🎯 Next steps:
 
 - Implement and validate Fix 24.
+
+# 🔹 Block 543 — Fix 24 candidate in isolated branch (06/03/2026)
+
+### ✔ Work completed:
+
+- Created isolated branch `fix24-owner-pause-reentry-jump` to test Fix 24
+  without risking the active branch.
+- Implemented two guarded changes in
+  `lib/presentation/viewmodels/pomodoro_view_model.dart`:
+  - Owner hydration now pins `_localPhaseStartedAt` from
+    `session.phaseStartedAt` for running and paused session states.
+  - Owner hydration skips `_applyGroupTimelineProjection(...)` in Account Mode.
+- Updated `docs/bugs/validation_fix_2026_03_05/plan_validacion_rapida_fix.md`
+  with Fix 24 code status (validation pending).
+
+### 🧪 Tests:
+
+- `flutter analyze` (pass).
+
+### ⚠️ Issues found:
+
+- Behavior validation still pending (Exact Repro + regression smoke checks).
+
+### 🎯 Next steps:
+
+- Run Fix 24 validation on owner iOS + mirror Chrome.

@@ -264,10 +264,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         ? session.pausedAt
         : null;
     _setMirrorSession(session, allowAutoTakeover: false);
-    if (session.status == PomodoroStatus.paused &&
-        session.phaseStartedAt != null) {
-      _localPhaseStartedAt = session.phaseStartedAt;
-    }
+    _pinOwnerPhaseStartFromSession(session);
     final shouldHydrate =
         _machine.state.status == PomodoroStatus.idle &&
         session.status != PomodoroStatus.idle;
@@ -1735,17 +1732,24 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     final projected =
         _projectStateFromSession(session, projectionNow: projectionNow);
     _applyProjectedState(projected, now: projectionNow ?? now);
-    if (session.status == PomodoroStatus.paused &&
-        session.phaseStartedAt != null) {
-      _localPhaseStartedAt = session.phaseStartedAt;
-    }
-    if (session.status != PomodoroStatus.paused &&
+    _pinOwnerPhaseStartFromSession(session);
+    final allowTimelineProjection = ref.read(appModeProvider) != AppMode.account;
+    if (allowTimelineProjection &&
+        session.status != PomodoroStatus.paused &&
         _applyGroupTimelineProjection(now)) {
       _bumpSessionRevision();
       _publishCurrentSession();
       return;
     }
     _publishCurrentSession();
+  }
+
+  void _pinOwnerPhaseStartFromSession(PomodoroSession session) {
+    final phaseStart = session.phaseStartedAt;
+    if (phaseStart == null) return;
+    if (_isRunning(session.status) || session.status == PomodoroStatus.paused) {
+      _localPhaseStartedAt = phaseStart;
+    }
   }
 
   void _applySessionTaskContext(PomodoroSession session) {

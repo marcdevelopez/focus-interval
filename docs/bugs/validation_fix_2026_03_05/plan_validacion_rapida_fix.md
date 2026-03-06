@@ -101,6 +101,12 @@ Each item below is a separate fix and must be committed separately.
     - `Apply globally` action updates global notice default,
     - planned group appears in Groups Hub with effective pre-run.
   - Regression smoke checks: PASS (all 4 checklist items).
+- Fix 24 (Scope 2): Code updated in isolated branch `fix24-owner-pause-reentry-jump`
+  (06/03/2026). Tests: `flutter analyze` (pass). Validation pending.
+  Notes:
+  - Owner hydration now pins `_localPhaseStartedAt` from `session.phaseStartedAt`
+    for both running and paused states.
+  - Owner hydration no longer applies group timeline projection in Account Mode.
 
 ## Acceptance Criteria
 1. Si el notice es auto-clamped, el grupo se planifica con el notice efectivo y el snackbar:
