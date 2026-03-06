@@ -1970,6 +1970,19 @@ The MM:SS timer must not shift horizontally:
   - **Running:** any mirror device may auto-claim even without a manual request.
   - **Paused:** only a requester with a pending ownershipRequest may auto-claim.
   This is based on session liveness (heartbeat), not app focus.
+- If a device loses ownership (another device becomes owner) while a local
+  owner-action confirmation is pending, the pending confirmation must be cleared
+  immediately. The UI must not remain blocked in Syncing due to stale local
+  confirmation flags.
+- Missing-session hold must be bounded by stale-grace and session context:
+  - Never hold when the local group is already terminal (canceled/completed).
+  - Keep hold only while there is fresh evidence of the same active session
+    (recent snapshot or recent lastUpdatedAt within stale-grace).
+- Auto-claim attempts must be failure-safe:
+  - Firestore `unavailable`/network failures must not throw unhandled
+    exceptions.
+  - Apply retry backoff after transient failures to avoid repeated takeover
+    storms during connectivity loss/resume windows.
 
 ### **10.4.9. Ownership visibility in Run Mode**
 
