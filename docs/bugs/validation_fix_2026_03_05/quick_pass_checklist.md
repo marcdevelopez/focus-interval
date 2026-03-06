@@ -20,8 +20,34 @@ Gate:
    - scheduling succeeds (no "too soon" block),
    - `Apply globally` action updates global notice,
    - planned group visible in Groups Hub with effective pre-run.
-2. [ ] Owner no re-suma pausa al volver al Timer Run (Fix 24).
+2. [x] Owner no re-suma pausa al volver al Timer Run (Fix 24) — **Closed/OK** (06/03/2026).
+   Evidence:
+   - Logs:
+     - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix24_ios_debug.log`
+     - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix24_chrome_debug.log`
+   - Screenshots:
+     - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_01.png`
+     - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_02.png`
+     - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_03.png`
+     - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_04.png`
+     - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_05.png`
 3. [ ] Local → Account sin overlaps falsos; request ownership llega (Fix 25).
+
+## New finding (outside Fix 24 scope)
+- [ ] Candidate Fix 26 — Mirror queda en `Syncing session...` tras `pause -> cancel` del owner.
+  Evidence:
+  - Logs:
+    - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix24_ios_debug.log`
+    - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix24_chrome_debug.log`
+  - Screenshots:
+    - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix26_discovery/fix26_discovery_01.png`
+    - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix26_discovery/fix26_discovery_02.png`
+    - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix26_discovery/fix26_discovery_03.png`
+    - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix26_discovery/fix26_discovery_04.png`
+    - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix26_discovery/fix26_discovery_05.png`
+    - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix26_discovery/fix26_discovery_06.png`
+    - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix26_discovery/fix26_discovery_07.png`
+    - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix26_discovery/fix26_discovery_08.png`
 
 ## Regression checks
 1. [x] Auto-open gating: durante Plan group no reabre Run Mode; en resume auto-open ocurre una sola vez.

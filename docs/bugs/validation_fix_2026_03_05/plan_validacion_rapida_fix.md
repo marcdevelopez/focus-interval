@@ -102,11 +102,48 @@ Each item below is a separate fix and must be committed separately.
     - planned group appears in Groups Hub with effective pre-run.
   - Regression smoke checks: PASS (all 4 checklist items).
 - Fix 24 (Scope 2): Code updated in isolated branch `fix24-owner-pause-reentry-jump`
-  (06/03/2026). Tests: `flutter analyze` (pass). Validation pending.
-  Notes:
-  - Owner hydration now pins `_localPhaseStartedAt` from `session.phaseStartedAt`
-    for both running and paused states.
-  - Owner hydration no longer applies group timeline projection in Account Mode.
+  (06/03/2026). **Closed/OK**.
+  - Code commit: `abb053d` (`fix: stabilize owner hydration after pause re-entry`).
+  - Tests: `flutter analyze` (pass).
+  - Validation: PASS (owner iOS + mirror Chrome), including:
+    - pause/resume,
+    - navigate to Groups Hub and return to Timer Run,
+    - owner timer does not jump backward adding paused time.
+  - Evidence:
+    - Logs:
+      - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix24_ios_debug.log`
+      - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix24_chrome_debug.log`
+    - Screenshots:
+      - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_01.png`
+      - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_02.png`
+      - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_03.png`
+      - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_04.png`
+      - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_05.png`
+
+## New Finding (Candidate Fix 26)
+- Scope: mirror queda en `Syncing session...` indefinidamente tras secuencia
+  `pause -> resume -> owner cancel`.
+- Fecha: 06/03/2026.
+- Estado: reproducido con logs y capturas; fuera del alcance de Fix 24.
+- Resumen:
+  - Owner (iOS) cancela y pasa correctamente a Groups Hub con grupo cancelado.
+  - Mirror (Chrome) queda en `Syncing session...` aunque `activeSession/current`
+    ya no existe.
+  - Al interactuar con la ventana, anchor se actualiza y mirror salta a pantalla
+    `Ready`; luego se corrige al navegar manualmente.
+- Evidencia:
+  - Logs:
+    - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix24_ios_debug.log`
+    - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix24_chrome_debug.log`
+  - Screenshots:
+    - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix26_discovery/fix26_discovery_01.png`
+    - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix26_discovery/fix26_discovery_02.png`
+    - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix26_discovery/fix26_discovery_03.png`
+    - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix26_discovery/fix26_discovery_04.png`
+    - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix26_discovery/fix26_discovery_05.png`
+    - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix26_discovery/fix26_discovery_06.png`
+    - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix26_discovery/fix26_discovery_07.png`
+    - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix26_discovery/fix26_discovery_08.png`
 
 ## Acceptance Criteria
 1. Si el notice es auto-clamped, el grupo se planifica con el notice efectivo y el snackbar:
@@ -133,7 +170,8 @@ Each item below is a separate fix and must be committed separately.
 1. Owner iOS inicia Start now.
 2. Pausar ~10s y reanudar.
 3. Salir a otra pantalla (Groups Hub) y volver al Timer Run.
-   - Resultado actual: el timer retrocede sumando el tiempo pausado (solo primera vez).
+   - Resultado esperado/actual (06/03/2026): PASS. El owner mantiene timeline
+     correcta y no suma de nuevo los segundos pausados.
 
 ## Exact Repro (Fix 25 — overlaps falsos + ownership erratico)
 1. Programar dos grupos seguidos sin solapamiento real.
