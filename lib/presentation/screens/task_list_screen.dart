@@ -22,6 +22,7 @@ import '../../data/repositories/task_run_group_repository.dart';
 import '../../data/services/firebase_auth_service.dart';
 import '../../data/services/app_mode_service.dart';
 import '../../data/services/local_sound_overrides.dart';
+import '../../data/services/task_run_notice_service.dart';
 import '../../domain/pomodoro_machine.dart';
 import '../../domain/validators.dart';
 import '../../widgets/task_card.dart';
@@ -1506,9 +1507,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       items,
       integrityMode,
     );
-    final noticeMinutes = await ref
-        .read(taskRunNoticeServiceProvider)
-        .getNoticeMinutes();
+    final noticeMinutes = planningResult.noticeMinutes;
     if (!context.mounted) return;
     final conflictStart = scheduledStart ?? planCapturedAt;
     final conflictEnd = conflictStart.add(
@@ -1526,18 +1525,19 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     }
     if (!context.mounted) return;
     final now = DateTime.now();
+    final shouldOfferGlobalNotice =
+        isSchedule &&
+        scheduledStart != null &&
+        _shouldOfferNoticeGlobal(
+          scheduledStart: scheduledStart,
+          capturedAt: planCapturedAt,
+          globalNoticeMinutes: initialNoticeMinutes,
+          effectiveNoticeMinutes: noticeMinutes,
+        );
     if (isSchedule && scheduledStart != null && noticeMinutes > 0) {
       final preRunStart = scheduledStart.subtract(
         Duration(minutes: noticeMinutes),
       );
-      if (preRunStart.isBefore(now)) {
-        _showSnackBar(
-          context,
-          "That start time is too soon to show the full pre-run countdown. "
-          "Choose a later start or reduce the pre-run notice.",
-        );
-        return;
-      }
       final preRunConflict = _findPreRunConflict(
         existingGroups,
         preRunStart: preRunStart,
@@ -1630,7 +1630,15 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       final message = status == TaskRunStatus.running
           ? "Task group started."
           : "Task group scheduled.";
-      _showSnackBar(context, message);
+      if (status == TaskRunStatus.scheduled && shouldOfferGlobalNotice) {
+        _showNoticeClampSnackBar(
+          context,
+          effectiveNoticeMinutes: noticeMinutes,
+          globalNoticeMinutes: initialNoticeMinutes,
+        );
+      } else {
+        _showSnackBar(context, message);
+      }
       if (status == TaskRunStatus.scheduled) {
         await _schedulePreAlertIfNeeded(group);
       }
@@ -1912,6 +1920,74 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final messenger = ScaffoldMessenger.of(context);
     messenger.clearSnackBars();
     messenger.showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  int _maxNoticeAllowed(DateTime scheduledStart, DateTime now) {
+    final seconds = scheduledStart.difference(now).inSeconds;
+    if (seconds <= 0) return TaskRunNoticeService.minNoticeMinutes;
+    final maxByTime = seconds ~/ 60;
+    return maxByTime.clamp(
+      TaskRunNoticeService.minNoticeMinutes,
+      TaskRunNoticeService.maxNoticeMinutes,
+    );
+  }
+
+  bool _shouldOfferNoticeGlobal({
+    required DateTime scheduledStart,
+    required DateTime capturedAt,
+    required int globalNoticeMinutes,
+    required int effectiveNoticeMinutes,
+  }) {
+    if (globalNoticeMinutes <= effectiveNoticeMinutes) return false;
+    final maxAllowed = _maxNoticeAllowed(scheduledStart, capturedAt);
+    return effectiveNoticeMinutes == maxAllowed;
+  }
+
+  void _showNoticeClampSnackBar(
+    BuildContext context, {
+    required int effectiveNoticeMinutes,
+    required int globalNoticeMinutes,
+  }) {
+    if (effectiveNoticeMinutes == globalNoticeMinutes) {
+      _showSnackBar(context, "Task group scheduled.");
+      return;
+    }
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 8),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Task group scheduled. Pre-run notice set to '
+              '${effectiveNoticeMinutes}m for this group. Global notice '
+              '(default for future groups) is ${globalNoticeMinutes}m.',
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () async {
+                final applied = await ref
+                    .read(preRunNoticeMinutesProvider.notifier)
+                    .setNoticeMinutes(effectiveNoticeMinutes);
+                if (!context.mounted) return;
+                messenger.clearSnackBars();
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Global pre-run notice set to ${applied}m.',
+                    ),
+                  ),
+                );
+              },
+              child: const Text('Apply globally'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   String _formatCountdown(int totalSeconds) {
