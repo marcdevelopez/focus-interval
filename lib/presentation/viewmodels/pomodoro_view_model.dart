@@ -161,7 +161,17 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
     final hasLoadedContext = _currentGroup != null || _currentTask != null;
     if (ref.read(appModeProvider) == AppMode.account && hasLoadedContext) {
-      _subscribeToRemoteSession();
+      // Defer re-subscription to after build() completes. Calling
+      // _subscribeToRemoteSession() synchronously here would close + reopen
+      // the ref.listen, which can deliver a null event and trigger "Missing
+      // snapshot; clearing session" spuriously on every build() re-run.
+      // The guard on _sessionSub == null prevents double-subscribing if
+      // loadGroup() or handleAppResumed() already set one up.
+      Future.microtask(() {
+        if (!ref.mounted) return;
+        if (_sessionSub != null) return;
+        _subscribeToRemoteSession();
+      });
     }
 
     // Clean up resources.
@@ -1300,6 +1310,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   void _publishCurrentSession({DateTime? now}) {
+    if (!ref.mounted) return;
     if (ref.read(appModeProvider) == AppMode.account && !isTimeSyncReady) {
       final localNow = DateTime.now();
       _markTimeSyncWaitStarted(localNow);
@@ -1685,8 +1696,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     String? reason,
     bool force = false,
   }) async {
+    if (!ref.mounted) return;
     if (ref.read(appModeProvider) != AppMode.account) return;
     final offset = await _timeSyncService.refresh(force: force);
+    if (!ref.mounted) return;
     if (offset != null) {
       _serverTimeOffset = offset;
       _clearTimeSyncWait();

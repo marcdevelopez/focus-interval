@@ -9503,3 +9503,61 @@ _(pending validation)_
 - Run exact repro: owner cancels → mirror must exit syncing hold within ≤5 s.
 - Run regression smoke checks (4 items).
 - If PASS: close Fix 26 in validation docs and roadmap.
+
+---
+
+# 🔹 Block 547 — Fix 26 regression fixes third cycle (07/03/2026)
+
+**Date:** 07/03/2026
+**Branch:** `fix26-reopen-syncing-session-hold`
+**Scope:** Fix three regressions introduced by the second-cycle implementation (Block 546 / commit `4f55010`).
+
+## Context
+
+Validation logs from `docs/bugs/validation_fix_2026_03_07-01/logs/` confirmed the second-cycle
+implementation made things **worse** than before:
+
+1. **New error — `setState() or markNeedsBuild() called during build`** (iOS lines 51006, 51153;
+   Chrome lines 2117, 2247):
+   - Root cause: `timer_screen.dart:682` called `_navigateToGroupsHub()` directly inside
+     `build()`, which synchronously invoked `GoRouter.go('/groups')` → GoRouter notifications
+     → `setState` on `Router` during Flutter's build phase.
+
+2. **New error — `Cannot use the Ref after it has been disposed`** (iOS lines 51175, 51187):
+   - Root cause: `_publishCurrentSession()` and `_refreshTimeSyncIfNeeded()` call `ref.read()`
+     synchronously. When Riverpod re-runs `build()` due to a watched-provider change
+     (e.g., auth token refresh), it disposes the previous build lifecycle. Any callback from
+     the previous lifecycle that still fires (machine callbacks registered in `configureFromItem`)
+     hits a disposed `ref`.
+
+3. **Increased spurious "Missing snapshot; clearing session" events** (iOS 3× vs 2×,
+   Chrome 2× vs 0×):
+   - Root cause: `build()` closes and immediately reopens the session `ref.listen`. On each
+     `build()` re-run the new listener may receive a null event before the Firestore stream
+     re-delivers the active session, triggering an extra missing-session clear.
+
+## Fixes applied
+
+### Fix A — `timer_screen.dart`: defer build-time navigation
+- Lines 680-683: replaced direct `_navigateToGroupsHub(reason: 'build canceled')` call with:
+  1. Set `_cancelNavigationHandled = true`, `_cancelNavRetryAttempts = 0`,
+     `_cancelNavTargetGroupId` immediately (prevents re-queuing on subsequent builds).
+  2. `WidgetsBinding.instance.addPostFrameCallback` → calls `_attemptNavigateToGroupsHub`
+     after the build frame completes.
+
+### Fix B — `pomodoro_view_model.dart`: ref.mounted guards
+- `_publishCurrentSession()`: added `if (!ref.mounted) return;` as first line.
+- `_refreshTimeSyncIfNeeded()`: added `if (!ref.mounted) return;` before the synchronous
+  `ref.read()` and again after `await _timeSyncService.refresh()` before using instance state.
+
+### Fix C — `pomodoro_view_model.dart`: defer build() re-subscription
+- `build()` (line ~163): replaced synchronous `_subscribeToRemoteSession()` with a
+  `Future.microtask` that guards on `ref.mounted && _sessionSub == null`. This ensures
+  the re-subscription happens after build completes and only if no other path (loadGroup,
+  handleAppResumed) has already established a subscription.
+
+## Tests
+- `flutter analyze` → no issues.
+
+## Commit
+- Pending (this block recorded before commit).

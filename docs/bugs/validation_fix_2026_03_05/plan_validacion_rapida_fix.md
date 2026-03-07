@@ -147,11 +147,35 @@ Each item below is a separate fix and must be committed separately.
   3. `clearSessionIfGroupNotRunning`: cuando el grupo no existe en Firestore,
      elimina la sesion solo si `lastUpdatedAt` supera los 45s de stale-grace
      (sesion huerfana confirmada); si es reciente, se preserva (transient).
-- Validacion pendiente:
+- Validacion segundo ciclo (07/03/2026) — logs `docs/bugs/validation_fix_2026_03_07-01/logs/`:
+  - REGRESSION — la implementacion del segundo ciclo introdujo nuevos errores no presentes antes:
+    1. `setState() or markNeedsBuild() called during build` (iOS líneas 51006, 51153;
+       Chrome líneas 2117, 2247): `timer_screen.dart:682` llamaba `_navigateToGroupsHub()`
+       directamente en `build()`, causando llamada síncrona a `router.go()` durante build.
+    2. `Cannot use the Ref after it has been disposed` (iOS líneas 51175, 51187):
+       `_publishCurrentSession()` y `_refreshTimeSyncIfNeeded()` usaban `ref.read()` sin
+       guardar `ref.mounted`, afectando callbacks del machine registrados en `configureFromItem`
+       que se disparaban tras un rebuild de `build()`.
+    3. "Missing snapshot; clearing session" aumentó: iOS 3× (antes 2×), Chrome 2× (antes 0×)
+       por el cierre+reapertura síncrono del `ref.listen` en `build()`.
+  - Nota de seguridad: `2026_03_07_fix26_cycle3_chrome_debug.log` contiene `access_token`
+    en texto plano (línea 1975) — NO debe pushearse a git.
+- Tercer ciclo implementado (07/03/2026):
+  1. `timer_screen.dart` lines 680-683: navegación diferida via `addPostFrameCallback`;
+     `_cancelNavigationHandled = true` se establece inmediatamente para evitar re-encolar.
+  2. `_publishCurrentSession()`: añadido `if (!ref.mounted) return;` como primera línea.
+  3. `_refreshTimeSyncIfNeeded()`: añadido `if (!ref.mounted) return;` antes del `ref.read()`
+     síncrono y tras el `await _timeSyncService.refresh()`.
+  4. `build()` re-subscription: reemplazado llamada síncrona a `_subscribeToRemoteSession()`
+     por `Future.microtask` con guards `ref.mounted && _sessionSub == null`.
+  - `flutter analyze` → sin issues.
+  - Pendiente: commit y nueva ronda de validacion.
+- Validacion pendiente (post-tercer-ciclo):
   - Exact repro: owner cancela → mirror debe salir del hold en ≤5s.
   - Resync transitorio en foreground: stream pierde sesion brevemente → mirror
     recupera sin intervención manual.
   - Regression smoke checks (ver lista en Regression checks).
+  - Confirmar ausencia de `setState during build` y `Ref after disposed` en logs.
 - Reopen reason (07/03/2026):
   - El comportamiento `Syncing session...` indefinido se reproduce de nuevo con
     los mismos sintomas previos al fix.
