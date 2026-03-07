@@ -9622,6 +9622,7 @@ implementation made things **worse** than before:
       reevaluation calls (`post-frame` + delayed recheck) via coordinator.
   - `lib/presentation/viewmodels/scheduled_group_coordinator.dart`
     - added `forceReevaluate()` to process current group stream snapshot on demand.
+- Commit: `5ac3d6b` (`fix: restore Local->Account overdue auto-start reentry`).
 
 ### 🧪 Tests:
 

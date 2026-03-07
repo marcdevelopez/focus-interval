@@ -49,6 +49,7 @@ Validation target
 
 Implementation status (2026-03-07)
 - Implemented in branch `fix27-local-account-reentry-autostart`.
+- Code commit: `5ac3d6b` (`fix: restore Local->Account overdue auto-start reentry`).
 - Code changes:
   - `lib/widgets/app_mode_change_guard.dart`
   - `lib/presentation/viewmodels/scheduled_group_coordinator.dart`
