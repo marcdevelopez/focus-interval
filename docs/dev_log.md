@@ -9594,3 +9594,94 @@ implementation made things **worse** than before:
 
 - Continue 2-day monitoring for Fix 26.
 - Triage and isolate the Local->Account late auto-open bug as separate follow-up fix.
+
+---
+
+# 🔹 Block 549 — Fix 27 implementation (Local -> Account overdue auto-start) (07/03/2026)
+
+### ✔ Work completed:
+
+- Opened dedicated branch: `fix27-local-account-reentry-autostart`.
+- Documentation-first updates:
+  - `docs/specs.md`: added explicit requirement that Local -> Account re-entry
+    must re-evaluate overdue scheduled groups and auto-open Run Mode without
+    app restart when no active conflict exists.
+  - `docs/roadmap.md`: added reopened item for this bug under Phase 17.
+  - `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`:
+    added Fix 27 scope/objective and exact repro target.
+  - `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`:
+    added Fix 27 validation and regression checks.
+- Implementation:
+  - `lib/widgets/app_mode_change_guard.dart`
+    - mode change handler now receives `previous/next` mode.
+    - added invalidation of account session stream providers
+      (`pomodoroSessionStreamProvider`, `activePomodoroSessionProvider`).
+    - switched from `clearAction()` to invalidating
+      `scheduledGroupCoordinatorProvider` to emulate cold re-entry.
+    - on Local -> Account transition, added deterministic post-switch
+      reevaluation calls (`post-frame` + delayed recheck) via coordinator.
+  - `lib/presentation/viewmodels/scheduled_group_coordinator.dart`
+    - added `forceReevaluate()` to process current group stream snapshot on demand.
+- Commit: `5ac3d6b` (`fix: restore Local->Account overdue auto-start reentry`).
+
+### 🧪 Tests:
+
+- `flutter analyze` (pass, no issues).
+
+### ⚠️ Issues found:
+
+- Behavioral validation pending (exact repro + regression smoke in
+  `validation_fix_2026_03_07-01`).
+
+### 🎯 Next steps:
+
+- Run Fix 27 exact repro on iOS + Chrome with logs.
+- Verify no regression on Fix 24/Fix 26 and overlap resolution flow.
+
+---
+
+# 🔹 Block 550 — Fix 27 closed: Local -> Account overdue auto-start (07/03/2026)
+
+### ✔ Work completed:
+
+- Diagnosed root cause of Fix 27 first-attempt failure (`5ac3d6b`):
+  - `ref.invalidate(scheduledGroupCoordinatorProvider)` in `_handleModeChange`
+    disposed the coordinator and tore down all its `ref.listen` subscriptions.
+  - `taskRunGroupStreamProvider` (auto-rebuilt by `appModeProvider` watch) started
+    delivering Firestore data during the race window before the new coordinator
+    instance rebuilt and re-registered its stream listener.
+  - The coordinator's own `ref.listen<AppMode>` already calls `_resetForModeChange()`
+    + `_handleGroups()` on every mode change — invalidating it bypassed this natural
+    mechanism without providing an equivalent guarantee.
+- Applied second-attempt fix (`lib/widgets/app_mode_change_guard.dart`):
+  - Removed `ref.invalidate(scheduledGroupCoordinatorProvider)` from `_handleModeChange`.
+  - Coordinator now keeps its listeners alive across mode switches; `ref.listen<AppMode>`
+    fires synchronously on mode change, resets state, and the coordinator's
+    `ref.listen<taskRunGroupStreamProvider>` fires when Firestore data arrives.
+  - `forceReevaluate()` calls (postFrameCallback + 600ms delay) kept as backup triggers
+    for slow-network / time-sync retry scenarios.
+- Updated docs:
+  - `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`
+  - `docs/roadmap.md`
+
+### 🧪 Tests:
+
+- `flutter analyze` (pass, no issues).
+- Exact repro PASS (iOS + Chrome, 2026-03-07 22:49):
+  - Group scheduled at 22:48, user switched to Local Mode before start.
+  - Start time passed while in Local Mode.
+  - User switched back to Account Mode at 22:49.
+  - Auto-start fired immediately; Timer Run Mode opened without app restart.
+- iOS evidence: `2026_03_07_fix27v2_ios_debug.log` line 51016 — `Auto-start opening TimerScreen` at 22:49:03.
+- Chrome evidence: `2026_03_07_fix27v2_chrome_debug.log` lines 2086–2090 — `Auto-open confirmed in timer route=/timer/c2b7f11d`.
+- Regression smoke: no Fix 24/Fix 26 regressions in v2 logs.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Continue Fix 26 two-day monitoring window (closes 2026-03-09).
+- Resume planned roadmap work.
