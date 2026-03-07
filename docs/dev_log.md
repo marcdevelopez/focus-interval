@@ -9459,3 +9459,47 @@ _(pending validation)_
 
 - Run exact repro on owner/mirror with logs (iOS+Chrome and Android+macOS path).
 - If PASS without regressions, close reopened Fix 26 in validation docs.
+
+# 🔹 Block 546 — Fix 26 second-cycle implementation (07/03/2026)
+
+### ✔ Work completed:
+
+- Code analysis post-reopen identified three concrete gaps in the previous implementation:
+  1. `applyRemoteCancellation()` did not clear `_sessionMissingWhileRunning` or
+     `_lastActiveSessionSnapshotAt`, leaving the VM inconsistent when the owner
+     cancels while the mirror is in a syncing hold.
+  2. No foreground auto-resync for mirror devices during the syncing hold:
+     `_inactiveResyncTimer` only starts on `handleAppPaused()`; in the foreground
+     the mirror had no automatic escape path if the stream was slow to recover.
+  3. `clearSessionIfGroupNotRunning` returned without deleting when the linked group
+     was not found in Firestore, leaving orphaned sessions beyond stale-grace.
+- Implemented three targeted fixes:
+  - `applyRemoteCancellation()` now clears `_sessionMissingWhileRunning` and
+    calls `_clearSessionSnapshotTracking()` before `_resetLocalSessionState()`.
+  - Added `_foregroundMissingResyncTimer` (one-shot, 5 s): scheduled on the
+    first entry into hold (both stream-listener and resync paths); fires
+    `syncWithRemoteSession(refreshGroup: true, preferServer: true)` to give
+    mirrors an automatic foreground escape without relying solely on the stream.
+    Cancelled when hold clears (session received, explicit clear, or dispose).
+  - `clearSessionIfGroupNotRunning`: when group is not found in Firestore, now
+    deletes the session only if `lastUpdatedAt` exceeds the 45 s stale-grace
+    (orphaned session confirmed); preserves it otherwise (transient window).
+- Updated:
+  - `docs/bugs/validation_fix_2026_03_05/plan_validacion_rapida_fix.md`
+  - `docs/roadmap.md`
+  - `lib/presentation/viewmodels/pomodoro_view_model.dart`
+  - `lib/data/repositories/firestore_pomodoro_session_repository.dart`
+
+### 🧪 Tests:
+
+- `flutter analyze` (pass, no issues).
+
+### ⚠️ Issues found:
+
+- Validation run pending for reopened Fix 26 exact repro + regression smoke checks.
+
+### 🎯 Next steps:
+
+- Run exact repro: owner cancels → mirror must exit syncing hold within ≤5 s.
+- Run regression smoke checks (4 items).
+- If PASS: close Fix 26 in validation docs and roadmap.

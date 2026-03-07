@@ -123,29 +123,35 @@ Each item below is a separate fix and must be committed separately.
 ## Fix 26 — Syncing hold after cancel/background recovery
 - Scope: owner/mirror queda en `Syncing session...` por hold stale cuando la sesion ya no existe o hay errores transitorios de Firestore al recuperar ownership stale.
 - Fecha: 06/03/2026.
-- Estado: **Reopened** (07/03/2026).
-- Code commit: `bdb89ad` (`fix: harden missing-session recovery and close fix26 validation`).
-- Implementacion aplicada:
-  1. Endurecer `missing-session hold` para no mantener syncing en grupos
-     terminales o sin evidencia fresca de la sesion activa.
-  2. Limpiar confirmaciones locales pendientes al perder ownership para evitar
-     flags stale.
-  3. Blindar `tryAutoClaimStaleOwner` con catch + backoff (sin unhandled
-     exceptions en `cloud_firestore/unavailable`).
-  4. Resync con refresh de grupo cuando hay missing-session activo.
-- Validacion reportada (owner):
-  - Prueba exacta en iOS+Chrome:
-    `start -> pause (~10s) -> resume -> Groups Hub -> volver Run Mode -> cancel`.
-    Resultado: owner y mirror pasan a Groups Hub correctamente, sin syncing
-    indefinido.
-  - Revalidacion extendida en Android+macOS (~1 hora con background/foreground,
-    pause/resume/cancel):
-    sin reproduccion del bug de syncing indefinido ni flip alterno de ownership.
-- Evidencia:
-  - Logs:
-    - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix26_ios_debug.log`
-    - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix26_chrome_debug.log`
-  - Screenshots: no requeridas (flow PASS sin errores visibles).
+- Estado: **Implementation updated** (07/03/2026) — validacion pendiente.
+- Code commits:
+  - `bdb89ad` (`fix: harden missing-session recovery and close fix26 validation`) — cerrado prematuramente.
+  - `9bab880` (`fix: harden missing-session cleanup and rebind run-mode session listeners`) — segundo intento.
+  - Pendiente: commit actual (ver tracking al final de este bloque).
+- Bugs identificados en analisis de codigo post-reopen (07/03/2026):
+  1. `applyRemoteCancellation()` no limpiaba `_sessionMissingWhileRunning` ni
+     `_lastActiveSessionSnapshotAt`, dejando el VM en estado inconsistente cuando
+     la cancelacion del owner llega al mirror durante un hold activo.
+  2. Sin mecanismo de resync automatico en foreground para el mirror durante hold:
+     `_inactiveResyncTimer` solo arranca en `handleAppPaused()`; en foreground el
+     mirror no tenia camino de escape automatico si el stream tardaba en recuperarse.
+  3. `clearSessionIfGroupNotRunning` con grupo no encontrado en Firestore retornaba
+     sin borrar, dejando sesiones huerfanas aunque el stale-grace ya hubiera expirado.
+- Implementacion aplicada (07/03/2026, segundo ciclo):
+  1. `applyRemoteCancellation()` ahora limpia `_sessionMissingWhileRunning` y
+     llama `_clearSessionSnapshotTracking()` antes de `_resetLocalSessionState()`.
+  2. Nuevo timer `_foregroundMissingResyncTimer` (one-shot, 5s): se activa en la
+     primera entrada al hold (stream listener y resync path); llama a
+     `syncWithRemoteSession(refreshGroup: true, preferServer: true)`.
+     Se cancela al salir del hold (session recibida, hold limpiado, o dispose).
+  3. `clearSessionIfGroupNotRunning`: cuando el grupo no existe en Firestore,
+     elimina la sesion solo si `lastUpdatedAt` supera los 45s de stale-grace
+     (sesion huerfana confirmada); si es reciente, se preserva (transient).
+- Validacion pendiente:
+  - Exact repro: owner cancela → mirror debe salir del hold en ≤5s.
+  - Resync transitorio en foreground: stream pierde sesion brevemente → mirror
+    recupera sin intervención manual.
+  - Regression smoke checks (ver lista en Regression checks).
 - Reopen reason (07/03/2026):
   - El comportamiento `Syncing session...` indefinido se reproduce de nuevo con
     los mismos sintomas previos al fix.

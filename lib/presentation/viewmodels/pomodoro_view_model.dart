@@ -84,6 +84,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   Timer? _pausedHeartbeatTimer;
   Timer? _inactiveResyncTimer;
   Timer? _postResumeResyncTimer;
+  Timer? _foregroundMissingResyncTimer;
   String? _remoteOwnerId;
   PomodoroSession? _remoteSession;
   PomodoroSession? _latestSession;
@@ -173,6 +174,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         _pausedHeartbeatTimer?.cancel();
         _inactiveResyncTimer?.cancel();
         _postResumeResyncTimer?.cancel();
+        _foregroundMissingResyncTimer?.cancel();
         _stopForegroundService();
         _keepAliveLink?.close();
         _keepAliveLink = null;
@@ -849,6 +851,8 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   void applyRemoteCancellation() {
+    _sessionMissingWhileRunning = false;
+    _clearSessionSnapshotTracking();
     _resetLocalSessionState();
   }
 
@@ -1182,6 +1186,32 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _syncPausedHeartbeat();
   }
 
+  // Schedules a one-shot resync with group refresh for when the session hold
+  // activates while the app is in the foreground (mirror devices have no other
+  // automatic recovery path in this state).
+  void _scheduleForegroundMissingResync() {
+    _foregroundMissingResyncTimer?.cancel();
+    _foregroundMissingResyncTimer = Timer(const Duration(seconds: 5), () {
+      _foregroundMissingResyncTimer = null;
+      if (!_sessionMissingWhileRunning) return;
+      if (kDebugMode) {
+        debugPrint('[ActiveSession] Foreground hold resync triggered.');
+      }
+      unawaited(
+        syncWithRemoteSession(
+          refreshGroup: true,
+          preferServer: true,
+          reason: 'foreground-hold-recovery',
+        ),
+      );
+    });
+  }
+
+  void _cancelForegroundMissingResync() {
+    _foregroundMissingResyncTimer?.cancel();
+    _foregroundMissingResyncTimer = null;
+  }
+
   void _setResyncInProgress(bool value) {
     if (_resyncInProgress == value) return;
     _resyncInProgress = value;
@@ -1329,6 +1359,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
             _stopForegroundService();
             _attemptMissingSessionRecovery(reason: 'stream-missing');
             if (!wasMissing) {
+              // First entry into hold: schedule a foreground resync so mirrors
+              // (which skip owner-recovery) have an automatic escape path while
+              // the app is in the foreground and the inactive resync is not running.
+              _scheduleForegroundMissingResync();
               _notifySessionMetaChanged();
             }
             return;
@@ -1337,6 +1371,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
             debugPrint('[ActiveSession] Missing snapshot; clearing session.');
           }
           _sessionMissingWhileRunning = false;
+          _cancelForegroundMissingResync();
           _latestSession = null;
           _clearSessionSnapshotTracking();
           _clearAwaitingSessionConfirmation(reason: 'session-cleared');
@@ -1362,6 +1397,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         }
 
         _sessionMissingWhileRunning = false;
+        _cancelForegroundMissingResync();
         _latestSession = session;
         _recordSessionSnapshot(session);
         _clearAwaitingSessionConfirmationIfSatisfied(session);
@@ -2646,6 +2682,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
           if (kDebugMode) {
             debugPrint('[ActiveSession] Resync missing; holding state.');
           }
+          if (!_sessionMissingWhileRunning) {
+            // First entry into hold from resync path: schedule foreground recovery.
+            _scheduleForegroundMissingResync();
+          }
           _sessionMissingWhileRunning = true;
           _attemptMissingSessionRecovery(reason: 'resync-missing');
           if (previousSession != null) {
@@ -2656,6 +2696,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
             debugPrint('[ActiveSession] Resync missing; clearing state.');
           }
           _sessionMissingWhileRunning = false;
+          _cancelForegroundMissingResync();
           _latestSession = null;
           _clearSessionSnapshotTracking();
           _clearAwaitingSessionConfirmation(reason: 'resync-session-cleared');
@@ -2666,6 +2707,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         return;
       }
       _sessionMissingWhileRunning = false;
+      _cancelForegroundMissingResync();
       _latestSession = session;
       _recordSessionSnapshot(session);
       _clearAwaitingSessionConfirmationIfSatisfied(session);

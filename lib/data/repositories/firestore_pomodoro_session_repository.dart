@@ -187,7 +187,16 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
       }
       final groupSnap = await tx.get(groupsCollection.doc(groupId));
       if (!groupSnap.exists) {
-        // Group lookup can be stale/transient while streams rebind.
+        // Group does not exist: the session is orphaned. Delete only if the
+        // session is stale (no recent heartbeat), to avoid clearing during
+        // transient reconnect windows when the group write hasn't arrived yet.
+        final updatedAt =
+            (data['lastUpdatedAt'] as Timestamp?)?.toDate();
+        if (updatedAt != null &&
+            DateTime.now().difference(updatedAt) >=
+                const Duration(seconds: 45)) {
+          tx.delete(docRef);
+        }
         return;
       }
       final groupData = groupSnap.data();

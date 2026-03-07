@@ -138,6 +138,10 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       07/03/2026: Fix 26 reopened after recurrent `Syncing session...` hold
           with active snapshots still present; documentation-first hardening
           started (non-destructive missing-session cleanup + listener rebind).
+      07/03/2026: Fix 26 second-cycle implementation: (1) applyRemoteCancellation
+          now clears _sessionMissingWhileRunning; (2) foreground hold recovery
+          timer added for mirrors (5 s one-shot resync); (3) clearSessionIfGroupNotRunning
+          deletes orphaned stale sessions when group not found. Validation pending.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
