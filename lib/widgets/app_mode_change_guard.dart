@@ -48,7 +48,11 @@ class _AppModeChangeGuardState extends ConsumerState<AppModeChangeGuard> {
     ref.invalidate(pomodoroSessionStreamProvider);
     ref.invalidate(activePomodoroSessionProvider);
     ref.invalidate(preRunNoticeMinutesProvider);
-    ref.invalidate(scheduledGroupCoordinatorProvider);
+    // Do NOT invalidate scheduledGroupCoordinatorProvider here.
+    // The coordinator has a ref.listen<AppMode> that calls _resetForModeChange()
+    // and _handleGroups() when the mode changes. Invalidating it would dispose
+    // those listeners and create a race window where stream events arrive before
+    // the new coordinator instance rebuilds and re-registers its subscriptions.
     ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
     ref.read(runningOverlapDecisionProvider.notifier).state = null;
     ref.read(completionDialogVisibleProvider.notifier).state = false;
@@ -62,6 +66,10 @@ class _AppModeChangeGuardState extends ConsumerState<AppModeChangeGuard> {
       router.go('/tasks');
     }
     if (previous == AppMode.local && next == AppMode.account) {
+      // The coordinator's ref.listen<AppMode> already fires _resetForModeChange()
+      // and _handleGroups(). The forceReevaluate() calls below are backup triggers
+      // to catch the case where stream data arrives before the initial _handleGroups
+      // runs or the time sync needs a retry window.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         if (ref.read(appModeProvider) != AppMode.account) return;

@@ -152,6 +152,9 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           from Local Mode after scheduled start (works only after app restart).
       07/03/2026: Fix 27 implementation started for Local -> Account re-entry
           overdue auto-start (docs-first + mode reentry reevaluation hardening).
+      07/03/2026: Fix 27 closed — PASS. Removed coordinator invalidation on mode
+          switch; coordinator's ref.listen<AppMode> drives reset naturally.
+          Validation: iOS + Chrome logs confirm immediate auto-start at 22:49.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
@@ -251,7 +254,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 17 — Late-start queue Cancel all (no loop) + exit cleanly (no black screen) + mirror “Owner resolved” modal + zero-selection = Cancel all (bug).
 - Phase 17 — Running conflict modal must show conflicting group context (name + time range) (new requirement).
 - Phase 17 — Pre-Run auto-open is idempotent on owner/mirror (no duplicate navigation / no Groups Hub bounce) and must not open Resolve overlaps without a real conflict (bug).
-- Phase 17 — Local -> Account re-entry must re-evaluate overdue scheduled groups and auto-open Run Mode without app restart when there is no active conflict (bug).
+- ~~Phase 17 — Local -> Account re-entry must re-evaluate overdue scheduled groups and auto-open Run Mode without app restart when there is no active conflict (bug).~~ **Closed/OK Fix 27 07/03/2026**
 - Phase 17 — Postpone effective schedule must refresh on mirrors in real time (no stale schedule) (bug).
 - Phase 14 — Global sound settings (apply switch + revert) (new requirement).
 - Phase 14 — Pre-Run notice minutes setting (Account Mode sync + Settings UI; range 0–15) (new requirement).

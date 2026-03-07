@@ -47,13 +47,28 @@ Validation target
   4. Switch back to Account Mode without closing app.
   5. Expected: immediate auto-start + Timer Run Mode open.
 
-Implementation status (2026-03-07)
-- Implemented in branch `fix27-local-account-reentry-autostart`.
-- Code commit: `5ac3d6b` (`fix: restore Local->Account overdue auto-start reentry`).
-- Code changes:
-  - `lib/widgets/app_mode_change_guard.dart`
-  - `lib/presentation/viewmodels/scheduled_group_coordinator.dart`
+Implementation status (2026-03-07) — first attempt FAIL
+- Commit: `5ac3d6b` (`fix: restore Local->Account overdue auto-start reentry`).
+- Changes: `app_mode_change_guard.dart` + `scheduled_group_coordinator.dart`.
+- Result: validation failed — timer did not open on mode switch.
+- Root cause of failure: `ref.invalidate(scheduledGroupCoordinatorProvider)` disposed the
+  coordinator's `ref.listen` subscriptions. Firestore stream data arrived during the race
+  window before the new coordinator instance rebuilt and re-registered its listeners.
+
+Implementation status (2026-03-07) — second attempt PASS — **Closed/OK**
+- Code change: removed `ref.invalidate(scheduledGroupCoordinatorProvider)` from
+  `_handleModeChange`. The coordinator's own `ref.listen<AppMode>` handler correctly
+  calls `_resetForModeChange()` + `_handleGroups()` on every mode change; invalidating it
+  was breaking that natural subscription chain.
+- `forceReevaluate()` calls (postFrameCallback + 600ms delay) kept as backup triggers.
 - Analyzer: PASS.
+- Validation logs:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_07_fix27v2_ios_debug.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_07_fix27v2_chrome_debug.log`
+- Exact repro PASS (iOS + Chrome, 2026-03-07 22:49): group scheduled at 22:48, user in
+  Local Mode, switched back to Account Mode at 22:49 — auto-start fired immediately,
+  Timer Run Mode opened without app restart.
+- Regression smoke PASS: no Fix 24/Fix 26 regressions observed in v2 logs.
 
 ## Closure criteria for Fix 26
 1. Exact repro for original syncing hold remains PASS during the 2-day window.
