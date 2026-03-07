@@ -135,6 +135,9 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       06/03/2026: `validation_fix_2026_03_05` Fix 26 (syncing hold after
           cancel/background recovery) validated and closed (iOS+Chrome repro
           pass, plus Android+macOS extended run pass). Commit: `bdb89ad`.
+      07/03/2026: Fix 26 reopened after recurrent `Syncing session...` hold
+          with active snapshots still present; documentation-first hardening
+          started (non-destructive missing-session cleanup + listener rebind).
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
@@ -249,6 +252,8 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 18 — Pause offsets must extend TaskRunGroup.theoreticalEndTime on resume (cross-device) (bug).
 - Phase 18 — Ownership request retry when pending exceeds stale threshold (bug).
 - Phase 18 — Run Mode shows Syncing state when activeSession is missing + manual refresh (sync icon) (bug).
+- Phase 18 — Missing-session cleanup must not clear activeSession on transient
+  group lookup/provider rebuild gaps; sync hold must recover without destructive clears (bug).
 - Phase 18 — Completion modal + Groups Hub navigation must work on owner and mirror devices (validation pending).
 - Phase 18 — Run Mode ownership visibility + take ownership UX (new requirement).
 - Phase 18 — Ownership transfer requires owner approval + rejection state (new requirement).

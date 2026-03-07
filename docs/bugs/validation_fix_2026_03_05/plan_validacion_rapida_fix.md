@@ -121,11 +121,9 @@ Each item below is a separate fix and must be committed separately.
       - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_05.png`
 
 ## Fix 26 — Syncing hold after cancel/background recovery
-- Scope: owner/mirror queda en `Syncing session...` por hold stale cuando la
-  sesion ya no existe o hay errores transitorios de Firestore al recuperar
-  ownership stale.
+- Scope: owner/mirror queda en `Syncing session...` por hold stale cuando la sesion ya no existe o hay errores transitorios de Firestore al recuperar ownership stale.
 - Fecha: 06/03/2026.
-- Estado: **Closed/OK** (06/03/2026).
+- Estado: **Reopened** (07/03/2026).
 - Code commit: `bdb89ad` (`fix: harden missing-session recovery and close fix26 validation`).
 - Implementacion aplicada:
   1. Endurecer `missing-session hold` para no mantener syncing en grupos
@@ -148,6 +146,16 @@ Each item below is a separate fix and must be committed separately.
     - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix26_ios_debug.log`
     - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix26_chrome_debug.log`
   - Screenshots: no requeridas (flow PASS sin errores visibles).
+- Reopen reason (07/03/2026):
+  - El comportamiento `Syncing session...` indefinido se reproduce de nuevo con
+    los mismos sintomas previos al fix.
+  - Hay evidencia de snapshots activos y heartbeat en Firestore mientras la UI
+    permanece bloqueada en syncing.
+  - Nuevos logs aportados:
+    - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_07_fix25_ios_owner_debug.log`
+    - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_07_fix25_chrome_mirror_debug.log`
+    - `/Users/devcodex/MEGA/Trabajo-INGRESOS/1_JORNADAS-INGRESOS-INVERSIONES/DEVELOP/3_PROYECTO-PERSONAL/focus-interval/testing/logs/Android-2026-03-06-961f7eb.log`
+    - `/Users/devcodex/MEGA/Trabajo-INGRESOS/1_JORNADAS-INGRESOS-INVERSIONES/DEVELOP/3_PROYECTO-PERSONAL/focus-interval/testing/logs/macos-2026-03-06-961f7eb.log`
 
 ## Acceptance Criteria
 1. Si el notice es auto-clamped, el grupo se planifica con el notice efectivo y el snackbar:

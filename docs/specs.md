@@ -1978,6 +1978,15 @@ The MM:SS timer must not shift horizontally:
   - Never hold when the local group is already terminal (canceled/completed).
   - Keep hold only while there is fresh evidence of the same active session
     (recent snapshot or recent lastUpdatedAt within stale-grace).
+- Missing-session cleanup must be non-destructive under transient repository gaps:
+  - `activeSession` must **not** be cleared only because a single `groupId` lookup
+    returns null during reconnect/resume windows.
+  - Clear `activeSession` only when there is corroborated evidence that the group
+    is not running (explicit terminal status from `taskRunGroups`) or when the
+    session is stale beyond stale-grace according to heartbeat/lastUpdatedAt.
+  - Repository/provider rebuilds (for example auth token refresh with same UID)
+    must not leave Run Mode without an active session listener; re-subscribe
+    before evaluating missing-session cleanup.
 - Auto-claim attempts must be failure-safe:
   - Firestore `unavailable`/network failures must not throw unhandled
     exceptions.

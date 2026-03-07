@@ -23,7 +23,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **06/03/2026**
+Last update: **07/03/2026**
 
 ---
 
@@ -9414,3 +9414,48 @@ _(pending validation)_
 ### 🎯 Next steps:
 
 - Continue with Fix 25 (`overlaps falsos + ownership erratico`), keeping the feature gate active until Fix 25 and regression checks are closed.
+
+# 🔹 Block 545 — Fix 26 reopened hardening (07/03/2026)
+
+### ✔ Work completed:
+
+- Reopened Fix 26 after recurrent `Syncing session...` reports with active
+  snapshots still updating.
+- Documentation-first updates:
+  - `docs/specs.md`: added non-destructive missing-session cleanup rules
+    (no clear on single transient `groupId` lookup miss; require corroborated
+    non-running/stale evidence).
+  - `docs/bugs/validation_fix_2026_03_05/plan_validacion_rapida_fix.md`:
+    Fix 26 marked **Reopened** with new evidence references.
+  - `docs/roadmap.md`: added Fix 26 reopen note and reopened-phase item.
+- Implemented P0 hardening:
+  - `lib/data/repositories/firestore_pomodoro_session_repository.dart`
+    - `clearSessionIfGroupNotRunning()` now validates session/group status
+      before delete.
+      - Deletes only if:
+        - session is non-active, or
+        - linked group exists and is explicitly non-running.
+      - Does not delete on transient missing group linkage/lookup.
+  - `lib/presentation/viewmodels/pomodoro_view_model.dart`
+    - Rebinds machine/session subscriptions on `build()` reruns to avoid stale
+      listeners after provider refreshes.
+    - Preserves existing `_serverTimeOffset` when the time-sync provider
+      rebuilds without an offset.
+    - `_sanitizeActiveSession()` no longer clears session when group lookup is
+      transiently null; clears only when stale-grace is exceeded or non-running
+      group is confirmed.
+
+### 🧪 Tests:
+
+- `flutter analyze` (pass).
+
+### ⚠️ Issues found:
+
+- Validation run pending for reopened Fix 26 exact repro + regression smoke checks.
+- Local workspace still contains unrelated `ios/Flutter/AppFrameworkInfo.plist`
+  modification (not part of this fix).
+
+### 🎯 Next steps:
+
+- Run exact repro on owner/mirror with logs (iOS+Chrome and Android+macOS path).
+- If PASS without regressions, close reopened Fix 26 in validation docs.
