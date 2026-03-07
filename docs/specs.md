@@ -1411,6 +1411,10 @@ Redistribution rules (shared)
   - If the app was inactive at scheduledStartTime:
     - On next launch/resume of any signed-in device, if scheduledStartTime <= now and there is no active conflict,
       auto-start immediately using actualStartTime = now (scheduledStartTime remains unchanged)
+  - If the app is open and the user switches from Local Mode to Account Mode after scheduledStartTime:
+    - Re-evaluate overdue scheduled groups immediately with the same launch/resume criteria.
+    - If there is no active conflict, auto-start immediately using actualStartTime = now and open Run Mode in the same re-entry flow.
+    - This must not require app restart.
   - The timer remains stopped until the scheduled start
   - When scheduling sequential groups, ensure the next group’s pre-run start
     is **at least +1 minute after** the previous group’s end (minute boundary

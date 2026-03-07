@@ -9594,3 +9594,45 @@ implementation made things **worse** than before:
 
 - Continue 2-day monitoring for Fix 26.
 - Triage and isolate the Local->Account late auto-open bug as separate follow-up fix.
+
+---
+
+# 🔹 Block 549 — Fix 27 implementation (Local -> Account overdue auto-start) (07/03/2026)
+
+### ✔ Work completed:
+
+- Opened dedicated branch: `fix27-local-account-reentry-autostart`.
+- Documentation-first updates:
+  - `docs/specs.md`: added explicit requirement that Local -> Account re-entry
+    must re-evaluate overdue scheduled groups and auto-open Run Mode without
+    app restart when no active conflict exists.
+  - `docs/roadmap.md`: added reopened item for this bug under Phase 17.
+  - `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`:
+    added Fix 27 scope/objective and exact repro target.
+  - `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`:
+    added Fix 27 validation and regression checks.
+- Implementation:
+  - `lib/widgets/app_mode_change_guard.dart`
+    - mode change handler now receives `previous/next` mode.
+    - added invalidation of account session stream providers
+      (`pomodoroSessionStreamProvider`, `activePomodoroSessionProvider`).
+    - switched from `clearAction()` to invalidating
+      `scheduledGroupCoordinatorProvider` to emulate cold re-entry.
+    - on Local -> Account transition, added deterministic post-switch
+      reevaluation calls (`post-frame` + delayed recheck) via coordinator.
+  - `lib/presentation/viewmodels/scheduled_group_coordinator.dart`
+    - added `forceReevaluate()` to process current group stream snapshot on demand.
+
+### 🧪 Tests:
+
+- `flutter analyze` (pass, no issues).
+
+### ⚠️ Issues found:
+
+- Behavioral validation pending (exact repro + regression smoke in
+  `validation_fix_2026_03_07-01`).
+
+### 🎯 Next steps:
+
+- Run Fix 27 exact repro on iOS + Chrome with logs.
+- Verify no regression on Fix 24/Fix 26 and overlap resolution flow.
