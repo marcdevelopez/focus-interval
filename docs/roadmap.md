@@ -142,6 +142,14 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           now clears _sessionMissingWhileRunning; (2) foreground hold recovery
           timer added for mirrors (5 s one-shot resync); (3) clearSessionIfGroupNotRunning
           deletes orphaned stale sessions when group not found. Validation pending.
+      07/03/2026: Fix 26 third-cycle commit `26f0c7e` applied
+          (post-frame cancel navigation, `ref.mounted` guards, deferred
+          resubscription in VM build).
+      07/03/2026: Fix 26 moved to monitoring window (07/03–09/03) after
+          first cycle4 practical tests without indefinite syncing hold.
+      07/03/2026: New regression observed during cycle4 validation:
+          Account scheduled group does not auto-open Run Mode when returning
+          from Local Mode after scheduled start (works only after app restart).
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
@@ -258,6 +266,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 18 — Run Mode shows Syncing state when activeSession is missing + manual refresh (sync icon) (bug).
 - Phase 18 — Missing-session cleanup must not clear activeSession on transient
   group lookup/provider rebuild gaps; sync hold must recover without destructive clears (bug).
+- Phase 18 — Fix 26 monitoring window active (07/03–09/03) before closure.
 - Phase 18 — Completion modal + Groups Hub navigation must work on owner and mirror devices (validation pending).
 - Phase 18 — Run Mode ownership visibility + take ownership UX (new requirement).
 - Phase 18 — Ownership transfer requires owner approval + rejection state (new requirement).

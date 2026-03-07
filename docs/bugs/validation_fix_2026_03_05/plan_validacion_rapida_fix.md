@@ -123,11 +123,11 @@ Each item below is a separate fix and must be committed separately.
 ## Fix 26 — Syncing hold after cancel/background recovery
 - Scope: owner/mirror queda en `Syncing session...` por hold stale cuando la sesion ya no existe o hay errores transitorios de Firestore al recuperar ownership stale.
 - Fecha: 06/03/2026.
-- Estado: **Implementation updated** (07/03/2026) — validacion pendiente.
+- Estado: **Monitoring (provisional pass)** (07/03/2026) — cierre pendiente tras 2 dias.
 - Code commits:
   - `bdb89ad` (`fix: harden missing-session recovery and close fix26 validation`) — cerrado prematuramente.
   - `9bab880` (`fix: harden missing-session cleanup and rebind run-mode session listeners`) — segundo intento.
-  - Pendiente: commit actual (ver tracking al final de este bloque).
+  - `26f0c7e` (defer nav-in-build + `ref.mounted` guards + deferred VM resubscribe) — tercer ciclo.
 - Bugs identificados en analisis de codigo post-reopen (07/03/2026):
   1. `applyRemoteCancellation()` no limpiaba `_sessionMissingWhileRunning` ni
      `_lastActiveSessionSnapshotAt`, dejando el VM en estado inconsistente cuando
@@ -169,13 +169,17 @@ Each item below is a separate fix and must be committed separately.
   4. `build()` re-subscription: reemplazado llamada síncrona a `_subscribeToRemoteSession()`
      por `Future.microtask` con guards `ref.mounted && _sessionSub == null`.
   - `flutter analyze` → sin issues.
-  - Pendiente: commit y nueva ronda de validacion.
-- Validacion pendiente (post-tercer-ciclo):
-  - Exact repro: owner cancela → mirror debe salir del hold en ≤5s.
-  - Resync transitorio en foreground: stream pierde sesion brevemente → mirror
-    recupera sin intervención manual.
-  - Regression smoke checks (ver lista en Regression checks).
-  - Confirmar ausencia de `setState during build` y `Ref after disposed` en logs.
+  - Commit aplicado: `26f0c7e`.
+- Validacion post-tercer-ciclo (07/03/2026):
+  - Logs:
+    - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_07_fix26_cycle4_ios_debug.log`
+    - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_07_fix26_cycle4_chrome_debug.log`
+  - Resultado inicial: no se reproduce `Syncing session...` indefinido en las primeras pruebas.
+  - Decision: mantener Fix 26 en **Monitoring** durante 2 dias (hasta 09/03/2026)
+    antes de marcar **Closed/OK**.
+  - Nota: se detecta bug relacionado pero separado (no bloqueante para el repro
+    principal de Fix 26): si un grupo se planifica en Account, se cambia a Local,
+    pasa la hora de start y se vuelve a Account, Run Mode no auto-abre hasta reiniciar la app.
 - Reopen reason (07/03/2026):
   - El comportamiento `Syncing session...` indefinido se reproduce de nuevo con
     los mismos sintomas previos al fix.

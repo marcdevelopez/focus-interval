@@ -9561,3 +9561,36 @@ implementation made things **worse** than before:
 
 ## Commit
 - Pending (this block recorded before commit).
+
+---
+
+# 🔹 Block 548 — Fix 26 moved to monitoring window (07/03/2026)
+
+### ✔ Work completed:
+
+- Updated validation docs to keep Fix 26 open in **Monitoring** state instead of closing it immediately.
+- Added/updated cycle4 validation artifacts:
+  - `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`
+- Updated Fix 26 status in:
+  - `docs/bugs/validation_fix_2026_03_05/plan_validacion_rapida_fix.md`
+  - `docs/roadmap.md`
+- Recorded commit reference for third-cycle implementation: `26f0c7e`.
+- Recorded decision:
+  - Monitoring window active: **07/03/2026 → 09/03/2026**.
+  - Initial practical tests show no indefinite `Syncing session...` hold.
+
+### 🧪 Tests:
+
+- No new code/test execution in this block (documentation/status update only).
+
+### ⚠️ Issues found:
+
+- Related open bug observed during cycle4:
+  - Account scheduled group -> switch to Local -> pass start time -> return to Account:
+    Run Mode does not auto-open until app restart.
+
+### 🎯 Next steps:
+
+- Continue 2-day monitoring for Fix 26.
+- Triage and isolate the Local->Account late auto-open bug as separate follow-up fix.
