@@ -585,15 +585,6 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
             message: 'Start time must be in the future.',
           );
         }
-        final noticeError = _noticeErrorForStart(_scheduledStart!);
-        if (noticeError != null) {
-          return _PlanPreview.error(
-            option: _selected,
-            items: items,
-            totalDurationSeconds: totalSeconds,
-            message: noticeError,
-          );
-        }
         return _PlanPreview(
           option: _selected,
           items: items,
@@ -623,15 +614,6 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
             items: items,
             totalDurationSeconds: totalSeconds,
             message: 'End time must be after start time.',
-          );
-        }
-        final noticeError = _noticeErrorForStart(_rangeStart!);
-        if (noticeError != null) {
-          return _PlanPreview.error(
-            option: _selected,
-            items: items,
-            totalDurationSeconds: totalSeconds,
-            message: noticeError,
           );
         }
         final targetSeconds = _rangeEnd!.difference(_rangeStart!).inSeconds;
@@ -678,15 +660,6 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
             items: items,
             totalDurationSeconds: totalSeconds,
             message: 'Duration must be at least 1 minute.',
-          );
-        }
-        final noticeError = _noticeErrorForStart(_totalStart!);
-        if (noticeError != null) {
-          return _PlanPreview.error(
-            option: _selected,
-            items: items,
-            totalDurationSeconds: totalSeconds,
-            message: noticeError,
           );
         }
         final targetSeconds = _totalDuration!.inSeconds;
