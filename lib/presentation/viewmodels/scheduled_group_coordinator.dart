@@ -147,6 +147,12 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     _handleGroups(_lastGroups);
   }
 
+  void forceReevaluate() {
+    if (!_canUseRef) return;
+    final groups = ref.read(taskRunGroupStreamProvider).value ?? const [];
+    _handleGroups(groups);
+  }
+
   void clearAction() {
     if (state != null) state = null;
   }

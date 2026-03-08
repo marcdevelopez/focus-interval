@@ -78,9 +78,118 @@ Each item below is a separate fix and must be committed separately.
 2. Fix 24 — evitar re-suma de pausa al rehidratar el owner tras navegar (Scope 2).
 3. Fix 25 — eliminar overlaps falsos y asegurar entrega de request ownership (Scope 3).
 
+## Execution Gate (mandatory)
+- No iniciar nuevas features de `docs/feature_backlog.md` hasta cerrar:
+  1. Fix 24 validado.
+  2. Fix 25 validado.
+  3. Regression checks (los 4 items) en verde para el estado post-fix.
+- Si alguno falla, se mantiene bloqueado el trabajo de features y se prioriza el fix.
+
+## Fix Closure Policy (mandatory)
+- Un fix se marca **Closed/OK** automaticamente cuando:
+  1. Exact Repro pasa.
+  2. Regression checks pasan.
+  3. Hay evidencia registrada (checklist + logs/screenshots cuando aplique).
+- No se pide confirmacion extra para cerrar un fix cuando se cumplen esas 3 condiciones.
+
 ## Fix Status
-- Fix 23 (Scope 1): Code updated (2026-03-05). Tests: `flutter analyze` (pass).
-  Validation pending. Commit: TBA.
+- Fix 23 (Scope 1): **Closed/OK** (06/03/2026).
+  - Code commit: `a884c94` (`feat: clamp planning notice with global apply and fix persistent banner actions`).
+  - Validation: PASS (owner iOS + mirror Chrome), including:
+    - notice auto-clamp applied to the planned group,
+    - schedule confirmation succeeds without "too soon" false block,
+    - `Apply globally` action updates global notice default,
+    - planned group appears in Groups Hub with effective pre-run.
+  - Regression smoke checks: PASS (all 4 checklist items).
+- Fix 24 (Scope 2): Code updated in isolated branch `fix24-owner-pause-reentry-jump`
+  (06/03/2026). **Closed/OK**.
+  - Code commit: `abb053d` (`fix: stabilize owner hydration after pause re-entry`).
+  - Tests: `flutter analyze` (pass).
+  - Validation: PASS (owner iOS + mirror Chrome), including:
+    - pause/resume,
+    - navigate to Groups Hub and return to Timer Run,
+    - owner timer does not jump backward adding paused time.
+  - Evidence:
+    - Logs:
+      - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix24_ios_debug.log`
+      - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix24_chrome_debug.log`
+    - Screenshots:
+      - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_01.png`
+      - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_02.png`
+      - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_03.png`
+      - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_04.png`
+      - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_05.png`
+
+## Fix 26 — Syncing hold after cancel/background recovery
+- Scope: owner/mirror queda en `Syncing session...` por hold stale cuando la sesion ya no existe o hay errores transitorios de Firestore al recuperar ownership stale.
+- Fecha: 06/03/2026.
+- Estado: **Monitoring (provisional pass)** (07/03/2026) — cierre pendiente tras 2 dias.
+- Code commits:
+  - `bdb89ad` (`fix: harden missing-session recovery and close fix26 validation`) — cerrado prematuramente.
+  - `9bab880` (`fix: harden missing-session cleanup and rebind run-mode session listeners`) — segundo intento.
+  - `26f0c7e` (defer nav-in-build + `ref.mounted` guards + deferred VM resubscribe) — tercer ciclo.
+- Bugs identificados en analisis de codigo post-reopen (07/03/2026):
+  1. `applyRemoteCancellation()` no limpiaba `_sessionMissingWhileRunning` ni
+     `_lastActiveSessionSnapshotAt`, dejando el VM en estado inconsistente cuando
+     la cancelacion del owner llega al mirror durante un hold activo.
+  2. Sin mecanismo de resync automatico en foreground para el mirror durante hold:
+     `_inactiveResyncTimer` solo arranca en `handleAppPaused()`; en foreground el
+     mirror no tenia camino de escape automatico si el stream tardaba en recuperarse.
+  3. `clearSessionIfGroupNotRunning` con grupo no encontrado en Firestore retornaba
+     sin borrar, dejando sesiones huerfanas aunque el stale-grace ya hubiera expirado.
+- Implementacion aplicada (07/03/2026, segundo ciclo):
+  1. `applyRemoteCancellation()` ahora limpia `_sessionMissingWhileRunning` y
+     llama `_clearSessionSnapshotTracking()` antes de `_resetLocalSessionState()`.
+  2. Nuevo timer `_foregroundMissingResyncTimer` (one-shot, 5s): se activa en la
+     primera entrada al hold (stream listener y resync path); llama a
+     `syncWithRemoteSession(refreshGroup: true, preferServer: true)`.
+     Se cancela al salir del hold (session recibida, hold limpiado, o dispose).
+  3. `clearSessionIfGroupNotRunning`: cuando el grupo no existe en Firestore,
+     elimina la sesion solo si `lastUpdatedAt` supera los 45s de stale-grace
+     (sesion huerfana confirmada); si es reciente, se preserva (transient).
+- Validacion segundo ciclo (07/03/2026) — logs `docs/bugs/validation_fix_2026_03_07-01/logs/`:
+  - REGRESSION — la implementacion del segundo ciclo introdujo nuevos errores no presentes antes:
+    1. `setState() or markNeedsBuild() called during build` (iOS líneas 51006, 51153;
+       Chrome líneas 2117, 2247): `timer_screen.dart:682` llamaba `_navigateToGroupsHub()`
+       directamente en `build()`, causando llamada síncrona a `router.go()` durante build.
+    2. `Cannot use the Ref after it has been disposed` (iOS líneas 51175, 51187):
+       `_publishCurrentSession()` y `_refreshTimeSyncIfNeeded()` usaban `ref.read()` sin
+       guardar `ref.mounted`, afectando callbacks del machine registrados en `configureFromItem`
+       que se disparaban tras un rebuild de `build()`.
+    3. "Missing snapshot; clearing session" aumentó: iOS 3× (antes 2×), Chrome 2× (antes 0×)
+       por el cierre+reapertura síncrono del `ref.listen` en `build()`.
+  - Nota de seguridad: `2026_03_07_fix26_cycle3_chrome_debug.log` contiene `access_token`
+    en texto plano (línea 1975) — NO debe pushearse a git.
+- Tercer ciclo implementado (07/03/2026):
+  1. `timer_screen.dart` lines 680-683: navegación diferida via `addPostFrameCallback`;
+     `_cancelNavigationHandled = true` se establece inmediatamente para evitar re-encolar.
+  2. `_publishCurrentSession()`: añadido `if (!ref.mounted) return;` como primera línea.
+  3. `_refreshTimeSyncIfNeeded()`: añadido `if (!ref.mounted) return;` antes del `ref.read()`
+     síncrono y tras el `await _timeSyncService.refresh()`.
+  4. `build()` re-subscription: reemplazado llamada síncrona a `_subscribeToRemoteSession()`
+     por `Future.microtask` con guards `ref.mounted && _sessionSub == null`.
+  - `flutter analyze` → sin issues.
+  - Commit aplicado: `26f0c7e`.
+- Validacion post-tercer-ciclo (07/03/2026):
+  - Logs:
+    - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_07_fix26_cycle4_ios_debug.log`
+    - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_07_fix26_cycle4_chrome_debug.log`
+  - Resultado inicial: no se reproduce `Syncing session...` indefinido en las primeras pruebas.
+  - Decision: mantener Fix 26 en **Monitoring** durante 2 dias (hasta 09/03/2026)
+    antes de marcar **Closed/OK**.
+  - Nota: se detecta bug relacionado pero separado (no bloqueante para el repro
+    principal de Fix 26): si un grupo se planifica en Account, se cambia a Local,
+    pasa la hora de start y se vuelve a Account, Run Mode no auto-abre hasta reiniciar la app.
+- Reopen reason (07/03/2026):
+  - El comportamiento `Syncing session...` indefinido se reproduce de nuevo con
+    los mismos sintomas previos al fix.
+  - Hay evidencia de snapshots activos y heartbeat en Firestore mientras la UI
+    permanece bloqueada en syncing.
+  - Nuevos logs aportados:
+    - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_07_fix25_ios_owner_debug.log`
+    - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_07_fix25_chrome_mirror_debug.log`
+    - `/Users/devcodex/MEGA/Trabajo-INGRESOS/1_JORNADAS-INGRESOS-INVERSIONES/DEVELOP/3_PROYECTO-PERSONAL/focus-interval/testing/logs/Android-2026-03-06-961f7eb.log`
+    - `/Users/devcodex/MEGA/Trabajo-INGRESOS/1_JORNADAS-INGRESOS-INVERSIONES/DEVELOP/3_PROYECTO-PERSONAL/focus-interval/testing/logs/macos-2026-03-06-961f7eb.log`
 
 ## Acceptance Criteria
 1. Si el notice es auto-clamped, el grupo se planifica con el notice efectivo y el snackbar:
@@ -100,13 +209,15 @@ Each item below is a separate fix and must be committed separately.
 2. Planificar grupo a now+2 min.
 3. Ver snackbar “Pre-run notice reduced to 2m”.
 4. Confirmar planificacion.
-   - Resultado actual: aparece “That start time is too soon...” y no planifica.
+   - Resultado esperado/actual (06/03/2026): el grupo se planifica con notice
+     efectivo, no bloquea con "too soon", y permite `Apply globally`.
 
 ## Exact Repro (Fix 24 — owner suma pausa al re-entrar)
 1. Owner iOS inicia Start now.
 2. Pausar ~10s y reanudar.
 3. Salir a otra pantalla (Groups Hub) y volver al Timer Run.
-   - Resultado actual: el timer retrocede sumando el tiempo pausado (solo primera vez).
+   - Resultado esperado/actual (06/03/2026): PASS. El owner mantiene timeline
+     correcta y no suma de nuevo los segundos pausados.
 
 ## Exact Repro (Fix 25 — overlaps falsos + ownership erratico)
 1. Programar dos grupos seguidos sin solapamiento real.

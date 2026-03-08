@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart'
 import '../../domain/pomodoro_machine.dart';
 
 import '../models/pomodoro_session.dart';
+import '../models/task_run_group.dart';
 import '../services/firebase_auth_service.dart';
 import '../services/firestore_service.dart';
 import 'pomodoro_session_repository.dart';
@@ -213,10 +214,54 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
   Future<void> clearSessionIfGroupNotRunning() async {
     final uid = await _uidOrThrow();
     final docRef = _doc(uid);
+    final groupsCollection = _db
+        .collection('users')
+        .doc(uid)
+        .collection('taskRunGroups');
     await _db.runTransaction((tx) async {
       final snap = await tx.get(docRef);
       if (!snap.exists) return;
-      tx.delete(docRef);
+      final data = snap.data();
+      if (data == null) return;
+      final statusRaw = data['status'] as String?;
+      final sessionStatus = PomodoroStatus.values.firstWhere(
+        (e) => e.name == statusRaw,
+        orElse: () => PomodoroStatus.idle,
+      );
+      if (!sessionStatus.isActiveExecution) {
+        tx.delete(docRef);
+        return;
+      }
+
+      final groupId = (data['groupId'] as String?)?.trim();
+      if (groupId == null || groupId.isEmpty) {
+        // Missing group linkage can be transient during reconnect/resume windows.
+        return;
+      }
+      final groupSnap = await tx.get(groupsCollection.doc(groupId));
+      if (!groupSnap.exists) {
+        // Group does not exist: the session is orphaned. Delete only if the
+        // session is stale (no recent heartbeat), to avoid clearing during
+        // transient reconnect windows when the group write hasn't arrived yet.
+        final updatedAt =
+            (data['lastUpdatedAt'] as Timestamp?)?.toDate();
+        if (updatedAt != null &&
+            DateTime.now().difference(updatedAt) >=
+                const Duration(seconds: 45)) {
+          tx.delete(docRef);
+        }
+        return;
+      }
+      final groupData = groupSnap.data();
+      if (groupData == null) return;
+      final groupStatusRaw = groupData['status'] as String?;
+      final groupStatus = TaskRunStatus.values.firstWhere(
+        (e) => e.name == groupStatusRaw,
+        orElse: () => TaskRunStatus.scheduled,
+      );
+      if (groupStatus != TaskRunStatus.running) {
+        tx.delete(docRef);
+      }
     });
   }
 

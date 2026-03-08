@@ -1419,6 +1419,10 @@ Redistribution rules (shared)
   - If the app was inactive at scheduledStartTime:
     - On next launch/resume of any signed-in device, if scheduledStartTime <= now and there is no active conflict,
       auto-start immediately using actualStartTime = now (scheduledStartTime remains unchanged)
+  - If the app is open and the user switches from Local Mode to Account Mode after scheduledStartTime:
+    - Re-evaluate overdue scheduled groups immediately with the same launch/resume criteria.
+    - If there is no active conflict, auto-start immediately using actualStartTime = now and open Run Mode in the same re-entry flow.
+    - This must not require app restart.
   - The timer remains stopped until the scheduled start
   - When scheduling sequential groups, ensure the next group’s pre-run start
     is **at least +1 minute after** the previous group’s end (minute boundary
@@ -2023,6 +2027,28 @@ foreground owner must **not** freeze progression.
   - **Running:** any mirror device may auto-claim even without a manual request.
   - **Paused:** only a requester with a pending ownershipRequest may auto-claim.
   This is based on session liveness (heartbeat), not app focus.
+- If a device loses ownership (another device becomes owner) while a local
+  owner-action confirmation is pending, the pending confirmation must be cleared
+  immediately. The UI must not remain blocked in Syncing due to stale local
+  confirmation flags.
+- Missing-session hold must be bounded by stale-grace and session context:
+  - Never hold when the local group is already terminal (canceled/completed).
+  - Keep hold only while there is fresh evidence of the same active session
+    (recent snapshot or recent lastUpdatedAt within stale-grace).
+- Missing-session cleanup must be non-destructive under transient repository gaps:
+  - `activeSession` must **not** be cleared only because a single `groupId` lookup
+    returns null during reconnect/resume windows.
+  - Clear `activeSession` only when there is corroborated evidence that the group
+    is not running (explicit terminal status from `taskRunGroups`) or when the
+    session is stale beyond stale-grace according to heartbeat/lastUpdatedAt.
+  - Repository/provider rebuilds (for example auth token refresh with same UID)
+    must not leave Run Mode without an active session listener; re-subscribe
+    before evaluating missing-session cleanup.
+- Auto-claim attempts must be failure-safe:
+  - Firestore `unavailable`/network failures must not throw unhandled
+    exceptions.
+  - Apply retry backoff after transient failures to avoid repeated takeover
+    storms during connectivity loss/resume windows.
 
 ### **10.4.9. Ownership visibility in Run Mode**
 

@@ -127,6 +127,34 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           post‑P0‑3 regressions; re-applied Plan Group notice control features
           and debug prod override. Pause syncing regression reported resolved
           after rollback (manual validation, no logs).
+      06/03/2026: Feature execution gate active — no new feature work until
+          `validation_fix_2026_03_05` closes Fix 24 and Fix 25 with regression
+          checks passing.
+      06/03/2026: `validation_fix_2026_03_05` Fix 23 (notice clamp coherence)
+          validated and closed (owner iOS + mirror Chrome).
+      06/03/2026: `validation_fix_2026_03_05` Fix 26 (syncing hold after
+          cancel/background recovery) validated and closed (iOS+Chrome repro
+          pass, plus Android+macOS extended run pass). Commit: `bdb89ad`.
+      07/03/2026: Fix 26 reopened after recurrent `Syncing session...` hold
+          with active snapshots still present; documentation-first hardening
+          started (non-destructive missing-session cleanup + listener rebind).
+      07/03/2026: Fix 26 second-cycle implementation: (1) applyRemoteCancellation
+          now clears _sessionMissingWhileRunning; (2) foreground hold recovery
+          timer added for mirrors (5 s one-shot resync); (3) clearSessionIfGroupNotRunning
+          deletes orphaned stale sessions when group not found. Validation pending.
+      07/03/2026: Fix 26 third-cycle commit `26f0c7e` applied
+          (post-frame cancel navigation, `ref.mounted` guards, deferred
+          resubscription in VM build).
+      07/03/2026: Fix 26 moved to monitoring window (07/03–09/03) after
+          first cycle4 practical tests without indefinite syncing hold.
+      07/03/2026: New regression observed during cycle4 validation:
+          Account scheduled group does not auto-open Run Mode when returning
+          from Local Mode after scheduled start (works only after app restart).
+      07/03/2026: Fix 27 implementation started for Local -> Account re-entry
+          overdue auto-start (docs-first + mode reentry reevaluation hardening).
+      07/03/2026: Fix 27 closed — PASS. Removed coordinator invalidation on mode
+          switch; coordinator's ref.listen<AppMode> drives reset naturally.
+          Validation: iOS + Chrome logs confirm immediate auto-start at 22:49.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
@@ -225,6 +253,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 17 — Late-start queue Cancel all (no loop) + exit cleanly (no black screen) + mirror “Owner resolved” modal + zero-selection = Cancel all (bug).
 - Phase 17 — Running conflict modal must show conflicting group context (name + time range) (new requirement).
 - Phase 17 — Pre-Run auto-open is idempotent on owner/mirror (no duplicate navigation / no Groups Hub bounce) and must not open Resolve overlaps without a real conflict (bug).
+- ~~Phase 17 — Local -> Account re-entry must re-evaluate overdue scheduled groups and auto-open Run Mode without app restart when there is no active conflict (bug).~~ **Closed/OK Fix 27 07/03/2026**
 - Phase 17 — Postpone effective schedule must refresh on mirrors in real time (no stale schedule) (bug).
 - Phase 14 — Global sound settings (apply switch + revert) (new requirement).
 - Phase 14 — Pre-Run notice minutes setting (Account Mode sync + Settings UI; range 0–15) (new requirement).
@@ -240,6 +269,9 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 18 — Pause offsets must extend TaskRunGroup.theoreticalEndTime on resume (cross-device) (bug).
 - Phase 18 — Ownership request retry when pending exceeds stale threshold (bug).
 - Phase 18 — Run Mode shows Syncing state when activeSession is missing + manual refresh (sync icon) (bug).
+- Phase 18 — Missing-session cleanup must not clear activeSession on transient
+  group lookup/provider rebuild gaps; sync hold must recover without destructive clears (bug).
+- Phase 18 — Fix 26 monitoring window active (07/03–09/03) before closure.
 - Phase 18 — Completion modal + Groups Hub navigation must work on owner and mirror devices (validation pending).
 - Phase 18 — Run Mode ownership visibility + take ownership UX (new requirement).
 - Phase 18 — Ownership transfer requires owner approval + rejection state (new requirement).

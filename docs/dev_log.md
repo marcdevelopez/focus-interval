@@ -23,7 +23,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **06/03/2026**
+Last update: **07/03/2026**
 
 ---
 
@@ -9185,3 +9185,403 @@ _(pending validation)_
 ### 🎯 Next steps:
 
 - Re-validate Fix 23 UX flow (notice clamp + global apply + persistent banner controls).
+
+# 🔹 Block 540 — Set execution gate before new feature work (06/03/2026)
+
+### ✔ Work completed:
+
+- Added an explicit execution gate to
+  `docs/bugs/validation_fix_2026_03_05/plan_validacion_rapida_fix.md`:
+  no new feature work until Fix 24 + Fix 25 are validated and regression checks pass.
+- Added the same gate note to
+  `docs/bugs/validation_fix_2026_03_05/quick_pass_checklist.md`.
+- Updated `docs/roadmap.md` global status notes to reflect the active gate.
+
+### 🧪 Tests:
+
+- Not applicable (documentation update only).
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Implement Fix 24 next (owner pause re-entry jump), then run required regression checks.
+
+# 🔹 Block 541 — Enforce automatic fix closure policy (06/03/2026)
+
+### ✔ Work completed:
+
+- Added a mandatory rule in `AGENTS.md`:
+  if a fix has Exact Repro PASS + Regression checks PASS + evidence recorded,
+  it must be marked `Closed/OK` automatically (no extra confirmation request).
+- Added the same closure rule to `docs/bugs/README.md`.
+- Added the closure rule to:
+  - `docs/bugs/validation_fix_2026_03_05/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_fix_2026_03_05/quick_pass_checklist.md`
+
+### 🧪 Tests:
+
+- Not applicable (documentation/policy updates only).
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Apply this rule consistently while closing Fix 23/24/25 validations.
+
+# 🔹 Block 542 — Close Fix 23 (notice clamp) in validation docs (06/03/2026)
+
+### ✔ Work completed:
+
+- Closed Fix 23 as **OK** in:
+  - `docs/bugs/validation_fix_2026_03_05/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_fix_2026_03_05/quick_pass_checklist.md`
+- Updated Fix 23 status with:
+  - code commit reference (`a884c94`),
+  - PASS result,
+  - regression smoke checks PASS.
+- Updated `docs/roadmap.md` with explicit note that Fix 23 is validated/closed.
+
+### 🧪 Tests:
+
+- Not run (documentation closure update based on completed validation evidence).
+
+### ⚠️ Issues found:
+
+- Fix 24 and Fix 25 remain open and keep the feature execution gate active.
+
+### 🎯 Next steps:
+
+- Implement and validate Fix 24.
+
+# 🔹 Block 543 — Fix 24 candidate in isolated branch (06/03/2026)
+
+### ✔ Work completed:
+
+- Created isolated branch `fix24-owner-pause-reentry-jump` to test Fix 24
+  without risking the active branch.
+- Implemented two guarded changes in
+  `lib/presentation/viewmodels/pomodoro_view_model.dart`:
+  - Owner hydration now pins `_localPhaseStartedAt` from
+    `session.phaseStartedAt` for running and paused session states.
+  - Owner hydration skips `_applyGroupTimelineProjection(...)` in Account Mode.
+- Updated `docs/bugs/validation_fix_2026_03_05/plan_validacion_rapida_fix.md`
+  with Fix 24 code status (validation pending).
+
+### 🧪 Tests:
+
+- `flutter analyze` (pass).
+
+### ⚠️ Issues found:
+
+- Behavior validation still pending (Exact Repro + regression smoke checks).
+
+### 🎯 Next steps:
+
+- Run Fix 24 validation on owner iOS + mirror Chrome.
+
+# 🔹 Block 544 — Fix 26 validated and closed (06/03/2026)
+
+### ✔ Work completed:
+
+- Commit: `bdb89ad` — `fix: harden missing-session recovery and close fix26 validation`.
+- Closed Fix 26 in `docs/bugs/validation_fix_2026_03_05` after PASS validation.
+- Updated:
+  - `docs/bugs/validation_fix_2026_03_05/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_fix_2026_03_05/quick_pass_checklist.md`
+  - `docs/roadmap.md`
+- Validation outcome recorded:
+  - Exact repro (iOS owner + Chrome mirror) PASS:
+    `start -> pause -> resume -> Groups Hub -> back to Run Mode -> cancel`,
+    owner/mirror return correctly to Groups Hub without indefinite syncing.
+  - Extended run (Android + macOS, background/foreground + pause/resume/cancel) PASS.
+- Reviewed new logs for critical errors and confirmed no unhandled exceptions in the Fix 26 validation run:
+  - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix26_ios_debug.log`
+  - `docs/bugs/validation_fix_2026_03_05/logs/2026_03_06_fix26_chrome_debug.log`
+
+### 🧪 Tests:
+
+- `flutter analyze` (pass).
+
+### ⚠️ Issues found:
+
+- None in Fix 26 validation scope.
+
+### 🎯 Next steps:
+
+- Continue with Fix 25 (`overlaps falsos + ownership erratico`), keeping the feature gate active until Fix 25 and regression checks are closed.
+
+# 🔹 Block 545 — Fix 26 reopened hardening (07/03/2026)
+
+### ✔ Work completed:
+
+- Reopened Fix 26 after recurrent `Syncing session...` reports with active
+  snapshots still updating.
+- Documentation-first updates:
+  - `docs/specs.md`: added non-destructive missing-session cleanup rules
+    (no clear on single transient `groupId` lookup miss; require corroborated
+    non-running/stale evidence).
+  - `docs/bugs/validation_fix_2026_03_05/plan_validacion_rapida_fix.md`:
+    Fix 26 marked **Reopened** with new evidence references.
+  - `docs/roadmap.md`: added Fix 26 reopen note and reopened-phase item.
+- Implemented P0 hardening:
+  - `lib/data/repositories/firestore_pomodoro_session_repository.dart`
+    - `clearSessionIfGroupNotRunning()` now validates session/group status
+      before delete.
+      - Deletes only if:
+        - session is non-active, or
+        - linked group exists and is explicitly non-running.
+      - Does not delete on transient missing group linkage/lookup.
+  - `lib/presentation/viewmodels/pomodoro_view_model.dart`
+    - Rebinds machine/session subscriptions on `build()` reruns to avoid stale
+      listeners after provider refreshes.
+    - Preserves existing `_serverTimeOffset` when the time-sync provider
+      rebuilds without an offset.
+    - `_sanitizeActiveSession()` no longer clears session when group lookup is
+      transiently null; clears only when stale-grace is exceeded or non-running
+      group is confirmed.
+
+### 🧪 Tests:
+
+- `flutter analyze` (pass).
+
+### ⚠️ Issues found:
+
+- Validation run pending for reopened Fix 26 exact repro + regression smoke checks.
+- Local workspace still contains unrelated `ios/Flutter/AppFrameworkInfo.plist`
+  modification (not part of this fix).
+
+### 🎯 Next steps:
+
+- Run exact repro on owner/mirror with logs (iOS+Chrome and Android+macOS path).
+- If PASS without regressions, close reopened Fix 26 in validation docs.
+
+# 🔹 Block 546 — Fix 26 second-cycle implementation (07/03/2026)
+
+### ✔ Work completed:
+
+- Code analysis post-reopen identified three concrete gaps in the previous implementation:
+  1. `applyRemoteCancellation()` did not clear `_sessionMissingWhileRunning` or
+     `_lastActiveSessionSnapshotAt`, leaving the VM inconsistent when the owner
+     cancels while the mirror is in a syncing hold.
+  2. No foreground auto-resync for mirror devices during the syncing hold:
+     `_inactiveResyncTimer` only starts on `handleAppPaused()`; in the foreground
+     the mirror had no automatic escape path if the stream was slow to recover.
+  3. `clearSessionIfGroupNotRunning` returned without deleting when the linked group
+     was not found in Firestore, leaving orphaned sessions beyond stale-grace.
+- Implemented three targeted fixes:
+  - `applyRemoteCancellation()` now clears `_sessionMissingWhileRunning` and
+    calls `_clearSessionSnapshotTracking()` before `_resetLocalSessionState()`.
+  - Added `_foregroundMissingResyncTimer` (one-shot, 5 s): scheduled on the
+    first entry into hold (both stream-listener and resync paths); fires
+    `syncWithRemoteSession(refreshGroup: true, preferServer: true)` to give
+    mirrors an automatic foreground escape without relying solely on the stream.
+    Cancelled when hold clears (session received, explicit clear, or dispose).
+  - `clearSessionIfGroupNotRunning`: when group is not found in Firestore, now
+    deletes the session only if `lastUpdatedAt` exceeds the 45 s stale-grace
+    (orphaned session confirmed); preserves it otherwise (transient window).
+- Updated:
+  - `docs/bugs/validation_fix_2026_03_05/plan_validacion_rapida_fix.md`
+  - `docs/roadmap.md`
+  - `lib/presentation/viewmodels/pomodoro_view_model.dart`
+  - `lib/data/repositories/firestore_pomodoro_session_repository.dart`
+
+### 🧪 Tests:
+
+- `flutter analyze` (pass, no issues).
+
+### ⚠️ Issues found:
+
+- Validation run pending for reopened Fix 26 exact repro + regression smoke checks.
+
+### 🎯 Next steps:
+
+- Run exact repro: owner cancels → mirror must exit syncing hold within ≤5 s.
+- Run regression smoke checks (4 items).
+- If PASS: close Fix 26 in validation docs and roadmap.
+
+---
+
+# 🔹 Block 547 — Fix 26 regression fixes third cycle (07/03/2026)
+
+**Date:** 07/03/2026
+**Branch:** `fix26-reopen-syncing-session-hold`
+**Scope:** Fix three regressions introduced by the second-cycle implementation (Block 546 / commit `4f55010`).
+
+## Context
+
+Validation logs from `docs/bugs/validation_fix_2026_03_07-01/logs/` confirmed the second-cycle
+implementation made things **worse** than before:
+
+1. **New error — `setState() or markNeedsBuild() called during build`** (iOS lines 51006, 51153;
+   Chrome lines 2117, 2247):
+   - Root cause: `timer_screen.dart:682` called `_navigateToGroupsHub()` directly inside
+     `build()`, which synchronously invoked `GoRouter.go('/groups')` → GoRouter notifications
+     → `setState` on `Router` during Flutter's build phase.
+
+2. **New error — `Cannot use the Ref after it has been disposed`** (iOS lines 51175, 51187):
+   - Root cause: `_publishCurrentSession()` and `_refreshTimeSyncIfNeeded()` call `ref.read()`
+     synchronously. When Riverpod re-runs `build()` due to a watched-provider change
+     (e.g., auth token refresh), it disposes the previous build lifecycle. Any callback from
+     the previous lifecycle that still fires (machine callbacks registered in `configureFromItem`)
+     hits a disposed `ref`.
+
+3. **Increased spurious "Missing snapshot; clearing session" events** (iOS 3× vs 2×,
+   Chrome 2× vs 0×):
+   - Root cause: `build()` closes and immediately reopens the session `ref.listen`. On each
+     `build()` re-run the new listener may receive a null event before the Firestore stream
+     re-delivers the active session, triggering an extra missing-session clear.
+
+## Fixes applied
+
+### Fix A — `timer_screen.dart`: defer build-time navigation
+- Lines 680-683: replaced direct `_navigateToGroupsHub(reason: 'build canceled')` call with:
+  1. Set `_cancelNavigationHandled = true`, `_cancelNavRetryAttempts = 0`,
+     `_cancelNavTargetGroupId` immediately (prevents re-queuing on subsequent builds).
+  2. `WidgetsBinding.instance.addPostFrameCallback` → calls `_attemptNavigateToGroupsHub`
+     after the build frame completes.
+
+### Fix B — `pomodoro_view_model.dart`: ref.mounted guards
+- `_publishCurrentSession()`: added `if (!ref.mounted) return;` as first line.
+- `_refreshTimeSyncIfNeeded()`: added `if (!ref.mounted) return;` before the synchronous
+  `ref.read()` and again after `await _timeSyncService.refresh()` before using instance state.
+
+### Fix C — `pomodoro_view_model.dart`: defer build() re-subscription
+- `build()` (line ~163): replaced synchronous `_subscribeToRemoteSession()` with a
+  `Future.microtask` that guards on `ref.mounted && _sessionSub == null`. This ensures
+  the re-subscription happens after build completes and only if no other path (loadGroup,
+  handleAppResumed) has already established a subscription.
+
+## Tests
+- `flutter analyze` → no issues.
+
+## Commit
+- Pending (this block recorded before commit).
+
+---
+
+# 🔹 Block 548 — Fix 26 moved to monitoring window (07/03/2026)
+
+### ✔ Work completed:
+
+- Updated validation docs to keep Fix 26 open in **Monitoring** state instead of closing it immediately.
+- Added/updated cycle4 validation artifacts:
+  - `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`
+- Updated Fix 26 status in:
+  - `docs/bugs/validation_fix_2026_03_05/plan_validacion_rapida_fix.md`
+  - `docs/roadmap.md`
+- Recorded commit reference for third-cycle implementation: `26f0c7e`.
+- Recorded decision:
+  - Monitoring window active: **07/03/2026 → 09/03/2026**.
+  - Initial practical tests show no indefinite `Syncing session...` hold.
+
+### 🧪 Tests:
+
+- No new code/test execution in this block (documentation/status update only).
+
+### ⚠️ Issues found:
+
+- Related open bug observed during cycle4:
+  - Account scheduled group -> switch to Local -> pass start time -> return to Account:
+    Run Mode does not auto-open until app restart.
+
+### 🎯 Next steps:
+
+- Continue 2-day monitoring for Fix 26.
+- Triage and isolate the Local->Account late auto-open bug as separate follow-up fix.
+
+---
+
+# 🔹 Block 549 — Fix 27 implementation (Local -> Account overdue auto-start) (07/03/2026)
+
+### ✔ Work completed:
+
+- Opened dedicated branch: `fix27-local-account-reentry-autostart`.
+- Documentation-first updates:
+  - `docs/specs.md`: added explicit requirement that Local -> Account re-entry
+    must re-evaluate overdue scheduled groups and auto-open Run Mode without
+    app restart when no active conflict exists.
+  - `docs/roadmap.md`: added reopened item for this bug under Phase 17.
+  - `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`:
+    added Fix 27 scope/objective and exact repro target.
+  - `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`:
+    added Fix 27 validation and regression checks.
+- Implementation:
+  - `lib/widgets/app_mode_change_guard.dart`
+    - mode change handler now receives `previous/next` mode.
+    - added invalidation of account session stream providers
+      (`pomodoroSessionStreamProvider`, `activePomodoroSessionProvider`).
+    - switched from `clearAction()` to invalidating
+      `scheduledGroupCoordinatorProvider` to emulate cold re-entry.
+    - on Local -> Account transition, added deterministic post-switch
+      reevaluation calls (`post-frame` + delayed recheck) via coordinator.
+  - `lib/presentation/viewmodels/scheduled_group_coordinator.dart`
+    - added `forceReevaluate()` to process current group stream snapshot on demand.
+- Commit: `5ac3d6b` (`fix: restore Local->Account overdue auto-start reentry`).
+
+### 🧪 Tests:
+
+- `flutter analyze` (pass, no issues).
+
+### ⚠️ Issues found:
+
+- Behavioral validation pending (exact repro + regression smoke in
+  `validation_fix_2026_03_07-01`).
+
+### 🎯 Next steps:
+
+- Run Fix 27 exact repro on iOS + Chrome with logs.
+- Verify no regression on Fix 24/Fix 26 and overlap resolution flow.
+
+---
+
+# 🔹 Block 550 — Fix 27 closed: Local -> Account overdue auto-start (07/03/2026)
+
+### ✔ Work completed:
+
+- Diagnosed root cause of Fix 27 first-attempt failure (`5ac3d6b`):
+  - `ref.invalidate(scheduledGroupCoordinatorProvider)` in `_handleModeChange`
+    disposed the coordinator and tore down all its `ref.listen` subscriptions.
+  - `taskRunGroupStreamProvider` (auto-rebuilt by `appModeProvider` watch) started
+    delivering Firestore data during the race window before the new coordinator
+    instance rebuilt and re-registered its stream listener.
+  - The coordinator's own `ref.listen<AppMode>` already calls `_resetForModeChange()`
+    + `_handleGroups()` on every mode change — invalidating it bypassed this natural
+    mechanism without providing an equivalent guarantee.
+- Applied second-attempt fix (`lib/widgets/app_mode_change_guard.dart`):
+  - Removed `ref.invalidate(scheduledGroupCoordinatorProvider)` from `_handleModeChange`.
+  - Coordinator now keeps its listeners alive across mode switches; `ref.listen<AppMode>`
+    fires synchronously on mode change, resets state, and the coordinator's
+    `ref.listen<taskRunGroupStreamProvider>` fires when Firestore data arrives.
+  - `forceReevaluate()` calls (postFrameCallback + 600ms delay) kept as backup triggers
+    for slow-network / time-sync retry scenarios.
+- Updated docs:
+  - `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`
+  - `docs/roadmap.md`
+
+### 🧪 Tests:
+
+- `flutter analyze` (pass, no issues).
+- Exact repro PASS (iOS + Chrome, 2026-03-07 22:49):
+  - Group scheduled at 22:48, user switched to Local Mode before start.
+  - Start time passed while in Local Mode.
+  - User switched back to Account Mode at 22:49.
+  - Auto-start fired immediately; Timer Run Mode opened without app restart.
+- iOS evidence: `2026_03_07_fix27v2_ios_debug.log` line 51016 — `Auto-start opening TimerScreen` at 22:49:03.
+- Chrome evidence: `2026_03_07_fix27v2_chrome_debug.log` lines 2086–2090 — `Auto-open confirmed in timer route=/timer/c2b7f11d`.
+- Regression smoke: no Fix 24/Fix 26 regressions in v2 logs.
+
+### ⚠️ Issues found:
+
+- None.
+
+### 🎯 Next steps:
+
+- Continue Fix 26 two-day monitoring window (closes 2026-03-09).
+- Resume planned roadmap work.
