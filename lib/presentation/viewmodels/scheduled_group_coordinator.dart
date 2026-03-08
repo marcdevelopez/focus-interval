@@ -47,6 +47,8 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
   static const Duration _lateStartOwnerStale = Duration(seconds: 45);
   static const Duration _lateStartHeartbeatInterval = Duration(seconds: 20);
   static const Duration _noticeFallbackTtl = Duration(seconds: 30);
+  static const Duration _accountRecheckInterval = Duration(seconds: 2);
+  static const int _accountRecheckMax = 3;
 
   Timer? _scheduledTimer;
   Timer? _preAlertTimer;
@@ -57,6 +59,10 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
   bool _initialized = false;
   bool _disposed = false;
   bool _sessionStreamReady = false;
+  bool _groupStreamReady = false;
+  bool _pendingAccountModeRecheck = false;
+  int _accountRecheckRemaining = 0;
+  Timer? _accountRecheckTimer;
   String? _lastLateStartQueueKey;
   String? _lastRunningOverlapKey;
   String? _lateStartHeartbeatQueueId;
@@ -84,8 +90,12 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       _,
       next,
     ) {
+      _groupStreamReady = !next.isLoading;
       final groups = next.value ?? const [];
       _handleGroups(groups);
+      if (_pendingAccountModeRecheck) {
+        unawaited(_runAccountModeRecheckIfReady());
+      }
     });
     ref.listen<PomodoroSession?>(activePomodoroSessionProvider, (previous, next) {
       final wasActive = previous != null;
@@ -104,9 +114,17 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     });
     ref.listen<AppMode>(appModeProvider, (previous, next) {
       if (previous == next) return;
+      if (previous == AppMode.account && next == AppMode.local) {
+        final snapshot = List<TaskRunGroup>.from(_lastGroups);
+        unawaited(_cancelAccountPreRunNotifications(snapshot));
+      }
       _resetForModeChange();
+      _pendingAccountModeRecheck = next == AppMode.account;
       final groups = ref.read(taskRunGroupStreamProvider).value ?? const [];
       _handleGroups(groups);
+      if (_pendingAccountModeRecheck) {
+        unawaited(_runAccountModeRecheckIfReady());
+      }
     });
     ref.listen<AsyncValue<PomodoroSession?>>(
       pomodoroSessionStreamProvider,
@@ -115,6 +133,9 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
         _sessionStreamReady = !next.isLoading;
         if (!wasReady && _sessionStreamReady) {
           _handleGroups(_lastGroups);
+        }
+        if (_pendingAccountModeRecheck) {
+          unawaited(_runAccountModeRecheckIfReady());
         }
       },
     );
@@ -137,17 +158,22 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
   }
 
   void _dispose() {
+    _debugLogTimerState(reason: 'dispose');
     _disposed = true;
     _scheduledTimer?.cancel();
     _preAlertTimer?.cancel();
     _runningExpiryTimer?.cancel();
     _runningOverlapTimer?.cancel();
     _lateStartHeartbeatTimer?.cancel();
+    _accountRecheckTimer?.cancel();
+    _accountRecheckTimer = null;
+    _accountRecheckRemaining = 0;
     _scheduledNotices.clear();
   }
 
   void _resetForModeChange() {
     if (!_canUseRef) return;
+    _debugLogTimerState(reason: 'mode-change');
     _scheduledTimer?.cancel();
     _scheduledTimer = null;
     _preAlertTimer?.cancel();
@@ -156,12 +182,17 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     _runningExpiryTimer = null;
     _runningOverlapTimer?.cancel();
     _runningOverlapTimer = null;
+    _accountRecheckTimer?.cancel();
+    _accountRecheckTimer = null;
+    _accountRecheckRemaining = 0;
     _stopLateStartHeartbeat();
     _scheduledNotices.clear();
     _lastLateStartQueueKey = null;
     _lastRunningOverlapKey = null;
     _autoStartInFlight = false;
     _sessionStreamReady = false;
+    _groupStreamReady = false;
+    _pendingAccountModeRecheck = false;
     _lastGroups = const [];
     if (state != null) state = null;
     ref.read(scheduledAutoStartGroupIdProvider.notifier).state = null;
@@ -193,6 +224,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     if (_autoStartInFlight || _disposed) return;
 
     if (!_canUseRef) return;
+    _debugLogTimerState(reason: 'handle-groups');
     final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
 
     _scheduledTimer?.cancel();
@@ -226,6 +258,14 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     }
 
     if (groups.isEmpty) {
+      _debugLogScheduledSnapshot(
+        reason: 'no-groups',
+        now: now,
+        scheduled: const [],
+        allGroups: groups,
+        session: session,
+        noticeFallbackMinutes: noticeFallback,
+      );
       _stopLateStartHeartbeat();
       return;
     }
@@ -237,37 +277,36 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     );
     if (!_canUseRef) return;
     if (finalized) {
+      final scheduled = _buildScheduledList(
+        groups: groups,
+        session: session,
+        now: now,
+        noticeFallbackMinutes: noticeFallback,
+      );
+      _debugLogScheduledSnapshot(
+        reason: 'postpone-finalized',
+        now: now,
+        scheduled: scheduled,
+        allGroups: groups,
+        session: session,
+        noticeFallbackMinutes: noticeFallback,
+      );
       return;
     }
-    final scheduled =
-        groups
-            .where(
-              (g) =>
-                  g.status == TaskRunStatus.scheduled &&
-                  g.scheduledStartTime != null,
-            )
-            .toList()
-          ..sort((a, b) {
-            final aStart =
-                resolveEffectiveScheduledStart(
-                  group: a,
-                  allGroups: groups,
-                  activeSession: session,
-                  now: now,
-                  fallbackNoticeMinutes: noticeFallback,
-                ) ??
-                a.scheduledStartTime!;
-            final bStart =
-                resolveEffectiveScheduledStart(
-                  group: b,
-                  allGroups: groups,
-                  activeSession: session,
-                  now: now,
-                  fallbackNoticeMinutes: noticeFallback,
-                ) ??
-                b.scheduledStartTime!;
-            return aStart.compareTo(bStart);
-          });
+    final scheduled = _buildScheduledList(
+      groups: groups,
+      session: session,
+      now: now,
+      noticeFallbackMinutes: noticeFallback,
+    );
+    _debugLogScheduledSnapshot(
+      reason: 'evaluate',
+      now: now,
+      scheduled: scheduled,
+      allGroups: groups,
+      session: session,
+      noticeFallbackMinutes: noticeFallback,
+    );
     final running =
         groups.where((g) => g.status == TaskRunStatus.running).toList();
     if (running.isNotEmpty) {
@@ -346,6 +385,14 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
         if (remaining.isNotEmpty) {
           final candidate = remaining.first;
           final groupId = candidate.id;
+          _debugLogScheduledSnapshot(
+            reason: 'running-open-timer',
+            now: now,
+            scheduled: scheduled,
+            allGroups: groups,
+            session: activeSession,
+            noticeFallbackMinutes: noticeFallback,
+          );
           ref.read(scheduledAutoStartGroupIdProvider.notifier).state = groupId;
           _emitOpenTimer(groupId);
           return;
@@ -375,6 +422,14 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     _clearRunningOverlapDecisionIfNeeded();
 
     if (scheduled.isEmpty) {
+      _debugLogScheduledSnapshot(
+        reason: 'no-scheduled',
+        now: now,
+        scheduled: scheduled,
+        allGroups: groups,
+        session: session,
+        noticeFallbackMinutes: noticeFallback,
+      );
       _lastLateStartQueueKey = null;
       _stopLateStartHeartbeat();
       return;
@@ -500,10 +555,90 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     }
 
     final delay = startTime.difference(now);
+    if (kDebugMode) {
+      debugPrint(
+        '[ScheduledGroups] schedule-start-timer group=${nextGroup.id} '
+        'start=$startTime delay=${delay.inSeconds}s',
+      );
+    }
     _scheduledTimer = Timer(delay, () {
       if (_disposed) return;
+      if (kDebugMode) {
+        debugPrint(
+          '[ScheduledGroups] start-timer-fired group=${nextGroup.id} '
+          'now=${DateTime.now()}',
+        );
+      }
       _handleGroups(_lastGroups);
     });
+  }
+
+  List<TaskRunGroup> _buildScheduledList({
+    required List<TaskRunGroup> groups,
+    required PomodoroSession? session,
+    required DateTime now,
+    int? noticeFallbackMinutes,
+  }) {
+    return groups
+        .where(
+          (g) =>
+              g.status == TaskRunStatus.scheduled &&
+              g.scheduledStartTime != null,
+        )
+        .toList()
+      ..sort((a, b) {
+        final aStart =
+            resolveEffectiveScheduledStart(
+              group: a,
+              allGroups: groups,
+              activeSession: session,
+              now: now,
+              fallbackNoticeMinutes: noticeFallbackMinutes,
+            ) ??
+            a.scheduledStartTime!;
+        final bStart =
+            resolveEffectiveScheduledStart(
+              group: b,
+              allGroups: groups,
+              activeSession: session,
+              now: now,
+              fallbackNoticeMinutes: noticeFallbackMinutes,
+            ) ??
+            b.scheduledStartTime!;
+        return aStart.compareTo(bStart);
+      });
+  }
+
+  void _debugLogTimerState({required String reason}) {
+    if (!kDebugMode) return;
+    debugPrint(
+      '[ScheduledGroups] timer-state reason=$reason '
+      'scheduled=${_scheduledTimer != null} '
+      'preAlert=${_preAlertTimer != null} '
+      'runningExpiry=${_runningExpiryTimer != null} '
+      'runningOverlap=${_runningOverlapTimer != null} '
+      'lateStartHeartbeat=${_lateStartHeartbeatTimer != null}',
+    );
+  }
+
+  Future<void> _cancelAccountPreRunNotifications(
+    List<TaskRunGroup> groups,
+  ) async {
+    if (!_canUseRef) return;
+    if (groups.isEmpty) return;
+    final scheduled =
+        groups.where((g) => g.status == TaskRunStatus.scheduled).toList();
+    if (scheduled.isEmpty) return;
+    final notificationService = ref.read(notificationServiceProvider);
+    for (final group in scheduled) {
+      await notificationService.cancelGroupPreAlert(group.id);
+    }
+    if (kDebugMode) {
+      debugPrint(
+        '[ScheduledGroups] Canceled account pre-run notifications '
+        'count=${scheduled.length}',
+      );
+    }
   }
 
   void _debugLogExpiryDecision({
@@ -536,6 +671,104 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       'lastUpdatedAt=${session?.lastUpdatedAt ?? 'n/a'} '
       'ownerDeviceId=${session?.ownerDeviceId ?? 'n/a'}',
     );
+  }
+
+  void _debugLogScheduledSnapshot({
+    required String reason,
+    required DateTime now,
+    required List<TaskRunGroup> scheduled,
+    required List<TaskRunGroup> allGroups,
+    PomodoroSession? session,
+    int? noticeFallbackMinutes,
+  }) {
+    if (!kDebugMode) return;
+    final overdueCount = scheduled.where((group) {
+      final effectiveStart =
+          resolveEffectiveScheduledStart(
+            group: group,
+            allGroups: allGroups,
+            activeSession: session,
+            now: now,
+            fallbackNoticeMinutes: noticeFallbackMinutes,
+          ) ??
+          group.scheduledStartTime!;
+      return !effectiveStart.isAfter(now);
+    }).length;
+    final sample = scheduled.take(3).map((group) {
+      final scheduledStart = group.scheduledStartTime;
+      final effectiveStart =
+          resolveEffectiveScheduledStart(
+            group: group,
+            allGroups: allGroups,
+            activeSession: session,
+            now: now,
+            fallbackNoticeMinutes: noticeFallbackMinutes,
+          ) ??
+          scheduledStart;
+      return '${group.id}:'
+          '${scheduledStart?.toIso8601String() ?? 'null'}|'
+          '${effectiveStart?.toIso8601String() ?? 'null'}';
+    }).join(', ');
+    final appMode = ref.read(appModeProvider);
+    debugPrint(
+      '[ScheduledGroups][$reason] mode=${appMode.name} now=$now '
+      'scheduled=${scheduled.length} overdue=$overdueCount '
+      'activeSession=${session?.groupId ?? 'n/a'} '
+      'sample=${sample.isEmpty ? 'n/a' : sample}',
+    );
+  }
+
+  Future<void> _runAccountModeRecheckIfReady() async {
+    if (!_pendingAccountModeRecheck || _disposed) return;
+    if (!_canUseRef) return;
+    if (!_groupStreamReady || !_sessionStreamReady) return;
+    final appMode = ref.read(appModeProvider);
+    if (appMode != AppMode.account) {
+      _pendingAccountModeRecheck = false;
+      return;
+    }
+    _pendingAccountModeRecheck = false;
+    final timeSync = ref.read(timeSyncServiceProvider);
+    final offset = await timeSync.refresh(force: true);
+    if (kDebugMode) {
+      debugPrint(
+        '[ScheduledGroups] Account recheck after mode switch '
+        'timeSyncReady=${offset != null}',
+      );
+    }
+    if (!_canUseRef) return;
+    _handleGroups(_lastGroups);
+    _startAccountRecheckBurst();
+  }
+
+  void _startAccountRecheckBurst() {
+    _accountRecheckTimer?.cancel();
+    _accountRecheckRemaining = _accountRecheckMax;
+    _scheduleAccountRecheckTick();
+  }
+
+  void _scheduleAccountRecheckTick() {
+    if (_accountRecheckRemaining <= 0 || _disposed) return;
+    _accountRecheckTimer?.cancel();
+    _accountRecheckTimer = Timer(_accountRecheckInterval, () {
+      if (_disposed || !_canUseRef) return;
+      final appMode = ref.read(appModeProvider);
+      if (appMode != AppMode.account) {
+        _accountRecheckTimer?.cancel();
+        _accountRecheckTimer = null;
+        _accountRecheckRemaining = 0;
+        return;
+      }
+      _accountRecheckRemaining -= 1;
+      if (kDebugMode) {
+        debugPrint(
+          '[ScheduledGroups] Account recheck burst '
+          'remaining=$_accountRecheckRemaining',
+        );
+      }
+      _handleGroups(_lastGroups);
+      _scheduleAccountRecheckTick();
+    });
   }
 
   Future<bool> _clearStaleActiveSessionIfNeeded(
@@ -984,8 +1217,20 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
         noticeMinutes: noticeMinutes,
       );
       final delay = preAlertStart.difference(now);
+      if (kDebugMode) {
+        debugPrint(
+          '[ScheduledGroups] schedule-prealert-timer group=${group.id} '
+          'preAlertStart=$preAlertStart delay=${delay.inSeconds}s',
+        );
+      }
       _preAlertTimer = Timer(delay, () {
         if (_disposed) return;
+        if (kDebugMode) {
+          debugPrint(
+            '[ScheduledGroups] prealert-timer-fired group=${group.id} '
+            'now=${DateTime.now()}',
+          );
+        }
         _handleGroups(_lastGroups);
       });
       return;
@@ -1146,8 +1391,19 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
 
   void _scheduleAutoStartRetry() {
     _scheduledTimer?.cancel();
+    if (kDebugMode) {
+      debugPrint(
+        '[ScheduledGroups] auto-start retry scheduled '
+        'delay=2s',
+      );
+    }
     _scheduledTimer = Timer(const Duration(seconds: 2), () {
       if (_disposed) return;
+      if (kDebugMode) {
+        debugPrint(
+          '[ScheduledGroups] auto-start retry fired now=${DateTime.now()}',
+        );
+      }
       _handleGroups(_lastGroups);
     });
   }

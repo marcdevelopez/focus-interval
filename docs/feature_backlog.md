@@ -80,6 +80,7 @@ execution slot.
 36. IDEA-035 — Global SnackBar Theme + Unified UI Messaging
 
 Notes:
+
 - IDEA-028 depends on IDEA-022.
 - IDEA-025 depends on IDEA-024.
 - IDEA-029 and IDEA-018 overlap; keep both for now and merge later if needed.
@@ -88,21 +89,28 @@ Notes:
 
 ## In progress
 
-When a feature starts, move the full entry here and keep its ID header. Update the fields as follows.
-1. Set `Status: in_progress`.
+When a feature starts, list it here and update its full entry in the ordered IDEA section below.
+
+1. Set `Status: in_progress` in the IDEA entry.
 2. Add `Feature folder: docs/features/feature_YYYY_MM_DD_slug/`.
 3. Add `Plan: docs/features/feature_YYYY_MM_DD_slug/feature_plan.md`.
 
-(none yet)
+Active:
+- IDEA-034 — Offline Continuation With Rejoin/Sync Choice (Feature folder: docs/features/feature_2026_03_04_offline-continuation-rejoin-choice/; Plan: docs/features/feature_2026_03_04_offline-continuation-rejoin-choice/feature_plan.md)
 
 ## Done
 
 When a feature completes, move the full entry here (or to `feature_backlog_archive.md` if this grows too large).
+
 1. Set `Status: done`.
 2. Add `Final commit: <hash> "<message>"`.
 3. Keep the feature folder link for traceability.
 
-(none yet)
+Completed:
+- IDEA-032 — Plan Group Pre-Run Notice Control
+  (Feature folder: docs/features/feature_2026_03_02_plan-group-notice-control/;
+  Plan: docs/features/feature_2026_03_02_plan-group-notice-control/feature_plan.md;
+  Final commit: aa73004 "Fix re-plan notice coherence with editable planning notice")
 
 ## Backlog entries
 
@@ -634,7 +642,8 @@ None.
 Text / typography:
 Use clear, compact labels:
 < 24h: "Starts in: HH h MM min"
->= 24h: "Starts in: DD d HH h MM min"
+
+> = 24h: "Starts in: DD d HH h MM min"
 
 Data & Logic:
 Source of truth:
@@ -854,6 +863,7 @@ info affordance available.
 
 Text / typography:
 Use short, user-friendly bullets aligned to current rules:
+
 - If the owner is active, your request stays pending until they approve/reject.
 - If the owner is stale and the session is running, a mirror may auto-claim.
   If a request exists, the requester has priority; otherwise the first mirror
@@ -1016,9 +1026,10 @@ to keep preview and execution aligned.
 Calculations:
 If the exact end falls inside the last pomodoro, shorten that final pomodoro.
 If the exact end falls inside the last break:
+
 - Short break: convert the final break into final work time until the exact end.
 - Long break: convert to a short break, then final work time until the exact end.
-Only the final segment is adjusted; the rest of the group remains standard.
+  Only the final segment is adjusted; the rest of the group remains standard.
 
 Sync / multi-device:
 No new sync rules, but execution must follow the stored exact-end flag so owner
@@ -2526,7 +2537,11 @@ Title: Plan Group Pre-Run Notice Control
 Type: UX
 Scope: M
 Priority: P1
-Status: idea
+Status: done
+
+Feature folder: docs/features/feature_2026_03_02_plan-group-notice-control/
+Plan: docs/features/feature_2026_03_02_plan-group-notice-control/feature_plan.md
+Final commit: aa73004 "Fix re-plan notice coherence with editable planning notice"
 
 Problem / Goal:
 Users cannot see or adjust the pre-run notice during planning, leading to
@@ -2665,7 +2680,10 @@ Title: Offline Continuation With Rejoin/Sync Choice
 Type: UX / Sync
 Scope: L
 Priority: P1
-Status: idea
+Status: in_progress
+
+Feature folder: docs/features/feature_2026_03_04_offline-continuation-rejoin-choice/
+Plan: docs/features/feature_2026_03_04_offline-continuation-rejoin-choice/feature_plan.md
 
 Problem / Goal:
 When a device loses network during a running or paused Account Mode session,
@@ -2682,41 +2700,49 @@ or accidental merges.
 
 Design / UX:
 Layout / placement:
+
 - Run Mode banner or pill at top: “Offline — local only”.
 - Inline CTA row: `Retry sync` and `Continue locally`.
 
 Visual states:
+
 - Offline banner visible when time sync is unavailable or network is down.
 - After choosing local continuation, show a persistent “Local-only” badge.
 
 Animation rules:
+
 - No animation required; keep steady UI to avoid confusion.
 
 Interaction:
+
 - `Retry sync` triggers a timeSync refresh and session fetch.
 - `Continue locally` switches to Local Mode with a local shadow group.
 - On reconnect, show a modal:
   - “Account session changed while you were offline.”
   - Options:
-    1) `Rejoin account session` (discard local)
-    2) `Keep local (stay Local Mode)`
+    1. `Rejoin account session` (discard local)
+    2. `Keep local (stay Local Mode)`
 
 Text / typography:
+
 - Clear warnings about non-synced state and that other devices continue the
   Account session independently.
 
 Data & Logic:
 Source of truth:
+
 - Account Mode session remains the only authoritative timeline.
 - Local continuation never writes to Account Mode while offline.
   - Explicitly store a local-only fork marker so it cannot be mistaken for
     Account data.
 
 Calculations:
+
 - Local continuation uses Local Mode timers and storage.
 - Account Mode session remains unchanged unless the user explicitly rejoins.
 
 Sync / multi-device:
+
 - Other devices remain in Account Mode and continue as owner/mirror.
 - Offline device does not publish to Account Mode.
 - On reconnect, allow rejoin or stay local; no auto-merge.
@@ -2724,6 +2750,7 @@ Sync / multi-device:
     must remain visible only in their respective modes.
 
 Edge cases:
+
 - If Account session completed while offline, rejoin should open Groups Hub
   and allow Run again / Start now actions.
 - If local continuation is active and the user re-joins, discard local state
@@ -2733,24 +2760,28 @@ Edge cases:
     (e.g., “Offline” / “Local-only”) in Groups Hub and Run Mode.
 
 Accessibility:
+
 - Offline banner and modal must be announced with clear warnings.
 
 Dependencies:
+
 - Fix 22 (timeSync + single source of truth).
 - Local/Account isolation rules (no silent merge).
 
 Risks:
+
 - User confusion about which mode they are in.
 - Accidental loss of local-only progress if rejoin is chosen.
- - Ambiguous UX if offline forks are not labeled clearly.
+- Ambiguous UX if offline forks are not labeled clearly.
 
 Acceptance criteria:
+
 - When offline, Run Mode is not blocked; user sees clear offline banner.
 - Choosing local continuation keeps the timer running without writing to
   Account Mode.
 - On reconnect, user must explicitly choose rejoin or stay local.
 - No automatic merge or overwrite of Account Mode session.
- - Offline fork is clearly labeled in Local Mode; Account Mode never shows it.
+- Offline fork is clearly labeled in Local Mode; Account Mode never shows it.
 
 Notes:
 Optional: presence signals (e.g., “Device offline”) can be added later when

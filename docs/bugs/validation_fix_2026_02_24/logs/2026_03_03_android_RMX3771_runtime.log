@@ -1,0 +1,1646 @@
+[  +60 ms] executing: sysctl hw.optional.arm64
+[  +11 ms] Exit code 1 from: sysctl hw.optional.arm64
+[        ] sysctl: unknown oid 'hw.optional.arm64'
+[  +14 ms] Artifact Instance of 'MaterialFonts' is not required, skipping update.
+[        ] Artifact Instance of 'GradleWrapper' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[   +1 ms] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterSdk' is not required, skipping update.
+[        ] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FontSubsetArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'PubDependencies' is not required, skipping update.
+[   +1 ms] executing: [/Users/devcodex/development/flutter/] git -c log.showSignature=false log HEAD -n 1 --pretty=format:%ad --date=iso
+[  +50 ms] Exit code 0 from: git -c log.showSignature=false log HEAD -n 1 --pretty=format:%ad --date=iso
+[        ] 2026-02-18 13:54:59 -0800
+[  +62 ms] executing: sysctl hw.optional.arm64
+[  +10 ms] Exit code 1 from: sysctl hw.optional.arm64
+[        ] sysctl: unknown oid 'hw.optional.arm64'
+[        ] executing: xcrun xcodebuild -version
+[ +169 ms] Exit code 0 from: xcrun xcodebuild -version
+[   +1 ms] Xcode 26.3
+           Build version 17C529
+[   +6 ms] executing: xcrun xcdevice list --timeout 5
+[  +10 ms] executing: /Users/devcodex/Library/Android/sdk/platform-tools/adb devices -l
+[        ] executing: xcrun xcdevice list --timeout 2
+[   +1 ms] executing: xcrun simctl list devices booted
+[ +302 ms] xcrun simctl list devices booted iOS --json
+[        ] executing: xcrun simctl list devices booted iOS --json
+[ +100 ms] List of devices attached
+           192.168.1.25:5555      device product:RMX3771EEA model:RMX3771 device:RE58B8L1 transport_id:1
+[  +10 ms] /Users/devcodex/Library/Android/sdk/platform-tools/adb -s 192.168.1.25:5555 shell getprop
+[ +148 ms] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterEngineStamp' is not required, skipping update.
+[        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[   +5 ms] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[  +76 ms] Artifact Instance of 'MaterialFonts' is not required, skipping update.
+[        ] Artifact Instance of 'GradleWrapper' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterEngineStamp' is not required, skipping update.
+[        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterSdk' is not required, skipping update.
+[        ] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FontSubsetArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'PubDependencies' is not required, skipping update.
+[ +225 ms] executing: /Users/devcodex/Library/Android/sdk/platform-tools/adb -s 192.168.1.25:5555 shell -x logcat -v time -t 1
+[   +1 ms] {
+             "devices" : {
+               "com.apple.CoreSimulator.SimRuntime.iOS-18-1" : [
+
+               ],
+               "com.apple.CoreSimulator.SimRuntime.iOS-18-4" : [
+
+               ],
+               "com.apple.CoreSimulator.SimRuntime.iOS-26-2" : [
+                 {
+                   "lastBootedAt" : "2026-03-03T15:49:41Z",
+                   "dataPath" : "\/Users\/devcodex\/Library\/Developer\/CoreSimulator\/Devices\/9A6B6687-8DE2-4573-A939-E4FFD0190E1A\/data",
+                   "dataPathSize" : 4525342720,
+                   "logPath" : "\/Users\/devcodex\/Library\/Logs\/CoreSimulator\/9A6B6687-8DE2-4573-A939-E4FFD0190E1A",
+                   "udid" : "9A6B6687-8DE2-4573-A939-E4FFD0190E1A",
+                   "isAvailable" : true,
+                   "logPathSize" : 716800,
+                   "deviceTypeIdentifier" : "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro",
+                   "state" : "Booted",
+                   "name" : "iPhone 17 Pro"
+                 }
+               ],
+               "com.apple.CoreSimulator.SimRuntime.watchOS-11-1" : [
+
+               ],
+               "com.apple.CoreSimulator.SimRuntime.tvOS-18-1" : [
+
+               ]
+             }
+           }
+[ +174 ms] --------- beginning of main
+           03-03 19:57:27.329 I/AHAL_StreamRemoteSubmix( 1284): inRead read failure count > 3, break read loop 0 frames, remaining =1024
+[  +10 ms] Showing RMX3771 logs:
+[+4257 ms] [
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,4",
+               "identifier" : "C20C534F-1AFB-48AC-8B3A-C9D513194D5A",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-plus-1",
+               "modelName" : "iPhone 16 Plus",
+               "name" : "iPhone 16 Plus",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,5",
+               "identifier" : "D51D5F29-FE65-4B02-950B-8D143F6015AF",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m3-13-1",
+               "modelName" : "iPad Air 13-inch (M3)",
+               "name" : "iPad Air 13-inch (M3)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,3",
+               "identifier" : "3B96DCB0-8E01-4477-9F0E-3348EC487AD2",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m3-1",
+               "modelName" : "iPad Air 11-inch (M3)",
+               "name" : "iPad Air 11-inch (M3)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,3",
+               "identifier" : "08215FD6-E8E7-48DC-813C-B6D7AC0DD3AD",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-1",
+               "modelName" : "iPhone 16",
+               "name" : "iPhone 16",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch7,5",
+               "identifier" : "52986FD7-C6F2-44F9-8184-135163ADB5AE",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-u2-8",
+               "modelName" : "Apple Watch Ultra 2 (49mm)",
+               "name" : "Apple Watch Ultra 2 (49mm)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,3",
+               "identifier" : "284106F3-DF1D-48FC-AB4F-168DEABDAC57",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-1",
+               "modelName" : "iPhone 16",
+               "name" : "iPhone 16",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch7,8",
+               "identifier" : "23A5AEB1-BD11-4065-B272-EB1D59302B5F",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-series10-4",
+               "modelName" : "Apple Watch Series 10 (42mm)",
+               "name" : "Apple Watch Series 10 (42mm)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone18,2",
+               "identifier" : "F34A2114-E4C0-4F53-90DC-46B3FF51A7E1",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.iphone-17-pro-max-2",
+               "modelName" : "iPhone 17 Pro Max",
+               "name" : "iPhone 17 Pro Max",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,6",
+               "identifier" : "B0C31D10-C712-4E87-BBC7-04134924132B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-pro-m4-13-1",
+               "modelName" : "iPad Pro 13-inch (M4)",
+               "name" : "iPad Pro 13-inch (M4)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,2",
+               "identifier" : "7682B1B1-3FAA-4396-8ED1-38D58C2D507B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-pro-max-1",
+               "modelName" : "iPhone 16 Pro Max",
+               "name" : "iPhone 16 Pro Max",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22J578)",
+               "available" : true,
+               "platform" : "com.apple.platform.appletvsimulator",
+               "modelCode" : "AppleTV5,3",
+               "identifier" : "92E44CA8-9C75-4D0B-80CE-3EF66405B32B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.apple-tv-4",
+               "modelName" : "Apple TV",
+               "name" : "Apple TV",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22J578)",
+               "available" : true,
+               "platform" : "com.apple.platform.appletvsimulator",
+               "modelCode" : "AppleTV14,1",
+               "identifier" : "CF865824-7BBD-4971-BAF5-A0B33E3D927F",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.apple-tv-4k-3rd",
+               "modelName" : "Apple TV 4K (3rd generation)",
+               "name" : "Apple TV 4K (3rd generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,5",
+               "identifier" : "446359A7-A997-48B2-A53B-D7FCA108449E",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-e-1",
+               "modelName" : "iPhone 16e",
+               "name" : "iPhone 16e",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,4",
+               "identifier" : "DE949815-CD56-4DC7-AF3A-0310ED55ED4A",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-pro-m4-1",
+               "modelName" : "iPad Pro 11-inch (M4)",
+               "name" : "iPad Pro 11-inch (M4)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad14,11",
+               "identifier" : "EE02B49D-E925-49A5-BE54-E8F872CFDFAF",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m2-13-1",
+               "modelName" : "iPad Air 13-inch (M2)",
+               "name" : "iPad Air 13-inch (M2)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,5",
+               "identifier" : "DED847BD-AA25-45A4-B3F8-DAC60D92CE08",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-e-1",
+               "modelName" : "iPhone 16e",
+               "name" : "iPhone 16e",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone14,6",
+               "identifier" : "955D663F-FFDC-427D-A693-887E69F5B1BA",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-se3-1",
+               "modelName" : "iPhone SE (3rd generation)",
+               "name" : "iPhone SE (3rd generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone18,4",
+               "identifier" : "185AD710-BB9D-4F05-AC30-1105B3338E78",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.iphone-air-1",
+               "modelName" : "iPhone Air",
+               "name" : "iPhone Air",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,3",
+               "identifier" : "E125AB3A-53E1-41E1-8469-B984F5217419",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m3-1",
+               "modelName" : "iPad Air 11-inch (M3)",
+               "name" : "iPad Air 11-inch (M3)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad17,2",
+               "identifier" : "F98C0FC9-2BD6-4279-9D88-7A6E161D668B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.ipad-pro-11-inch-m5-1",
+               "modelName" : "iPad Pro 11-inch (M5)",
+               "name" : "iPad Pro 11-inch (M5)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad13,18",
+               "identifier" : "E2700927-1973-46ED-AD4C-470032780D5B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-10-1",
+               "modelName" : "iPad (10th generation)",
+               "name" : "iPad (10th generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone18,1",
+               "identifier" : "9A6B6687-8DE2-4573-A939-E4FFD0190E1A",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.iphone-17-pro-2",
+               "modelName" : "iPhone 17 Pro",
+               "name" : "iPhone 17 Pro",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch7,9",
+               "identifier" : "6E0D3EE3-0FA1-470C-AD72-C9375FA7C0F6",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-series10-4",
+               "modelName" : "Apple Watch Series 10 (46mm)",
+               "name" : "Apple Watch Series 10 (46mm)",
+               "ignored" : false
+             },
+             {
+               "ignored" : false,
+               "modelCode" : "MacBookPro16,1",
+               "simulator" : false,
+               "modelName" : "MacBook Pro",
+               "operatingSystemVersion" : "26.3 (25D125)",
+               "identifier" : "80550D2C-713D-5411-8754-44777FB80AB4",
+               "platform" : "com.apple.platform.macosx",
+               "architecture" : "x86_64h",
+               "interface" : "usb",
+               "available" : true,
+               "name" : "My Mac",
+               "modelUTI" : "com.apple.macbookpro-16"
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,2",
+               "identifier" : "244F195E-DD92-4C57-A822-A91BDFA5823F",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-mini-a17-1",
+               "modelName" : "iPad mini (A17 Pro)",
+               "name" : "iPad mini (A17 Pro)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone18,3",
+               "identifier" : "47E79B36-2B8D-4DDD-8A76-B2CA8B7B7F1E",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.iphone-17-2",
+               "modelName" : "iPhone 17",
+               "name" : "iPhone 17",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,1",
+               "identifier" : "8F63858E-5673-4CBB-813C-42BF25381FFB",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-pro-1",
+               "modelName" : "iPhone 16 Pro",
+               "name" : "iPhone 16 Pro",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad17,4",
+               "identifier" : "CFB538D5-72B8-4D7A-B01F-8815B2C9EEB4",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.ipad-pro-13-inch-m5-1",
+               "modelName" : "iPad Pro 13-inch (M5)",
+               "name" : "iPad Pro 13-inch (M5)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch6,13",
+               "identifier" : "9B0B9E3C-B325-4ECF-A4DE-8AA283A4E356",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-se-2nd-1",
+               "modelName" : "Apple Watch SE (44mm) (2nd generation)",
+               "name" : "Apple Watch SE (44mm) (2nd generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,2",
+               "identifier" : "94DFB47E-9A14-46C0-8F12-6A6CD513FF6A",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-mini-a17-1",
+               "modelName" : "iPad mini (A17 Pro)",
+               "name" : "iPad mini (A17 Pro)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,1",
+               "identifier" : "1835A5D0-AF1A-4D0B-8CF2-4EE06C0707C4",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-pro-1",
+               "modelName" : "iPhone 16 Pro",
+               "name" : "iPhone 16 Pro",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,4",
+               "identifier" : "132647C4-11D5-475D-85FA-2D68A05AE405",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-pro-m4-1",
+               "modelName" : "iPad Pro 11-inch (M4)",
+               "name" : "iPad Pro 11-inch (M4)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,7",
+               "identifier" : "EE4B788F-BD5A-437D-AE99-82CB18F1F7AB",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-a16-1",
+               "modelName" : "iPad (A16)",
+               "name" : "iPad (A16)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,7",
+               "identifier" : "D34ACD36-E0D7-470C-AEB0-1A9559A1917F",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-a16-1",
+               "modelName" : "iPad (A16)",
+               "name" : "iPad (A16)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch6,12",
+               "identifier" : "AD7CA81E-EF8C-4914-BE8D-09F42C93ADFD",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-se-2nd-1",
+               "modelName" : "Apple Watch SE (40mm) (2nd generation)",
+               "name" : "Apple Watch SE (40mm) (2nd generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad14,9",
+               "identifier" : "42291EF5-3456-44DF-968E-975F54B8868D",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m2-1",
+               "modelName" : "iPad Air 11-inch (M2)",
+               "name" : "iPad Air 11-inch (M2)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,5",
+               "identifier" : "7B696BBD-1BEE-4EDB-B4C5-9F2A4FFA8D24",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m3-13-1",
+               "modelName" : "iPad Air 13-inch (M3)",
+               "name" : "iPad Air 13-inch (M3)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,2",
+               "identifier" : "3DDD7683-59C1-4BEB-91E4-A81989E35A9C",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-mini-a17-1",
+               "modelName" : "iPad mini (A17 Pro)",
+               "name" : "iPad mini (A17 Pro)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,2",
+               "identifier" : "89CB1423-5EEA-4625-905C-FB7558FBB8C2",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-pro-max-1",
+               "modelName" : "iPhone 16 Pro Max",
+               "name" : "iPhone 16 Pro Max",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22J578)",
+               "available" : true,
+               "platform" : "com.apple.platform.appletvsimulator",
+               "modelCode" : "AppleTV14,1",
+               "identifier" : "8FE517B9-8789-49F1-8460-84F3A50B8507",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.apple-tv-4k-3rd",
+               "modelName" : "Apple TV 4K (3rd generation) (at 1080p)",
+               "name" : "Apple TV 4K (3rd generation) (at 1080p)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,6",
+               "identifier" : "A80C020F-BE29-4EC1-A814-EBBABB8DD2DE",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-pro-m4-13-1",
+               "modelName" : "iPad Pro 13-inch (M4)",
+               "name" : "iPad Pro 13-inch (M4)",
+               "ignored" : false
+             }
+           ]
+[   +9 ms] executing: xcrun devicectl --version
+[ +126 ms] executing: xcrun devicectl list devices --timeout 5 --json-output /var/folders/xf/w6ghptys0vs0w03ys34g0y7h0000gp/T/flutter_tools.3xCbVZ/core_devices.HpJhzM/core_device_list.json
+[ +121 ms] {
+             "info" : {
+               "arguments" : [
+                 "devicectl",
+                 "list",
+                 "devices",
+                 "--timeout",
+                 "5",
+                 "--json-output",
+                 "/var/folders/xf/w6ghptys0vs0w03ys34g0y7h0000gp/T/flutter_tools.3xCbVZ/core_devices.HpJhzM/core_device_list.json"
+               ],
+               "commandType" : "devicectl.list.devices",
+               "environment" : {
+                 "TERM" : "xterm-256color"
+               },
+               "jsonVersion" : 3,
+               "outcome" : "success",
+               "version" : "506.7"
+             },
+             "result" : {
+               "devices" : [
+
+               ]
+             }
+           }
+
+[+2684 ms] [
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,4",
+               "identifier" : "C20C534F-1AFB-48AC-8B3A-C9D513194D5A",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-plus-1",
+               "modelName" : "iPhone 16 Plus",
+               "name" : "iPhone 16 Plus",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,5",
+               "identifier" : "D51D5F29-FE65-4B02-950B-8D143F6015AF",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m3-13-1",
+               "modelName" : "iPad Air 13-inch (M3)",
+               "name" : "iPad Air 13-inch (M3)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,3",
+               "identifier" : "3B96DCB0-8E01-4477-9F0E-3348EC487AD2",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m3-1",
+               "modelName" : "iPad Air 11-inch (M3)",
+               "name" : "iPad Air 11-inch (M3)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,3",
+               "identifier" : "08215FD6-E8E7-48DC-813C-B6D7AC0DD3AD",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-1",
+               "modelName" : "iPhone 16",
+               "name" : "iPhone 16",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch7,5",
+               "identifier" : "52986FD7-C6F2-44F9-8184-135163ADB5AE",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-u2-8",
+               "modelName" : "Apple Watch Ultra 2 (49mm)",
+               "name" : "Apple Watch Ultra 2 (49mm)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,3",
+               "identifier" : "284106F3-DF1D-48FC-AB4F-168DEABDAC57",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-1",
+               "modelName" : "iPhone 16",
+               "name" : "iPhone 16",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch7,8",
+               "identifier" : "23A5AEB1-BD11-4065-B272-EB1D59302B5F",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-series10-4",
+               "modelName" : "Apple Watch Series 10 (42mm)",
+               "name" : "Apple Watch Series 10 (42mm)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone18,2",
+               "identifier" : "F34A2114-E4C0-4F53-90DC-46B3FF51A7E1",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.iphone-17-pro-max-2",
+               "modelName" : "iPhone 17 Pro Max",
+               "name" : "iPhone 17 Pro Max",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,6",
+               "identifier" : "B0C31D10-C712-4E87-BBC7-04134924132B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-pro-m4-13-1",
+               "modelName" : "iPad Pro 13-inch (M4)",
+               "name" : "iPad Pro 13-inch (M4)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,2",
+               "identifier" : "7682B1B1-3FAA-4396-8ED1-38D58C2D507B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-pro-max-1",
+               "modelName" : "iPhone 16 Pro Max",
+               "name" : "iPhone 16 Pro Max",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22J578)",
+               "available" : true,
+               "platform" : "com.apple.platform.appletvsimulator",
+               "modelCode" : "AppleTV5,3",
+               "identifier" : "92E44CA8-9C75-4D0B-80CE-3EF66405B32B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.apple-tv-4",
+               "modelName" : "Apple TV",
+               "name" : "Apple TV",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22J578)",
+               "available" : true,
+               "platform" : "com.apple.platform.appletvsimulator",
+               "modelCode" : "AppleTV14,1",
+               "identifier" : "CF865824-7BBD-4971-BAF5-A0B33E3D927F",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.apple-tv-4k-3rd",
+               "modelName" : "Apple TV 4K (3rd generation)",
+               "name" : "Apple TV 4K (3rd generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,5",
+               "identifier" : "446359A7-A997-48B2-A53B-D7FCA108449E",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-e-1",
+               "modelName" : "iPhone 16e",
+               "name" : "iPhone 16e",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,4",
+               "identifier" : "DE949815-CD56-4DC7-AF3A-0310ED55ED4A",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-pro-m4-1",
+               "modelName" : "iPad Pro 11-inch (M4)",
+               "name" : "iPad Pro 11-inch (M4)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad14,11",
+               "identifier" : "EE02B49D-E925-49A5-BE54-E8F872CFDFAF",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m2-13-1",
+               "modelName" : "iPad Air 13-inch (M2)",
+               "name" : "iPad Air 13-inch (M2)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,5",
+               "identifier" : "DED847BD-AA25-45A4-B3F8-DAC60D92CE08",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-e-1",
+               "modelName" : "iPhone 16e",
+               "name" : "iPhone 16e",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone14,6",
+               "identifier" : "955D663F-FFDC-427D-A693-887E69F5B1BA",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-se3-1",
+               "modelName" : "iPhone SE (3rd generation)",
+               "name" : "iPhone SE (3rd generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone18,4",
+               "identifier" : "185AD710-BB9D-4F05-AC30-1105B3338E78",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.iphone-air-1",
+               "modelName" : "iPhone Air",
+               "name" : "iPhone Air",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,3",
+               "identifier" : "E125AB3A-53E1-41E1-8469-B984F5217419",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m3-1",
+               "modelName" : "iPad Air 11-inch (M3)",
+               "name" : "iPad Air 11-inch (M3)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad17,2",
+               "identifier" : "F98C0FC9-2BD6-4279-9D88-7A6E161D668B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.ipad-pro-11-inch-m5-1",
+               "modelName" : "iPad Pro 11-inch (M5)",
+               "name" : "iPad Pro 11-inch (M5)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad13,18",
+               "identifier" : "E2700927-1973-46ED-AD4C-470032780D5B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-10-1",
+               "modelName" : "iPad (10th generation)",
+               "name" : "iPad (10th generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone18,1",
+               "identifier" : "9A6B6687-8DE2-4573-A939-E4FFD0190E1A",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.iphone-17-pro-2",
+               "modelName" : "iPhone 17 Pro",
+               "name" : "iPhone 17 Pro",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch7,9",
+               "identifier" : "6E0D3EE3-0FA1-470C-AD72-C9375FA7C0F6",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-series10-4",
+               "modelName" : "Apple Watch Series 10 (46mm)",
+               "name" : "Apple Watch Series 10 (46mm)",
+               "ignored" : false
+             },
+             {
+               "ignored" : false,
+               "modelCode" : "MacBookPro16,1",
+               "simulator" : false,
+               "modelName" : "MacBook Pro",
+               "operatingSystemVersion" : "26.3 (25D125)",
+               "identifier" : "80550D2C-713D-5411-8754-44777FB80AB4",
+               "platform" : "com.apple.platform.macosx",
+               "architecture" : "x86_64h",
+               "interface" : "usb",
+               "available" : true,
+               "name" : "My Mac",
+               "modelUTI" : "com.apple.macbookpro-16"
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,2",
+               "identifier" : "244F195E-DD92-4C57-A822-A91BDFA5823F",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-mini-a17-1",
+               "modelName" : "iPad mini (A17 Pro)",
+               "name" : "iPad mini (A17 Pro)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone18,3",
+               "identifier" : "47E79B36-2B8D-4DDD-8A76-B2CA8B7B7F1E",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.iphone-17-2",
+               "modelName" : "iPhone 17",
+               "name" : "iPhone 17",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,1",
+               "identifier" : "8F63858E-5673-4CBB-813C-42BF25381FFB",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-pro-1",
+               "modelName" : "iPhone 16 Pro",
+               "name" : "iPhone 16 Pro",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad17,4",
+               "identifier" : "CFB538D5-72B8-4D7A-B01F-8815B2C9EEB4",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.ipad-pro-13-inch-m5-1",
+               "modelName" : "iPad Pro 13-inch (M5)",
+               "name" : "iPad Pro 13-inch (M5)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch6,13",
+               "identifier" : "9B0B9E3C-B325-4ECF-A4DE-8AA283A4E356",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-se-2nd-1",
+               "modelName" : "Apple Watch SE (44mm) (2nd generation)",
+               "name" : "Apple Watch SE (44mm) (2nd generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,2",
+               "identifier" : "94DFB47E-9A14-46C0-8F12-6A6CD513FF6A",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-mini-a17-1",
+               "modelName" : "iPad mini (A17 Pro)",
+               "name" : "iPad mini (A17 Pro)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,1",
+               "identifier" : "1835A5D0-AF1A-4D0B-8CF2-4EE06C0707C4",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-pro-1",
+               "modelName" : "iPhone 16 Pro",
+               "name" : "iPhone 16 Pro",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,4",
+               "identifier" : "132647C4-11D5-475D-85FA-2D68A05AE405",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-pro-m4-1",
+               "modelName" : "iPad Pro 11-inch (M4)",
+               "name" : "iPad Pro 11-inch (M4)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,7",
+               "identifier" : "EE4B788F-BD5A-437D-AE99-82CB18F1F7AB",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-a16-1",
+               "modelName" : "iPad (A16)",
+               "name" : "iPad (A16)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,7",
+               "identifier" : "D34ACD36-E0D7-470C-AEB0-1A9559A1917F",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-a16-1",
+               "modelName" : "iPad (A16)",
+               "name" : "iPad (A16)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch6,12",
+               "identifier" : "AD7CA81E-EF8C-4914-BE8D-09F42C93ADFD",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-se-2nd-1",
+               "modelName" : "Apple Watch SE (40mm) (2nd generation)",
+               "name" : "Apple Watch SE (40mm) (2nd generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad14,9",
+               "identifier" : "42291EF5-3456-44DF-968E-975F54B8868D",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m2-1",
+               "modelName" : "iPad Air 11-inch (M2)",
+               "name" : "iPad Air 11-inch (M2)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,5",
+               "identifier" : "7B696BBD-1BEE-4EDB-B4C5-9F2A4FFA8D24",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m3-13-1",
+               "modelName" : "iPad Air 13-inch (M3)",
+               "name" : "iPad Air 13-inch (M3)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,2",
+               "identifier" : "3DDD7683-59C1-4BEB-91E4-A81989E35A9C",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-mini-a17-1",
+               "modelName" : "iPad mini (A17 Pro)",
+               "name" : "iPad mini (A17 Pro)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,2",
+               "identifier" : "89CB1423-5EEA-4625-905C-FB7558FBB8C2",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-pro-max-1",
+               "modelName" : "iPhone 16 Pro Max",
+               "name" : "iPhone 16 Pro Max",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22J578)",
+               "available" : true,
+               "platform" : "com.apple.platform.appletvsimulator",
+               "modelCode" : "AppleTV14,1",
+               "identifier" : "8FE517B9-8789-49F1-8460-84F3A50B8507",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.apple-tv-4k-3rd",
+               "modelName" : "Apple TV 4K (3rd generation) (at 1080p)",
+               "name" : "Apple TV 4K (3rd generation) (at 1080p)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,6",
+               "identifier" : "A80C020F-BE29-4EC1-A814-EBBABB8DD2DE",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-pro-m4-13-1",
+               "modelName" : "iPad Pro 13-inch (M4)",
+               "name" : "iPad Pro 13-inch (M4)",
+               "ignored" : false
+             }
+           ]
+[+13688 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=longBreakRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30938 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=longBreakRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30019 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=longBreakRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+12023 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+18056 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+29936 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30008 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+29978 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+29989 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30017 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+29978 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+29998 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+31040 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+29950 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30019 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+31046 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[   +1 ms] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30969 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30083 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+29905 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30031 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+29973 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30999 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30997 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+29982 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30993 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30050 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+29984 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+31007 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30025 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+31022 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+29948 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30981 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30985 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30090 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30955 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+29979 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30970 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30026 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+31126 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30922 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30956 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+29978 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30103 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30892 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[   +1 ms] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+31019 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30992 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+29959 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30036 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30038 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+29967 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30107 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+29907 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30959 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+23064 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=shortBreakRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+6996 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=shortBreakRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+31268 ms] I/flutter (32207): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=shortBreakRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (32207): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+16338 ms] D/FlutterJNI(23443): Beginning load of flutter...
+[ +130 ms] D/FlutterJNI(23443): flutter (null) was loaded normally!
+[ +155 ms] I/flutter (23443): [IMPORTANT:flutter/shell/platform/android/android_context_vk_impeller.cc(62)] Using the Impeller rendering backend (Vulkan).
+[ +365 ms] I/flutter (23443): The Dart VM service is listening on http://127.0.0.1:40625/gojLBw4It_w=/
+[ +266 ms] D/FlutterRenderer(23443): Width is zero. 0,0
+[ +408 ms] I/flutter (23443): AppConfig: env=prod project=focus-interval emulator=false host=10.0.2.2 ports=auth:9099,firestore:8080
+[ +710 ms] D/FlutterRenderer(23443): Width is zero. 0,0
+[  +31 ms] D/FlutterJNI(23443): Sending viewport metrics to the engine.
+[ +243 ms] D/FlutterJNI(23443): Sending viewport metrics to the engine.
+[  +18 ms] D/FlutterJNI(23443): Sending viewport metrics to the engine.
+[ +631 ms] I/FlutterBackgroundExecutor(23443): Starting AlarmService...
+[ +100 ms] I/flutter (23443): [IMPORTANT:flutter/shell/platform/android/android_context_vk_impeller.cc(62)] Using the Impeller rendering backend (Vulkan).
+[ +748 ms] I/flutter (23443): [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[ +700 ms] I/flutter (23443): [RunModeDiag] Active session cleared route=/tasks
+[ +282 ms] D/FlutterJNI(23443): Sending viewport metrics to the engine.
+[ +501 ms] I/flutter (23443): [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[ +124 ms] I/flutter (23443): [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[  +32 ms] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=shortBreakRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/tasks
+[   +6 ms] I/flutter (23443): [RunModeDiag] Active session detected. Validating auto-open group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/tasks
+[ +706 ms] I/flutter (23443): [ScheduledGroups][no-groups] mode=account now=2026-03-03 20:24:59.747855 scheduled=0 overdue=0 activeSession=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 sample=n/a
+[  +10 ms] I/flutter (23443): [ScheduledGroups][evaluate] mode=account now=2026-03-03 20:25:01.362769 scheduled=0 overdue=0 activeSession=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 sample=n/a
+[        ] I/flutter (23443): Scheduled auto-start suppressed (running group active).
+[   +8 ms] I/flutter (23443): [RunModeDiag] Attempting auto-open to TimerScreen group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/tasks
+[ +318 ms] I/flutter (23443): [RunModeDiag] Auto-open confirmed in timer group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[  +81 ms] I/flutter (23443): [ScheduledGroups][no-groups] mode=account now=2026-03-03 20:25:01.233553 scheduled=0 overdue=0 activeSession=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 sample=n/a
+[ +290 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=shortBreakRunning phase=shortBreak remaining=263 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:24:00.920 lastUpdatedAt=2026-03-03 20:24:39.025 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[ +348 ms] I/flutter (23443): [TimeSync] offset=-163ms local=2026-03-03 20:25:03.163751 server=2026-03-03 20:25:02.821
+[   +3 ms] I/flutter (23443): [TimeSync] refreshed (load-group) offset=-163ms
+[  +23 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=shortBreakRunning phase=shortBreak remaining=263 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:24:00.920 lastUpdatedAt=2026-03-03 20:24:39.025 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Timer load group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 result=PomodoroGroupLoadResult.loaded status=running route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[  +11 ms] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-163ms
+[   +1 ms] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-163ms
+[+6102 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=shortBreakRunning phase=shortBreak remaining=232 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:24:00.920 lastUpdatedAt=2026-03-03 20:25:09.021 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[   +9 ms] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-163ms
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=shortBreakRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+86893 ms] I/flutter (23443): [ActiveSession] Resync start (inactive-resync).
+[ +512 ms] E/flutter (23443): [ERROR:flutter/runtime/dart_vm_initializer.cc(40)] Unhandled Exception: [cloud_firestore/unavailable] The service is currently unavailable. This is a most likely a transient condition and may be corrected by retrying with a backoff.
+[        ] E/flutter (23443): #0      FirebaseFirestoreHostApi.transactionGet (package:cloud_firestore_platform_interface/src/pigeon/messages.pigeon.dart:1000:7)
+[        ] E/flutter (23443): <asynchronous suspension>
+[        ] E/flutter (23443): #1      MethodChannelTransaction.get (package:cloud_firestore_platform_interface/src/method_channel/method_channel_transaction.dart:50:22)
+[        ] E/flutter (23443): <asynchronous suspension>
+[        ] E/flutter (23443): #2      Transaction.get (package:cloud_firestore/src/transaction.dart:28:9)
+[        ] E/flutter (23443): <asynchronous suspension>
+[        ] E/flutter (23443): #3      FirestorePomodoroSessionRepository.tryAutoClaimStaleOwner.<anonymous closure> (package:focus_interval/data/repositories/firestore_pomodoro_session_repository.dart:298:20)
+[        ] E/flutter (23443): <asynchronous suspension>
+[        ] E/flutter (23443): #4      FirebaseFirestore.runTransaction.<anonymous closure> (package:cloud_firestore/src/firestore.dart:291:18)
+[        ] E/flutter (23443): <asynchronous suspension>
+[        ] E/flutter (23443): #5      MethodChannelFirebaseFirestore.runTransaction.<anonymous closure> (package:cloud_firestore_platform_interface/src/method_channel/method_channel_firestore.dart:278:20)
+[        ] E/flutter (23443): <asynchronous suspension>
+[        ] E/flutter (23443): 
+[+27108 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=shortBreakRunning phase=shortBreak remaining=141 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:24:00.920 lastUpdatedAt=2026-03-03 20:26:40.039 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=shortBreakRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[  +33 ms] I/flutter (23443): [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=true runningOverlap=false lateStartHeartbeat=false
+[  +15 ms] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=shortBreakRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open resume trigger. Clearing auto-open state group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open state set (already in timer) group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[        ] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=shortBreakRunning phase=shortBreak remaining=141 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:24:00.920 lastUpdatedAt=2026-03-03 20:26:40.039 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[ +164 ms] I/flutter (23443): [ScheduledGroups][evaluate] mode=account now=2026-03-03 20:27:03.875196 scheduled=0 overdue=0 activeSession=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 sample=n/a
+[        ] I/flutter (23443): Scheduled auto-start suppressed (running group active).
+[  +19 ms] I/flutter (23443): [TimeSync] offset=13504ms local=2026-03-03 20:27:04.072075 server=2026-03-03 20:27:03.649
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=13504ms
+[        ] I/flutter (23443): [TimeSync] refreshed (resume) offset=13504ms
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=13504ms
+[        ] I/flutter (23443): [TimeSync] refreshed (inactive-resync) offset=13504ms
+[ +103 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=shortBreakRunning phase=shortBreak remaining=141 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:24:00.920 lastUpdatedAt=2026-03-03 20:26:40.039 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=13504ms
+[+1786 ms] I/flutter (23443): [ActiveSession] Resync start (post-resume).
+[        ] I/flutter (23443): [TimeSync] refreshed (post-resume) offset=13504ms
+[  +38 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=shortBreakRunning phase=shortBreak remaining=141 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:24:00.920 lastUpdatedAt=2026-03-03 20:26:40.039 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[   +1 ms] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=13504ms
+[+5305 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=shortBreakRunning phase=shortBreak remaining=110 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:24:00.920 lastUpdatedAt=2026-03-03 20:27:11.039 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=13504ms
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=shortBreakRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30077 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=shortBreakRunning phase=shortBreak remaining=80 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:24:00.920 lastUpdatedAt=2026-03-03 20:27:41.026 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[   +7 ms] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=shortBreakRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[   +1 ms] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[ +218 ms] I/flutter (23443): [TimeSync] offset=-216ms local=2026-03-03 20:27:41.616064 server=2026-03-03 20:27:41.284
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-216ms
+[+30720 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=shortBreakRunning phase=shortBreak remaining=49 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:24:00.920 lastUpdatedAt=2026-03-03 20:28:12.037 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=shortBreakRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[ +272 ms] I/flutter (23443): [TimeSync] offset=-215ms local=2026-03-03 20:28:12.609327 server=2026-03-03 20:28:12.257
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-215ms
+[+29716 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=shortBreakRunning phase=shortBreak remaining=19 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:24:00.920 lastUpdatedAt=2026-03-03 20:28:42.029 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-215ms
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=shortBreakRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+3614 ms] I/flutter (23443): [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=true runningOverlap=false lateStartHeartbeat=false
+[  +38 ms] I/flutter (23443): [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[  +28 ms] I/flutter (23443): [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false runningOverlap=false lateStartHeartbeat=false
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=shortBreakRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[  +93 ms] I/flutter (23443): [ScheduledGroups][evaluate] mode=account now=2026-03-03 20:28:45.985575 scheduled=0 overdue=0 activeSession=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 sample=n/a
+[        ] I/flutter (23443): Scheduled auto-start suppressed (running group active).
+[        ] I/flutter (23443): [ScheduledGroups][evaluate] mode=account now=2026-03-03 20:28:45.937232 scheduled=0 overdue=0 activeSession=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 sample=n/a
+[        ] I/flutter (23443): Scheduled auto-start suppressed (running group active).
+[  +15 ms] I/flutter (23443): [ScheduledGroups][evaluate] mode=account now=2026-03-03 20:28:46.008231 scheduled=0 overdue=0 activeSession=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 sample=n/a
+[        ] I/flutter (23443): Scheduled auto-start suppressed (running group active).
+[+15257 ms] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+10918 ms] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30016 ms] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+31003 ms] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+31040 ms] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30945 ms] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30017 ms] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+29994 ms] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+31065 ms] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+29951 ms] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+11924 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=1245 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:33:16.050 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[ +542 ms] I/flutter (23443): [TimeSync] offset=-63ms local=2026-03-03 20:33:28.809198 server=2026-03-03 20:33:28.472
+[        ] I/flutter (23443): [TimeSync] refreshed (load-group) offset=-63ms
+[   +1 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=1245 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:33:16.050 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Timer load group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 result=PomodoroGroupLoadResult.loaded status=running route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-63ms
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-63ms
+[+17509 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=1215 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:33:46.068 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-63ms
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30995 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=1184 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:34:17.050 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[  +13 ms] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[ +239 ms] I/flutter (23443): [TimeSync] offset=-215ms local=2026-03-03 20:34:17.575551 server=2026-03-03 20:34:17.232
+[   +1 ms] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-215ms
+[+29765 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=1154 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:34:47.048 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[   +1 ms] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-215ms
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+31000 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=1123 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:35:18.031 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[   +7 ms] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[ +394 ms] I/flutter (23443): [TimeSync] offset=-192ms local=2026-03-03 20:35:18.745884 server=2026-03-03 20:35:18.353
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-192ms
+[+29584 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=1093 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:35:48.035 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-192ms
+[   +7 ms] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+29971 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=1063 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:36:18.030 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[ +247 ms] I/flutter (23443): [TimeSync] offset=-226ms local=2026-03-03 20:36:18.560107 server=2026-03-03 20:36:18.203
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-226ms
+[+29761 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=1033 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:36:48.044 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-226ms
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+29989 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=1003 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:37:18.040 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[ +218 ms] I/flutter (23443): [TimeSync] offset=-213ms local=2026-03-03 20:37:18.530094 server=2026-03-03 20:37:18.205
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-213ms
+[+30806 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=972 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:37:49.067 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[ +223 ms] I/flutter (23443): [TimeSync] offset=-221ms local=2026-03-03 20:37:49.558025 server=2026-03-03 20:37:49.225
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-221ms
+[+29809 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=942 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:38:19.102 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-221ms
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30952 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=911 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:38:50.041 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[ +404 ms] I/flutter (23443): [TimeSync] offset=-186ms local=2026-03-03 20:38:50.735002 server=2026-03-03 20:38:50.341
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-186ms
+[+29623 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=881 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:39:20.042 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-186ms
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30956 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=850 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:39:51.045 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[ +335 ms] I/flutter (23443): [TimeSync] offset=-175ms local=2026-03-03 20:39:51.650781 server=2026-03-03 20:39:51.305
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-175ms
+[+30650 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=819 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:40:22.049 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[ +207 ms] I/flutter (23443): [TimeSync] offset=-208ms local=2026-03-03 20:40:22.503856 server=2026-03-03 20:40:22.191
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-208ms
+[+29784 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=789 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:40:52.039 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-208ms
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30043 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=759 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:41:22.055 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[ +193 ms] I/flutter (23443): [TimeSync] offset=-211ms local=2026-03-03 20:41:22.527230 server=2026-03-03 20:41:22.218
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-211ms
+[+29769 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=729 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:41:52.048 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-211ms
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+31083 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=698 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:42:23.074 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[   +6 ms] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[ +429 ms] I/flutter (23443): [TimeSync] offset=-172ms local=2026-03-03 20:42:23.793945 server=2026-03-03 20:42:23.416
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-172ms
+[+29571 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=668 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:42:53.045 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-172ms
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+29957 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=638 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:43:23.052 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[   +9 ms] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[ +260 ms] I/flutter (23443): [TimeSync] offset=-236ms local=2026-03-03 20:43:23.616201 server=2026-03-03 20:43:23.249
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-236ms
+[+29876 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=608 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:43:53.061 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-236ms
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30866 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=577 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:44:24.051 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[ +413 ms] I/flutter (23443): [TimeSync] offset=-183ms local=2026-03-03 20:44:24.782400 server=2026-03-03 20:44:24.388
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-183ms
+[+29695 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=547 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:44:54.244 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-183ms
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+29852 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=517 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:45:24.074 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[  +21 ms] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[ +266 ms] I/flutter (23443): [TimeSync] offset=-241ms local=2026-03-03 20:45:24.619164 server=2026-03-03 20:45:24.236
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-241ms
+[+30710 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=486 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:45:55.048 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[ +251 ms] I/flutter (23443): [TimeSync] offset=-228ms local=2026-03-03 20:45:55.587563 server=2026-03-03 20:45:55.229
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-228ms
+[+29770 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=456 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:46:25.091 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-228ms
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30947 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=425 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:46:56.043 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[ +352 ms] I/flutter (23443): [TimeSync] offset=-180ms local=2026-03-03 20:46:56.658722 server=2026-03-03 20:46:56.302
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-180ms
+[+30644 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=394 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:47:27.041 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[   +7 ms] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[ +266 ms] I/flutter (23443): [TimeSync] offset=-232ms local=2026-03-03 20:47:27.577698 server=2026-03-03 20:47:27.210
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-232ms
+[+29745 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=364 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:47:57.067 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[   +7 ms] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-232ms
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+30019 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=334 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:48:27.070 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[   +5 ms] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[ +297 ms] I/flutter (23443): [TimeSync] offset=-249ms local=2026-03-03 20:48:27.659273 server=2026-03-03 20:48:27.256
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-249ms
+[+29860 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=304 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:48:57.054 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-249ms
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[+16418 ms] I/flutter (23443): [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=true runningOverlap=false lateStartHeartbeat=false
+[        ] I/flutter (23443): [RunModeDiag] Active session change group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 status=pomodoroRunning owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open resume trigger. Clearing auto-open state group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open state set (already in timer) group=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [RunModeDiag] Auto-open suppressed (in-flight=false opened=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 route=/timer/4b4bbccd-cade-4134-9a8f-b5271fd2d0f4)
+[   +8 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=304 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:48:57.054 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [ActiveSession] Resync start (resume).
+[ +175 ms] I/flutter (23443): [ScheduledGroups][evaluate] mode=account now=2026-03-03 20:49:13.926341 scheduled=0 overdue=0 activeSession=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4 sample=n/a
+[        ] I/flutter (23443): Scheduled auto-start suppressed (running group active).
+[ +121 ms] I/flutter (23443): [TimeSync] offset=-186ms local=2026-03-03 20:49:14.244820 server=2026-03-03 20:49:13.900
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-186ms
+[        ] I/flutter (23443): [TimeSync] refreshed (resume) offset=-186ms
+[        ] I/flutter (23443): [TimeSync] refreshed (resume) offset=-186ms
+[ +185 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=304 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:48:57.054 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[        ] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-186ms
+[+1521 ms] I/flutter (23443): [ActiveSession] Resync start (post-resume).
+[        ] I/flutter (23443): [TimeSync] refreshed (post-resume) offset=-186ms
+[ +137 ms] I/flutter (23443): [ActiveSession][snapshot] owner=macOS-720d9b30-8d36-4c25-bac5-68832adace86 status=pomodoroRunning phase=pomodoro remaining=304 pausedAt=n/a accPaused=0 phaseStartedAt=2026-03-03 20:29:00.936 lastUpdatedAt=2026-03-03 20:48:57.054 groupId=4b4bbccd-cade-4134-9a8f-b5271fd2d0f4
+[  +11 ms] I/flutter (23443): [TimeSync] refreshed (session-snapshot) offset=-186ms
+[+34395 ms] I/flutter (23443): [ActiveSession] Resync start (inactive-resync).
+[  +25 ms] E/flutter (23443): [ERROR:flutter/runtime/dart_vm_initializer.cc(40)] Unhandled Exception: [cloud_firestore/unavailable] The service is currently unavailable. This is a most likely a transient condition and may be corrected by retrying with a backoff.
+[        ] E/flutter (23443): #0      FirebaseFirestoreHostApi.transactionGet (package:cloud_firestore_platform_interface/src/pigeon/messages.pigeon.dart:1000:7)
+[        ] E/flutter (23443): <asynchronous suspension>
+[        ] E/flutter (23443): #1      MethodChannelTransaction.get (package:cloud_firestore_platform_interface/src/method_channel/method_channel_transaction.dart:50:22)
+[        ] E/flutter (23443): <asynchronous suspension>
+[        ] E/flutter (23443): #2      Transaction.get (package:cloud_firestore/src/transaction.dart:28:9)
+[        ] E/flutter (23443): <asynchronous suspension>
+[        ] E/flutter (23443): #3      FirestorePomodoroSessionRepository.tryAutoClaimStaleOwner.<anonymous closure> (package:focus_interval/data/repositories/firestore_pomodoro_session_repository.dart:298:20)
+[        ] E/flutter (23443): <asynchronous suspension>
+[        ] E/flutter (23443): #4      FirebaseFirestore.runTransaction.<anonymous closure> (package:cloud_firestore/src/firestore.dart:291:18)
+[        ] E/flutter (23443): <asynchronous suspension>
+[        ] E/flutter (23443): #5      MethodChannelFirebaseFirestore.runTransaction.<anonymous closure> (package:cloud_firestore_platform_interface/src/method_channel/method_channel_firestore.dart:278:20)
+[        ] E/flutter (23443): <asynchronous suspension>
+[        ] E/flutter (23443): 
+[+50321 ms] E/flutter (23443): [ERROR:flutter/runtime/dart_vm_initializer.cc(40)] Unhandled Exception: [cloud_firestore/unavailable] The service is currently unavailable. This is a most likely a transient condition and may be corrected by retrying with a backoff.
+[        ] E/flutter (23443): #0      FirebaseFirestoreHostApi.transactionGet (package:cloud_firestore_platform_interface/src/pigeon/messages.pigeon.dart:1000:7)
+[        ] E/flutter (23443): <asynchronous suspension>
+[        ] E/flutter (23443): #1      MethodChannelTransaction.get (package:cloud_firestore_platform_interface/src/method_channel/method_channel_transaction.dart:50:22)
+[        ] E/flutter (23443): <asynchronous suspension>
+[        ] E/flutter (23443): #2      Transaction.get (package:cloud_firestore/src/transaction.dart:28:9)
+[        ] E/flutter (23443): <asynchronous suspension>
+[        ] E/flutter (23443): #3      FirestorePomodoroSessionRepository.tryAutoClaimStaleOwner.<anonymous closure> (package:focus_interval/data/repositories/firestore_pomodoro_session_repository.dart:298:20)
+[        ] E/flutter (23443): <asynchronous suspension>
+[        ] E/flutter (23443): #4      FirebaseFirestore.runTransaction.<anonymous closure> (package:cloud_firestore/src/firestore.dart:291:18)
+[        ] E/flutter (23443): <asynchronous suspension>
+[        ] E/flutter (23443): #5      MethodChannelFirebaseFirestore.runTransaction.<anonymous closure> (package:cloud_firestore_platform_interface/src/method_channel/method_channel_firestore.dart:278:20)
+[        ] E/flutter (23443): <asynchronous suspension>
+[        ] E/flutter (23443): 

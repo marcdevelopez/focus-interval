@@ -165,10 +165,15 @@ class _LateStartOverlapQueueScreenState
     );
     final isAccountMode = appMode == AppMode.account;
     final isOwner = !isAccountMode || ownerDeviceId == deviceId;
+    final queueResolved =
+        anchorFromGroups == null &&
+        ownerDeviceId == null &&
+        requestId == null &&
+        requesterDeviceId == null;
     final allCanceled =
         conflictGroups.isNotEmpty &&
         conflictGroups.every((group) => group.status == TaskRunStatus.canceled);
-    if (!isOwner && allCanceled) {
+    if (!isOwner && (allCanceled || queueResolved)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _showOwnerResolvedDialog();
@@ -188,6 +193,7 @@ class _LateStartOverlapQueueScreenState
     final shouldAutoClaim =
         isAccountMode &&
         !allCanceled &&
+        !queueResolved &&
         !isOwner &&
         (!hasOwner || ownerStale) &&
         (!hasPendingRequest || isPendingForSelf);

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
+import 'package:flutter/foundation.dart'
+    show debugPrint, kDebugMode, visibleForTesting;
 
 import '../../domain/pomodoro_machine.dart';
 
@@ -57,8 +58,60 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
       if (currentOwner != null && currentOwner != session.ownerDeviceId) {
         return;
       }
+      final currentData = snap.data()!;
+      final currentHasRevision = currentData.containsKey('sessionRevision');
+      final currentRevision = (currentData['sessionRevision'] as num?)?.toInt();
+      final decision = evaluateSessionWrite(
+        incomingRevision: session.sessionRevision,
+        currentRevision: currentRevision,
+        currentHasRevision: currentHasRevision,
+      );
+      if (decision == SessionWriteDecision.ignore) {
+        return;
+      }
+      if (decision == SessionWriteDecision.idempotent) {
+        final isSamePayload = _isSameSessionPayloadForRevision(
+          currentData,
+          session,
+        );
+        if (!isSamePayload) {
+          tx.set(docRef, data, SetOptions(merge: true));
+          return;
+        }
+        tx.set(docRef, {
+          'lastUpdatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        return;
+      }
       tx.set(docRef, data, SetOptions(merge: true));
     });
+  }
+
+  bool _isSameSessionPayloadForRevision(
+    Map<String, dynamic> currentData,
+    PomodoroSession incoming,
+  ) {
+    final current = PomodoroSession.fromMap(currentData);
+    return current.taskId == incoming.taskId &&
+        current.groupId == incoming.groupId &&
+        current.currentTaskId == incoming.currentTaskId &&
+        current.currentTaskIndex == incoming.currentTaskIndex &&
+        current.totalTasks == incoming.totalTasks &&
+        current.dataVersion == incoming.dataVersion &&
+        current.sessionRevision == incoming.sessionRevision &&
+        current.ownerDeviceId == incoming.ownerDeviceId &&
+        current.status == incoming.status &&
+        current.phase == incoming.phase &&
+        current.currentPomodoro == incoming.currentPomodoro &&
+        current.totalPomodoros == incoming.totalPomodoros &&
+        current.phaseDurationSeconds == incoming.phaseDurationSeconds &&
+        current.remainingSeconds == incoming.remainingSeconds &&
+        current.accumulatedPausedSeconds == incoming.accumulatedPausedSeconds &&
+        current.phaseStartedAt == incoming.phaseStartedAt &&
+        current.currentTaskStartedAt == incoming.currentTaskStartedAt &&
+        current.pausedAt == incoming.pausedAt &&
+        current.finishedAt == incoming.finishedAt &&
+        current.pauseReason == incoming.pauseReason;
   }
 
   @override
@@ -213,6 +266,29 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
   }
 
   @override
+  Future<void> clearSessionIfInactive({String? expectedGroupId}) async {
+    final uid = await _uidOrThrow();
+    final docRef = _doc(uid);
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(docRef);
+      if (!snap.exists) return;
+      final data = snap.data();
+      if (data == null) return;
+      if (expectedGroupId != null) {
+        final groupId = data['groupId'] as String?;
+        if (groupId != expectedGroupId) return;
+      }
+      final statusRaw = data['status'] as String?;
+      final status = PomodoroStatus.values.firstWhere(
+        (e) => e.name == statusRaw,
+        orElse: () => PomodoroStatus.idle,
+      );
+      if (status.isActiveExecution) return;
+      tx.delete(docRef);
+    });
+  }
+
+  @override
   Future<void> requestOwnership({
     required String requesterDeviceId,
     required String requestId,
@@ -361,4 +437,25 @@ class FirestorePomodoroSessionRepository implements PomodoroSessionRepository {
       }, SetOptions(merge: true));
     });
   }
+}
+
+enum SessionWriteDecision { ignore, idempotent, apply }
+
+@visibleForTesting
+SessionWriteDecision evaluateSessionWrite({
+  required int incomingRevision,
+  required int? currentRevision,
+  required bool currentHasRevision,
+}) {
+  if (!currentHasRevision) {
+    return SessionWriteDecision.apply;
+  }
+  final current = currentRevision ?? 0;
+  if (incomingRevision < current) {
+    return SessionWriteDecision.ignore;
+  }
+  if (incomingRevision == current) {
+    return SessionWriteDecision.idempotent;
+  }
+  return SessionWriteDecision.apply;
 }

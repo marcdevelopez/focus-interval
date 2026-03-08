@@ -1,0 +1,2706 @@
+[  +72 ms] executing: sysctl hw.optional.arm64
+[  +15 ms] Exit code 1 from: sysctl hw.optional.arm64
+[        ] sysctl: unknown oid 'hw.optional.arm64'
+[  +22 ms] Artifact Instance of 'MaterialFonts' is not required, skipping update.
+[        ] Artifact Instance of 'GradleWrapper' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[   +1 ms] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterSdk' is not required, skipping update.
+[        ] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FontSubsetArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'PubDependencies' is not required, skipping update.
+[   +2 ms] executing: [/Users/devcodex/development/flutter/] git -c log.showSignature=false log HEAD -n 1 --pretty=format:%ad --date=iso
+[  +64 ms] Exit code 0 from: git -c log.showSignature=false log HEAD -n 1 --pretty=format:%ad --date=iso
+[        ] 2026-02-18 13:54:59 -0800
+[  +87 ms] executing: sysctl hw.optional.arm64
+[  +13 ms] Exit code 1 from: sysctl hw.optional.arm64
+[        ] sysctl: unknown oid 'hw.optional.arm64'
+[        ] executing: xcrun xcodebuild -version
+[ +245 ms] Exit code 0 from: xcrun xcodebuild -version
+[        ] Xcode 26.3
+           Build version 17C529
+[   +6 ms] executing: xcrun xcdevice list --timeout 5
+[  +12 ms] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterEngineStamp' is not required, skipping update.
+[        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[   +4 ms] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[  +96 ms] executing: /Users/devcodex/Library/Android/sdk/platform-tools/adb devices -l
+[   +1 ms] executing: xcrun xcdevice list --timeout 2
+[   +2 ms] executing: xcrun simctl list devices booted
+[ +470 ms] xcrun simctl list devices booted iOS --json
+[        ] executing: xcrun simctl list devices booted iOS --json
+[ +127 ms] List of devices attached
+           192.168.1.25:5555      device product:RMX3771EEA model:RMX3771 device:RE58B8L1 transport_id:1
+[ +458 ms] {
+             "devices" : {
+               "com.apple.CoreSimulator.SimRuntime.iOS-18-1" : [
+
+               ],
+               "com.apple.CoreSimulator.SimRuntime.iOS-18-4" : [
+
+               ],
+               "com.apple.CoreSimulator.SimRuntime.iOS-26-2" : [
+                 {
+                   "lastBootedAt" : "2026-03-03T15:49:41Z",
+                   "dataPath" : "\/Users\/devcodex\/Library\/Developer\/CoreSimulator\/Devices\/9A6B6687-8DE2-4573-A939-E4FFD0190E1A\/data",
+                   "dataPathSize" : 4048781312,
+                   "logPath" : "\/Users\/devcodex\/Library\/Logs\/CoreSimulator\/9A6B6687-8DE2-4573-A939-E4FFD0190E1A",
+                   "udid" : "9A6B6687-8DE2-4573-A939-E4FFD0190E1A",
+                   "isAvailable" : true,
+                   "logPathSize" : 716800,
+                   "deviceTypeIdentifier" : "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro",
+                   "state" : "Booted",
+                   "name" : "iPhone 17 Pro"
+                 }
+               ],
+               "com.apple.CoreSimulator.SimRuntime.watchOS-11-1" : [
+
+               ],
+               "com.apple.CoreSimulator.SimRuntime.tvOS-18-1" : [
+
+               ]
+             }
+           }
+[  +16 ms] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[   +2 ms] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterEngineStamp' is not required, skipping update.
+[        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[   +2 ms] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[   +1 ms] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[  +73 ms] /Users/devcodex/Library/Android/sdk/platform-tools/adb -s 192.168.1.25:5555 shell getprop
+[   +1 ms] executing: xcrun xcdevice list --timeout 2
+[  +45 ms] Skipping pub get: version match.
+[ +316 ms] Found plugin url_launcher at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher-6.3.2/
+[  +14 ms] Found plugin url_launcher_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_windows-3.1.5/
+[  +18 ms] Found plugin url_launcher_web at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_web-2.4.2/
+[  +13 ms] Found plugin url_launcher_macos at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_macos-3.2.5/
+[  +10 ms] Found plugin url_launcher_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_linux-3.2.2/
+[  +12 ms] Found plugin url_launcher_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_ios-6.3.6/
+[  +10 ms] Found plugin url_launcher_android at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.28/
+[  +13 ms] Found plugin shared_preferences at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences-2.5.3/
+[   +7 ms] Found plugin shared_preferences_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_windows-2.4.1/
+[  +14 ms] Found plugin path_provider_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/
+[  +40 ms] Found plugin shared_preferences_web at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_web-2.4.3/
+[   +6 ms] Found plugin shared_preferences_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_linux-2.4.1/
+[   +9 ms] Found plugin path_provider_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_linux-2.2.1/
+[  +32 ms] Found plugin shared_preferences_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.4/
+[  +22 ms] Found plugin shared_preferences_android at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.13/
+[  +32 ms] Found plugin path_provider at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider-2.1.5/
+[  +15 ms] Found plugin path_provider_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.2/
+[   +5 ms] Found plugin path_provider_android at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_android-2.2.19/
+[   +4 ms] Found plugin local_notifier at /Users/devcodex/.pub-cache/hosted/pub.dev/local_notifier-0.1.6/
+[   +7 ms] Found plugin just_audio at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio-0.9.46/
+[   +8 ms] Found plugin just_audio_web at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio_web-0.4.16/
+[  +11 ms] Found plugin audio_session at /Users/devcodex/.pub-cache/hosted/pub.dev/audio_session-0.1.25/
+[  +11 ms] Found plugin google_sign_in at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in-6.3.0/
+[   +3 ms] Found plugin google_sign_in_web at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_web-0.12.4+4/
+[  +10 ms] Found plugin google_sign_in_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_ios-5.9.0/
+[   +3 ms] Found plugin google_sign_in_android at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_android-6.2.1/
+[  +97 ms] Found plugin flutter_local_notifications at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications-17.2.4/
+[   +5 ms] Found plugin flutter_local_notifications_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications_linux-4.0.1/
+[  +13 ms] Found plugin firebase_core at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core-3.15.2/
+[   +4 ms] Found plugin firebase_core_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core_web-2.24.1/
+[   +5 ms] Found plugin firebase_auth at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth-5.7.0/
+[   +8 ms] Found plugin firebase_auth_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth_web-5.15.3/
+[  +15 ms] Found plugin file_picker at /Users/devcodex/.pub-cache/hosted/pub.dev/file_picker-8.3.7/
+[  +15 ms] Found plugin flutter_plugin_android_lifecycle at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.33/
+[  +13 ms] Found plugin cloud_firestore at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore-5.6.12/
+[   +5 ms] Found plugin cloud_firestore_web at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore_web-4.4.12/
+[   +9 ms] Found plugin audioplayers at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers-6.5.1/
+[   +4 ms] Found plugin audioplayers_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_windows-4.2.1/
+[   +4 ms] Found plugin audioplayers_web at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_web-5.1.1/
+[   +3 ms] Found plugin audioplayers_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_linux-4.2.1/
+[   +3 ms] Found plugin audioplayers_darwin at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_darwin-6.3.0/
+[   +5 ms] Found plugin audioplayers_android at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_android-5.2.1/
+[   +3 ms] Found plugin android_alarm_manager_plus at /Users/devcodex/.pub-cache/hosted/pub.dev/android_alarm_manager_plus-4.0.8/
+[ +265 ms] Found plugin url_launcher at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher-6.3.2/
+[   +2 ms] Found plugin url_launcher_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_windows-3.1.5/
+[   +7 ms] Found plugin url_launcher_web at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_web-2.4.2/
+[   +5 ms] Found plugin url_launcher_macos at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_macos-3.2.5/
+[   +2 ms] Found plugin url_launcher_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_linux-3.2.2/
+[   +2 ms] Found plugin url_launcher_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_ios-6.3.6/
+[   +3 ms] Found plugin url_launcher_android at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.28/
+[   +4 ms] Found plugin shared_preferences at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences-2.5.3/
+[   +2 ms] Found plugin shared_preferences_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_windows-2.4.1/
+[   +3 ms] Found plugin path_provider_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/
+[  +32 ms] Found plugin shared_preferences_web at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_web-2.4.3/
+[   +3 ms] Found plugin shared_preferences_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_linux-2.4.1/
+[   +4 ms] Found plugin path_provider_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_linux-2.2.1/
+[   +5 ms] Found plugin shared_preferences_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.4/
+[   +3 ms] Found plugin shared_preferences_android at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.13/
+[   +3 ms] Found plugin path_provider at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider-2.1.5/
+[   +3 ms] Found plugin path_provider_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.2/
+[   +2 ms] Found plugin path_provider_android at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_android-2.2.19/
+[   +3 ms] Found plugin local_notifier at /Users/devcodex/.pub-cache/hosted/pub.dev/local_notifier-0.1.6/
+[   +2 ms] Found plugin just_audio at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio-0.9.46/
+[   +9 ms] Found plugin just_audio_web at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio_web-0.4.16/
+[   +9 ms] Found plugin audio_session at /Users/devcodex/.pub-cache/hosted/pub.dev/audio_session-0.1.25/
+[   +7 ms] Found plugin google_sign_in at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in-6.3.0/
+[   +5 ms] Found plugin google_sign_in_web at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_web-0.12.4+4/
+[   +8 ms] Found plugin google_sign_in_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_ios-5.9.0/
+[   +2 ms] Found plugin google_sign_in_android at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_android-6.2.1/
+[  +70 ms] Found plugin flutter_local_notifications at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications-17.2.4/
+[   +4 ms] Found plugin flutter_local_notifications_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications_linux-4.0.1/
+[   +7 ms] Found plugin firebase_core at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core-3.15.2/
+[   +1 ms] Found plugin firebase_core_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core_web-2.24.1/
+[   +4 ms] Found plugin firebase_auth at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth-5.7.0/
+[   +2 ms] Found plugin firebase_auth_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth_web-5.15.3/
+[   +7 ms] Found plugin file_picker at /Users/devcodex/.pub-cache/hosted/pub.dev/file_picker-8.3.7/
+[   +7 ms] Found plugin flutter_plugin_android_lifecycle at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.33/
+[   +6 ms] Found plugin cloud_firestore at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore-5.6.12/
+[   +7 ms] Found plugin cloud_firestore_web at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore_web-4.4.12/
+[   +6 ms] Found plugin audioplayers at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers-6.5.1/
+[   +2 ms] Found plugin audioplayers_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_windows-4.2.1/
+[   +7 ms] Found plugin audioplayers_web at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_web-5.1.1/
+[   +1 ms] Found plugin audioplayers_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_linux-4.2.1/
+[   +3 ms] Found plugin audioplayers_darwin at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_darwin-6.3.0/
+[   +2 ms] Found plugin audioplayers_android at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_android-5.2.1/
+[   +2 ms] Found plugin android_alarm_manager_plus at /Users/devcodex/.pub-cache/hosted/pub.dev/android_alarm_manager_plus-4.0.8/
+[  +38 ms] Skipping generating web_plugin_registrant.dart because it is up-to-date.
+[  +70 ms] Found plugin url_launcher at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher-6.3.2/
+[   +1 ms] Found plugin url_launcher_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_windows-3.1.5/
+[   +4 ms] Found plugin url_launcher_web at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_web-2.4.2/
+[   +4 ms] Found plugin url_launcher_macos at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_macos-3.2.5/
+[   +2 ms] Found plugin url_launcher_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_linux-3.2.2/
+[   +1 ms] Found plugin url_launcher_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_ios-6.3.6/
+[   +2 ms] Found plugin url_launcher_android at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.28/
+[   +3 ms] Found plugin shared_preferences at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences-2.5.3/
+[   +2 ms] Found plugin shared_preferences_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_windows-2.4.1/
+[   +5 ms] Found plugin path_provider_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/
+[   +7 ms] Found plugin shared_preferences_web at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_web-2.4.3/
+[   +1 ms] Found plugin shared_preferences_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_linux-2.4.1/
+[   +2 ms] Found plugin path_provider_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_linux-2.2.1/
+[   +3 ms] Found plugin shared_preferences_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.4/
+[   +2 ms] Found plugin shared_preferences_android at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.13/
+[   +2 ms] Found plugin path_provider at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider-2.1.5/
+[   +5 ms] Found plugin path_provider_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.2/
+[   +2 ms] Found plugin path_provider_android at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_android-2.2.19/
+[   +7 ms] Found plugin local_notifier at /Users/devcodex/.pub-cache/hosted/pub.dev/local_notifier-0.1.6/
+[   +5 ms] Found plugin just_audio at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio-0.9.46/
+[   +4 ms] Found plugin just_audio_web at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio_web-0.4.16/
+[   +7 ms] Found plugin audio_session at /Users/devcodex/.pub-cache/hosted/pub.dev/audio_session-0.1.25/
+[   +6 ms] Found plugin google_sign_in at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in-6.3.0/
+[   +2 ms] Found plugin google_sign_in_web at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_web-0.12.4+4/
+[   +8 ms] Found plugin google_sign_in_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_ios-5.9.0/
+[   +2 ms] Found plugin google_sign_in_android at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_android-6.2.1/
+[  +65 ms] Found plugin flutter_local_notifications at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications-17.2.4/
+[   +3 ms] Found plugin flutter_local_notifications_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications_linux-4.0.1/
+[   +8 ms] Found plugin firebase_core at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core-3.15.2/
+[   +1 ms] Found plugin firebase_core_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core_web-2.24.1/
+[   +3 ms] Found plugin firebase_auth at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth-5.7.0/
+[   +1 ms] Found plugin firebase_auth_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth_web-5.15.3/
+[   +9 ms] Found plugin file_picker at /Users/devcodex/.pub-cache/hosted/pub.dev/file_picker-8.3.7/
+[   +5 ms] Found plugin flutter_plugin_android_lifecycle at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.33/
+[   +5 ms] Found plugin cloud_firestore at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore-5.6.12/
+[   +4 ms] Found plugin cloud_firestore_web at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore_web-4.4.12/
+[   +3 ms] Found plugin audioplayers at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers-6.5.1/
+[   +2 ms] Found plugin audioplayers_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_windows-4.2.1/
+[   +5 ms] Found plugin audioplayers_web at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_web-5.1.1/
+[   +2 ms] Found plugin audioplayers_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_linux-4.2.1/
+[   +2 ms] Found plugin audioplayers_darwin at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_darwin-6.3.0/
+[   +2 ms] Found plugin audioplayers_android at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_android-5.2.1/
+[   +1 ms] Found plugin android_alarm_manager_plus at /Users/devcodex/.pub-cache/hosted/pub.dev/android_alarm_manager_plus-4.0.8/
+[  +19 ms] Generating /Users/devcodex/development/focus_interval/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+[   +3 ms] Skipping generating GeneratedPluginRegistrant.java because it is up-to-date.
+[  +15 ms] Skipping generating generated_plugin_registrant.h because it is up-to-date.
+[   +3 ms] Skipping generating generated_plugin_registrant.cc because it is up-to-date.
+[   +4 ms] Skipping generating generated_plugins.cmake because it is up-to-date.
+[   +4 ms] Skipping generating generated_plugin_registrant.h because it is up-to-date.
+[   +2 ms] Skipping generating generated_plugin_registrant.cc because it is up-to-date.
+[   +3 ms] Skipping generating generated_plugins.cmake because it is up-to-date.
+[   +7 ms] Skipping generating GeneratedPluginRegistrant.h because it is up-to-date.
+[   +6 ms] Skipping generating GeneratedPluginRegistrant.m because it is up-to-date.
+[   +7 ms] Skipping generating GeneratedPluginRegistrant.swift because it is up-to-date.
+[ +918 ms] Initializing file store
+[   +3 ms] Done initializing file store
+[  +28 ms] Skipping target: gen_localizations
+[   +6 ms] gen_dart_plugin_registrant: Starting due to {InvalidatedReasonKind.inputChanged: The following inputs have updated contents: /Users/devcodex/development/focus_interval/.dart_tool/package_config.json,/Users/devcodex/development/focus_interval/.dart_tool/flutter_build/dart_plugin_registrant.dart}
+[ +101 ms] Found plugin url_launcher at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher-6.3.2/
+[  +19 ms] Found plugin url_launcher_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_windows-3.1.5/
+[   +6 ms] Found plugin url_launcher_web at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_web-2.4.2/
+[   +5 ms] Found plugin url_launcher_macos at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_macos-3.2.5/
+[   +2 ms] Found plugin url_launcher_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_linux-3.2.2/
+[   +2 ms] Found plugin url_launcher_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_ios-6.3.6/
+[   +6 ms] Found plugin url_launcher_android at /Users/devcodex/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.28/
+[   +4 ms] Found plugin shared_preferences at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences-2.5.3/
+[   +2 ms] Found plugin shared_preferences_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_windows-2.4.1/
+[   +3 ms] Found plugin path_provider_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/
+[  +27 ms] Found plugin shared_preferences_web at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_web-2.4.3/
+[   +2 ms] Found plugin shared_preferences_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_linux-2.4.1/
+[   +1 ms] Found plugin path_provider_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_linux-2.2.1/
+[   +6 ms] Found plugin shared_preferences_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.4/
+[   +2 ms] Found plugin shared_preferences_android at /Users/devcodex/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.13/
+[   +3 ms] Found plugin path_provider at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider-2.1.5/
+[   +2 ms] Found plugin path_provider_foundation at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.2/
+[   +2 ms] Found plugin path_provider_android at /Users/devcodex/.pub-cache/hosted/pub.dev/path_provider_android-2.2.19/
+[   +2 ms] Found plugin local_notifier at /Users/devcodex/.pub-cache/hosted/pub.dev/local_notifier-0.1.6/
+[   +4 ms] Found plugin just_audio at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio-0.9.46/
+[   +4 ms] Found plugin just_audio_web at /Users/devcodex/.pub-cache/hosted/pub.dev/just_audio_web-0.4.16/
+[   +9 ms] Found plugin audio_session at /Users/devcodex/.pub-cache/hosted/pub.dev/audio_session-0.1.25/
+[   +7 ms] Found plugin google_sign_in at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in-6.3.0/
+[   +2 ms] Found plugin google_sign_in_web at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_web-0.12.4+4/
+[   +6 ms] Found plugin google_sign_in_ios at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_ios-5.9.0/
+[   +2 ms] Found plugin google_sign_in_android at /Users/devcodex/.pub-cache/hosted/pub.dev/google_sign_in_android-6.2.1/
+[  +58 ms] Found plugin flutter_local_notifications at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications-17.2.4/
+[   +3 ms] Found plugin flutter_local_notifications_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_local_notifications_linux-4.0.1/
+[   +6 ms] Found plugin firebase_core at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core-3.15.2/
+[   +1 ms] Found plugin firebase_core_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_core_web-2.24.1/
+[   +3 ms] Found plugin firebase_auth at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth-5.7.0/
+[   +2 ms] Found plugin firebase_auth_web at /Users/devcodex/.pub-cache/hosted/pub.dev/firebase_auth_web-5.15.3/
+[  +57 ms] Found plugin file_picker at /Users/devcodex/.pub-cache/hosted/pub.dev/file_picker-8.3.7/
+[   +4 ms] Found plugin flutter_plugin_android_lifecycle at /Users/devcodex/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.33/
+[  +21 ms] Found plugin cloud_firestore at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore-5.6.12/
+[   +1 ms] Found plugin cloud_firestore_web at /Users/devcodex/.pub-cache/hosted/pub.dev/cloud_firestore_web-4.4.12/
+[   +5 ms] Found plugin audioplayers at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers-6.5.1/
+[   +1 ms] Found plugin audioplayers_windows at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_windows-4.2.1/
+[   +3 ms] Found plugin audioplayers_web at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_web-5.1.1/
+[   +2 ms] Found plugin audioplayers_linux at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_linux-4.2.1/
+[   +2 ms] Found plugin audioplayers_darwin at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_darwin-6.3.0/
+[   +1 ms] Found plugin audioplayers_android at /Users/devcodex/.pub-cache/hosted/pub.dev/audioplayers_android-5.2.1/
+[   +2 ms] Found plugin android_alarm_manager_plus at /Users/devcodex/.pub-cache/hosted/pub.dev/android_alarm_manager_plus-4.0.8/
+[  +13 ms] Skipping generating dart_plugin_registrant.dart because it is up-to-date.
+[        ] gen_dart_plugin_registrant: Complete
+[   +5 ms] Skipping target: _composite
+[   +3 ms] complete
+[  +10 ms] Launching lib/main.dart on iPhone 17 Pro in debug mode...
+[  +12 ms] /Users/devcodex/development/flutter/bin/cache/dart-sdk/bin/dartaotruntime /Users/devcodex/development/flutter/bin/cache/dart-sdk/bin/snapshots/frontend_server_aot.dart.snapshot --sdk-root /Users/devcodex/development/flutter/bin/cache/artifacts/engine/common/flutter_patched_sdk/ --incremental --target=flutter --experimental-emit-debug-metadata -DAPP_ENV=prod -DALLOW_PROD_IN_DEBUG=true -DFLUTTER_VERSION=3.41.2 -DFLUTTER_CHANNEL=stable -DFLUTTER_GIT_URL=https://github.com/flutter/flutter.git -DFLUTTER_FRAMEWORK_REVISION=90673a4eef -DFLUTTER_ENGINE_REVISION=6c0baaebf7 -DFLUTTER_DART_VERSION=3.11.0 --output-dill /var/folders/xf/w6ghptys0vs0w03ys34g0y7h0000gp/T/flutter_tools.EK6BDy/flutter_tool.Uan2MT/app.dill --packages /Users/devcodex/development/focus_interval/.dart_tool/package_config.json -Ddart.vm.profile=false -Ddart.vm.product=false --enable-asserts --track-widget-creation --filesystem-scheme org-dartlang-root --initialize-from-dill build/724fdf90f04e9eeae770ff41aeb7fbf0.cache.dill.track.dill --source file:///Users/devcodex/development/focus_interval/.dart_tool/flutter_build/dart_plugin_registrant.dart --source package:flutter/src/dart_plugin_registrant.dart -Dflutter.dart_plugin_registrant=file:///Users/devcodex/development/focus_interval/.dart_tool/flutter_build/dart_plugin_registrant.dart --verbosity=error --enable-experiment=alternative-invalidation-strategy
+[  +13 ms] executing: [/Users/devcodex/development/focus_interval/ios/] xcrun xcodebuild -list
+[  +27 ms] <- compile package:focus_interval/main.dart
+[+3033 ms] [
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,4",
+               "identifier" : "C20C534F-1AFB-48AC-8B3A-C9D513194D5A",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-plus-1",
+               "modelName" : "iPhone 16 Plus",
+               "name" : "iPhone 16 Plus",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,5",
+               "identifier" : "D51D5F29-FE65-4B02-950B-8D143F6015AF",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m3-13-1",
+               "modelName" : "iPad Air 13-inch (M3)",
+               "name" : "iPad Air 13-inch (M3)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,3",
+               "identifier" : "3B96DCB0-8E01-4477-9F0E-3348EC487AD2",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m3-1",
+               "modelName" : "iPad Air 11-inch (M3)",
+               "name" : "iPad Air 11-inch (M3)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,3",
+               "identifier" : "08215FD6-E8E7-48DC-813C-B6D7AC0DD3AD",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-1",
+               "modelName" : "iPhone 16",
+               "name" : "iPhone 16",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch7,5",
+               "identifier" : "52986FD7-C6F2-44F9-8184-135163ADB5AE",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-u2-8",
+               "modelName" : "Apple Watch Ultra 2 (49mm)",
+               "name" : "Apple Watch Ultra 2 (49mm)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,3",
+               "identifier" : "284106F3-DF1D-48FC-AB4F-168DEABDAC57",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-1",
+               "modelName" : "iPhone 16",
+               "name" : "iPhone 16",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch7,8",
+               "identifier" : "23A5AEB1-BD11-4065-B272-EB1D59302B5F",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-series10-4",
+               "modelName" : "Apple Watch Series 10 (42mm)",
+               "name" : "Apple Watch Series 10 (42mm)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone18,2",
+               "identifier" : "F34A2114-E4C0-4F53-90DC-46B3FF51A7E1",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.iphone-17-pro-max-2",
+               "modelName" : "iPhone 17 Pro Max",
+               "name" : "iPhone 17 Pro Max",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,6",
+               "identifier" : "B0C31D10-C712-4E87-BBC7-04134924132B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-pro-m4-13-1",
+               "modelName" : "iPad Pro 13-inch (M4)",
+               "name" : "iPad Pro 13-inch (M4)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,2",
+               "identifier" : "7682B1B1-3FAA-4396-8ED1-38D58C2D507B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-pro-max-1",
+               "modelName" : "iPhone 16 Pro Max",
+               "name" : "iPhone 16 Pro Max",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22J578)",
+               "available" : true,
+               "platform" : "com.apple.platform.appletvsimulator",
+               "modelCode" : "AppleTV5,3",
+               "identifier" : "92E44CA8-9C75-4D0B-80CE-3EF66405B32B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.apple-tv-4",
+               "modelName" : "Apple TV",
+               "name" : "Apple TV",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22J578)",
+               "available" : true,
+               "platform" : "com.apple.platform.appletvsimulator",
+               "modelCode" : "AppleTV14,1",
+               "identifier" : "CF865824-7BBD-4971-BAF5-A0B33E3D927F",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.apple-tv-4k-3rd",
+               "modelName" : "Apple TV 4K (3rd generation)",
+               "name" : "Apple TV 4K (3rd generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,5",
+               "identifier" : "446359A7-A997-48B2-A53B-D7FCA108449E",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-e-1",
+               "modelName" : "iPhone 16e",
+               "name" : "iPhone 16e",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,4",
+               "identifier" : "DE949815-CD56-4DC7-AF3A-0310ED55ED4A",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-pro-m4-1",
+               "modelName" : "iPad Pro 11-inch (M4)",
+               "name" : "iPad Pro 11-inch (M4)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad14,11",
+               "identifier" : "EE02B49D-E925-49A5-BE54-E8F872CFDFAF",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m2-13-1",
+               "modelName" : "iPad Air 13-inch (M2)",
+               "name" : "iPad Air 13-inch (M2)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,5",
+               "identifier" : "DED847BD-AA25-45A4-B3F8-DAC60D92CE08",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-e-1",
+               "modelName" : "iPhone 16e",
+               "name" : "iPhone 16e",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone14,6",
+               "identifier" : "955D663F-FFDC-427D-A693-887E69F5B1BA",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-se3-1",
+               "modelName" : "iPhone SE (3rd generation)",
+               "name" : "iPhone SE (3rd generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone18,4",
+               "identifier" : "185AD710-BB9D-4F05-AC30-1105B3338E78",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.iphone-air-1",
+               "modelName" : "iPhone Air",
+               "name" : "iPhone Air",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,3",
+               "identifier" : "E125AB3A-53E1-41E1-8469-B984F5217419",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m3-1",
+               "modelName" : "iPad Air 11-inch (M3)",
+               "name" : "iPad Air 11-inch (M3)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad17,2",
+               "identifier" : "F98C0FC9-2BD6-4279-9D88-7A6E161D668B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.ipad-pro-11-inch-m5-1",
+               "modelName" : "iPad Pro 11-inch (M5)",
+               "name" : "iPad Pro 11-inch (M5)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad13,18",
+               "identifier" : "E2700927-1973-46ED-AD4C-470032780D5B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-10-1",
+               "modelName" : "iPad (10th generation)",
+               "name" : "iPad (10th generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone18,1",
+               "identifier" : "9A6B6687-8DE2-4573-A939-E4FFD0190E1A",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.iphone-17-pro-2",
+               "modelName" : "iPhone 17 Pro",
+               "name" : "iPhone 17 Pro",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch7,9",
+               "identifier" : "6E0D3EE3-0FA1-470C-AD72-C9375FA7C0F6",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-series10-4",
+               "modelName" : "Apple Watch Series 10 (46mm)",
+               "name" : "Apple Watch Series 10 (46mm)",
+               "ignored" : false
+             },
+             {
+               "ignored" : false,
+               "modelCode" : "MacBookPro16,1",
+               "simulator" : false,
+               "modelName" : "MacBook Pro",
+               "operatingSystemVersion" : "26.3 (25D125)",
+               "identifier" : "80550D2C-713D-5411-8754-44777FB80AB4",
+               "platform" : "com.apple.platform.macosx",
+               "architecture" : "x86_64h",
+               "interface" : "usb",
+               "available" : true,
+               "name" : "My Mac",
+               "modelUTI" : "com.apple.macbookpro-16"
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,2",
+               "identifier" : "244F195E-DD92-4C57-A822-A91BDFA5823F",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-mini-a17-1",
+               "modelName" : "iPad mini (A17 Pro)",
+               "name" : "iPad mini (A17 Pro)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone18,3",
+               "identifier" : "47E79B36-2B8D-4DDD-8A76-B2CA8B7B7F1E",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.iphone-17-2",
+               "modelName" : "iPhone 17",
+               "name" : "iPhone 17",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,1",
+               "identifier" : "8F63858E-5673-4CBB-813C-42BF25381FFB",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-pro-1",
+               "modelName" : "iPhone 16 Pro",
+               "name" : "iPhone 16 Pro",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad17,4",
+               "identifier" : "CFB538D5-72B8-4D7A-B01F-8815B2C9EEB4",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.ipad-pro-13-inch-m5-1",
+               "modelName" : "iPad Pro 13-inch (M5)",
+               "name" : "iPad Pro 13-inch (M5)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch6,13",
+               "identifier" : "9B0B9E3C-B325-4ECF-A4DE-8AA283A4E356",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-se-2nd-1",
+               "modelName" : "Apple Watch SE (44mm) (2nd generation)",
+               "name" : "Apple Watch SE (44mm) (2nd generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,2",
+               "identifier" : "94DFB47E-9A14-46C0-8F12-6A6CD513FF6A",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-mini-a17-1",
+               "modelName" : "iPad mini (A17 Pro)",
+               "name" : "iPad mini (A17 Pro)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,1",
+               "identifier" : "1835A5D0-AF1A-4D0B-8CF2-4EE06C0707C4",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-pro-1",
+               "modelName" : "iPhone 16 Pro",
+               "name" : "iPhone 16 Pro",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,4",
+               "identifier" : "132647C4-11D5-475D-85FA-2D68A05AE405",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-pro-m4-1",
+               "modelName" : "iPad Pro 11-inch (M4)",
+               "name" : "iPad Pro 11-inch (M4)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,7",
+               "identifier" : "EE4B788F-BD5A-437D-AE99-82CB18F1F7AB",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-a16-1",
+               "modelName" : "iPad (A16)",
+               "name" : "iPad (A16)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,7",
+               "identifier" : "D34ACD36-E0D7-470C-AEB0-1A9559A1917F",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-a16-1",
+               "modelName" : "iPad (A16)",
+               "name" : "iPad (A16)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch6,12",
+               "identifier" : "AD7CA81E-EF8C-4914-BE8D-09F42C93ADFD",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-se-2nd-1",
+               "modelName" : "Apple Watch SE (40mm) (2nd generation)",
+               "name" : "Apple Watch SE (40mm) (2nd generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad14,9",
+               "identifier" : "42291EF5-3456-44DF-968E-975F54B8868D",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m2-1",
+               "modelName" : "iPad Air 11-inch (M2)",
+               "name" : "iPad Air 11-inch (M2)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,5",
+               "identifier" : "7B696BBD-1BEE-4EDB-B4C5-9F2A4FFA8D24",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m3-13-1",
+               "modelName" : "iPad Air 13-inch (M3)",
+               "name" : "iPad Air 13-inch (M3)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,2",
+               "identifier" : "3DDD7683-59C1-4BEB-91E4-A81989E35A9C",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-mini-a17-1",
+               "modelName" : "iPad mini (A17 Pro)",
+               "name" : "iPad mini (A17 Pro)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,2",
+               "identifier" : "89CB1423-5EEA-4625-905C-FB7558FBB8C2",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-pro-max-1",
+               "modelName" : "iPhone 16 Pro Max",
+               "name" : "iPhone 16 Pro Max",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22J578)",
+               "available" : true,
+               "platform" : "com.apple.platform.appletvsimulator",
+               "modelCode" : "AppleTV14,1",
+               "identifier" : "8FE517B9-8789-49F1-8460-84F3A50B8507",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.apple-tv-4k-3rd",
+               "modelName" : "Apple TV 4K (3rd generation) (at 1080p)",
+               "name" : "Apple TV 4K (3rd generation) (at 1080p)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,6",
+               "identifier" : "A80C020F-BE29-4EC1-A814-EBBABB8DD2DE",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-pro-m4-13-1",
+               "modelName" : "iPad Pro 13-inch (M4)",
+               "name" : "iPad Pro 13-inch (M4)",
+               "ignored" : false
+             }
+           ]
+[   +9 ms] executing: xcrun devicectl --version
+[ +188 ms] executing: xcrun devicectl list devices --timeout 5 --json-output /var/folders/xf/w6ghptys0vs0w03ys34g0y7h0000gp/T/flutter_tools.EK6BDy/core_devices.Yuz1Kp/core_device_list.json
+[  +16 ms] lib/presentation/viewmodels/pomodoro_view_model.dart:269:18: Error: The getter 'appMode' isn't defined for the type 'PomodoroViewModel'.
+[        ]  - 'PomodoroViewModel' is from 'package:focus_interval/presentation/viewmodels/pomodoro_view_model.dart' ('lib/presentation/viewmodels/pomodoro_view_model.dart').
+[        ] Try correcting the name to the name of an existing getter, or defining a getter or field named 'appMode'.
+[        ]       } else if (appMode == AppMode.account) {
+[        ]                  ^^^^^^^
+[  +24 ms] Command line invocation:
+               /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -list
+
+           Information about project "Runner":
+               Targets:
+                   Runner
+                   RunnerTests
+
+               Build Configurations:
+                   Debug
+                   Release
+                   Profile
+
+               If no build configuration is specified and -scheme is not passed then "Release" is used.
+
+               Schemes:
+                   Runner
+[  +25 ms] executing: [/Users/devcodex/development/focus_interval/ios/Runner.xcodeproj/] xcrun xcodebuild -project /Users/devcodex/development/focus_interval/ios/Runner.xcodeproj -scheme Runner -configuration Debug -destination generic/platform=iOS -showBuildSettings BUILD_DIR=/Users/devcodex/development/focus_interval/build/ios
+[        ] executing: [/Users/devcodex/development/focus_interval/ios/Runner.xcodeproj/] xcrun xcodebuild -project /Users/devcodex/development/focus_interval/ios/Runner.xcodeproj -scheme Runner -configuration Debug -destination generic/platform=iOS -showBuildSettings BUILD_DIR=/Users/devcodex/development/focus_interval/build/ios
+[ +143 ms] {
+             "info" : {
+               "arguments" : [
+                 "devicectl",
+                 "list",
+                 "devices",
+                 "--timeout",
+                 "5",
+                 "--json-output",
+                 "/var/folders/xf/w6ghptys0vs0w03ys34g0y7h0000gp/T/flutter_tools.EK6BDy/core_devices.Yuz1Kp/core_device_list.json"
+               ],
+               "commandType" : "devicectl.list.devices",
+               "environment" : {
+                 "TERM" : "xterm-256color"
+               },
+               "jsonVersion" : 3,
+               "outcome" : "success",
+               "version" : "506.7"
+             },
+             "result" : {
+               "devices" : [
+
+               ]
+             }
+           }
+
+[ +405 ms] [
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,4",
+               "identifier" : "C20C534F-1AFB-48AC-8B3A-C9D513194D5A",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-plus-1",
+               "modelName" : "iPhone 16 Plus",
+               "name" : "iPhone 16 Plus",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,5",
+               "identifier" : "D51D5F29-FE65-4B02-950B-8D143F6015AF",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m3-13-1",
+               "modelName" : "iPad Air 13-inch (M3)",
+               "name" : "iPad Air 13-inch (M3)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,3",
+               "identifier" : "3B96DCB0-8E01-4477-9F0E-3348EC487AD2",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m3-1",
+               "modelName" : "iPad Air 11-inch (M3)",
+               "name" : "iPad Air 11-inch (M3)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,3",
+               "identifier" : "08215FD6-E8E7-48DC-813C-B6D7AC0DD3AD",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-1",
+               "modelName" : "iPhone 16",
+               "name" : "iPhone 16",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch7,5",
+               "identifier" : "52986FD7-C6F2-44F9-8184-135163ADB5AE",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-u2-8",
+               "modelName" : "Apple Watch Ultra 2 (49mm)",
+               "name" : "Apple Watch Ultra 2 (49mm)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,3",
+               "identifier" : "284106F3-DF1D-48FC-AB4F-168DEABDAC57",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-1",
+               "modelName" : "iPhone 16",
+               "name" : "iPhone 16",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch7,8",
+               "identifier" : "23A5AEB1-BD11-4065-B272-EB1D59302B5F",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-series10-4",
+               "modelName" : "Apple Watch Series 10 (42mm)",
+               "name" : "Apple Watch Series 10 (42mm)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone18,2",
+               "identifier" : "F34A2114-E4C0-4F53-90DC-46B3FF51A7E1",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.iphone-17-pro-max-2",
+               "modelName" : "iPhone 17 Pro Max",
+               "name" : "iPhone 17 Pro Max",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,6",
+               "identifier" : "B0C31D10-C712-4E87-BBC7-04134924132B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-pro-m4-13-1",
+               "modelName" : "iPad Pro 13-inch (M4)",
+               "name" : "iPad Pro 13-inch (M4)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,2",
+               "identifier" : "7682B1B1-3FAA-4396-8ED1-38D58C2D507B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-pro-max-1",
+               "modelName" : "iPhone 16 Pro Max",
+               "name" : "iPhone 16 Pro Max",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22J578)",
+               "available" : true,
+               "platform" : "com.apple.platform.appletvsimulator",
+               "modelCode" : "AppleTV5,3",
+               "identifier" : "92E44CA8-9C75-4D0B-80CE-3EF66405B32B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.apple-tv-4",
+               "modelName" : "Apple TV",
+               "name" : "Apple TV",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22J578)",
+               "available" : true,
+               "platform" : "com.apple.platform.appletvsimulator",
+               "modelCode" : "AppleTV14,1",
+               "identifier" : "CF865824-7BBD-4971-BAF5-A0B33E3D927F",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.apple-tv-4k-3rd",
+               "modelName" : "Apple TV 4K (3rd generation)",
+               "name" : "Apple TV 4K (3rd generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,5",
+               "identifier" : "446359A7-A997-48B2-A53B-D7FCA108449E",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-e-1",
+               "modelName" : "iPhone 16e",
+               "name" : "iPhone 16e",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,4",
+               "identifier" : "DE949815-CD56-4DC7-AF3A-0310ED55ED4A",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-pro-m4-1",
+               "modelName" : "iPad Pro 11-inch (M4)",
+               "name" : "iPad Pro 11-inch (M4)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad14,11",
+               "identifier" : "EE02B49D-E925-49A5-BE54-E8F872CFDFAF",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m2-13-1",
+               "modelName" : "iPad Air 13-inch (M2)",
+               "name" : "iPad Air 13-inch (M2)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,5",
+               "identifier" : "DED847BD-AA25-45A4-B3F8-DAC60D92CE08",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-e-1",
+               "modelName" : "iPhone 16e",
+               "name" : "iPhone 16e",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone14,6",
+               "identifier" : "955D663F-FFDC-427D-A693-887E69F5B1BA",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-se3-1",
+               "modelName" : "iPhone SE (3rd generation)",
+               "name" : "iPhone SE (3rd generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone18,4",
+               "identifier" : "185AD710-BB9D-4F05-AC30-1105B3338E78",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.iphone-air-1",
+               "modelName" : "iPhone Air",
+               "name" : "iPhone Air",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,3",
+               "identifier" : "E125AB3A-53E1-41E1-8469-B984F5217419",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m3-1",
+               "modelName" : "iPad Air 11-inch (M3)",
+               "name" : "iPad Air 11-inch (M3)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad17,2",
+               "identifier" : "F98C0FC9-2BD6-4279-9D88-7A6E161D668B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.ipad-pro-11-inch-m5-1",
+               "modelName" : "iPad Pro 11-inch (M5)",
+               "name" : "iPad Pro 11-inch (M5)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad13,18",
+               "identifier" : "E2700927-1973-46ED-AD4C-470032780D5B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-10-1",
+               "modelName" : "iPad (10th generation)",
+               "name" : "iPad (10th generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone18,1",
+               "identifier" : "9A6B6687-8DE2-4573-A939-E4FFD0190E1A",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.iphone-17-pro-2",
+               "modelName" : "iPhone 17 Pro",
+               "name" : "iPhone 17 Pro",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch7,9",
+               "identifier" : "6E0D3EE3-0FA1-470C-AD72-C9375FA7C0F6",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-series10-4",
+               "modelName" : "Apple Watch Series 10 (46mm)",
+               "name" : "Apple Watch Series 10 (46mm)",
+               "ignored" : false
+             },
+             {
+               "ignored" : false,
+               "modelCode" : "MacBookPro16,1",
+               "simulator" : false,
+               "modelName" : "MacBook Pro",
+               "operatingSystemVersion" : "26.3 (25D125)",
+               "identifier" : "80550D2C-713D-5411-8754-44777FB80AB4",
+               "platform" : "com.apple.platform.macosx",
+               "architecture" : "x86_64h",
+               "interface" : "usb",
+               "available" : true,
+               "name" : "My Mac",
+               "modelUTI" : "com.apple.macbookpro-16"
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,2",
+               "identifier" : "244F195E-DD92-4C57-A822-A91BDFA5823F",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-mini-a17-1",
+               "modelName" : "iPad mini (A17 Pro)",
+               "name" : "iPad mini (A17 Pro)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone18,3",
+               "identifier" : "47E79B36-2B8D-4DDD-8A76-B2CA8B7B7F1E",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.iphone-17-2",
+               "modelName" : "iPhone 17",
+               "name" : "iPhone 17",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,1",
+               "identifier" : "8F63858E-5673-4CBB-813C-42BF25381FFB",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-pro-1",
+               "modelName" : "iPhone 16 Pro",
+               "name" : "iPhone 16 Pro",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad17,4",
+               "identifier" : "CFB538D5-72B8-4D7A-B01F-8815B2C9EEB4",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.ipad-pro-13-inch-m5-1",
+               "modelName" : "iPad Pro 13-inch (M5)",
+               "name" : "iPad Pro 13-inch (M5)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch6,13",
+               "identifier" : "9B0B9E3C-B325-4ECF-A4DE-8AA283A4E356",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-se-2nd-1",
+               "modelName" : "Apple Watch SE (44mm) (2nd generation)",
+               "name" : "Apple Watch SE (44mm) (2nd generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,2",
+               "identifier" : "94DFB47E-9A14-46C0-8F12-6A6CD513FF6A",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-mini-a17-1",
+               "modelName" : "iPad mini (A17 Pro)",
+               "name" : "iPad mini (A17 Pro)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,1",
+               "identifier" : "1835A5D0-AF1A-4D0B-8CF2-4EE06C0707C4",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-pro-1",
+               "modelName" : "iPhone 16 Pro",
+               "name" : "iPhone 16 Pro",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,4",
+               "identifier" : "132647C4-11D5-475D-85FA-2D68A05AE405",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-pro-m4-1",
+               "modelName" : "iPad Pro 11-inch (M4)",
+               "name" : "iPad Pro 11-inch (M4)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,7",
+               "identifier" : "EE4B788F-BD5A-437D-AE99-82CB18F1F7AB",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-a16-1",
+               "modelName" : "iPad (A16)",
+               "name" : "iPad (A16)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,7",
+               "identifier" : "D34ACD36-E0D7-470C-AEB0-1A9559A1917F",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-a16-1",
+               "modelName" : "iPad (A16)",
+               "name" : "iPad (A16)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch6,12",
+               "identifier" : "AD7CA81E-EF8C-4914-BE8D-09F42C93ADFD",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-se-2nd-1",
+               "modelName" : "Apple Watch SE (40mm) (2nd generation)",
+               "name" : "Apple Watch SE (40mm) (2nd generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad14,9",
+               "identifier" : "42291EF5-3456-44DF-968E-975F54B8868D",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m2-1",
+               "modelName" : "iPad Air 11-inch (M2)",
+               "name" : "iPad Air 11-inch (M2)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,5",
+               "identifier" : "7B696BBD-1BEE-4EDB-B4C5-9F2A4FFA8D24",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m3-13-1",
+               "modelName" : "iPad Air 13-inch (M3)",
+               "name" : "iPad Air 13-inch (M3)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,2",
+               "identifier" : "3DDD7683-59C1-4BEB-91E4-A81989E35A9C",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-mini-a17-1",
+               "modelName" : "iPad mini (A17 Pro)",
+               "name" : "iPad mini (A17 Pro)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,2",
+               "identifier" : "89CB1423-5EEA-4625-905C-FB7558FBB8C2",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-pro-max-1",
+               "modelName" : "iPhone 16 Pro Max",
+               "name" : "iPhone 16 Pro Max",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22J578)",
+               "available" : true,
+               "platform" : "com.apple.platform.appletvsimulator",
+               "modelCode" : "AppleTV14,1",
+               "identifier" : "8FE517B9-8789-49F1-8460-84F3A50B8507",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.apple-tv-4k-3rd",
+               "modelName" : "Apple TV 4K (3rd generation) (at 1080p)",
+               "name" : "Apple TV 4K (3rd generation) (at 1080p)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,6",
+               "identifier" : "A80C020F-BE29-4EC1-A814-EBBABB8DD2DE",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-pro-m4-13-1",
+               "modelName" : "iPad Pro 13-inch (M4)",
+               "name" : "iPad Pro 13-inch (M4)",
+               "ignored" : false
+             }
+           ]
+[   +4 ms] executing: xcrun devicectl list devices --timeout 5 --json-output /var/folders/xf/w6ghptys0vs0w03ys34g0y7h0000gp/T/flutter_tools.EK6BDy/core_devices.FsFroh/core_device_list.json
+[ +179 ms] {
+             "info" : {
+               "arguments" : [
+                 "devicectl",
+                 "list",
+                 "devices",
+                 "--timeout",
+                 "5",
+                 "--json-output",
+                 "/var/folders/xf/w6ghptys0vs0w03ys34g0y7h0000gp/T/flutter_tools.EK6BDy/core_devices.FsFroh/core_device_list.json"
+               ],
+               "commandType" : "devicectl.list.devices",
+               "environment" : {
+                 "TERM" : "xterm-256color"
+               },
+               "jsonVersion" : 3,
+               "outcome" : "success",
+               "version" : "506.7"
+             },
+             "result" : {
+               "devices" : [
+
+               ]
+             }
+           }
+
+[+1692 ms] [
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,4",
+               "identifier" : "C20C534F-1AFB-48AC-8B3A-C9D513194D5A",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-plus-1",
+               "modelName" : "iPhone 16 Plus",
+               "name" : "iPhone 16 Plus",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,5",
+               "identifier" : "D51D5F29-FE65-4B02-950B-8D143F6015AF",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m3-13-1",
+               "modelName" : "iPad Air 13-inch (M3)",
+               "name" : "iPad Air 13-inch (M3)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,3",
+               "identifier" : "3B96DCB0-8E01-4477-9F0E-3348EC487AD2",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m3-1",
+               "modelName" : "iPad Air 11-inch (M3)",
+               "name" : "iPad Air 11-inch (M3)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,3",
+               "identifier" : "08215FD6-E8E7-48DC-813C-B6D7AC0DD3AD",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-1",
+               "modelName" : "iPhone 16",
+               "name" : "iPhone 16",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch7,5",
+               "identifier" : "52986FD7-C6F2-44F9-8184-135163ADB5AE",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-u2-8",
+               "modelName" : "Apple Watch Ultra 2 (49mm)",
+               "name" : "Apple Watch Ultra 2 (49mm)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,3",
+               "identifier" : "284106F3-DF1D-48FC-AB4F-168DEABDAC57",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-1",
+               "modelName" : "iPhone 16",
+               "name" : "iPhone 16",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch7,8",
+               "identifier" : "23A5AEB1-BD11-4065-B272-EB1D59302B5F",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-series10-4",
+               "modelName" : "Apple Watch Series 10 (42mm)",
+               "name" : "Apple Watch Series 10 (42mm)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone18,2",
+               "identifier" : "F34A2114-E4C0-4F53-90DC-46B3FF51A7E1",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.iphone-17-pro-max-2",
+               "modelName" : "iPhone 17 Pro Max",
+               "name" : "iPhone 17 Pro Max",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,6",
+               "identifier" : "B0C31D10-C712-4E87-BBC7-04134924132B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-pro-m4-13-1",
+               "modelName" : "iPad Pro 13-inch (M4)",
+               "name" : "iPad Pro 13-inch (M4)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,2",
+               "identifier" : "7682B1B1-3FAA-4396-8ED1-38D58C2D507B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-pro-max-1",
+               "modelName" : "iPhone 16 Pro Max",
+               "name" : "iPhone 16 Pro Max",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22J578)",
+               "available" : true,
+               "platform" : "com.apple.platform.appletvsimulator",
+               "modelCode" : "AppleTV5,3",
+               "identifier" : "92E44CA8-9C75-4D0B-80CE-3EF66405B32B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.apple-tv-4",
+               "modelName" : "Apple TV",
+               "name" : "Apple TV",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22J578)",
+               "available" : true,
+               "platform" : "com.apple.platform.appletvsimulator",
+               "modelCode" : "AppleTV14,1",
+               "identifier" : "CF865824-7BBD-4971-BAF5-A0B33E3D927F",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.apple-tv-4k-3rd",
+               "modelName" : "Apple TV 4K (3rd generation)",
+               "name" : "Apple TV 4K (3rd generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,5",
+               "identifier" : "446359A7-A997-48B2-A53B-D7FCA108449E",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-e-1",
+               "modelName" : "iPhone 16e",
+               "name" : "iPhone 16e",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,4",
+               "identifier" : "DE949815-CD56-4DC7-AF3A-0310ED55ED4A",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-pro-m4-1",
+               "modelName" : "iPad Pro 11-inch (M4)",
+               "name" : "iPad Pro 11-inch (M4)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad14,11",
+               "identifier" : "EE02B49D-E925-49A5-BE54-E8F872CFDFAF",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m2-13-1",
+               "modelName" : "iPad Air 13-inch (M2)",
+               "name" : "iPad Air 13-inch (M2)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,5",
+               "identifier" : "DED847BD-AA25-45A4-B3F8-DAC60D92CE08",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-e-1",
+               "modelName" : "iPhone 16e",
+               "name" : "iPhone 16e",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone14,6",
+               "identifier" : "955D663F-FFDC-427D-A693-887E69F5B1BA",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-se3-1",
+               "modelName" : "iPhone SE (3rd generation)",
+               "name" : "iPhone SE (3rd generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone18,4",
+               "identifier" : "185AD710-BB9D-4F05-AC30-1105B3338E78",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.iphone-air-1",
+               "modelName" : "iPhone Air",
+               "name" : "iPhone Air",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,3",
+               "identifier" : "E125AB3A-53E1-41E1-8469-B984F5217419",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m3-1",
+               "modelName" : "iPad Air 11-inch (M3)",
+               "name" : "iPad Air 11-inch (M3)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad17,2",
+               "identifier" : "F98C0FC9-2BD6-4279-9D88-7A6E161D668B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.ipad-pro-11-inch-m5-1",
+               "modelName" : "iPad Pro 11-inch (M5)",
+               "name" : "iPad Pro 11-inch (M5)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad13,18",
+               "identifier" : "E2700927-1973-46ED-AD4C-470032780D5B",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-10-1",
+               "modelName" : "iPad (10th generation)",
+               "name" : "iPad (10th generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone18,1",
+               "identifier" : "9A6B6687-8DE2-4573-A939-E4FFD0190E1A",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.iphone-17-pro-2",
+               "modelName" : "iPhone 17 Pro",
+               "name" : "iPhone 17 Pro",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch7,9",
+               "identifier" : "6E0D3EE3-0FA1-470C-AD72-C9375FA7C0F6",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-series10-4",
+               "modelName" : "Apple Watch Series 10 (46mm)",
+               "name" : "Apple Watch Series 10 (46mm)",
+               "ignored" : false
+             },
+             {
+               "ignored" : false,
+               "modelCode" : "MacBookPro16,1",
+               "simulator" : false,
+               "modelName" : "MacBook Pro",
+               "operatingSystemVersion" : "26.3 (25D125)",
+               "identifier" : "80550D2C-713D-5411-8754-44777FB80AB4",
+               "platform" : "com.apple.platform.macosx",
+               "architecture" : "x86_64h",
+               "interface" : "usb",
+               "available" : true,
+               "name" : "My Mac",
+               "modelUTI" : "com.apple.macbookpro-16"
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,2",
+               "identifier" : "244F195E-DD92-4C57-A822-A91BDFA5823F",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-mini-a17-1",
+               "modelName" : "iPad mini (A17 Pro)",
+               "name" : "iPad mini (A17 Pro)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone18,3",
+               "identifier" : "47E79B36-2B8D-4DDD-8A76-B2CA8B7B7F1E",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.iphone-17-2",
+               "modelName" : "iPhone 17",
+               "name" : "iPhone 17",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,1",
+               "identifier" : "8F63858E-5673-4CBB-813C-42BF25381FFB",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-pro-1",
+               "modelName" : "iPhone 16 Pro",
+               "name" : "iPhone 16 Pro",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad17,4",
+               "identifier" : "CFB538D5-72B8-4D7A-B01F-8815B2C9EEB4",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.com.apple.ipad-pro-13-inch-m5-1",
+               "modelName" : "iPad Pro 13-inch (M5)",
+               "name" : "iPad Pro 13-inch (M5)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch6,13",
+               "identifier" : "9B0B9E3C-B325-4ECF-A4DE-8AA283A4E356",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-se-2nd-1",
+               "modelName" : "Apple Watch SE (44mm) (2nd generation)",
+               "name" : "Apple Watch SE (44mm) (2nd generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,2",
+               "identifier" : "94DFB47E-9A14-46C0-8F12-6A6CD513FF6A",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-mini-a17-1",
+               "modelName" : "iPad mini (A17 Pro)",
+               "name" : "iPad mini (A17 Pro)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,1",
+               "identifier" : "1835A5D0-AF1A-4D0B-8CF2-4EE06C0707C4",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-pro-1",
+               "modelName" : "iPhone 16 Pro",
+               "name" : "iPhone 16 Pro",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,4",
+               "identifier" : "132647C4-11D5-475D-85FA-2D68A05AE405",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-pro-m4-1",
+               "modelName" : "iPad Pro 11-inch (M4)",
+               "name" : "iPad Pro 11-inch (M4)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,7",
+               "identifier" : "EE4B788F-BD5A-437D-AE99-82CB18F1F7AB",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-a16-1",
+               "modelName" : "iPad (A16)",
+               "name" : "iPad (A16)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,7",
+               "identifier" : "D34ACD36-E0D7-470C-AEB0-1A9559A1917F",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-a16-1",
+               "modelName" : "iPad (A16)",
+               "name" : "iPad (A16)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "11.1 (22R581)",
+               "available" : true,
+               "platform" : "com.apple.platform.watchsimulator",
+               "modelCode" : "Watch6,12",
+               "identifier" : "AD7CA81E-EF8C-4914-BE8D-09F42C93ADFD",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.watch-se-2nd-1",
+               "modelName" : "Apple Watch SE (40mm) (2nd generation)",
+               "name" : "Apple Watch SE (40mm) (2nd generation)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad14,9",
+               "identifier" : "42291EF5-3456-44DF-968E-975F54B8868D",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m2-1",
+               "modelName" : "iPad Air 11-inch (M2)",
+               "name" : "iPad Air 11-inch (M2)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "26.2 (23C54)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad15,5",
+               "identifier" : "7B696BBD-1BEE-4EDB-B4C5-9F2A4FFA8D24",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-air-m3-13-1",
+               "modelName" : "iPad Air 13-inch (M3)",
+               "name" : "iPad Air 13-inch (M3)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22B81)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,2",
+               "identifier" : "3DDD7683-59C1-4BEB-91E4-A81989E35A9C",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-mini-a17-1",
+               "modelName" : "iPad mini (A17 Pro)",
+               "name" : "iPad mini (A17 Pro)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPhone17,2",
+               "identifier" : "89CB1423-5EEA-4625-905C-FB7558FBB8C2",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.iphone-16-pro-max-1",
+               "modelName" : "iPhone 16 Pro Max",
+               "name" : "iPhone 16 Pro Max",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.1 (22J578)",
+               "available" : true,
+               "platform" : "com.apple.platform.appletvsimulator",
+               "modelCode" : "AppleTV14,1",
+               "identifier" : "8FE517B9-8789-49F1-8460-84F3A50B8507",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.apple-tv-4k-3rd",
+               "modelName" : "Apple TV 4K (3rd generation) (at 1080p)",
+               "name" : "Apple TV 4K (3rd generation) (at 1080p)",
+               "ignored" : false
+             },
+             {
+               "simulator" : true,
+               "operatingSystemVersion" : "18.4 (22E238)",
+               "available" : true,
+               "platform" : "com.apple.platform.iphonesimulator",
+               "modelCode" : "iPad16,6",
+               "identifier" : "A80C020F-BE29-4EC1-A814-EBBABB8DD2DE",
+               "architecture" : "x86_64",
+               "modelUTI" : "com.apple.ipad-pro-m4-13-1",
+               "modelName" : "iPad Pro 13-inch (M4)",
+               "name" : "iPad Pro 13-inch (M4)",
+               "ignored" : false
+             }
+           ]
+[+1831 ms] Command line invocation:
+               /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project /Users/devcodex/development/focus_interval/ios/Runner.xcodeproj -scheme Runner -configuration Debug -destination generic/platform=iOS -showBuildSettings BUILD_DIR=/Users/devcodex/development/focus_interval/build/ios
+
+           Build settings from command line:
+               BUILD_DIR = /Users/devcodex/development/focus_interval/build/ios
+
+           Build settings for action build and target Runner:
+               ACTION = build
+               AD_HOC_CODE_SIGNING_ALLOWED = NO
+               AGGREGATE_TRACKED_DOMAINS = YES
+               ALLOW_BUILD_REQUEST_OVERRIDES = NO
+               ALLOW_TARGET_PLATFORM_SPECIALIZATION = NO
+               ALTERNATE_GROUP = staff
+               ALTERNATE_MODE = u+w,go-w,a+rX
+               ALTERNATE_OWNER = devcodex
+               ALTERNATIVE_DISTRIBUTION_WEB = NO
+               ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES
+               ALWAYS_SEARCH_USER_PATHS = NO
+               ALWAYS_USE_SEPARATE_HEADERMAPS = NO
+               ANDROID_DEPLOYMENT_TARGET = 21.0
+               APPLICATION_EXTENSION_API_ONLY = NO
+               APPLY_RULES_IN_COPY_FILES = NO
+               APPLY_RULES_IN_COPY_HEADERS = NO
+               APP_SHORTCUTS_ENABLE_FLEXIBLE_MATCHING = YES
+               ARCHS = arm64
+               ARCHS_STANDARD = arm64
+               ARCHS_STANDARD_32_64_BIT = armv7 arm64
+               ARCHS_STANDARD_32_BIT = armv7
+               ARCHS_STANDARD_64_BIT = arm64
+               ARCHS_STANDARD_INCLUDING_64_BIT = arm64
+               ARCHS_UNIVERSAL_IPHONE_OS = armv7 arm64
+               ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon
+               ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES
+               AUTOMATICALLY_MERGE_DEPENDENCIES = NO
+               AUTOMATION_APPLE_EVENTS = NO
+               AVAILABLE_PLATFORMS = android appletvos appletvsimulator driverkit iphoneos iphonesimulator macosx qnx watchos watchsimulator webassembly xros xrsimulator
+               BUILD_ACTIVE_RESOURCES_ONLY = NO
+               BUILD_COMPONENTS = headers build
+               BUILD_DIR = /Users/devcodex/development/focus_interval/build/ios
+               BUILD_LIBRARY_FOR_DISTRIBUTION = NO
+               BUILD_ROOT = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Products
+               BUILD_STYLE = 
+               BUILD_VARIANTS = normal
+               BUILT_PRODUCTS_DIR = /Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos
+               BUNDLE_CONTENTS_FOLDER_PATH_deep = Contents/
+               BUNDLE_EXECUTABLE_FOLDER_NAME_deep = MacOS
+               BUNDLE_EXTENSIONS_FOLDER_PATH = Extensions
+               BUNDLE_FORMAT = shallow
+               BUNDLE_FRAMEWORKS_FOLDER_PATH = Frameworks
+               BUNDLE_PLUGINS_FOLDER_PATH = PlugIns
+               BUNDLE_PRIVATE_HEADERS_FOLDER_PATH = PrivateHeaders
+               BUNDLE_PUBLIC_HEADERS_FOLDER_PATH = Headers
+               CACHE_ROOT = /var/folders/xf/w6ghptys0vs0w03ys34g0y7h0000gp/C/com.apple.DeveloperTools/26.3-17C529/Xcode
+               CCHROOT = /var/folders/xf/w6ghptys0vs0w03ys34g0y7h0000gp/C/com.apple.DeveloperTools/26.3-17C529/Xcode
+               CHMOD = /bin/chmod
+               CHOWN = /usr/sbin/chown
+               CLANG_ANALYZER_NONNULL = YES
+               CLANG_CACHE_FINE_GRAINED_OUTPUTS = YES
+               CLANG_CXX_LANGUAGE_STANDARD = gnu++0x
+               CLANG_CXX_LIBRARY = libc++
+               CLANG_ENABLE_EXPLICIT_MODULES = YES
+               CLANG_ENABLE_MODULES = YES
+               CLANG_ENABLE_OBJC_ARC = YES
+               CLANG_MODULES_BUILD_SESSION_FILE = /Users/devcodex/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation
+               CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES
+               CLANG_WARN_BOOL_CONVERSION = YES
+               CLANG_WARN_COMMA = YES
+               CLANG_WARN_CONSTANT_CONVERSION = YES
+               CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES
+               CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR
+               CLANG_WARN_EMPTY_BODY = YES
+               CLANG_WARN_ENUM_CONVERSION = YES
+               CLANG_WARN_INFINITE_RECURSION = YES
+               CLANG_WARN_INT_CONVERSION = YES
+               CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES
+               CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES
+               CLANG_WARN_OBJC_LITERAL_CONVERSION = YES
+               CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR
+               CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = NO
+               CLANG_WARN_RANGE_LOOP_ANALYSIS = YES
+               CLANG_WARN_STRICT_PROTOTYPES = YES
+               CLANG_WARN_SUSPICIOUS_MOVE = YES
+               CLANG_WARN_UNREACHABLE_CODE = YES
+               CLANG_WARN__DUPLICATE_METHOD_MATCH = YES
+               CLASS_FILE_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/JavaClasses
+               CLEAN_PRECOMPS = YES
+               CLONE_HEADERS = NO
+               COCOAPODS_PARALLEL_CODE_SIGN = true
+               CODESIGNING_FOLDER_PATH = /Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/Runner.app
+               CODE_SIGNING_ALLOWED = YES
+               CODE_SIGNING_REQUIRED = YES
+               CODE_SIGN_CONTEXT_CLASS = XCiPhoneOSCodeSignContext
+               CODE_SIGN_IDENTITY = iPhone Developer
+               CODE_SIGN_INJECT_BASE_ENTITLEMENTS = YES
+               COLOR_DIAGNOSTICS = NO
+               COMBINE_HIDPI_IMAGES = NO
+               COMPILATION_CACHE_CAS_PATH = /Users/devcodex/Library/Developer/Xcode/DerivedData/CompilationCache.noindex
+               COMPILATION_CACHE_KEEP_CAS_DIRECTORY = YES
+               COMPILER_INDEX_STORE_ENABLE = Default
+               COMPOSITE_SDK_DIRS = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/CompositeSDKs
+               COMPRESS_PNG_FILES = YES
+               CONFIGURATION = Debug
+               CONFIGURATION_BUILD_DIR = /Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos
+               CONFIGURATION_TEMP_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos
+               CONTENTS_FOLDER_PATH = Runner.app
+               CONTENTS_FOLDER_PATH_SHALLOW_BUNDLE_NO = Runner.app/Contents
+               CONTENTS_FOLDER_PATH_SHALLOW_BUNDLE_YES = Runner.app
+               COPYING_PRESERVES_HFS_DATA = NO
+               COPY_HEADERS_RUN_UNIFDEF = NO
+               COPY_PHASE_STRIP = NO
+               CORRESPONDING_SIMULATOR_PLATFORM_DIR = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform
+               CORRESPONDING_SIMULATOR_PLATFORM_NAME = iphonesimulator
+               CORRESPONDING_SIMULATOR_SDK_DIR = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk
+               CORRESPONDING_SIMULATOR_SDK_NAME = iphonesimulator26.2
+               CP = /bin/cp
+               CREATE_INFOPLIST_SECTION_IN_BINARY = NO
+               CURRENT_ARCH = undefined_arch
+               CURRENT_PROJECT_VERSION = 1
+               CURRENT_VARIANT = normal
+               DART_DEFINES = QVBQX0VOVj1wcm9k,QUxMT1dfUFJPRF9JTl9ERUJVRz10cnVl,RkxVVFRFUl9WRVJTSU9OPTMuNDEuMg==,RkxVVFRFUl9DSEFOTkVMPXN0YWJsZQ==,RkxVVFRFUl9HSVRfVVJMPWh0dHBzOi8vZ2l0aHViLmNvbS9mbHV0dGVyL2ZsdXR0ZXIuZ2l0,RkxVVFRFUl9GUkFNRVdPUktfUkVWSVNJT049OTA2NzNhNGVlZg==,RkxVVFRFUl9FTkdJTkVfUkVWSVNJT049NmMwYmFhZWJmNw==,RkxVVFRFUl9EQVJUX1ZFUlNJT049My4xMS4w
+               DART_OBFUSCATION = false
+               DEAD_CODE_STRIPPING = YES
+               DEBUGGING_SYMBOLS = YES
+               DEBUG_INFORMATION_FORMAT = dwarf
+               DEBUG_INFORMATION_VERSION = compiler-default
+               DEFAULT_COMPILER = com.apple.compilers.llvm.clang.1_0
+               DEFAULT_DEXT_INSTALL_PATH = /System/Library/DriverExtensions
+               DEFAULT_KEXT_INSTALL_PATH = /System/Library/Extensions
+               DEFINES_MODULE = NO
+               DEPLOYMENT_LOCATION = NO
+               DEPLOYMENT_POSTPROCESSING = NO
+               DEPLOYMENT_TARGET_SETTING_NAME = IPHONEOS_DEPLOYMENT_TARGET
+               DEPLOYMENT_TARGET_SUGGESTED_VALUES = 12.0 12.1 12.2 12.3 12.4 13.0 13.1 13.2 13.3 13.4 13.5 13.6 14.0 14.1 14.2 14.3 14.4 14.5 14.6 14.7 15.0 15.1 15.2 15.3 15.4 15.5 15.6 16.0 16.1 16.2 16.3 16.4 16.5 16.6 17.0 17.1 17.2 17.3 17.4 17.5 17.6 18.0 18.1 18.2 18.3 18.4 18.5 18.6 26.0 26.1 26.2
+               DERIVED_FILES_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/DerivedSources
+               DERIVED_FILE_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/DerivedSources
+               DERIVED_SOURCES_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/DerivedSources
+               DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO
+               DEVELOPER_APPLICATIONS_DIR = /Applications/Xcode.app/Contents/Developer/Applications
+               DEVELOPER_BIN_DIR = /Applications/Xcode.app/Contents/Developer/usr/bin
+               DEVELOPER_DIR = /Applications/Xcode.app/Contents/Developer
+               DEVELOPER_FRAMEWORKS_DIR = /Applications/Xcode.app/Contents/Developer/Library/Frameworks
+               DEVELOPER_FRAMEWORKS_DIR_QUOTED = /Applications/Xcode.app/Contents/Developer/Library/Frameworks
+               DEVELOPER_LIBRARY_DIR = /Applications/Xcode.app/Contents/Developer/Library
+               DEVELOPER_SDK_DIR = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs
+               DEVELOPER_TOOLS_DIR = /Applications/Xcode.app/Contents/Developer/Tools
+               DEVELOPER_USR_DIR = /Applications/Xcode.app/Contents/Developer/usr
+               DEVELOPMENT_LANGUAGE = en
+               DIAGNOSE_MISSING_TARGET_DEPENDENCIES = YES
+               DIFF = /usr/bin/diff
+               DOCUMENTATION_FOLDER_PATH = Runner.app/en.lproj/Documentation
+               DONT_GENERATE_INFOPLIST_FILE = NO
+               DRIVERKIT_DEPLOYMENT_TARGET = 25.2
+               DSTROOT = /tmp/Runner.dst
+               DT_TOOLCHAIN_DIR = /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain
+               DWARF_DSYM_FILE_NAME = Runner.app.dSYM
+               DWARF_DSYM_FILE_SHOULD_ACCOMPANY_PRODUCT = NO
+               DWARF_DSYM_FOLDER_PATH = /Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos
+               DYNAMIC_LIBRARY_EXTENSION = dylib
+               EAGER_COMPILATION_ALLOW_SCRIPTS = NO
+               EAGER_LINKING = NO
+               EFFECTIVE_PLATFORM_NAME = -iphoneos
+               EMBEDDED_CONTENT_CONTAINS_SWIFT = NO
+               EMBEDDED_PROFILE_NAME = embedded.mobileprovision
+               EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = NO
+               ENABLE_APP_SANDBOX = NO
+               ENABLE_BITCODE = NO
+               ENABLE_CODE_COVERAGE = YES
+               ENABLE_CPLUSPLUS_BOUNDS_SAFE_BUFFERS = NO
+               ENABLE_C_BOUNDS_SAFETY = NO
+               ENABLE_DEBUG_DYLIB = YES
+               ENABLE_DEFAULT_HEADER_SEARCH_PATHS = YES
+               ENABLE_DEFAULT_SEARCH_PATHS = YES
+               ENABLE_ENHANCED_SECURITY = NO
+               ENABLE_HARDENED_RUNTIME = NO
+               ENABLE_HEADER_DEPENDENCIES = YES
+               ENABLE_INCOMING_NETWORK_CONNECTIONS = NO
+               ENABLE_ON_DEMAND_RESOURCES = YES
+               ENABLE_OUTGOING_NETWORK_CONNECTIONS = NO
+               ENABLE_POINTER_AUTHENTICATION = NO
+               ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO
+               ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO
+               ENABLE_RESOURCE_ACCESS_CALENDARS = NO
+               ENABLE_RESOURCE_ACCESS_CAMERA = NO
+               ENABLE_RESOURCE_ACCESS_CONTACTS = NO
+               ENABLE_RESOURCE_ACCESS_LOCATION = NO
+               ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO
+               ENABLE_RESOURCE_ACCESS_PRINTING = NO
+               ENABLE_RESOURCE_ACCESS_USB = NO
+               ENABLE_SDK_IMPORTS = NO
+               ENABLE_SECURITY_COMPILER_WARNINGS = NO
+               ENABLE_STRICT_OBJC_MSGSEND = YES
+               ENABLE_TESTABILITY = YES
+               ENABLE_TESTING_SEARCH_PATHS = NO
+               ENABLE_USER_SCRIPT_SANDBOXING = NO
+               ENFORCE_VALID_ARCHS = YES
+               ENTITLEMENTS_ALLOWED = YES
+               ENTITLEMENTS_DESTINATION = Signature
+               ENTITLEMENTS_REQUIRED = NO
+               EXCLUDED_ARCHS = armv7
+               EXCLUDED_INSTALLSRC_SUBDIRECTORY_PATTERNS = .DS_Store .svn .git .hg CVS
+               EXCLUDED_RECURSIVE_SEARCH_PATH_SUBDIRECTORIES = *.nib *.lproj *.framework *.gch *.xcode* *.xcassets *.icon (*) .DS_Store CVS .svn .git .hg *.pbproj *.pbxproj
+               EXECUTABLES_FOLDER_PATH = Runner.app/Executables
+               EXECUTABLE_FOLDER_PATH = Runner.app
+               EXECUTABLE_FOLDER_PATH_SHALLOW_BUNDLE_NO = Runner.app/MacOS
+               EXECUTABLE_FOLDER_PATH_SHALLOW_BUNDLE_YES = Runner.app
+               EXECUTABLE_NAME = Runner
+               EXECUTABLE_PATH = Runner.app/Runner
+               EXTENSIONS_FOLDER_PATH = Runner.app/Extensions
+               FILE_LIST = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Objects/LinkFileList
+               FIXED_FILES_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/FixedFiles
+               FLUTTER_APPLICATION_PATH = /Users/devcodex/development/focus_interval
+               FLUTTER_BUILD_DIR = build
+               FLUTTER_BUILD_NAME = 1.1.0
+               FLUTTER_BUILD_NUMBER = 1
+               FLUTTER_ROOT = /Users/devcodex/development/flutter
+               FLUTTER_TARGET = /Users/devcodex/development/focus_interval/lib/main.dart
+               FRAMEWORKS_FOLDER_PATH = Runner.app/Frameworks
+               FRAMEWORK_FLAG_PREFIX = -framework
+               FRAMEWORK_SEARCH_PATHS = /Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos  "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/AppAuth" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/AppCheckCore" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/BoringSSL-GRPC" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/DKImagePickerController" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/DKPhotoGallery" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseAppCheckInterop" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseAuth" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseAuthInterop" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseCore" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseCoreExtension" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseCoreInternal" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseFirestore" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseFirestoreInternal" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseSharedSwift" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/GTMAppAuth" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/GTMSessionFetcher" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/GoogleSignIn" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/GoogleUtilities" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/PromisesObjC" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/RecaptchaInterop" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/SDWebImage" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/SwiftyGif" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/abseil" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/audio_session" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/audioplayers_darwin" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/cloud_firestore" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/file_picker" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/firebase_auth" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/firebase_core" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/flutter_local_notifications" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/gRPC-C++" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/gRPC-Core" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/google_sign_in_ios" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/just_audio" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/leveldb-library" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/nanopb" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/path_provider_foundation" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/shared_preferences_foundation" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/url_launcher_ios"
+               FRAMEWORK_VERSION = A
+               FULL_PRODUCT_NAME = Runner.app
+               FUSE_BUILD_PHASES = YES
+               FUSE_BUILD_SCRIPT_PHASES = NO
+               GCC3_VERSION = 3.3
+               GCC_C_LANGUAGE_STANDARD = gnu99
+               GCC_DYNAMIC_NO_PIC = NO
+               GCC_INLINES_ARE_PRIVATE_EXTERN = YES
+               GCC_NO_COMMON_BLOCKS = YES
+               GCC_OPTIMIZATION_LEVEL = 0
+               GCC_PFE_FILE_C_DIALECTS = c objective-c c++ objective-c++
+               GCC_PREPROCESSOR_DEFINITIONS = DEBUG=1  COCOAPODS=1 DEBUG=1  PB_FIELD_32BIT=1 PB_NO_PACKED_STRUCTS=1 PB_ENABLE_MALLOC=1
+               GCC_SYMBOLS_PRIVATE_EXTERN = NO
+               GCC_THUMB_SUPPORT = YES
+               GCC_TREAT_WARNINGS_AS_ERRORS = NO
+               GCC_VERSION = com.apple.compilers.llvm.clang.1_0
+               GCC_VERSION_IDENTIFIER = com_apple_compilers_llvm_clang_1_0
+               GCC_WARN_64_TO_32_BIT_CONVERSION = YES
+               GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR
+               GCC_WARN_UNDECLARED_SELECTOR = YES
+               GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE
+               GCC_WARN_UNUSED_FUNCTION = YES
+               GCC_WARN_UNUSED_VARIABLE = YES
+               GENERATED_MODULEMAP_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/GeneratedModuleMaps-iphoneos
+               GENERATE_INFOPLIST_FILE = NO
+               GENERATE_INTERMEDIATE_TEXT_BASED_STUBS = YES
+               GENERATE_PKGINFO_FILE = YES
+               GENERATE_PRELINK_OBJECT_FILE = NO
+               GENERATE_PROFILING_CODE = NO
+               GENERATE_TEXT_BASED_STUBS = NO
+               GID = 20
+               GROUP = staff
+               HEADERMAP_INCLUDES_FLAT_ENTRIES_FOR_TARGET_BEING_BUILT = YES
+               HEADERMAP_INCLUDES_FRAMEWORK_ENTRIES_FOR_ALL_PRODUCT_TYPES = YES
+               HEADERMAP_INCLUDES_FRAMEWORK_ENTRIES_FOR_TARGETS_NOT_BEING_BUILT = YES
+               HEADERMAP_INCLUDES_NONPUBLIC_NONPRIVATE_HEADERS = YES
+               HEADERMAP_INCLUDES_PROJECT_HEADERS = YES
+               HEADERMAP_USES_FRAMEWORK_PREFIX_ENTRIES = YES
+               HEADERMAP_USES_VFS = NO
+               HEADER_SEARCH_PATHS = /Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/include  "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/AppAuth/AppAuth.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/AppCheckCore/AppCheckCore.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/BoringSSL-GRPC/openssl_grpc.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/DKImagePickerController/DKImagePickerController.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/DKPhotoGallery/DKPhotoGallery.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseAppCheckInterop/FirebaseAppCheckInterop.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseAuth/FirebaseAuth.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseAuthInterop/FirebaseAuthInterop.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseCore/FirebaseCore.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseCoreExtension/FirebaseCoreExtension.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseCoreInternal/FirebaseCoreInternal.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseFirestore/FirebaseFirestore.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseFirestoreInternal/FirebaseFirestoreInternal.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseSharedSwift/FirebaseSharedSwift.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/GTMAppAuth/GTMAppAuth.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/GTMSessionFetcher/GTMSessionFetcher.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/GoogleSignIn/GoogleSignIn.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/GoogleUtilities/GoogleUtilities.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/PromisesObjC/FBLPromises.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/RecaptchaInterop/RecaptchaInterop.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/SDWebImage/SDWebImage.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/SwiftyGif/SwiftyGif.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/abseil/absl.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/audio_session/audio_session.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/audioplayers_darwin/audioplayers_darwin.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/cloud_firestore/cloud_firestore.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/file_picker/file_picker.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/firebase_auth/firebase_auth.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/firebase_core/firebase_core.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/flutter_local_notifications/flutter_local_notifications.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/gRPC-C++/grpcpp.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/gRPC-Core/grpc.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/google_sign_in_ios/google_sign_in_ios.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/just_audio/just_audio.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/leveldb-library/leveldb.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/nanopb/nanopb.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/path_provider_foundation/path_provider_foundation.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/shared_preferences_foundation/shared_preferences_foundation.framework/Headers" "/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/url_launcher_ios/url_launcher_ios.framework/Headers" "/Users/devcodex/development/focus_interval/ios/Pods/Headers/Public" "/Users/devcodex/development/focus_interval/ios/Pods/Headers/Public/Firebase"  /Users/devcodex/development/focus_interval/ios/Pods/Firebase/CoreOnly/Sources
+               HOME = /Users/devcodex
+               HOST_ARCH = x86_64
+               HOST_PLATFORM = macosx
+               ICONV = /usr/bin/iconv
+               IMPLICIT_DEPENDENCY_DOMAIN = default
+               INFOPLIST_ENABLE_CFBUNDLEICONS_MERGE = YES
+               INFOPLIST_EXPAND_BUILD_SETTINGS = YES
+               INFOPLIST_FILE = Runner/Info.plist
+               INFOPLIST_OUTPUT_FORMAT = binary
+               INFOPLIST_PATH = Runner.app/Info.plist
+               INFOPLIST_PREPROCESS = NO
+               INFOSTRINGS_PATH = Runner.app/en.lproj/InfoPlist.strings
+               INLINE_PRIVATE_FRAMEWORKS = NO
+               INSTALLAPI_IGNORE_SKIP_INSTALL = YES
+               INSTALLHDRS_COPY_PHASE = NO
+               INSTALLHDRS_SCRIPT_PHASE = NO
+               INSTALL_DIR = /tmp/Runner.dst/Applications
+               INSTALL_GROUP = staff
+               INSTALL_MODE_FLAG = u+w,go-w,a+rX
+               INSTALL_OWNER = devcodex
+               INSTALL_PATH = /Applications
+               INSTALL_ROOT = /tmp/Runner.dst
+               IPHONEOS_DEPLOYMENT_TARGET = 14.0
+               IS_UNOPTIMIZED_BUILD = YES
+               JAVAC_DEFAULT_FLAGS = -J-Xms64m -J-XX:NewSize=4M -J-Dfile.encoding=UTF8
+               JAVA_APP_STUB = /System/Library/Frameworks/JavaVM.framework/Resources/MacOS/JavaApplicationStub
+               JAVA_ARCHIVE_CLASSES = YES
+               JAVA_ARCHIVE_TYPE = JAR
+               JAVA_COMPILER = /usr/bin/javac
+               JAVA_FOLDER_PATH = Runner.app/Java
+               JAVA_FRAMEWORK_RESOURCES_DIRS = Resources
+               JAVA_JAR_FLAGS = cv
+               JAVA_SOURCE_SUBDIR = .
+               JAVA_USE_DEPENDENCIES = YES
+               JAVA_ZIP_FLAGS = -urg
+               JIKES_DEFAULT_FLAGS = +E +OLDCSO
+               KASAN_CFLAGS_CLASSIC = -DKASAN=1 -DKASAN_CLASSIC=1 -fsanitize=address -mllvm -asan-globals-live-support -mllvm -asan-force-dynamic-shadow
+               KASAN_CFLAGS_TBI = -DKASAN=1 -DKASAN_TBI=1 -fsanitize=kernel-hwaddress -mllvm -hwasan-recover=0 -mllvm -hwasan-instrument-atomics=0 -mllvm -hwasan-instrument-stack=1 -mllvm -hwasan-generate-tags-with-calls=1 -mllvm -hwasan-instrument-with-calls=1 -mllvm -hwasan-use-short-granules=0 -mllvm -hwasan-memory-access-callback-prefix=__asan_
+               KASAN_DEFAULT_CFLAGS = -DKASAN=1 -DKASAN_CLASSIC=1 -fsanitize=address -mllvm -asan-globals-live-support -mllvm -asan-force-dynamic-shadow
+               KEEP_PRIVATE_EXTERNS = NO
+               LD_DEPENDENCY_INFO_FILE = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Objects-normal/undefined_arch/Runner_dependency_info.dat
+               LD_EXPORT_SYMBOLS = YES
+               LD_GENERATE_MAP_FILE = NO
+               LD_MAP_FILE_PATH = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Runner-LinkMap-normal-undefined_arch.txt
+               LD_NO_PIE = NO
+               LD_QUOTE_LINKER_ARGUMENTS_FOR_COMPILER_DRIVER = YES
+               LD_RUNPATH_SEARCH_PATHS =  /usr/lib/swift '@executable_path/Frameworks' '@loader_path/Frameworks' @executable_path/Frameworks
+               LD_RUNPATH_SEARCH_PATHS_YES = @loader_path/../Frameworks
+               LD_SHARED_CACHE_ELIGIBLE = Automatic
+               LD_WARN_DUPLICATE_LIBRARIES = NO
+               LD_WARN_UNUSED_DYLIBS = NO
+               LEGACY_DEVELOPER_DIR = /Applications/Xcode.app/Contents/PlugIns/Xcode3Core.ideplugin/Contents/SharedSupport/Developer
+               LEX = lex
+               LIBRARY_DEXT_INSTALL_PATH = /Library/DriverExtensions
+               LIBRARY_FLAG_NOSPACE = YES
+               LIBRARY_FLAG_PREFIX = -l
+               LIBRARY_KEXT_INSTALL_PATH = /Library/Extensions
+               LIBRARY_SEARCH_PATHS = /Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.2.sdk/usr/lib/swift /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.2.sdk/usr/lib/swift
+               LINKER_DISPLAYS_MANGLED_NAMES = NO
+               LINK_FILE_LIST_normal_arm64 = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Objects-normal/arm64/Runner.LinkFileList
+               LINK_OBJC_RUNTIME = YES
+               LINK_WITH_STANDARD_LIBRARIES = YES
+               LLVM_TARGET_TRIPLE_OS_VERSION = ios14.0
+               LLVM_TARGET_TRIPLE_VENDOR = apple
+               LM_AUX_CONST_METADATA_LIST_PATH_normal_arm64 = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Objects-normal/arm64/Runner.SwiftConstValuesFileList
+               LOCALIZATION_EXPORT_SUPPORTED = YES
+               LOCALIZATION_PREFERS_STRING_CATALOGS = NO
+               LOCALIZED_RESOURCES_FOLDER_PATH = Runner.app/en.lproj
+               LOCALIZED_STRING_MACRO_NAMES = NSLocalizedString CFCopyLocalizedString
+               LOCALIZED_STRING_SWIFTUI_SUPPORT = YES
+               LOCAL_ADMIN_APPS_DIR = /Applications/Utilities
+               LOCAL_APPS_DIR = /Applications
+               LOCAL_DEVELOPER_DIR = /Library/Developer
+               LOCAL_LIBRARY_DIR = /Library
+               LOCROOT = /Users/devcodex/development/focus_interval/ios
+               LOCSYMROOT = /Users/devcodex/development/focus_interval/ios
+               MACH_O_TYPE = mh_execute
+               MACOSX_DEPLOYMENT_TARGET = 26.2
+               MAC_OS_X_PRODUCT_BUILD_VERSION = 25D125
+               MAC_OS_X_VERSION_ACTUAL = 260300
+               MAC_OS_X_VERSION_MAJOR = 260000
+               MAC_OS_X_VERSION_MINOR = 260300
+               MAKE_MERGEABLE = NO
+               MERGEABLE_LIBRARY = NO
+               MERGED_BINARY_TYPE = none
+               MERGE_LINKED_LIBRARIES = NO
+               METAL_LIBRARY_FILE_BASE = default
+               METAL_LIBRARY_OUTPUT_DIR = /Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/Runner.app
+               MODULES_FOLDER_PATH = Runner.app/Modules
+               MODULE_CACHE_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData/ModuleCache.noindex
+               MTL_ENABLE_DEBUG_INFO = YES
+               NATIVE_ARCH = x86_64
+               NATIVE_ARCH_32_BIT = i386
+               NATIVE_ARCH_64_BIT = x86_64
+               NATIVE_ARCH_ACTUAL = x86_64
+               NO_COMMON = YES
+               OBJECT_FILE_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Objects
+               OBJECT_FILE_DIR_normal = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Objects-normal
+               OBJROOT = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex
+               ONLY_ACTIVE_ARCH = NO
+               OS = MACOS
+               OSAC = /usr/bin/osacompile
+               OTHER_LDFLAGS =  -ObjC -l"c++" -l"z" -framework "AVFoundation" -framework "AVKit" -framework "AppAuth" -framework "AppCheckCore" -framework "CoreGraphics" -framework "CoreText" -framework "DKImagePickerController" -framework "DKPhotoGallery" -framework "FBLPromises" -framework "FirebaseAppCheckInterop" -framework "FirebaseAuth" -framework "FirebaseAuthInterop" -framework "FirebaseCore" -framework "FirebaseCoreExtension" -framework "FirebaseCoreInternal" -framework "FirebaseFirestore" -framework "FirebaseFirestoreInternal" -framework "FirebaseSharedSwift" -framework "Foundation" -framework "GTMAppAuth" -framework "GTMSessionFetcher" -framework "GoogleSignIn" -framework "GoogleUtilities" -framework "ImageIO" -framework "LocalAuthentication" -framework "Photos" -framework "RecaptchaInterop" -framework "SDWebImage" -framework "SafariServices" -framework "Security" -framework "SwiftyGif" -framework "SystemConfiguration" -framework "UIKit" -framework "absl" -framework "audio_session" -framework "audioplayers_darwin" -framework "cloud_firestore" -framework "file_picker" -framework "firebase_auth" -framework "firebase_core" -framework "flutter_local_notifications" -framework "google_sign_in_ios" -framework "grpc" -framework "grpcpp" -framework "just_audio" -framework "leveldb" -framework "nanopb" -framework "openssl_grpc" -framework "path_provider_foundation" -framework "shared_preferences_foundation" -framework "url_launcher_ios" -weak_framework "AuthenticationServices" -weak_framework "DeviceCheck" -weak_framework "FirebaseFirestoreInternal"
+               OTHER_MODULE_VERIFIER_FLAGS =  "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/AppAuth" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/AppCheckCore" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/BoringSSL-GRPC" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/DKImagePickerController" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/DKPhotoGallery" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/Firebase" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseAppCheckInterop" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseAuth" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseAuthInterop" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseCore" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseCoreExtension" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseCoreInternal" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseFirestore" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseFirestoreInternal" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/FirebaseSharedSwift" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/Flutter" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/GTMAppAuth" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/GTMSessionFetcher" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/GoogleSignIn" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/GoogleUtilities" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/PromisesObjC" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/RecaptchaInterop" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/SDWebImage" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/SwiftyGif" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/abseil" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/audio_session" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/audioplayers_darwin" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/cloud_firestore" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/file_picker" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/firebase_auth" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/firebase_core" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/flutter_local_notifications" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/gRPC-C++" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/gRPC-Core" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/google_sign_in_ios" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/just_audio" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/leveldb-library" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/nanopb" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/path_provider_foundation" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/shared_preferences_foundation" "-F/Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/url_launcher_ios"
+               OTHER_SWIFT_FLAGS =  -D COCOAPODS
+               PACKAGE_CONFIG = /Users/devcodex/development/focus_interval/.dart_tool/package_config.json
+               PACKAGE_TYPE = com.apple.package-type.wrapper.application
+               PASCAL_STRINGS = YES
+               PATH = /Applications/Xcode.app/Contents/SharedFrameworks/SwiftBuild.framework/Versions/A/PlugIns/SWBBuildService.bundle/Contents/PlugIns/SWBUniversalPlatformPlugin.bundle/Contents/Frameworks/SWBUniversalPlatform.framework/Resources:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/local/bin:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/libexec:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/usr/bin:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/usr/local/bin:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/local/bin:/Applications/Xcode.app/Contents/Developer/usr/bin:/Applications/Xcode.app/Contents/Developer/usr/local/bin:/Users/devcodex/development/flutter/bin:/Users/devcodex/Library/Application Support/Code/User/globalStorage/github.copilot-chat/debugCommand:/Users/devcodex/Library/Application Support/Code/User/globalStorage/github.copilot-chat/copilotCli:/Users/devcodex/development/flutter/bin/:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/opt/pmk/env/global/bin:/Library/Apple/usr/bin:/Users/devcodex/.pub-cache/bin
+               PATH_PREFIXES_EXCLUDED_FROM_HEADER_DEPENDENCIES = /usr/include /usr/local/include /System/Library/Frameworks /System/Library/PrivateFrameworks /Applications/Xcode.app/Contents/Developer/Headers /Applications/Xcode.app/Contents/Developer/SDKs /Applications/Xcode.app/Contents/Developer/Platforms
+               PBDEVELOPMENTPLIST_PATH = Runner.app/pbdevelopment.plist
+               PER_ARCH_MODULE_FILE_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Objects-normal/undefined_arch
+               PER_ARCH_OBJECT_FILE_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Objects-normal/undefined_arch
+               PER_VARIANT_OBJECT_FILE_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Objects-normal
+               PKGINFO_FILE_PATH = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/PkgInfo
+               PKGINFO_PATH = Runner.app/PkgInfo
+               PLATFORM_DEVELOPER_APPLICATIONS_DIR = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Applications
+               PLATFORM_DEVELOPER_BIN_DIR = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin
+               PLATFORM_DEVELOPER_LIBRARY_DIR = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Library
+               PLATFORM_DEVELOPER_SDK_DIR = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs
+               PLATFORM_DEVELOPER_TOOLS_DIR = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Tools
+               PLATFORM_DEVELOPER_USR_DIR = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr
+               PLATFORM_DIR = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform
+               PLATFORM_DISPLAY_NAME = iOS
+               PLATFORM_FAMILY_NAME = iOS
+               PLATFORM_NAME = iphoneos
+               PLATFORM_PREFERRED_ARCH = arm64
+               PLATFORM_PRODUCT_BUILD_VERSION = 23C57
+               PLATFORM_REQUIRES_SWIFT_AUTOLINK_EXTRACT = NO
+               PLATFORM_REQUIRES_SWIFT_MODULEWRAP = NO
+               PLIST_FILE_OUTPUT_FORMAT = binary
+               PLUGINS_FOLDER_PATH = Runner.app/PlugIns
+               PODS_BUILD_DIR = /Users/devcodex/development/focus_interval/build/ios
+               PODS_CONFIGURATION_BUILD_DIR = /Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos
+               PODS_PODFILE_DIR_PATH = /Users/devcodex/development/focus_interval/ios/.
+               PODS_ROOT = /Users/devcodex/development/focus_interval/ios/Pods
+               PODS_XCFRAMEWORKS_BUILD_DIR = /Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/XCFrameworkIntermediates
+               PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES
+               PRECOMP_DESTINATION_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/PrefixHeaders
+               PRIVATE_HEADERS_FOLDER_PATH = Runner.app/PrivateHeaders
+               PROCESSED_INFOPLIST_PATH = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Objects-normal/undefined_arch/Processed-Info.plist
+               PRODUCT_BUNDLE_IDENTIFIER = com.marcdevelopez.focusinterval
+               PRODUCT_BUNDLE_PACKAGE_TYPE = APPL
+               PRODUCT_MODULE_NAME = Runner
+               PRODUCT_NAME = Runner
+               PRODUCT_SETTINGS_PATH = /Users/devcodex/development/focus_interval/ios/Runner/Info.plist
+               PRODUCT_TYPE = com.apple.product-type.application
+               PROFILING_CODE = NO
+               PROJECT = Runner
+               PROJECT_DERIVED_FILE_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/DerivedSources
+               PROJECT_DIR = /Users/devcodex/development/focus_interval/ios
+               PROJECT_FILE_PATH = /Users/devcodex/development/focus_interval/ios/Runner.xcodeproj
+               PROJECT_GUID = 18c1723432283e0cc55f10a6dcfd9e02
+               PROJECT_NAME = Runner
+               PROJECT_TEMP_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build
+               PROJECT_TEMP_ROOT = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex
+               PROVISIONING_PROFILE_REQUIRED = YES
+               PROVISIONING_PROFILE_REQUIRED_YES_YES = YES
+               PROVISIONING_PROFILE_SUPPORTED = YES
+               PUBLIC_HEADERS_FOLDER_PATH = Runner.app/Headers
+               RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET = 15.0
+               RECURSIVE_SEARCH_PATHS_FOLLOW_SYMLINKS = YES
+               REMOVE_CVS_FROM_RESOURCES = YES
+               REMOVE_GIT_FROM_RESOURCES = YES
+               REMOVE_HEADERS_FROM_EMBEDDED_BUNDLES = YES
+               REMOVE_HG_FROM_RESOURCES = YES
+               REMOVE_STATIC_EXECUTABLES_FROM_EMBEDDED_BUNDLES = YES
+               REMOVE_SVN_FROM_RESOURCES = YES
+               RESCHEDULE_INDEPENDENT_HEADERS_PHASES = YES
+               REZ_COLLECTOR_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/ResourceManagerResources
+               REZ_OBJECTS_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/ResourceManagerResources/Objects
+               REZ_SEARCH_PATHS = /Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos 
+               RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO
+               RUNTIME_EXCEPTION_ALLOW_JIT = NO
+               RUNTIME_EXCEPTION_ALLOW_UNSIGNED_EXECUTABLE_MEMORY = NO
+               RUNTIME_EXCEPTION_DEBUGGING_TOOL = NO
+               RUNTIME_EXCEPTION_DISABLE_EXECUTABLE_PAGE_PROTECTION = NO
+               RUNTIME_EXCEPTION_DISABLE_LIBRARY_VALIDATION = NO
+               SCAN_ALL_SOURCE_FILES_FOR_INCLUDES = NO
+               SCRIPTS_FOLDER_PATH = Runner.app/Scripts
+               SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.2.sdk
+               SDK_DIR = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.2.sdk
+               SDK_DIR_iphoneos = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.2.sdk
+               SDK_DIR_iphoneos26_2 = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.2.sdk
+               SDK_NAME = iphoneos26.2
+               SDK_NAMES = iphoneos26.2
+               SDK_PRODUCT_BUILD_VERSION = 23C57
+               SDK_STAT_CACHE_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData
+               SDK_STAT_CACHE_ENABLE = YES
+               SDK_STAT_CACHE_PATH = /Users/devcodex/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphoneos26.2-23C57-3794476bd08197c3e2abd9bb477ef7f7.sdkstatcache
+               SDK_VERSION = 26.2
+               SDK_VERSION_ACTUAL = 260200
+               SDK_VERSION_MAJOR = 260000
+               SDK_VERSION_MINOR = 260200
+               SED = /usr/bin/sed
+               SEPARATE_STRIP = NO
+               SEPARATE_SYMBOL_EDIT = NO
+               SET_DIR_MODE_OWNER_GROUP = YES
+               SET_FILE_MODE_OWNER_GROUP = NO
+               SHALLOW_BUNDLE = YES
+               SHALLOW_BUNDLE_TRIPLE = ios
+               SHALLOW_BUNDLE_ios_macabi = NO
+               SHALLOW_BUNDLE_macos = NO
+               SHARED_DERIVED_FILE_DIR = /Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos/DerivedSources
+               SHARED_FRAMEWORKS_FOLDER_PATH = Runner.app/SharedFrameworks
+               SHARED_PRECOMPS_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/PrecompiledHeaders
+               SHARED_SUPPORT_FOLDER_PATH = Runner.app/SharedSupport
+               SKIP_INSTALL = NO
+               SOURCE_ROOT = /Users/devcodex/development/focus_interval/ios
+               SRCROOT = /Users/devcodex/development/focus_interval/ios
+               STRINGSDATA_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Objects-normal/undefined_arch
+               STRINGSDATA_ROOT = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build
+               STRINGS_FILE_INFOPLIST_RENAME = YES
+               STRINGS_FILE_OUTPUT_ENCODING = binary
+               STRING_CATALOG_GENERATE_SYMBOLS = NO
+               STRIP_BITCODE_FROM_COPIED_FILES = YES
+               STRIP_INSTALLED_PRODUCT = NO
+               STRIP_STYLE = all
+               STRIP_SWIFT_SYMBOLS = YES
+               SUPPORTED_DEVICE_FAMILIES = 1,2
+               SUPPORTED_PLATFORMS = iphoneos iphonesimulator
+               SUPPORTS_MACCATALYST = NO
+               SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES
+               SUPPORTS_ON_DEMAND_RESOURCES = YES
+               SUPPORTS_TEXT_BASED_API = NO
+               SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES
+               SUPPRESS_WARNINGS = NO
+               SWIFT_EMIT_CONST_VALUE_PROTOCOLS = AppIntent EntityQuery AppEntity TransientEntity AppEnum AppShortcutProviding AppShortcutsProvider AnyResolverProviding AppIntentsPackage DynamicOptionsProvider _IntentValueRepresentable _AssistantIntentsProvider _GenerativeFunctionExtractable IntentValueQuery Resolver AppExtension ExtensionPointDefining
+               SWIFT_EMIT_LOC_STRINGS = NO
+               SWIFT_ENABLE_EXPLICIT_MODULES = YES
+               SWIFT_OBJC_BRIDGING_HEADER = Runner/Runner-Bridging-Header.h
+               SWIFT_OPTIMIZATION_LEVEL = -Onone
+               SWIFT_PLATFORM_TARGET_PREFIX = ios
+               SWIFT_RESPONSE_FILE_PATH_normal_arm64 = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Objects-normal/arm64/Runner.SwiftFileList
+               SWIFT_VERSION = 5.0
+               SYMROOT = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Products
+               SYSTEM_ADMIN_APPS_DIR = /Applications/Utilities
+               SYSTEM_APPS_DIR = /Applications
+               SYSTEM_CORE_SERVICES_DIR = /System/Library/CoreServices
+               SYSTEM_DEMOS_DIR = /Applications/Extras
+               SYSTEM_DEVELOPER_APPS_DIR = /Applications/Xcode.app/Contents/Developer/Applications
+               SYSTEM_DEVELOPER_BIN_DIR = /Applications/Xcode.app/Contents/Developer/usr/bin
+               SYSTEM_DEVELOPER_DEMOS_DIR = /Applications/Xcode.app/Contents/Developer/Applications/Utilities/Built Examples
+               SYSTEM_DEVELOPER_DIR = /Applications/Xcode.app/Contents/Developer
+               SYSTEM_DEVELOPER_DOC_DIR = /Applications/Xcode.app/Contents/Developer/ADC Reference Library
+               SYSTEM_DEVELOPER_GRAPHICS_TOOLS_DIR = /Applications/Xcode.app/Contents/Developer/Applications/Graphics Tools
+               SYSTEM_DEVELOPER_JAVA_TOOLS_DIR = /Applications/Xcode.app/Contents/Developer/Applications/Java Tools
+               SYSTEM_DEVELOPER_PERFORMANCE_TOOLS_DIR = /Applications/Xcode.app/Contents/Developer/Applications/Performance Tools
+               SYSTEM_DEVELOPER_RELEASENOTES_DIR = /Applications/Xcode.app/Contents/Developer/ADC Reference Library/releasenotes
+               SYSTEM_DEVELOPER_TOOLS = /Applications/Xcode.app/Contents/Developer/Tools
+               SYSTEM_DEVELOPER_TOOLS_DOC_DIR = /Applications/Xcode.app/Contents/Developer/ADC Reference Library/documentation/DeveloperTools
+               SYSTEM_DEVELOPER_TOOLS_RELEASENOTES_DIR = /Applications/Xcode.app/Contents/Developer/ADC Reference Library/releasenotes/DeveloperTools
+               SYSTEM_DEVELOPER_USR_DIR = /Applications/Xcode.app/Contents/Developer/usr
+               SYSTEM_DEVELOPER_UTILITIES_DIR = /Applications/Xcode.app/Contents/Developer/Applications/Utilities
+               SYSTEM_DEXT_INSTALL_PATH = /System/Library/DriverExtensions
+               SYSTEM_DOCUMENTATION_DIR = /Library/Documentation
+               SYSTEM_EXTENSIONS_FOLDER_PATH = Runner.app/SystemExtensions
+               SYSTEM_EXTENSIONS_FOLDER_PATH_SHALLOW_BUNDLE_NO = Runner.app/Library/SystemExtensions
+               SYSTEM_EXTENSIONS_FOLDER_PATH_SHALLOW_BUNDLE_YES = Runner.app/SystemExtensions
+               SYSTEM_KEXT_INSTALL_PATH = /System/Library/Extensions
+               SYSTEM_LIBRARY_DIR = /System/Library
+               TAPI_DEMANGLE = YES
+               TAPI_ENABLE_PROJECT_HEADERS = NO
+               TAPI_LANGUAGE = objective-c
+               TAPI_LANGUAGE_STANDARD = compiler-default
+               TAPI_USE_SRCROOT = YES
+               TAPI_VERIFY_MODE = Pedantic
+               TARGETED_DEVICE_FAMILY = 1,2
+               TARGETNAME = Runner
+               TARGET_BUILD_DIR = /Users/devcodex/development/focus_interval/build/ios/Debug-iphoneos
+               TARGET_NAME = Runner
+               TARGET_TEMP_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build
+               TEMP_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build
+               TEMP_FILES_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build
+               TEMP_FILE_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build
+               TEMP_ROOT = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex
+               TEMP_SANDBOX_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/TemporaryTaskSandboxes
+               TEST_FRAMEWORK_SEARCH_PATHS =  /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Library/Frameworks /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.2.sdk/Developer/Library/Frameworks
+               TEST_LIBRARY_SEARCH_PATHS =  /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib
+               TOOLCHAINS = com.apple.dt.toolchain.XcodeDefault
+               TOOLCHAIN_DIR = /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain
+               TRACK_WIDGET_CREATION = true
+               TREAT_MISSING_BASELINES_AS_TEST_FAILURES = NO
+               TREAT_MISSING_SCRIPT_PHASE_OUTPUTS_AS_ERRORS = NO
+               TREE_SHAKE_ICONS = false
+               TVOS_DEPLOYMENT_TARGET = 26.2
+               UID = 502
+               UNINSTALLED_PRODUCTS_DIR = /Users/devcodex/Library/Developer/Xcode/DerivedData/Runner-gfbmkgeuubliwedrwgqblgvxcpnt/Build/Intermediates.noindex/UninstalledProducts
+               UNLOCALIZED_RESOURCES_FOLDER_PATH = Runner.app
+               UNLOCALIZED_RESOURCES_FOLDER_PATH_SHALLOW_BUNDLE_NO = Runner.app/Resources
+               UNLOCALIZED_RESOURCES_FOLDER_PATH_SHALLOW_BUNDLE_YES = Runner.app
+               UNSTRIPPED_PRODUCT = NO
+               USER = devcodex
+               USER_APPS_DIR = /Users/devcodex/Applications
+               USER_LIBRARY_DIR = /Users/devcodex/Library
+               USE_DYNAMIC_NO_PIC = YES
+               USE_HEADERMAP = YES
+               USE_HEADER_SYMLINKS = NO
+               USE_RECURSIVE_SCRIPT_INPUTS_IN_SCRIPT_PHASES = YES
+               VALIDATE_DEVELOPMENT_ASSET_PATHS = YES_ERROR
+               VALIDATE_PRODUCT = NO
+               VALID_ARCHS = arm64 arm64e armv7 armv7s
+               VERBOSE_PBXCP = NO
+               VERSIONING_SYSTEM = apple-generic
+               VERSIONPLIST_PATH = Runner.app/version.plist
+               VERSION_INFO_BUILDER = devcodex
+               VERSION_INFO_FILE = Runner_vers.c
+               VERSION_INFO_STRING = "@(#)PROGRAM:Runner  PROJECT:Runner-1"
+               WATCHOS_DEPLOYMENT_TARGET = 26.2
+               WORKSPACE_DIR = /Users/devcodex/development/focus_interval/ios/Runner.xcodeproj
+               WRAPPER_EXTENSION = app
+               WRAPPER_NAME = Runner.app
+               WRAPPER_SUFFIX = .app
+               WRAP_ASSET_PACKS_IN_SEPARATE_DIRECTORIES = NO
+               XCODE_APP_SUPPORT_DIR = /Applications/Xcode.app/Contents/Developer/Library/Xcode
+               XCODE_PRODUCT_BUILD_VERSION = 17C529
+               XCODE_VERSION_ACTUAL = 2630
+               XCODE_VERSION_MAJOR = 2600
+               XCODE_VERSION_MINOR = 2630
+               XPCSERVICES_FOLDER_PATH = Runner.app/XPCServices
+               XROS_DEPLOYMENT_TARGET = 26.2
+               YACC = yacc
+               _DISCOVER_COMMAND_LINE_LINKER_INPUTS = YES
+               _DISCOVER_COMMAND_LINE_LINKER_INPUTS_INCLUDE_WL = YES
+               _LD_MULTIARCH = YES
+               _WRAPPER_CONTENTS_DIR_SHALLOW_BUNDLE_NO = /Contents
+               _WRAPPER_PARENT_PATH_SHALLOW_BUNDLE_NO = /..
+               _WRAPPER_RESOURCES_DIR_SHALLOW_BUNDLE_NO = /Resources
+               __DIAGNOSE_DEPRECATED_ARCHS = YES
+               __IS_NOT_MACOS = YES
+               __IS_NOT_MACOS_macosx = NO
+               __IS_NOT_SIMULATOR = YES
+               __IS_NOT_SIMULATOR_simulator = NO
+               arch = undefined_arch
+               variant = normal
+[  +25 ms] executing: /usr/bin/plutil -convert xml1 -o - /Users/devcodex/development/focus_interval/ios/Runner/Info.plist
+[  +25 ms] Exit code 0 from: /usr/bin/plutil -convert xml1 -o - /Users/devcodex/development/focus_interval/ios/Runner/Info.plist
+[        ] <?xml version="1.0" encoding="UTF-8"?>
+           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+           <plist version="1.0">
+           <dict>
+           	<key>CADisableMinimumFrameDurationOnPhone</key>
+           	<true/>
+           	<key>CFBundleDevelopmentRegion</key>
+           	<string>$(DEVELOPMENT_LANGUAGE)</string>
+           	<key>CFBundleDisplayName</key>
+           	<string>Focus Interval</string>
+           	<key>CFBundleExecutable</key>
+           	<string>$(EXECUTABLE_NAME)</string>
+           	<key>CFBundleIdentifier</key>
+           	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+           	<key>CFBundleInfoDictionaryVersion</key>
+           	<string>6.0</string>
+           	<key>CFBundleName</key>
+           	<string>focus_interval</string>
+           	<key>CFBundlePackageType</key>
+           	<string>APPL</string>
+           	<key>CFBundleShortVersionString</key>
+           	<string>$(FLUTTER_BUILD_NAME)</string>
+           	<key>CFBundleSignature</key>
+           	<string>????</string>
+           	<key>CFBundleURLTypes</key>
+           	<array>
+           		<dict>
+           			<key>CFBundleURLSchemes</key>
+           			<array>
+           				<string>com.googleusercontent.apps.32274647226-2496tlb97lrbt0qim7qu7s0off27ttnp</string>
+           			</array>
+           		</dict>
+           	</array>
+           	<key>CFBundleVersion</key>
+           	<string>$(FLUTTER_BUILD_NUMBER)</string>
+           	<key>LSRequiresIPhoneOS</key>
+           	<true/>
+           	<key>UIApplicationSupportsIndirectInputEvents</key>
+           	<true/>
+           	<key>UILaunchStoryboardName</key>
+           	<string>LaunchScreen</string>
+           	<key>UIMainStoryboardFile</key>
+           	<string>Main</string>
+           	<key>UISupportedInterfaceOrientations</key>
+           	<array>
+           		<string>UIInterfaceOrientationPortrait</string>
+           		<string>UIInterfaceOrientationLandscapeLeft</string>
+           		<string>UIInterfaceOrientationLandscapeRight</string>
+           	</array>
+           	<key>UISupportedInterfaceOrientations~ipad</key>
+           	<array>
+           		<string>UIInterfaceOrientationPortrait</string>
+           		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+           		<string>UIInterfaceOrientationLandscapeLeft</string>
+           		<string>UIInterfaceOrientationLandscapeRight</string>
+           	</array>
+           </dict>
+           </plist>
+[ +182 ms] Building Runner for 9A6B6687-8DE2-4573-A939-E4FFD0190E1A.
+[  +38 ms] executing: xcrun simctl spawn 9A6B6687-8DE2-4573-A939-E4FFD0190E1A log stream --style json --predicate eventType = logEvent AND processImagePath ENDSWITH "Runner" AND (senderImagePath ENDSWITH "/Flutter" OR senderImagePath ENDSWITH "/libswiftCore.dylib" OR processImageUUID == senderImageUUID) AND NOT(eventMessage CONTAINS ": could not find icon for representation -> com.apple.") AND NOT(eventMessage BEGINSWITH "assertion failed: ") AND NOT(eventMessage CONTAINS " libxpc.dylib ")
+[  +78 ms] The Swift Package Manager feature is off. Skipping the migration that adds Swift Package Manager integration...
+[ +101 ms] executing: /usr/bin/plutil -convert xml1 -o - /Users/devcodex/development/focus_interval/ios/Runner/Info.plist
+[  +24 ms] Exit code 0 from: /usr/bin/plutil -convert xml1 -o - /Users/devcodex/development/focus_interval/ios/Runner/Info.plist
+[        ] <?xml version="1.0" encoding="UTF-8"?>
+           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+           <plist version="1.0">
+           <dict>
+           	<key>CADisableMinimumFrameDurationOnPhone</key>
+           	<true/>
+           	<key>CFBundleDevelopmentRegion</key>
+           	<string>$(DEVELOPMENT_LANGUAGE)</string>
+           	<key>CFBundleDisplayName</key>
+           	<string>Focus Interval</string>
+           	<key>CFBundleExecutable</key>
+           	<string>$(EXECUTABLE_NAME)</string>
+           	<key>CFBundleIdentifier</key>
+           	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+           	<key>CFBundleInfoDictionaryVersion</key>
+           	<string>6.0</string>
+           	<key>CFBundleName</key>
+           	<string>focus_interval</string>
+           	<key>CFBundlePackageType</key>
+           	<string>APPL</string>
+           	<key>CFBundleShortVersionString</key>
+           	<string>$(FLUTTER_BUILD_NAME)</string>
+           	<key>CFBundleSignature</key>
+           	<string>????</string>
+           	<key>CFBundleURLTypes</key>
+           	<array>
+           		<dict>
+           			<key>CFBundleURLSchemes</key>
+           			<array>
+           				<string>com.googleusercontent.apps.32274647226-2496tlb97lrbt0qim7qu7s0off27ttnp</string>
+           			</array>
+           		</dict>
+           	</array>
+           	<key>CFBundleVersion</key>
+           	<string>$(FLUTTER_BUILD_NUMBER)</string>
+           	<key>LSRequiresIPhoneOS</key>
+           	<true/>
+           	<key>UIApplicationSupportsIndirectInputEvents</key>
+           	<true/>
+           	<key>UILaunchStoryboardName</key>
+           	<string>LaunchScreen</string>
+           	<key>UIMainStoryboardFile</key>
+           	<string>Main</string>
+           	<key>UISupportedInterfaceOrientations</key>
+           	<array>
+           		<string>UIInterfaceOrientationPortrait</string>
+           		<string>UIInterfaceOrientationLandscapeLeft</string>
+           		<string>UIInterfaceOrientationLandscapeRight</string>
+           	</array>
+           	<key>UISupportedInterfaceOrientations~ipad</key>
+           	<array>
+           		<string>UIInterfaceOrientationPortrait</string>
+           		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+           		<string>UIInterfaceOrientationLandscapeLeft</string>
+           		<string>UIInterfaceOrientationLandscapeRight</string>
+           	</array>
+           </dict>
+           </plist>
+[   +7 ms] UIScene migration: AppDelegate does not match original template.
+[   +1 ms] To ensure your app continues to launch on upcoming iOS versions, UIScene lifecycle support will soon be required. Please see https://flutter.dev/to/uiscene-migration for the migration guide.
+
+[   +6 ms] executing: xattr -r -d com.apple.FinderInfo /Users/devcodex/development/focus_interval

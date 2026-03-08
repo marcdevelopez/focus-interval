@@ -117,6 +117,9 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
   Future<void> clearSessionIfGroupNotRunning() async {}
 
   @override
+  Future<void> clearSessionIfInactive({String? expectedGroupId}) async {}
+
+  @override
   Future<void> requestOwnership({
     required String requesterDeviceId,
     required String requestId,
