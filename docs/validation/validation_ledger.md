@@ -20,7 +20,7 @@ Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
 ## Snapshot (2026-03-09)
 
 - Roadmap `validation pending`: **69** items.
-- Active bug-checklist open items: **3**.
+- Active bug-checklist open items: **1**.
 - Profiling checklist open items: **8**.
 - 2026-03-09 update: Fix 26 monitoring window reached target date but failed
   (persistent `Syncing session...` + black-screen resume scenario).
@@ -34,12 +34,12 @@ Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
   logs:
   - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_09_fix26_quick_ios_debug.log`
   - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_09_fix26_quick_chrome_debug.log`
-- 2026-03-09 quick packet executed (iOS simulator + Chrome): no irreversible
-  syncing lock, but transient reconnect desync reproduced (timer projection
-  skew ~45s) and auto-recovered after next sync cycle.
-- 2026-03-09 follow-up implementation applied: `TimeSyncService` now rejects
-  invalid reconnect measurements (roundtrip/offset-jump guards + reject
-  cooldown) in commit `418c75f`. Re-validation pending.
+- 2026-03-09 quick packet executed (iOS simulator + Chrome): first run
+  reproduced transient reconnect desync (timer projection skew ~45s), then
+  follow-up implementation `418c75f` rejected invalid reconnect measurements
+  (roundtrip/offset-jump guards + reject cooldown).
+- 2026-03-09 re-validation after `418c75f`: PASS. Syncing duration matched
+  offline window only; no reconnect timer jump and no irreversible sync hold.
 
 ## Already validated/closed (reference)
 
@@ -50,8 +50,8 @@ Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
 
 ### P0 blockers (must close before new feature work)
 
-- [ ] ID: `P0-F26-001` | Type: bug | Priority: P0 | Status: In validation | Source: `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md:13` | Item: Re-run the exact single-device degraded-network repro after the 2026-03-09 hardening; expected no irrecoverable `Syncing session...` hold and no black-screen resume. | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: baseline failure evidence remains screenshot `docs/bugs/validation_fix_2026_03_07-01/screenshots/Screenshot_2026-03-08-19-02-12-76_24a6c2193a9deb7da51ed61dc48f62e5.jpg` + logs `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_08_fix26_incident_android_cc5f55b.log`, `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_08_fix26_incident_macos_cc5f55b.log`; quick packet logs `2026_03_09_fix26_quick_ios_debug.log` + `2026_03_09_fix26_quick_chrome_debug.log` reproduced transient reconnect desync (no irreversible hold); follow-up timeSync guard implementation pending re-validation.
-- [ ] ID: `P0-F26-002` | Type: bug | Priority: P0 | Status: Pending | Source: `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md:15` | Item: Final closure recorded in validation docs. | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: blocked by `P0-F26-001` until exact repro + regression smoke pass.
+- [x] ID: `P0-F26-001` | Type: bug | Priority: P0 | Status: Closed/OK | Source: `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md:13` | Item: Re-run the exact single-device degraded-network repro after the 2026-03-09 hardening; expected no irrecoverable `Syncing session...` hold and no black-screen resume. | closed_commit_hash: `418c75f` | closed_commit_message: `fix: guard timesync offset against reconnect poisoning` | evidence: baseline failure retained in 2026-03-08 incident logs/screenshots; re-validation PASS in `2026_03_09_fix26_quick_chrome_debug.log` (rejected reconnect samples lines 2255/2466/2506, no large positive offset accepted) plus checklist closure notes.
+- [x] ID: `P0-F26-002` | Type: bug | Priority: P0 | Status: Closed/OK | Source: `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md:15` | Item: Final closure recorded in validation docs. | closed_commit_hash: `418c75f` | closed_commit_message: `fix: guard timesync offset against reconnect poisoning` | evidence: `quick_pass_checklist.md` and `plan_validacion_rapida_fix.md` updated to Closed/OK with re-validation PASS notes.
 - [ ] ID: `P0-F25-001` | Type: bug | Priority: P0 | Status: Pending | Source: `docs/bugs/validation_fix_2026_03_05/quick_pass_checklist.md:34` | Item: Local -> Account without false overlaps; ownership request delivered (Fix 25). | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: `-`.
 
 ### P1 reopened roadmap validation items

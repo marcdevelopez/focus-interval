@@ -162,8 +162,9 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           network repro.
       09/03/2026: Fix 26 follow-up hardening (timeSync measurement safety):
           reject poisoned offset samples after offline/background reconnect
-          (roundtrip validity + offset-jump guard + reject cooldown). Validation
-          pending on iOS+Chrome quick packet rerun.
+          (roundtrip validity + offset-jump guard + reject cooldown). Re-validated
+          PASS on iOS+Chrome quick packet rerun; Fix 26 closed/OK with
+          commit `418c75f`.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
@@ -280,12 +281,14 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 18 — Run Mode shows Syncing state when activeSession is missing + manual refresh (sync icon) (bug).
 - Phase 18 — Missing-session cleanup must not clear activeSession on transient
   group lookup/provider rebuild gaps; sync hold must recover without destructive clears (bug).
-- Phase 18 — Fix 26 reopened hardening (v4): bounded foreground retry +
+- ~~Phase 18 — Fix 26 reopened hardening (v4): bounded foreground retry +
   non-destructive missing-session clear with repo recheck + resume listener
-  stability (validation pending exact repro on single-device degraded network).
-- Phase 18 — Fix 26 timeSync reconnect desync follow-up (v5): reject invalid
+  stability (validation pending exact repro on single-device degraded network).~~
+  **Closed/OK 09/03/2026** (re-validation PASS with v4+v5 stack).
+- ~~Phase 18 — Fix 26 timeSync reconnect desync follow-up (v5): reject invalid
   timeSync offset measurements after offline/background reconnect and avoid
-  transient wrong timer projection (validation pending).
+  transient wrong timer projection (validation pending).~~
+  **Closed/OK 09/03/2026** (commit `418c75f`, quick packet rerun PASS).
 - Phase 18 — Completion modal + Groups Hub navigation must work on owner and mirror devices (validation pending).
 - Phase 18 — Run Mode ownership visibility + take ownership UX (new requirement).
 - Phase 18 — Ownership transfer requires owner approval + rejection state (new requirement).

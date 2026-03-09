@@ -9707,3 +9707,40 @@ implementation made things **worse** than before:
 - Re-run iOS+Chrome quick packet using existing log commands.
 - If reconnect desync is gone and no regressions appear, close Fix 26 in
   checklist/plan/ledger/roadmap with commit traceability.
+
+---
+
+# 🔹 Block 554 — Fix 26 re-validation PASS and closure (09/03/2026)
+
+**Date:** 09/03/2026  
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`  
+**Scope:** Close reopened Fix 26 after rerun of the degraded-network quick packet.
+
+### ✔ Work completed:
+
+- Re-checked quick packet logs after `418c75f`:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_09_fix26_quick_chrome_debug.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_09_fix26_quick_ios_debug.log`
+- Confirmed `TimeSync` guard behavior in Chrome:
+  - invalid reconnect samples were rejected (`rejected measurement` events at lines 2255, 2466, 2506),
+  - no large positive `offset` projection was accepted in the rerun.
+- User-run validation outcome:
+  - `Syncing session...` duration matched only the real offline interval,
+  - previous reconnect timer drift was not reproduced in the same scenario.
+- Updated closure traceability docs:
+  - `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`
+  - `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`
+  - `docs/validation/validation_ledger.md`
+  - `docs/roadmap.md`
+
+### 🧪 Tests:
+
+- No new code changes in this block; validation evidence is log-based on the rerun.
+
+### ⚠️ Issues found:
+
+- None. Fix 26 closure criteria met for current scope.
+
+### 🎯 Next steps:
+
+- Continue normal roadmap order with remaining P0 validation blocker (`P0-F25-001`).

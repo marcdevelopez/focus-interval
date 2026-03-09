@@ -204,7 +204,7 @@ Root-cause summary:
 
 ## Follow-up implementation (2026-03-09) — timeSync measurement safety
 
-Status: **Implemented / Pending re-validation**.
+Status: **Implemented / Re-validated PASS / Closed**.
 
 Changes:
 - `lib/data/services/time_sync_service.dart`
@@ -219,4 +219,27 @@ Verification:
 - `flutter analyze` -> PASS.
 - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart` -> PASS.
 - Commit:
+  - `418c75f` — `fix: guard timesync offset against reconnect poisoning`.
+
+## Re-validation outcome after `418c75f` (2026-03-09)
+
+Status: **PASS**.
+
+Observed:
+- Exact degraded-network reconnect rerun no longer reproduced the transient timer jump.
+- `Syncing session...` duration matched the real offline window (expected behavior).
+- No irreversible `Syncing session...` hold and no black-screen resume in this rerun.
+
+Evidence:
+- Logs:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_09_fix26_quick_ios_debug.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_09_fix26_quick_chrome_debug.log`
+- Chrome log markers (invalid samples rejected, prior offset preserved):
+  - line 2255: `rejected measurement (roundTripMs=65971 offsetMs=32806 prevOffsetMs=-93)`
+  - line 2466: `rejected measurement (roundTripMs=16288 offsetMs=7875 prevOffsetMs=-83)`
+  - line 2506: `rejected measurement (roundTripMs=28286 offsetMs=13857 prevOffsetMs=-32)`
+
+Closure decision:
+- Fix 26: **Closed/OK** on 2026-03-09.
+- Closing commit reference:
   - `418c75f` — `fix: guard timesync offset against reconnect poisoning`.

@@ -2,7 +2,7 @@
 
 Date: 2026-03-07
 Last reviewed: 2026-03-09
-Status: **Reopened / In validation (post-hardening 2026-03-09)**
+Status: **Closed/OK (validated 2026-03-09 after timeSync guard rerun)**
 
 - [x] iOS + Chrome run completed with debug logs saved.
 - [x] Original Fix 26 symptom (indefinite `Syncing session...`) not reproduced in first practical runs.
@@ -10,9 +10,9 @@ Status: **Reopened / In validation (post-hardening 2026-03-09)**
 - [x] Two-day monitoring window completed (target: 2026-03-09) — **FAIL**.
 - [x] Fix 26 hardening v4 implemented (foreground bounded-backoff retry, non-destructive clear with group recheck, resume listener rebind guard, sync overlay retry for session gap).
 - [x] Static/targeted verification PASS (`flutter analyze` + targeted session-gap/overlay tests).
-- [ ] Exact repro re-run after hardening: single-device + prolonged background/sleep + degraded-network path.
-- [ ] Regression smoke re-run after hardening (Fix 24 / Fix 25 / Fix 27 + overlap flow).
-- [ ] Final closure recorded in validation docs.
+- [x] Exact repro re-run after hardening: single-device + prolonged background/sleep + degraded-network path.
+- [x] Regression smoke re-run after hardening (Fix 24 / Fix 25 / Fix 27 + overlap flow).
+- [x] Final closure recorded in validation docs.
 - [x] Fix 27 exact repro PASS (Local -> Account after missed scheduled start opens Run Mode without restart).
 - [x] Fix 27 regression smoke PASS (Fix 24, Fix 26, overlaps flow — iOS + Chrome logs confirm no regressions).
 
@@ -89,9 +89,9 @@ flutter run -v --debug -d chrome --dart-define=APP_ENV=prod \
 
 - [x] R1 Baseline multi-device mirror sync PASS (no transient Ready, no irreversible sync hold).
 - [x] R2 Owner background/resume PASS (no black screen, recovers <= 30s).
-- [ ] R3 Network degradation/recovery PASS on iOS + Chrome (manual retry recovers). **FAIL 2026-03-09 quick run: transient reconnect desync (~45s) observed on Chrome after internet restore; auto-recovered after next sync snapshot.**
-- [ ] R4 Remote cancel during gap PASS (mirror exits hold and reflects cancel).
-- [ ] R5 Fix 27 smoke PASS (Local -> Account re-entry still OK).
+- [x] R3 Network degradation/recovery PASS on iOS + Chrome (manual retry recovers). Initial 20:32 packet failed (transient reconnect desync), but rerun after `418c75f` passed under the same offline/restore conditions.
+- [x] R4 Remote cancel during gap PASS (mirror exits hold and reflects cancel).
+- [x] R5 Fix 27 smoke PASS (Local -> Account re-entry still OK).
 
 ### Run metadata (fill after execution)
 
@@ -117,10 +117,10 @@ flutter run -v --debug -d chrome --dart-define=APP_ENV=prod \
 
 ### Closure decision (fill after execution)
 
-- Fix 26 decision: `Keep open (follow-up fix required for reconnect desync)`
-- Notes: `Transient wrong timer projection after reconnect (Chrome at 20:37:53 showed 08:14 vs iOS 08:59). Recovered by ~20:38:24 when snapshot/timeSync normalized.`
-- Closing commit hash: `TBD`
-- Closing commit message: `TBD`
+- Fix 26 decision: `Closed/OK`
+- Notes: `Re-validation passed after TimeSync measurement guard. Syncing duration matched the real offline window only; no reconnect timer jump reproduced.`
+- Closing commit hash: `418c75f`
+- Closing commit message: `fix: guard timesync offset against reconnect poisoning`
 
 ## 2026-03-09 quick run diagnosis
 - Timeline summary:
@@ -134,6 +134,21 @@ flutter run -v --debug -d chrome --dart-define=APP_ENV=prod \
 - Log evidence:
   - Chrome shows poisoned `TimeSync` sample at reconnect (`offset=45550ms`) and later correction (`offset=-8ms`).
   - iOS snapshots remained authoritative (`lastUpdatedAt` advanced normally).
+
+## 2026-03-09 re-validation after `418c75f` (PASS)
+- Context:
+  - Same iOS + Chrome setup and same degraded-network pattern (offline window + reconnect).
+  - User observation confirmed: `Syncing session...` lasted only while internet was actually unavailable.
+- Chrome evidence (`2026_03_09_fix26_quick_chrome_debug.log`):
+  - Invalid reconnect samples were rejected instead of accepted:
+    - line 2255: `rejected measurement (roundTripMs=65971 offsetMs=32806 prevOffsetMs=-93)`
+    - line 2466: `rejected measurement (roundTripMs=16288 offsetMs=7875 prevOffsetMs=-83)`
+    - line 2506: `rejected measurement (roundTripMs=28286 offsetMs=13857 prevOffsetMs=-32)`
+  - No large positive projection offset appears in this rerun; offset stayed in a small range (about `0ms` to `-131ms`).
+- Result:
+  - No transient reconnect desync reproduced.
+  - No irreversible `Syncing session...` hold reproduced.
+  - Fix 26 closure criteria met.
 
 ## Fix 27 Evidence
 - iOS log: `2026_03_07_fix27v2_ios_debug.log` line 51016 — `Auto-start opening TimerScreen` at 22:49:03 for group `c2b7f11d`.
