@@ -39,7 +39,7 @@ Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
   skew ~45s) and auto-recovered after next sync cycle.
 - 2026-03-09 follow-up implementation applied: `TimeSyncService` now rejects
   invalid reconnect measurements (roundtrip/offset-jump guards + reject
-  cooldown). Re-validation pending.
+  cooldown) in commit `418c75f`. Re-validation pending.
 
 ## Already validated/closed (reference)
 

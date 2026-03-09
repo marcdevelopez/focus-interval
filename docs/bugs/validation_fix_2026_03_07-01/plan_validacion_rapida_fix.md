@@ -218,3 +218,5 @@ Changes:
 Verification:
 - `flutter analyze` -> PASS.
 - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart` -> PASS.
+- Commit:
+  - `418c75f` — `fix: guard timesync offset against reconnect poisoning`.
