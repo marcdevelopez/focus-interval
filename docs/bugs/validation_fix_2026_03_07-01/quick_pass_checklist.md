@@ -16,9 +16,10 @@ Status: **Reopened / FAIL (monitoring window)**
 - Exact repro context:
   - macOS owner went to sleep/background.
   - Android remained as the only app/device open, with intermittent screen-off cycles.
-  - Time window reported: around 19:00 to 20:45 (2026-03-08).
+  - First stuck observation: around 19:00 (2026-03-08), confirmed by screenshot timestamp 19:02.
+  - Stuck window remained until around 20:45 (2026-03-08) with no recovery.
 - Observed result:
-  - Android stayed indefinitely on `Syncing session...` with amber ring and did not recover even after screen/navigation changes.
+  - Android stayed indefinitely on `Syncing session...` with amber ring from first observation (~19:00) through ~20:45, without recovery even after screen/navigation changes.
   - macOS resumed in `Syncing session...` with black screen after wake from sleep.
 - Evidence:
   - Screenshot:

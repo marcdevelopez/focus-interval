@@ -22,8 +22,9 @@ Scope: Re-validation after commit `26f0c7e` + implementation of Fix 27.
 - Failure scenario confirmed on 2026-03-08:
   1. macOS owner went to sleep/background.
   2. Android remained as the only active/open app with intermittent screen-off cycles.
-  3. Around 19:00 (2026-03-08), Android entered `Syncing session...` with amber ring and never recovered.
+  3. Around 19:00 (2026-03-08), Android entered `Syncing session...` with amber ring (first screenshot at 19:02) and never recovered.
   4. On macOS wake, app resumed into `Syncing session...` + black screen.
+  5. Stuck state remained until around 20:45 (2026-03-08).
 - Recovery attempts reported: screen wake, navigation changes, and retry interactions did not recover Android state.
 - Evidence:
   - Screenshot:
