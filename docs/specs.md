@@ -1923,6 +1923,17 @@ The MM:SS timer must not shift horizontally:
   - **No snapshot yet** → show full loader until the first snapshot arrives.
 - If the server-time offset is unavailable, show **Syncing session...** and keep
   the last known snapshot without re-projecting until time sync is ready.
+- Time-sync offset measurements taken across prolonged offline/background gaps
+  must be treated as invalid and discarded (for example, when measured
+  roundtrip is unexpectedly large). Invalid measurements must not overwrite the
+  last valid offset.
+- If a new measured offset jumps abruptly versus the previous valid offset
+  (for example, >5s delta) while a session is active, treat it as invalid and
+  retry. Do not project TimerScreen from a suspicious jump.
+- For invalid time-sync measurements:
+  - Do not update the stored last-successful sync timestamp.
+  - Return the previous valid offset (if any) and re-attempt soon with a short
+    reject cooldown (a few seconds) to avoid tight retry loops.
 - The Syncing indicator must not hide the timer when a snapshot exists; use an
   overlay that keeps the timer visible. Controls remain disabled until time sync
   is ready.

@@ -134,3 +134,87 @@ Implementation status (2026-03-07) — second attempt PASS — **Closed/OK**
 1. Exact repro for the single-device + prolonged background/sleep + degraded-network scenario passes after this hardening implementation.
 2. Regression smoke checks remain PASS (Fix 24 / Fix 25 / Fix 27 + overlap flow).
 3. No new irrecoverable `Syncing session...` hold and no black-screen resume in the validated runs.
+
+## Quick execution protocol (iOS + Chrome)
+
+Date target: 2026-03-09
+Purpose: fast regression confidence under unstable network without waiting full pomodoro cycles.
+
+Steps:
+1. Start one account-mode running group on iOS (owner).
+2. Open the same group on Chrome (mirror) and verify sync baseline.
+3. Run short background/resume on iOS (screen off / app background), then resume.
+4. Simulate brief network instability on each device (about 60-90s), then recover and use retry if needed.
+5. Trigger remote cancel while mirror is in/near sync-gap and verify mirror exits hold.
+6. Run a short Fix 27 smoke check (Local -> Account re-entry path).
+
+Expected PASS:
+- No irreversible `Syncing session...` hold.
+- No black-screen resume.
+- No transient drop to Ready while active session is valid.
+- Cancel path resolves on mirror after temporary gaps.
+
+Planned logs:
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_09_fix26_quick_ios_debug.log`
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_09_fix26_quick_chrome_debug.log`
+
+Command snippet:
+
+```bash
+flutter devices
+flutter run -v --debug -d <IOS_DEVICE_ID> --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee /Users/devcodex/development/focus_interval/docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_09_fix26_quick_ios_debug.log
+flutter run -v --debug -d chrome --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee /Users/devcodex/development/focus_interval/docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_09_fix26_quick_chrome_debug.log
+```
+
+Post-run documentation actions:
+1. Update `quick_pass_checklist.md` R1-R5 and run metadata.
+2. Update `validation_ledger.md` status for `P0-F26-001` and `P0-F26-002`.
+3. If PASS, close Fix 26 and record closure commit hash/message/evidence.
+
+## Quick run outcome (2026-03-09 iOS + Chrome)
+
+Status: **FAIL (transient reconnect desync)**.
+
+Observed:
+- Baseline pause/resume and background/foreground behavior remained stable.
+- During offline window + reconnect, Chrome briefly projected the timer with a
+  large negative drift (~45s ahead of elapsed time), then self-corrected after
+  the next sync cycle.
+- No irreversible `Syncing session...` lock and no black-screen resume in this
+  run.
+
+Correlated evidence:
+- Logs:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_09_fix26_quick_ios_debug.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_09_fix26_quick_chrome_debug.log`
+- Screenshots:
+  - `docs/bugs/validation_fix_2026_03_07-01/screenshots/2026_03_09_fix26_quick_timeline_07_204708.png`
+  - `docs/bugs/validation_fix_2026_03_07-01/screenshots/2026_03_09_fix26_quick_timeline_08_204802.png`
+  - `docs/bugs/validation_fix_2026_03_07-01/screenshots/2026_03_09_fix26_quick_timeline_09_205008.png`
+  - `docs/bugs/validation_fix_2026_03_07-01/screenshots/2026_03_09_fix26_quick_timeline_10_205046.png`
+  - `docs/bugs/validation_fix_2026_03_07-01/screenshots/2026_03_09_fix26_quick_timeline_11_205103.png`
+
+Root-cause summary:
+- `TimeSyncService.refresh()` accepted an invalid reconnect measurement and
+  produced a poisoned offset (`+45550ms`) that temporarily skewed projection.
+
+## Follow-up implementation (2026-03-09) — timeSync measurement safety
+
+Status: **Implemented / Pending re-validation**.
+
+Changes:
+- `lib/data/services/time_sync_service.dart`
+  - Reject measurement when roundtrip duration exceeds 3s.
+  - Reject abrupt offset jumps (>5s delta) when a previous offset exists.
+  - Add rejection cooldown (3s) to avoid tight retry loops on unstable network.
+  - On rejection: keep previous offset, do not update last successful sync time.
+- `docs/specs.md`
+  - Added explicit rules for invalid timeSync measurement handling.
+
+Verification:
+- `flutter analyze` -> PASS.
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart` -> PASS.

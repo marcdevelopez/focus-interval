@@ -8,6 +8,9 @@ import 'firestore_service.dart';
 
 class TimeSyncService {
   static const Duration minRefreshInterval = Duration(seconds: 30);
+  static const Duration _rejectCooldown = Duration(seconds: 3);
+  static const Duration _maxValidRoundTrip = Duration(seconds: 3);
+  static const Duration _maxOffsetJump = Duration(seconds: 5);
   static const String _collection = 'timeSync';
   static const String _docId = 'anchor';
 
@@ -17,6 +20,7 @@ class TimeSyncService {
 
   Duration? _offset;
   DateTime? _lastSyncAt;
+  DateTime? _lastRejectedAt;
   String? _lastUserId;
   Future<Duration?>? _inFlight;
 
@@ -50,8 +54,14 @@ class TimeSyncService {
       _lastUserId = uid;
       _offset = null;
       _lastSyncAt = null;
+      _lastRejectedAt = null;
     }
     final now = DateTime.now();
+    final lastRejectedAt = _lastRejectedAt;
+    if (lastRejectedAt != null &&
+        now.difference(lastRejectedAt) < _rejectCooldown) {
+      return _offset;
+    }
     final lastSyncAt = _lastSyncAt;
     if (!force && lastSyncAt != null) {
       if (now.difference(lastSyncAt) < minRefreshInterval) {
@@ -63,26 +73,47 @@ class TimeSyncService {
     final completer = Completer<Duration?>();
     _inFlight = completer.future;
     try {
-      final docRef =
-          db.collection('users').doc(uid).collection(_collection).doc(_docId);
+      final docRef = db
+          .collection('users')
+          .doc(uid)
+          .collection(_collection)
+          .doc(_docId);
       final localBefore = DateTime.now();
       await docRef.set({
         'serverTime': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
-      final snap = await docRef.get(
-        const GetOptions(source: Source.server),
-      );
+      final snap = await docRef.get(const GetOptions(source: Source.server));
       final localAfter = DateTime.now();
       final data = snap.data();
       final serverTime = data?['serverTime'] as Timestamp?;
       if (serverTime != null) {
         final roundTrip =
             localAfter.difference(localBefore).inMicroseconds ~/ 2;
-        final localMid =
-            localBefore.add(Duration(microseconds: roundTrip));
-        _offset = serverTime.toDate().difference(localMid);
+        final roundTripDuration = Duration(microseconds: roundTrip * 2);
+        final localMid = localBefore.add(Duration(microseconds: roundTrip));
+        final measuredOffset = serverTime.toDate().difference(localMid);
+        final previousOffset = _offset;
+        final hasInvalidRoundTrip = roundTripDuration > _maxValidRoundTrip;
+        final hasInvalidOffsetJump =
+            previousOffset != null &&
+            (measuredOffset - previousOffset).abs() > _maxOffsetJump;
+        if (hasInvalidRoundTrip || hasInvalidOffsetJump) {
+          _lastRejectedAt = localAfter;
+          if (kDebugMode) {
+            debugPrint(
+              '[TimeSync] rejected measurement '
+              '(roundTripMs=${roundTripDuration.inMilliseconds} '
+              'offsetMs=${measuredOffset.inMilliseconds} '
+              'prevOffsetMs=${previousOffset?.inMilliseconds ?? 'n/a'})',
+            );
+          }
+          completer.complete(_offset);
+          return completer.future;
+        }
+        _offset = measuredOffset;
         _lastSyncAt = localAfter;
+        _lastRejectedAt = null;
         if (kDebugMode) {
           debugPrint(
             '[TimeSync] offset=${_offset?.inMilliseconds}ms '
@@ -105,6 +136,7 @@ class TimeSyncService {
   void reset() {
     _offset = null;
     _lastSyncAt = null;
+    _lastRejectedAt = null;
     _lastUserId = null;
     _inFlight = null;
   }

@@ -160,6 +160,10 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           destructive clear, resume listener stability guard, and session-gap
           retry CTA wiring. Validation pending on exact single-device degraded-
           network repro.
+      09/03/2026: Fix 26 follow-up hardening (timeSync measurement safety):
+          reject poisoned offset samples after offline/background reconnect
+          (roundtrip validity + offset-jump guard + reject cooldown). Validation
+          pending on iOS+Chrome quick packet rerun.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
@@ -279,6 +283,9 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 18 — Fix 26 reopened hardening (v4): bounded foreground retry +
   non-destructive missing-session clear with repo recheck + resume listener
   stability (validation pending exact repro on single-device degraded network).
+- Phase 18 — Fix 26 timeSync reconnect desync follow-up (v5): reject invalid
+  timeSync offset measurements after offline/background reconnect and avoid
+  transient wrong timer projection (validation pending).
 - Phase 18 — Completion modal + Groups Hub navigation must work on owner and mirror devices (validation pending).
 - Phase 18 — Run Mode ownership visibility + take ownership UX (new requirement).
 - Phase 18 — Ownership transfer requires owner approval + rejection state (new requirement).

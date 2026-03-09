@@ -30,6 +30,16 @@ Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
 - 2026-03-09 implementation update: Fix 26 hardening v4 landed (foreground
   bounded-backoff recovery + non-destructive clear recheck + resume listener
   guard + session-gap retry CTA). Exact repro + regression smoke pending.
+- 2026-03-09 quick validation packet prepared for iOS + Chrome with planned
+  logs:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_09_fix26_quick_ios_debug.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_09_fix26_quick_chrome_debug.log`
+- 2026-03-09 quick packet executed (iOS simulator + Chrome): no irreversible
+  syncing lock, but transient reconnect desync reproduced (timer projection
+  skew ~45s) and auto-recovered after next sync cycle.
+- 2026-03-09 follow-up implementation applied: `TimeSyncService` now rejects
+  invalid reconnect measurements (roundtrip/offset-jump guards + reject
+  cooldown). Re-validation pending.
 
 ## Already validated/closed (reference)
 
@@ -40,7 +50,7 @@ Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
 
 ### P0 blockers (must close before new feature work)
 
-- [ ] ID: `P0-F26-001` | Type: bug | Priority: P0 | Status: In validation | Source: `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md:13` | Item: Re-run the exact single-device degraded-network repro after the 2026-03-09 hardening; expected no irrecoverable `Syncing session...` hold and no black-screen resume. | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: baseline failure evidence remains screenshot `docs/bugs/validation_fix_2026_03_07-01/screenshots/Screenshot_2026-03-08-19-02-12-76_24a6c2193a9deb7da51ed61dc48f62e5.jpg` + logs `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_08_fix26_incident_android_cc5f55b.log`, `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_08_fix26_incident_macos_cc5f55b.log`; implementation verification PASS (`flutter analyze` + targeted session-gap tests) on commit `3ad6c98` recorded in checklist.
+- [ ] ID: `P0-F26-001` | Type: bug | Priority: P0 | Status: In validation | Source: `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md:13` | Item: Re-run the exact single-device degraded-network repro after the 2026-03-09 hardening; expected no irrecoverable `Syncing session...` hold and no black-screen resume. | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: baseline failure evidence remains screenshot `docs/bugs/validation_fix_2026_03_07-01/screenshots/Screenshot_2026-03-08-19-02-12-76_24a6c2193a9deb7da51ed61dc48f62e5.jpg` + logs `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_08_fix26_incident_android_cc5f55b.log`, `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_08_fix26_incident_macos_cc5f55b.log`; quick packet logs `2026_03_09_fix26_quick_ios_debug.log` + `2026_03_09_fix26_quick_chrome_debug.log` reproduced transient reconnect desync (no irreversible hold); follow-up timeSync guard implementation pending re-validation.
 - [ ] ID: `P0-F26-002` | Type: bug | Priority: P0 | Status: Pending | Source: `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md:15` | Item: Final closure recorded in validation docs. | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: blocked by `P0-F26-001` until exact repro + regression smoke pass.
 - [ ] ID: `P0-F25-001` | Type: bug | Priority: P0 | Status: Pending | Source: `docs/bugs/validation_fix_2026_03_05/quick_pass_checklist.md:34` | Item: Local -> Account without false overlaps; ownership request delivered (Fix 25). | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: `-`.
 

@@ -65,6 +65,75 @@ Status: **Reopened / In validation (post-hardening 2026-03-09)**
   - Commit: `3ad6c98` — `fix: harden fix26 missing-session recovery and resume sync`.
   - Commit: `9f05951` — `fix: invalidate missing-session decision on remote cancellation`.
 
+## Quick Validation Packet (iOS + Chrome, 2026-03-09)
+
+### Log capture commands
+
+```bash
+# 1) Discover device IDs
+flutter devices
+
+# 2) iOS debug + prod override log (replace <IOS_DEVICE_ID>)
+flutter run -v --debug -d <IOS_DEVICE_ID> --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee /Users/devcodex/development/focus_interval/docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_09_fix26_quick_ios_debug.log
+
+# 3) Chrome debug + prod override log
+flutter run -v --debug -d chrome --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee /Users/devcodex/development/focus_interval/docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_09_fix26_quick_chrome_debug.log
+```
+
+### Execution checklist (quick regression)
+
+- [x] R1 Baseline multi-device mirror sync PASS (no transient Ready, no irreversible sync hold).
+- [x] R2 Owner background/resume PASS (no black screen, recovers <= 30s).
+- [ ] R3 Network degradation/recovery PASS on iOS + Chrome (manual retry recovers). **FAIL 2026-03-09 quick run: transient reconnect desync (~45s) observed on Chrome after internet restore; auto-recovered after next sync snapshot.**
+- [ ] R4 Remote cancel during gap PASS (mirror exits hold and reflects cancel).
+- [ ] R5 Fix 27 smoke PASS (Local -> Account re-entry still OK).
+
+### Run metadata (fill after execution)
+
+- Start time (local): `2026-03-09 20:32:21`
+- End time (local): `2026-03-09 20:38:33`
+- iOS device used: `iPhone 17 Pro` (simulator, owner)
+- Chrome environment: `localhost web debug` (mirror, same machine/Wi-Fi)
+- Logs:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_09_fix26_quick_ios_debug.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_09_fix26_quick_chrome_debug.log`
+- Evidence screenshots:
+  - `docs/bugs/validation_fix_2026_03_07-01/screenshots/2026_03_09_fix26_quick_timeline_01_204131.png`
+  - `docs/bugs/validation_fix_2026_03_07-01/screenshots/2026_03_09_fix26_quick_timeline_02_204211.png`
+  - `docs/bugs/validation_fix_2026_03_07-01/screenshots/2026_03_09_fix26_quick_timeline_03_204356.png`
+  - `docs/bugs/validation_fix_2026_03_07-01/screenshots/2026_03_09_fix26_quick_timeline_04_204503.png`
+  - `docs/bugs/validation_fix_2026_03_07-01/screenshots/2026_03_09_fix26_quick_timeline_05_204547.png`
+  - `docs/bugs/validation_fix_2026_03_07-01/screenshots/2026_03_09_fix26_quick_timeline_06_204617.png`
+  - `docs/bugs/validation_fix_2026_03_07-01/screenshots/2026_03_09_fix26_quick_timeline_07_204708.png`
+  - `docs/bugs/validation_fix_2026_03_07-01/screenshots/2026_03_09_fix26_quick_timeline_08_204802.png`
+  - `docs/bugs/validation_fix_2026_03_07-01/screenshots/2026_03_09_fix26_quick_timeline_09_205008.png`
+  - `docs/bugs/validation_fix_2026_03_07-01/screenshots/2026_03_09_fix26_quick_timeline_10_205046.png`
+  - `docs/bugs/validation_fix_2026_03_07-01/screenshots/2026_03_09_fix26_quick_timeline_11_205103.png`
+
+### Closure decision (fill after execution)
+
+- Fix 26 decision: `Keep open (follow-up fix required for reconnect desync)`
+- Notes: `Transient wrong timer projection after reconnect (Chrome at 20:37:53 showed 08:14 vs iOS 08:59). Recovered by ~20:38:24 when snapshot/timeSync normalized.`
+- Closing commit hash: `TBD`
+- Closing commit message: `TBD`
+
+## 2026-03-09 quick run diagnosis
+- Timeline summary:
+  - 20:32:21 pause on iOS owner; 20:32:33 resume: PASS.
+  - 20:33:00 iOS background; 20:36:01 foreground: PASS.
+  - 20:36:14 iOS background.
+  - 20:36:20 internet removed on both devices.
+  - 20:37:27 iOS foreground while offline: still coherent with syncing hold.
+  - 20:37:53 internet restored: transient owner/mirror desync shown.
+  - 20:38:24/20:38:33 both views converged again.
+- Log evidence:
+  - Chrome shows poisoned `TimeSync` sample at reconnect (`offset=45550ms`) and later correction (`offset=-8ms`).
+  - iOS snapshots remained authoritative (`lastUpdatedAt` advanced normally).
+
 ## Fix 27 Evidence
 - iOS log: `2026_03_07_fix27v2_ios_debug.log` line 51016 — `Auto-start opening TimerScreen` at 22:49:03 for group `c2b7f11d`.
 - Chrome log: `2026_03_07_fix27v2_chrome_debug.log` lines 2086–2090 — `Active session change route=/tasks` → `Attempting auto-open` → `Auto-open confirmed in timer route=/timer/c2b7f11d`.

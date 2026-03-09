@@ -9661,3 +9661,48 @@ implementation made things **worse** than before:
 ### ⚠️ Issues found:
 
 - None. Change is additive and does not alter any existing path; it only closes a stale-decision race window that was low-severity but logically incorrect.
+
+---
+
+# 🔹 Block 553 — Fix 26 reconnect desync guard in TimeSyncService (09/03/2026)
+
+**Date:** 09/03/2026  
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`  
+**Scope:** Prevent transient wrong timer projection after offline/background reconnect in iOS+Chrome quick packet.
+
+### ✔ Work completed:
+
+- Root-cause confirmed from quick packet logs:
+  - Chrome accepted a poisoned time-sync sample on reconnect (`offset=+45550ms`)
+    and projected timer with a transient ~45s skew before the next sync corrected it.
+- Documentation-first update:
+  - `docs/specs.md`: added explicit rules for invalid time-sync measurement
+    handling (roundtrip validity, offset-jump guard, reject cooldown behavior).
+- Implemented surgical guard in:
+  - `lib/data/services/time_sync_service.dart`
+    - Added reject cooldown (`3s`) to avoid tight retry loops after rejected samples.
+    - Rejects measurement if reconnect roundtrip is too large (`>3s`).
+    - Rejects abrupt offset jumps (`>5s`) when a previous valid offset exists.
+    - On rejection: keeps previous valid offset and does not update
+      `lastSyncAt` so a new valid measurement can happen soon.
+- Updated validation tracking docs:
+  - `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`
+  - `docs/validation/validation_ledger.md`
+  - `docs/roadmap.md`
+
+### 🧪 Tests:
+
+- `flutter analyze` (pass, no issues).
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart` (pass).
+
+### ⚠️ Issues found:
+
+- Fix 26 remains open until the quick packet is re-run after this guard and
+  confirms no transient reconnect desync.
+
+### 🎯 Next steps:
+
+- Re-run iOS+Chrome quick packet using existing log commands.
+- If reconnect desync is gone and no regressions appear, close Fix 26 in
+  checklist/plan/ledger/roadmap with commit traceability.
