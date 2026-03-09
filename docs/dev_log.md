@@ -9624,6 +9624,7 @@ implementation made things **worse** than before:
 
 - `flutter analyze` (pass, no issues).
 - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart` (pass).
+- Commit: `3ad6c98` — `fix: harden fix26 missing-session recovery and resume sync`.
 
 ### ⚠️ Issues found:
 

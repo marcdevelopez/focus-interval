@@ -61,6 +61,7 @@ Status: **Reopened / In validation (post-hardening 2026-03-09)**
 - Verification:
   - `flutter analyze` -> PASS.
   - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart` -> PASS.
+  - Commit: `3ad6c98` — `fix: harden fix26 missing-session recovery and resume sync`.
 
 ## Fix 27 Evidence
 - iOS log: `2026_03_07_fix27v2_ios_debug.log` line 51016 — `Auto-start opening TimerScreen` at 22:49:03 for group `c2b7f11d`.

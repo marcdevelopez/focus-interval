@@ -72,6 +72,8 @@ Latest branch update (2026-03-09): `fix26-reopen-black-syncing-2026-03-09`
 - Verification executed:
   - `flutter analyze` -> PASS.
   - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart` -> PASS.
+- Tracking commit:
+  - `3ad6c98` — `fix: harden fix26 missing-session recovery and resume sync`
 
 ## Related open bug found during this cycle
 - Scenario:
