@@ -1,7 +1,7 @@
 # Feature: IDEA-034 — Offline Continuation With Rejoin/Sync Choice
 
 ## Backlog reference
-Backlog file: `docs/feature_backlog.md`
+Backlog file: `docs/features/feature_backlog.md`
 Backlog ID: IDEA-034
 Backlog title: Offline Continuation With Rejoin/Sync Choice
 Backlog status at extraction: in_progress

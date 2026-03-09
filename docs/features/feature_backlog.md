@@ -100,7 +100,7 @@ Active:
 
 ## Done
 
-When a feature completes, move the full entry here (or to `feature_backlog_archive.md` if this grows too large).
+When a feature completes, move the full entry here (or to `docs/features/feature_backlog_archive.md` if this grows too large).
 
 1. Set `Status: done`.
 2. Add `Final commit: <hash> "<message>"`.

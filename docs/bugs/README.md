@@ -129,3 +129,8 @@ flutter run -v --debug -d chrome --dart-define=APP_ENV=prod \
   2. Regression smoke checks en verde.
   3. Evidencia registrada (checklist + logs/screenshots cuando aplique).
 - Si falta cualquiera de las 3, el fix queda en `pending/fail` y no se cierra.
+
+## Cola priorizada de validaciones (global)
+
+- Referencia activa del ledger (bugs/features/refactors):
+  - `docs/validation/validation_ledger.md`

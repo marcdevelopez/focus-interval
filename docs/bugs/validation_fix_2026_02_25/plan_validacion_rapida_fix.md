@@ -251,7 +251,7 @@ Nota: estos hallazgos deben resolverse en esta rama o registrarse como bugs a co
 - Timestamp + evidence: 2026-03-04 16:21:01; screenshot
   `docs/bugs/validation_fix_2026_02_25/screenshots/38.png`.
 
-Hallazgos movidos a `docs/bug_log.md` (no bloquean esta rama, pero deben atacarse antes de nuevas features):
+Hallazgos movidos a `docs/bugs/bug_log.md` (no bloquean esta rama, pero deben atacarse antes de nuevas features):
 - BUG-010: Mirror desincronizado unos segundos al volver desde Local (timer difiere y luego se corrige).
 - BUG-011: Pausa + background deja desfase de tiempo pausado; se corrige al cambiar de owner.
 - BUG-012: Mirror queda indefinidamente en "Syncing session"; requiere click o entrar a Groups Hub para recuperar.

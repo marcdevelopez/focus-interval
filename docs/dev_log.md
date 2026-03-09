@@ -5434,12 +5434,12 @@ _(fill in when they happen)_
 
 ### ✔ Work completed:
 
-- Added docs/bug_log.md to centralize bug tracking.
+- Added docs/bugs/bug_log.md to centralize bug tracking.
 - Seeded the log with BUG-001 (mirror Ready with active session) and marked it intermittent.
 
 ### 🧠 Decisions made:
 
-- Bug notes live in docs/bug_log.md; dev log references them only when tied to code changes.
+- Bug notes live in docs/bugs/bug_log.md; dev log references them only when tied to code changes.
 
 ### ⚠️ Issues found:
 
@@ -5447,18 +5447,18 @@ _(fill in when they happen)_
 
 ### 🎯 Next steps:
 
-- Add new bug reports to docs/bug_log.md in chronological order.
+- Add new bug reports to docs/bugs/bug_log.md in chronological order.
 
 # 🔹 Block 371 — Add feature backlog (13/02/2026)
 
 ### ✔ Work completed:
 
-- Added docs/feature_backlog.md to centralize feature ideas.
+- Added docs/features/feature_backlog.md to centralize feature ideas.
 - Seeded IDEA-001 (circular group progress ring around the timer).
 
 ### 🧠 Decisions made:
 
-- Feature ideas live in docs/feature_backlog.md with a consistent template.
+- Feature ideas live in docs/features/feature_backlog.md with a consistent template.
 
 ### ⚠️ Issues found:
 
@@ -5472,7 +5472,7 @@ _(fill in when they happen)_
 
 ### ✔ Work completed:
 
-- Added BUG-002 and BUG-003 to docs/bug_log.md, splitting ownership rejection
+- Added BUG-002 and BUG-003 to docs/bugs/bug_log.md, splitting ownership rejection
   desync from macOS mirror flicker.
 - Expanded evidence with key Firestore timestamps and observed sequences.
 - Updated bug log template to include Repro steps, Workaround, and optional
@@ -5652,7 +5652,7 @@ _(fill in when they happen)_
 
 ### ✔ Work completed:
 
-- Added BUG-006 to docs/bug_log.md for status-box time ranges that ignore pause
+- Added BUG-006 to docs/bugs/bug_log.md for status-box time ranges that ignore pause
   anchoring, to align with contextual task list behavior.
 
 ### 🧠 Decisions made:
@@ -5751,7 +5751,7 @@ _(fill in when they happen)_
 
 ### ✔ Work completed:
 
-- Updated IDEA-016 in `docs/feature_backlog.md` to state that scheduled previews
+- Updated IDEA-016 in `docs/features/feature_backlog.md` to state that scheduled previews
   auto-rebase to the nearest valid start when pre-run becomes stale, with a
   warning and conflict gating.
 
@@ -5772,7 +5772,7 @@ _(fill in when they happen)_
 
 ### ✔ Work completed:
 
-- Added IDEA-018 to `docs/feature_backlog.md` for live pause updates of task
+- Added IDEA-018 to `docs/features/feature_backlog.md` for live pause updates of task
   time ranges in Run Mode (task list under the timer).
 
 ### 🧠 Decisions made:
@@ -5792,7 +5792,7 @@ _(fill in when they happen)_
 
 ### ✔ Work completed:
 
-- Added IDEA-019 to `docs/feature_backlog.md` for a Break tasks list in Run Mode
+- Added IDEA-019 to `docs/features/feature_backlog.md` for a Break tasks list in Run Mode
   with break-only completion and local per-user persistence.
 
 ### 🧠 Decisions made:
@@ -5887,7 +5887,7 @@ _(fill in when they happen)_
 
 ### ✔ Work completed:
 
-- Added IDEA-020 to `docs/feature_backlog.md` for showing scheduledByDeviceId
+- Added IDEA-020 to `docs/features/feature_backlog.md` for showing scheduledByDeviceId
   in Group Summary with a legacy fallback.
 
 ### 🧠 Decisions made:
@@ -5906,7 +5906,7 @@ _(fill in when they happen)_
 
 ### ✔ Work completed:
 
-- Added IDEA-021 to `docs/feature_backlog.md` for an Account Mode "Delete account"
+- Added IDEA-021 to `docs/features/feature_backlog.md` for an Account Mode "Delete account"
   action with explicit destructive confirmation.
 
 ### 🧠 Decisions made:
@@ -5926,7 +5926,7 @@ _(fill in when they happen)_
 
 ### ✔ Work completed:
 
-- Added IDEA-022 to `docs/feature_backlog.md` for pomodoro presence verification
+- Added IDEA-022 to `docs/features/feature_backlog.md` for pomodoro presence verification
   and a GitHub-style activity heatmap (personal vs workspace).
 
 ### 🧠 Decisions made:
@@ -5965,7 +5965,7 @@ _(fill in when they happen)_
 
 ### ✔ Work completed:
 
-- Added IDEA-023 to `docs/feature_backlog.md` for resuming canceled groups while
+- Added IDEA-023 to `docs/features/feature_backlog.md` for resuming canceled groups while
   keeping Re-plan as an alternative.
 
 ### 🧠 Decisions made:
@@ -6103,7 +6103,7 @@ _(fill in when they happen)_
 
 ### ✔ Work completed:
 
-- Added IDEA-024 to `docs/feature_backlog.md` for Workspaces with shared
+- Added IDEA-024 to `docs/features/feature_backlog.md` for Workspaces with shared
   TaskRunGroups, ownership rules, and personal-overlap conflict gating.
 
 ### 🧠 Decisions made:
@@ -6180,7 +6180,7 @@ _(fill in when they happen)_
 
 ### ✔ Work completed:
 
-- Added IDEA-025 to `docs/feature_backlog.md` for break-focused workspace chat,
+- Added IDEA-025 to `docs/features/feature_backlog.md` for break-focused workspace chat,
   including deferred DM delivery and data-efficient sync rules.
 
 ### 🧠 Decisions made:
@@ -6276,7 +6276,7 @@ _(fill in when they happen)_
 
 ### ✔ Work completed:
 
-- Added IDEA-026 to `docs/feature_backlog.md` for consistent Manage Presets item
+- Added IDEA-026 to `docs/features/feature_backlog.md` for consistent Manage Presets item
   preview, star placement, and tap/long-press behavior.
 
 ### 🧠 Decisions made:
@@ -6295,7 +6295,7 @@ _(fill in when they happen)_
 
 ### ✔ Work completed:
 
-- Added IDEA-027 to `docs/feature_backlog.md` for consistent mode indicator
+- Added IDEA-027 to `docs/features/feature_backlog.md` for consistent mode indicator
   placement and a single session-context sheet across screens.
 
 ### 🧠 Decisions made:
@@ -6315,7 +6315,7 @@ _(fill in when they happen)_
 
 ### ✔ Work completed:
 
-- Added IDEA-028 to `docs/feature_backlog.md` for verified weekly/monthly totals,
+- Added IDEA-028 to `docs/features/feature_backlog.md` for verified weekly/monthly totals,
   task breakdowns, and a Week-start setting aligned with IDEA-022.
 
 ### 🧠 Decisions made:
@@ -6334,7 +6334,7 @@ _(fill in when they happen)_
 
 ### ✔ Work completed:
 
-- Added IDEA-029 to `docs/feature_backlog.md` for live pause time ranges that
+- Added IDEA-029 to `docs/features/feature_backlog.md` for live pause time ranges that
   update forward-only during paused state.
 
 ### 🧠 Decisions made:
@@ -6353,7 +6353,7 @@ _(fill in when they happen)_
 
 ### ✔ Work completed:
 
-- Logged BUG-007 in `docs/bug_log.md` for owner resume drift after an Android
+- Logged BUG-007 in `docs/bugs/bug_log.md` for owner resume drift after an Android
   background crash (owner behind mirror by ~5s) and manual resync recovery.
 
 ### 🧠 Decisions made:
@@ -6796,7 +6796,7 @@ _(none)_
 
 ### ✔ Work completed:
 
-- Added a "Recommended execution order" section to `docs/feature_backlog.md`
+- Added a "Recommended execution order" section to `docs/features/feature_backlog.md`
   while keeping idea entries in chronological order.
 
 ### 🧠 Decisions made:
@@ -6816,7 +6816,7 @@ _(none)_
 
 ### ✔ Work completed:
 
-- Added a mitigation note to `docs/bug_log.md` proposing a Run Mode "Syncing..."
+- Added a mitigation note to `docs/bugs/bug_log.md` proposing a Run Mode "Syncing..."
   overlay that mimics the Groups Hub resubscribe without navigation.
 
 ### 🧠 Decisions made:
@@ -7700,7 +7700,7 @@ _(none)_
 
 ### ✔ Work completed:
 
-- Added explicit In progress/Done workflow sections to `docs/feature_backlog.md`.
+- Added explicit In progress/Done workflow sections to `docs/features/feature_backlog.md`.
 - Documented feature tracking rules in `AGENTS.md` to keep backlog items linked to feature folders and commits.
 
 ### 🧠 Decisions made:
@@ -9130,7 +9130,7 @@ _(pending validation)_
 ### ✔ Work completed:
 
 - Added `IDEA-036 — Runtime Internationalization (l10n) Foundation` to
-  `docs/feature_backlog.md`.
+  `docs/features/feature_backlog.md`.
 - Updated the recommended execution order with IDEA-036.
 
 ### 🧪 Tests:
@@ -9149,7 +9149,7 @@ _(pending validation)_
 
 ### ✔ Work completed:
 
-- Reordered `docs/feature_backlog.md` recommended execution list to place
+- Reordered `docs/features/feature_backlog.md` recommended execution list to place
   `IDEA-036 — Runtime Internationalization (l10n) Foundation` at position #1.
 - Updated the section header date for recommended execution order to `06/03/2026`.
 

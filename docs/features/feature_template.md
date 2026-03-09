@@ -1,7 +1,7 @@
 # Feature: <Backlog ID> — <Exact Title>
 
 ## Backlog reference
-Backlog file: `docs/feature_backlog.md`
+Backlog file: `docs/features/feature_backlog.md`
 Backlog ID: <IDEA-XXX>
 Backlog title: <Exact Title>
 Backlog status at extraction: <idea | planned | in_progress | blocked>
