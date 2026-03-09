@@ -1,6 +1,6 @@
 # Global Validation Ledger
 
-Date: 2026-03-08
+Date: 2026-03-09
 Scope: bugs + features + refactors + roadmap/process validations
 
 ## Record format (mandatory)
@@ -17,11 +17,13 @@ Scope: bugs + features + refactors + roadmap/process validations
 
 Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
 
-## Snapshot (2026-03-08)
+## Snapshot (2026-03-09)
 
 - Roadmap `validation pending`: **69** items.
 - Active bug-checklist open items: **3**.
 - Profiling checklist open items: **8**.
+- 2026-03-09 update: Fix 26 monitoring window reached target date but failed
+  (persistent `Syncing session...` + black-screen resume scenario).
 
 ## Already validated/closed (reference)
 
@@ -32,8 +34,8 @@ Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
 
 ### P0 blockers (must close before new feature work)
 
-- [ ] ID: `P0-F26-001` | Type: bug | Priority: P0 | Status: Pending | Source: `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md:9` | Item: Two-day monitoring window completed (target 2026-03-09). | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: `-`.
-- [ ] ID: `P0-F26-002` | Type: bug | Priority: P0 | Status: Pending | Source: `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md:10` | Item: Final closure recorded in validation docs. | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: `-`.
+- [ ] ID: `P0-F26-001` | Type: bug | Priority: P0 | Status: In validation | Source: `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md:10` | Item: Two-day monitoring window completed (target 2026-03-09) — FAIL/reopened due persistent syncing hold after owner sleep/background. | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: screenshot `docs/bugs/validation_fix_2026_03_07-01/screenshots/Screenshot_2026-03-08-19-02-12-76_24a6c2193a9deb7da51ed61dc48f62e5.jpg` + logs `.../Android-2026-03-08-cc5f55b.log`, `.../macos-2026-03-08-cc5f55b.log`.
+- [ ] ID: `P0-F26-002` | Type: bug | Priority: P0 | Status: Pending | Source: `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md:11` | Item: Final closure recorded in validation docs. | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: blocked by `P0-F26-001` failure on 2026-03-08.
 - [ ] ID: `P0-F25-001` | Type: bug | Priority: P0 | Status: Pending | Source: `docs/bugs/validation_fix_2026_03_05/quick_pass_checklist.md:34` | Item: Local -> Account without false overlaps; ownership request delivered (Fix 25). | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: `-`.
 
 ### P1 reopened roadmap validation items

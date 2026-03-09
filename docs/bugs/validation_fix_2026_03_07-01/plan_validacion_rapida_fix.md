@@ -17,6 +17,27 @@ Scope: Re-validation after commit `26f0c7e` + implementation of Fix 27.
 - Status: **Monitoring** (not closed yet).
 - Monitoring window: **2026-03-07 to 2026-03-09**.
 
+## Monitoring Window Result (updated 2026-03-09)
+- Status changed from **Monitoring** to **FAIL / Reopened**.
+- Failure scenario confirmed on 2026-03-08:
+  1. macOS owner went to sleep/background.
+  2. Android remained as the only active/open app with intermittent screen-off cycles.
+  3. Around 19:00 (2026-03-08), Android entered `Syncing session...` with amber ring and never recovered.
+  4. On macOS wake, app resumed into `Syncing session...` + black screen.
+- Recovery attempts reported: screen wake, navigation changes, and retry interactions did not recover Android state.
+- Evidence:
+  - Screenshot:
+    - `docs/bugs/validation_fix_2026_03_07-01/screenshots/Screenshot_2026-03-08-19-02-12-76_24a6c2193a9deb7da51ed61dc48f62e5.jpg`
+  - Logs:
+    - `/Users/devcodex/MEGA/Trabajo-INGRESOS/1_JORNADAS-INGRESOS-INVERSIONES/DEVELOP/3_PROYECTO-PERSONAL/focus-interval/testing/logs/Android-2026-03-08-cc5f55b.log`
+    - `/Users/devcodex/MEGA/Trabajo-INGRESOS/1_JORNADAS-INGRESOS-INVERSIONES/DEVELOP/3_PROYECTO-PERSONAL/focus-interval/testing/logs/macos-2026-03-08-cc5f55b.log`
+- Log correlation summary:
+  - Android: sustained Firestore `UNAVAILABLE` + `UnknownHostException` during the incident window, with stale session snapshots.
+  - macOS: `Missing snapshot; clearing session` and `Resync missing; clearing state` during resume path.
+- Closure impact:
+  - Fix 26 closure criteria are not met.
+  - Keep Fix 26 open and blocked for further hardening/re-validation.
+
 ## Related open bug found during this cycle
 - Scenario:
   1. Plan a group in Account Mode.
