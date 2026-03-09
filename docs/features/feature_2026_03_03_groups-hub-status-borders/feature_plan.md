@@ -1,7 +1,7 @@
 # Feature: IDEA-035 — Groups Hub Status Borders + Offline Completion Highlight
 
 ## Backlog reference
-Backlog file: `docs/feature_backlog.md`
+Backlog file: `docs/features/feature_backlog.md`
 Backlog ID: IDEA-035
 Backlog title: Groups Hub Status Borders + Offline Completion Highlight
 Backlog status at extraction: idea

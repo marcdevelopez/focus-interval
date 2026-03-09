@@ -79,7 +79,7 @@ Each item below is a separate fix and must be committed separately.
 3. Fix 25 — eliminar overlaps falsos y asegurar entrega de request ownership (Scope 3).
 
 ## Execution Gate (mandatory)
-- No iniciar nuevas features de `docs/feature_backlog.md` hasta cerrar:
+- No iniciar nuevas features de `docs/features/feature_backlog.md` hasta cerrar:
   1. Fix 24 validado.
   2. Fix 25 validado.
   3. Regression checks (los 4 items) en verde para el estado post-fix.

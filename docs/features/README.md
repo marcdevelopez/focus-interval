@@ -1,7 +1,7 @@
 # Feature Docs
 
 Purpose
-Maintain per-feature documentation that stays aligned with `docs/feature_backlog.md`.
+Maintain per-feature documentation that stays aligned with `docs/features/feature_backlog.md`.
 Every new feature pulled from the backlog must have a matching folder here before
 implementation starts.
 
@@ -18,7 +18,7 @@ Required files
 
 Backlog reference
 Each feature folder must include a "Backlog reference" section with:
-- Backlog file: `docs/feature_backlog.md`
+- Backlog file: `docs/features/feature_backlog.md`
 - Backlog ID and title (copy exactly)
 - Status at time of extraction
 

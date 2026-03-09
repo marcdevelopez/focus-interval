@@ -128,12 +128,12 @@ Feature planning workflow (required):
   - `feature_plan.md` (implementation plan)
   - `feature_checklist.md` (validation checklist, created after implementation)
   - `screenshots/` (when relevant)
-- Every feature must be linked to `docs/feature_backlog.md` (reference the item
+- Every feature must be linked to `docs/features/feature_backlog.md` (reference the item
   or ID in the plan).
-- In `docs/feature_backlog.md`, move the item to **In progress** (or
+- In `docs/features/feature_backlog.md`, move the item to **In progress** (or
   **In implementation**) and add the link to the feature directory.
 - When the feature is complete, move the item to **Done** (or
-  `feature_backlog_archive.md`) and record the final commit.
+  `docs/features/feature_backlog_archive.md`) and record the final commit.
 - After each feature or subfeature:
   - Update the plan to mark it completed.
   - Record the commit hash and commit message in the plan tracking entry.
@@ -193,16 +193,44 @@ Feature planning workflow (required):
   - `feature_plan.md` (implementation plan)
   - `feature_checklist.md` (validation checklist, created after implementation)
   - `screenshots/` (when relevant)
-- Every feature must be linked to `docs/feature_backlog.md` (reference the item
+- Every feature must be linked to `docs/features/feature_backlog.md` (reference the item
   or ID in the plan).
-- In `docs/feature_backlog.md`, move the item to **In progress** (or
+- In `docs/features/feature_backlog.md`, move the item to **In progress** (or
   **In implementation**) and add the link to the feature directory.
 - When the feature is complete, move the item to **Done** (or
-  `feature_backlog_archive.md`) and record the final commit.
+  `docs/features/feature_backlog_archive.md`) and record the final commit.
 - After each feature or subfeature:
   - Update the plan to mark it completed.
   - Record the commit hash and commit message in the plan tracking entry.
   - Commit the change after updating the plan and supporting docs/logs.
+
+Global validation ledger workflow (hard rule):
+- Use a single active ledger for validation order and closure traceability:
+  - `docs/validation/validation_ledger.md`
+- This ledger is mandatory for **all** work types:
+  - bugs, features, refactors, infra/process work.
+- Every pending validation item must include, at minimum:
+  - stable ID
+  - type (`bug` / `feature` / `refactor` / `infra` / `process` / `roadmap`)
+  - priority (`P0`, `P1`, etc.)
+  - status (`Pending`, `In validation`, `Validated`, `Closed/OK`)
+  - source path + line reference
+- Stop-the-line rule (mandatory):
+  - Do not start a new unrelated implementation before the current item is
+    updated in the ledger and in its source docs (checklist/plan/roadmap).
+  - If validation is incomplete, leave explicit status and blocker reason before
+    switching context.
+- Closure traceability (mandatory):
+  - When any item is closed, record:
+    - `closed_commit_hash`
+    - `closed_commit_message`
+    - evidence reference (logs/screenshots/checklist line)
+  - If one implementation closes multiple items, close each ID explicitly.
+- Priority execution order (mandatory):
+  1. P0 blockers
+  2. Reopened-phase validation items
+  3. Remaining historical pending validations
+  - Do not start new feature work while P0 validation blockers remain open.
 
 ---
 

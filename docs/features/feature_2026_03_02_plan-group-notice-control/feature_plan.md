@@ -2,7 +2,8 @@
 
 Date: 02/03/2026
 Feature ID: IDEA-032
-Status: implemented (validation pending)
+Status: validated/closed — 02/03/2026
+Validation reference: `docs/features/feature_2026_03_02_plan-group-notice-control/feature_checklist.md`
 
 ## Goal
 
