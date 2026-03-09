@@ -67,13 +67,15 @@ Latest branch update (2026-03-09): `fix26-reopen-black-syncing-2026-03-09`
     - Added non-destructive clear path that preserves running projection state.
     - Added guarded session listener rebind policy on resume (rebind only when absent/stalled with cooldown).
     - Added explicit manual recovery API for session-gap stalls (`retrySessionGapRecovery`).
+    - `applyRemoteCancellation()` now increments decision token and cancels foreground retry to prevent stale async hold after remote cancel.
   - `lib/presentation/screens/timer_screen.dart`
     - Sync overlay retry button now handles both time-sync stalls and session-gap stalls.
 - Verification executed:
   - `flutter analyze` -> PASS.
   - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart` -> PASS.
-- Tracking commit:
+- Tracking commits:
   - `3ad6c98` — `fix: harden fix26 missing-session recovery and resume sync`
+  - `(pending)` — `fix: invalidate missing-session decision on remote cancellation`
 
 ## Related open bug found during this cycle
 - Scenario:

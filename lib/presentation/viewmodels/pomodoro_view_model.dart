@@ -871,6 +871,8 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   void applyRemoteCancellation() {
+    _missingSessionDecisionToken += 1;
+    _cancelForegroundMissingResync();
     _sessionMissingWhileRunning = false;
     _clearSessionSnapshotTracking();
     _resetLocalSessionState();

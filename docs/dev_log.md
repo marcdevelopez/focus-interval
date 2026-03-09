@@ -9635,3 +9635,29 @@ implementation made things **worse** than before:
 - Run exact repro validation on Android + macOS sleep/background path with logs.
 - Run regression smoke checks (Fix 24 / Fix 25 / Fix 27 + overlap flow).
 - If all pass, close Fix 26 in validation docs + roadmap + ledger with commit traceability.
+
+---
+
+# 🔹 Block 552 — Fix 26 cancellation race guard (09/03/2026)
+
+**Date:** 09/03/2026
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`
+**Scope:** Surgical follow-up to Block 551: guard against stale async missing-session hold after remote cancellation.
+
+### ✔ Work completed:
+
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`
+  - `applyRemoteCancellation()`: added `_missingSessionDecisionToken += 1` and `_cancelForegroundMissingResync()` before resetting `_sessionMissingWhileRunning`.
+  - This prevents an in-flight `_handleMissingSessionFromStream()` (awaiting group repo recheck) from overriding the cancellation state when the token check runs after the async gap.
+- Updated tracking docs:
+  - `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`
+  - `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`
+  - `docs/dev_log.md`
+
+### 🧪 Tests:
+
+- `flutter analyze` (pass, no issues).
+
+### ⚠️ Issues found:
+
+- None. Change is additive and does not alter any existing path; it only closes a stale-decision race window that was low-severity but logically incorrect.
