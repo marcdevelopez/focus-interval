@@ -155,6 +155,11 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       07/03/2026: Fix 27 closed — PASS. Removed coordinator invalidation on mode
           switch; coordinator's ref.listen<AppMode> drives reset naturally.
           Validation: iOS + Chrome logs confirm immediate auto-start at 22:49.
+      09/03/2026: Fix 26 fourth-cycle hardening implemented:
+          bounded foreground missing-session retries, repo group recheck before
+          destructive clear, resume listener stability guard, and session-gap
+          retry CTA wiring. Validation pending on exact single-device degraded-
+          network repro.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
@@ -271,7 +276,9 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 18 — Run Mode shows Syncing state when activeSession is missing + manual refresh (sync icon) (bug).
 - Phase 18 — Missing-session cleanup must not clear activeSession on transient
   group lookup/provider rebuild gaps; sync hold must recover without destructive clears (bug).
-- Phase 18 — Fix 26 monitoring window active (07/03–09/03) before closure.
+- Phase 18 — Fix 26 reopened hardening (v4): bounded foreground retry +
+  non-destructive missing-session clear with repo recheck + resume listener
+  stability (validation pending exact repro on single-device degraded network).
 - Phase 18 — Completion modal + Groups Hub navigation must work on owner and mirror devices (validation pending).
 - Phase 18 — Run Mode ownership visibility + take ownership UX (new requirement).
 - Phase 18 — Ownership transfer requires owner approval + rejection state (new requirement).

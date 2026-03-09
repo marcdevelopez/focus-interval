@@ -3,6 +3,7 @@
 Date: 2026-03-07
 Branch: `fix27-local-account-reentry-autostart`
 Scope: Re-validation after commit `26f0c7e` + implementation of Fix 27.
+Latest branch update (2026-03-09): `fix26-reopen-black-syncing-2026-03-09`
 
 ## Objective
 - Confirm that Fix 26 no longer leaves owner/mirror in indefinite `Syncing session...`.
@@ -51,6 +52,26 @@ Scope: Re-validation after commit `26f0c7e` + implementation of Fix 27.
 - Updated hypothesis:
   - Trigger risk is concentrated in single-device effective ownership plus prolonged background/sleep and weak/offline network periods.
   - Hardening must prioritize resume/recovery when owner is alone and network is degraded.
+
+## Fix 26 hardening implementation (2026-03-09)
+- Status: **Implemented / Pending validation**.
+- Branch: `fix26-reopen-black-syncing-2026-03-09`.
+- Specs-first updates:
+  - Added foreground bounded-backoff retry requirement during missing-session hold.
+  - Added non-destructive clear guard requiring group-status recheck before local state clear.
+  - Added resume listener rule to avoid forced close/recreate on every resume.
+- Code changes applied:
+  - `lib/presentation/viewmodels/pomodoro_view_model.dart`
+    - Foreground missing-session retry loop upgraded from one-shot to periodic bounded backoff (`5s -> 10s -> 20s -> max 30s`).
+    - Added repo recheck (`_groupRepo.getById`) before destructive clear when session snapshot is missing.
+    - Added non-destructive clear path that preserves running projection state.
+    - Added guarded session listener rebind policy on resume (rebind only when absent/stalled with cooldown).
+    - Added explicit manual recovery API for session-gap stalls (`retrySessionGapRecovery`).
+  - `lib/presentation/screens/timer_screen.dart`
+    - Sync overlay retry button now handles both time-sync stalls and session-gap stalls.
+- Verification executed:
+  - `flutter analyze` -> PASS.
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart` -> PASS.
 
 ## Related open bug found during this cycle
 - Scenario:
@@ -106,6 +127,6 @@ Implementation status (2026-03-07) — second attempt PASS — **Closed/OK**
 - Regression smoke PASS: no Fix 24/Fix 26 regressions observed in v2 logs.
 
 ## Closure criteria for Fix 26
-1. Exact repro for original syncing hold remains PASS during the 2-day window.
-2. Regression smoke checks remain PASS.
-3. No new `Syncing session...` indefinite hold in owner/mirror cross-device runs.
+1. Exact repro for the single-device + prolonged background/sleep + degraded-network scenario passes after this hardening implementation.
+2. Regression smoke checks remain PASS (Fix 24 / Fix 25 / Fix 27 + overlap flow).
+3. No new irrecoverable `Syncing session...` hold and no black-screen resume in the validated runs.

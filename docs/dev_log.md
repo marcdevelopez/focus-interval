@@ -23,7 +23,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **07/03/2026**
+Last update: **09/03/2026**
 
 ---
 
@@ -9585,3 +9585,52 @@ implementation made things **worse** than before:
 
 - Continue Fix 26 two-day monitoring window (closes 2026-03-09).
 - Resume planned roadmap work.
+
+---
+
+# 🔹 Block 551 — Fix 26 reopened hardening v4 implementation (09/03/2026)
+
+**Date:** 09/03/2026  
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`  
+**Scope:** Harden missing-session recovery for the single-device background/offline scenario reported on 2026-03-08.
+
+### ✔ Work completed:
+
+- Documentation-first updates:
+  - `docs/specs.md`: added explicit requirements for:
+    - periodic foreground missing-session retries with bounded backoff,
+    - repo-backed group recheck before destructive clear,
+    - resume listener stability (no forced close/recreate on every resume).
+- Implemented VM/session hardening:
+  - `lib/presentation/viewmodels/pomodoro_view_model.dart`
+    - Replaced one-shot foreground hold resync with periodic bounded-backoff retry loop (`5s -> 10s -> 20s -> max 30s`).
+    - Added asynchronous missing-session handling with decision token guard to avoid stale clear races.
+    - Added repo recheck (`_groupRepo.getById`) before destructive missing-session clear; keep hold when running state cannot be safely ruled out.
+    - Added non-destructive clear helper that avoids forcing idle when group remains running.
+    - Added session listener rebind guard on resume (rebind only when absent or stalled, with cooldown).
+    - Added `isSessionGapStalled` + `retrySessionGapRecovery()` for manual recovery path.
+  - `lib/presentation/screens/timer_screen.dart`
+    - Sync overlay retry now supports both time-sync stalls and session-gap stalls.
+- Test hygiene update:
+  - `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+    - Corrected assertion to match existing spec rule: Account Mode without timeSync must block authoritative publish and force sync refresh.
+- Updated tracking docs for reopened Fix 26 status:
+  - `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`
+  - `docs/validation/validation_ledger.md`
+  - `docs/roadmap.md`
+
+### 🧪 Tests:
+
+- `flutter analyze` (pass, no issues).
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart` (pass).
+
+### ⚠️ Issues found:
+
+- Fix 26 remains open until exact repro + regression smoke are re-run with evidence on the single-device degraded-network scenario.
+
+### 🎯 Next steps:
+
+- Run exact repro validation on Android + macOS sleep/background path with logs.
+- Run regression smoke checks (Fix 24 / Fix 25 / Fix 27 + overlap flow).
+- If all pass, close Fix 26 in validation docs + roadmap + ledger with commit traceability.

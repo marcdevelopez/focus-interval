@@ -1977,6 +1977,10 @@ The MM:SS timer must not shift horizontally:
   reconnecting), show **Syncing session...** instead of rendering potentially
   stale state. Keep the ownership indicator visible (neutral/last-known) but
   disable controls and hide task ranges until the session arrives.
+- While the app is in foreground and a running/paused group is in missing-session
+  hold, schedule periodic remote resync retries with bounded backoff
+  (for example 5s -> 10s -> 20s -> max 30s). This retry loop is read-only for
+  mirror devices; mirror paths must never publish/republish `activeSession`.
 - After a scheduled auto-start, the **first device that starts the session** becomes the owner.
   Other devices open in mirror mode and remain there until ownership is approved.
 - Conflict-resolution flows (late-start overlap queue, running overlap decision)
@@ -2038,12 +2042,20 @@ foreground owner must **not** freeze progression.
 - Missing-session cleanup must be non-destructive under transient repository gaps:
   - `activeSession` must **not** be cleared only because a single `groupId` lookup
     returns null during reconnect/resume windows.
+  - Before destructive clear of local Run Mode state, re-check the linked
+    TaskRunGroup status from repository (cache-first/server fallback). If status
+    cannot be confirmed terminal/non-running, keep syncing hold and continue
+    recovery retries.
   - Clear `activeSession` only when there is corroborated evidence that the group
     is not running (explicit terminal status from `taskRunGroups`) or when the
     session is stale beyond stale-grace according to heartbeat/lastUpdatedAt.
   - Repository/provider rebuilds (for example auth token refresh with same UID)
     must not leave Run Mode without an active session listener; re-subscribe
     before evaluating missing-session cleanup.
+  - Resume handling must not force close/recreate the activeSession listener on
+    every `AppLifecycleState.resumed` event. Keep the existing listener when
+    healthy and trigger explicit resync; only force a listener rebind when
+    the listener is absent or a bounded stalled-listener condition is detected.
 - Auto-claim attempts must be failure-safe:
   - Firestore `unavailable`/network failures must not throw unhandled
     exceptions.

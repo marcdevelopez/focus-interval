@@ -2,12 +2,16 @@
 
 Date: 2026-03-07
 Last reviewed: 2026-03-09
-Status: **Reopened / FAIL (monitoring window)**
+Status: **Reopened / In validation (post-hardening 2026-03-09)**
 
 - [x] iOS + Chrome run completed with debug logs saved.
 - [x] Original Fix 26 symptom (indefinite `Syncing session...`) not reproduced in first practical runs.
 - [x] Owner cancel path observed without indefinite mirror lock.
 - [x] Two-day monitoring window completed (target: 2026-03-09) — **FAIL**.
+- [x] Fix 26 hardening v4 implemented (foreground bounded-backoff retry, non-destructive clear with group recheck, resume listener rebind guard, sync overlay retry for session gap).
+- [x] Static/targeted verification PASS (`flutter analyze` + targeted session-gap/overlay tests).
+- [ ] Exact repro re-run after hardening: single-device + prolonged background/sleep + degraded-network path.
+- [ ] Regression smoke re-run after hardening (Fix 24 / Fix 25 / Fix 27 + overlap flow).
 - [ ] Final closure recorded in validation docs.
 - [x] Fix 27 exact repro PASS (Local -> Account after missed scheduled start opens Run Mode without restart).
 - [x] Fix 27 regression smoke PASS (Fix 24, Fix 26, overlaps flow — iOS + Chrome logs confirm no regressions).
@@ -47,6 +51,16 @@ Status: **Reopened / FAIL (monitoring window)**
 - Interpretation:
   - Failure scope appears narrower: high risk when ownership effectively collapses to one device with prolonged background/sleep + unstable network.
   - Fix 26 remains open until that exact single-device degraded-network scenario is hardened.
+
+## Fix 26 Hardening (implemented 2026-03-09)
+- Implemented:
+  - VM foreground hold recovery now uses periodic bounded-backoff retries (no one-shot-only gap for mirrors in foreground).
+  - Missing-session destructive clear now requires group-status recheck via repository first.
+  - Resume path no longer forces listener close/recreate on every resume event.
+  - Sync overlay retry now supports session-gap stall recovery in addition to time-sync retry.
+- Verification:
+  - `flutter analyze` -> PASS.
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart` -> PASS.
 
 ## Fix 27 Evidence
 - iOS log: `2026_03_07_fix27v2_ios_debug.log` line 51016 — `Auto-start opening TimerScreen` at 22:49:03 for group `c2b7f11d`.
