@@ -39,6 +39,19 @@ Scope: Re-validation after commit `26f0c7e` + implementation of Fix 27.
   - Fix 26 closure criteria are not met.
   - Keep Fix 26 open and blocked for further hardening/re-validation.
 
+## Comparative Observation (2026-03-09 partial logs)
+- New partial evidence added:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_09_fix26_observation_partial_android_cc5f55b.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_09_fix26_observation_partial_macos_cc5f55b.log`
+- Summary:
+  - No irrecoverable `Syncing session...` lock reproduced while both devices remained mostly active/open.
+  - Android still reports repeated Firestore `UNAVAILABLE` + `UnknownHostException`.
+  - Recovery behavior is present in this run: session snapshots continue advancing after error bursts.
+  - macOS did not show `Missing snapshot; clearing session` / `Resync missing; clearing state` in the partial sample; only transient `Missing snapshot; holding in sync`.
+- Updated hypothesis:
+  - Trigger risk is concentrated in single-device effective ownership plus prolonged background/sleep and weak/offline network periods.
+  - Hardening must prioritize resume/recovery when owner is alone and network is degraded.
+
 ## Related open bug found during this cycle
 - Scenario:
   1. Plan a group in Account Mode.

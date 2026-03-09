@@ -24,6 +24,9 @@ Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
 - Profiling checklist open items: **8**.
 - 2026-03-09 update: Fix 26 monitoring window reached target date but failed
   (persistent `Syncing session...` + black-screen resume scenario).
+- 2026-03-09 partial follow-up: multi-device active run did not reproduce
+  irrecoverable syncing, but Fix 26 remains open because the single-device +
+  prolonged background + unstable network scenario is still failing.
 
 ## Already validated/closed (reference)
 
