@@ -412,3 +412,40 @@ Pending validation:
   1) reopen lands on correct task/time segment when owner changes,
   2) no reappearance of `Pomodoro 2 of 1`,
   3) Firestore `activeSession/current` remains coherent after reopen.
+
+## 2026-03-10 Follow-up v2: `running` group with `finished` activeSession
+
+Status: **Implemented, pending device validation**
+
+Problem observed (post-fix `1fa8ca7` logs):
+- `TaskRunGroup` remains `status=running`, but `activeSession/current` is persisted as:
+  - `status=finished`
+  - `phase=null`, `remainingSeconds=0`
+  - stale/invalid cursor (`currentPomodoro=2`, `totalPomodoros=1`).
+- On reopen, both Android and macOS can end in `00:00` + `Syncing session...` with
+  log loop:
+  - `Active session cleared`
+  - `Auto-start abort (state not idle) state=finished`
+
+Root cause:
+- Previous cursor repair path focused on active-execution snapshots and could miss
+  repair when persisted session arrived already `finished` while the group was still
+  `running`.
+
+Fix implemented:
+- Expanded `_sanitizeActiveSession` / `_repairInconsistentSessionCursor` handling so
+  non-active sessions are also reconciled against the running group timeline when the
+  cursor/task tuple is inconsistent.
+- Added regression coverage for this exact pair (`running` + `finished` + invalid cursor):
+  - `loadGroup repairs finished invalid cursor when group is still running`
+  - file: `test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart`
+
+Validation executed:
+- `dart analyze lib/presentation/viewmodels/pomodoro_view_model.dart test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS
+
+Pending validation:
+- Re-run Android (`RMX3771`) + macOS from clean reopen/install and confirm:
+  1) timer lands on projected running task/time (expected `Trading` segment),
+  2) no indefinite `Syncing session...`,
+  3) auto-start no longer aborts with `state=finished` for this scenario.

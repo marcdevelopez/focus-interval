@@ -2846,7 +2846,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   Future<PomodoroSession?> _sanitizeActiveSession(
     PomodoroSession? session,
   ) async {
-    if (session == null || !session.status.isActiveExecution) return session;
+    if (session == null) return session;
     final groupId = session.groupId;
     if (groupId == null || groupId.isEmpty) return session;
     final now = DateTime.now();
@@ -2927,8 +2927,8 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     TaskRunGroup group,
     DateTime now,
   ) {
-    if (!session.status.isActiveExecution) return session;
     if (group.tasks.isEmpty) return session;
+    final inactiveWhileGroupRunning = !session.status.isActiveExecution;
     final resolvedIndex = _resolveTaskIndex(group, session);
     final resolvedItem = _resolveTaskItem(group, resolvedIndex);
     if (resolvedItem == null) return session;
@@ -2939,6 +2939,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     final outOfRangePomodoro =
         currentPomodoro < 1 || currentPomodoro > canonicalTotalPomodoros;
     final needsRepair =
+        inactiveWhileGroupRunning ||
         outOfRangePomodoro ||
         session.totalPomodoros != canonicalTotalPomodoros ||
         session.currentTaskIndex != resolvedIndex ||
@@ -2953,13 +2954,15 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         session.currentTaskStartedAt ??
         _resolveTaskStart(group, session, resolvedIndex);
 
-    if (outOfRangePomodoro) {
+    if (inactiveWhileGroupRunning || outOfRangePomodoro) {
       final projection = _projectFromGroupTimelineWithPauseOffset(group, now);
       if (projection != null) {
         targetIndex = projection.taskIndex;
         targetItem = _resolveTaskItem(group, targetIndex) ?? targetItem;
         targetState = projection.state;
         targetTaskStartedAt = projection.taskStartedAt;
+      } else if (inactiveWhileGroupRunning) {
+        return session;
       } else {
         final clampedPomodoro = currentPomodoro.clamp(1, canonicalTotalPomodoros);
         final phaseDuration = _phaseDurationForItemPhase(

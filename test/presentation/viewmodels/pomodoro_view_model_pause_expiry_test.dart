@@ -332,6 +332,35 @@ PomodoroSession _buildInvalidCursorSession({
   );
 }
 
+PomodoroSession _buildFinishedInvalidCursorSession({
+  required String groupId,
+  required DateTime now,
+}) {
+  return PomodoroSession(
+    taskId: '654e32e7-a5a7-49a2-b6ff-08e76025e8a7',
+    groupId: groupId,
+    currentTaskId: '654e32e7-a5a7-49a2-b6ff-08e76025e8a7',
+    currentTaskIndex: 1,
+    totalTasks: 5,
+    dataVersion: kCurrentDataVersion,
+    sessionRevision: 22,
+    ownerDeviceId: 'other-device',
+    status: PomodoroStatus.finished,
+    phase: null,
+    currentPomodoro: 2,
+    totalPomodoros: 1,
+    phaseDurationSeconds: 0,
+    remainingSeconds: 0,
+    accumulatedPausedSeconds: 0,
+    phaseStartedAt: null,
+    currentTaskStartedAt: now.subtract(const Duration(minutes: 61)),
+    pausedAt: null,
+    lastUpdatedAt: now,
+    finishedAt: now,
+    pauseReason: null,
+  );
+}
+
 Future<void> _pumpQueue() async {
   await Future<void>.delayed(const Duration(milliseconds: 20));
   await Future<void>.delayed(const Duration(milliseconds: 20));
@@ -413,4 +442,51 @@ void main() {
     expect(state.totalPomodoros, 4);
     expect(state.currentPomodoro, inInclusiveRange(1, 4));
   });
+
+  test(
+    'loadGroup repairs finished invalid cursor when group is still running',
+    () async {
+      final now = DateTime.now();
+      final group = _buildTimelineRunningGroup(
+        id: 'group-cursor-repair-finished',
+        start: now.subtract(const Duration(minutes: 230)),
+      );
+      final session = _buildFinishedInvalidCursorSession(
+        groupId: group.id,
+        now: now,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            TimeSyncService(enabled: false),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      final state = container.read(pomodoroViewModelProvider);
+
+      expect(result, PomodoroGroupLoadResult.loaded);
+      expect(vm.currentTaskIndex, 2);
+      expect(vm.currentItem?.sourceTaskId, '802f7fe0-8294-4057-aa98-68e2e5efb8dd');
+      expect(state.status.isActiveExecution, isTrue);
+      expect(state.status, isNot(PomodoroStatus.finished));
+      expect(state.totalPomodoros, 4);
+      expect(state.currentPomodoro, inInclusiveRange(1, 4));
+    },
+  );
 }

@@ -181,6 +181,10 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           reopen/owner switch: detect and repair invalid activeSession task/pomodoro
           cursor (e.g., `currentPomodoro > totalPomodoros`) using running-group
           timeline anchor before Run Mode hydration. Validation pending.
+      10/03/2026: Fix 26 follow-up v2 implemented for `running` group +
+          `finished` activeSession mismatch on reopen: sanitize/repair now also
+          reprojects non-active inconsistent sessions to the current running
+          timeline segment. Validation pending.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling

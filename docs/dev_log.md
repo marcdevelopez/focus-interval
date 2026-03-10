@@ -9987,3 +9987,44 @@ persists an invalid cursor (e.g. `currentPomodoro > totalPomodoros`).
 - Confirm reopen lands on the correct task (`Trading`) and no `Pomodoro 2 of 1`
   reappears.
 - If pass, close `P0-F26-003` in validation ledger and checklist.
+
+---
+
+# 🔹 Block 560 — Fix 26 follow-up v2: recover `running` group + `finished` session mismatch (10/03/2026)
+
+**Date:** 10/03/2026  
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`  
+**Scope:** Prevent `00:00 Syncing session...` loop when Firestore keeps `TaskRunGroup.status=running`
+but `activeSession/current.status=finished` with stale cursor data.
+
+### ✔ Work completed:
+
+- Extended the active-session reconciliation path in
+  `lib/presentation/viewmodels/pomodoro_view_model.dart`:
+  - `_sanitizeActiveSession(...)` no longer exits early for non-active statuses.
+  - `_repairInconsistentSessionCursor(...)` now treats
+    `!session.status.isActiveExecution && group.status == running` as a repair trigger.
+  - For that case, it reprojects from running-group timeline anchor (with pause-offset model),
+    and rebuilds a coherent active snapshot instead of preserving stale `finished` payload.
+- Added dedicated regression coverage in
+  `test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart`:
+  - `loadGroup repairs finished invalid cursor when group is still running`
+  - Simulates exact inconsistent payload observed in production:
+    `status=finished`, `phase=null`, `remainingSeconds=0`, `currentPomodoro=2`, `totalPomodoros=1`
+    while group remains `running`.
+
+### 🧪 Tests:
+
+- `dart analyze lib/presentation/viewmodels/pomodoro_view_model.dart test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
+
+### ⚠️ Issues found:
+
+- Device validation is still pending for this exact scenario on Android RMX3771 + macOS.
+- `ios/Flutter/AppFrameworkInfo.plist` remains locally modified and was intentionally excluded.
+
+### 🎯 Next steps:
+
+- Run clean reopen/install packet with release logs on macOS + RMX3771.
+- Confirm no repeated `Auto-start abort (state not idle) state=finished`.
+- Confirm timer lands on projected running segment (`Trading`) and no indefinite syncing hold.

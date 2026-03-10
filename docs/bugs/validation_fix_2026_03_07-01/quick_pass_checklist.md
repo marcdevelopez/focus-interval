@@ -203,6 +203,17 @@ flutter run -v --debug -d chrome --dart-define=APP_ENV=prod \
 - [ ] Android RMX3771 + macOS manual validation PASS with post-fix logs.
 - [ ] Confirm reopened session lands on correct task (`Trading`) and coherent pomodoro index (no `2/1`).
 
+## 2026-03-10 Follow-up v2 — running group + finished session inconsistency
+
+- [x] Reproduced inconsistent pair in Firestore: `TaskRunGroup.status=running` while `activeSession/current.status=finished` with stale cursor (`currentPomodoro=2`, `totalPomodoros=1`).
+- [x] Confirmed symptom in logs on both devices: repeated `Active session cleared` and `Auto-start abort (state not idle) state=finished`.
+- [x] Hardened cursor repair to also recover when session is non-active (`finished`) but group is still `running`.
+- [x] Added regression test: `loadGroup repairs finished invalid cursor when group is still running`.
+- [x] `dart analyze` (targeted files) PASS.
+- [x] `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS.
+- [ ] Android RMX3771 + macOS manual validation PASS with post-fix logs (`postfix_<new_commit>_*.log`).
+- [ ] Confirm auto-open/run mode no longer stays on `00:00 Syncing session...` for this inconsistent snapshot pair.
+
 ## Fix 27 Evidence
 - iOS log: `2026_03_07_fix27v2_ios_debug.log` line 51016 — `Auto-start opening TimerScreen` at 22:49:03 for group `c2b7f11d`.
 - Chrome log: `2026_03_07_fix27v2_chrome_debug.log` lines 2086–2090 — `Active session change route=/tasks` → `Attempting auto-open` → `Auto-open confirmed in timer route=/timer/c2b7f11d`.
