@@ -10076,3 +10076,42 @@ but `activeSession/current.status=finished` with stale cursor data.
   1) stale `finished` session is replaced by an active owned session when group is still running;
   2) no-owner gap is gone;
   3) if group is truly expired, it completes (no forced running reclaim).
+
+---
+
+# 🔹 Block 562 — Fix 26 `P0-F26-003` closure validation PASS (10/03/2026)
+
+**Date:** 10/03/2026  
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`  
+**Scope:** Close validation item `P0-F26-003` (reopen/owner-switch cursor mismatch + stale finished/no-owner recovery) with real-device evidence.
+
+### ✔ Work completed:
+
+- Reviewed closure logs from release runs:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-10_fix26_postfix_250c24d_macos_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-10_fix26_postfix_250c24d_android_RMX3771_diag.log`
+- Confirmed both clients auto-opened Run Mode correctly for the running group.
+- Confirmed no recurrence of the reopened bug signatures:
+  - no `Pomodoro 2 of 1`
+  - no indefinite `00:00 Syncing session...`
+  - no stale mirror/no-owner dead state.
+- Verified deterministic ownership behavior from logs:
+  - stable owner snapshots while running,
+  - clean owner handoff (`macOS -> Android`) without sync latch.
+- Verified timer coherence against phase window + wall-clock (second-level rounding only).
+- Updated closure docs:
+  - `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`
+  - `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`
+  - `docs/validation/validation_ledger.md`
+  - `docs/roadmap.md`
+
+### 🧪 Validation result:
+
+- `P0-F26-003`: **Closed/OK**
+  - closed implementation commit: `250c24d`
+  - message: `fix(f26): recover stale finished session ownership with expiry-safe guard`
+- `P0-F26-001`: remains open (`In validation`) pending exact degraded-network repro + extended soak criteria.
+
+### ⚠️ Notes:
+
+- `ios/Flutter/AppFrameworkInfo.plist` remains locally modified and intentionally excluded from all staging/commits.

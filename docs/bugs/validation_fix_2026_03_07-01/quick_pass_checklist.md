@@ -200,8 +200,8 @@ flutter run -v --debug -d chrome --dart-define=APP_ENV=prod \
 - [x] `dart analyze` (targeted files) PASS.
 - [x] `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS.
 - [x] `flutter analyze` PASS.
-- [ ] Android RMX3771 + macOS manual validation PASS with post-fix logs.
-- [ ] Confirm reopened session lands on correct task (`Trading`) and coherent pomodoro index (no `2/1`).
+- [x] Android RMX3771 + macOS manual validation PASS with post-fix logs (`2026-03-10_fix26_postfix_250c24d_macos_diag.log`, `2026-03-10_fix26_postfix_250c24d_android_RMX3771_diag.log`).
+- [x] Confirm reopened session lands on correct task (`Trading`) and coherent pomodoro index (no `2/1`).
 
 ## 2026-03-10 Follow-up v2 — running group + finished session inconsistency
 
@@ -211,8 +211,8 @@ flutter run -v --debug -d chrome --dart-define=APP_ENV=prod \
 - [x] Added regression test: `loadGroup repairs finished invalid cursor when group is still running`.
 - [x] `dart analyze` (targeted files) PASS.
 - [x] `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS.
-- [ ] Android RMX3771 + macOS manual validation PASS with post-fix logs (`postfix_<new_commit>_*.log`).
-- [ ] Confirm auto-open/run mode no longer stays on `00:00 Syncing session...` for this inconsistent snapshot pair.
+- [x] Android RMX3771 + macOS manual validation PASS with post-fix logs (`2026-03-10_fix26_postfix_250c24d_macos_diag.log`, `2026-03-10_fix26_postfix_250c24d_android_RMX3771_diag.log`).
+- [x] Confirm auto-open/run mode no longer stays on `00:00 Syncing session...` for this inconsistent snapshot pair.
 
 ## 2026-03-10 Follow-up v3 — stale finished owner recovery
 
@@ -221,8 +221,24 @@ flutter run -v --debug -d chrome --dart-define=APP_ENV=prod \
 - [x] Added regression assertion that recovered session becomes owned by current device in test.
 - [x] `dart analyze` (targeted files) PASS.
 - [x] `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS.
-- [ ] Android RMX3771 + macOS manual validation PASS with post-fix logs (`postfix_<new_commit>_*.log`).
-- [ ] Confirm Firestore `activeSession/current` transitions out of stale `finished` state after reopen.
+- [x] Android RMX3771 + macOS manual validation PASS with post-fix logs (`2026-03-10_fix26_postfix_250c24d_macos_diag.log`, `2026-03-10_fix26_postfix_250c24d_android_RMX3771_diag.log`).
+- [x] Confirm Firestore `activeSession/current` transitions out of stale `finished` state after reopen.
+
+## 2026-03-10 Closure Evidence — `P0-F26-003` (commit `250c24d`)
+
+- [x] Cross-device reopen in run mode lands on coherent segment (`Trading`, `Pomodoro 4 of 4`) with matching countdown.
+- [x] No recurrence of `Pomodoro 2 of 1` or `00:00 Syncing session...` in postfix logs.
+- [x] Log scan for critical signatures is clean in both files:
+  - `sessionMissing=0`
+  - `stream-missing-debounced=0`
+  - `Missing snapshot=0`
+  - `Syncing session=0`
+  - `Unhandled Exception=0`
+  - `cloud_firestore/unavailable=0`
+  - `runningExpiry=0`
+- [x] Owner handoff remains deterministic (`macOS -> Android`) with continuous `pomodoroRunning` snapshots on both devices.
+- [x] Timer exactness confirmed against wall-clock + phase window (`16:39-17:04`) after second-level review; false alarm discarded as user misread break length (15 min).
+- [x] Closure decision: `P0-F26-003` -> **Closed/OK** (10/03/2026).
 
 ## Fix 27 Evidence
 - iOS log: `2026_03_07_fix27v2_ios_debug.log` line 51016 — `Auto-start opening TimerScreen` at 22:49:03 for group `c2b7f11d`.

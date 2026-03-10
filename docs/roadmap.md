@@ -180,15 +180,23 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       10/03/2026: Fix 26 follow-up implemented for cursor inconsistency on
           reopen/owner switch: detect and repair invalid activeSession task/pomodoro
           cursor (e.g., `currentPomodoro > totalPomodoros`) using running-group
-          timeline anchor before Run Mode hydration. Validation pending.
+          timeline anchor before Run Mode hydration. Validated in closure packet
+          `P0-F26-003` on 10/03/2026.
       10/03/2026: Fix 26 follow-up v2 implemented for `running` group +
           `finished` activeSession mismatch on reopen: sanitize/repair now also
           reprojects non-active inconsistent sessions to the current running
-          timeline segment. Validation pending.
+          timeline segment. Validated in closure packet `P0-F26-003` on 10/03/2026.
       10/03/2026: Fix 26 follow-up v3 implemented for stale non-active owner
           recovery: when `running` group coexists with stale `finished` session,
           sanitize can claim a rebuilt active snapshot on current device; guard
-          added to avoid reclaim if group timeline is already expired. Validation pending.
+          added to avoid reclaim if group timeline is already expired. Validated in
+          closure packet `P0-F26-003` on 10/03/2026.
+      10/03/2026: Fix 26 follow-up cursor/owner mismatch packet re-validated
+          on Android RMX3771 + macOS (logs `2026-03-10_fix26_postfix_250c24d_*`):
+          no `Pomodoro 2 of 1`, no indefinite `Syncing session...`, deterministic
+          owner handoff preserved, and timer projection coherent with wall-clock.
+          Validation item `P0-F26-003` closed/OK on implementation commit `250c24d`.
+          Note: degraded-network regression item `P0-F26-001` remains open.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling

@@ -376,7 +376,7 @@ Next step:
 
 ## 2026-03-10 Follow-up bug: invalid cursor after reopen/owner switch
 
-Status: **Implemented, pending device validation**
+Status: **Closed/OK (validated on devices, 10/03/2026)**
 
 Problem observed (post-fix `b8dbff5` run):
 - `activeSession/current` persisted an inconsistent cursor:
@@ -407,15 +407,17 @@ Validation executed:
 - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS
 - `flutter analyze` PASS
 
-Pending validation:
-- Re-run Android (`RMX3771`) + macOS with current commit and confirm:
-  1) reopen lands on correct task/time segment when owner changes,
-  2) no reappearance of `Pomodoro 2 of 1`,
-  3) Firestore `activeSession/current` remains coherent after reopen.
+Validation result:
+- Android (`RMX3771`) + macOS manual validation PASS with release logs:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-10_fix26_postfix_250c24d_macos_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-10_fix26_postfix_250c24d_android_RMX3771_diag.log`
+- Reopen now lands on correct task/time segment when owner changes.
+- No reappearance of `Pomodoro 2 of 1`.
+- Firestore/session cursor remains coherent after reopen.
 
 ## 2026-03-10 Follow-up v2: `running` group with `finished` activeSession
 
-Status: **Implemented, pending device validation**
+Status: **Closed/OK (validated on devices, 10/03/2026)**
 
 Problem observed (post-fix `1fa8ca7` logs):
 - `TaskRunGroup` remains `status=running`, but `activeSession/current` is persisted as:
@@ -444,15 +446,15 @@ Validation executed:
 - `dart analyze lib/presentation/viewmodels/pomodoro_view_model.dart test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS
 - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS
 
-Pending validation:
-- Re-run Android (`RMX3771`) + macOS from clean reopen/install and confirm:
-  1) timer lands on projected running task/time (expected `Trading` segment),
-  2) no indefinite `Syncing session...`,
-  3) auto-start no longer aborts with `state=finished` for this scenario.
+Validation result:
+- Android (`RMX3771`) + macOS clean reopen/install PASS on post-fix logs.
+- Timer lands on projected running segment (`Trading`) across both devices.
+- No indefinite `Syncing session...`.
+- No recurring auto-start abort loop with `state=finished` in this scenario.
 
 ## 2026-03-10 Follow-up v3: no-owner gap with stale `finished` session
 
-Status: **Implemented, pending device validation**
+Status: **Closed/OK (validated on devices, 10/03/2026)**
 
 Problem observed after v2:
 - Even with correct timer projection, Firestore still kept stale:
@@ -474,8 +476,34 @@ Validation executed:
 - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS
 - Regression test now asserts recovered session owner equals current device id.
 
-Pending validation:
-- Re-run Android (`RMX3771`) + macOS and confirm:
-  1) no-owner gap is gone (one owner selected),
-  2) Firestore `activeSession/current` leaves stale `finished` payload,
-  3) Run Mode remains aligned on both devices without manual Firestore edits.
+Validation result:
+- No-owner gap resolved: one deterministic owner is always visible.
+- `activeSession/current` no longer remains latched on stale `finished` after reopen.
+- Run Mode remains aligned on both devices without manual Firestore edits.
+
+## 2026-03-10 Closure packet — `P0-F26-003`
+
+Status: **Closed/OK**
+
+Evidence summary:
+- Commit implementing the final behavior: `250c24d`
+  - `fix(f26): recover stale finished session ownership with expiry-safe guard`
+- Logs used for closure:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-10_fix26_postfix_250c24d_macos_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-10_fix26_postfix_250c24d_android_RMX3771_diag.log`
+- Critical-pattern scan in both logs:
+  - no `sessionMissing`
+  - no `stream-missing-debounced`
+  - no `Missing snapshot`
+  - no `Syncing session...` latch
+  - no `Unhandled Exception`
+  - no `cloud_firestore/unavailable`
+  - no `runningExpiry` false-positive signature
+- Device-level behavior:
+  - reopen/hydration lands on coherent running segment,
+  - owner transition remains deterministic (`macOS -> Android`) with continuous run-mode updates,
+  - timer values match wall-clock within expected second-level rounding bounds.
+
+Decision:
+- `P0-F26-003` is closed.
+- `P0-F26-001` remains open until exact degraded-network repro + extended soak closure criteria are met.
