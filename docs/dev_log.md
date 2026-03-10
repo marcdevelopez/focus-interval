@@ -25,7 +25,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **09/03/2026**
+Last update: **10/03/2026**
 
 ---
 
@@ -9764,8 +9764,22 @@ implementation made things **worse** than before:
   - With the session stream dead, `_sessionMissingWhileRunning = true` was set and
     never cleared — Android stuck in `Syncing session...` for 40+ minutes despite
     Firestore showing a healthy `pomodoroRunning` session.
-  - Root cause traced to VM code introduced in the second-cycle hardening commits
-    (`9bab880`, `4f55010`, `26f0c7e`) and third-cycle commit (`3ad6c98`).
+  - Root cause traced to commit `9bab880` (second-cycle hardening):
+    `PomodoroViewModel.build()` was modified to unconditionally cancel `_sessionSub`
+    at start (`_sessionSub?.close(); _sessionSub = null`) to prevent duplicate
+    subscriptions on Riverpod re-runs. This is fundamentally incorrect because
+    `Notifier.build()` re-runs for **any** watched-provider change — not only
+    session-related events. A Firebase Auth token refresh causes
+    `pomodoroSessionRepositoryProvider` to re-emit, which triggers a `build()` re-run,
+    which kills the Firestore session stream. Re-subscription at the end of `build()`
+    is conditional (`if (appMode == account && hasLoadedContext)`); even when the
+    condition is met, the new Firestore stream emits `null` during the auth-reconnect
+    window → `_sessionMissingWhileRunning = true` latches. The foreground retry (also
+    from this second-cycle) then sees `group=running` and keeps the hold indefinitely.
+    At `961f7eb`, `_sessionSub` was a `ProviderSubscription` (`ref.listen`) managed
+    by Riverpod — `build()` re-runs left it completely untouched, only
+    `ref.onDispose()` closed it. **Rule for future implementations:** never cancel
+    a `ref.listen` subscription inside `build()`; let Riverpod own its lifecycle.
   - `418c75f` (TimeSync guard) confirmed **not involved** — no rejected measurements
     appear in the logs; all offsets were clean (-136ms to -214ms) throughout the incident.
 - Rollback performed to `961f7eb` baseline for the affected code files:
@@ -9794,3 +9808,39 @@ implementation made things **worse** than before:
 - Rebuild and redeploy on all devices with commit `4195ef1`.
 - Re-validate Fix 26 exact repro (single-device background + reconnect scenario).
 - If validation passes, close P0-F26-001 with new commit hash.
+
+---
+
+# 🔹 Block 556 — Fix 26 rollback partial re-validation kept open (10/03/2026)
+
+**Date:** 10/03/2026  
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`  
+**Scope:** Review new rollback logs and keep closure blocked until longer validation.
+
+### ✔ Work completed:
+
+- Reviewed new rollback logs generated on commit `4195ef1`:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_10_fix26_observation_partial_android_4195ef1.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_10_fix26_observation_partial_macos_4195ef1.log`
+- Observed in the sampled window (~13:19–13:46 CET):
+  - Android resumed with `Resync start (resume)` and `Resync start (post-resume)`.
+  - Active session snapshots kept advancing (no destructive `Missing snapshot; clearing session` signal in this partial run).
+  - No irrecoverable `Syncing session...` hold reproduced in this short window.
+- Updated validation docs to keep strict caution status:
+  - `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`
+  - `docs/validation/validation_ledger.md`
+  - `docs/roadmap.md`
+
+### 🧪 Tests:
+
+- No code changes in this block; validation work is log/documentation based.
+
+### ⚠️ Issues found:
+
+- Validation window is still too short (<1h). Regression cannot be considered resolved yet.
+
+### 🎯 Next steps:
+
+- Complete exact degraded-network repro packet end-to-end on rollback commit `4195ef1`.
+- Complete extended soak window (>=4h) before any closure attempt.
