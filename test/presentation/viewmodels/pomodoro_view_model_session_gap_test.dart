@@ -25,7 +25,8 @@ class FakeTaskRunGroupRepository implements TaskRunGroupRepository {
   }
 
   @override
-  Stream<List<TaskRunGroup>> watchAll() => Stream.value(_store.values.toList());
+  Stream<List<TaskRunGroup>> watchAll() =>
+      Stream.value(_store.values.toList());
 
   @override
   Future<List<TaskRunGroup>> getAll() async => _store.values.toList();
@@ -134,9 +135,6 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
   Future<void> clearSessionIfGroupNotRunning() async {}
 
   @override
-  Future<void> clearSessionIfInactive({String? expectedGroupId}) async {}
-
-  @override
   Future<void> requestOwnership({
     required String requesterDeviceId,
     required String requestId,
@@ -171,8 +169,8 @@ class FakeSoundService implements SoundService {
 
 class FakeTimeSyncService extends TimeSyncService {
   FakeTimeSyncService({Duration? offset})
-    : _offsetOverride = offset,
-      super(enabled: false);
+      : _offsetOverride = offset,
+        super(enabled: false);
 
   Duration? _offsetOverride;
   int refreshCalls = 0;
@@ -211,7 +209,10 @@ TaskRunItem _buildItem() {
   );
 }
 
-TaskRunGroup _buildRunningGroup({required String id, required DateTime start}) {
+TaskRunGroup _buildRunningGroup({
+  required String id,
+  required DateTime start,
+}) {
   final item = _buildItem();
   return TaskRunGroup(
     id: id,
@@ -318,7 +319,7 @@ void main() {
     expect(vm.isSessionMissingWhileRunning, isTrue);
   });
 
-  test('Account without timeSync blocks publish and forces refresh', () async {
+  test('Account without timeSync does not publish and forces refresh', () async {
     final now = DateTime.now();
     final deviceInfo = DeviceInfoService.ephemeral();
     final group = _buildRunningGroup(id: 'group-1', start: now);
@@ -365,7 +366,7 @@ void main() {
     vm.pause();
     await _pumpQueue();
 
-    expect(sessionRepo.publishCount, equals(0));
+    expect(sessionRepo.publishCount, 0);
     expect(timeSyncService.forcedRefreshCalls, greaterThan(0));
   });
 

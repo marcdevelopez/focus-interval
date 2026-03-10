@@ -8,7 +8,6 @@ abstract class PomodoroSessionRepository {
   Future<void> clearSessionAsOwner();
   Future<void> clearSessionIfStale({required DateTime now});
   Future<void> clearSessionIfGroupNotRunning();
-  Future<void> clearSessionIfInactive({String? expectedGroupId});
   Future<void> requestOwnership({
     required String requesterDeviceId,
     required String requestId,
@@ -30,9 +29,6 @@ class NoopPomodoroSessionRepository implements PomodoroSessionRepository {
 
   @override
   Future<void> clearSessionIfGroupNotRunning() async {}
-
-  @override
-  Future<void> clearSessionIfInactive({String? expectedGroupId}) async {}
 
   @override
   Future<void> publishSession(PomodoroSession session) async {}
