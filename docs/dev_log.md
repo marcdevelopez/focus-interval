@@ -1,5 +1,55 @@
 # 📝 Focus Interval — Dev Log (MVP 1.2)
 
+---
+
+# 🔹 Block 555 — Fix 26 regression detected + rollback to 961f7eb baseline (10/03/2026)
+
+**Date:** 10/03/2026
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`
+**Scope:** Regression in "Syncing session..." hold reintroduced by second/third-cycle hardening; rolled back to last known-good baseline.
+
+### ✔ Work completed:
+
+- Regression confirmed from Android + macOS logs (`2026_03_10_fix26_observation_partial_android_d03c150.log`):
+  - At ~12:15 CET, a Firebase Auth token refresh caused a brief `runningExpiry=true`
+    false-positive (56ms spike) in `ScheduledGroups`.
+  - The spike silently disconnected the Firestore session listener on Android.
+  - With the session stream dead, `_sessionMissingWhileRunning = true` was set and
+    never cleared — Android stuck in `Syncing session...` for 40+ minutes despite
+    Firestore showing a healthy `pomodoroRunning` session.
+  - Root cause traced to VM code introduced in the second-cycle hardening commits
+    (`9bab880`, `4f55010`, `26f0c7e`) and third-cycle commit (`3ad6c98`).
+  - `418c75f` (TimeSync guard) confirmed **not involved** — no rejected measurements
+    appear in the logs; all offsets were clean (-136ms to -214ms) throughout the incident.
+- Rollback performed to `961f7eb` baseline for the affected code files:
+  - `lib/presentation/viewmodels/pomodoro_view_model.dart`
+  - `lib/presentation/screens/timer_screen.dart`
+  - `lib/data/repositories/firestore_pomodoro_session_repository.dart`
+  - `lib/data/repositories/pomodoro_session_repository.dart`
+  - `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+  - `test/data/repositories/firestore_pomodoro_session_repository_test.dart` (deleted — tested rolled-back symbols)
+- Preserved (not rolled back):
+  - Fix 27 (`app_mode_change_guard.dart`, `scheduled_group_coordinator.dart`) — confirmed no overlap with rolled-back files.
+  - `418c75f` (`lib/data/services/time_sync_service.dart`) — TimeSync guard is independent and valid.
+
+### 🧪 Tests:
+
+- `flutter analyze` (pass — 4 test-mock warnings only, no errors).
+
+### ⚠️ Issues found:
+
+- Fix 26 is **reopened**. The 961f7eb baseline was previously validated (06/03/2026) but
+  was then reopened on 07/03/2026 for recurrent edge-case scenarios. A fresh validation
+  run is required to confirm the baseline still holds under current conditions.
+
+### 🎯 Next steps:
+
+- Rebuild and redeploy on all devices with commit `4195ef1`.
+- Re-validate Fix 26 exact repro (single-device background + reconnect scenario).
+- If validation passes, close P0-F26-001 with new commit hash.
+
+---
+
 Chronological history of the MVP 1.2 development using work blocks.
 Each block represents significant progress within the same day or sprint.
 

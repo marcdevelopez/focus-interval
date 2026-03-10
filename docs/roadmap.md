@@ -165,6 +165,14 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           (roundtrip validity + offset-jump guard + reject cooldown). Re-validated
           PASS on iOS+Chrome quick packet rerun; Fix 26 closed/OK with
           commit `418c75f`.
+      10/03/2026: Fix 26 regression observed — Android stuck in irrecoverable
+          `Syncing session...` (~12:15 CET). Root cause: second/third-cycle VM
+          hardening (`9bab880`, `4f55010`, `26f0c7e`, `3ad6c98`) introduced a path
+          where a Firebase Auth token refresh caused `runningExpiry=true` false-positive
+          (56ms) that silently disconnected the Firestore session listener.
+          `418c75f` (TimeSync guard) confirmed uninvolved.
+          Rollback to `961f7eb` baseline for VM + repository files (commit `4195ef1`).
+          Fix 27 and `418c75f` preserved. Fix 26 reopened — re-validation required.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling

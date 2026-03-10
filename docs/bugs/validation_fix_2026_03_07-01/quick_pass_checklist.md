@@ -1,8 +1,8 @@
 # Quick Pass Checklist — Fix 26 cycle 4
 
 Date: 2026-03-07
-Last reviewed: 2026-03-09
-Status: **Closed/OK (validated 2026-03-09 after timeSync guard rerun)**
+Last reviewed: 2026-03-10
+Status: **Reopened (10/03/2026 regression — rollback to 961f7eb baseline, re-validation required)**
 
 - [x] iOS + Chrome run completed with debug logs saved.
 - [x] Original Fix 26 symptom (indefinite `Syncing session...`) not reproduced in first practical runs.
@@ -149,6 +149,27 @@ flutter run -v --debug -d chrome --dart-define=APP_ENV=prod \
   - No transient reconnect desync reproduced.
   - No irreversible `Syncing session...` hold reproduced.
   - Fix 26 closure criteria met.
+
+## 2026-03-10 Regression + Rollback
+
+- Context:
+  - During Fix 25 validation (iOS owner + Android mirror), Android became stuck in
+    irrecoverable `Syncing session...` at ~12:15 CET despite Firestore showing a healthy
+    `pomodoroRunning` session (owner=macOS, `lastUpdatedAt` advancing normally).
+- Root cause (confirmed from logs `2026_03_10_fix26_observation_partial_android_d03c150.log`):
+  - Firebase Auth token refresh at ~12:15:11 caused `runningExpiry=true` false-positive
+    (56ms spike) in `ScheduledGroups`.
+  - Spike silently disconnected the Firestore session listener on Android without logging
+    an explicit `Cancel nav` event.
+  - With stream dead, `_sessionMissingWhileRunning = true` latched and never cleared
+    despite foreground retry running every ~30s.
+  - `418c75f` (TimeSync guard) confirmed uninvolved — all offsets clean (-136ms to -214ms).
+- Rollback performed (commit `4195ef1`):
+  - `pomodoro_view_model.dart`, `timer_screen.dart`, `firestore_pomodoro_session_repository.dart`,
+    `pomodoro_session_repository.dart` restored to `961f7eb` state.
+  - Second/third-cycle hardening commits (`9bab880`, `4f55010`, `26f0c7e`, `3ad6c98`) removed.
+  - Fix 27 and `418c75f` preserved.
+- Next step: Re-validate Fix 26 exact repro under `4195ef1`.
 
 ## Fix 27 Evidence
 - iOS log: `2026_03_07_fix27v2_ios_debug.log` line 51016 — `Auto-start opening TimerScreen` at 22:49:03 for group `c2b7f11d`.

@@ -40,6 +40,12 @@ Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
   (roundtrip/offset-jump guards + reject cooldown).
 - 2026-03-09 re-validation after `418c75f`: PASS. Syncing duration matched
   offline window only; no reconnect timer jump and no irreversible sync hold.
+- 2026-03-10 regression observed: Android stuck in irrecoverable `Syncing session...`
+  (~12:15 CET) triggered by a Firebase Auth token refresh causing a `runningExpiry=true`
+  false-positive (56ms spike) that silently disconnected the Firestore session listener.
+  Root cause in second/third-cycle VM hardening (`9bab880`, `4f55010`, `26f0c7e`, `3ad6c98`).
+  `418c75f` confirmed uninvolved. Rollback to `961f7eb` baseline performed (commit `4195ef1`).
+  Fix 26 reopened — P0-F26-001 requires re-validation.
 
 ## Already validated/closed (reference)
 
@@ -50,8 +56,8 @@ Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
 
 ### P0 blockers (must close before new feature work)
 
-- [x] ID: `P0-F26-001` | Type: bug | Priority: P0 | Status: Closed/OK | Source: `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md:13` | Item: Re-run the exact single-device degraded-network repro after the 2026-03-09 hardening; expected no irrecoverable `Syncing session...` hold and no black-screen resume. | closed_commit_hash: `418c75f` | closed_commit_message: `fix: guard timesync offset against reconnect poisoning` | evidence: baseline failure retained in 2026-03-08 incident logs/screenshots; re-validation PASS in `2026_03_09_fix26_quick_chrome_debug.log` (rejected reconnect samples lines 2255/2466/2506, no large positive offset accepted) plus checklist closure notes.
-- [x] ID: `P0-F26-002` | Type: bug | Priority: P0 | Status: Closed/OK | Source: `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md:15` | Item: Final closure recorded in validation docs. | closed_commit_hash: `418c75f` | closed_commit_message: `fix: guard timesync offset against reconnect poisoning` | evidence: `quick_pass_checklist.md` and `plan_validacion_rapida_fix.md` updated to Closed/OK with re-validation PASS notes.
+- [ ] ID: `P0-F26-001` | Type: bug | Priority: P0 | Status: In validation | Source: `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md:13` | Item: Re-validate exact single-device degraded-network repro after rollback to 961f7eb baseline (commit `4195ef1`); expected no irrecoverable `Syncing session...` hold and no black-screen resume. | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: Previously closed at `418c75f` (09/03/2026 PASS), then regression observed 10/03/2026 (Android stuck ~40min, `runningExpiry` false-positive disconnected session listener). Rollback to `961f7eb` performed. Re-validation required.
+- [x] ID: `P0-F26-002` | Type: bug | Priority: P0 | Status: Closed/OK | Source: `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md:15` | Item: Final closure recorded in validation docs. | closed_commit_hash: `418c75f` | closed_commit_message: `fix: guard timesync offset against reconnect poisoning` | evidence: `quick_pass_checklist.md` and `plan_validacion_rapida_fix.md` updated to Closed/OK with re-validation PASS notes (09/03/2026). Regression note added 10/03/2026; closure will be re-issued after P0-F26-001 re-validation.
 - [ ] ID: `P0-F25-001` | Type: bug | Priority: P0 | Status: Pending | Source: `docs/bugs/validation_fix_2026_03_05/quick_pass_checklist.md:34` | Item: Local -> Account without false overlaps; ownership request delivered (Fix 25). | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: `-`.
 
 ### P1 reopened roadmap validation items
