@@ -239,7 +239,26 @@ Evidence:
   - line 2466: `rejected measurement (roundTripMs=16288 offsetMs=7875 prevOffsetMs=-83)`
   - line 2506: `rejected measurement (roundTripMs=28286 offsetMs=13857 prevOffsetMs=-32)`
 
-Closure decision:
+Closure decision (09/03/2026):
 - Fix 26: **Closed/OK** on 2026-03-09.
 - Closing commit reference:
   - `418c75f` — `fix: guard timesync offset against reconnect poisoning`.
+
+---
+
+## 2026-03-10 Regression + Rollback
+
+Status: **Reopened — re-validation required**
+
+- Regression observed during Fix 25 validation (~12:15 CET): Android stuck in
+  irrecoverable `Syncing session...` for 40+ minutes with a healthy Firestore session.
+- Root cause: Firebase Auth token refresh triggered `runningExpiry=true` false-positive
+  (56ms) in `ScheduledGroups`, silently disconnecting the Firestore session listener.
+  Second/third-cycle VM hardening commits (`9bab880`, `4f55010`, `26f0c7e`, `3ad6c98`)
+  introduced this path. `418c75f` confirmed uninvolved.
+- Rollback performed to `961f7eb` baseline (commit `4195ef1`):
+  - `pomodoro_view_model.dart`, `timer_screen.dart`, `firestore_pomodoro_session_repository.dart`,
+    `pomodoro_session_repository.dart` restored to `961f7eb` state.
+  - Fix 27 and `418c75f` preserved.
+- Fix 26 reopened. Next step: re-validate exact single-device degraded-network repro
+  under commit `4195ef1`.
