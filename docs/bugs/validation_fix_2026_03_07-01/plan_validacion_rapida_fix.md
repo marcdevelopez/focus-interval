@@ -373,3 +373,42 @@ Next step:
   foreground/background cycles) before closure.
 - Keep Fix 26 in `In validation` status until an extended soak window is completed
   (minimum target: >=4h on rollback commit `4195ef1`).
+
+## 2026-03-10 Follow-up bug: invalid cursor after reopen/owner switch
+
+Status: **Implemented, pending device validation**
+
+Problem observed (post-fix `b8dbff5` run):
+- `activeSession/current` persisted an inconsistent cursor:
+  - `currentTaskIndex=1` (`Almorzar`, `totalPomodoros=1`)
+  - `currentPomodoro=2`
+- Result: Run Mode reopened in the wrong segment (`Pomodoro 2 of 1`) instead of
+  progressing to the correct next task (`Trading`) by timeline.
+
+Root cause:
+- Session hydration trusted persisted `currentTaskIndex/currentPomodoro` even when
+  mathematically invalid for the task snapshot (`currentPomodoro > totalPomodoros`).
+- On reopen/owner switch this allowed stale/invalid cursor state to drive the UI.
+
+Fix implemented:
+- `PomodoroViewModel` now validates and repairs inconsistent active-session cursor
+  during sanitize and stream processing:
+  - detects invalid cursor (`currentPomodoro` out-of-range, taskId/index mismatch,
+    task total mismatch),
+  - reprojects against the running-group timeline anchor (with pause offset model),
+  - rebuilds a coherent session snapshot for hydration,
+  - if local device is owner in Account Mode, republishes repaired snapshot to Firestore.
+- Added regression test:
+  - `loadGroup repairs invalid task cursor and lands on expected running task`
+  - file: `test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart`
+
+Validation executed:
+- `dart analyze lib/presentation/viewmodels/pomodoro_view_model.dart test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS
+- `flutter analyze` PASS
+
+Pending validation:
+- Re-run Android (`RMX3771`) + macOS with current commit and confirm:
+  1) reopen lands on correct task/time segment when owner changes,
+  2) no reappearance of `Pomodoro 2 of 1`,
+  3) Firestore `activeSession/current` remains coherent after reopen.

@@ -20,7 +20,7 @@ Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
 ## Snapshot (2026-03-10)
 
 - Roadmap `validation pending`: **69** items.
-- Active bug-checklist open items: **1**.
+- Active bug-checklist open items: **2**.
 - Profiling checklist open items: **8**.
 - 2026-03-09 update: Fix 26 monitoring window reached target date but failed
   (persistent `Syncing session...` + black-screen resume scenario).
@@ -52,6 +52,9 @@ Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
 - 2026-03-10 process hardening applied: mandatory listener-lifecycle guardrails
   documented in Fix 26 plan/checklist; next implementation cannot bypass these
   gates.
+- 2026-03-10 Fix 26 follow-up implementation added cursor auto-repair for
+  inconsistent activeSession reopen states (`currentPomodoro > totalPomodoros`,
+  task cursor mismatch). Regression test added; manual device validation pending.
 
 ## Already validated/closed (reference)
 
@@ -63,6 +66,7 @@ Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
 ### P0 blockers (must close before new feature work)
 
 - [ ] ID: `P0-F26-001` | Type: bug | Priority: P0 | Status: In validation | Source: `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md:174`, `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md:187`, `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md:330` | Item: Re-validate exact single-device degraded-network repro after rollback to 961f7eb baseline (commit `4195ef1`); expected no irrecoverable `Syncing session...` hold and no black-screen resume. | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: Previously closed at `418c75f` (09/03/2026 PASS), then regression observed 10/03/2026 (Android stuck ~40min, `runningExpiry` false-positive disconnected session listener). Rollback to `961f7eb` performed. Partial logs on rollback (`2026_03_10_fix26_observation_partial_android_4195ef1.log`, `2026_03_10_fix26_observation_partial_macos_4195ef1.log`) show recovery, but window is <1h. Keep `In validation` until extended soak (>=4h) + exact degraded-network repro pass, with the new mandatory guardrails enforced before any new Fix 26 code changes.
+- [ ] ID: `P0-F26-003` | Type: bug | Priority: P0 | Status: In validation | Source: `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md:195`, `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md:203`, `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md:377` | Item: Reopen/owner-switch must not persist invalid activeSession cursor (`currentPomodoro > totalPomodoros`); app must reopen on correct running task/time and avoid `Pomodoro 2 of 1`. | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: Incident on 10/03 post-fix run: activeSession had `currentTaskIndex=1` (`Almorzar`, `totalPomodoros=1`) with `currentPomodoro=2`; UI reopened in wrong segment. Fix implemented in PomodoroViewModel (sanitize + stream repair + owner republish) with regression test PASS; manual Android RMX3771 + macOS validation pending.
 - [x] ID: `P0-F26-002` | Type: bug | Priority: P0 | Status: Closed/OK | Source: `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md:15` | Item: Final closure recorded in validation docs. | closed_commit_hash: `418c75f` | closed_commit_message: `fix: guard timesync offset against reconnect poisoning` | evidence: `quick_pass_checklist.md` and `plan_validacion_rapida_fix.md` updated to Closed/OK with re-validation PASS notes (09/03/2026). Regression note added 10/03/2026; closure will be re-issued after P0-F26-001 re-validation.
 - [ ] ID: `P0-F25-001` | Type: bug | Priority: P0 | Status: Pending | Source: `docs/bugs/validation_fix_2026_03_05/quick_pass_checklist.md:34` | Item: Local -> Account without false overlaps; ownership request delivered (Fix 25). | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: `-`.
 

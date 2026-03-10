@@ -1320,7 +1320,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       (previous, next) {
         final previousSession = _latestSession;
         final wasMissing = _sessionMissingWhileRunning;
-        final session = _resolveSessionSnapshot(previous, next);
+        var session = _resolveSessionSnapshot(previous, next);
         if (session == null) {
           final shouldHoldForMissing =
               _shouldTreatMissingSessionAsRunning(previousSession);
@@ -1364,6 +1364,32 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
             _notifySessionMetaChanged();
           }
           return;
+        }
+
+        final group = _currentGroup;
+        if (group != null && session.groupId == group.id) {
+          final repaired = _repairInconsistentSessionCursor(
+            session,
+            group,
+            DateTime.now(),
+          );
+          if (!identical(repaired, session)) {
+            if (kDebugMode) {
+              debugPrint(
+                '[ActiveSession] Repaired inconsistent cursor from stream '
+                'group=${group.id} '
+                'taskIndex=${session.currentTaskIndex ?? -1}->${repaired.currentTaskIndex ?? -1} '
+                'pomodoro=${session.currentPomodoro}/${session.totalPomodoros}'
+                '->${repaired.currentPomodoro}/${repaired.totalPomodoros}',
+              );
+            }
+            session = repaired;
+            final appMode = ref.read(appModeProvider);
+            if (appMode == AppMode.account &&
+                repaired.ownerDeviceId == _deviceInfo.deviceId) {
+              unawaited(_sessionRepo.publishSession(repaired));
+            }
+          }
         }
 
         _sessionMissingLatchTimer?.cancel();
@@ -2868,10 +2894,210 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         await _sessionRepo.clearSessionIfStale(now: now);
         return null;
       }
+      final repaired = _repairInconsistentSessionCursor(session, group, now);
+      if (!identical(repaired, session)) {
+        if (kDebugMode) {
+          debugPrint(
+            '[ActiveSession] Repaired inconsistent cursor during sanitize '
+            'group=${group.id} '
+            'taskIndex=${session.currentTaskIndex ?? -1}->${repaired.currentTaskIndex ?? -1} '
+            'pomodoro=${session.currentPomodoro}/${session.totalPomodoros}'
+            '->${repaired.currentPomodoro}/${repaired.totalPomodoros}',
+          );
+        }
+        final appMode = ref.read(appModeProvider);
+        if (appMode == AppMode.account &&
+            repaired.ownerDeviceId == _deviceInfo.deviceId) {
+          try {
+            await _sessionRepo.publishSession(repaired);
+          } catch (_) {
+            // Keep local recovery even if publish fails transiently.
+          }
+        }
+        return repaired;
+      }
     } catch (_) {
       return session;
     }
     return session;
+  }
+
+  PomodoroSession _repairInconsistentSessionCursor(
+    PomodoroSession session,
+    TaskRunGroup group,
+    DateTime now,
+  ) {
+    if (!session.status.isActiveExecution) return session;
+    if (group.tasks.isEmpty) return session;
+    final resolvedIndex = _resolveTaskIndex(group, session);
+    final resolvedItem = _resolveTaskItem(group, resolvedIndex);
+    if (resolvedItem == null) return session;
+
+    final canonicalTaskId = resolvedItem.sourceTaskId;
+    final canonicalTotalPomodoros = resolvedItem.totalPomodoros;
+    final currentPomodoro = session.currentPomodoro;
+    final outOfRangePomodoro =
+        currentPomodoro < 1 || currentPomodoro > canonicalTotalPomodoros;
+    final needsRepair =
+        outOfRangePomodoro ||
+        session.totalPomodoros != canonicalTotalPomodoros ||
+        session.currentTaskIndex != resolvedIndex ||
+        session.currentTaskId != canonicalTaskId ||
+        session.taskId != canonicalTaskId;
+    if (!needsRepair) return session;
+
+    var targetIndex = resolvedIndex;
+    var targetItem = resolvedItem;
+    var targetState = _stateFromSession(session, remaining: session.remainingSeconds);
+    var targetTaskStartedAt =
+        session.currentTaskStartedAt ??
+        _resolveTaskStart(group, session, resolvedIndex);
+
+    if (outOfRangePomodoro) {
+      final projection = _projectFromGroupTimelineWithPauseOffset(group, now);
+      if (projection != null) {
+        targetIndex = projection.taskIndex;
+        targetItem = _resolveTaskItem(group, targetIndex) ?? targetItem;
+        targetState = projection.state;
+        targetTaskStartedAt = projection.taskStartedAt;
+      } else {
+        final clampedPomodoro = currentPomodoro.clamp(1, canonicalTotalPomodoros);
+        final phaseDuration = _phaseDurationForItemPhase(
+          targetItem,
+          session.phase,
+          fallback: session.phaseDurationSeconds,
+        );
+        final boundedRemaining = session.remainingSeconds.clamp(0, phaseDuration);
+        targetState = PomodoroState(
+          status: session.status,
+          phase: session.phase,
+          currentPomodoro: clampedPomodoro,
+          totalPomodoros: canonicalTotalPomodoros,
+          totalSeconds: phaseDuration,
+          remainingSeconds: boundedRemaining,
+        );
+      }
+    } else {
+      final clampedPomodoro = currentPomodoro.clamp(1, canonicalTotalPomodoros);
+      final phaseDuration = _phaseDurationForItemPhase(
+        targetItem,
+        session.phase,
+        fallback: session.phaseDurationSeconds,
+      );
+      final boundedRemaining = session.remainingSeconds.clamp(0, phaseDuration);
+      targetState = PomodoroState(
+        status: session.status,
+        phase: session.phase,
+        currentPomodoro: clampedPomodoro,
+        totalPomodoros: canonicalTotalPomodoros,
+        totalSeconds: phaseDuration,
+        remainingSeconds: boundedRemaining,
+      );
+    }
+
+    final runningOrPaused =
+        _isRunning(targetState.status) || targetState.status == PomodoroStatus.paused;
+    DateTime? phaseStartedAt = session.phaseStartedAt;
+    if (runningOrPaused && targetState.phase != null) {
+      final elapsed =
+          (targetState.totalSeconds - targetState.remainingSeconds).clamp(
+            0,
+            targetState.totalSeconds,
+          );
+      phaseStartedAt = now.subtract(Duration(seconds: elapsed));
+    }
+
+    final repaired = PomodoroSession(
+      taskId: targetItem.sourceTaskId,
+      groupId: session.groupId,
+      currentTaskId: targetItem.sourceTaskId,
+      currentTaskIndex: targetIndex,
+      totalTasks: group.tasks.length,
+      dataVersion: session.dataVersion,
+      sessionRevision: session.sessionRevision,
+      ownerDeviceId: session.ownerDeviceId,
+      status: targetState.status,
+      phase: targetState.phase,
+      currentPomodoro: targetState.currentPomodoro,
+      totalPomodoros: targetState.totalPomodoros,
+      phaseDurationSeconds: targetState.totalSeconds,
+      remainingSeconds: targetState.remainingSeconds,
+      accumulatedPausedSeconds: session.accumulatedPausedSeconds,
+      phaseStartedAt: runningOrPaused ? phaseStartedAt : null,
+      currentTaskStartedAt: targetTaskStartedAt,
+      pausedAt: targetState.status == PomodoroStatus.paused ? session.pausedAt : null,
+      lastUpdatedAt: session.lastUpdatedAt,
+      finishedAt: targetState.status == PomodoroStatus.finished
+          ? (session.finishedAt ?? now)
+          : null,
+      pauseReason: targetState.status == PomodoroStatus.paused
+          ? session.pauseReason
+          : null,
+      ownershipRequest: session.ownershipRequest,
+    );
+    return _isSameSessionSnapshot(session, repaired) ? session : repaired;
+  }
+
+  _GroupResumeProjection? _projectFromGroupTimelineWithPauseOffset(
+    TaskRunGroup group,
+    DateTime now,
+  ) {
+    final pauseOffsetSeconds = _totalPausedSecondsFromGroup(group);
+    final projectionNow = pauseOffsetSeconds > 0
+        ? now.subtract(Duration(seconds: pauseOffsetSeconds))
+        : now;
+    final projection = _projectFromGroupTimeline(group, projectionNow);
+    if (projection == null) return null;
+    if (pauseOffsetSeconds <= 0) return projection;
+    return _GroupResumeProjection(
+      taskIndex: projection.taskIndex,
+      state: projection.state,
+      taskStartedAt: projection.taskStartedAt.add(
+        Duration(seconds: pauseOffsetSeconds),
+      ),
+    );
+  }
+
+  int _phaseDurationForItemPhase(
+    TaskRunItem item,
+    PomodoroPhase? phase, {
+    required int fallback,
+  }) {
+    switch (phase) {
+      case PomodoroPhase.pomodoro:
+        return item.pomodoroMinutes * 60;
+      case PomodoroPhase.shortBreak:
+        return item.shortBreakMinutes * 60;
+      case PomodoroPhase.longBreak:
+        return item.longBreakMinutes * 60;
+      default:
+        return fallback > 0 ? fallback : item.pomodoroMinutes * 60;
+    }
+  }
+
+  bool _isSameSessionSnapshot(PomodoroSession a, PomodoroSession b) {
+    return a.taskId == b.taskId &&
+        a.groupId == b.groupId &&
+        a.currentTaskId == b.currentTaskId &&
+        a.currentTaskIndex == b.currentTaskIndex &&
+        a.totalTasks == b.totalTasks &&
+        a.dataVersion == b.dataVersion &&
+        a.sessionRevision == b.sessionRevision &&
+        a.ownerDeviceId == b.ownerDeviceId &&
+        a.status == b.status &&
+        a.phase == b.phase &&
+        a.currentPomodoro == b.currentPomodoro &&
+        a.totalPomodoros == b.totalPomodoros &&
+        a.phaseDurationSeconds == b.phaseDurationSeconds &&
+        a.remainingSeconds == b.remainingSeconds &&
+        a.accumulatedPausedSeconds == b.accumulatedPausedSeconds &&
+        a.phaseStartedAt == b.phaseStartedAt &&
+        a.currentTaskStartedAt == b.currentTaskStartedAt &&
+        a.pausedAt == b.pausedAt &&
+        a.lastUpdatedAt == b.lastUpdatedAt &&
+        a.finishedAt == b.finishedAt &&
+        a.pauseReason == b.pauseReason &&
+        _sameOwnershipRequest(a.ownershipRequest, b.ownershipRequest);
   }
 
   bool _isSessionStaleForCleanup(PomodoroSession session, DateTime now) {

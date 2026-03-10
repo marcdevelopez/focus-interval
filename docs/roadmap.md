@@ -177,6 +177,10 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           (Android+macOS logs, ~13:19–13:46 CET) did not reproduce irreversible
           sync hold in that short window, but closure is blocked until extended
           soak (>=4h) plus exact degraded-network repro PASS.
+      10/03/2026: Fix 26 follow-up implemented for cursor inconsistency on
+          reopen/owner switch: detect and repair invalid activeSession task/pomodoro
+          cursor (e.g., `currentPomodoro > totalPomodoros`) using running-group
+          timeline anchor before Run Mode hydration. Validation pending.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
@@ -293,6 +297,8 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 18 — Run Mode shows Syncing state when activeSession is missing + manual refresh (sync icon) (bug).
 - Phase 18 — Missing-session cleanup must not clear activeSession on transient
   group lookup/provider rebuild gaps; sync hold must recover without destructive clears (bug).
+- Phase 18 — Reopen/owner-switch must auto-repair invalid activeSession cursor
+  (task/pomodoro mismatch, e.g. `2/1`) and land on the correct running task/time (bug).
 - ~~Phase 18 — Fix 26 reopened hardening (v4): bounded foreground retry +
   non-destructive missing-session clear with repo recheck + resume listener
   stability (validation pending exact repro on single-device degraded network).~~

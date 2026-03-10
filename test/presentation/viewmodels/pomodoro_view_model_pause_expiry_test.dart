@@ -163,6 +163,27 @@ TaskRunItem _buildItem() {
   );
 }
 
+TaskRunItem _buildTaskItem({
+  required String id,
+  required String name,
+  required int pomodoroMinutes,
+  required int totalPomodoros,
+}) {
+  return TaskRunItem(
+    sourceTaskId: id,
+    name: name,
+    presetId: null,
+    pomodoroMinutes: pomodoroMinutes,
+    shortBreakMinutes: 5,
+    longBreakMinutes: 15,
+    totalPomodoros: totalPomodoros,
+    longBreakInterval: 4,
+    startSound: const SelectedSound.builtIn('default_chime'),
+    startBreakSound: const SelectedSound.builtIn('default_chime_break'),
+    finishTaskSound: const SelectedSound.builtIn('default_chime_finish'),
+  );
+}
+
 TaskRunGroup _buildRunningGroup({
   required String id,
   required DateTime start,
@@ -187,6 +208,68 @@ TaskRunGroup _buildRunningGroup({
     totalTasks: 1,
     totalPomodoros: 2,
     totalDurationSeconds: item.durationSeconds(includeFinalBreak: true),
+    updatedAt: start,
+  );
+}
+
+TaskRunGroup _buildTimelineRunningGroup({
+  required String id,
+  required DateTime start,
+}) {
+  final tasks = [
+    _buildTaskItem(
+      id: '8399506a-dbbd-4397-aa82-b3a0c96decf8',
+      name: 'Proyecto Focus Interval (mañana)',
+      pomodoroMinutes: 25,
+      totalPomodoros: 5,
+    ),
+    _buildTaskItem(
+      id: '654e32e7-a5a7-49a2-b6ff-08e76025e8a7',
+      name: 'Almorzar',
+      pomodoroMinutes: 60,
+      totalPomodoros: 1,
+    ),
+    _buildTaskItem(
+      id: '802f7fe0-8294-4057-aa98-68e2e5efb8dd',
+      name: 'Trading',
+      pomodoroMinutes: 25,
+      totalPomodoros: 4,
+    ),
+    _buildTaskItem(
+      id: '7b75ec77-da9a-47b7-bf72-4c24f7fb2849',
+      name: 'Impuestos',
+      pomodoroMinutes: 25,
+      totalPomodoros: 2,
+    ),
+    _buildTaskItem(
+      id: '8108e3ef-b142-4a58-9ee1-3092ffded235',
+      name: 'Proyecto Focus Interval (tarde)',
+      pomodoroMinutes: 25,
+      totalPomodoros: 6,
+    ),
+  ];
+  final totalDurationSeconds = groupDurationSecondsByMode(
+    tasks,
+    TaskRunIntegrityMode.individual,
+  );
+  return TaskRunGroup(
+    id: id,
+    ownerUid: 'user-1',
+    dataVersion: kCurrentDataVersion,
+    integrityMode: TaskRunIntegrityMode.individual,
+    tasks: tasks,
+    createdAt: start,
+    scheduledStartTime: null,
+    scheduledByDeviceId: 'macOS-c7c721ea-7217-47a1-890a-d7787091efa5',
+    noticeSentAt: null,
+    noticeSentByDeviceId: null,
+    actualStartTime: start,
+    theoreticalEndTime: start.add(Duration(seconds: totalDurationSeconds)),
+    status: TaskRunStatus.running,
+    noticeMinutes: 5,
+    totalTasks: tasks.length,
+    totalPomodoros: tasks.fold<int>(0, (sum, item) => sum + item.totalPomodoros),
+    totalDurationSeconds: totalDurationSeconds,
     updatedAt: start,
   );
 }
@@ -217,6 +300,35 @@ PomodoroSession _buildPausedSession({
     lastUpdatedAt: now,
     finishedAt: null,
     pauseReason: 'user',
+  );
+}
+
+PomodoroSession _buildInvalidCursorSession({
+  required String groupId,
+  required DateTime now,
+}) {
+  return PomodoroSession(
+    taskId: '654e32e7-a5a7-49a2-b6ff-08e76025e8a7',
+    groupId: groupId,
+    currentTaskId: '654e32e7-a5a7-49a2-b6ff-08e76025e8a7',
+    currentTaskIndex: 1,
+    totalTasks: 5,
+    dataVersion: kCurrentDataVersion,
+    sessionRevision: 22,
+    ownerDeviceId: 'other-device',
+    status: PomodoroStatus.pomodoroRunning,
+    phase: PomodoroPhase.pomodoro,
+    currentPomodoro: 2,
+    totalPomodoros: 1,
+    phaseDurationSeconds: 60 * 60,
+    remainingSeconds: 1164,
+    accumulatedPausedSeconds: 0,
+    phaseStartedAt: now.subtract(const Duration(minutes: 39)),
+    currentTaskStartedAt: now.subtract(const Duration(minutes: 39)),
+    pausedAt: null,
+    lastUpdatedAt: now,
+    finishedAt: null,
+    pauseReason: null,
   );
 }
 
@@ -261,5 +373,44 @@ void main() {
     expect(result, PomodoroGroupLoadResult.loaded);
     expect(groupRepo.saved, isEmpty);
     expect((await groupRepo.getById(group.id))?.status, TaskRunStatus.running);
+  });
+
+  test('loadGroup repairs invalid task cursor and lands on expected running task', () async {
+    final now = DateTime.now();
+    final group = _buildTimelineRunningGroup(
+      id: 'group-cursor-repair',
+      start: now.subtract(const Duration(minutes: 230)),
+    );
+    final session = _buildInvalidCursorSession(groupId: group.id, now: now);
+
+    final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+    final sessionRepo = FakePomodoroSessionRepository(session);
+    final appModeService = AppModeService.memory();
+
+    final container = ProviderContainer(
+      overrides: [
+        taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+        pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+        appModeServiceProvider.overrideWithValue(appModeService),
+        soundServiceProvider.overrideWithValue(FakeSoundService()),
+        timeSyncServiceProvider.overrideWithValue(
+          TimeSyncService(enabled: false),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container.read(appModeProvider.notifier).setAccount();
+    await _pumpQueue();
+
+    final vm = container.read(pomodoroViewModelProvider.notifier);
+    final result = await vm.loadGroup(group.id);
+    final state = container.read(pomodoroViewModelProvider);
+
+    expect(result, PomodoroGroupLoadResult.loaded);
+    expect(vm.currentTaskIndex, 2);
+    expect(vm.currentItem?.sourceTaskId, '802f7fe0-8294-4057-aa98-68e2e5efb8dd');
+    expect(state.totalPomodoros, 4);
+    expect(state.currentPomodoro, inInclusiveRange(1, 4));
   });
 }

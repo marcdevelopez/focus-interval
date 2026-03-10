@@ -9937,3 +9937,53 @@ After `tryClaimSession` fails and `publishSession` is blocked, immediately fetch
 - Deploy and run the same degraded-network repro (macOS brief network cut during Android ownership takeover).
 - Verify macOS auto-recovers within ~5–8 seconds without any manual intervention.
 - If stable: close P0-F26-001 and P0-F26-002.
+
+---
+
+# 🔹 Block 559 — Fix 26 follow-up: cursor repair on reopen/owner switch (10/03/2026)
+
+**Date:** 10/03/2026  
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`  
+**Scope:** Prevent reopening Run Mode in the wrong task/time when `activeSession/current`
+persists an invalid cursor (e.g. `currentPomodoro > totalPomodoros`).
+
+### ✔ Work completed:
+
+- Implemented active-session cursor repair in
+  `lib/presentation/viewmodels/pomodoro_view_model.dart`:
+  - Added repair path in `_sanitizeActiveSession(...)`.
+  - Added repair path in `_subscribeToRemoteSession(...)` stream callback.
+  - New helpers:
+    - `_repairInconsistentSessionCursor(...)`
+    - `_projectFromGroupTimelineWithPauseOffset(...)`
+    - `_phaseDurationForItemPhase(...)`
+    - `_isSameSessionSnapshot(...)`
+- Repair behavior:
+  - Detects invalid session cursor (taskId/index mismatch, task total mismatch,
+    out-of-range pomodoro such as `2/1`).
+  - Reprojects against the running group timeline anchor and rebuilds a coherent
+    session snapshot for hydration.
+  - If local device is owner in Account Mode, republishes repaired snapshot to
+    Firestore to converge remote state.
+- Added regression test:
+  - `loadGroup repairs invalid task cursor and lands on expected running task`
+  - file:
+    `test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart`
+
+### 🧪 Tests:
+
+- `dart analyze lib/presentation/viewmodels/pomodoro_view_model.dart test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
+- `flutter analyze` → PASS
+
+### ⚠️ Issues found:
+
+- Manual multi-device validation is still pending for the exact owner-switch reopen
+  path on Android RMX3771 + macOS.
+
+### 🎯 Next steps:
+
+- Execute post-fix release logs on Android RMX3771 and macOS.
+- Confirm reopen lands on the correct task (`Trading`) and no `Pomodoro 2 of 1`
+  reappears.
+- If pass, close `P0-F26-003` in validation ledger and checklist.

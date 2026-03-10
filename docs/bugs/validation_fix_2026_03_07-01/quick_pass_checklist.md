@@ -192,6 +192,17 @@ flutter run -v --debug -d chrome --dart-define=APP_ENV=prod \
 - [ ] Run exact repro + >=4h soak on the candidate commit before closure.
 - [ ] Confirm at least one `FirebaseAuth` id-token refresh in logs without indefinite `Syncing session...`.
 
+## 2026-03-10 Follow-up — invalid cursor after reopen/owner switch
+
+- [x] Reproduced inconsistent persisted cursor (`currentTaskIndex=1`, `currentPomodoro=2`, `totalPomodoros=1`) with running group still active.
+- [x] Implemented cursor repair in ViewModel sanitize + stream paths (repair by running-group timeline anchor when cursor is invalid).
+- [x] Added regression test for invalid cursor repair on `loadGroup`.
+- [x] `dart analyze` (targeted files) PASS.
+- [x] `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS.
+- [x] `flutter analyze` PASS.
+- [ ] Android RMX3771 + macOS manual validation PASS with post-fix logs.
+- [ ] Confirm reopened session lands on correct task (`Trading`) and coherent pomodoro index (no `2/1`).
+
 ## Fix 27 Evidence
 - iOS log: `2026_03_07_fix27v2_ios_debug.log` line 51016 — `Auto-start opening TimerScreen` at 22:49:03 for group `c2b7f11d`.
 - Chrome log: `2026_03_07_fix27v2_chrome_debug.log` lines 2086–2090 — `Active session change route=/tasks` → `Attempting auto-open` → `Auto-open confirmed in timer route=/timer/c2b7f11d`.
