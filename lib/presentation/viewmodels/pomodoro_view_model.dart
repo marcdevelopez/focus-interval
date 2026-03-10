@@ -1406,7 +1406,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
           previousSession: previousSession,
         );
         if (!shouldApplyTimeline) {
-          if (ownershipMetaChanged) {
+          if (ownershipMetaChanged || wasMissing) {
             _notifySessionMetaChanged();
           }
           return;
