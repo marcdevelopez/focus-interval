@@ -25,8 +25,7 @@ class FakeTaskRunGroupRepository implements TaskRunGroupRepository {
   }
 
   @override
-  Stream<List<TaskRunGroup>> watchAll() =>
-      Stream.value(_store.values.toList());
+  Stream<List<TaskRunGroup>> watchAll() => Stream.value(_store.values.toList());
 
   @override
   Future<List<TaskRunGroup>> getAll() async => _store.values.toList();
@@ -169,8 +168,8 @@ class FakeSoundService implements SoundService {
 
 class FakeTimeSyncService extends TimeSyncService {
   FakeTimeSyncService({Duration? offset})
-      : _offsetOverride = offset,
-        super(enabled: false);
+    : _offsetOverride = offset,
+      super(enabled: false);
 
   Duration? _offsetOverride;
   int refreshCalls = 0;
@@ -209,10 +208,7 @@ TaskRunItem _buildItem() {
   );
 }
 
-TaskRunGroup _buildRunningGroup({
-  required String id,
-  required DateTime start,
-}) {
+TaskRunGroup _buildRunningGroup({required String id, required DateTime start}) {
   final item = _buildItem();
   return TaskRunGroup(
     id: id,
@@ -229,6 +225,64 @@ TaskRunGroup _buildRunningGroup({
     totalTasks: 1,
     totalPomodoros: 2,
     totalDurationSeconds: 3600,
+    updatedAt: start,
+    actualStartTime: start,
+  );
+}
+
+TaskRunGroup _buildTwoTaskRunningGroup({
+  required String id,
+  required DateTime start,
+}) {
+  const taskOne = TaskRunItem(
+    sourceTaskId: 'task-1',
+    name: 'Task one',
+    presetId: null,
+    pomodoroMinutes: 25,
+    shortBreakMinutes: 5,
+    longBreakMinutes: 15,
+    totalPomodoros: 1,
+    longBreakInterval: 2,
+    startSound: SelectedSound.builtIn('default_chime'),
+    startBreakSound: SelectedSound.builtIn('default_chime_break'),
+    finishTaskSound: SelectedSound.builtIn('default_chime_finish'),
+  );
+  const taskTwo = TaskRunItem(
+    sourceTaskId: 'task-2',
+    name: 'Task two',
+    presetId: null,
+    pomodoroMinutes: 25,
+    shortBreakMinutes: 5,
+    longBreakMinutes: 15,
+    totalPomodoros: 2,
+    longBreakInterval: 2,
+    startSound: SelectedSound.builtIn('default_chime'),
+    startBreakSound: SelectedSound.builtIn('default_chime_break'),
+    finishTaskSound: SelectedSound.builtIn('default_chime_finish'),
+  );
+  final tasks = const [taskOne, taskTwo];
+  final totalDurationSeconds = groupDurationSecondsByMode(
+    tasks,
+    TaskRunIntegrityMode.shared,
+  );
+  return TaskRunGroup(
+    id: id,
+    ownerUid: 'user-1',
+    dataVersion: kCurrentDataVersion,
+    integrityMode: TaskRunIntegrityMode.shared,
+    tasks: tasks,
+    createdAt: start,
+    scheduledStartTime: null,
+    scheduledByDeviceId: 'device-1',
+    theoreticalEndTime: start.add(Duration(seconds: totalDurationSeconds)),
+    status: TaskRunStatus.running,
+    noticeMinutes: null,
+    totalTasks: tasks.length,
+    totalPomodoros: tasks.fold<int>(
+      0,
+      (sum, item) => sum + item.totalPomodoros,
+    ),
+    totalDurationSeconds: totalDurationSeconds,
     updatedAt: start,
     actualStartTime: start,
   );
@@ -315,60 +369,65 @@ void main() {
 
     sessionRepo.emit(null);
     await _pumpQueue();
+    await Future<void>.delayed(const Duration(seconds: 4));
+    await _pumpQueue();
 
     expect(vm.isSessionMissingWhileRunning, isTrue);
   });
 
-  test('Account without timeSync does not publish and forces refresh', () async {
-    final now = DateTime.now();
-    final deviceInfo = DeviceInfoService.ephemeral();
-    final group = _buildRunningGroup(id: 'group-1', start: now);
-    final session = _buildRunningSession(
-      groupId: group.id,
-      taskId: group.tasks.first.sourceTaskId,
-      ownerDeviceId: deviceInfo.deviceId,
-      now: now,
-    );
+  test(
+    'Account without timeSync does not publish and forces refresh',
+    () async {
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(id: 'group-1', start: now);
+      final session = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        ownerDeviceId: deviceInfo.deviceId,
+        now: now,
+      );
 
-    final groupRepo = FakeTaskRunGroupRepository()..seed(group);
-    final sessionRepo = FakePomodoroSessionRepository(session);
-    final appModeService = AppModeService.memory();
-    final timeSyncService = FakeTimeSyncService(offset: null);
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+      final timeSyncService = FakeTimeSyncService(offset: null);
 
-    final container = ProviderContainer(
-      overrides: [
-        taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
-        pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
-        appModeServiceProvider.overrideWithValue(appModeService),
-        deviceInfoServiceProvider.overrideWithValue(deviceInfo),
-        soundServiceProvider.overrideWithValue(FakeSoundService()),
-        timeSyncServiceProvider.overrideWithValue(timeSyncService),
-      ],
-    );
-    addTearDown(() {
-      sessionRepo.dispose();
-      container.dispose();
-    });
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(timeSyncService),
+        ],
+      );
+      addTearDown(() {
+        sessionRepo.dispose();
+        container.dispose();
+      });
 
-    await container.read(appModeProvider.notifier).setAccount();
-    await _pumpQueue();
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
 
-    container.listen<PomodoroState>(pomodoroViewModelProvider, (_, __) {});
-    final vm = container.read(pomodoroViewModelProvider.notifier);
-    final result = await vm.loadGroup(group.id);
-    expect(result, PomodoroGroupLoadResult.loaded);
-    await _pumpQueue();
+      container.listen<PomodoroState>(pomodoroViewModelProvider, (_, __) {});
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
 
-    sessionRepo.publishCount = 0;
-    timeSyncService.refreshCalls = 0;
-    timeSyncService.forcedRefreshCalls = 0;
+      sessionRepo.publishCount = 0;
+      timeSyncService.refreshCalls = 0;
+      timeSyncService.forcedRefreshCalls = 0;
 
-    vm.pause();
-    await _pumpQueue();
+      vm.pause();
+      await _pumpQueue();
 
-    expect(sessionRepo.publishCount, 0);
-    expect(timeSyncService.forcedRefreshCalls, greaterThan(0));
-  });
+      expect(sessionRepo.publishCount, 0);
+      expect(timeSyncService.forcedRefreshCalls, greaterThan(0));
+    },
+  );
 
   test('Account session render ignores machine stream updates', () async {
     final now = DateTime.now();
@@ -422,4 +481,106 @@ void main() {
     expect(after.status.isActiveExecution, isTrue);
     expect(after.status, isNot(PomodoroStatus.idle));
   });
+
+  test(
+    'owner handoff applies timeline even when updatedAt regresses',
+    () async {
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildTwoTaskRunningGroup(
+        id: 'group-owner-handoff-regressed-time',
+        start: now.subtract(const Duration(minutes: 30)),
+      );
+
+      final firstTask = group.tasks[0];
+      final secondTask = group.tasks[1];
+      final sessionBeforeHandoff = PomodoroSession(
+        taskId: firstTask.sourceTaskId,
+        groupId: group.id,
+        currentTaskId: firstTask.sourceTaskId,
+        currentTaskIndex: 0,
+        totalTasks: group.tasks.length,
+        dataVersion: kCurrentDataVersion,
+        sessionRevision: 33,
+        ownerDeviceId: deviceInfo.deviceId,
+        status: PomodoroStatus.pomodoroRunning,
+        phase: PomodoroPhase.pomodoro,
+        currentPomodoro: 1,
+        totalPomodoros: firstTask.totalPomodoros,
+        phaseDurationSeconds: firstTask.pomodoroMinutes * 60,
+        remainingSeconds: 240,
+        accumulatedPausedSeconds: 0,
+        phaseStartedAt: now.subtract(const Duration(minutes: 4)),
+        currentTaskStartedAt: now.subtract(const Duration(minutes: 4)),
+        pausedAt: null,
+        lastUpdatedAt: now.add(const Duration(minutes: 2)),
+        finishedAt: null,
+        pauseReason: null,
+      );
+      final sessionAfterHandoff = PomodoroSession(
+        taskId: secondTask.sourceTaskId,
+        groupId: group.id,
+        currentTaskId: secondTask.sourceTaskId,
+        currentTaskIndex: 1,
+        totalTasks: group.tasks.length,
+        dataVersion: kCurrentDataVersion,
+        sessionRevision: 33,
+        ownerDeviceId: 'android-owner',
+        status: PomodoroStatus.shortBreakRunning,
+        phase: PomodoroPhase.shortBreak,
+        currentPomodoro: 1,
+        totalPomodoros: secondTask.totalPomodoros,
+        phaseDurationSeconds: secondTask.shortBreakMinutes * 60,
+        remainingSeconds: 180,
+        accumulatedPausedSeconds: 0,
+        phaseStartedAt: now.subtract(const Duration(minutes: 1)),
+        currentTaskStartedAt: now.subtract(const Duration(minutes: 6)),
+        pausedAt: null,
+        lastUpdatedAt: now,
+        finishedAt: null,
+        pauseReason: null,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(sessionBeforeHandoff);
+      final appModeService = AppModeService.memory();
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      addTearDown(() {
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      container.listen<PomodoroState>(pomodoroViewModelProvider, (_, __) {});
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      sessionRepo.emit(sessionAfterHandoff);
+      await _pumpQueue();
+
+      final state = container.read(pomodoroViewModelProvider);
+      expect(vm.currentTaskIndex, 1);
+      expect(vm.currentItem?.sourceTaskId, secondTask.sourceTaskId);
+      expect(vm.activeSessionForCurrentGroup, isNotNull);
+      expect(vm.activeSessionForCurrentGroup?.ownerDeviceId, 'android-owner');
+      expect(vm.isSessionMissingWhileRunning, isFalse);
+      expect(state.status, PomodoroStatus.shortBreakRunning);
+    },
+  );
 }

@@ -10115,3 +10115,36 @@ but `activeSession/current.status=finished` with stale cursor data.
 ### ⚠️ Notes:
 
 - `ios/Flutter/AppFrameworkInfo.plist` remains locally modified and intentionally excluded from all staging/commits.
+
+# 🔹 Block 563 — Fix 26 reopen: owner-handoff timestamp regression gate (10/03/2026)
+
+**Date:** 10/03/2026  
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`  
+**Scope:** Address mirror `Syncing session...` latch when stream is alive but ViewModel timeline gate skips remote snapshots after owner handoff.
+
+### ✔ Work completed:
+
+- Reviewed incident logs reported as current:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-10_fix26_postfix_250c24d_macos_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-10_fix26_postfix_250c24d_android_RMX3771_diag.log`
+- Confirmed stream stayed alive (`[RunModeDiag] Active session change` every ~30s, owner Android), while UI still showed `Syncing session...`.
+- Added owner-handoff safeguard in timeline gate:
+  - `lib/presentation/viewmodels/pomodoro_view_model.dart`
+  - `_shouldApplySessionTimeline(...)` now accepts `previousSession` and always applies first snapshot when `ownerDeviceId` changes (prevents lockout when `lastUpdatedAt` regresses across devices).
+  - Applied in both stream listener path and explicit resync path.
+- Added regression test scenario with dynamic stream:
+  - `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+  - New test: `owner handoff applies timeline even when updatedAt regresses`.
+- Updated existing debounce-aware expectation:
+  - `missing session holds sync when lastUpdatedAt is null` now waits for debounce before asserting latch.
+
+### 🧪 Validation run (local):
+
+- `dart analyze lib/presentation/viewmodels/pomodoro_view_model.dart test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
+
+### ⚠️ Notes:
+
+- `ios/Flutter/AppFrameworkInfo.plist` remains locally modified and intentionally excluded.
+- Device validation pending on release logs after this patch.
