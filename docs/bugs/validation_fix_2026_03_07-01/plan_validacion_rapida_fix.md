@@ -449,3 +449,33 @@ Pending validation:
   1) timer lands on projected running task/time (expected `Trading` segment),
   2) no indefinite `Syncing session...`,
   3) auto-start no longer aborts with `state=finished` for this scenario.
+
+## 2026-03-10 Follow-up v3: no-owner gap with stale `finished` session
+
+Status: **Implemented, pending device validation**
+
+Problem observed after v2:
+- Even with correct timer projection, Firestore still kept stale:
+  - `activeSession/current.status=finished`
+  - `ownerDeviceId=<old device id>`
+  - stale `lastUpdatedAt`
+- Result: both clients rendered as mirror/no-owner even while group stayed running.
+
+Fix implemented:
+- In `_sanitizeActiveSession`, after cursor repair:
+  - when original snapshot is non-active (`finished`), stale, and repaired snapshot is active,
+    claim recovery ownership on current device.
+  - flow: clear stale non-active session -> `tryClaimSession` with recovered active snapshot
+    and bumped `sessionRevision`.
+  - if claim race is lost, fetch fresh snapshot from server and continue safely.
+
+Validation executed:
+- `dart analyze lib/presentation/viewmodels/pomodoro_view_model.dart test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS
+- Regression test now asserts recovered session owner equals current device id.
+
+Pending validation:
+- Re-run Android (`RMX3771`) + macOS and confirm:
+  1) no-owner gap is gone (one owner selected),
+  2) Firestore `activeSession/current` leaves stale `finished` payload,
+  3) Run Mode remains aligned on both devices without manual Firestore edits.

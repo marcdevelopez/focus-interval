@@ -2894,6 +2894,17 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         await _sessionRepo.clearSessionIfStale(now: now);
         return null;
       }
+      if (!session.status.isActiveExecution &&
+          _isGroupExpired(group, now) &&
+          _isSessionStaleForCleanup(session, now)) {
+        final updated = group.copyWith(
+          status: TaskRunStatus.completed,
+          updatedAt: now,
+        );
+        await _groupRepo.save(updated);
+        await _sessionRepo.clearSessionIfStale(now: now);
+        return null;
+      }
       final repaired = _repairInconsistentSessionCursor(session, group, now);
       if (!identical(repaired, session)) {
         if (kDebugMode) {
@@ -2906,6 +2917,38 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
           );
         }
         final appMode = ref.read(appModeProvider);
+        if (appMode == AppMode.account &&
+            !session.status.isActiveExecution &&
+            repaired.status.isActiveExecution &&
+            repaired.ownerDeviceId != _deviceInfo.deviceId &&
+            !_isGroupExpired(group, now) &&
+            _isSessionStaleForCleanup(session, now)) {
+          final claimSession = _buildOwnedRecoveredSession(
+            repaired,
+            ownerDeviceId: _deviceInfo.deviceId,
+            sessionRevision: _nextSessionRevision(base: session),
+            now: now,
+          );
+          try {
+            await _sessionRepo.clearSessionIfStale(now: now);
+            final claimed = await _sessionRepo.tryClaimSession(claimSession);
+            if (claimed) {
+              if (kDebugMode) {
+                debugPrint(
+                  '[ActiveSession] Claimed stale non-active session during '
+                  'sanitize recovery group=${group.id} owner=${claimSession.ownerDeviceId}',
+                );
+              }
+              return claimSession;
+            }
+            final fresh = await _fetchSessionSnapshot(preferServer: true);
+            if (fresh != null) {
+              return fresh;
+            }
+          } catch (_) {
+            // Keep local repaired recovery if claim fails transiently.
+          }
+        }
         if (appMode == AppMode.account &&
             repaired.ownerDeviceId == _deviceInfo.deviceId) {
           try {
@@ -3101,6 +3144,42 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         a.finishedAt == b.finishedAt &&
         a.pauseReason == b.pauseReason &&
         _sameOwnershipRequest(a.ownershipRequest, b.ownershipRequest);
+  }
+
+  PomodoroSession _buildOwnedRecoveredSession(
+    PomodoroSession session, {
+    required String ownerDeviceId,
+    required int sessionRevision,
+    required DateTime now,
+  }) {
+    return PomodoroSession(
+      taskId: session.taskId,
+      groupId: session.groupId,
+      currentTaskId: session.currentTaskId,
+      currentTaskIndex: session.currentTaskIndex,
+      totalTasks: session.totalTasks,
+      dataVersion: session.dataVersion,
+      sessionRevision: sessionRevision,
+      ownerDeviceId: ownerDeviceId,
+      status: session.status,
+      phase: session.phase,
+      currentPomodoro: session.currentPomodoro,
+      totalPomodoros: session.totalPomodoros,
+      phaseDurationSeconds: session.phaseDurationSeconds,
+      remainingSeconds: session.remainingSeconds,
+      accumulatedPausedSeconds: session.accumulatedPausedSeconds,
+      phaseStartedAt: session.phaseStartedAt,
+      currentTaskStartedAt: session.currentTaskStartedAt,
+      pausedAt: session.status == PomodoroStatus.paused ? session.pausedAt : null,
+      lastUpdatedAt: now,
+      finishedAt: session.status == PomodoroStatus.finished
+          ? (session.finishedAt ?? now)
+          : null,
+      pauseReason: session.status == PomodoroStatus.paused
+          ? session.pauseReason
+          : null,
+      ownershipRequest: null,
+    );
   }
 
   bool _isSessionStaleForCleanup(PomodoroSession session, DateTime now) {

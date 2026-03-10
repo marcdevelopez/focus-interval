@@ -10028,3 +10028,51 @@ but `activeSession/current.status=finished` with stale cursor data.
 - Run clean reopen/install packet with release logs on macOS + RMX3771.
 - Confirm no repeated `Auto-start abort (state not idle) state=finished`.
 - Confirm timer lands on projected running segment (`Trading`) and no indefinite syncing hold.
+
+---
+
+# 🔹 Block 561 — Fix 26 follow-up v3: stale finished owner recovery + expiry safety (10/03/2026)
+
+**Date:** 10/03/2026  
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`  
+**Scope:** Close the no-owner gap when Firestore keeps a stale `finished` activeSession while group remains `running`, without forcing running if timeline is already expired.
+
+### ✔ Work completed:
+
+- Added stale non-active ownership recovery in
+  `lib/presentation/viewmodels/pomodoro_view_model.dart`:
+  - During sanitize, after cursor repair, when original snapshot is non-active/stale
+    and repaired snapshot is active:
+    - clear stale session (`clearSessionIfStale`)
+    - attempt `tryClaimSession` with rebuilt active snapshot and bumped revision.
+  - If claim loses race, fetch server snapshot and continue safely.
+- Added expiry safety guard:
+  - if group is already expired by timeline (`actualStartTime` + duration + pause offset via `theoreticalEndTime`), sanitize **does not reclaim** owner;
+    it completes the group + clears stale session.
+- Added helper:
+  - `_buildOwnedRecoveredSession(...)`
+
+### 🧪 Tests:
+
+- Updated regression test file:
+  `test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart`
+  - existing: `loadGroup repairs finished invalid cursor when group is still running`
+    now asserts recovered owner is current device.
+  - new: `expired running-group + stale finished session is completed instead of re-claimed`
+- Validation:
+  - `dart analyze lib/presentation/viewmodels/pomodoro_view_model.dart test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
+  - `flutter analyze` → PASS
+
+### ⚠️ Issues found:
+
+- Device validation still pending for this v3 behavior on Android RMX3771 + macOS.
+- `ios/Flutter/AppFrameworkInfo.plist` remains locally modified and intentionally excluded.
+
+### 🎯 Next steps:
+
+- Run new release logs on RMX3771 + macOS with this commit.
+- Confirm:
+  1) stale `finished` session is replaced by an active owned session when group is still running;
+  2) no-owner gap is gone;
+  3) if group is truly expired, it completes (no forced running reclaim).

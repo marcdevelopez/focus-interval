@@ -92,6 +92,8 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
   FakePomodoroSessionRepository(this._session);
 
   final PomodoroSession? _session;
+  int tryClaimCalls = 0;
+  int clearSessionIfStaleCalls = 0;
 
   @override
   Stream<PomodoroSession?> watchSession() => Stream.value(_session);
@@ -105,13 +107,18 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
   Future<void> publishSession(PomodoroSession session) async {}
 
   @override
-  Future<bool> tryClaimSession(PomodoroSession session) async => true;
+  Future<bool> tryClaimSession(PomodoroSession session) async {
+    tryClaimCalls += 1;
+    return true;
+  }
 
   @override
   Future<void> clearSessionAsOwner() async {}
 
   @override
-  Future<void> clearSessionIfStale({required DateTime now}) async {}
+  Future<void> clearSessionIfStale({required DateTime now}) async {
+    clearSessionIfStaleCalls += 1;
+  }
 
   @override
   Future<void> clearSessionIfGroupNotRunning() async {}
@@ -355,8 +362,8 @@ PomodoroSession _buildFinishedInvalidCursorSession({
     phaseStartedAt: null,
     currentTaskStartedAt: now.subtract(const Duration(minutes: 61)),
     pausedAt: null,
-    lastUpdatedAt: now,
-    finishedAt: now,
+    lastUpdatedAt: now.subtract(const Duration(minutes: 5)),
+    finishedAt: now.subtract(const Duration(minutes: 5)),
     pauseReason: null,
   );
 }
@@ -479,6 +486,7 @@ void main() {
       final vm = container.read(pomodoroViewModelProvider.notifier);
       final result = await vm.loadGroup(group.id);
       final state = container.read(pomodoroViewModelProvider);
+      final deviceId = container.read(deviceInfoServiceProvider).deviceId;
 
       expect(result, PomodoroGroupLoadResult.loaded);
       expect(vm.currentTaskIndex, 2);
@@ -487,6 +495,54 @@ void main() {
       expect(state.status, isNot(PomodoroStatus.finished));
       expect(state.totalPomodoros, 4);
       expect(state.currentPomodoro, inInclusiveRange(1, 4));
+      expect(vm.activeSessionForCurrentGroup?.ownerDeviceId, deviceId);
+      expect(vm.isOwnerForCurrentSession, isTrue);
+    },
+  );
+
+  test(
+    'expired running-group + stale finished session is completed instead of re-claimed',
+    () async {
+      final now = DateTime.now();
+      final group = _buildTimelineRunningGroup(
+        id: 'group-expired-finished-stale',
+        start: now.subtract(const Duration(hours: 11)),
+      );
+      final session = _buildFinishedInvalidCursorSession(
+        groupId: group.id,
+        now: now,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            TimeSyncService(enabled: false),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      final reloadedGroup = await groupRepo.getById(group.id);
+
+      expect(result, PomodoroGroupLoadResult.loaded);
+      expect(reloadedGroup?.status, TaskRunStatus.completed);
+      expect(vm.activeSessionForCurrentGroup, isNull);
+      expect(vm.isOwnerForCurrentSession, isFalse);
+      expect(sessionRepo.tryClaimCalls, 0);
+      expect(sessionRepo.clearSessionIfStaleCalls, greaterThanOrEqualTo(1));
     },
   );
 }

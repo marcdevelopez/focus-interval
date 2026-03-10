@@ -185,6 +185,10 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           `finished` activeSession mismatch on reopen: sanitize/repair now also
           reprojects non-active inconsistent sessions to the current running
           timeline segment. Validation pending.
+      10/03/2026: Fix 26 follow-up v3 implemented for stale non-active owner
+          recovery: when `running` group coexists with stale `finished` session,
+          sanitize can claim a rebuilt active snapshot on current device; guard
+          added to avoid reclaim if group timeline is already expired. Validation pending.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
