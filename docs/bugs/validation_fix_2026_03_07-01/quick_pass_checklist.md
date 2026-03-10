@@ -171,6 +171,27 @@ flutter run -v --debug -d chrome --dart-define=APP_ENV=prod \
   - Fix 27 and `418c75f` preserved.
 - Next step: Re-validate Fix 26 exact repro under `4195ef1`.
 
+## 2026-03-10 Rollback Re-validation (partial logs, `4195ef1`)
+
+- Evidence:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_10_fix26_observation_partial_android_4195ef1.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_10_fix26_observation_partial_macos_4195ef1.log`
+- [x] Android partial run analyzed (13:19–13:42 CET).
+- [x] macOS partial run analyzed (13:19–13:42 CET).
+- [x] No `Missing snapshot; clearing session` found in rollback partial logs.
+- [x] Resume flow reached `Resync start (resume/post-resume)` and recovered with continuous snapshots.
+- [x] No irrecoverable `Syncing session...` reproduced in this partial window.
+- [ ] Extended stability soak completed on rollback commit `4195ef1` (minimum target: >=4h before closure).
+- [ ] Exact degraded-network repro packet completed end-to-end (required before closure).
+
+## Mandatory guardrails before next Fix 26 code changes
+
+- [ ] Do not close/rebind `_sessionSub` from `PomodoroViewModel.build()`.
+- [ ] Keep listener-lifecycle changes isolated in a dedicated commit (no mixed UI/routing changes).
+- [ ] Add/update targeted regression test for provider rebuild/auth-refresh listener continuity.
+- [ ] Run exact repro + >=4h soak on the candidate commit before closure.
+- [ ] Confirm at least one `FirebaseAuth` id-token refresh in logs without indefinite `Syncing session...`.
+
 ## Fix 27 Evidence
 - iOS log: `2026_03_07_fix27v2_ios_debug.log` line 51016 — `Auto-start opening TimerScreen` at 22:49:03 for group `c2b7f11d`.
 - Chrome log: `2026_03_07_fix27v2_chrome_debug.log` lines 2086–2090 — `Active session change route=/tasks` → `Attempting auto-open` → `Auto-open confirmed in timer route=/timer/c2b7f11d`.

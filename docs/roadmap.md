@@ -173,6 +173,10 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           `418c75f` (TimeSync guard) confirmed uninvolved.
           Rollback to `961f7eb` baseline for VM + repository files (commit `4195ef1`).
           Fix 27 and `418c75f` preserved. Fix 26 reopened — re-validation required.
+      10/03/2026: Rollback partial re-validation on commit `4195ef1`
+          (Android+macOS logs, ~13:19–13:46 CET) did not reproduce irreversible
+          sync hold in that short window, but closure is blocked until extended
+          soak (>=4h) plus exact degraded-network repro PASS.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling

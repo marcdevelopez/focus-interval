@@ -84,6 +84,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   Timer? _pausedHeartbeatTimer;
   Timer? _inactiveResyncTimer;
   Timer? _postResumeResyncTimer;
+  Timer? _sessionMissingLatchTimer;
   String? _remoteOwnerId;
   PomodoroSession? _remoteSession;
   PomodoroSession? _latestSession;
@@ -155,6 +156,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       _pausedHeartbeatTimer?.cancel();
       _inactiveResyncTimer?.cancel();
       _postResumeResyncTimer?.cancel();
+      _sessionMissingLatchTimer?.cancel();
       _stopForegroundService();
       _keepAliveLink?.close();
       _keepAliveLink = null;
@@ -176,6 +178,8 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     } else {
       _clearSessionSnapshotTracking();
     }
+    _sessionMissingLatchTimer?.cancel();
+    _sessionMissingLatchTimer = null;
     _sessionMissingWhileRunning = false;
     _syncOptimisticOwnershipRequest(session);
     _awaitingSessionRevision = null;
@@ -1162,8 +1166,26 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     final session = _buildCurrentSessionSnapshot(now);
     if (session == null) return;
     final claimed = await _sessionRepo.tryClaimSession(session);
-    if (!claimed) {
-      await _sessionRepo.publishSession(session);
+    if (claimed) {
+      _syncPausedHeartbeat();
+      return;
+    }
+    await _sessionRepo.publishSession(session);
+    // publishSession is a no-op when another device owns the document.
+    // Fetch from the server to detect this and exit the latch immediately.
+    final serverSession = await _sessionRepo.fetchSession(preferServer: true);
+    if (serverSession != null &&
+        serverSession.ownerDeviceId != _deviceInfo.deviceId &&
+        serverSession.status.isActiveExecution) {
+      _sessionMissingLatchTimer?.cancel();
+      _sessionMissingLatchTimer = null;
+      _sessionMissingWhileRunning = false;
+      _latestSession = serverSession;
+      _recordSessionSnapshot(serverSession);
+      _resetLocalSessionState();
+      _primeMirrorSession(serverSession);
+      _notifySessionMetaChanged();
+      return;
     }
     _syncPausedHeartbeat();
   }
@@ -1304,18 +1326,18 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
               _shouldTreatMissingSessionAsRunning(previousSession);
           if (shouldHoldForMissing) {
             if (kDebugMode) {
-              debugPrint('[ActiveSession] Missing snapshot; holding in sync.');
+              debugPrint('[ActiveSession] Missing snapshot; deferring latch.');
             }
-            _sessionMissingWhileRunning = true;
-            _mirrorTimer?.cancel();
-            _stopPausedHeartbeat();
-            _stopForegroundService();
-            _attemptMissingSessionRecovery(reason: 'stream-missing');
-            if (!wasMissing) {
-              _notifySessionMetaChanged();
-            }
+            // Debounce before latching to tolerate brief Firestore reconnect
+            // windows where the stream emits AsyncData<null> transiently.
+            _sessionMissingLatchTimer ??= Timer(
+              const Duration(seconds: 3),
+              _onSessionMissingLatchDebounced,
+            );
             return;
           }
+          _sessionMissingLatchTimer?.cancel();
+          _sessionMissingLatchTimer = null;
           if (kDebugMode) {
             debugPrint('[ActiveSession] Missing snapshot; clearing session.');
           }
@@ -1344,6 +1366,8 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
           return;
         }
 
+        _sessionMissingLatchTimer?.cancel();
+        _sessionMissingLatchTimer = null;
         _sessionMissingWhileRunning = false;
         _latestSession = session;
         _recordSessionSnapshot(session);
@@ -1433,6 +1457,21 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       },
       fireImmediately: true,
     );
+  }
+
+  void _onSessionMissingLatchDebounced() {
+    _sessionMissingLatchTimer = null;
+    if (_sessionMissingWhileRunning) return;
+    if (!_shouldTreatMissingSessionAsRunning(_latestSession)) return;
+    if (kDebugMode) {
+      debugPrint('[ActiveSession] Missing snapshot latch fired after debounce.');
+    }
+    _sessionMissingWhileRunning = true;
+    _mirrorTimer?.cancel();
+    _stopPausedHeartbeat();
+    _stopForegroundService();
+    _attemptMissingSessionRecovery(reason: 'stream-missing-debounced');
+    _notifySessionMetaChanged();
   }
 
   PomodoroSession? _resolveSessionSnapshot(

@@ -1,6 +1,6 @@
 # Global Validation Ledger
 
-Date: 2026-03-09
+Date: 2026-03-10
 Scope: bugs + features + refactors + roadmap/process validations
 
 ## Record format (mandatory)
@@ -17,7 +17,7 @@ Scope: bugs + features + refactors + roadmap/process validations
 
 Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
 
-## Snapshot (2026-03-09)
+## Snapshot (2026-03-10)
 
 - Roadmap `validation pending`: **69** items.
 - Active bug-checklist open items: **1**.
@@ -46,6 +46,12 @@ Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
   Root cause in second/third-cycle VM hardening (`9bab880`, `4f55010`, `26f0c7e`, `3ad6c98`).
   `418c75f` confirmed uninvolved. Rollback to `961f7eb` baseline performed (commit `4195ef1`).
   Fix 26 reopened — P0-F26-001 requires re-validation.
+- 2026-03-10 rollback partial re-validation on commit `4195ef1` (Android + macOS logs)
+  shows resumed snapshots and no irrecoverable hold during the sampled window, but
+  runtime is still <1h, so closure is explicitly blocked until extended soak + exact repro.
+- 2026-03-10 process hardening applied: mandatory listener-lifecycle guardrails
+  documented in Fix 26 plan/checklist; next implementation cannot bypass these
+  gates.
 
 ## Already validated/closed (reference)
 
@@ -56,7 +62,7 @@ Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
 
 ### P0 blockers (must close before new feature work)
 
-- [ ] ID: `P0-F26-001` | Type: bug | Priority: P0 | Status: In validation | Source: `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md:13` | Item: Re-validate exact single-device degraded-network repro after rollback to 961f7eb baseline (commit `4195ef1`); expected no irrecoverable `Syncing session...` hold and no black-screen resume. | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: Previously closed at `418c75f` (09/03/2026 PASS), then regression observed 10/03/2026 (Android stuck ~40min, `runningExpiry` false-positive disconnected session listener). Rollback to `961f7eb` performed. Re-validation required.
+- [ ] ID: `P0-F26-001` | Type: bug | Priority: P0 | Status: In validation | Source: `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md:174`, `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md:187`, `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md:330` | Item: Re-validate exact single-device degraded-network repro after rollback to 961f7eb baseline (commit `4195ef1`); expected no irrecoverable `Syncing session...` hold and no black-screen resume. | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: Previously closed at `418c75f` (09/03/2026 PASS), then regression observed 10/03/2026 (Android stuck ~40min, `runningExpiry` false-positive disconnected session listener). Rollback to `961f7eb` performed. Partial logs on rollback (`2026_03_10_fix26_observation_partial_android_4195ef1.log`, `2026_03_10_fix26_observation_partial_macos_4195ef1.log`) show recovery, but window is <1h. Keep `In validation` until extended soak (>=4h) + exact degraded-network repro pass, with the new mandatory guardrails enforced before any new Fix 26 code changes.
 - [x] ID: `P0-F26-002` | Type: bug | Priority: P0 | Status: Closed/OK | Source: `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md:15` | Item: Final closure recorded in validation docs. | closed_commit_hash: `418c75f` | closed_commit_message: `fix: guard timesync offset against reconnect poisoning` | evidence: `quick_pass_checklist.md` and `plan_validacion_rapida_fix.md` updated to Closed/OK with re-validation PASS notes (09/03/2026). Regression note added 10/03/2026; closure will be re-issued after P0-F26-001 re-validation.
 - [ ] ID: `P0-F25-001` | Type: bug | Priority: P0 | Status: Pending | Source: `docs/bugs/validation_fix_2026_03_05/quick_pass_checklist.md:34` | Item: Local -> Account without false overlaps; ownership request delivered (Fix 25). | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: `-`.
 

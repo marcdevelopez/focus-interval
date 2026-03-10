@@ -3,7 +3,7 @@
 Date: 2026-03-07
 Branch: `fix27-local-account-reentry-autostart`
 Scope: Re-validation after commit `26f0c7e` + implementation of Fix 27.
-Latest branch update (2026-03-09): `fix26-reopen-black-syncing-2026-03-09`
+Latest branch update (2026-03-10): `fix26-reopen-black-syncing-2026-03-09`
 
 ## Objective
 - Confirm that Fix 26 no longer leaves owner/mirror in indefinite `Syncing session...`.
@@ -262,3 +262,114 @@ Status: **Reopened — re-validation required**
   - Fix 27 and `418c75f` preserved.
 - Fix 26 reopened. Next step: re-validate exact single-device degraded-network repro
   under commit `4195ef1`.
+
+### Root cause analysis (exact mechanism — 10/03/2026)
+
+**Commit that introduced the regression: `9bab880`**
+(`fix: harden missing-session cleanup and rebind run-mode session listeners`)
+
+The change that caused the regression was adding these lines at the **top** of `PomodoroViewModel.build()`:
+
+```dart
+// build() can re-run when watched providers refresh (e.g. auth/token updates).
+_sub?.cancel();
+_sub = null;
+_sessionSub?.close();
+_sessionSub = null;
+```
+
+**Why this is wrong:**
+
+In Riverpod, `build()` on a `Notifier` re-runs whenever any `ref.watch()`ed provider
+emits a new value — including `pomodoroSessionRepositoryProvider` which re-emits on
+Firebase Auth token refreshes. These re-runs are completely unrelated to session state.
+
+At `961f7eb` (baseline), `_sessionSub` was a `ProviderSubscription` created via
+`ref.listen()` in a separate method. Riverpod manages its lifecycle; `build()` re-runs
+do NOT affect it. The only place it was closed was `ref.onDispose()`.
+
+After `9bab880`, `build()` unconditionally kills `_sessionSub` on EVERY re-run.
+Re-subscription at the end of `build()` is conditional:
+`if (appMode == account && hasLoadedContext)`. Even when the condition is met, the
+new Firestore stream listener emits `null` during the brief auth-reconnect window.
+
+`26f0c7e` added a microtask guard (`if (_sessionSub != null) return`) before calling
+`_subscribeToRemoteSession()`, but that guard was neutralized by the earlier
+`_sessionSub = null` at build start. In practice, build re-runs still re-opened the
+listener.
+
+**Full causal chain (10/03/2026 incident):**
+1. Firebase Auth token refresh at ~12:15:09 → `pomodoroSessionRepositoryProvider` re-emits
+2. Riverpod triggers `build()` re-run on PomodoroViewModel
+3. `_sessionSub?.close()` at start of `build()` → Firestore session listener **killed**
+4. `_subscribeToRemoteSession()` called at end of `build()` → new listener created
+5. New listener emits `null` during auth reconnect window
+6. `_handleMissingSessionFromStream(null)` → `_sessionMissingWhileRunning = true`
+7. ScheduledGroups sees no active session → `runningExpiry=true` spike (56ms), then
+   self-corrects; but `_sessionMissingWhileRunning` stays latched
+8. Foreground retry fires every ~30s, checks group (status=running) →
+   `_shouldKeepMissingSessionHoldAfterGroupRecheck()` returns `true` → hold preserved
+9. `activePomodoroSessionProvider` (a separate Riverpod provider) keeps delivering
+   valid session data every ~30s → visible in `[RunModeDiag] Active session change`
+   logs — but this path does NOT clear `_sessionMissingWhileRunning`
+10. Android stuck in "Syncing session..." indefinitely (40+ min observed)
+
+**Anti-pattern to avoid in future implementations:**
+
+> **Never cancel `_sessionSub` (or any session/group stream subscription)
+> unconditionally inside `build()`.** Riverpod `build()` re-runs happen for
+> reasons completely unrelated to session state (auth token refresh, any watched
+> provider update). Canceling subscriptions inside `build()` creates fragile
+> windows and can permanently lose the session stream.
+>
+> If deduplication of subscriptions is needed, use a guard on the subscription
+> itself (`if (_sessionSub != null) return;`) rather than canceling at build start.
+> For Riverpod-managed subscriptions (`ref.listen`), no manual lifecycle management
+> inside `build()` is needed — Riverpod handles it.
+
+## Mandatory guardrails for next Fix 26 implementation
+
+1. Subscription lifecycle guardrail
+   - Do not call `_sessionSub?.close()` or `_subscribeToRemoteSession()` from `build()`.
+   - Keep listener close/open only in explicit lifecycle methods (`loadGroup`,
+     app resume handlers, mode-switch handlers) with a reasoned debug log.
+2. Change isolation guardrail
+   - Listener lifecycle changes must be in a dedicated commit (no unrelated UI/routing
+     edits in the same commit) so rollback is surgical.
+3. Regression-test guardrail
+   - Before merge, include/refresh a targeted test proving that a provider rebuild
+     (auth/token refresh equivalent) does not drop session-listener continuity.
+4. Validation guardrail
+   - Required before closure: exact degraded-network repro PASS + extended soak
+     window PASS (>=4h) on the target commit.
+   - During that run, include at least one Firebase id-token refresh event in logs
+     without ending in indefinite `Syncing session...`.
+5. Stop-the-line guardrail
+   - If any run reproduces indefinite hold again, stop new fixes/features, record logs,
+     and rollback the listener-lifecycle commit immediately.
+
+## 2026-03-10 Rollback Re-validation (partial logs, commit `4195ef1`)
+
+Status: **In validation (partial run PASS, exact repro still pending)**
+
+Evidence:
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_10_fix26_observation_partial_android_4195ef1.log`
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_10_fix26_observation_partial_macos_4195ef1.log`
+
+Preliminary findings (13:19–13:42 CET):
+- Android:
+  - no `Missing snapshot; clearing session`.
+  - no `Resync missing; clearing state`.
+  - resume path showed `Resync start (resume)` + `Resync start (post-resume)`, then
+    active snapshots continued without gaps.
+- Snapshot cadence remained healthy (roughly every 30s) with advancing `remaining`
+  values and stable remote owner (`macOS-6305354a-2d03-4248-b825-672fa88de542`).
+- No irrecoverable `Syncing session...` reproduced in this partial window.
+- Observation window is still short (~23 minutes), so this is not sufficient to
+  rule out regression yet.
+
+Next step:
+- Complete the full exact repro packet (screen-off + unstable network + long
+  foreground/background cycles) before closure.
+- Keep Fix 26 in `In validation` status until an extended soak window is completed
+  (minimum target: >=4h on rollback commit `4195ef1`).

@@ -9844,3 +9844,96 @@ implementation made things **worse** than before:
 
 - Complete exact degraded-network repro packet end-to-end on rollback commit `4195ef1`.
 - Complete extended soak window (>=4h) before any closure attempt.
+
+---
+
+# 🔹 Block 557 — Fix 26 regression-cause review + mandatory guardrails (10/03/2026)
+
+**Date:** 10/03/2026  
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`  
+**Scope:** Validate documented root cause and lock prevention rules for next implementations.
+
+### ✔ Work completed:
+
+- Reviewed the documented root cause against:
+  - `2026_03_10_fix26_observation_partial_android_d03c150.log`
+  - commits `9bab880`, `4f55010`, `26f0c7e`, `3ad6c98`
+- Confirmed the main mechanism is consistent:
+  - `9bab880` added unconditional `_sessionSub?.close(); _sessionSub = null;`
+    at `build()` start.
+  - `build()` can re-run on auth/token-driven provider refreshes.
+  - re-open after build may see transient `null`; hold latch then persists in bad paths.
+- Added precision note:
+  - `26f0c7e` microtask guard (`if (_sessionSub != null) return`) was ineffective
+    because `_sessionSub` had already been nulled at build start.
+- Added mandatory prevention guardrails in:
+  - `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`
+
+### 🧪 Tests:
+
+- No production code changes in this block; review + process hardening only.
+
+### ⚠️ Issues found:
+
+- Regression risk remains high for any future listener-lifecycle edits unless
+  guardrails and validation gates are followed strictly.
+
+### 🎯 Next steps:
+
+- Apply guardrails as a merge gate on the next Fix 26 implementation attempt.
+- Keep Fix 26 open until exact repro + >=4h soak pass on the same commit.
+
+---
+
+# 🔹 Block 558 — Root-cause analysis + fix: transient AsyncData<null> latch (10/03/2026)
+
+**Date:** 10/03/2026
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`
+**Scope:** Reproduce and permanently fix the "Syncing session..." infinite freeze triggered by a brief network cut on the session owner device.
+
+### Root cause (confirmed from 10/03 incident logs):
+
+The "Syncing session..." freeze is triggered by a two-step failure:
+
+**Step 1 — Spurious latch via `AsyncData<null>`:**
+When the owner device (macOS) experiences a brief internet cut, the Firestore SDK begins reconnecting. During this window the `snapshots()` stream listener (backing `pomodoroSessionStreamProvider`) can emit `AsyncData<null>` — either from a cache miss or a transient SDK state. `_resolveSessionSnapshot` treats `AsyncData<null>` the same as a genuine deletion and returns `null`. With a valid recent `_latestSession` present, `_shouldTreatMissingSessionAsRunning` returns `true` and `_sessionMissingWhileRunning` latches **immediately** — before any real session data is lost.
+
+**Step 2 — Auto-recovery fails silently:**
+`_recoverMissingSession` calls `tryClaimSession` (returns `false` — Android's document exists) then `publishSession` (transaction reads Android as owner → returns without writing). Both calls fail silently. Nothing clears the latch. Heartbeats stop (`_controlsEnabled = false`). macOS freezes indefinitely in "Syncing session...".
+
+The latch could self-clear if the Firestore stream later delivers the Android-owned session (line 1347), but if the SDK does not re-emit after reconnect (or takes too long), the device stays frozen until `handleAppResumed()` (macOS window click) or `loadGroup()` (Android re-navigation) runs.
+
+### Fix (two-part, both defensive layers):
+
+**Part 1 — 3-second debounce before latching (stream path only):**
+Added `_sessionMissingLatchTimer`. When `_subscribeToRemoteSession` detects a potentially missing session from the stream, it starts a 3-second timer via `_onSessionMissingLatchDebounced()` instead of latching immediately. If a valid session arrives within 3 seconds (normal reconnect), the timer is cancelled and no latch ever fires. Only if the stream remains silent for >3 seconds does `_onSessionMissingLatchDebounced()` fire and set the latch. The `syncWithRemoteSession` resync path (explicit fetch on resume) bypasses the debounce and sets the latch synchronously as before.
+
+**Part 2 — Server fetch fallback in `_recoverMissingSession`:**
+After `tryClaimSession` fails and `publishSession` is blocked, immediately fetch from the server (`preferServer: true`). If the response shows another device owns an active session for the current context, clear the latch, apply the remote session via `_primeMirrorSession`, and return. This means even if the debounce is bypassed (e.g. >3s reconnect), the first recovery attempt at `t+5s` will discover the remote owner via server fetch and self-heal automatically — no manual intervention required.
+
+### Files changed:
+
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`:
+  - Added `Timer? _sessionMissingLatchTimer` field (line ~87).
+  - Added `_sessionMissingLatchTimer?.cancel()` in `ref.onDispose` and `loadGroup`.
+  - `_subscribeToRemoteSession` null-latch branch: replaced immediate latch with 3-second debounce timer.
+  - Added `_sessionMissingLatchTimer` cancel in the clear-session and non-null session paths.
+  - Added `_onSessionMissingLatchDebounced()` method after `_subscribeToRemoteSession`.
+  - `_recoverMissingSession`: after `publishSession` fails, fetch from server; if remote-owned active session found, clear latch and enter mirror mode immediately.
+
+### 🧪 Tests:
+
+- Dart analyzer: no issues.
+- Manual validation required (same degraded-network repro scenario from 10/03 incident).
+
+### ⚠️ Issues found:
+
+- The stream-based debounce only protects the `_subscribeToRemoteSession` path. The `syncWithRemoteSession` resync path still latches immediately when it fetches null — this is intentional (explicit server fetch is authoritative).
+- The server fetch in `_recoverMissingSession` adds one extra Firestore read per recovery attempt when another device owns the session. Recovery cooldown is 5 seconds; this is acceptable.
+
+### 🎯 Next steps:
+
+- Deploy and run the same degraded-network repro (macOS brief network cut during Android ownership takeover).
+- Verify macOS auto-recovers within ~5–8 seconds without any manual intervention.
+- If stable: close P0-F26-001 and P0-F26-002.
