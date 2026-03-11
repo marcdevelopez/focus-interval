@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' as foundation;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -622,7 +623,9 @@ void main() {
         remainingSeconds: 1400,
         accumulatedPausedSeconds: 0,
         phaseStartedAt: now.subtract(const Duration(minutes: 1, seconds: 40)),
-        currentTaskStartedAt: now.subtract(const Duration(minutes: 1, seconds: 40)),
+        currentTaskStartedAt: now.subtract(
+          const Duration(minutes: 1, seconds: 40),
+        ),
         pausedAt: null,
         lastUpdatedAt: tFuture,
         finishedAt: null,
@@ -715,16 +718,42 @@ void main() {
       await _pumpQueue();
       await Future<void>.delayed(const Duration(seconds: 4));
       await _pumpQueue();
-      expect(vm.isSessionMissingWhileRunning, isTrue,
-          reason: 'latch must fire after debounce');
+      expect(
+        vm.isSessionMissingWhileRunning,
+        isTrue,
+        reason: 'latch must fire after debounce',
+      );
 
       // Deliver cached session (T_cached < T_future → old code blocks the gate)
       sessionRepo.emit(cachedSession);
       await _pumpQueue();
 
       // The latch must be cleared by the single-shot bypass
-      expect(vm.isSessionMissingWhileRunning, isFalse,
-          reason: 'AP-4: stale snapshot must exit hold regardless of gate');
+      expect(
+        vm.isSessionMissingWhileRunning,
+        isFalse,
+        reason: 'AP-4: stale snapshot must exit hold regardless of gate',
+      );
+      final stateAfterExit = container.read(pomodoroViewModelProvider);
+      final expectedProjected =
+          (cachedSession.phaseDurationSeconds -
+                  DateTime.now()
+                      .difference(cachedSession.phaseStartedAt!)
+                      .inSeconds)
+              .clamp(0, cachedSession.phaseDurationSeconds)
+              .toInt();
+      expect(
+        stateAfterExit.remainingSeconds,
+        isNot(cachedSession.remainingSeconds),
+        reason:
+            'Hold exit must project remaining time from phase start, not from stale snapshot remainingSeconds.',
+      );
+      expect(
+        (stateAfterExit.remainingSeconds - expectedProjected).abs(),
+        lessThanOrEqualTo(5),
+        reason:
+            'Hold exit remainingSeconds must be timeline-projected (phaseStartedAt + elapsed).',
+      );
 
       // [REFACTOR] After bypass, watermarks must be reset to T_cached.
       // Verify by emitting a follow-up session slightly newer than T_cached:
@@ -734,7 +763,8 @@ void main() {
       expect(
         vm.activeSessionForCurrentGroup?.sessionRevision,
         followUpSession.sessionRevision,
-        reason: '[REFACTOR] watermarks reset to cached values; follow-up session must be applied',
+        reason:
+            '[REFACTOR] watermarks reset to cached values; follow-up session must be applied',
       );
     },
   );
@@ -816,8 +846,12 @@ void main() {
       await Future<void>.delayed(const Duration(seconds: 3));
       await _pumpQueue();
 
-      expect(vm.isSessionMissingWhileRunning, isFalse,
-          reason: 'AP-2: debounce cancelled by real session; no latch should fire');
+      expect(
+        vm.isSessionMissingWhileRunning,
+        isFalse,
+        reason:
+            'AP-2: debounce cancelled by real session; no latch should fire',
+      );
       expect(vm.activeSessionForCurrentGroup, isNotNull);
     },
   );
@@ -910,10 +944,403 @@ void main() {
       await _pumpQueue();
 
       // After debounce + recovery: latch must be cleared by the server fetch
-      expect(vm.isSessionMissingWhileRunning, isFalse,
-          reason: 'AP-3: server fetch during recovery must clear latch when remote session is active');
-      expect(vm.activeSessionForCurrentGroup?.ownerDeviceId, remoteOwner,
-          reason: 'AP-3: discovered remote session must be applied after recovery');
+      expect(
+        vm.isSessionMissingWhileRunning,
+        isFalse,
+        reason:
+            'AP-3: server fetch during recovery must clear latch when remote session is active',
+      );
+      expect(
+        vm.activeSessionForCurrentGroup?.ownerDeviceId,
+        remoteOwner,
+        reason:
+            'AP-3: discovered remote session must be applied after recovery',
+      );
+    },
+  );
+
+  test(
+    'projection_uses_phase_start_not_snapshot_remaining_on_hold_exit',
+    () async {
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'group-projection-phase-start',
+        start: now,
+      );
+
+      final freshSession = PomodoroSession(
+        taskId: group.tasks.first.sourceTaskId,
+        groupId: group.id,
+        currentTaskId: group.tasks.first.sourceTaskId,
+        currentTaskIndex: 0,
+        totalTasks: 1,
+        dataVersion: kCurrentDataVersion,
+        sessionRevision: 20,
+        ownerDeviceId: 'other-device',
+        status: PomodoroStatus.pomodoroRunning,
+        phase: PomodoroPhase.pomodoro,
+        currentPomodoro: 1,
+        totalPomodoros: 2,
+        phaseDurationSeconds: 25 * 60,
+        remainingSeconds: 1300,
+        accumulatedPausedSeconds: 0,
+        phaseStartedAt: now.subtract(const Duration(minutes: 3, seconds: 30)),
+        currentTaskStartedAt: now.subtract(
+          const Duration(minutes: 3, seconds: 30),
+        ),
+        pausedAt: null,
+        lastUpdatedAt: now.add(const Duration(minutes: 2)),
+        finishedAt: null,
+        pauseReason: null,
+      );
+      final exitSnapshot = PomodoroSession(
+        taskId: freshSession.taskId,
+        groupId: freshSession.groupId,
+        currentTaskId: freshSession.currentTaskId,
+        currentTaskIndex: freshSession.currentTaskIndex,
+        totalTasks: freshSession.totalTasks,
+        dataVersion: freshSession.dataVersion,
+        sessionRevision: freshSession.sessionRevision,
+        ownerDeviceId: freshSession.ownerDeviceId,
+        status: freshSession.status,
+        phase: freshSession.phase,
+        currentPomodoro: freshSession.currentPomodoro,
+        totalPomodoros: freshSession.totalPomodoros,
+        phaseDurationSeconds: freshSession.phaseDurationSeconds,
+        // Intentionally stale and inconsistent with phaseStartedAt + elapsed.
+        remainingSeconds: 1450,
+        accumulatedPausedSeconds: 0,
+        phaseStartedAt: freshSession.phaseStartedAt,
+        currentTaskStartedAt: freshSession.currentTaskStartedAt,
+        pausedAt: null,
+        lastUpdatedAt: now.subtract(const Duration(minutes: 1)),
+        finishedAt: null,
+        pauseReason: null,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(freshSession);
+      final appModeService = AppModeService.memory();
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      addTearDown(() {
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      container.listen<PomodoroState>(pomodoroViewModelProvider, (_, __) {});
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      sessionRepo.emit(null);
+      await _pumpQueue();
+      await Future<void>.delayed(const Duration(seconds: 4));
+      await _pumpQueue();
+      expect(vm.isSessionMissingWhileRunning, isTrue);
+
+      sessionRepo.emit(exitSnapshot);
+      await _pumpQueue();
+
+      final state = container.read(pomodoroViewModelProvider);
+      final expectedProjected =
+          (exitSnapshot.phaseDurationSeconds -
+                  DateTime.now()
+                      .difference(exitSnapshot.phaseStartedAt!)
+                      .inSeconds)
+              .clamp(0, exitSnapshot.phaseDurationSeconds)
+              .toInt();
+      expect(vm.isSessionMissingWhileRunning, isFalse);
+      expect(
+        state.remainingSeconds,
+        isNot(exitSnapshot.remainingSeconds),
+        reason: 'Projection must not use stale snapshot remainingSeconds.',
+      );
+      expect(
+        (state.remainingSeconds - expectedProjected).abs(),
+        lessThanOrEqualTo(5),
+        reason:
+            'Projection must be derived from phaseStartedAt + elapsed when exiting hold.',
+      );
+    },
+  );
+
+  test(
+    '[PHASE3] transitional non-active snapshot must not clear hold without terminal corroboration',
+    () async {
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'group-phase3-transitional',
+        start: now,
+      );
+      final runningSession = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        ownerDeviceId: 'other-device',
+        now: now,
+      );
+      final transitionalFinishedSnapshot = PomodoroSession(
+        taskId: runningSession.taskId,
+        groupId: runningSession.groupId,
+        currentTaskId: runningSession.currentTaskId,
+        currentTaskIndex: runningSession.currentTaskIndex,
+        totalTasks: runningSession.totalTasks,
+        dataVersion: runningSession.dataVersion,
+        sessionRevision: runningSession.sessionRevision + 1,
+        ownerDeviceId: runningSession.ownerDeviceId,
+        status: PomodoroStatus.finished,
+        phase: null,
+        currentPomodoro: runningSession.currentPomodoro,
+        totalPomodoros: runningSession.totalPomodoros,
+        phaseDurationSeconds: runningSession.phaseDurationSeconds,
+        remainingSeconds: 0,
+        accumulatedPausedSeconds: runningSession.accumulatedPausedSeconds,
+        phaseStartedAt: runningSession.phaseStartedAt,
+        currentTaskStartedAt: runningSession.currentTaskStartedAt,
+        pausedAt: null,
+        lastUpdatedAt: now,
+        finishedAt: now,
+        pauseReason: null,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(runningSession);
+      final appModeService = AppModeService.memory();
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      addTearDown(() {
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      container.listen<PomodoroState>(pomodoroViewModelProvider, (_, __) {});
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      sessionRepo.emit(null);
+      await _pumpQueue();
+      await Future<void>.delayed(const Duration(seconds: 4));
+      await _pumpQueue();
+      expect(vm.isSessionMissingWhileRunning, isTrue);
+
+      sessionRepo.emit(transitionalFinishedSnapshot);
+      await _pumpQueue();
+
+      expect(
+        vm.isSessionMissingWhileRunning,
+        isTrue,
+        reason:
+            'Phase-3 contract: non-active transitional snapshots must extend hold unless group terminality is corroborated.',
+      );
+    },
+  );
+
+  test(
+    '[PHASE3] non-owner recovery may read server and exit hold without write ownership',
+    () async {
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'group-phase3-non-owner-recovery',
+        start: now,
+      );
+      final mirroredSession = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        ownerDeviceId: 'owner-device',
+        now: now,
+      );
+      final serverSession = PomodoroSession(
+        taskId: mirroredSession.taskId,
+        groupId: mirroredSession.groupId,
+        currentTaskId: mirroredSession.currentTaskId,
+        currentTaskIndex: mirroredSession.currentTaskIndex,
+        totalTasks: mirroredSession.totalTasks,
+        dataVersion: mirroredSession.dataVersion,
+        sessionRevision: mirroredSession.sessionRevision + 1,
+        ownerDeviceId: 'owner-device',
+        status: PomodoroStatus.pomodoroRunning,
+        phase: PomodoroPhase.pomodoro,
+        currentPomodoro: mirroredSession.currentPomodoro,
+        totalPomodoros: mirroredSession.totalPomodoros,
+        phaseDurationSeconds: mirroredSession.phaseDurationSeconds,
+        remainingSeconds: 1050,
+        accumulatedPausedSeconds: 0,
+        phaseStartedAt: now.subtract(const Duration(minutes: 4)),
+        currentTaskStartedAt: now.subtract(const Duration(minutes: 4)),
+        pausedAt: null,
+        lastUpdatedAt: now,
+        finishedAt: null,
+        pauseReason: null,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = _FakeSessionRepoClaimFails.withServer(
+        mirroredSession,
+        serverSession,
+      );
+      final appModeService = AppModeService.memory();
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      addTearDown(() {
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      container.listen<PomodoroState>(pomodoroViewModelProvider, (_, __) {});
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      sessionRepo.emit(null);
+      await _pumpQueue();
+      await Future<void>.delayed(const Duration(seconds: 4));
+      await _pumpQueue();
+
+      expect(
+        vm.isSessionMissingWhileRunning,
+        isFalse,
+        reason:
+            'Phase-3 contract: non-owner devices may recover hold via server read and shared ingest path.',
+      );
+      expect(
+        vm.activeSessionForCurrentGroup?.ownerDeviceId,
+        serverSession.ownerDeviceId,
+      );
+    },
+  );
+
+  test(
+    '[PHASE3] hold diagnostics must emit enter/extend/exit with projectionSource',
+    () async {
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'group-phase3-diagnostics',
+        start: now,
+      );
+      final session = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        ownerDeviceId: 'other-device',
+        now: now,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+
+      final logs = <String>[];
+      final previousDebugPrint = foundation.debugPrint;
+      foundation.debugPrint = (String? message, {int? wrapWidth}) {
+        if (message != null) logs.add(message);
+      };
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      addTearDown(() {
+        foundation.debugPrint = previousDebugPrint;
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      container.listen<PomodoroState>(pomodoroViewModelProvider, (_, __) {});
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      sessionRepo.emit(null);
+      await _pumpQueue();
+      await Future<void>.delayed(const Duration(seconds: 4));
+      await _pumpQueue();
+      sessionRepo.emit(session);
+      await _pumpQueue();
+      expect(vm.activeSessionForCurrentGroup, isNotNull);
+
+      final merged = logs.join('\n');
+      expect(
+        merged.contains('hold-enter'),
+        isTrue,
+        reason: 'Diagnostics contract requires explicit hold-enter event.',
+      );
+      expect(
+        merged.contains('hold-extend'),
+        isTrue,
+        reason: 'Diagnostics contract requires explicit hold-extend event.',
+      );
+      expect(
+        merged.contains('hold-exit'),
+        isTrue,
+        reason: 'Diagnostics contract requires explicit hold-exit event.',
+      );
+      expect(
+        merged.contains('projectionSource='),
+        isTrue,
+        reason:
+            'Diagnostics contract requires projectionSource metadata on hold-exit lifecycle events.',
+      );
     },
   );
 }
@@ -923,14 +1350,14 @@ void main() {
 // simulating a server that has the active session even when the stream is null.
 class _FakeSessionRepoClaimFails extends FakePomodoroSessionRepository {
   _FakeSessionRepoClaimFails(PomodoroSession initialSession)
-      : _serverSession = initialSession,
-        super(initialSession);
+    : _serverSession = initialSession,
+      super(initialSession);
 
   _FakeSessionRepoClaimFails.withServer(
     PomodoroSession initialSession,
     PomodoroSession serverSession,
-  )   : _serverSession = serverSession,
-        super(initialSession);
+  ) : _serverSession = serverSession,
+      super(initialSession);
 
   final PomodoroSession _serverSession;
 

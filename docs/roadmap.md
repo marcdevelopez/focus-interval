@@ -203,6 +203,18 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           single-shot missing-session bypass + atomic watermark reset.
           Contract tests in `pomodoro_view_model_session_gap_test.dart`
           pass (including `[REFACTOR] AP-4 full fix`). Device validation pending.
+      11/03/2026: Fix 26 Phase 3 documentation-first contract draft completed
+          (specs 10.4.8.b delta + pre-implementation contract tests):
+          single latch exit point, non-owner server-read recovery, transitional
+          hold-extension rule, mandatory hold diagnostics with `projectionSource`.
+          New contract tests intentionally fail on current runtime and define the
+          implementation target before coding.
+      11/03/2026: Fix 26 Phase 3 runtime implemented on
+          `refactor-run-mode-sync-core`:
+          transitional hold extension (no direct clear while missing),
+          non-owner recovery server-read path, and hold lifecycle diagnostics.
+          Contract suite `pomodoro_view_model_session_gap_test.dart` now passes
+          fully (`11/11`). Device validation pending.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling

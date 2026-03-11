@@ -25,7 +25,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **Fix 26 sync-core refactor (Phase 2 in progress)**
+Last bug fix: **Fix 26 Phase 3 runtime implementation (validation pending)**
 Last update: **11/03/2026**
 
 ---
@@ -10251,3 +10251,96 @@ single-shot missing-session bypass with atomic watermark reset.
   `scheduled_group_coordinator_test.dart` (AppModeService initialization path);
   these failures are outside this refactor scope.
 - Device validation for Fix 26 degraded-network repro remains pending.
+
+---
+
+# 🔹 Block 566 — Fix 26 Phase 3 contract draft: single exit point + diagnostics (11/03/2026)
+
+**Date:** 11/03/2026  
+**Branch:** `refactor-run-mode-sync-core`  
+**Scope:** Documentation-first Phase 3 delta before runtime implementation:
+formalize latch-exit invariants and add contract tests reproducing field
+validation failures from Android/macOS/iOS/Chrome runs.
+
+### ✔ Work completed:
+
+- Updated `docs/specs.md` section **10.4.8.b** with Phase 3 contracts:
+  - single latch exit-point invariant (`true -> false` only via shared ingest),
+  - non-owner recovery reads allowed (`preferServer: true`) with write ownership
+    kept owner-scoped,
+  - transitional-state hold extension rule (`null`/`idle`/`finished` at
+    phase boundaries cannot clear hold without terminal corroboration),
+  - mandatory diagnostics with lifecycle events
+    (`hold-enter`/`hold-extend`/`hold-exit`/`hold-timeout`),
+  - mandatory `projectionSource` field:
+    `serverOffset | localFallback | snapshotRemaining | none`,
+    including required behavior for `projectionSource=none`
+    (do not render-resolve hold; extend with `projection-unavailable`).
+- Updated contract tests in
+  `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`:
+  - strengthened AP-4 assertion to verify hold-exit projection is timeline-based
+    (not stale `session.remainingSeconds`),
+  - added `projection_uses_phase_start_not_snapshot_remaining_on_hold_exit`,
+  - added `[PHASE3] transitional non-active snapshot must not clear hold...`,
+  - added `[PHASE3] non-owner recovery may read server and exit hold...`,
+  - added `[PHASE3] hold diagnostics must emit enter/extend/exit with projectionSource`.
+
+### 🧪 Validation run (local):
+
+- `dart analyze test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` → PASS (infos only).
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart --reporter compact`
+  → expected contract failures (pre-implementation):
+  - `[PHASE3] transitional non-active snapshot must not clear hold...`
+  - `[PHASE3] non-owner recovery may read server and exit hold...`
+  - `[PHASE3] hold diagnostics must emit enter/extend/exit with projectionSource`
+
+### ⚠️ Notes:
+
+- No runtime implementation changes were made in this block.
+- This block is review-only (specs + contract tests) before coding Phase 3
+  runtime changes.
+
+---
+
+# 🔹 Block 567 — Fix 26 Phase 3 runtime: single-exit hold + non-owner read recovery + diagnostics (11/03/2026)
+
+**Date:** 11/03/2026  
+**Branch:** `refactor-run-mode-sync-core`  
+**Scope:** Implement runtime behavior to satisfy Phase 3 contracts added in
+Block 566, without introducing patch-only side paths.
+
+### ✔ Work completed:
+
+- Updated `lib/presentation/viewmodels/pomodoro_view_model.dart`:
+  - **Gap 1 (transitional hold safety):**
+    - Added transitional guard so non-valid hold-exit snapshots while
+      `wasMissing=true` extend hold instead of clearing it.
+    - Prevented direct hold clear on `null` stream/resync while already in hold
+      unless terminality is corroborated.
+  - **Gap 2 (non-owner read recovery):**
+    - Missing-session recovery now allows server reads for non-owner devices.
+    - Ownership checks remain write-scoped (`tryClaimSession` / publish path).
+    - If server fetch returns active same-context session, it is ingested through
+      the shared pipeline and can clear hold.
+  - **Gap 3 (diagnostics):**
+    - Added hold lifecycle diagnostics events:
+      `hold-enter`, `hold-extend`, `hold-exit`.
+    - Added projection source classification in diagnostics:
+      `serverOffset | localFallback | snapshotRemaining | none`.
+
+### 🧪 Validation run (local):
+
+- `dart analyze lib/presentation/viewmodels/pomodoro_view_model.dart test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+  → PASS (2 info-level style hints in test helper only).
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart --reporter compact`
+  → PASS (`11/11`).
+  - Includes previously failing Phase 3 contracts:
+    - transitional non-active snapshot must not clear hold,
+    - non-owner recovery via server read,
+    - hold diagnostics with projection source.
+
+### ⚠️ Notes:
+
+- Device validation is still pending for this runtime phase.
+- Existing unrelated local modifications were preserved
+  (`docs/bugs/...`, `ios/Flutter/AppFrameworkInfo.plist`).

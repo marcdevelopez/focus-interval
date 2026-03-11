@@ -1111,10 +1111,13 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   bool _shouldAttemptMissingSessionRecovery() {
     if (!_sessionMissingWhileRunning) return false;
     if (ref.read(appModeProvider) != AppMode.account) return false;
-    if (!_isLocalOwnerCandidateForMissingRecovery()) return false;
     final group = _currentGroup;
     if (group == null || group.status != TaskRunStatus.running) return false;
-    if (!_machine.state.status.isActiveExecution) return false;
+    final hasExecutionContext =
+        _machine.state.status.isActiveExecution ||
+        (_latestSession?.status.isActiveExecution ?? false) ||
+        (_remoteSession?.status.isActiveExecution ?? false);
+    if (!hasExecutionContext) return false;
     return true;
   }
 
@@ -1158,20 +1161,24 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   Future<void> _recoverMissingSession(DateTime now) async {
-    final session = _buildCurrentSessionSnapshot(now);
-    if (session == null) return;
-    final claimed = await _sessionRepo.tryClaimSession(session);
-    if (claimed) {
-      _syncPausedHeartbeat();
-      return;
+    final canWrite = _isLocalOwnerCandidateForMissingRecovery();
+    if (canWrite) {
+      final session = _buildCurrentSessionSnapshot(now);
+      if (session != null) {
+        final claimed = await _sessionRepo.tryClaimSession(session);
+        if (claimed) {
+          _syncPausedHeartbeat();
+          return;
+        }
+        await _sessionRepo.publishSession(session);
+      }
     }
-    await _sessionRepo.publishSession(session);
     // publishSession is a no-op when another device owns the document.
     // Fetch from the server to detect this and exit the latch immediately.
     final serverSession = await _sessionRepo.fetchSession(preferServer: true);
     if (serverSession != null &&
-        serverSession.ownerDeviceId != _deviceInfo.deviceId &&
-        serverSession.status.isActiveExecution) {
+        serverSession.status.isActiveExecution &&
+        _matchesCurrentContext(serverSession)) {
       final previousSession = _latestSession;
       final wasMissing = _sessionMissingWhileRunning;
       _ingestResolvedSession(
@@ -1181,7 +1188,9 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       );
       return;
     }
-    _syncPausedHeartbeat();
+    if (canWrite) {
+      _syncPausedHeartbeat();
+    }
   }
 
   void _setResyncInProgress(bool value) {
@@ -1325,12 +1334,36 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
             if (kDebugMode) {
               debugPrint('[ActiveSession] Missing snapshot; deferring latch.');
             }
+            _logHoldLifecycle(
+              event: 'hold-extend',
+              path: 'stream',
+              reason: 'null-stream',
+              gateDecision: 'extend',
+              wasMissingBefore: wasMissing,
+              isMissingAfter: true,
+              projectionSource: 'none',
+            );
             // Debounce before latching to tolerate brief Firestore reconnect
             // windows where the stream emits AsyncData<null> transiently.
             _sessionMissingLatchTimer ??= Timer(
               const Duration(seconds: 3),
               _onSessionMissingLatchDebounced,
             );
+            return;
+          }
+          if (wasMissing && !_isCurrentGroupTerminalCorroborated()) {
+            _sessionMissingWhileRunning = true;
+            _logHoldLifecycle(
+              event: 'hold-extend',
+              path: 'stream',
+              reason: 'null-without-terminal-corroboration',
+              gateDecision: 'extend',
+              wasMissingBefore: true,
+              isMissingAfter: true,
+              projectionSource: 'none',
+            );
+            _attemptMissingSessionRecovery(reason: 'stream-missing-extended');
+            _notifySessionMetaChanged();
             return;
           }
           _sessionMissingLatchTimer?.cancel();
@@ -1360,6 +1393,17 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
           if (previousSession != null || wasMissing) {
             _notifySessionMetaChanged();
           }
+          return;
+        }
+
+        if (_shouldExtendHoldForTransitionalSnapshot(
+          session,
+          wasMissing: wasMissing,
+          path: 'stream',
+        )) {
+          _sessionMissingWhileRunning = true;
+          _attemptMissingSessionRecovery(reason: 'stream-transitional');
+          _notifySessionMetaChanged();
           return;
         }
 
@@ -1409,6 +1453,15 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       );
     }
     _sessionMissingWhileRunning = true;
+    _logHoldLifecycle(
+      event: 'hold-enter',
+      path: 'stream',
+      reason: 'debounce-expired',
+      gateDecision: 'extend',
+      wasMissingBefore: false,
+      isMissingAfter: true,
+      projectionSource: 'none',
+    );
     _mirrorTimer?.cancel();
     _stopPausedHeartbeat();
     _stopForegroundService();
@@ -1470,6 +1523,69 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         group.status == TaskRunStatus.completed ||
         group.status == TaskRunStatus.canceled;
     return isTerminalSession && isTerminalGroup;
+  }
+
+  bool _isCurrentGroupTerminalCorroborated() {
+    final status = _currentGroup?.status;
+    return status == TaskRunStatus.completed ||
+        status == TaskRunStatus.canceled;
+  }
+
+  String _projectionSourceForSession(PomodoroSession session) {
+    final appMode = ref.read(appModeProvider);
+    if (appMode != AppMode.account) return 'localFallback';
+    final offset = _serverTimeOffset ?? _timeSyncService.offset;
+    if (offset != null) return 'serverOffset';
+    final hasTimelineAnchor =
+        session.phaseStartedAt != null &&
+        (_isRunning(session.status) || session.status == PomodoroStatus.paused);
+    if (hasTimelineAnchor) return 'snapshotRemaining';
+    return 'none';
+  }
+
+  bool _shouldExtendHoldForTransitionalSnapshot(
+    PomodoroSession session, {
+    required bool wasMissing,
+    required String path,
+  }) {
+    if (!wasMissing) return false;
+    if (_isValidHoldExitSnapshot(session)) return false;
+    _logHoldLifecycle(
+      event: 'hold-extend',
+      path: path,
+      reason: 'transitional-${session.status.name}',
+      gateDecision: 'extend',
+      wasMissingBefore: true,
+      isMissingAfter: true,
+      projectionSource: _projectionSourceForSession(session),
+      session: session,
+    );
+    return true;
+  }
+
+  void _logHoldLifecycle({
+    required String event,
+    required String path,
+    required String reason,
+    required String gateDecision,
+    required bool wasMissingBefore,
+    required bool isMissingAfter,
+    required String projectionSource,
+    PomodoroSession? session,
+  }) {
+    if (!kDebugMode) return;
+    final resolvedGroupId = session?.groupId ?? _currentGroup?.id ?? 'n/a';
+    debugPrint(
+      '[HoldDiag] '
+      'event=$event '
+      'path=$path '
+      'reason=$reason '
+      'groupId=$resolvedGroupId '
+      'wasMissingBefore=$wasMissingBefore '
+      'isMissingAfter=$isMissingAfter '
+      'gateDecision=$gateDecision '
+      'projectionSource=$projectionSource',
+    );
   }
 
   void _applySessionSnapshot(
@@ -1573,6 +1689,14 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     required PomodoroSession? previousSession,
     required bool wasMissing,
   }) {
+    if (_shouldExtendHoldForTransitionalSnapshot(
+      session,
+      wasMissing: wasMissing,
+      path: 'ingest',
+    )) {
+      _sessionMissingWhileRunning = true;
+      return;
+    }
     _sessionMissingLatchTimer?.cancel();
     _sessionMissingLatchTimer = null;
     _sessionMissingWhileRunning = false;
@@ -1590,6 +1714,18 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       ownershipMetaChanged: ownershipMetaChanged,
       onApply: _applySessionTimelineProjection,
     );
+    if (wasMissing) {
+      _logHoldLifecycle(
+        event: 'hold-exit',
+        path: 'ingest',
+        reason: 'resolved-snapshot',
+        gateDecision: 'apply',
+        wasMissingBefore: true,
+        isMissingAfter: _sessionMissingWhileRunning,
+        projectionSource: _projectionSourceForSession(session),
+        session: session,
+      );
+    }
   }
 
   bool _shouldApplySessionTimeline(
@@ -2754,11 +2890,35 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
             debugPrint('[ActiveSession] Resync missing; holding state.');
           }
           _sessionMissingWhileRunning = true;
+          _logHoldLifecycle(
+            event: 'hold-extend',
+            path: 'resync',
+            reason: 'server-null',
+            gateDecision: 'extend',
+            wasMissingBefore: wasMissing,
+            isMissingAfter: true,
+            projectionSource: 'none',
+          );
           _attemptMissingSessionRecovery(reason: 'resync-missing');
           if (previousSession != null) {
             _notifySessionMetaChanged();
           }
         } else {
+          if (wasMissing && !_isCurrentGroupTerminalCorroborated()) {
+            _sessionMissingWhileRunning = true;
+            _logHoldLifecycle(
+              event: 'hold-extend',
+              path: 'resync',
+              reason: 'server-null-without-terminal-corroboration',
+              gateDecision: 'extend',
+              wasMissingBefore: true,
+              isMissingAfter: true,
+              projectionSource: 'none',
+            );
+            _attemptMissingSessionRecovery(reason: 'resync-missing-extended');
+            _notifySessionMetaChanged();
+            return;
+          }
           if (kDebugMode) {
             debugPrint('[ActiveSession] Resync missing; clearing state.');
           }
@@ -2770,6 +2930,16 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
             _notifySessionMetaChanged();
           }
         }
+        return;
+      }
+      if (_shouldExtendHoldForTransitionalSnapshot(
+        session,
+        wasMissing: wasMissing,
+        path: 'resync',
+      )) {
+        _sessionMissingWhileRunning = true;
+        _attemptMissingSessionRecovery(reason: 'resync-transitional');
+        _notifySessionMetaChanged();
         return;
       }
       _ingestResolvedSession(

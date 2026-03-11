@@ -2159,6 +2159,59 @@ foreground owner must **not** freeze progression.
   - Task context list updated.
 - No partial state is acceptable: clearing the overlay while the timer remains
   frozen at a stale value is a bug equivalent to the hold itself.
+- Hold-exit projection source requirements:
+  - During hold exit, countdown/ring projection must come from timeline anchors
+    (`phaseStartedAt` + elapsed), not from static `session.remainingSeconds`.
+  - Valid projection sources for render-resolved hold exit are:
+    `serverOffset` or `localFallback`.
+  - `snapshotRemaining` or `none` are not valid render-resolved exit sources.
+    In those cases, hold must be extended and overlay must remain visible.
+
+**Single latch exit point (hard invariant):**
+- In Account Mode, `_sessionMissingWhileRunning` may transition `true -> false`
+  only inside the shared resolved-snapshot ingest function
+  (`_ingestResolvedSession`, or an explicitly documented successor).
+- Any path receiving `null` / loading / error while hold is active (stream,
+  resync, or recovery) must either:
+  - extend hold (debounce/backoff), or
+  - escalate to corroborated terminal cleanup per 10.4.8 + G-6.
+- Direct latch clearing in side paths (for example stream-null-no-hold or
+  resync-null-clear) is forbidden while hold is active and running context is
+  not terminally corroborated.
+
+**Non-owner recovery contract (reads allowed, writes owner-scoped):**
+- While hold is active, server reads (`fetchSession(preferServer: true)`) are
+  allowed for both owner and mirror devices.
+- Ownership checks apply to writes only (`tryClaimSession`, `publishSession`,
+  clear-as-owner paths).
+- If server read returns an active same-group session (even owned by another
+  device), that snapshot must flow through the shared ingest function and clear
+  hold through the single exit point.
+- If server read returns null/non-active while group terminality is not
+  corroborated, hold must be extended (not cleared) and bounded retries continue.
+
+**Transitional-state rule (phase boundary safety):**
+- During active phase boundaries (for example `pomodoroRunning` ->
+  `shortBreakRunning`), transient `null` / `idle` / `finished` observations are
+  transitional unless group reconciliation corroborates terminality.
+- Transitional observations must not clear hold directly. They must be treated
+  as hold-extend events until a valid active snapshot is ingested, or terminal
+  corroboration is confirmed.
+
+**Mandatory diagnostics contract (required for validation):**
+- Hold lifecycle logs are mandatory in debug and validation builds:
+  `hold-enter`, `hold-extend`, `hold-exit`, `hold-timeout`.
+- Each event must include at least:
+  - `path`: `stream` | `resync` | `recovery`
+  - `reason`: concrete trigger (`null-stream`, `server-null`, `terminal-corroborated`, etc.)
+  - `groupId`
+  - `wasMissingBefore` / `isMissingAfter`
+  - `gateDecision`: `apply` | `reject` | `extend` | `timeout`
+  - `projectionSource`: `serverOffset` | `localFallback` | `snapshotRemaining` | `none`
+- If `projectionSource=none` on a hold-exit candidate, behavior is mandatory:
+  - do not mark render as resolved,
+  - do not clear hold via exit path,
+  - emit `hold-extend` with reason `projection-unavailable`.
 
 **Hold timeout (bounded hold rule):**
 - Missing-session hold must not persist indefinitely. Release and clean up
