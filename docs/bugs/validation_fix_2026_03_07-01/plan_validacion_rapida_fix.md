@@ -507,3 +507,71 @@ Evidence summary:
 Decision:
 - `P0-F26-003` is closed.
 - `P0-F26-001` remains open until exact degraded-network repro + extended soak closure criteria are met.
+
+---
+
+## 2026-03-10 Reopen — Syncing session latch regression (post-250c24d)
+
+Status: **In validation** (device logs running as of 10/03/2026)
+
+### Incident summary
+
+After `250c24d`, both devices showed the original symptoms again:
+- macOS mirror: permanent `Syncing session...` overlay (25:00, Ready, Start)
+- Android owner: frozen timer at ~03:24, gray/white circle, not counting down
+
+### Root cause
+
+`loadGroup` fetches session with `preferServer: true` → `_lastAppliedSessionUpdatedAt = T_server_fresh`.
+`_subscribeToRemoteSession(fireImmediately: true)` → first event is null → 3 s debounce fires →
+`_sessionMissingWhileRunning = true`, mirror timer cancelled, UI latches to `Syncing session...`.
+Real Firestore snapshot arrives: `lastUpdatedAt = T_cached ≤ T_server_fresh` → `shouldApplyTimeline = false`.
+The `!shouldApplyTimeline` early-return block only called `_notifySessionMetaChanged()` when
+`ownershipMetaChanged`, **not** when `wasMissing`. No rebuild → UI stuck permanently.
+
+### Applied fix
+
+Commit `b085ea6` — `fix(f26): notify UI when missing-session latch clears but timeline skips`
+
+```dart
+// pomodoro_view_model.dart — _subscribeToRemoteSession listener
+if (!shouldApplyTimeline) {
+  if (ownershipMetaChanged || wasMissing) {   // ← added || wasMissing
+    _notifySessionMetaChanged();
+  }
+  return;
+}
+```
+
+### Deferred improvement — immediate timer unfreeze (not yet implemented)
+
+**Problem this would solve:** After b085ea6, the `Syncing session...` overlay clears correctly.
+However, the mirror timer position (frozen seconds) remains stale until the next Firestore write
+where `lastUpdatedAt > T_server_fresh` (up to ~30 s). The owner's displayed time may be off during
+this window.
+
+**Proposed change** (implement only if device validation confirms the timer freeze is user-visible):
+
+```dart
+// pomodoro_view_model.dart — _subscribeToRemoteSession listener
+if (!shouldApplyTimeline) {
+  if (ownershipMetaChanged || wasMissing) {
+    if (wasMissing) _setMirrorSession(session);  // ← unfreeze display immediately
+    _notifySessionMetaChanged();
+  }
+  return;
+}
+```
+
+**Required guard before adding this:**
+- Verify `session.status.isActiveExecution` (not idle/finished) before calling `_setMirrorSession`.
+- Verify `session.remainingSeconds > 0` to avoid applying a zero-second stale snapshot.
+- Safe because `wasMissing=true` means mirror timer was already cancelled; we restore from null,
+  not overwrite a live timer with a regressed snapshot.
+
+**Risk if guard is omitted:** `_setMirrorSession` with a regressed `lastUpdatedAt` could display
+slightly incorrect remaining time, but would not cause a permanent latch since
+`_notifySessionMetaChanged()` always fires after it.
+
+**Implement if:** device validation shows a noticeable timer freeze (> 5 s visible) after the
+`Syncing session...` overlay clears.

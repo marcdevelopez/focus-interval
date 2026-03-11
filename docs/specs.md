@@ -170,6 +170,9 @@ class TaskRunGroup {
   String? lateStartClaimRequestId; // pending ownership request id
   String? lateStartClaimRequestedByDeviceId; // device requesting ownership
   DateTime? lateStartClaimRequestedAt; // when ownership was requested
+  DateTime? noticeSentAt; // pre-run notice sent timestamp (if sent)
+  String? noticeSentByDeviceId; // device that sent the pre-run notice
+  DateTime? actualStartTime; // authoritative execution anchor once running
   DateTime theoreticalEndTime;  // required for overlap checks
 
   String status; // scheduled | running | completed | canceled
@@ -587,18 +590,16 @@ users/{uid}/activeSession
   - Time sync and session services must remain enabled as long as a valid
     `currentUser` exists and sync is enabled; transient auth stream nulls must
     not disable sync or downgrade to Noop repositories.
-  - If the server-time offset is unavailable in Account Mode, **block** any
-    start/resume/auto-start actions and show **Syncing session...**.
-  - While the server-time offset is unavailable in Account Mode:
-    - Do not start/resume/auto-start (no new authoritative transitions).
-    - If a session is already active (running/paused), the owner may publish
-      fallback heartbeats/snapshots using local time to keep `activeSession`
-      alive and avoid deadlocks. `lastUpdatedAt` remains a serverTimestamp.
-      Once time sync is ready, resume server-time timestamps for authoritative
-      fields.
-  - The heartbeat requirement still applies; if time sync is unavailable,
-    local-time heartbeats are allowed to prevent stale ownership while the app
-    continues retrying time sync.
+- If the server-time offset is unavailable in Account Mode, **block** any
+  start/resume/auto-start actions and show **Syncing session...**.
+- While the server-time offset is unavailable in Account Mode:
+  - Do not start/resume/auto-start (no new authoritative transitions).
+  - Allowed exception (liveness only): if a session is already active and this
+    device is still the owner/owner-candidate, it may emit **bounded**
+    heartbeat/republish writes to keep the document alive while retrying sync.
+    These writes must not introduce a new phase/task transition.
+  - If ownership/context is uncertain, do not write; continue in syncing hold.
+  - Once time sync is ready, resume normal server-time authoritative updates.
   - While syncing, the TimerScreen must **remain visible** when a prior snapshot
     exists. Use a non-blocking overlay (dim/blur + spinner + label) so the timer
     stays readable behind it. Only when no snapshot exists, show a full loader.
@@ -618,11 +619,32 @@ users/{uid}/activeSession
   - If **paused**:
     - `elapsed = (pausedAt - phaseStartedAt) - accumulatedPausedSeconds`
   - `remaining = max(0, phaseDurationSeconds - elapsed)`
-  - `remainingSeconds` is **compat** only and must never override the projection.
+  - `remainingSeconds` is a compatibility/fallback field:
+    - Running projection is authoritative from timeline fields.
+    - Paused/fallback UI may read `remainingSeconds` only when timeline anchors
+      are missing or incomplete.
 - Ordering & staleness:
   - Use `sessionRevision` to accept snapshots in order and ignore stale updates.
-  - `lastUpdatedAt` is **liveness only** (ownership stale detection); it must **not**
-    be used to derive server time or projection.
+  - If revisions are equal, `lastUpdatedAt` may be used only as a tie-breaker
+    for snapshot acceptance.
+  - `lastUpdatedAt` is **never** used to derive server time or projection math.
+  - **Exception — missing-session exit (single-shot bypass):** When the device
+    is in missing-session hold and the first valid snapshot arrives, that snapshot
+    must be applied unconditionally, bypassing the `sessionRevision` /
+    `lastUpdatedAt` gate. The bypass applies to exactly one snapshot event (the
+    exit event); once the hold is cleared and the applied snapshot watermarks
+    (revision/updatedAt) are reset, normal gate rules resume immediately for all
+    subsequent snapshots.
+    A snapshot is valid to exit hold if and only if:
+    - Its `groupId` matches the currently loaded group,
+    - Its status is an active execution state (`pomodoroRunning`,
+      `shortBreakRunning`, `longBreakRunning`, or `paused`), OR it is terminal
+      while the group reconciliation confirms the group is also terminal (in
+      which case navigate away from Run Mode without freezing),
+    - It is a concrete data value, not null/loading/error.
+    Applied snapshot watermarks reset on exit is atomic: set the applied
+    revision and applied updatedAt watermarks to the exit snapshot's values in
+    the same event, even if those values are lower than the prior watermarks.
 - Owner update rules (Account Mode):
   - On **pause**: set `pausedAt = serverNow`, keep `accumulatedPausedSeconds` unchanged.
   - On **resume**: `accumulatedPausedSeconds += (serverNow - pausedAt)`, then clear `pausedAt`.
@@ -654,7 +676,17 @@ users/{uid}/activeSession
   (owner-only, no overwrite). Use `tryClaimSession` to create the doc if missing,
   then publish normally. Rate-limit recovery attempts (e.g., >=5s between tries).
   Mirror devices must never publish during this recovery path.
-- If a device observes an activeSession referencing a group that is not running (or missing), it must treat the session as stale and clear it.
+- Reconciliation precedence (Account Mode):
+  - `activeSession` is authoritative for **phase/countdown/owner** while active.
+  - `TaskRunGroup.status` is authoritative for **lifecycle terminality**
+    (running vs completed/canceled).
+  - If group is terminal and session is still active, clear session.
+  - If group is running and session is missing/terminal, hold + recover first;
+    only clear after corroborated stale/terminal evidence.
+- If a device observes an activeSession referencing a group that appears missing
+  or non-running, do **not** clear on a single lookup. Re-check using
+  cache-first + server fallback; clear only with corroborated non-running/
+  terminal evidence or stale-threshold expiry.
 - If a running group has passed its theoreticalEndTime and the activeSession has not updated within the stale threshold, any device may clear the session and complete the group to prevent zombie runs.
 - Do not expire/complete running groups while the activeSession stream is still loading
   (unknown session state). Expiry checks may only run after at least one session snapshot
@@ -1425,8 +1457,10 @@ Redistribution rules (shared)
     - This must not require app restart.
   - The timer remains stopped until the scheduled start
   - When scheduling sequential groups, ensure the next group’s pre-run start
-    is **at least +1 minute after** the previous group’s end (minute boundary
-    equality is not allowed).
+    is **strictly after** the previous group’s end.
+    - Minute-display normalization:
+      - round to minute resolution using ceiling,
+      - if equality still occurs after rounding, add +1 minute.
 
 ### **10.4.1.a. Pre-Run Countdown Mode (scheduled groups only)**
 
@@ -1591,9 +1625,12 @@ Actions
       stall in “syncing session”.
     - Schedule the remaining groups **sequentially**, preserving pre-run windows:
       scheduledStartTime = previousEnd + noticeMinutes.
-    - When deriving scheduledStartTime from queue sequencing, **round up to the
-      next full minute** (seconds = 00) to match minute-only UI display. Never
-      round backwards into the past.
+    - When deriving scheduledStartTime from queue sequencing, apply strict
+      minute normalization:
+      - round up to the next full minute (seconds = 00),
+      - and enforce `scheduledStartTime > previousEnd` (if equal after
+        rounding, add +1 minute).
+      Never round backwards into the past.
     - Update scheduledStartTime and theoreticalEndTime for rescheduled groups.
     - Cancel all **unselected** groups using the reason rules above.
     - Clear `lateStartAnchorAt`, `lateStartOwnerDeviceId`,
@@ -1662,9 +1699,12 @@ Flow
   2. **Postpone scheduled group** →
     - Set `scheduledStartTime = projectedEnd + noticeMinutes`, and set
       `postponedAfterGroupId = currentGroupId`.
-    - When deriving scheduledStartTime from a projected end, **round up to the
-      next full minute** (seconds = 00) to match minute-only UI display. Never
-      round backwards into the past.
+    - When deriving scheduledStartTime from a projected end, apply strict
+      minute normalization:
+      - round up to the next full minute (seconds = 00),
+      - and enforce `scheduledStartTime > projectedEnd` (if equal after
+        rounding, add +1 minute).
+      Never round backwards into the past.
      - While the current group is running/paused, the scheduled group’s
        **effective** start tracks the current group’s projected end in real
        time (no repeat modal for the same pair).
@@ -1730,7 +1770,8 @@ Permissions
 - The fill represents **effective executed time** only:
   - Progress **does not advance while paused**.
   - For running sessions, derive elapsed time from `phaseStartedAt` + `phaseDurationSeconds`.
-  - For paused sessions, use the stored `remainingSeconds` to keep progress frozen.
+  - For paused sessions, freeze from the same projected timeline; use
+    `remainingSeconds` only as a fallback if timeline anchors are unavailable.
   - Mirror devices compute the same value from the shared session + group snapshot.
   - Local Mode: if a pause is lost on app close (per spec), progress recalculates from
     `actualStartTime` and will jump accordingly on reopen.
@@ -1921,6 +1962,8 @@ The MM:SS timer must not shift horizontally:
     a prior snapshot is available → keep the last snapshot visible with Syncing
     overlay; do **not** fall back to the local machine.
   - **No snapshot yet** → show full loader until the first snapshot arrives.
+  - Countdown/ring/marker/status boxes/context list must consume the **same**
+    projected state per frame. Partial mixed updates are invalid.
 - If the server-time offset is unavailable, show **Syncing session...** and keep
   the last known snapshot without re-projecting until time sync is ready.
 - Time-sync offset measurements taken across prolonged offline/background gaps
@@ -1938,10 +1981,10 @@ The MM:SS timer must not shift horizontally:
   overlay that keeps the timer visible. Controls remain disabled until time sync
   is ready.
 - While time sync is unavailable in Account Mode, owner controls (start/resume/
-  auto-start) must remain disabled; no local-time writes are permitted.
-- While time sync is unavailable, **no** authoritative writes are allowed,
-  including heartbeats and republish/recovery writes. Heartbeat enforcement
-  applies only when time sync is ready.
+  auto-start) must remain disabled; no local-time **transition** writes are permitted.
+- While time sync is unavailable, no **transition** writes are allowed
+  (start/resume/pause/cancel/phase/task changes). Bounded liveness writes
+  (heartbeat/republish) are allowed only under the owner-candidate rule above.
 - **Offline vs Syncing (Account Mode):**
   - **Syncing** is used when connectivity appears available but time sync or
     activeSession snapshots are not ready yet.
@@ -2002,7 +2045,9 @@ The MM:SS timer must not shift horizontally:
   so pause/resume stays globally consistent.
 - Initial ownership is deterministic: the device that **initiates the run**
   (Start now or auto-start) must be the first owner.
-- For scheduled runs, `scheduledByDeviceId` is **metadata only** and must not block
+- For scheduled runs, `scheduledByDeviceId` is **metadata only** and must not
+  block auto-start or ownership.
+- At scheduled time, any active signed-in device may claim ownership.
 
 ### **10.4.8.a. No-foreground owner / all devices closed**
 
@@ -2025,7 +2070,6 @@ foreground owner must **not** freeze progression.
 - If a scheduled group’s start time passes while no device is open, follow the
   existing auto-start / resolve-overlaps rules (start on open if no conflicts;
   show Resolve overlaps if conflicts exist).
-  auto-start or ownership; any device can claim at the scheduled time.
 - For Start now, only the initiating device (`scheduledByDeviceId`) should claim
   the initial session; other devices wait for the activeSession.
 - Ownership transfer is explicit:
@@ -2067,6 +2111,75 @@ foreground owner must **not** freeze progression.
     every `AppLifecycleState.resumed` event. Keep the existing listener when
     healthy and trigger explicit resync; only force a listener rebind when
     the listener is absent or a bounded stalled-listener condition is detected.
+
+### **10.4.8.b. Missing-session hold exit contract**
+
+**Gate bypass rule (single-shot):**
+- When a device is in missing-session hold and the first valid snapshot arrives
+  for the current group, that snapshot must be applied unconditionally. The gate
+  (`sessionRevision` / `lastUpdatedAt` check) is bypassed for exactly this one
+  event. After the hold is cleared, the gate resumes normally for all subsequent
+  events.
+- A snapshot is valid to exit hold if and only if:
+  1. `groupId` matches the currently loaded group.
+  2. `status` is an active execution state: `pomodoroRunning`,
+     `shortBreakRunning`, `longBreakRunning`, or `paused`.
+     (A terminal snapshot — `finished` or `idle` — may only exit hold if group
+     reconciliation also confirms the group is terminal; in that case, navigate
+     away from Run Mode cleanly, do not freeze.)
+  3. The value is a concrete `AsyncData<session>`, not null / loading / error.
+     A null/loading/error arrival during hold must not exit hold; it must restart
+     or extend the debounce timer.
+- Applied snapshot watermarks reset on exit is atomic and must happen in the
+  same synchronous event as the snapshot application:
+  - Set applied revision watermark = exit snapshot's `sessionRevision`.
+  - Set applied updatedAt watermark = exit snapshot's `lastUpdatedAt`.
+  - These values replace the prior watermarks even if they are numerically lower.
+
+**Snapshot acceptance gate — decision table:**
+
+| Condition                                                    | wasMissing=false     | wasMissing=true (first valid snapshot) |
+|--------------------------------------------------------------|----------------------|----------------------------------------|
+| Higher `sessionRevision`                                     | apply + update marks | apply + reset watermarks               |
+| Equal revision, newer/equal `lastUpdatedAt`                  | apply + update marks | apply + reset watermarks               |
+| Equal revision, older `lastUpdatedAt`                        | reject (no-op)       | **apply + reset watermarks**           |
+| Lower `sessionRevision`                                      | reject (no-op)       | **apply + reset watermarks**           |
+| `ownerDeviceId` changed with matching `groupId` (handoff)    | apply (handoff)      | apply (handoff)                        |
+| `session == null` / loading / error (during hold)            | debounce → hold      | extend debounce, do not exit hold      |
+| `session == null` (not running context)                      | clear normally       | clear normally                         |
+
+**UI contract on exit (same-frame requirement):**
+- When the hold is cleared by a valid snapshot, the following must update in the
+  same UI frame:
+  - `Syncing session...` overlay removed.
+  - Timer countdown (`MM:SS`) updated to the projected value derived from the
+    applied snapshot.
+  - Progress ring position updated to the projected value.
+  - Status boxes updated.
+  - Task context list updated.
+- No partial state is acceptable: clearing the overlay while the timer remains
+  frozen at a stale value is a bug equivalent to the hold itself.
+
+**Hold timeout (bounded hold rule):**
+- Missing-session hold must not persist indefinitely. Release and clean up
+  non-destructively when **condition A AND condition B** are both met:
+  - **Condition A:** all bounded-backoff retries are exhausted
+    (5s → 10s → 20s → max 30s, as defined in 10.4.8).
+  - **Condition B (either one suffices):**
+    - the last known `lastUpdatedAt` of the prior session is older than the
+      stale threshold (45 seconds, as defined in section 5.3), OR
+    - the group is confirmed terminal by a corroborated repository lookup.
+  - Cleanup on timeout follows the non-destructive clear rules in 10.4.8:
+    do not clear based on a single null lookup; require corroborated evidence.
+
+**Single application pipeline (architecture rule):**
+- The stream path, the manual fetch/resync path, and the recovery path must all
+  delegate final snapshot application to one shared function. Duplicate
+  apply/gate/notify logic spread across multiple code paths is forbidden.
+- Each path may have its own input handling (debounce, fetch, ownership check)
+  but must not independently implement the gate decision, watermark update, or
+  UI notification. These belong exclusively in the shared function.
+
 - Auto-claim attempts must be failure-safe:
   - Firestore `unavailable`/network failures must not throw unhandled
     exceptions.
@@ -2373,6 +2486,9 @@ When the timer completes the last pomodoro of the last task:
    - The modal must appear on both owner and mirror devices while Run Mode is visible.
    - If the app is not active and the modal cannot be shown, show it on next foreground;
      if it still cannot be presented, auto-navigate to Groups Hub to avoid an idle Run Mode state.
+   - If completion is reconciled after reopen (the group already finished while
+     all devices were closed), navigate directly to Groups Hub without forcing a
+     stale completion modal.
 4. It must send a system notification.
 5. The state machine transitions to finished.
 6. The clock screen must:

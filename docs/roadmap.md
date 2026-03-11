@@ -197,6 +197,12 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           owner handoff preserved, and timer projection coherent with wall-clock.
           Validation item `P0-F26-003` closed/OK on implementation commit `250c24d`.
           Note: degraded-network regression item `P0-F26-001` remains open.
+      11/03/2026: Fix 26 Phase 2 sync-core refactor implemented on branch
+          `refactor-run-mode-sync-core`: single snapshot application pipeline
+          (`stream` + `resync/fetch` + `recovery`) with specs 10.4.8.b
+          single-shot missing-session bypass + atomic watermark reset.
+          Contract tests in `pomodoro_view_model_session_gap_test.dart`
+          pass (including `[REFACTOR] AP-4 full fix`). Device validation pending.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling

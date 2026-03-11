@@ -583,4 +583,362 @@ void main() {
       expect(state.status, PomodoroStatus.shortBreakRunning);
     },
   );
+
+  // ─── Sync contract tests (specs 10.4.8.b) ─────────────────────────────────
+  // These tests define the expected behavior after the sync-core refactor.
+  // A test marked [REFACTOR] describes behavior that the current code (b085ea6)
+  // does NOT fully satisfy. It must pass after the refactor is complete.
+
+  test(
+    '[REFACTOR] missing-session exit resets watermark so subsequent stream events pass gate (AP-4 full fix)',
+    () async {
+      // Scenario: loadGroup sets watermark to T_future (fresh server fetch).
+      // Stream emits null → 3s debounce → latch.
+      // Stream emits a cached session with T_cached < T_future.
+      // Expected (per specs 10.4.8.b single-shot bypass):
+      //   - latch is cleared
+      //   - watermarks reset to T_cached
+      //   - a follow-up session with T_cached+1s passes the gate normally
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(id: 'group-ap4', start: now);
+
+      // Fresh session: lastUpdatedAt far in the future (simulates server fetch)
+      final tFuture = now.add(const Duration(minutes: 5));
+      final freshSession = PomodoroSession(
+        taskId: group.tasks.first.sourceTaskId,
+        groupId: group.id,
+        currentTaskId: group.tasks.first.sourceTaskId,
+        currentTaskIndex: 0,
+        totalTasks: 1,
+        dataVersion: kCurrentDataVersion,
+        sessionRevision: 10,
+        ownerDeviceId: 'other-device',
+        status: PomodoroStatus.pomodoroRunning,
+        phase: PomodoroPhase.pomodoro,
+        currentPomodoro: 1,
+        totalPomodoros: 2,
+        phaseDurationSeconds: 25 * 60,
+        remainingSeconds: 1400,
+        accumulatedPausedSeconds: 0,
+        phaseStartedAt: now.subtract(const Duration(minutes: 1, seconds: 40)),
+        currentTaskStartedAt: now.subtract(const Duration(minutes: 1, seconds: 40)),
+        pausedAt: null,
+        lastUpdatedAt: tFuture,
+        finishedAt: null,
+        pauseReason: null,
+      );
+
+      // Cached (stale) session: same revision, lastUpdatedAt in the past
+      final tCached = now.subtract(const Duration(minutes: 1));
+      final cachedSession = PomodoroSession(
+        taskId: freshSession.taskId,
+        groupId: freshSession.groupId,
+        currentTaskId: freshSession.currentTaskId,
+        currentTaskIndex: freshSession.currentTaskIndex,
+        totalTasks: freshSession.totalTasks,
+        dataVersion: freshSession.dataVersion,
+        sessionRevision: freshSession.sessionRevision, // same revision
+        ownerDeviceId: freshSession.ownerDeviceId,
+        status: freshSession.status,
+        phase: freshSession.phase,
+        currentPomodoro: freshSession.currentPomodoro,
+        totalPomodoros: freshSession.totalPomodoros,
+        phaseDurationSeconds: freshSession.phaseDurationSeconds,
+        remainingSeconds: 1380,
+        accumulatedPausedSeconds: freshSession.accumulatedPausedSeconds,
+        phaseStartedAt: freshSession.phaseStartedAt,
+        currentTaskStartedAt: freshSession.currentTaskStartedAt,
+        pausedAt: null,
+        lastUpdatedAt: tCached, // older than T_future
+        finishedAt: null,
+        pauseReason: null,
+      );
+
+      // Follow-up session: revision+1, just 1s newer than cached
+      final followUpSession = PomodoroSession(
+        taskId: freshSession.taskId,
+        groupId: freshSession.groupId,
+        currentTaskId: freshSession.currentTaskId,
+        currentTaskIndex: freshSession.currentTaskIndex,
+        totalTasks: freshSession.totalTasks,
+        dataVersion: freshSession.dataVersion,
+        sessionRevision: 11, // higher revision
+        ownerDeviceId: freshSession.ownerDeviceId,
+        status: freshSession.status,
+        phase: freshSession.phase,
+        currentPomodoro: freshSession.currentPomodoro,
+        totalPomodoros: freshSession.totalPomodoros,
+        phaseDurationSeconds: freshSession.phaseDurationSeconds,
+        remainingSeconds: 1370,
+        accumulatedPausedSeconds: freshSession.accumulatedPausedSeconds,
+        phaseStartedAt: freshSession.phaseStartedAt,
+        currentTaskStartedAt: freshSession.currentTaskStartedAt,
+        pausedAt: null,
+        lastUpdatedAt: tCached.add(const Duration(seconds: 1)),
+        finishedAt: null,
+        pauseReason: null,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(freshSession);
+      final appModeService = AppModeService.memory();
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      addTearDown(() {
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      container.listen<PomodoroState>(pomodoroViewModelProvider, (_, __) {});
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      // Trigger null → debounce → latch
+      sessionRepo.emit(null);
+      await _pumpQueue();
+      await Future<void>.delayed(const Duration(seconds: 4));
+      await _pumpQueue();
+      expect(vm.isSessionMissingWhileRunning, isTrue,
+          reason: 'latch must fire after debounce');
+
+      // Deliver cached session (T_cached < T_future → old code blocks the gate)
+      sessionRepo.emit(cachedSession);
+      await _pumpQueue();
+
+      // The latch must be cleared by the single-shot bypass
+      expect(vm.isSessionMissingWhileRunning, isFalse,
+          reason: 'AP-4: stale snapshot must exit hold regardless of gate');
+
+      // [REFACTOR] After bypass, watermarks must be reset to T_cached.
+      // Verify by emitting a follow-up session slightly newer than T_cached:
+      // it must be accepted (would be blocked if watermarks still pointed to T_future).
+      sessionRepo.emit(followUpSession);
+      await _pumpQueue();
+      expect(
+        vm.activeSessionForCurrentGroup?.sessionRevision,
+        followUpSession.sessionRevision,
+        reason: '[REFACTOR] watermarks reset to cached values; follow-up session must be applied',
+      );
+    },
+  );
+
+  test(
+    'stream null within debounce window does not latch if real session arrives first (AP-2)',
+    () async {
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(id: 'group-ap2', start: now);
+      final session = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        ownerDeviceId: 'other-device',
+        now: now,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      addTearDown(() {
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      container.listen<PomodoroState>(pomodoroViewModelProvider, (_, __) {});
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      // Emit null to start the 3s debounce
+      sessionRepo.emit(null);
+      await _pumpQueue();
+      // Wait only 1s (within debounce window) then send valid session
+      await Future<void>.delayed(const Duration(seconds: 1));
+      final recoveredSession = PomodoroSession(
+        taskId: session.taskId,
+        groupId: session.groupId,
+        currentTaskId: session.currentTaskId,
+        currentTaskIndex: session.currentTaskIndex,
+        totalTasks: session.totalTasks,
+        dataVersion: session.dataVersion,
+        sessionRevision: 2,
+        ownerDeviceId: session.ownerDeviceId,
+        status: session.status,
+        phase: session.phase,
+        currentPomodoro: session.currentPomodoro,
+        totalPomodoros: session.totalPomodoros,
+        phaseDurationSeconds: session.phaseDurationSeconds,
+        remainingSeconds: session.remainingSeconds,
+        accumulatedPausedSeconds: session.accumulatedPausedSeconds,
+        phaseStartedAt: session.phaseStartedAt,
+        currentTaskStartedAt: session.currentTaskStartedAt,
+        pausedAt: null,
+        lastUpdatedAt: session.lastUpdatedAt,
+        finishedAt: null,
+        pauseReason: null,
+      );
+      sessionRepo.emit(recoveredSession);
+      await _pumpQueue();
+      // Wait out the rest of the debounce window
+      await Future<void>.delayed(const Duration(seconds: 3));
+      await _pumpQueue();
+
+      expect(vm.isSessionMissingWhileRunning, isFalse,
+          reason: 'AP-2: debounce cancelled by real session; no latch should fire');
+      expect(vm.activeSessionForCurrentGroup, isNotNull);
+    },
+  );
+
+  test(
+    'recovery clears latch when server session is active and owner is different device (AP-3)',
+    () async {
+      // Scenario: this device was the owner. Stream drops (null). Device tries
+      // to reclaim (tryClaimSession → false: another device took over).
+      // fetchSession returns active session with new owner.
+      // Expected: latch cleared, new owner session applied.
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(id: 'group-ap3', start: now);
+      final remoteOwner = 'remote-owner-device';
+
+      // This device starts as owner
+      final ownerSession = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        ownerDeviceId: deviceInfo.deviceId, // this device owns it
+        now: now,
+      );
+      // Server session: another device has taken over (new owner)
+      final serverSession = PomodoroSession(
+        taskId: ownerSession.taskId,
+        groupId: ownerSession.groupId,
+        currentTaskId: ownerSession.currentTaskId,
+        currentTaskIndex: ownerSession.currentTaskIndex,
+        totalTasks: ownerSession.totalTasks,
+        dataVersion: ownerSession.dataVersion,
+        sessionRevision: ownerSession.sessionRevision + 1,
+        ownerDeviceId: remoteOwner, // new owner
+        status: PomodoroStatus.pomodoroRunning,
+        phase: PomodoroPhase.pomodoro,
+        currentPomodoro: ownerSession.currentPomodoro,
+        totalPomodoros: ownerSession.totalPomodoros,
+        phaseDurationSeconds: ownerSession.phaseDurationSeconds,
+        remainingSeconds: 1100,
+        accumulatedPausedSeconds: 0,
+        phaseStartedAt: now.subtract(const Duration(minutes: 3)),
+        currentTaskStartedAt: now.subtract(const Duration(minutes: 3)),
+        pausedAt: null,
+        lastUpdatedAt: now,
+        finishedAt: null,
+        pauseReason: null,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      // tryClaimSession returns false (remote device now owns the session).
+      // fetchSession always returns serverSession (server has the active session).
+      final sessionRepo = _FakeSessionRepoClaimFails.withServer(
+        ownerSession,
+        serverSession,
+      );
+      final appModeService = AppModeService.memory();
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      addTearDown(() {
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      container.listen<PomodoroState>(pomodoroViewModelProvider, (_, __) {});
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      // Trigger latch: emit null, wait for debounce.
+      // fetchSession already returns the active server session throughout,
+      // so the first recovery attempt (fired by the latch) can find it.
+      sessionRepo.emit(null);
+      await _pumpQueue();
+      await Future<void>.delayed(const Duration(seconds: 4));
+      await _pumpQueue();
+
+      // After debounce + recovery: latch must be cleared by the server fetch
+      expect(vm.isSessionMissingWhileRunning, isFalse,
+          reason: 'AP-3: server fetch during recovery must clear latch when remote session is active');
+      expect(vm.activeSessionForCurrentGroup?.ownerDeviceId, remoteOwner,
+          reason: 'AP-3: discovered remote session must be applied after recovery');
+    },
+  );
+}
+
+// Variant that always fails tryClaimSession (simulates ownership by another device).
+// fetchSession always returns [serverSession] regardless of stream state,
+// simulating a server that has the active session even when the stream is null.
+class _FakeSessionRepoClaimFails extends FakePomodoroSessionRepository {
+  _FakeSessionRepoClaimFails(PomodoroSession initialSession)
+      : _serverSession = initialSession,
+        super(initialSession);
+
+  _FakeSessionRepoClaimFails.withServer(
+    PomodoroSession initialSession,
+    PomodoroSession serverSession,
+  )   : _serverSession = serverSession,
+        super(initialSession);
+
+  final PomodoroSession _serverSession;
+
+  @override
+  Future<bool> tryClaimSession(PomodoroSession session) async => false;
+
+  @override
+  Future<PomodoroSession?> fetchSession({bool preferServer = false}) async {
+    return _serverSession;
+  }
 }

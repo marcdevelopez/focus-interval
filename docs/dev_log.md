@@ -25,7 +25,8 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **10/03/2026**
+Last bug fix: **Fix 26 sync-core refactor (Phase 2 in progress)**
+Last update: **11/03/2026**
 
 ---
 
@@ -10144,7 +10145,109 @@ but `activeSession/current.status=finished` with stale cursor data.
 - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` → PASS
 - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
 
+### 🔖 Tracking:
+
+- Implementation commit: `cb31ddf`
+- Message: `fix(f26): rebase timeline on owner handoff with regressed timestamps`
+
 ### ⚠️ Notes:
 
 - `ios/Flutter/AppFrameworkInfo.plist` remains locally modified and intentionally excluded.
 - Device validation pending on release logs after this patch.
+
+---
+
+# 🔹 Block 564 — Fix 26 reopen: missing-session latch not clearing on UI after timeline skip (10/03/2026)
+
+**Date:** 10/03/2026
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`
+**Scope:** Root-cause and fix the persistent `Syncing session...` overlay on mirror (macOS) and frozen timer/gray circle on owner (Android) that reappeared after commit `250c24d`.
+
+### ✔ Work completed:
+
+- Analysed incident logs (same log files as Block 563):
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-10_fix26_postfix_250c24d_macos_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-10_fix26_postfix_250c24d_android_RMX3771_diag.log`
+- Confirmed Block 563 fix (`cb31ddf`) targeted a different failure mode (owner-handoff with regressed `lastUpdatedAt`) that was **not** the actual root cause for this incident (Android remained owner throughout, no handoff).
+- Identified true root cause:
+
+  **Bug sequence:**
+  1. `loadGroup` fetches session with `preferServer: true` → sets `_lastAppliedSessionUpdatedAt = T_server_fresh`.
+  2. `_primeMirrorSession` starts the mirror timer; UI shows running state.
+  3. `_subscribeToRemoteSession(fireImmediately: true)` fires `AsyncLoading` → null → 3 s debounce starts.
+  4. After 3 s: `_sessionMissingWhileRunning = true`, mirror timer cancelled, `_notifySessionMetaChanged()` → UI shows `Syncing session...`.
+  5. Real Firestore snapshot arrives: `lastUpdatedAt = T_cached ≤ T_server_fresh` → `shouldApplyTimeline = false`.
+  6. `wasMissing = true` was captured before the clear at step 4, but the `!shouldApplyTimeline` early-return block only called `_notifySessionMetaChanged()` when `ownershipMetaChanged`, **not** when `wasMissing`.
+  7. Result: no rebuild triggered → UI permanently stuck at `Syncing session...`.
+  8. Additionally, `_lastAppliedSessionUpdatedAt` is only updated inside the `shouldApplyTimeline=true` block, so all subsequent stream events also fail the gate → indefinite lock.
+
+- Applied fix in `lib/presentation/viewmodels/pomodoro_view_model.dart`:
+  - In `_subscribeToRemoteSession` listener, at the `!shouldApplyTimeline` early-return (line ~1408):
+  - **Before:** `if (ownershipMetaChanged) { _notifySessionMetaChanged(); }`
+  - **After:** `if (ownershipMetaChanged || wasMissing) { _notifySessionMetaChanged(); }`
+  - This ensures a UI rebuild fires when the missing-session latch clears, even when the stream snapshot doesn't pass the timeline gate.
+
+### 🧪 Validation run (local):
+
+- `dart analyze lib/presentation/viewmodels/pomodoro_view_model.dart` → PASS
+- `flutter analyze` → PASS
+
+### 🔖 Tracking:
+
+- Implementation commit: `b085ea6`
+- Message: `fix(f26): notify UI when missing-session latch clears but timeline skips`
+
+### ⚠️ Notes:
+
+- **Partial limitation**: The fix clears the `Syncing session...` overlay immediately. The mirror timer position (frozen seconds) will unfreeze on the next Firestore write where `lastUpdatedAt > T_server_fresh` (~30 s max). A full immediate unfreeze would require calling `_setMirrorSession(session)` inside the `wasMissing` branch — deferred to device validation.
+- `ios/Flutter/AppFrameworkInfo.plist` remains locally modified and intentionally excluded.
+- Device validation in progress (release logs running on Android RMX3771 + macOS as of 10/03/2026).
+
+---
+
+# 🔹 Block 565 — Fix 26 Phase 2: unified session snapshot pipeline (11/03/2026)
+
+**Date:** 11/03/2026  
+**Branch:** `refactor-run-mode-sync-core`  
+**Scope:** Apply the specs 10.4.8.b contract in runtime by centralizing
+snapshot application (`stream` + `fetch/resync` + `recovery`) and enforcing the
+single-shot missing-session bypass with atomic watermark reset.
+
+### ✔ Work completed:
+
+- Refactored `lib/presentation/viewmodels/pomodoro_view_model.dart`:
+  - Added `_applySessionSnapshot(...)` as the single gate/application entry:
+    - computes `shouldBypassGate = wasMissing && _isValidHoldExitSnapshot(session)`
+    - applies single-shot bypass
+    - resets applied watermarks atomically on bypass
+    - resumes normal gate path immediately after exit event.
+  - Added `_isValidHoldExitSnapshot(...)` with spec-aligned validity checks:
+    `groupId` match + active execution status (or terminal+terminal reconciliation).
+  - Added `_ingestResolvedSession(...)` so stream/fetch/recovery all delegate to
+    the same ingest + gate + projection path.
+  - Added `_applySessionTimelineProjection(...)` and
+    `_clearRemoteSessionForContextMismatch(...)` to keep projection behavior
+    centralized and deterministic.
+- Rewired all three session paths to the shared pipeline:
+  - `_subscribeToRemoteSession(...)` now delegates non-null snapshots to
+    `_ingestResolvedSession(...)`.
+  - `syncWithRemoteSession(...)` now delegates non-null snapshots to
+    `_ingestResolvedSession(...)`.
+  - `_recoverMissingSession(...)` (server-session branch) now delegates to
+    `_ingestResolvedSession(...)` instead of applying state through a parallel path.
+
+### 🧪 Validation run (local):
+
+- `dart analyze lib/presentation/viewmodels/pomodoro_view_model.dart test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` → PASS (infos only).
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` → PASS (7/7).
+- Contract-focused tests confirmed:
+  - `[REFACTOR] missing-session exit resets watermark... (AP-4 full fix)` → PASS.
+  - `stream null within debounce window... (AP-2)` → PASS.
+  - `recovery clears latch when server session is active... (AP-3)` → PASS.
+
+### ⚠️ Notes:
+
+- Full repository test suite still has pre-existing failures in
+  `scheduled_group_coordinator_test.dart` (AppModeService initialization path);
+  these failures are outside this refactor scope.
+- Device validation for Fix 26 degraded-network repro remains pending.

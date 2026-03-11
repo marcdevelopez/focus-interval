@@ -1172,14 +1172,13 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (serverSession != null &&
         serverSession.ownerDeviceId != _deviceInfo.deviceId &&
         serverSession.status.isActiveExecution) {
-      _sessionMissingLatchTimer?.cancel();
-      _sessionMissingLatchTimer = null;
-      _sessionMissingWhileRunning = false;
-      _latestSession = serverSession;
-      _recordSessionSnapshot(serverSession);
-      _resetLocalSessionState();
-      _primeMirrorSession(serverSession);
-      _notifySessionMetaChanged();
+      final previousSession = _latestSession;
+      final wasMissing = _sessionMissingWhileRunning;
+      _ingestResolvedSession(
+        serverSession,
+        previousSession: previousSession,
+        wasMissing: wasMissing,
+      );
       return;
     }
     _syncPausedHeartbeat();
@@ -1390,97 +1389,11 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
           }
         }
 
-        _sessionMissingLatchTimer?.cancel();
-        _sessionMissingLatchTimer = null;
-        _sessionMissingWhileRunning = false;
-        _latestSession = session;
-        _recordSessionSnapshot(session);
-        _clearAwaitingSessionConfirmationIfSatisfied(session);
-        _reconcilePendingIntent(session);
-        final optimisticChanged = _syncOptimisticOwnershipRequest(session);
-        final ownershipMetaChanged =
-            _didOwnershipMetaChange(previousSession, session) ||
-            optimisticChanged;
-        final shouldApplyTimeline = _shouldApplySessionTimeline(
+        _ingestResolvedSession(
           session,
           previousSession: previousSession,
+          wasMissing: wasMissing,
         );
-        if (!shouldApplyTimeline) {
-          if (ownershipMetaChanged || wasMissing) {
-            _notifySessionMetaChanged();
-          }
-          return;
-        }
-        _syncSessionCounters(session, markApplied: true);
-        if (session.ownerDeviceId == _deviceInfo.deviceId) {
-          _mirrorTimer?.cancel();
-          _remoteOwnerId = null;
-          _remoteSession = null;
-          _lastAutoTakeoverAttemptAt = null;
-          _lastAutoTakeoverFailureAt = null;
-          final matchesContext = _matchesCurrentContext(session);
-          if (_currentGroup != null && session.groupId == _currentGroup!.id) {
-            _applySessionTaskContext(session);
-          } else if (_currentTask != null &&
-              session.taskId == _currentTask!.id) {
-            _applySessionTaskContext(session);
-          }
-          if (matchesContext) {
-            _setMirrorSession(session, allowAutoTakeover: false);
-            final shouldHydrate =
-                _machine.state.status == PomodoroStatus.idle &&
-                session.status != PomodoroStatus.idle;
-            if (shouldHydrate) {
-              unawaited(_hydrateOwnerSession(session));
-            }
-          }
-          if (ownershipMetaChanged) {
-            _notifySessionMetaChanged();
-          }
-          return;
-        }
-        if (_currentGroup != null) {
-          if (session.groupId != _currentGroup!.id) {
-            _mirrorTimer?.cancel();
-            _remoteOwnerId = null;
-            _remoteSession = null;
-            _lastAutoTakeoverAttemptAt = null;
-            _stopPausedHeartbeat();
-            _stopForegroundService();
-            if (ownershipMetaChanged) {
-              _notifySessionMetaChanged();
-            }
-            return;
-          }
-          _applySessionTaskContext(session);
-        } else if (_currentTask == null || session.taskId != _currentTask!.id) {
-          // If the remote session belongs to another task, do not apply it.
-          _mirrorTimer?.cancel();
-          _remoteOwnerId = null;
-          _remoteSession = null;
-          _lastAutoTakeoverAttemptAt = null;
-          _stopPausedHeartbeat();
-          _stopForegroundService();
-          if (ownershipMetaChanged) {
-            _notifySessionMetaChanged();
-          }
-          return;
-        }
-        final wasOwner =
-            _remoteOwnerId == null || _remoteOwnerId == _deviceInfo.deviceId;
-        if (wasOwner) {
-          final keepOptimistic = isOwnershipRequestPendingForThisDevice;
-          _resetLocalSessionState(keepOptimistic: keepOptimistic);
-        }
-        _remoteOwnerId = session.ownerDeviceId;
-        _remoteSession = session;
-        _lastAutoTakeoverAttemptAt = null;
-        _stopPausedHeartbeat();
-        _stopForegroundService();
-        _setMirrorSession(session);
-        if (ownershipMetaChanged || wasMissing) {
-          _notifySessionMetaChanged();
-        }
       },
       fireImmediately: true,
     );
@@ -1543,6 +1456,140 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       _lastAppliedSessionRevision = session.sessionRevision;
       _lastAppliedSessionUpdatedAt = session.lastUpdatedAt;
     }
+  }
+
+  bool _isValidHoldExitSnapshot(PomodoroSession session) {
+    final group = _currentGroup;
+    if (group == null) return false;
+    if (session.groupId != group.id) return false;
+    if (session.status.isActiveExecution) return true;
+    final isTerminalSession =
+        session.status == PomodoroStatus.finished ||
+        session.status == PomodoroStatus.idle;
+    final isTerminalGroup =
+        group.status == TaskRunStatus.completed ||
+        group.status == TaskRunStatus.canceled;
+    return isTerminalSession && isTerminalGroup;
+  }
+
+  void _applySessionSnapshot(
+    PomodoroSession session, {
+    required PomodoroSession? previousSession,
+    required bool wasMissing,
+    required bool ownershipMetaChanged,
+    required void Function(PomodoroSession session) onApply,
+  }) {
+    final shouldBypassGate = wasMissing && _isValidHoldExitSnapshot(session);
+    final shouldApplyTimeline =
+        shouldBypassGate ||
+        _shouldApplySessionTimeline(session, previousSession: previousSession);
+    if (!shouldApplyTimeline) {
+      if (ownershipMetaChanged || wasMissing) {
+        _notifySessionMetaChanged();
+      }
+      return;
+    }
+    _syncSessionCounters(session, markApplied: true);
+    if (shouldBypassGate) {
+      // Single-shot bypass on hold exit must atomically reset watermarks
+      // to the applied snapshot values, even when numerically lower.
+      _lastAppliedSessionRevision = session.sessionRevision;
+      _lastAppliedSessionUpdatedAt = session.lastUpdatedAt;
+    }
+    onApply(session);
+    if (ownershipMetaChanged || wasMissing) {
+      _notifySessionMetaChanged();
+    }
+  }
+
+  void _clearRemoteSessionForContextMismatch() {
+    _mirrorTimer?.cancel();
+    _remoteOwnerId = null;
+    _remoteSession = null;
+    _lastAutoTakeoverAttemptAt = null;
+    _stopPausedHeartbeat();
+    _stopForegroundService();
+  }
+
+  void _applySessionTimelineProjection(PomodoroSession session) {
+    if (session.ownerDeviceId == _deviceInfo.deviceId) {
+      _mirrorTimer?.cancel();
+      _remoteOwnerId = null;
+      _remoteSession = null;
+      _lastAutoTakeoverAttemptAt = null;
+      _lastAutoTakeoverFailureAt = null;
+      final matchesContext = _matchesCurrentContext(session);
+      if (_currentGroup != null && session.groupId == _currentGroup!.id) {
+        _applySessionTaskContext(session);
+      } else if (_currentTask != null && session.taskId == _currentTask!.id) {
+        _applySessionTaskContext(session);
+      }
+      if (!matchesContext) {
+        _clearRemoteSessionForContextMismatch();
+        return;
+      }
+      _pauseReason = session.status == PomodoroStatus.paused
+          ? session.pauseReason
+          : null;
+      _pauseStartedAt = session.status == PomodoroStatus.paused
+          ? session.pausedAt
+          : null;
+      _setMirrorSession(session, allowAutoTakeover: false);
+      _pinOwnerPhaseStartFromSession(session);
+      final shouldHydrate =
+          _machine.state.status == PomodoroStatus.idle &&
+          session.status != PomodoroStatus.idle;
+      if (shouldHydrate) {
+        unawaited(_hydrateOwnerSession(session));
+      }
+      return;
+    }
+    if (_currentGroup != null) {
+      if (session.groupId != _currentGroup!.id) {
+        _clearRemoteSessionForContextMismatch();
+        return;
+      }
+      _applySessionTaskContext(session);
+    } else if (_currentTask == null || session.taskId != _currentTask!.id) {
+      _clearRemoteSessionForContextMismatch();
+      return;
+    }
+    final wasOwner =
+        _remoteOwnerId == null || _remoteOwnerId == _deviceInfo.deviceId;
+    if (wasOwner) {
+      final keepOptimistic = isOwnershipRequestPendingForThisDevice;
+      _resetLocalSessionState(keepOptimistic: keepOptimistic);
+    }
+    _remoteOwnerId = session.ownerDeviceId;
+    _remoteSession = session;
+    _lastAutoTakeoverAttemptAt = null;
+    _stopPausedHeartbeat();
+    _stopForegroundService();
+    _setMirrorSession(session);
+  }
+
+  void _ingestResolvedSession(
+    PomodoroSession session, {
+    required PomodoroSession? previousSession,
+    required bool wasMissing,
+  }) {
+    _sessionMissingLatchTimer?.cancel();
+    _sessionMissingLatchTimer = null;
+    _sessionMissingWhileRunning = false;
+    _latestSession = session;
+    _recordSessionSnapshot(session);
+    _clearAwaitingSessionConfirmationIfSatisfied(session);
+    _reconcilePendingIntent(session);
+    final optimisticChanged = _syncOptimisticOwnershipRequest(session);
+    final ownershipMetaChanged =
+        _didOwnershipMetaChange(previousSession, session) || optimisticChanged;
+    _applySessionSnapshot(
+      session,
+      previousSession: previousSession,
+      wasMissing: wasMissing,
+      ownershipMetaChanged: ownershipMetaChanged,
+      onApply: _applySessionTimelineProjection,
+    );
   }
 
   bool _shouldApplySessionTimeline(
@@ -2725,33 +2772,11 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         }
         return;
       }
-      _sessionMissingWhileRunning = false;
-      _latestSession = session;
-      _recordSessionSnapshot(session);
-      _clearAwaitingSessionConfirmationIfSatisfied(session);
-      _reconcilePendingIntent(session);
-      final optimisticChanged = _syncOptimisticOwnershipRequest(session);
-      final ownershipMetaChanged =
-          _didOwnershipMetaChange(previousSession, session) ||
-          optimisticChanged;
-      final shouldApplyTimeline = _shouldApplySessionTimeline(
+      _ingestResolvedSession(
         session,
         previousSession: previousSession,
+        wasMissing: wasMissing,
       );
-      if (shouldApplyTimeline) {
-        _syncSessionCounters(session, markApplied: true);
-        final now = _serverNowFromOffset() ?? DateTime.now();
-        if (session.ownerDeviceId == _deviceInfo.deviceId) {
-          _lastAutoTakeoverFailureAt = null;
-          _primeOwnerSession(session, now: now);
-        } else {
-          _primeMirrorSession(session);
-          _maybeAutoTakeoverStaleOwner(session);
-        }
-      }
-      if (ownershipMetaChanged || wasMissing) {
-        _notifySessionMetaChanged();
-      }
     } finally {
       _setResyncInProgress(false);
     }
