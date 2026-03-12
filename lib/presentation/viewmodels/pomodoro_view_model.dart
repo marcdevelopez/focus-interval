@@ -115,6 +115,8 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   _PendingIntent? _pendingIntent;
   DateTime? _timeSyncWaitStartedAt;
   int? _awaitingSessionRevision;
+  bool _lastSyncOverlayVisible = false;
+  List<String> _lastSyncOverlayReasons = const <String>[];
 
   @override
   PomodoroState build() {
@@ -1539,7 +1541,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     final hasTimelineAnchor =
         session.phaseStartedAt != null &&
         (_isRunning(session.status) || session.status == PomodoroStatus.paused);
-    if (hasTimelineAnchor) return 'snapshotRemaining';
+    if (hasTimelineAnchor) return 'localFallback';
     return 'none';
   }
 
@@ -1955,7 +1957,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     final projection = _serverNowFromOffset(localNow: now);
     if (projection == null) {
       unawaited(_refreshTimeSyncIfNeeded(reason: 'projection'));
-      return null;
+      return now;
     }
     return projection;
   }
@@ -1975,7 +1977,74 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   void _notifySessionMetaChanged() {
+    _logSyncOverlayTransitionIfNeeded();
     state = state;
+  }
+
+  List<String> _activeSyncOverlayReasons() {
+    if (ref.read(appModeProvider) != AppMode.account) {
+      return const <String>[];
+    }
+
+    final reasons = <String>[];
+    final hasSession = activeSessionForCurrentGroup != null;
+    final groupRunning = _currentGroup?.status == TaskRunStatus.running;
+
+    if (_sessionMissingWhileRunning) {
+      reasons.add('sessionMissingHold');
+    }
+    if (groupRunning && !hasSession) {
+      reasons.add('runningWithoutSession');
+    }
+    if (_awaitingSessionRevision != null) {
+      reasons.add('awaitingSessionConfirmation');
+    }
+    if (!isTimeSyncReady && (hasSession || _pendingIntent != null)) {
+      reasons.add('timeSyncUnready');
+    }
+    return reasons;
+  }
+
+  String _primarySyncOverlayReason(List<String> reasons) {
+    if (reasons.isEmpty) return 'none';
+    return reasons.first;
+  }
+
+  bool _sameReasonList(List<String> left, List<String> right) {
+    if (left.length != right.length) return false;
+    for (var i = 0; i < left.length; i += 1) {
+      if (left[i] != right[i]) return false;
+    }
+    return true;
+  }
+
+  void _logSyncOverlayTransitionIfNeeded() {
+    if (!kDebugMode) return;
+    final reasonsAfter = _activeSyncOverlayReasons();
+    final visibleAfter = reasonsAfter.isNotEmpty;
+    final visibleBefore = _lastSyncOverlayVisible;
+    final reasonsBefore = _lastSyncOverlayReasons;
+    final changed =
+        visibleBefore != visibleAfter ||
+        !_sameReasonList(reasonsBefore, reasonsAfter);
+    if (!changed) return;
+
+    _lastSyncOverlayVisible = visibleAfter;
+    _lastSyncOverlayReasons = List<String>.from(reasonsAfter);
+
+    final groupId = _currentGroup?.id ?? 'n/a';
+    final activeReasons = reasonsAfter.isEmpty
+        ? 'none'
+        : reasonsAfter.join(',');
+    final primaryReason = _primarySyncOverlayReason(reasonsAfter);
+    debugPrint(
+      '[SyncOverlay] '
+      'groupId=$groupId '
+      'overlayVisibleBefore=$visibleBefore '
+      'overlayVisibleAfter=$visibleAfter '
+      'activeReasons=$activeReasons '
+      'primaryReason=$primaryReason',
+    );
   }
 
   bool _didOwnershipMetaChange(
@@ -3003,6 +3072,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       _markPhaseStartedFromState(projected, now: now);
     }
     state = projected;
+    _logSyncOverlayTransitionIfNeeded();
     _syncForegroundService(projected);
     _syncKeepAliveState();
   }

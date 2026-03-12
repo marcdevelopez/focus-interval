@@ -391,6 +391,7 @@ void main() {
       vm.start();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
+      foundation.debugPrint = previousDebugPrint;
 
       expect(vm.hasPendingIntent, isTrue);
       final merged = logs.join('\n');

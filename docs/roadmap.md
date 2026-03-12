@@ -222,6 +222,13 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           outside Phase 3 latch protections. Phase 4 opened (docs-first):
           render/sync decoupling contract + overlay-trigger diagnostics
           contract tests added; runtime implementation pending.
+      12/03/2026: Fix 26 Phase 4 runtime implemented on
+          `refactor-run-mode-sync-core`: active projection now falls back to
+          local elapsed-time anchors when server offset is unavailable, and
+          explicit `[SyncOverlay]` diagnostics now emit visibility transitions
+          with deterministic trigger reasons (`sessionMissingHold`,
+          `runningWithoutSession`, `awaitingSessionConfirmation`,
+          `timeSyncUnready`). Contract suites now pass.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling

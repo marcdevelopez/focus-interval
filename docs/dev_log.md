@@ -25,7 +25,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **Fix 26 Phase 3 runtime implementation (validation pending)**
+Last bug fix: **Fix 26 Phase 4 runtime implementation (validation pending)**
 Last update: **12/03/2026**
 
 ---
@@ -10386,3 +10386,54 @@ freeze reproduction outside the Phase 3 hold path.
 
 - No runtime changes were made in this block.
 - This block formalizes Phase 4 target behavior before implementation.
+
+---
+
+# 🔹 Block 569 — Fix 26 Phase 4 runtime: local-fallback projection + sync-overlay diagnostics (12/03/2026)
+
+**Date:** 12/03/2026  
+**Branch:** `refactor-run-mode-sync-core`  
+**Scope:** Implement Phase 4 runtime contracts to decouple countdown rendering
+from sync/offset availability and to expose deterministic diagnostics for
+`Syncing session...` transitions.
+
+### ✔ Work completed:
+
+- Updated `lib/presentation/viewmodels/pomodoro_view_model.dart`:
+  - projection fallback:
+    - `_projectionNowForSession(...)` now falls back to local time when server
+      offset is unavailable (while still triggering async TimeSync refresh),
+    - active render projection no longer returns `null` anchor in account mode
+      during offset gaps.
+  - hold diagnostics projection source:
+    - `_projectionSourceForSession(...)` now reports `localFallback` (instead of
+      `snapshotRemaining`) when timeline anchors exist but offset is unavailable.
+  - sync-overlay diagnostics:
+    - added deterministic trigger derivation in ViewModel for:
+      `sessionMissingHold`, `runningWithoutSession`,
+      `awaitingSessionConfirmation`, `timeSyncUnready`,
+    - added `[SyncOverlay]` transition log emission with:
+      `overlayVisibleBefore/After`, `activeReasons`, `primaryReason`, `groupId`,
+    - diagnostics are emitted from ViewModel state/meta transitions, not inline
+      in widget build logic.
+  - state/meta hooks:
+    - `_notifySessionMetaChanged()` and `_applyProjectedState(...)` now reconcile
+      and emit sync-overlay transition diagnostics on change.
+
+- Updated test coverage:
+  - `test/presentation/timer_screen_syncing_overlay_test.dart`:
+    - stabilized debug-print restoration ordering in the new Phase 4 diagnostics
+      test to avoid widget-test foundation invariant violations.
+
+### 🧪 Validation run (local):
+
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart --reporter compact`
+  → PASS (`14/14`).
+- `dart analyze lib/presentation/viewmodels/pomodoro_view_model.dart test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart`
+  → PASS (2 pre-existing info-level style hints in test helper).
+
+### ⚠️ Notes:
+
+- Device validation remains pending for this runtime phase.
+- Existing unrelated local modifications were preserved
+  (`docs/bugs/...`, `ios/Flutter/AppFrameworkInfo.plist`).
