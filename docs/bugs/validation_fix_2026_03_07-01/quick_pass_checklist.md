@@ -1,7 +1,7 @@
 # Quick Pass Checklist — Fix 26 cycle 4
 
 Date: 2026-03-07
-Last reviewed: 2026-03-10
+Last reviewed: 2026-03-11
 Status: **Reopened (10/03/2026 regression — rollback to 961f7eb baseline, re-validation required)**
 
 - [x] iOS + Chrome run completed with debug logs saved.
@@ -246,3 +246,26 @@ flutter run -v --debug -d chrome --dart-define=APP_ENV=prod \
 - Root cause: `ref.invalidate(scheduledGroupCoordinatorProvider)` was disposing the coordinator's listeners, creating a race window where Firestore stream data arrived before the new coordinator instance rebuilt its subscriptions.
 - Fix: removed the invalidation — coordinator's `ref.listen<AppMode>` handles mode transitions naturally via `_resetForModeChange()` + `_handleGroups()`.
 - Fix commit: Block 550 in dev_log.md.
+
+## 2026-03-11 Phase 3 validation logs — second run (`f25f294`) — IN PROGRESS
+
+- [ ] All 4 devices running without freeze (monitoring)
+- [ ] HoldDiag events visible in debug logs (iOS/Chrome)
+- [ ] Network cut repro test pending
+- Log files:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_phase3_f25f294_macos_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_phase3_f25f294_android_RMX3771_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_phase3_f25f294_ios_iPhone17Pro_debug.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_phase3_f25f294_chrome_debug.log`
+
+---
+
+## 2026-03-11 Phase 2 validation logs captured (`8c6cb73`)
+
+- [x] Existing running-group smoke logs captured (macOS + Android RMX3771).
+- [x] New-group exact repro logs captured (iOS simulator + Chrome debug).
+- Log files:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_phase2_8c6cb73_macos_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_phase2_8c6cb73_android_RMX3771_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_refactor_8c6cb73_ios_iPhone17Pro_debug.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_refactor_8c6cb73_chrome_debug.log`

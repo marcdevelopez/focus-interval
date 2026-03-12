@@ -1082,6 +1082,71 @@ void main() {
   );
 
   test(
+    '[PHASE4] active projection must continue with local fallback when timeSync is unavailable',
+    () async {
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'group-phase4-local-fallback-projection',
+        start: now,
+      );
+      final session = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        ownerDeviceId: 'other-device',
+        now: now,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+      final timeSyncService = FakeTimeSyncService(offset: null);
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(timeSyncService),
+        ],
+      );
+      addTearDown(() {
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      container.listen<PomodoroState>(pomodoroViewModelProvider, (_, __) {});
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      expect(vm.isTimeSyncReady, isFalse);
+      expect(vm.activeSessionForCurrentGroup, isNotNull);
+
+      final before = container.read(pomodoroViewModelProvider);
+      final beforeSeconds = before.remainingSeconds;
+      expect(before.status.isActiveExecution, isTrue);
+
+      await Future<void>.delayed(const Duration(seconds: 2));
+      await _pumpQueue();
+
+      final after = container.read(pomodoroViewModelProvider);
+      expect(
+        after.remainingSeconds,
+        lessThan(beforeSeconds),
+        reason:
+            'Phase-4 contract: active render projection must continue with local fallback and must not freeze on snapshotRemaining when timeSync is unavailable.',
+      );
+    },
+  );
+
+  test(
     '[PHASE3] transitional non-active snapshot must not clear hold without terminal corroboration',
     () async {
       final now = DateTime.now();

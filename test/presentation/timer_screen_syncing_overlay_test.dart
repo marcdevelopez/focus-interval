@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' as foundation;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -310,6 +311,101 @@ void main() {
       expect(vm.hasPendingIntent, isTrue);
       expect(find.byType(TimerDisplay), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    '[PHASE4] sync overlay diagnostics must emit explicit trigger reason (timeSyncUnready)',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final group = _buildScheduledGroup(
+        id: 'group-phase4-overlay-diagnostics',
+        scheduledStart: now.add(const Duration(minutes: 5)),
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(null);
+      final appModeService = AppModeService.memory();
+      final timeSyncService = FakeTimeSyncService(offset: null);
+      final noticeService = FakeTaskRunNoticeService();
+      final logs = <String>[];
+      final previousDebugPrint = foundation.debugPrint;
+      foundation.debugPrint = (String? message, {int? wrapWidth}) {
+        if (message != null) logs.add(message);
+      };
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(
+            DeviceInfoService.ephemeral(),
+          ),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(timeSyncService),
+          taskRunNoticeServiceProvider.overrideWithValue(noticeService),
+        ],
+      );
+      addTearDown(() {
+        foundation.debugPrint = previousDebugPrint;
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+
+      final router = GoRouter(
+        initialLocation: '/timer/${group.id}',
+        routes: [
+          GoRoute(
+            path: '/timer/:id',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return TimerScreen(groupId: id);
+            },
+          ),
+          GoRoute(
+            path: '/groups',
+            builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+          ),
+          GoRoute(
+            path: '/tasks',
+            builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 80));
+
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      vm.start();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(vm.hasPendingIntent, isTrue);
+      final merged = logs.join('\n');
+      expect(
+        merged.contains('SyncOverlay'),
+        isTrue,
+        reason:
+            'Phase-4 diagnostics contract: overlay transitions must emit a dedicated sync-overlay diagnostic event.',
+      );
+      expect(
+        merged.contains('timeSyncUnready'),
+        isTrue,
+        reason:
+            'Phase-4 diagnostics contract: sync-overlay diagnostics must include explicit trigger reason(s), including timeSyncUnready.',
+      );
     },
   );
 }

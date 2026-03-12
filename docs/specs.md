@@ -2213,6 +2213,41 @@ foreground owner must **not** freeze progression.
   - do not clear hold via exit path,
   - emit `hold-extend` with reason `projection-unavailable`.
 
+**Phase-4 render/sync decoupling contract (hard invariant):**
+- During active execution states (`pomodoroRunning`, `shortBreakRunning`,
+  `longBreakRunning`, `paused`), rendered countdown must be derived from timeline
+  anchors (`phaseStartedAt` + elapsed against `phaseDurationSeconds`).
+- `session.remainingSeconds` is seed-only compatibility metadata and must not be
+  used as the authoritative rendered value while an active phase is running.
+- If server-offset projection is unavailable, render must continue with
+  deterministic local fallback projection. A missing server offset is not a valid
+  reason to freeze countdown rendering.
+
+**Sync overlay non-blocking contract (hard invariant):**
+- The `Syncing session...` overlay and the countdown render loop are separate
+  concerns.
+- Overlay visibility must not pause/freeze countdown projection while there is a
+  last-known active timeline anchor for the current group.
+- The timer ring and `MM:SS` must continue updating while overlay is visible,
+  unless the group is terminally corroborated.
+
+**Sync overlay trigger diagnostics contract (mandatory):**
+- Every transition to/from overlay-visible state must emit a diagnostic event
+  with explicit trigger reason(s).
+- Supported trigger reasons map 1:1 to `TimerScreen` sync conditions:
+  - `sessionMissingHold` (`isSessionMissingWhileRunning`)
+  - `runningWithoutSession` (`group running && !sessionForGroup`)
+  - `timeSyncUnready` (`!isTimeSyncReady` with active/pending context)
+  - `awaitingSessionConfirmation` (`isAwaitingSessionConfirmation`)
+- Diagnostics payload must include:
+  - `groupId`
+  - `overlayVisibleBefore` / `overlayVisibleAfter`
+  - `activeReasons` (list)
+  - `primaryReason` (deterministic priority order:
+    `sessionMissingHold` > `runningWithoutSession` >
+    `awaitingSessionConfirmation` > `timeSyncUnready`)
+- Missing reason metadata for overlay transitions is a contract violation.
+
 **Hold timeout (bounded hold rule):**
 - Missing-session hold must not persist indefinitely. Release and clean up
   non-destructively when **condition A AND condition B** are both met:

@@ -215,6 +215,13 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           non-owner recovery server-read path, and hold lifecycle diagnostics.
           Contract suite `pomodoro_view_model_session_gap_test.dart` now passes
           fully (`11/11`). Device validation pending.
+      12/03/2026: Fix 26 validation rerun reproduced cascade freeze across
+          owner handoffs (macOS -> Android -> web -> iOS) while Firestore
+          snapshots/revisions continued advancing. Hold diagnostics did not
+          trigger in the failing run, indicating the active failure path is
+          outside Phase 3 latch protections. Phase 4 opened (docs-first):
+          render/sync decoupling contract + overlay-trigger diagnostics
+          contract tests added; runtime implementation pending.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling

@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Fix 26 Phase 3 runtime implementation (validation pending)**
-Last update: **11/03/2026**
+Last update: **12/03/2026**
 
 ---
 
@@ -10344,3 +10344,45 @@ Block 566, without introducing patch-only side paths.
 - Device validation is still pending for this runtime phase.
 - Existing unrelated local modifications were preserved
   (`docs/bugs/...`, `ios/Flutter/AppFrameworkInfo.plist`).
+
+---
+
+# 🔹 Block 568 — Fix 26 Phase 4 contract draft: render/sync decoupling + overlay-trigger diagnostics (12/03/2026)
+
+**Date:** 12/03/2026  
+**Branch:** `refactor-run-mode-sync-core`  
+**Scope:** Documentation-first Phase 4 delta after validation evidence showed
+freeze reproduction outside the Phase 3 hold path.
+
+### ✔ Work completed:
+
+- Updated `docs/specs.md` section **10.4.8.b** with Phase 4 contracts:
+  - render/sync decoupling invariant (active countdown projection from
+    `phaseStartedAt` + elapsed; `session.remainingSeconds` seed-only),
+  - non-blocking overlay invariant (`Syncing session...` must not freeze active
+    countdown rendering),
+  - mandatory overlay-trigger diagnostics with explicit reason taxonomy:
+    `sessionMissingHold | runningWithoutSession | timeSyncUnready |
+    awaitingSessionConfirmation`,
+  - deterministic `primaryReason` priority and required transition payload.
+- Added Phase 4 contract tests (no runtime implementation) in:
+  - `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+    - `[PHASE4] active projection must continue with local fallback when timeSync is unavailable`
+  - `test/presentation/timer_screen_syncing_overlay_test.dart`
+    - `[PHASE4] sync overlay diagnostics must emit explicit trigger reason (timeSyncUnready)`
+
+### 🧪 Validation run (local):
+
+- `dart analyze test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart`
+  → PASS (2 info-level style hints in existing test helper only).
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart --reporter compact`
+  → FAIL (expected contract-first failure):
+  - `[PHASE4] active projection must continue with local fallback when timeSync is unavailable`
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart --reporter compact`
+  → FAIL (expected contract-first failure):
+  - `[PHASE4] sync overlay diagnostics must emit explicit trigger reason (timeSyncUnready)`
+
+### ⚠️ Notes:
+
+- No runtime changes were made in this block.
+- This block formalizes Phase 4 target behavior before implementation.
