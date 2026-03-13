@@ -10689,3 +10689,38 @@ Phase 6 contract was defined in `docs/specs.md` section **10.4.9** before coding
 - Ledger updated:
   - `P0-F26-004` moved to Closed/OK (Phase 5 diagnostics objective completed),
   - `P0-F26-005` opened In validation for Phase 6 runtime closure criteria.
+
+---
+
+# 🔹 Block 574 — Phase 6 device validation runbook registration (13/03/2026)
+
+## 📋 Context
+
+After Phase 6 runtime commit (`2fc65e4`), device validation needed explicit and
+unambiguous log destinations for the two execution windows:
+- pass 1 (1h, same day),
+- pass 2 (4h30 soak, next day).
+
+## ✔ Work completed
+
+- Updated `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`:
+  - added fixed-device run commands in `--debug` for:
+    - `RMX3771`,
+    - `iPhone 17 Pro`,
+    - `macOS`,
+    - `Chrome`;
+  - registered definitive log filenames for:
+    - `2026-03-13 ... pass1_1h ...`,
+    - `2026-03-14 ... pass2_4h30 ...`;
+  - added grep patterns for Phase 6 diagnostic verification
+    (`[VMLifecycle]`, `[SessionSub]`, `[SyncOverlay]`, `[HoldDiag]`,
+    `Auto-open recovery`, crash/error signatures).
+- Updated `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`:
+  - added planned packet A/B sections with exact log paths for both passes,
+  - aligned closure gate text for `P0-F26-005`.
+
+## ⚠️ Notes
+
+- No runtime code changes in this block (docs-only validation logistics).
+- Phase 6 remains **In validation** until exact repro + regression smoke + soak
+  evidence are captured in the registered logs.

@@ -420,3 +420,83 @@ flutter test test/presentation/timer_screen_syncing_overlay_test.dart \
   --plain-name "[PHASE6]" --reporter compact
 # PASS
 ```
+
+### Phase 6 device runbook (P0-F26-005)
+
+Validation devices (fixed):
+- Android: `RMX3771`
+- iOS: `iPhone 17 Pro`
+- Desktop: `macOS`
+- Web: `Chrome`
+
+#### Pass 1 (today, 1h) — log capture commands
+
+```bash
+LOG_DIR="docs/bugs/validation_fix_2026_03_07-01/logs"
+mkdir -p "$LOG_DIR"
+
+# Android RMX3771 (debug)
+flutter run -v --debug -d "RMX3771" \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-13_fix26_phase6_2fc65e4_pass1_1h_android_RMX3771_debug.log"
+
+# iOS iPhone 17 Pro (debug)
+flutter run -v --debug -d "iPhone 17 Pro" \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-13_fix26_phase6_2fc65e4_pass1_1h_ios_iPhone17Pro_debug.log"
+
+# macOS (debug)
+flutter run -v --debug -d macos \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-13_fix26_phase6_2fc65e4_pass1_1h_macos_debug.log"
+
+# Chrome (debug)
+flutter run -v --debug -d chrome \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-13_fix26_phase6_2fc65e4_pass1_1h_chrome_debug.log"
+```
+
+#### Pass 2 (tomorrow, 4h30) — log capture commands
+
+```bash
+LOG_DIR="docs/bugs/validation_fix_2026_03_07-01/logs"
+mkdir -p "$LOG_DIR"
+
+# Android RMX3771 (debug)
+flutter run -v --debug -d "RMX3771" \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_phase6_2fc65e4_pass2_4h30_android_RMX3771_debug.log"
+
+# iOS iPhone 17 Pro (debug)
+flutter run -v --debug -d "iPhone 17 Pro" \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_phase6_2fc65e4_pass2_4h30_ios_iPhone17Pro_debug.log"
+
+# macOS (debug)
+flutter run -v --debug -d macos \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_phase6_2fc65e4_pass2_4h30_macos_debug.log"
+
+# Chrome (debug)
+flutter run -v --debug -d chrome \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_phase6_2fc65e4_pass2_4h30_chrome_debug.log"
+```
+
+#### Phase 6 event checks after each pass
+
+```bash
+grep -E "\[VMLifecycle\]|\[SessionSub\]|\[SyncOverlay\]|\[HoldDiag\]|Auto-open recovery" <log>
+grep -E "provider-dispose|resume-rebind|Unhandled Exception|SIGSEGV|EXC_BAD_ACCESS" <log>
+```
+
+If a device selector by name fails, run `flutter devices` and replace `-d "<name>"`
+with the concrete device id.

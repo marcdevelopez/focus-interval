@@ -652,3 +652,30 @@ Local evidence:
 Next mandatory step for closure:
 - Device run with exact repro + regression smoke (all in debug for diagnostics)
   before marking Phase 6 as Closed/OK.
+
+## 2026-03-13/14 — Phase 6 device validation packets (scheduled)
+
+Status: **PLANNED**
+
+Target devices:
+- Android `RMX3771`
+- iOS `iPhone 17 Pro`
+- `macOS`
+- `Chrome`
+
+Packet A (today, 1h):
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase6_2fc65e4_pass1_1h_android_RMX3771_debug.log`
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase6_2fc65e4_pass1_1h_ios_iPhone17Pro_debug.log`
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase6_2fc65e4_pass1_1h_macos_debug.log`
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase6_2fc65e4_pass1_1h_chrome_debug.log`
+
+Packet B (tomorrow, 4h30 soak):
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-14_fix26_phase6_2fc65e4_pass2_4h30_android_RMX3771_debug.log`
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-14_fix26_phase6_2fc65e4_pass2_4h30_ios_iPhone17Pro_debug.log`
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-14_fix26_phase6_2fc65e4_pass2_4h30_macos_debug.log`
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-14_fix26_phase6_2fc65e4_pass2_4h30_chrome_debug.log`
+
+Phase 6 closure gate (`P0-F26-005`):
+- Exact repro PASS.
+- Regression smoke PASS.
+- Evidence recorded in checklist + logs above.
