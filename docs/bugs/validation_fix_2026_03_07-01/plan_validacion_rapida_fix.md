@@ -634,6 +634,7 @@ Decision:
 Status: **IN VALIDATION** (local smoke PASS; device exact repro pending)
 
 Implemented scope:
+- Commit: `2fc65e4` — `fix(f26): implement phase 6 runtime keepalive grace + auto-open recovery`
 - B1 (`pomodoro_view_model.dart`):
   - `_lastActiveSessionTimestamp` + keepAlive grace window (2 min).
   - Grace re-check timer to release keepAlive when grace expires.

@@ -10644,6 +10644,9 @@ Phase 5 validation confirmed two runtime bugs:
 - **B2**: `ActiveSessionAutoOpener` suppressed re-navigation for an already-opened
   group without verifying whether the VM had already been disposed.
 
+Implementation commit:
+- `2fc65e4` — `fix(f26): implement phase 6 runtime keepalive grace + auto-open recovery`
+
 Phase 6 contract was defined in `docs/specs.md` section **10.4.9** before coding.
 
 ## ✔ Work completed
