@@ -591,3 +591,23 @@ Logs saved for this validation cycle:
 Command profile used:
 - macOS/Android in `--release` + `APP_ENV=prod`.
 - iOS simulator/Chrome in `--debug` + `APP_ENV=prod` + `ALLOW_PROD_IN_DEBUG=true`.
+
+## 2026-03-13 — Phase 5 log capture packet (`7daf636`)
+
+Status: **IN PROGRESS — validation run launched**
+
+Logs will be saved at:
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase5_7daf636_android_RMX3771_diag.log`
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase5_7daf636_ios_iPhone17Pro_debug.log`
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase5_7daf636_macos_diag.log`
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase5_7daf636_chrome_debug.log`
+
+Command profile used:
+- Android/macOS in `--release` + `APP_ENV=prod`.
+- iOS/Chrome in `--debug` + `APP_ENV=prod` + `ALLOW_PROD_IN_DEBUG=true`.
+
+New diagnostic events available in this packet (Phase 5 instrumentation):
+- `[VMLifecycle] init/dispose vmToken=<uuid>` — detect ViewModel recreation
+- `[SessionSub] open/close vmToken=<uuid> reason=<reason>` — detect what closes `_sessionSub`
+- `[StaleClearDiag] decision=<clear|skip>` — detect if coordinator clears active session
+- `[ScheduledActionDiag] action=<action>` — detect scheduled firings near freeze timestamp

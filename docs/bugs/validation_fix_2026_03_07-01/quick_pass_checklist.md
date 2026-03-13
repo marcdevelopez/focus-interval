@@ -311,3 +311,64 @@ flutter run -v --debug -d chrome --dart-define=APP_ENV=prod \
 
 - Phase 4 device validation: **FAIL (reproduced freeze in production-like run)**.
 - Fix 26 remains **open**.
+
+---
+
+## 2026-03-13 Phase 5 validation run (`7daf636`) — IN PROGRESS
+
+- Commit under validation: `7daf636` (Phase 5 runtime lifecycle observability).
+- Objective: capture `[VMLifecycle]`, `[SessionSub]`, `[StaleClearDiag]`, `[ScheduledActionDiag]` to identify what closes `_sessionSub` during freeze.
+- Log files:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase5_7daf636_android_RMX3771_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase5_7daf636_ios_iPhone17Pro_debug.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase5_7daf636_macos_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase5_7daf636_chrome_debug.log`
+
+### Commands used
+
+```bash
+# Android RMX3771 (release)
+flutter run -v --release -d 192.168.1.25:5555 \
+  --dart-define=APP_ENV=prod \
+  2>&1 | tee docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase5_7daf636_android_RMX3771_diag.log
+
+# iOS iPhone 17 Pro (debug)
+flutter run -v --debug -d 9A6B6687-8DE2-4573-A939-E4FFD0190E1A \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase5_7daf636_ios_iPhone17Pro_debug.log
+
+# macOS (release)
+flutter run -v --release -d macos \
+  --dart-define=APP_ENV=prod \
+  2>&1 | tee docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase5_7daf636_macos_diag.log
+
+# Chrome (debug)
+flutter run -v --debug -d chrome \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase5_7daf636_chrome_debug.log
+```
+
+### Key events to grep after run completes
+
+```bash
+# vmToken consistency (detect ViewModel recreation)
+grep "\[VMLifecycle\]" <log>
+
+# SessionSub close reason (detect what closed _sessionSub)
+grep "\[SessionSub\]" <log>
+
+# Stale-clear decisions during active session
+grep "\[StaleClearDiag\]" <log>
+
+# Scheduled actions near freeze timestamp
+grep "\[ScheduledActionDiag\]" <log>
+
+# SyncOverlay transitions
+grep "\[SyncOverlay\]" <log>
+```
+
+### Current closure status
+
+- Phase 5 device validation: **PENDING**.
