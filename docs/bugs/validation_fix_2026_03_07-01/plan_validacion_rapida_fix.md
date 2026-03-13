@@ -575,3 +575,19 @@ slightly incorrect remaining time, but would not cause a permanent latch since
 
 **Implement if:** device validation shows a noticeable timer freeze (> 5 s visible) after the
 `Syncing session...` overlay clears.
+
+## 2026-03-11 — Phase 2 log capture packet (`8c6cb73`)
+
+Status: **Evidence captured (analysis pending)**
+
+Logs saved for this validation cycle:
+- Existing running-group smoke:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_phase2_8c6cb73_macos_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_phase2_8c6cb73_android_RMX3771_diag.log`
+- New-group exact repro:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_refactor_8c6cb73_ios_iPhone17Pro_debug.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_refactor_8c6cb73_chrome_debug.log`
+
+Command profile used:
+- macOS/Android in `--release` + `APP_ENV=prod`.
+- iOS simulator/Chrome in `--debug` + `APP_ENV=prod` + `ALLOW_PROD_IN_DEBUG=true`.

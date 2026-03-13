@@ -269,3 +269,45 @@ flutter run -v --debug -d chrome --dart-define=APP_ENV=prod \
   - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_phase2_8c6cb73_android_RMX3771_diag.log`
   - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_refactor_8c6cb73_ios_iPhone17Pro_debug.log`
   - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_refactor_8c6cb73_chrome_debug.log`
+
+---
+
+## 2026-03-12 Phase 4 validation run (`744f83b`) — REPRODUCED
+
+- Commit under validation: `744f83b` (Phase 4 runtime).
+- Log files confirmed:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-12_fix26_phase4_744f83b_macos_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-12_fix26_phase4_744f83b_android_RMX3771_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-12_fix26_phase4_744f83b_ios_iPhone17Pro_debug.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-12_fix26_phase4_744f83b_chrome_debug.log`
+
+### Timeline reported (device run)
+
+- 12:43: Android started as owner (group execution started).
+- 13:10: network cut 10s on macOS+iOS+Chrome (Android kept online); no visible UI impact during this cut.
+- 13:12: ownership requested on iOS and granted (confirmed on device + Firestore).
+- 13:33:39: Android (mirror) entered `Syncing session...`, timer screen showed `Ready` with `60:00`.
+- 13:36:22: macOS entered the same state (`Syncing session...` + `Ready` + `60:00`).
+- From then on, all devices eventually ended frozen; user-reported last to freeze was iOS (frozen without prolonged `Syncing session...` overlay).
+
+### Firestore `activeSession/current` evidence (reported)
+
+- 13:33:15 `lastUpdatedAt`, owner remained iOS:
+  - `ownerDeviceId=iOS-2c0371a1-461c-4bab-b636-5b6e156a3b99`
+  - `phase=pomodoro`
+  - `phaseDurationSeconds=3600`
+  - `phaseStartedAt=2026-03-12 13:13:01 (UTC+1)`
+- 13:36:16 `lastUpdatedAt`: owner still iOS while mirrors already showed `Syncing session...`.
+- 14:01:02 `lastUpdatedAt`: owner still iOS, `remainingSeconds=719`, backend still advancing while clients remained frozen.
+
+### Preliminary log notes from this packet
+
+- iOS/Chrome debug logs show continuous `[ActiveSession][snapshot]` and `[TimeSync]` lines through the failing window.
+- iOS/Chrome trigger scan shows no `[SyncOverlay]` lines in this packet.
+- iOS/Chrome include `Missing snapshot; clearing session` only around pre-run/startup window (~12:42), not at the reported freeze timestamps.
+- Android/macOS runs were captured in release mode; logs are less diagnostic for overlay trigger reason than iOS/Chrome debug logs.
+
+### Current closure status
+
+- Phase 4 device validation: **FAIL (reproduced freeze in production-like run)**.
+- Fix 26 remains **open**.
