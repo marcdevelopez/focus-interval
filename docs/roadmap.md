@@ -239,7 +239,20 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           reasoned diagnostics in `PomodoroViewModel`, extended `[SyncOverlay]`
           with `vmToken`, and added coordinator diagnostics
           `[ScheduledActionDiag]` + `[StaleClearDiag]` with instance-token
-          correlation. Phase 5 smoke tests pass; device validation pending.
+          correlation. Phase 5 smoke tests pass.
+      13/03/2026: Fix 26 Phase 5 device validation COMPLETED — root cause confirmed:
+          `pomodoroViewModelProvider` is `autoDispose`; `_keepAliveLink` closed
+          during Firestore quiet window (10s gap between snapshots) → Riverpod
+          disposed the VM while timer screen still visible (B1). Recovery blocked
+          by `_autoOpenedGroupId == groupId` guard in `ActiveSessionAutoOpener` —
+          guard does not check if VM was disposed, so re-navigation is suppressed
+          (B2). Phase 6 plan documented.
+      13/03/2026: Fix 26 Phase 6 opened (docs-first):
+          B1 — add `_lastActiveSessionTimestamp` grace window (2 min) to
+          `_shouldKeepAlive()` so VM survives Firestore quiet windows;
+          B2 — add `ref.exists(pomodoroViewModelProvider)` check in
+          `ActiveSessionAutoOpener` before suppressing re-navigation.
+          Contract and implementation pending.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
@@ -330,9 +343,10 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 10 — Auto-adjust breaks on valid pomodoro changes and break edits (focus-loss adjustment; Task Editor + Edit Preset) (validation pending).
 - Phase 10 — Task weight (%) is selection-scoped in Edit Task + info modal (validation pending).
 - Phase 13 — Mirror session gaps must not drop Run Mode to Ready (validation pending).
-- Phase 13 — Fix 26 Phase 5 diagnostics: VM/session lifecycle correlation
-  (`vmToken`) must identify exact `_sessionSub` loss trigger before Phase 6
-  behavior changes (runtime instrumentation implemented; device validation pending).
+- Phase 13 — Fix 26 Phase 6: ViewModel lifetime hardening + auto-open recovery guard
+  (B1: `keepAlive` grace window to prevent `autoDispose` race during Firestore quiet windows;
+  B2: `ref.exists()` guard in `ActiveSessionAutoOpener` to allow re-navigation when VM was disposed;
+  implementation pending after Phase 5 device validation confirmed root cause 2026-03-13).
 - Phase 13 — Mirror must not start behind on resume (stale lastUpdatedAt compensation) (bug).
 - Phase 10 — Task Editor: total time chip + task color picker (new requirement).
 - Phase 9 — Task List: group name input + group summary + per-task total time + selection reset (new requirement).

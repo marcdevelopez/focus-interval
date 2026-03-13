@@ -2279,6 +2279,74 @@ foreground owner must **not** freeze progression.
 - Phase-5 smoke tests validate diagnostic emission only (presence/fields), not
   behavioral correctness. Behavioral fixes are Phase 6 scope.
 
+### 10.4.9 Phase 6 — ViewModel lifetime hardening + auto-open recovery guard
+
+**Root cause confirmed by Phase 5 device validation (2026-03-13):**
+
+- `pomodoroViewModelProvider` is `NotifierProvider.autoDispose`.
+- During Firestore quiet windows (≥ 10s between snapshots), if `_syncKeepAliveState()`
+  is called while all of `_machine.state.status.isActiveExecution`,
+  `_latestSession?.status.isActiveExecution`, and `_remoteSession?.status.isActiveExecution`
+  are momentarily false, `_keepAliveLink` closes → Riverpod disposes the VM.
+- After disposal, `ActiveSessionAutoOpener` suppresses re-navigation because
+  `_autoOpenedGroupId == groupId` without checking whether the VM is still alive.
+- Result: timer screen shows `Ready + <phaseDuration>` (dead VM on live route).
+
+**B1 — `_shouldKeepAlive()` grace window (in `PomodoroViewModel`):**
+
+- Add `DateTime? _lastActiveSessionTimestamp` field, updated whenever
+  `_ingestResolvedSession` receives a snapshot with `isActiveExecution == true`.
+- In `_shouldKeepAlive()`, add final condition:
+  ```dart
+  final lastActive = _lastActiveSessionTimestamp;
+  if (lastActive != null &&
+      DateTime.now().difference(lastActive) < const Duration(minutes: 2))
+    return true;
+  ```
+- This ensures the VM survives short Firestore quiet windows (reconnect, SDK
+  snapshot batching, background throttling) without changing the keepAlive
+  conditions for non-active states.
+- Invariant: grace window must be > the Firestore reconnect window (≤ 30s per specs
+  section 5.3) and < the stale threshold that would indicate a real session end.
+  2 minutes satisfies both.
+
+**B2 — auto-open recovery guard (in `ActiveSessionAutoOpener`):**
+
+- At the suppression check (before returning when `_autoOpenedGroupId == groupId`),
+  add:
+  ```dart
+  if (_autoOpenedGroupId == groupId && !ref.exists(pomodoroViewModelProvider)) {
+    // VM was disposed while screen still visible — allow recovery re-navigation
+    _autoOpenedGroupId = null;
+    // fall through to navigation
+  } else {
+    return; // normal suppression
+  }
+  ```
+- `ref.exists(provider)` returns false when the autoDispose provider has been
+  disposed. This check must NOT use `ref.read()` (which would recreate the provider).
+- Diagnostic: emit `[RunModeDiag] Auto-open recovery: VM disposed, clearing guard`
+  when this path fires.
+
+**Phase 6 contracts:**
+
+1. A VM that was alive and had received an `isActiveExecution` snapshot within the
+   last 2 minutes must NOT be disposed by Riverpod autoDispose during a Firestore
+   quiet window.
+2. After VM disposal while the timer screen is still on-route, the next
+   `activePomodoroSessionProvider` emission must trigger re-navigation to the timer
+   screen and create a fresh VM.
+3. No new `[VMLifecycle] init` with `groupId=none` must appear on the live route
+   after VM disposal — the new init must include the correct `groupId`.
+4. `[RunModeDiag] Auto-open recovery` must appear in logs exactly once per VM
+   disposal event (not repeatedly).
+
+**Phase 6 smoke tests:**
+
+- `[PHASE6] _shouldKeepAlive returns true within 2-min grace window after last active snapshot`
+- `[PHASE6] _shouldKeepAlive returns false after grace window expires with no active state`
+- `[PHASE6] auto-open guard clears when VM is disposed mid-session`
+
 **Hold timeout (bounded hold rule):**
 - Missing-session hold must not persist indefinitely. Release and clean up
   non-destructively when **condition A AND condition B** are both met:

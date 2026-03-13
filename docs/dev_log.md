@@ -10527,3 +10527,108 @@ contract (no business-behavior changes).
   `AppModeService` harness failures outside Phase 5 scope.
 - Phase 6 remains blocked until device validation captures the new diagnostics
   and identifies the exact `_sessionSub` loss trigger path.
+
+---
+
+# 🔹 Block 572 — Fix 26 Phase 5 device validation: root cause confirmed (13/03/2026)
+
+## 📋 Context
+
+Phase 5 device run on commit `7daf636` with 4 devices (Android RMX3771 release, macOS
+release, iOS iPhone17Pro debug, Chrome debug). Group `aa8794d0`, scheduled 14:43, owner
+macOS. All devices froze with `Syncing session...` / `Ready + 25:00` between 15:30 and
+15:35. macOS crashed at 15:48 (SIGSEGV).
+
+## 🔍 Key findings from Phase 5 logs
+
+### Chrome (debug log — full trace available)
+
+Last event sequence before freeze:
+```
+15:30:08.572  [ActiveSession][snapshot] remaining=773  ← last Firestore snapshot
+15:30:24.996  [ActiveSession][snapshot] remaining=773  ← stale resync (unchanged)
++10017 ms gap (no Firestore events)
+[SessionSub] close vmToken=b2ce33ee reason=provider-dispose
+[VMLifecycle] dispose vmToken=b2ce33ee
+[ScheduledGroups] timer-state runningExpiry=true        ← coordinator still alive
+[RunModeDiag] Auto-open suppressed (opened=aa8794d0 route=/timer/aa8794d0)
+```
+
+- `provider-dispose` fired while the timer screen was still on `/timer/aa8794d0`
+- No `[VMLifecycle] init` appeared after dispose → no VM recovery
+- Coordinator saw `decision=keep reason=group-running` continuously — session was NOT deleted
+
+### iOS (debug log)
+
+Identical pattern: `provider-dispose` 18.6s after last Firestore activity. Same
+`Auto-open suppressed` guard block.
+
+### Android / macOS (release logs)
+
+Phase 5 diagnostic events absent in `--release` mode (need debug for next run).
+macOS showed frozen RUNNING timer (not Ready) — consistent with owner's
+`_machine.state.status.isActiveExecution` keeping keepAlive alive longer.
+macOS crash at 15:48:18 (SIGSEGV `EXC_BAD_ACCESS`) — Firestore transaction path, unrelated to Fix 26.
+
+### Codex corrections on the diagnosis
+
+1. `pomodoroViewModelProvider` confirmed `autoDispose` at `providers.dart:325` ✓
+2. `[StaleClearDiag]` events have coordinator `vmToken` (not VM token) — separate instance ✓
+3. `runningExpiry=true` = `_runningExpiryTimer` was armed at time of `_handleGroupsAsync` entry, NOT that the group expired ✓
+4. macOS crash thread is Firestore transaction, not Flutter build recursion ✓
+
+## 🐛 Two confirmed sub-bugs
+
+### B1 — autoDispose keepAlive race condition
+
+`pomodoroViewModelProvider` is `NotifierProvider.autoDispose`. The `_keepAliveLink`
+can close during a Firestore quiet window (10–18s between snapshots) if
+`_syncKeepAliveState()` is called at a moment where all of:
+- `_machine.state.status.isActiveExecution` → false
+- `_latestSession?.status.isActiveExecution` → false/null
+- `_remoteSession?.status.isActiveExecution` → false/null
+
+Then Riverpod disposes the VM even though the session is still running in Firestore.
+
+### B2 — Auto-open guard blocks recovery navigation
+
+`ActiveSessionAutoOpener._autoOpenedGroupId == groupId` suppresses re-navigation
+without checking if the VM was disposed. After a `provider-dispose`, the screen stays
+on `/timer/groupId` with a dead ViewModel showing `Ready + 25:00`.
+`ref.exists(pomodoroViewModelProvider)` is not checked.
+
+## 📐 Phase 6 plan (docs-first, contracts in specs.md section 10.4.9)
+
+### B1 fix
+
+Add `DateTime? _lastActiveSessionTimestamp` to `PomodoroViewModel`. Update it whenever
+`_ingestResolvedSession` processes a snapshot with `isActiveExecution == true`. In
+`_shouldKeepAlive()`, add:
+```dart
+final lastActive = _lastActiveSessionTimestamp;
+if (lastActive != null &&
+    DateTime.now().difference(lastActive) < const Duration(minutes: 2)) return true;
+```
+2-minute grace window > Firestore reconnect window (≤ 30s) and < stale threshold.
+
+### B2 fix
+
+In `active_session_auto_opener.dart` at the suppression block (line ~147):
+```dart
+if (_autoOpenedGroupId == groupId && !ref.exists(pomodoroViewModelProvider)) {
+  // VM was disposed while screen still showed timer — allow recovery
+  _autoOpenedGroupId = null;
+  // fall through to navigation
+} else {
+  return; // normal suppression
+}
+```
+
+### Android/iOS validation note
+
+For the next run, use `--debug` on ALL devices to capture Phase 5 diagnostic events.
+Release mode strips them.
+
+## ✅ Status
+
+- Root cause confirmed. Phase 6 plan written. Implementation pending.

@@ -369,6 +369,34 @@ grep "\[ScheduledActionDiag\]" <log>
 grep "\[SyncOverlay\]" <log>
 ```
 
+### Root cause analysis (2026-03-13)
+
+**Chrome (froze 15:30:36) — full trace recovered:**
+```
+15:30:08.572  [ActiveSession][snapshot] remaining=773 owner=macOS   ← last snapshot
+15:30:24.996  [ActiveSession][snapshot] remaining=773               ← stale resync
++10017 ms     [SessionSub] close vmToken=b2ce33ee reason=provider-dispose
++9 ms         [VMLifecycle] dispose vmToken=b2ce33ee
++158 ms       [ScheduledGroups] timer-state runningExpiry=true
+[RunModeDiag] Auto-open suppressed (opened=aa8794d0 route=/timer/aa8794d0)
+```
+No `[VMLifecycle] init` after dispose — screen stayed at `/timer/...` with dead VM → `Ready + 25:00`.
+
+**iOS (froze 15:35:16):** identical pattern. `provider-dispose` 18.6s after last Firestore activity.
+
+**Android/macOS:** release logs have no Phase 5 diagnostic events (release mode filters them).
+macOS crash at 15:48:18 (SIGSEGV from Firestore transaction) is a separate issue.
+
+**Root cause confirmed (two sub-bugs):**
+
+- **B1**: `autoDispose` + `_keepAliveLink` race — keepAlive closes during 10s Firestore
+  quiet window → Riverpod disposes VM while session still active in Firestore.
+- **B2**: `_autoOpenedGroupId == groupId` guard in `ActiveSessionAutoOpener` blocks
+  re-navigation even after VM is dead. `ref.exists()` not checked.
+
+**Phase 6 fix plan:** see `docs/specs.md` section 10.4.9.
+
 ### Current closure status
 
-- Phase 5 device validation: **PENDING**.
+- Phase 5 device validation: **COMPLETE — root cause confirmed 2026-03-13**.
+- Phase 6: **PENDING** (contracts written, runtime implementation not yet done).
