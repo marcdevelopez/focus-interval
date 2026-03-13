@@ -26,7 +26,8 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Fix 26 Phase 4 runtime implementation (validation pending)**
-Last update: **12/03/2026**
+Current focus: **Fix 26 Phase 5 docs-first lifecycle observability contract**
+Last update: **13/03/2026**
 
 ---
 
@@ -10437,3 +10438,46 @@ from sync/offset availability and to expose deterministic diagnostics for
 - Device validation remains pending for this runtime phase.
 - Existing unrelated local modifications were preserved
   (`docs/bugs/...`, `ios/Flutter/AppFrameworkInfo.plist`).
+
+---
+
+# 🔹 Block 570 — Fix 26 Phase 5 docs-first: VM/session lifecycle observability contract (13/03/2026)
+
+**Date:** 13/03/2026  
+**Branch:** `refactor-run-mode-sync-core`  
+**Scope:** Documentation-first diagnostic phase to pinpoint the `_sessionSub`
+loss trigger observed in device logs, without changing runtime behavior.
+
+### ✔ Work completed:
+
+- Updated `docs/specs.md` section **10.4.8.b** with a Phase 5
+  observability-only contract:
+  - mandatory stable `vmToken` per `PomodoroViewModel` instance,
+  - mandatory `[VMLifecycle]` init/dispose logs with token correlation,
+  - mandatory `[SessionSub]` open/close logs with explicit `reason`,
+  - mandatory scheduled-action bridge diagnostics with action metadata +
+    token correlation,
+  - mandatory `_clearStaleActiveSessionIfNeeded` decision diagnostics with
+    structured fields (`sessionGroupId`, lookup status, clear/keep decision).
+- Added Phase 5 smoke tests (contract-first, expected to fail before runtime):
+  - `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+    - `[PHASE5] VM lifecycle/session-sub diagnostics must include vmToken and lifecycle reasons`
+  - `test/presentation/timer_screen_syncing_overlay_test.dart`
+    - `[PHASE5] sync overlay diagnostics must include vmToken for lifecycle correlation`
+  - `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+    - `[PHASE5] scheduled-action diagnostics must include vmToken and action metadata`
+    - `[PHASE5] stale-clear diagnostics must include instance token and clear decision metadata`
+- Updated project tracking docs to mark Phase 5 as opened in docs-first mode:
+  - `docs/roadmap.md` (global status + reopened phases),
+  - `docs/validation/validation_ledger.md` (new Fix 26 Phase 5 pending item).
+
+### 🧪 Validation run (local):
+
+- `dart analyze` on updated docs/tests target set → PASS (or info-only).
+- Phase 5 smoke tests are intentionally contract-first and expected to fail
+  until runtime instrumentation is implemented in the next phase.
+
+### ⚠️ Notes:
+
+- No runtime behavior changes were made in this block.
+- Phase 6 scope remains blocked on Phase 5 diagnostic evidence from device logs.

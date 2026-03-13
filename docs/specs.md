@@ -2248,6 +2248,37 @@ foreground owner must **not** freeze progression.
     `awaitingSessionConfirmation` > `timeSyncUnready`)
 - Missing reason metadata for overlay transitions is a contract violation.
 
+**Phase-5 lifecycle observability contract (diagnostic-only):**
+- Phase 5 is instrumentation scope only. It must not change ownership rules,
+  timeline authority, or hold/overlay business behavior.
+- Every `PomodoroViewModel` instance must carry a stable `vmToken` generated at
+  instance init and preserved until dispose.
+- The same `vmToken` is mandatory in all lifecycle-correlated diagnostics:
+  `VMLifecycle`, `SessionSub`, `SyncOverlay`, and coordinator bridge events.
+- Mandatory `PomodoroViewModel` lifecycle diagnostics:
+  - `[VMLifecycle] init vmToken=<...> groupId=<...|none>`
+  - `[VMLifecycle] dispose vmToken=<...> groupId=<...|none>`
+  - rebuild/reinit transitions must be distinguishable by token changes.
+- Mandatory session subscription diagnostics:
+  - `[SessionSub] open vmToken=<...> groupId=<...> reason=<...>`
+  - `[SessionSub] close vmToken=<...> groupId=<...> reason=<...>`
+  - `reason` must be explicit (`load-group`, `resume-rebind`,
+    `provider-dispose`, etc.); opaque/missing reason is a contract violation.
+- Mandatory scheduled-action bridge diagnostics:
+  - when `ScheduledGroupAction` is emitted/handled, emit a diagnostic event that
+    includes `vmToken` (if available in bridge context), `actionType`,
+    `groupId/groupIds`, and action `token`.
+  - this event must allow temporal correlation with `SessionSub` close/open.
+- Mandatory stale-clear evaluation diagnostics:
+  - each `_clearStaleActiveSessionIfNeeded` evaluation must emit a structured
+    diagnostic with `vmToken` (or coordinator instance token), `sessionGroupId`,
+    repository lookup result/status, and clear decision (`clear` | `keep`) with
+    reason.
+  - absence of decision metadata during stale-clear evaluation is a contract
+    violation.
+- Phase-5 smoke tests validate diagnostic emission only (presence/fields), not
+  behavioral correctness. Behavioral fixes are Phase 6 scope.
+
 **Hold timeout (bounded hold rule):**
 - Missing-session hold must not persist indefinitely. Release and clean up
   non-destructively when **condition A AND condition B** are both met:

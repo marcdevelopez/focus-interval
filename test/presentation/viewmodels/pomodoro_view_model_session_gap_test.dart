@@ -1147,6 +1147,97 @@ void main() {
   );
 
   test(
+    '[PHASE5] VM lifecycle/session-sub diagnostics must include vmToken and lifecycle reasons',
+    () async {
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'group-phase5-vm-lifecycle',
+        start: now,
+      );
+      final session = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        ownerDeviceId: 'owner-device',
+        now: now,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+
+      final logs = <String>[];
+      final previousDebugPrint = foundation.debugPrint;
+      foundation.debugPrint = (String? message, {int? wrapWidth}) {
+        if (message != null) logs.add(message);
+      };
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      addTearDown(() {
+        foundation.debugPrint = previousDebugPrint;
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      container.listen<PomodoroState>(pomodoroViewModelProvider, (_, __) {});
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final first = await vm.loadGroup(group.id);
+      expect(first, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      final second = await vm.loadGroup(group.id);
+      expect(second, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      final merged = logs.join('\n');
+      expect(
+        merged.contains('[VMLifecycle] init'),
+        isTrue,
+        reason:
+            'Phase-5 diagnostics contract: ViewModel lifecycle must emit init diagnostics.',
+      );
+      expect(
+        merged.contains('[SessionSub] open'),
+        isTrue,
+        reason:
+            'Phase-5 diagnostics contract: session subscription open must be logged.',
+      );
+      expect(
+        merged.contains('[SessionSub] close'),
+        isTrue,
+        reason:
+            'Phase-5 diagnostics contract: session subscription close must be logged.',
+      );
+      expect(
+        merged.contains('vmToken='),
+        isTrue,
+        reason:
+            'Phase-5 diagnostics contract: lifecycle/subscription logs must include vmToken correlation.',
+      );
+      expect(
+        merged.contains('reason='),
+        isTrue,
+        reason:
+            'Phase-5 diagnostics contract: session-sub diagnostics must include explicit close/open reason metadata.',
+      );
+    },
+  );
+
+  test(
     '[PHASE3] transitional non-active snapshot must not clear hold without terminal corroboration',
     () async {
       final now = DateTime.now();
