@@ -25,9 +25,9 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **Fix 26 Phase 6 runtime hardening (local validation PASS)**
-Current focus: **Fix 26 Phase 6 device exact-repro validation (B1+B2)**
-Last update: **13/03/2026**
+Last bug fix: **Fix 26 Phase 6 device validation FAILED (rewrite required)**
+Current focus: **Sync architecture rewrite planning (post-Fix 26 failure)**
+Last update: **14/03/2026**
 
 ---
 
@@ -10799,3 +10799,37 @@ Next step is a sync architecture rewrite with these principles:
 - `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`: Phase 6 → FAILED
 - `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`: packets → FAILED + cancelled
 - `docs/roadmap.md`: Phase 6 entry replaced with "Sync architecture rewrite required"
+
+---
+
+# 🔹 Block 576 — iOS plist normalization confirmed + Git safety runbook finalized (14/03/2026)
+
+## 📋 Context
+
+After repeated iOS runs, `ios/Flutter/AppFrameworkInfo.plist` kept appearing as modified.
+In parallel, branch safety guidance needed a deterministic, low-risk sequence to avoid
+progress loss while moving toward the sync rewrite branch.
+
+## ✔ Work completed
+
+- Verified and confirmed `AppFrameworkInfo.plist` is now aligned to Flutter-generated output
+  (`MinimumOSVersion` removed) under commit `1b1dc33`.
+- Verified the branch graph state:
+  - `fix26-reopen-black-syncing-2026-03-09` is fully contained in
+    `refactor-run-mode-sync-core`.
+  - `refactor-run-mode-sync-core` is synced with `origin` at `51ccf0a`.
+- Finalized `docs/git_strategy.md` for executable, safe Git operations:
+  - corrected stale commit references,
+  - corrected failed-state tag target hash to `b1cb17e`,
+  - standardized policy for no merge to `main` with P0 bug open,
+  - documented rewrite branch creation flow from current refactor head.
+
+## 📁 Updated docs
+
+- `docs/git_strategy.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- No runtime code changes in this block (docs/process only).
+- Next implementation branch remains pending: `rewrite-sync-architecture`.

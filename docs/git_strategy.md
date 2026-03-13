@@ -8,112 +8,96 @@ Last updated: 2026-03-14
 
 | Branch | Base | Status | Purpose |
 |--------|------|--------|---------|
-| `main` | — | stable | Releases only. No bug-open merges. |
-| `fix26-reopen-black-syncing-2026-03-09` | `main` | frozen (ancestro de refactor) | Historical — Phases 1–3 of Fix 26 first cycle. Do not modify. |
-| `refactor-run-mode-sync-core` | `fix26-reopen-black-syncing-2026-03-09` | active, ahead 11+ | Phases 2–6 refactor + all diagnostics. Current working branch. |
+| `main` | — | stable | Releases only. Never merge known-bug states. |
+| `fix26-reopen-black-syncing-2026-03-09` | `main` | frozen (ancestor of refactor) | Historical branch for early Fix 26 cycles. Keep read-only. |
+| `refactor-run-mode-sync-core` | `fix26-reopen-black-syncing-2026-03-09` | active (synced with origin) | Current working branch with Phases 2–6 refactor, diagnostics, and failure docs. |
 
 ### Relationship
-```
+
+```text
 main
- └─ fix26-reopen-black-syncing-2026-03-09  (b085ea6)  ← ancestro
-     └─ refactor-run-mode-sync-core         (1b1dc33)  ← HEAD actual
-         └─ rewrite-sync-architecture       (TBD)      ← próxima rama
+ └─ fix26-reopen-black-syncing-2026-03-09  (b085ea6)  <- ancestor
+     └─ refactor-run-mode-sync-core         (51ccf0a) <- current HEAD
+         └─ rewrite-sync-architecture       (TBD)      <- next branch
 ```
 
-`fix26-reopen-black-syncing-2026-03-09` está completamente contenida en
-`refactor-run-mode-sync-core`. No hay trabajo en ella que no esté ya en la rama activa.
+`fix26-reopen-black-syncing-2026-03-09` is fully contained in
+`refactor-run-mode-sync-core`.
 
 ---
 
-## Política de merge a main
+## Merge policy for `main`
 
-**Nunca mergear a main con un bug P0 abierto.**
+Never merge to `main` while any P0 sync bug remains open.
 
-Criterio de apertura de PR a main:
-1. Bug P0 (`P0-F26-001` o equivalente) cerrado con exact repro PASS.
-2. Regression smoke PASS en todos los devices del proyecto.
-3. Soak ≥4h sin `Syncing session...` irrecuperable.
-4. `flutter analyze` sin errores. `flutter test` suite completa sin fallos.
-5. `CLAUDE.md` actualizado con nuevos anti-patterns si los hay.
+PR-to-main gate:
+1. P0 sync item (`P0-F26-005` successor or equivalent) is closed with exact repro PASS.
+2. Regression smoke PASS on all target devices.
+3. Soak window >=4h without irrecoverable `Syncing session...`.
+4. `flutter analyze` has no errors and test suite passes.
+5. Roadmap/dev-log/validation ledger are synchronized with evidence.
 
 ---
 
-## Próximos pasos (2026-03-14)
+## Safe sequence (no progress loss)
 
-### 1. Push de rama activa a origin
-
-`refactor-run-mode-sync-core` está ahead 11 commits. Pushear antes de crear la nueva rama:
+### 1. Keep current active branch as source of truth
 
 ```bash
-git push origin refactor-run-mode-sync-core
+git checkout refactor-run-mode-sync-core
+git pull --ff-only origin refactor-run-mode-sync-core
 ```
 
-### 2. Crear rama de rewrite
-
-Desde el HEAD actual (`1b1dc33`), crear:
+### 2. Freeze a historical tag for the failed Phase 6 state
 
 ```bash
-git checkout -b rewrite-sync-architecture
-git push -u origin rewrite-sync-architecture
-```
-
-No crear desde `main` — el rewrite parte de la base de diagnósticos y contratos
-acumulados en `refactor-run-mode-sync-core`, que son necesarios para la nueva suite.
-
-### 3. Congelar snapshot de referencia
-
-Tag ligero del estado fallido como referencia histórica:
-
-```bash
-git tag fix26-phase6-failed-2026-03-14 1b1cb17e
+git tag fix26-phase6-failed-2026-03-14 b1cb17e
 git push origin fix26-phase6-failed-2026-03-14
 ```
 
-(Actualizar hash si el HEAD ha avanzado antes de ejecutarlo.)
-
-### 4. Flujo de trabajo en rewrite-sync-architecture
-
-- Diseño de contratos en `docs/specs.md` primero (docs-first como siempre).
-- Tests `[REWRITE-CORE]` antes de implementación.
-- Tests `[PHASE*]` se conservan como regresión histórica; marcar los que sean
-  "legacy patch behavior" con comentario `// LEGACY: pre-rewrite patch behavior`.
-- Solo retirar tests legacy cuando los `[REWRITE-CORE]` cubran explícitamente el mismo riesgo.
-
-### 5. Cierre de ramas antiguas
-
-Solo cerrar `fix26-reopen-black-syncing-2026-03-09` y `refactor-run-mode-sync-core`
-cuando el rewrite esté validado y mergeado a main. Mantenerlas como historial hasta entonces.
-
----
-
-## Archivos auto-modificados por Flutter (no commitear cambios a estos)
-
-| Archivo | Motivo | Solución |
-|---------|--------|----------|
-| `ios/Flutter/AppFrameworkInfo.plist` | `flutter run -d ios` elimina `MinimumOSVersion` en cada run | Commiteado sin `MinimumOSVersion` en `1b1dc33`; no tocar |
-
-Si `flutter run` vuelve a marcar este archivo como modificado, la causa es un cambio
-de versión del Flutter SDK en el entorno local. Solución: `git checkout -- ios/Flutter/AppFrameworkInfo.plist`
-para descartar el cambio, o commitear la nueva versión generada si el SDK ha sido actualizado.
-
----
-
-## Comandos de referencia rápida
+### 3. Create the rewrite branch from current refactor HEAD
 
 ```bash
-# Ver estado de todas las ramas (local + remote)
-git branch -vv --all
-
-# Ver grafo de commits
-git log --oneline --graph --decorate --all
-
-# Descartar cambio en plist si vuelve a aparecer
-git checkout -- ios/Flutter/AppFrameworkInfo.plist
-
-# Push de rama activa
-git push origin refactor-run-mode-sync-core
-
-# Crear rama de rewrite (cuando sea el momento)
 git checkout -b rewrite-sync-architecture
 git push -u origin rewrite-sync-architecture
+```
+
+Do not branch from `main`: the rewrite depends on diagnostics/contracts already present in `refactor-run-mode-sync-core`.
+
+### 4. Keep legacy branches until rewrite closure
+
+Keep both historical branches (`fix26-reopen...`, `refactor-run-mode-sync-core`) until rewrite is validated and merged.
+
+---
+
+## Flutter-generated iOS file noise
+
+| File | Why it changes | Policy |
+|------|----------------|--------|
+| `ios/Flutter/AppFrameworkInfo.plist` | `flutter run -d ios` removes `MinimumOSVersion` | File normalized in commit `1b1dc33`; do not manually edit it. |
+
+If it appears modified again:
+
+```bash
+git checkout -- ios/Flutter/AppFrameworkInfo.plist
+```
+
+Only commit this file again if Flutter SDK generation behavior changed intentionally.
+
+---
+
+## Quick reference commands
+
+```bash
+# Branch and tracking state
+git branch -vv --all
+
+# Full graph
+git log --oneline --graph --decorate --all
+
+# Discard plist noise
+git checkout -- ios/Flutter/AppFrameworkInfo.plist
+
+# Push active branch
+git push origin refactor-run-mode-sync-core
 ```
