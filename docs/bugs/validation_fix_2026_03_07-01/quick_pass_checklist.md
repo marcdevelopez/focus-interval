@@ -400,7 +400,7 @@ macOS crash at 15:48:18 (SIGSEGV from Firestore transaction) is a separate issue
 
 - Phase 5 device validation: **COMPLETE — root cause confirmed 2026-03-13**.
 - Phase 6 runtime (B1+B2): **IMPLEMENTED (local validation PASS, 2026-03-13)**.
-- Phase 6 device validation: **PENDING** (exact repro + regression smoke on devices).
+- Phase 6 device validation: **FAILED** (exact repro REPRODUCED 2026-03-14; pass 2 cancelled; architecture rewrite required).
 
 ### Phase 6 local validation evidence (2026-03-13)
 

@@ -653,29 +653,33 @@ Next mandatory step for closure:
 - Device run with exact repro + regression smoke (all in debug for diagnostics)
   before marking Phase 6 as Closed/OK.
 
-## 2026-03-13/14 — Phase 6 device validation packets (scheduled)
+## 2026-03-13/14 — Phase 6 device validation packets — FAILED
 
-Status: **PLANNED**
+Status: **FAILED — exact repro REPRODUCED; pass 2 cancelled**
 
-Target devices:
-- Android `RMX3771`
-- iOS `iPhone 17 Pro`
-- `macOS`
-- `Chrome`
+Target devices: Android `RMX3771`, iOS `iPhone 17 Pro`, `macOS`, `Chrome`
 
-Packet A (today, 1h):
+Packet A (2026-03-13, 1h) — **EXECUTED — FAIL**:
 - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase6_2fc65e4_pass1_1h_android_RMX3771_debug.log`
 - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase6_2fc65e4_pass1_1h_ios_iPhone17Pro_debug.log`
 - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase6_2fc65e4_pass1_1h_macos_debug.log`
 - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase6_2fc65e4_pass1_1h_chrome_debug.log`
 
-Packet B (tomorrow, 4h30 soak):
-- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-14_fix26_phase6_2fc65e4_pass2_4h30_android_RMX3771_debug.log`
-- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-14_fix26_phase6_2fc65e4_pass2_4h30_ios_iPhone17Pro_debug.log`
-- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-14_fix26_phase6_2fc65e4_pass2_4h30_macos_debug.log`
-- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-14_fix26_phase6_2fc65e4_pass2_4h30_chrome_debug.log`
+Packet B (2026-03-14, 4h30 soak) — **CANCELLED** (exact repro already failed in A; no value in soak).
 
-Phase 6 closure gate (`P0-F26-005`):
-- Exact repro PASS.
-- Regression smoke PASS.
-- Evidence recorded in checklist + logs above.
+Failure timeline (Packet A):
+- 22:10:00 — user cut network on iOS/Chrome/macOS for 10s → no Syncing session (B1 working for this case)
+- 22:21:37 — Android (owner) entered `Syncing session...` spontaneously (no user cut); stream null ≥3s → latch
+- 22:22:01 — Android cleared Syncing but timer frozen at 08:25
+- 22:23:14 — macOS entered Syncing (showing "ready" 15:00, ownership had transferred to iOS)
+- 22:23:26 — Chrome entered Syncing (same as macOS)
+- 22:25:44 — iOS entered Syncing (timer 04:22 frozen)
+- 22:26:01 — iOS cleared Syncing but timer remained frozen
+- 22:37:50 — validation ended; Android woke from screen-off and synced (owner = iOS)
+
+Root cause of failure: `_sessionMissingWhileRunning` latch fires on any ≥3s Firestore stream null,
+regardless of VM disposal. Phase 6 B1 only prevented the VM-disposal trigger path; the
+spontaneous stream-null path (Firebase SDK reconnect/auth-refresh/cache-miss) survives.
+This is an architectural problem, not a missing hardening.
+
+Conclusion: no more focalized hardenings. Sync architecture rewrite required.

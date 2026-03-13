@@ -257,6 +257,12 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           keepAlive grace window + timer-guard recovery refresh in
           `ActiveSessionAutoOpener`; local Phase 6 smoke tests PASS.
           Device exact-repro validation pending for closure.
+      14/03/2026: Fix 26 Phase 6 FAILED device validation (P0-F26-005):
+          Android spontaneous `Syncing session...` at 22:21:37 (no user cut);
+          cascade to macOS/Chrome/iOS; all timers frozen. Root cause: latch fires
+          from any ≥3s Firestore stream null, not only from VM disposal.
+          Phase 6 B1 irrelevant for this trigger path. Conclusion: focalized
+          hardenings exhausted; sync architecture rewrite required. Pass 2 cancelled.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
@@ -347,10 +353,11 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 10 — Auto-adjust breaks on valid pomodoro changes and break edits (focus-loss adjustment; Task Editor + Edit Preset) (validation pending).
 - Phase 10 — Task weight (%) is selection-scoped in Edit Task + info modal (validation pending).
 - Phase 13 — Mirror session gaps must not drop Run Mode to Ready (validation pending).
-- Phase 13 — Fix 26 Phase 6: ViewModel lifetime hardening + auto-open recovery guard
-  (B1: `keepAlive` grace window to prevent `autoDispose` race during Firestore quiet windows;
-  B2: `ref.exists()` guard in `ActiveSessionAutoOpener` to allow re-navigation when VM was disposed;
-  runtime implemented 13/03/2026; device exact-repro validation pending closure).
+- Phase 13 — **Fix 26 sync architecture rewrite required** (P0-F26-005 failed device validation
+  2026-03-14; Phase 6 B1+B2 patch verified insufficient — latch fires from spontaneous Firestore
+  stream null independent of VM disposal; all focalized hardenings exhausted; solution requires
+  decoupling timer from session stream, persistent (non-autoDispose) timer service, optimistic
+  rendering, and deterministic recovery state machine).
 - Phase 13 — Mirror must not start behind on resume (stale lastUpdatedAt compensation) (bug).
 - Phase 10 — Task Editor: total time chip + task color picker (new requirement).
 - Phase 9 — Task List: group name input + group summary + per-task total time + selection reset (new requirement).

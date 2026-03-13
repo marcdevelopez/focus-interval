@@ -10724,3 +10724,78 @@ unambiguous log destinations for the two execution windows:
 - No runtime code changes in this block (docs-only validation logistics).
 - Phase 6 remains **In validation** until exact repro + regression smoke + soak
   evidence are captured in the registered logs.
+
+
+---
+
+# 🔹 Block 575 — Phase 6 device validation FAILED + architecture rewrite decision (14/03/2026)
+
+## 📋 Context
+
+Phase 6 (commit `2fc65e4`) was a focalized fix for two root causes confirmed in Phase 5
+device validation (2026-03-13):
+- **B1**: `pomodoroViewModelProvider` disposed during Firestore quiet window (10s gap) →
+  `_sessionSub` torn down → new listener emits `null` → 3s debounce → latch.
+  Fix: 2-minute `keepAlive` grace window via `_lastActiveSessionTimestamp`.
+- **B2**: `_autoOpenedGroupId == groupId` guard in `ActiveSessionAutoOpener` blocks
+  re-navigation after VM disposal.
+  Fix: `ref.exists()` check to detect disposed VM and clear guard.
+
+## ❌ Validation result — FAILED
+
+**Pass 1 (2026-03-13, ~1h, 4 devices RMX3771 / iPhone 17 Pro / macOS / Chrome):**
+
+- 22:10:00 — 10s manual network cut on iOS/Chrome/macOS → **no Syncing session** (B1 working)
+- 22:21:37 — Android (owner) entered `Syncing session...` **spontaneously** (no user cut)
+  - Last session write: `lastUpdatedAt=22:21:20`, `remainingSeconds=521`, `sessionRevision=7`
+  - Stream emitted null for ≥3s → debounce fired → latch engaged
+  - 22:22:01: Syncing cleared but timer **frozen at 08:25**
+- 22:23:14 — macOS: `Syncing session...`, showing "ready" 15:00 (iOS now owner)
+- 22:23:26 — Chrome: same as macOS
+- 22:25:44 — iOS: `Syncing session...`, timer 04:22 frozen
+- 22:26:01 — iOS cleared Syncing but timer remained frozen
+- 22:37:50 — validation ended; Android recovered on wake from screen-off (owner = iOS)
+
+**Pass 2 (4h30 soak) cancelled** — exact repro already reproduced in pass 1.
+
+## 🔍 Root cause of failure
+
+B1 fixed the **VM-disposal trigger path**. The spontaneous Android freeze at 22:21:37
+was caused by a **different path**: Firebase SDK internal event (auth token refresh /
+Firestore reconnect / cache miss) caused the session stream to emit `null` for ≥3s
+**while the VM was still alive**. The 3-second debounce then latched
+`_sessionMissingWhileRunning = true` → freeze.
+
+This trigger path has always existed (AP-2). The 3s debounce was the only protection.
+It is insufficient for SDK-internal reconnect cycles.
+
+## 🏛️ Architecture decision — rewrite required
+
+All focalized hardenings (Phases 2–6) have been exhausted without eliminating the bug.
+The problem is **structural**:
+
+1. **Timer and session sync are tightly coupled** in an autoDisposable ViewModel.
+   Any stream null → timer freeze. No separation between "I have no data" and "timer must stop".
+
+2. **`_sessionMissingWhileRunning` latch** activates on any transient null (3s debounce)
+   and has complex, multi-path recovery that fails silently when ownership changes.
+
+3. **Ephemeral ViewModel for critical state** — `autoDispose` was the wrong choice for
+   the most critical runtime state in the app.
+
+**Decision (agreed by Claude + Codex, 2026-03-14):** no more focalized hardenings.
+Next step is a sync architecture rewrite with these principles:
+
+- `TimerService` — persistent (non-autoDispose), never interrupted by network events
+- `SessionSyncService` — background reconciler; adjusts timer drift without blocking it
+- **Optimistic rendering**: always show last known good state; escalate to error only after
+  N seconds with zero signal from all sources (stream + fetch + group state)
+- **No freeze on stream null**: "Syncing session..." overlay = informational, timer keeps running
+- **Deterministic recovery state machine**: explicit states, explicit transitions, no implicit latches
+
+## 📁 Updated docs
+
+- `docs/validation/validation_ledger.md`: P0-F26-005 → Failed — exact repro FAIL 2026-03-14
+- `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`: Phase 6 → FAILED
+- `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`: packets → FAILED + cancelled
+- `docs/roadmap.md`: Phase 6 entry replaced with "Sync architecture rewrite required"
