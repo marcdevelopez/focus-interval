@@ -234,6 +234,12 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           correlation across ViewModel init/dispose, session subscription
           open/close, scheduled-action bridge events, and stale-clear
           evaluation logs. Runtime instrumentation pending.
+      13/03/2026: Fix 26 Phase 5 runtime instrumentation implemented:
+          added `[VMLifecycle]` init/dispose + `[SessionSub]` open/close
+          reasoned diagnostics in `PomodoroViewModel`, extended `[SyncOverlay]`
+          with `vmToken`, and added coordinator diagnostics
+          `[ScheduledActionDiag]` + `[StaleClearDiag]` with instance-token
+          correlation. Phase 5 smoke tests pass; device validation pending.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
@@ -325,8 +331,8 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 10 — Task weight (%) is selection-scoped in Edit Task + info modal (validation pending).
 - Phase 13 — Mirror session gaps must not drop Run Mode to Ready (validation pending).
 - Phase 13 — Fix 26 Phase 5 diagnostics: VM/session lifecycle correlation
-  (`vmToken`) must identify exact `_sessionSub` loss trigger before runtime
-  behavior changes (docs-first; runtime instrumentation pending).
+  (`vmToken`) must identify exact `_sessionSub` loss trigger before Phase 6
+  behavior changes (runtime instrumentation implemented; device validation pending).
 - Phase 13 — Mirror must not start behind on resume (stale lastUpdatedAt compensation) (bug).
 - Phase 10 — Task Editor: total time chip + task color picker (new requirement).
 - Phase 9 — Task List: group name input + group summary + per-task total time + selection reset (new requirement).

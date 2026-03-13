@@ -71,6 +71,8 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   late DeviceInfoService _deviceInfo;
   late TimeSyncService _timeSyncService;
   final Uuid _uuid = const Uuid();
+  final String _vmToken = const Uuid().v4();
+  bool _didLogLifecycleInit = false;
   PomodoroTask? _currentTask;
   TaskRunGroup? _currentGroup;
   TaskRunGroup? _pendingGroupOverride;
@@ -120,6 +122,8 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   @override
   PomodoroState build() {
+    _logVmLifecycleInitIfNeeded();
+
     // Keep the machine alive while the VM exists.
     _machine = ref.watch(pomodoroMachineProvider);
     _soundService = ref.watch(soundServiceProvider);
@@ -144,6 +148,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     ref.listen<AppMode>(appModeProvider, (previous, next) {
       if (previous == next) return;
       if (next != AppMode.account) {
+        _closeSessionSubscription(reason: 'mode-switch');
         _clearPendingIntent(reason: 'mode-change');
         _clearTimeSyncWait();
         _clearAwaitingSessionConfirmation(reason: 'mode-change');
@@ -153,7 +158,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     // Clean up resources.
     ref.onDispose(() {
       _sub?.cancel();
-      _sessionSub?.close();
+      _closeSessionSubscription(reason: 'provider-dispose');
       _mirrorTimer?.cancel();
       _pausedHeartbeatTimer?.cancel();
       _inactiveResyncTimer?.cancel();
@@ -162,6 +167,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       _stopForegroundService();
       _keepAliveLink?.close();
       _keepAliveLink = null;
+      _logVmLifecycleDispose();
     });
 
     return _machine.state;
@@ -229,7 +235,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     configureFromItem(_currentItem!);
     _primeOwnerSession(session, now: now);
     _primeMirrorSession(session);
-    _subscribeToRemoteSession();
+    _subscribeToRemoteSession(reason: 'load-group');
     if (projection != null) {
       _applyProjectedState(projection.state, now: now);
     }
@@ -1320,8 +1326,8 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     }
   }
 
-  void _subscribeToRemoteSession() {
-    _sessionSub?.close();
+  void _subscribeToRemoteSession({required String reason}) {
+    _closeSessionSubscription(reason: reason);
     _sessionSub = ref.listen<AsyncValue<PomodoroSession?>>(
       pomodoroSessionStreamProvider,
       (previous, next) {
@@ -1443,6 +1449,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       },
       fireImmediately: true,
     );
+    _logSessionSubscriptionOpen(reason: reason);
   }
 
   void _onSessionMissingLatchDebounced() {
@@ -1563,6 +1570,40 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       session: session,
     );
     return true;
+  }
+
+  void _logVmLifecycleInitIfNeeded() {
+    if (!kDebugMode || _didLogLifecycleInit) return;
+    _didLogLifecycleInit = true;
+    debugPrint(
+      '[VMLifecycle] init vmToken=$_vmToken groupId=${_currentGroup?.id ?? 'none'}',
+    );
+  }
+
+  void _logVmLifecycleDispose() {
+    if (!kDebugMode) return;
+    debugPrint(
+      '[VMLifecycle] dispose vmToken=$_vmToken groupId=${_currentGroup?.id ?? 'none'}',
+    );
+  }
+
+  void _closeSessionSubscription({required String reason}) {
+    final sub = _sessionSub;
+    if (sub == null) return;
+    if (kDebugMode) {
+      debugPrint(
+        '[SessionSub] close vmToken=$_vmToken groupId=${_currentGroup?.id ?? 'none'} reason=$reason',
+      );
+    }
+    sub.close();
+    _sessionSub = null;
+  }
+
+  void _logSessionSubscriptionOpen({required String reason}) {
+    if (!kDebugMode) return;
+    debugPrint(
+      '[SessionSub] open vmToken=$_vmToken groupId=${_currentGroup?.id ?? 'none'} reason=$reason',
+    );
   }
 
   void _logHoldLifecycle({
@@ -2039,6 +2080,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     final primaryReason = _primarySyncOverlayReason(reasonsAfter);
     debugPrint(
       '[SyncOverlay] '
+      'vmToken=$_vmToken '
       'groupId=$groupId '
       'overlayVisibleBefore=$visibleBefore '
       'overlayVisibleAfter=$visibleAfter '
@@ -2817,7 +2859,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     final appMode = ref.read(appModeProvider);
     if (appMode == AppMode.account) {
       unawaited(_refreshTimeSyncIfNeeded(reason: 'resume'));
-      _subscribeToRemoteSession();
+      _subscribeToRemoteSession(reason: 'resume-rebind');
       unawaited(syncWithRemoteSession(preferServer: true, reason: 'resume'));
       _schedulePostResumeResync();
       return;

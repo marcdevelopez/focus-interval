@@ -25,8 +25,8 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **Fix 26 Phase 4 runtime implementation (validation pending)**
-Current focus: **Fix 26 Phase 5 docs-first lifecycle observability contract**
+Last bug fix: **Fix 26 Phase 5 runtime instrumentation (validation pending)**
+Current focus: **Fix 26 device re-validation with vmToken lifecycle diagnostics**
 Last update: **13/03/2026**
 
 ---
@@ -10481,3 +10481,49 @@ loss trigger observed in device logs, without changing runtime behavior.
 
 - No runtime behavior changes were made in this block.
 - Phase 6 scope remains blocked on Phase 5 diagnostic evidence from device logs.
+
+---
+
+# 🔹 Block 571 — Fix 26 Phase 5 runtime: vmToken lifecycle instrumentation (13/03/2026)
+
+**Date:** 13/03/2026  
+**Branch:** `refactor-run-mode-sync-core`  
+**Scope:** Implement runtime diagnostics required by the Phase 5 observability
+contract (no business-behavior changes).
+
+### ✔ Work completed:
+
+- Updated `lib/presentation/viewmodels/pomodoro_view_model.dart`:
+  - added stable `vmToken` per `PomodoroViewModel` instance (`Uuid.v4()`),
+  - added `[VMLifecycle] init|dispose` diagnostics,
+  - added `[SessionSub] open|close` diagnostics with explicit `reason`,
+  - replaced raw subscription close calls with reasoned helper paths:
+    `load-group`, `resume-rebind`, `mode-switch`, `provider-dispose`,
+  - extended `[SyncOverlay]` diagnostics payload with `vmToken`.
+- Updated `lib/presentation/viewmodels/scheduled_group_coordinator.dart`:
+  - added stable coordinator instance token (`vmToken` field in diagnostics),
+  - added `[ScheduledActionDiag]` on `openTimer`/`lateStartQueue` emission with
+    action type/token and payload metadata,
+  - added `[StaleClearDiag]` on `_clearStaleActiveSessionIfNeeded` evaluations
+    with `sessionGroupId`, lookup source/status, decision (`clear|keep`), and reason.
+
+### 🧪 Validation run (local):
+
+- `dart analyze lib/presentation/viewmodels/pomodoro_view_model.dart lib/presentation/viewmodels/scheduled_group_coordinator.dart test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+  → PASS (2 pre-existing info-level style hints in test helper only).
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart --reporter compact`
+  → PASS (`16/16`).
+- Phase 5 smoke tests:
+  - `flutter test ...pomodoro_view_model_session_gap_test.dart --plain-name "[PHASE5]"`
+    → PASS,
+  - `flutter test ...timer_screen_syncing_overlay_test.dart --plain-name "[PHASE5]"`
+    → PASS,
+  - `flutter test ...scheduled_group_coordinator_test.dart --plain-name "[PHASE5]"`
+    → PASS.
+
+### ⚠️ Notes:
+
+- Full `scheduled_group_coordinator_test.dart` still contains pre-existing
+  `AppModeService` harness failures outside Phase 5 scope.
+- Phase 6 remains blocked until device validation captures the new diagnostics
+  and identifies the exact `_sessionSub` loss trigger path.
