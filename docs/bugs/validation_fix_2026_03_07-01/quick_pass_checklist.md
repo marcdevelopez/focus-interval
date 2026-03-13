@@ -399,4 +399,24 @@ macOS crash at 15:48:18 (SIGSEGV from Firestore transaction) is a separate issue
 ### Current closure status
 
 - Phase 5 device validation: **COMPLETE — root cause confirmed 2026-03-13**.
-- Phase 6: **PENDING** (contracts written, runtime implementation not yet done).
+- Phase 6 runtime (B1+B2): **IMPLEMENTED (local validation PASS, 2026-03-13)**.
+- Phase 6 device validation: **PENDING** (exact repro + regression smoke on devices).
+
+### Phase 6 local validation evidence (2026-03-13)
+
+```bash
+dart analyze \
+  lib/presentation/viewmodels/pomodoro_view_model.dart \
+  lib/widgets/active_session_auto_opener.dart \
+  test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart \
+  test/presentation/timer_screen_syncing_overlay_test.dart
+# PASS (2 pre-existing info hints in test helper)
+
+flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart \
+  --plain-name "[PHASE6]" --reporter compact
+# PASS
+
+flutter test test/presentation/timer_screen_syncing_overlay_test.dart \
+  --plain-name "[PHASE6]" --reporter compact
+# PASS
+```

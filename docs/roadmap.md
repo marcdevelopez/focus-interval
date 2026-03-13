@@ -253,6 +253,10 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           B2 — add `ref.exists(pomodoroViewModelProvider)` check in
           `ActiveSessionAutoOpener` before suppressing re-navigation.
           Contract and implementation pending.
+      13/03/2026: Fix 26 Phase 6 runtime implemented (B1+B2):
+          keepAlive grace window + timer-guard recovery refresh in
+          `ActiveSessionAutoOpener`; local Phase 6 smoke tests PASS.
+          Device exact-repro validation pending for closure.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
@@ -346,7 +350,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 13 — Fix 26 Phase 6: ViewModel lifetime hardening + auto-open recovery guard
   (B1: `keepAlive` grace window to prevent `autoDispose` race during Firestore quiet windows;
   B2: `ref.exists()` guard in `ActiveSessionAutoOpener` to allow re-navigation when VM was disposed;
-  implementation pending after Phase 5 device validation confirmed root cause 2026-03-13).
+  runtime implemented 13/03/2026; device exact-repro validation pending closure).
 - Phase 13 — Mirror must not start behind on resume (stale lastUpdatedAt compensation) (bug).
 - Phase 10 — Task Editor: total time chip + task color picker (new requirement).
 - Phase 9 — Task List: group name input + group summary + per-task total time + selection reset (new requirement).

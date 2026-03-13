@@ -25,8 +25,8 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **Fix 26 Phase 5 runtime instrumentation (validation pending)**
-Current focus: **Fix 26 device re-validation with vmToken lifecycle diagnostics**
+Last bug fix: **Fix 26 Phase 6 runtime hardening (local validation PASS)**
+Current focus: **Fix 26 Phase 6 device exact-repro validation (B1+B2)**
 Last update: **13/03/2026**
 
 ---
@@ -10632,3 +10632,57 @@ Release mode strips them.
 ## ✅ Status
 
 - Root cause confirmed. Phase 6 plan written. Implementation pending.
+
+---
+
+# 🔹 Block 573 — Fix 26 Phase 6 runtime: B1 keepAlive grace + B2 auto-open recovery (13/03/2026)
+
+## 📋 Context
+
+Phase 5 validation confirmed two runtime bugs:
+- **B1**: `autoDispose` race disposed `PomodoroViewModel` during Firestore quiet windows.
+- **B2**: `ActiveSessionAutoOpener` suppressed re-navigation for an already-opened
+  group without verifying whether the VM had already been disposed.
+
+Phase 6 contract was defined in `docs/specs.md` section **10.4.9** before coding.
+
+## ✔ Work completed
+
+- Updated `lib/presentation/viewmodels/pomodoro_view_model.dart`:
+  - added `_lastActiveSessionTimestamp` (local processing time stamp),
+  - added keepAlive grace policy (`_defaultKeepAliveGraceWindow = 2 min`),
+  - added grace timer re-check (`_keepAliveGraceTimer`) to release keepAlive
+    once grace expires when no active execution signal remains,
+  - extended `_syncKeepAliveState()` / `_shouldKeepAlive()` with explicit
+    active-signal and grace-window logic,
+  - synchronized keepAlive state after stream-null handling and after resolved
+    session ingestion to avoid stale keepAlive decisions.
+- Updated `lib/widgets/active_session_auto_opener.dart`:
+  - added VM existence transition tracking via
+    `ref.exists(pomodoroViewModelProvider)`,
+  - added recovery branch that clears stale `_autoOpenedGroupId` when VM was
+    disposed while session remains active,
+  - added forced timer refresh navigation path (`/timer/:id?refresh=...`) under
+    recovery mode, while preserving in-flight and bounce-window protections.
+- Added Phase 6 contract tests:
+  - `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+    (`[PHASE6]` keepAlive grace behavior),
+  - `test/presentation/timer_screen_syncing_overlay_test.dart`
+    (`[PHASE6]` auto-open guard recovery after VM disposal).
+
+## 🧪 Validation run (local)
+
+- `dart analyze lib/presentation/viewmodels/pomodoro_view_model.dart lib/widgets/active_session_auto_opener.dart test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart`
+  - PASS (2 pre-existing info-level hints in existing test helper).
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart --plain-name "[PHASE6]" --reporter compact`
+  - PASS.
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart --plain-name "[PHASE6]" --reporter compact`
+  - PASS.
+
+## ⚠️ Notes
+
+- Phase 6 is **not closed** yet: device exact repro + regression smoke packet is
+  still required before marking Closed/OK in validation docs.
+- Ledger updated:
+  - `P0-F26-004` moved to Closed/OK (Phase 5 diagnostics objective completed),
+  - `P0-F26-005` opened In validation for Phase 6 runtime closure criteria.

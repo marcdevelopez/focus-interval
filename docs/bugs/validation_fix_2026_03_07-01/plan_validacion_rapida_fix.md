@@ -611,3 +611,43 @@ New diagnostic events available in this packet (Phase 5 instrumentation):
 - `[SessionSub] open/close vmToken=<uuid> reason=<reason>` — detect what closes `_sessionSub`
 - `[StaleClearDiag] decision=<clear|skip>` — detect if coordinator clears active session
 - `[ScheduledActionDiag] action=<action>` — detect scheduled firings near freeze timestamp
+
+## 2026-03-13 — Phase 5 packet closure (`7daf636`)
+
+Status: **COMPLETED — root cause confirmed**
+
+Outcome summary:
+- Chrome and iOS debug logs captured `provider-dispose` while timer route remained
+  active, confirming VM disposal race under `autoDispose`.
+- Coordinator diagnostics confirmed active running group persisted (`decision=keep`)
+  while timer UI froze.
+- Root cause split finalized:
+  - B1: keepAlive race during Firestore quiet window.
+  - B2: auto-open suppression guard blocks re-navigation after VM dispose.
+
+Decision:
+- Phase 5 diagnostic objective met.
+- Move to Phase 6 runtime hardening (B1+B2).
+
+## 2026-03-13 — Phase 6 runtime implementation packet (local)
+
+Status: **IN VALIDATION** (local smoke PASS; device exact repro pending)
+
+Implemented scope:
+- B1 (`pomodoro_view_model.dart`):
+  - `_lastActiveSessionTimestamp` + keepAlive grace window (2 min).
+  - Grace re-check timer to release keepAlive when grace expires.
+  - keepAlive sync updates after snapshot ingestion and stream null handling.
+- B2 (`active_session_auto_opener.dart`):
+  - detect VM disposed transition via `ref.exists(pomodoroViewModelProvider)`.
+  - clear stale `_autoOpenedGroupId` guard on disposed VM.
+  - force timer route refresh (`/timer/:id?refresh=...`) in recovery path.
+
+Local evidence:
+- `dart analyze` target set PASS (2 pre-existing info hints).
+- `flutter test ...pomodoro_view_model_session_gap_test.dart --plain-name "[PHASE6]"` PASS.
+- `flutter test ...timer_screen_syncing_overlay_test.dart --plain-name "[PHASE6]"` PASS.
+
+Next mandatory step for closure:
+- Device run with exact repro + regression smoke (all in debug for diagnostics)
+  before marking Phase 6 as Closed/OK.

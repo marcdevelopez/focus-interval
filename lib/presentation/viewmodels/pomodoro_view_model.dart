@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
+import 'package:flutter/foundation.dart'
+    show debugPrint, kDebugMode, visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -62,6 +63,9 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   static const Duration _autoTakeoverFailureBackoff = Duration(seconds: 30);
   static const Duration _pendingIntentTtl = Duration(seconds: 15);
   static const Duration _timeSyncTimeout = Duration(seconds: 15);
+  static const Duration _defaultKeepAliveGraceWindow = Duration(minutes: 2);
+  @visibleForTesting
+  static Duration? debugKeepAliveGraceWindowOverride;
   late PomodoroMachine _machine;
   StreamSubscription<PomodoroState>? _sub;
   late SoundService _soundService;
@@ -87,12 +91,14 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   Timer? _inactiveResyncTimer;
   Timer? _postResumeResyncTimer;
   Timer? _sessionMissingLatchTimer;
+  Timer? _keepAliveGraceTimer;
   String? _remoteOwnerId;
   PomodoroSession? _remoteSession;
   PomodoroSession? _latestSession;
   Duration? _serverTimeOffset;
   dynamic _keepAliveLink;
   DateTime? _lastActiveSessionSnapshotAt;
+  DateTime? _lastActiveSessionTimestamp;
   String? _lastActiveSessionGroupId;
   String? _lastActiveSessionTaskId;
   bool _sessionMissingWhileRunning = false;
@@ -152,7 +158,9 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         _clearPendingIntent(reason: 'mode-change');
         _clearTimeSyncWait();
         _clearAwaitingSessionConfirmation(reason: 'mode-change');
+        _lastActiveSessionTimestamp = null;
       }
+      _syncKeepAliveState();
     });
 
     // Clean up resources.
@@ -164,6 +172,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       _inactiveResyncTimer?.cancel();
       _postResumeResyncTimer?.cancel();
       _sessionMissingLatchTimer?.cancel();
+      _keepAliveGraceTimer?.cancel();
       _stopForegroundService();
       _keepAliveLink?.close();
       _keepAliveLink = null;
@@ -1401,6 +1410,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
           if (previousSession != null || wasMissing) {
             _notifySessionMetaChanged();
           }
+          _syncKeepAliveState();
           return;
         }
 
@@ -1491,10 +1501,11 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     final timestamp = now ?? DateTime.now();
     if (!session.status.isActiveExecution) return;
     unawaited(_refreshTimeSyncIfNeeded(reason: 'session-snapshot'));
-    _syncKeepAliveState();
     _lastActiveSessionSnapshotAt = timestamp;
+    _lastActiveSessionTimestamp = timestamp;
     _lastActiveSessionGroupId = session.groupId;
     _lastActiveSessionTaskId = session.taskId;
+    _syncKeepAliveState();
     if (kDebugMode) {
       debugPrint(
         '[ActiveSession][snapshot] '
@@ -1757,6 +1768,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       ownershipMetaChanged: ownershipMetaChanged,
       onApply: _applySessionTimelineProjection,
     );
+    _syncKeepAliveState();
     if (wasMissing) {
       _logHoldLifecycle(
         event: 'hold-exit',
@@ -1969,23 +1981,66 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     return DateTime.now().add(offset);
   }
 
-  void _syncKeepAliveState() {
-    final shouldKeep = _shouldKeepAlive();
-    if (shouldKeep) {
-      _keepAliveLink ??= ref.keepAlive();
-      return;
-    }
-    _keepAliveLink?.close();
-    _keepAliveLink = null;
-  }
+  Duration get _keepAliveGraceWindow =>
+      debugKeepAliveGraceWindowOverride ?? _defaultKeepAliveGraceWindow;
 
-  bool _shouldKeepAlive() {
-    if (ref.read(appModeProvider) != AppMode.account) return false;
-    if (_sessionMissingWhileRunning) return true;
+  bool _hasKeepAliveActiveExecutionSignal() {
     if (_machine.state.status.isActiveExecution) return true;
     if (_latestSession?.status.isActiveExecution ?? false) return true;
     if (_remoteSession?.status.isActiveExecution ?? false) return true;
     return false;
+  }
+
+  Duration? _keepAliveGraceRemaining({DateTime? now}) {
+    final lastActive = _lastActiveSessionTimestamp;
+    if (lastActive == null) return null;
+    final elapsed = (now ?? DateTime.now()).difference(lastActive);
+    final grace = _keepAliveGraceWindow;
+    if (elapsed >= grace) return null;
+    return grace - elapsed;
+  }
+
+  void _cancelKeepAliveGraceTimer() {
+    _keepAliveGraceTimer?.cancel();
+    _keepAliveGraceTimer = null;
+  }
+
+  void _scheduleKeepAliveGraceTimer(Duration remaining) {
+    final delay = remaining <= Duration.zero ? Duration.zero : remaining;
+    _keepAliveGraceTimer?.cancel();
+    _keepAliveGraceTimer = Timer(delay, _syncKeepAliveState);
+  }
+
+  void _syncKeepAliveState() {
+    final activeExecution = _hasKeepAliveActiveExecutionSignal();
+    final graceRemaining = _keepAliveGraceRemaining();
+    final shouldKeep = _shouldKeepAlive(
+      activeExecution: activeExecution,
+      graceRemaining: graceRemaining,
+    );
+    if (shouldKeep) {
+      _keepAliveLink ??= ref.keepAlive();
+      final keepByGraceOnly =
+          !_sessionMissingWhileRunning &&
+          !activeExecution &&
+          graceRemaining != null;
+      if (keepByGraceOnly) {
+        _scheduleKeepAliveGraceTimer(graceRemaining);
+      } else {
+        _cancelKeepAliveGraceTimer();
+      }
+      return;
+    }
+    _cancelKeepAliveGraceTimer();
+    _keepAliveLink?.close();
+    _keepAliveLink = null;
+  }
+
+  bool _shouldKeepAlive({bool? activeExecution, Duration? graceRemaining}) {
+    if (ref.read(appModeProvider) != AppMode.account) return false;
+    if (_sessionMissingWhileRunning) return true;
+    if (activeExecution ?? _hasKeepAliveActiveExecutionSignal()) return true;
+    return (graceRemaining ?? _keepAliveGraceRemaining()) != null;
   }
 
   DateTime? _projectionNowForSession(

@@ -37,11 +37,13 @@ class _ActiveSessionAutoOpenerState
   Timer? _retryTimer;
   int _retryAttempts = 0;
   bool _resumeAutoOpenPending = false;
+  bool _lastPomodoroVmExists = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _lastPomodoroVmExists = ref.exists(pomodoroViewModelProvider);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _handleActiveSessionChange(ref.read(activePomodoroSessionProvider));
     });
@@ -64,24 +66,30 @@ class _ActiveSessionAutoOpenerState
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<PomodoroSession?>(
-      activePomodoroSessionProvider,
-      (previous, next) {
-        _handleActiveSessionChange(next);
-      },
-    );
+    ref.listen<PomodoroSession?>(activePomodoroSessionProvider, (
+      previous,
+      next,
+    ) {
+      _handleActiveSessionChange(next);
+    });
     return widget.child;
   }
 
   String _currentRoute() {
     final navigatorContext = widget.navigatorKey.currentContext;
     if (navigatorContext == null) return 'null';
-    return GoRouter.of(navigatorContext).routerDelegate.currentConfiguration.uri.path;
+    return GoRouter.of(
+      navigatorContext,
+    ).routerDelegate.currentConfiguration.uri.path;
   }
 
   void _handleActiveSessionChange(PomodoroSession? session) {
+    final vmWasAlive = _lastPomodoroVmExists;
+    final vmExists = ref.exists(pomodoroViewModelProvider);
     if (session == null) {
-      debugPrint('[RunModeDiag] Active session cleared route=${_currentRoute()}');
+      debugPrint(
+        '[RunModeDiag] Active session cleared route=${_currentRoute()}',
+      );
     } else {
       debugPrint(
         '[RunModeDiag] Active session change group=${session.groupId} '
@@ -100,6 +108,7 @@ class _ActiveSessionAutoOpenerState
       _resumeAutoOpenPending = false;
       _retryTimer?.cancel();
       _retryTimer = null;
+      _lastPomodoroVmExists = vmExists;
       return;
     }
 
@@ -107,6 +116,7 @@ class _ActiveSessionAutoOpenerState
     if (groupId == null || groupId.isEmpty) {
       debugPrint('Active session missing groupId. Clearing session.');
       unawaited(_clearStaleSession());
+      _lastPomodoroVmExists = vmExists;
       return;
     }
 
@@ -118,6 +128,17 @@ class _ActiveSessionAutoOpenerState
       _autoOpenedGroupId = null;
       _autoOpenSuppressedGroupId = null;
       _resumeAutoOpenPending = false;
+    }
+
+    var forceTimerRefresh = false;
+    if (_autoOpenedGroupId == groupId && !vmExists && vmWasAlive) {
+      debugPrint(
+        '[RunModeDiag] Auto-open recovery: VM disposed, clearing guard '
+        'group=$groupId route=${_currentRoute()}',
+      );
+      _autoOpenedGroupId = null;
+      _autoOpenSuppressedGroupId = null;
+      forceTimerRefresh = true;
     }
 
     final navigatorContext = widget.navigatorKey.currentContext;
@@ -134,7 +155,7 @@ class _ActiveSessionAutoOpenerState
         _autoOpenedGroupId = null;
         _autoOpenSuppressedGroupId = null;
       }
-      if (_autoOpenedGroupId == null && inTimer) {
+      if (_autoOpenedGroupId == null && inTimer && !forceTimerRefresh) {
         debugPrint(
           '[RunModeDiag] Auto-open state set (already in timer) '
           'group=$groupId route=${_currentRoute()}',
@@ -151,6 +172,7 @@ class _ActiveSessionAutoOpenerState
         '[RunModeDiag] Auto-open suppressed (in-flight=$_autoOpenInFlight '
         'opened=$_autoOpenedGroupId route=${_currentRoute()})',
       );
+      _lastPomodoroVmExists = vmExists;
       return;
     }
 
@@ -162,6 +184,7 @@ class _ActiveSessionAutoOpenerState
 
     if (_pendingGroupId == groupId && _retryTimer != null) {
       debugPrint('Auto-open retry already scheduled.');
+      _lastPomodoroVmExists = vmExists;
       return;
     }
 
@@ -171,6 +194,7 @@ class _ActiveSessionAutoOpenerState
         '[RunModeDiag] Auto-open suppressed (not in Account Mode) '
         'route=${_currentRoute()}',
       );
+      _lastPomodoroVmExists = vmExists;
       return;
     }
 
@@ -181,15 +205,20 @@ class _ActiveSessionAutoOpenerState
         'group=$groupId route=$route',
       );
       _autoOpenSuppressedGroupId = groupId;
+      _lastPomodoroVmExists = vmExists;
       return;
     }
 
     _autoOpenInFlight = true;
     _pendingGroupId = groupId;
-    unawaited(_autoOpenSession(session));
+    _lastPomodoroVmExists = vmExists;
+    unawaited(_autoOpenSession(session, forceTimerRefresh: forceTimerRefresh));
   }
 
-  Future<void> _autoOpenSession(PomodoroSession session) async {
+  Future<void> _autoOpenSession(
+    PomodoroSession session, {
+    bool forceTimerRefresh = false,
+  }) async {
     try {
       final groupId = session.groupId;
       if (groupId == null || groupId.isEmpty) {
@@ -197,10 +226,16 @@ class _ActiveSessionAutoOpenerState
         return;
       }
 
-      if (_isAlreadyInTimer(groupId)) {
+      if (_isAlreadyInTimer(groupId) && !forceTimerRefresh) {
         debugPrint('Auto-open suppressed (already in timer).');
         _autoOpenedGroupId = groupId;
         return;
+      }
+      if (forceTimerRefresh) {
+        debugPrint(
+          '[RunModeDiag] Auto-open recovery: forcing timer refresh '
+          'group=$groupId route=${_currentRoute()}',
+        );
       }
 
       debugPrint(
@@ -226,7 +261,7 @@ class _ActiveSessionAutoOpenerState
           _autoOpenSuppressedGroupId = groupId;
           return;
         }
-        if (_isAlreadyInTimer(groupId)) {
+        if (_isAlreadyInTimer(groupId) && !forceTimerRefresh) {
           debugPrint('Auto-open suppressed (already in timer).');
           _autoOpenedGroupId = groupId;
           return;
@@ -237,7 +272,10 @@ class _ActiveSessionAutoOpenerState
           '[RunModeDiag] Attempting auto-open to TimerScreen '
           'group=$groupId route=${_currentRoute()}',
         );
-        navigatorContext.go('/timer/$groupId');
+        final targetRoute = forceTimerRefresh
+            ? '/timer/$groupId?refresh=${DateTime.now().microsecondsSinceEpoch}'
+            : '/timer/$groupId';
+        navigatorContext.go(targetRoute);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           if (_isAlreadyInTimer(groupId)) {
@@ -262,10 +300,9 @@ class _ActiveSessionAutoOpenerState
   bool _isAlreadyInTimer(String groupId) {
     final navigatorContext = widget.navigatorKey.currentContext;
     if (navigatorContext == null) return false;
-    final uri = GoRouter.of(navigatorContext)
-        .routerDelegate
-        .currentConfiguration
-        .uri;
+    final uri = GoRouter.of(
+      navigatorContext,
+    ).routerDelegate.currentConfiguration.uri;
     final location = uri.path;
     if (!location.startsWith('/timer/')) return false;
     final current = location.substring('/timer/'.length).split('?').first;

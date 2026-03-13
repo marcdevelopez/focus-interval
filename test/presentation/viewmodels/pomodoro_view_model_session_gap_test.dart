@@ -1415,6 +1415,160 @@ void main() {
   );
 
   test(
+    '[PHASE6] _shouldKeepAlive returns true within grace window after last active snapshot',
+    () async {
+      PomodoroViewModel.debugKeepAliveGraceWindowOverride = const Duration(
+        milliseconds: 200,
+      );
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'group-phase6-keepalive-grace',
+        start: now,
+      );
+      final session = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        ownerDeviceId: 'other-device',
+        now: now,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      final vmSub = container.listen<PomodoroState>(
+        pomodoroViewModelProvider,
+        (_, __) {},
+      );
+      addTearDown(() {
+        PomodoroViewModel.debugKeepAliveGraceWindowOverride = null;
+        vmSub.close();
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      vm.updateGroup(
+        group.copyWith(
+          status: TaskRunStatus.completed,
+          updatedAt: now.add(const Duration(seconds: 1)),
+        ),
+      );
+      sessionRepo.emit(null);
+      await _pumpQueue();
+
+      vmSub.close();
+      await _pumpQueue();
+
+      expect(
+        container.exists(pomodoroViewModelProvider),
+        isTrue,
+        reason:
+            'Phase-6 contract: provider must stay alive inside grace window after last active snapshot.',
+      );
+    },
+  );
+
+  test(
+    '[PHASE6] _shouldKeepAlive returns false after grace window expires with no active state',
+    () async {
+      PomodoroViewModel.debugKeepAliveGraceWindowOverride = const Duration(
+        milliseconds: 200,
+      );
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'group-phase6-keepalive-expiry',
+        start: now,
+      );
+      final session = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        ownerDeviceId: 'other-device',
+        now: now,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      final vmSub = container.listen<PomodoroState>(
+        pomodoroViewModelProvider,
+        (_, __) {},
+      );
+      addTearDown(() {
+        PomodoroViewModel.debugKeepAliveGraceWindowOverride = null;
+        vmSub.close();
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      vm.updateGroup(
+        group.copyWith(
+          status: TaskRunStatus.completed,
+          updatedAt: now.add(const Duration(seconds: 1)),
+        ),
+      );
+      sessionRepo.emit(null);
+      await _pumpQueue();
+
+      vmSub.close();
+      await _pumpQueue();
+      expect(container.exists(pomodoroViewModelProvider), isTrue);
+
+      await Future<void>.delayed(const Duration(milliseconds: 650));
+      await _pumpQueue();
+
+      expect(
+        container.exists(pomodoroViewModelProvider),
+        isFalse,
+        reason:
+            'Phase-6 contract: provider must release keepAlive once grace expires and no active signal remains.',
+      );
+    },
+  );
+
+  test(
     '[PHASE3] hold diagnostics must emit enter/extend/exit with projectionSource',
     () async {
       final now = DateTime.now();
