@@ -4,7 +4,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/pomodoro_session.dart';
+import '../../data/services/app_mode_service.dart';
+import '../../domain/pomodoro_machine.dart';
 import '../providers.dart';
+
+enum RecoveryStatus { idle, attempting, failed }
 
 /// Sync state exposed to the VM for display and orchestration.
 class SessionSyncState {
@@ -12,12 +16,14 @@ class SessionSyncState {
   final PomodoroSession? latestSession;
   final DateTime? lastActiveAt;
   final String? attachedGroupId;
+  final RecoveryStatus recoveryStatus;
 
   const SessionSyncState({
     required this.holdActive,
     required this.latestSession,
     required this.lastActiveAt,
     required this.attachedGroupId,
+    required this.recoveryStatus,
   });
 
   factory SessionSyncState.initial() => const SessionSyncState(
@@ -25,6 +31,7 @@ class SessionSyncState {
         latestSession: null,
         lastActiveAt: null,
         attachedGroupId: null,
+        recoveryStatus: RecoveryStatus.idle,
       );
 
   SessionSyncState copyWith({
@@ -33,6 +40,7 @@ class SessionSyncState {
     bool clearLatestSession = false,
     DateTime? lastActiveAt,
     String? attachedGroupId,
+    RecoveryStatus? recoveryStatus,
   }) {
     return SessionSyncState(
       holdActive: holdActive ?? this.holdActive,
@@ -40,6 +48,7 @@ class SessionSyncState {
           clearLatestSession ? null : (latestSession ?? this.latestSession),
       lastActiveAt: lastActiveAt ?? this.lastActiveAt,
       attachedGroupId: attachedGroupId ?? this.attachedGroupId,
+      recoveryStatus: recoveryStatus ?? this.recoveryStatus,
     );
   }
 }
@@ -58,13 +67,19 @@ class SessionSyncState {
 /// - detach() is only called on explicit mode switch — NOT on VM dispose.
 ///   This preserves stream continuity across Riverpod VM rebuilds (AP-1).
 class SessionSyncService extends Notifier<SessionSyncState> {
+  static const Duration _recoveryCooldown = Duration(seconds: 5);
+
   Timer? _latchTimer;
+  Timer? _recoveryRetryTimer;
   ProviderSubscription<AsyncValue<PomodoroSession?>>? _sessionSub;
+  DateTime? _lastRecoveryAttemptAt;
+  Future<void>? _recoveryInFlight;
 
   @override
   SessionSyncState build() {
     ref.onDispose(() {
       _latchTimer?.cancel();
+      _recoveryRetryTimer?.cancel();
       // Do NOT close _sessionSub here — it must survive VM dispose/rebuild
       // to maintain stream continuity (AP-1 anti-pattern).
     });
@@ -77,6 +92,10 @@ class SessionSyncService extends Notifier<SessionSyncState> {
     if (state.attachedGroupId == groupId && _sessionSub != null) return;
     _latchTimer?.cancel();
     _latchTimer = null;
+    _recoveryRetryTimer?.cancel();
+    _recoveryRetryTimer = null;
+    _recoveryInFlight = null;
+    _lastRecoveryAttemptAt = null;
     if (state.attachedGroupId != groupId) {
       // Switching groups: reset sync state for the new group.
       state = SessionSyncState.initial().copyWith(attachedGroupId: groupId);
@@ -97,6 +116,10 @@ class SessionSyncService extends Notifier<SessionSyncState> {
   void detach() {
     _latchTimer?.cancel();
     _latchTimer = null;
+    _recoveryRetryTimer?.cancel();
+    _recoveryRetryTimer = null;
+    _recoveryInFlight = null;
+    _lastRecoveryAttemptAt = null;
     _sessionSub?.close();
     _sessionSub = null;
     state = SessionSyncState.initial();
@@ -105,29 +128,14 @@ class SessionSyncService extends Notifier<SessionSyncState> {
     }
   }
 
-  /// VM calls this when a transitional snapshot should keep hold active
-  /// (e.g., session is transitioning through non-active status).
-  void extendHold() {
-    if (!state.holdActive) {
-      state = state.copyWith(holdActive: true);
-    }
-  }
-
-  /// VM calls this when a valid session has been fully ingested and the
-  /// hold should be cleared.
-  void clearHold() {
-    if (state.holdActive) {
-      _latchTimer?.cancel();
-      _latchTimer = null;
-      state = state.copyWith(holdActive: false);
-    }
-  }
-
   void _handleStreamEvent(
     AsyncValue<PomodoroSession?>? prev,
     AsyncValue<PomodoroSession?> next,
   ) {
-    final session = next is AsyncData<PomodoroSession?> ? next.value : null;
+    // AsyncLoading / AsyncError are transient and MUST NOT be treated as
+    // missing-session null snapshots.
+    if (next is! AsyncData<PomodoroSession?>) return;
+    final session = next.value;
     if (session != null && _isSessionForGroup(session)) {
       _onSessionReceived(session);
     } else if (session == null) {
@@ -138,13 +146,38 @@ class SessionSyncService extends Notifier<SessionSyncState> {
   void _onSessionReceived(PomodoroSession session) {
     _latchTimer?.cancel();
     _latchTimer = null;
+    _recoveryRetryTimer?.cancel();
+    _recoveryRetryTimer = null;
     final wasHold = state.holdActive;
+    final timer = ref.read(timerServiceProvider);
+    final shouldIgnoreNonActive =
+        !session.status.isActiveExecution && timer.isTickingCandidate;
+    // Ignore non-active snapshots while runtime is still active.
+    // This prevents stale terminal/transitional snapshots from overriding
+    // an active countdown that still has authoritative runtime continuity.
+    if (shouldIgnoreNonActive) {
+      if (state.recoveryStatus != RecoveryStatus.failed) {
+        state = state.copyWith(recoveryStatus: RecoveryStatus.failed);
+      }
+      if (kDebugMode) {
+        debugPrint(
+          '[SessionSync] non-active snapshot ignored while runtime active '
+          'hold=$wasHold '
+          'groupId=${session.groupId} status=${session.status.name}',
+        );
+      }
+      if (wasHold) {
+        _scheduleRecoveryRetry(_recoveryCooldown);
+      }
+      return;
+    }
     // Anchor TimerService to the authoritative Firestore value.
     ref.read(timerServiceProvider.notifier).applyOwnerSnapshot(session);
     state = state.copyWith(
       holdActive: false,
       latestSession: session,
       lastActiveAt: DateTime.now(),
+      recoveryStatus: RecoveryStatus.idle,
     );
     if (kDebugMode && wasHold) {
       debugPrint(
@@ -161,7 +194,13 @@ class SessionSyncService extends Notifier<SessionSyncState> {
       if (state.holdActive || state.latestSession != null) {
         _latchTimer?.cancel();
         _latchTimer = null;
-        state = state.copyWith(holdActive: false, clearLatestSession: true);
+        _recoveryRetryTimer?.cancel();
+        _recoveryRetryTimer = null;
+        state = state.copyWith(
+          holdActive: false,
+          clearLatestSession: true,
+          recoveryStatus: RecoveryStatus.idle,
+        );
       }
       return;
     }
@@ -173,6 +212,7 @@ class SessionSyncService extends Notifier<SessionSyncState> {
       if (kDebugMode) {
         debugPrint('[SessionSync] hold extended — null stream while ticking');
       }
+      unawaited(_attemptRecovery(trigger: 'null-while-hold'));
       return;
     }
     // Timer is running but no session — start 3-second debounce.
@@ -200,7 +240,11 @@ class SessionSyncService extends Notifier<SessionSyncState> {
     ref
         .read(timerServiceProvider.notifier)
         .notifySessionGap(const Duration(seconds: 3));
-    state = state.copyWith(holdActive: true);
+    state = state.copyWith(
+      holdActive: true,
+      recoveryStatus: RecoveryStatus.attempting,
+    );
+    unawaited(_attemptRecovery(trigger: 'latch-debounce'));
   }
 
   bool _isSessionForGroup(PomodoroSession session) {
@@ -213,5 +257,69 @@ class SessionSyncService extends Notifier<SessionSyncState> {
     if (lastAt == null) return const Duration(seconds: 3);
     final gap = DateTime.now().difference(lastAt);
     return gap.isNegative ? Duration.zero : gap;
+  }
+
+  Future<void> _attemptRecovery({required String trigger}) async {
+    if (!state.holdActive) return;
+    if (ref.read(appModeProvider) != AppMode.account) return;
+    if (_recoveryInFlight != null) return;
+    final lastAttempt = _lastRecoveryAttemptAt;
+    final now = DateTime.now();
+    if (lastAttempt != null) {
+      final elapsed = now.difference(lastAttempt);
+      if (elapsed < _recoveryCooldown) {
+        _scheduleRecoveryRetry(_recoveryCooldown - elapsed);
+        return;
+      }
+    }
+    _lastRecoveryAttemptAt = now;
+    if (state.recoveryStatus != RecoveryStatus.attempting) {
+      state = state.copyWith(recoveryStatus: RecoveryStatus.attempting);
+    }
+    if (kDebugMode) {
+      debugPrint('[SessionSync] recovery attempt trigger=$trigger');
+    }
+
+    final future = _recoverFromServer();
+    _recoveryInFlight = future;
+    try {
+      await future;
+    } finally {
+      if (identical(_recoveryInFlight, future)) {
+        _recoveryInFlight = null;
+      }
+    }
+  }
+
+  Future<void> _recoverFromServer() async {
+    try {
+      final repo = ref.read(pomodoroSessionRepositoryProvider);
+      final serverSession = await repo.fetchSession(preferServer: true);
+      if (!state.holdActive) return;
+      if (serverSession != null && _isSessionForGroup(serverSession)) {
+        _onSessionReceived(serverSession);
+        return;
+      }
+      if (state.recoveryStatus != RecoveryStatus.failed) {
+        state = state.copyWith(recoveryStatus: RecoveryStatus.failed);
+      }
+      _scheduleRecoveryRetry(_recoveryCooldown);
+    } catch (_) {
+      if (!state.holdActive) return;
+      if (state.recoveryStatus != RecoveryStatus.failed) {
+        state = state.copyWith(recoveryStatus: RecoveryStatus.failed);
+      }
+      _scheduleRecoveryRetry(_recoveryCooldown);
+    }
+  }
+
+  void _scheduleRecoveryRetry(Duration delay) {
+    _recoveryRetryTimer?.cancel();
+    if (!state.holdActive) return;
+    final nextDelay = delay <= Duration.zero ? Duration.zero : delay;
+    _recoveryRetryTimer = Timer(nextDelay, () {
+      _recoveryRetryTimer = null;
+      unawaited(_attemptRecovery(trigger: 'retry'));
+    });
   }
 }

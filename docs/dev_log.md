@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Fix 26 Phase 6 device validation FAILED (rewrite required)**
-Current focus: **Fix 26 rewrite runtime implementation from REWRITE-CORE red baseline**
+Current focus: **Fix 26 rewrite runtime ready for multi-device validation packet (4-device soak)**
 Last update: **14/03/2026**
 
 ---
@@ -11227,3 +11227,62 @@ handoff format to avoid drift during the sync rewrite.
 
 - Process/documentation change only (no runtime logic change).
 - Existing uncommitted runtime work on rewrite branch remains untouched.
+
+---
+
+# 🔹 Block 586 — SSS authority cutover completed (14/03/2026)
+
+## 📋 Context
+
+After Stage B runtime green, the remaining architectural blockers were:
+- VM still owning missing-session recovery paths,
+- dual-path hold mutations (VM + SessionSyncService),
+- keepAlive coupling to `_sessionMissingWhileRunning`,
+- stream loading/error states being interpreted as missing-session null events.
+
+Goal of this block: complete the cutover so `SessionSyncService` + `TimerService`
+are the sole runtime/sync authority and keep VM as UI adapter.
+
+## ✔ Work completed
+
+- `SessionSyncService` now owns missing-session recovery:
+  - introduced `RecoveryStatus` (`idle | attempting | failed`),
+  - added internal recovery loop (`_attemptRecovery`, `_recoverFromServer`,
+    cooldown + retry scheduling),
+  - recovery updates are emitted through SSS state (VM no longer recovers).
+- Removed VM hold/recovery authority:
+  - deleted VM recovery methods (`_attemptMissingSessionRecovery`,
+    `_recoverMissingSession*`),
+  - removed all VM calls to `extendHold/clearHold`.
+- Hardened stream semantics in SSS:
+  - `_handleStreamEvent` now ignores non-`AsyncData` states
+    (`AsyncLoading`/`AsyncError`) explicitly.
+- KeepAlive authority aligned to runtime:
+  - `_hasKeepAliveActiveExecutionSignal` now uses
+    `timer.isTickingCandidate || recoveryStatus == attempting`,
+  - `_shouldKeepAlive` no longer gates directly on `_sessionMissingWhileRunning`.
+- Added regression tests:
+  - `stream AsyncError does not trigger missing-session hold latch`,
+  - `stream AsyncLoading does not trigger missing-session hold latch`.
+
+## 🧪 Validation run (local)
+
+- `flutter analyze` → **No issues found**.
+- Mandatory suite:
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart test/presentation/timer_screen_syncing_overlay_test.dart`
+  - Result: **30/30 PASS**.
+
+## 📁 Updated files
+
+- `lib/presentation/viewmodels/session_sync_service.dart`
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`
+- `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- Architectural cutover is locally green and ready to be used as baseline for
+  the 4-device validation packet.
+- Open low-priority observation:
+  transient race windows around remote pause propagation may require follow-up
+  hardening in a later block if observed in device logs.
