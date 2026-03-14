@@ -507,3 +507,179 @@ Evidence summary:
 Decision:
 - `P0-F26-003` is closed.
 - `P0-F26-001` remains open until exact degraded-network repro + extended soak closure criteria are met.
+
+---
+
+## 2026-03-10 Reopen — Syncing session latch regression (post-250c24d)
+
+Status: **In validation** (device logs running as of 10/03/2026)
+
+### Incident summary
+
+After `250c24d`, both devices showed the original symptoms again:
+- macOS mirror: permanent `Syncing session...` overlay (25:00, Ready, Start)
+- Android owner: frozen timer at ~03:24, gray/white circle, not counting down
+
+### Root cause
+
+`loadGroup` fetches session with `preferServer: true` → `_lastAppliedSessionUpdatedAt = T_server_fresh`.
+`_subscribeToRemoteSession(fireImmediately: true)` → first event is null → 3 s debounce fires →
+`_sessionMissingWhileRunning = true`, mirror timer cancelled, UI latches to `Syncing session...`.
+Real Firestore snapshot arrives: `lastUpdatedAt = T_cached ≤ T_server_fresh` → `shouldApplyTimeline = false`.
+The `!shouldApplyTimeline` early-return block only called `_notifySessionMetaChanged()` when
+`ownershipMetaChanged`, **not** when `wasMissing`. No rebuild → UI stuck permanently.
+
+### Applied fix
+
+Commit `b085ea6` — `fix(f26): notify UI when missing-session latch clears but timeline skips`
+
+```dart
+// pomodoro_view_model.dart — _subscribeToRemoteSession listener
+if (!shouldApplyTimeline) {
+  if (ownershipMetaChanged || wasMissing) {   // ← added || wasMissing
+    _notifySessionMetaChanged();
+  }
+  return;
+}
+```
+
+### Deferred improvement — immediate timer unfreeze (not yet implemented)
+
+**Problem this would solve:** After b085ea6, the `Syncing session...` overlay clears correctly.
+However, the mirror timer position (frozen seconds) remains stale until the next Firestore write
+where `lastUpdatedAt > T_server_fresh` (up to ~30 s). The owner's displayed time may be off during
+this window.
+
+**Proposed change** (implement only if device validation confirms the timer freeze is user-visible):
+
+```dart
+// pomodoro_view_model.dart — _subscribeToRemoteSession listener
+if (!shouldApplyTimeline) {
+  if (ownershipMetaChanged || wasMissing) {
+    if (wasMissing) _setMirrorSession(session);  // ← unfreeze display immediately
+    _notifySessionMetaChanged();
+  }
+  return;
+}
+```
+
+**Required guard before adding this:**
+- Verify `session.status.isActiveExecution` (not idle/finished) before calling `_setMirrorSession`.
+- Verify `session.remainingSeconds > 0` to avoid applying a zero-second stale snapshot.
+- Safe because `wasMissing=true` means mirror timer was already cancelled; we restore from null,
+  not overwrite a live timer with a regressed snapshot.
+
+**Risk if guard is omitted:** `_setMirrorSession` with a regressed `lastUpdatedAt` could display
+slightly incorrect remaining time, but would not cause a permanent latch since
+`_notifySessionMetaChanged()` always fires after it.
+
+**Implement if:** device validation shows a noticeable timer freeze (> 5 s visible) after the
+`Syncing session...` overlay clears.
+
+## 2026-03-11 — Phase 2 log capture packet (`8c6cb73`)
+
+Status: **Evidence captured (analysis pending)**
+
+Logs saved for this validation cycle:
+- Existing running-group smoke:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_phase2_8c6cb73_macos_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_phase2_8c6cb73_android_RMX3771_diag.log`
+- New-group exact repro:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_refactor_8c6cb73_ios_iPhone17Pro_debug.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_refactor_8c6cb73_chrome_debug.log`
+
+Command profile used:
+- macOS/Android in `--release` + `APP_ENV=prod`.
+- iOS simulator/Chrome in `--debug` + `APP_ENV=prod` + `ALLOW_PROD_IN_DEBUG=true`.
+
+## 2026-03-13 — Phase 5 log capture packet (`7daf636`)
+
+Status: **IN PROGRESS — validation run launched**
+
+Logs will be saved at:
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase5_7daf636_android_RMX3771_diag.log`
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase5_7daf636_ios_iPhone17Pro_debug.log`
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase5_7daf636_macos_diag.log`
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase5_7daf636_chrome_debug.log`
+
+Command profile used:
+- Android/macOS in `--release` + `APP_ENV=prod`.
+- iOS/Chrome in `--debug` + `APP_ENV=prod` + `ALLOW_PROD_IN_DEBUG=true`.
+
+New diagnostic events available in this packet (Phase 5 instrumentation):
+- `[VMLifecycle] init/dispose vmToken=<uuid>` — detect ViewModel recreation
+- `[SessionSub] open/close vmToken=<uuid> reason=<reason>` — detect what closes `_sessionSub`
+- `[StaleClearDiag] decision=<clear|skip>` — detect if coordinator clears active session
+- `[ScheduledActionDiag] action=<action>` — detect scheduled firings near freeze timestamp
+
+## 2026-03-13 — Phase 5 packet closure (`7daf636`)
+
+Status: **COMPLETED — root cause confirmed**
+
+Outcome summary:
+- Chrome and iOS debug logs captured `provider-dispose` while timer route remained
+  active, confirming VM disposal race under `autoDispose`.
+- Coordinator diagnostics confirmed active running group persisted (`decision=keep`)
+  while timer UI froze.
+- Root cause split finalized:
+  - B1: keepAlive race during Firestore quiet window.
+  - B2: auto-open suppression guard blocks re-navigation after VM dispose.
+
+Decision:
+- Phase 5 diagnostic objective met.
+- Move to Phase 6 runtime hardening (B1+B2).
+
+## 2026-03-13 — Phase 6 runtime implementation packet (local)
+
+Status: **IN VALIDATION** (local smoke PASS; device exact repro pending)
+
+Implemented scope:
+- Commit: `2fc65e4` — `fix(f26): implement phase 6 runtime keepalive grace + auto-open recovery`
+- B1 (`pomodoro_view_model.dart`):
+  - `_lastActiveSessionTimestamp` + keepAlive grace window (2 min).
+  - Grace re-check timer to release keepAlive when grace expires.
+  - keepAlive sync updates after snapshot ingestion and stream null handling.
+- B2 (`active_session_auto_opener.dart`):
+  - detect VM disposed transition via `ref.exists(pomodoroViewModelProvider)`.
+  - clear stale `_autoOpenedGroupId` guard on disposed VM.
+  - force timer route refresh (`/timer/:id?refresh=...`) in recovery path.
+
+Local evidence:
+- `dart analyze` target set PASS (2 pre-existing info hints).
+- `flutter test ...pomodoro_view_model_session_gap_test.dart --plain-name "[PHASE6]"` PASS.
+- `flutter test ...timer_screen_syncing_overlay_test.dart --plain-name "[PHASE6]"` PASS.
+
+Next mandatory step for closure:
+- Device run with exact repro + regression smoke (all in debug for diagnostics)
+  before marking Phase 6 as Closed/OK.
+
+## 2026-03-13/14 — Phase 6 device validation packets — FAILED
+
+Status: **FAILED — exact repro REPRODUCED; pass 2 cancelled**
+
+Target devices: Android `RMX3771`, iOS `iPhone 17 Pro`, `macOS`, `Chrome`
+
+Packet A (2026-03-13, 1h) — **EXECUTED — FAIL**:
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase6_2fc65e4_pass1_1h_android_RMX3771_debug.log`
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase6_2fc65e4_pass1_1h_ios_iPhone17Pro_debug.log`
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase6_2fc65e4_pass1_1h_macos_debug.log`
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase6_2fc65e4_pass1_1h_chrome_debug.log`
+
+Packet B (2026-03-14, 4h30 soak) — **CANCELLED** (exact repro already failed in A; no value in soak).
+
+Failure timeline (Packet A):
+- 22:10:00 — user cut network on iOS/Chrome/macOS for 10s → no Syncing session (B1 working for this case)
+- 22:21:37 — Android (owner) entered `Syncing session...` spontaneously (no user cut); stream null ≥3s → latch
+- 22:22:01 — Android cleared Syncing but timer frozen at 08:25
+- 22:23:14 — macOS entered Syncing (showing "ready" 15:00, ownership had transferred to iOS)
+- 22:23:26 — Chrome entered Syncing (same as macOS)
+- 22:25:44 — iOS entered Syncing (timer 04:22 frozen)
+- 22:26:01 — iOS cleared Syncing but timer remained frozen
+- 22:37:50 — validation ended; Android woke from screen-off and synced (owner = iOS)
+
+Root cause of failure: `_sessionMissingWhileRunning` latch fires on any ≥3s Firestore stream null,
+regardless of VM disposal. Phase 6 B1 only prevented the VM-disposal trigger path; the
+spontaneous stream-null path (Firebase SDK reconnect/auth-refresh/cache-miss) survives.
+This is an architectural problem, not a missing hardening.
+
+Conclusion: no more focalized hardenings. Sync architecture rewrite required.

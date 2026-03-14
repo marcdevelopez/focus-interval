@@ -197,6 +197,72 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           owner handoff preserved, and timer projection coherent with wall-clock.
           Validation item `P0-F26-003` closed/OK on implementation commit `250c24d`.
           Note: degraded-network regression item `P0-F26-001` remains open.
+      11/03/2026: Fix 26 Phase 2 sync-core refactor implemented on branch
+          `refactor-run-mode-sync-core`: single snapshot application pipeline
+          (`stream` + `resync/fetch` + `recovery`) with specs 10.4.8.b
+          single-shot missing-session bypass + atomic watermark reset.
+          Contract tests in `pomodoro_view_model_session_gap_test.dart`
+          pass (including `[REFACTOR] AP-4 full fix`). Device validation pending.
+      11/03/2026: Fix 26 Phase 3 documentation-first contract draft completed
+          (specs 10.4.8.b delta + pre-implementation contract tests):
+          single latch exit point, non-owner server-read recovery, transitional
+          hold-extension rule, mandatory hold diagnostics with `projectionSource`.
+          New contract tests intentionally fail on current runtime and define the
+          implementation target before coding.
+      11/03/2026: Fix 26 Phase 3 runtime implemented on
+          `refactor-run-mode-sync-core`:
+          transitional hold extension (no direct clear while missing),
+          non-owner recovery server-read path, and hold lifecycle diagnostics.
+          Contract suite `pomodoro_view_model_session_gap_test.dart` now passes
+          fully (`11/11`). Device validation pending.
+      12/03/2026: Fix 26 validation rerun reproduced cascade freeze across
+          owner handoffs (macOS -> Android -> web -> iOS) while Firestore
+          snapshots/revisions continued advancing. Hold diagnostics did not
+          trigger in the failing run, indicating the active failure path is
+          outside Phase 3 latch protections. Phase 4 opened (docs-first):
+          render/sync decoupling contract + overlay-trigger diagnostics
+          contract tests added; runtime implementation pending.
+      12/03/2026: Fix 26 Phase 4 runtime implemented on
+          `refactor-run-mode-sync-core`: active projection now falls back to
+          local elapsed-time anchors when server offset is unavailable, and
+          explicit `[SyncOverlay]` diagnostics now emit visibility transitions
+          with deterministic trigger reasons (`sessionMissingHold`,
+          `runningWithoutSession`, `awaitingSessionConfirmation`,
+          `timeSyncUnready`). Contract suites now pass.
+      13/03/2026: Fix 26 Phase 5 opened (docs-first, diagnostic scope):
+          lifecycle observability contract drafted with mandatory `vmToken`
+          correlation across ViewModel init/dispose, session subscription
+          open/close, scheduled-action bridge events, and stale-clear
+          evaluation logs. Runtime instrumentation pending.
+      13/03/2026: Fix 26 Phase 5 runtime instrumentation implemented:
+          added `[VMLifecycle]` init/dispose + `[SessionSub]` open/close
+          reasoned diagnostics in `PomodoroViewModel`, extended `[SyncOverlay]`
+          with `vmToken`, and added coordinator diagnostics
+          `[ScheduledActionDiag]` + `[StaleClearDiag]` with instance-token
+          correlation. Phase 5 smoke tests pass.
+      13/03/2026: Fix 26 Phase 5 device validation COMPLETED — root cause confirmed:
+          `pomodoroViewModelProvider` is `autoDispose`; `_keepAliveLink` closed
+          during Firestore quiet window (10s gap between snapshots) → Riverpod
+          disposed the VM while timer screen still visible (B1). Recovery blocked
+          by `_autoOpenedGroupId == groupId` guard in `ActiveSessionAutoOpener` —
+          guard does not check if VM was disposed, so re-navigation is suppressed
+          (B2). Phase 6 plan documented.
+      13/03/2026: Fix 26 Phase 6 opened (docs-first):
+          B1 — add `_lastActiveSessionTimestamp` grace window (2 min) to
+          `_shouldKeepAlive()` so VM survives Firestore quiet windows;
+          B2 — add `ref.exists(pomodoroViewModelProvider)` check in
+          `ActiveSessionAutoOpener` before suppressing re-navigation.
+          Contract and implementation pending.
+      13/03/2026: Fix 26 Phase 6 runtime implemented (B1+B2):
+          keepAlive grace window + timer-guard recovery refresh in
+          `ActiveSessionAutoOpener`; local Phase 6 smoke tests PASS.
+          Device exact-repro validation pending for closure.
+      14/03/2026: Fix 26 Phase 6 FAILED device validation (P0-F26-005):
+          Android spontaneous `Syncing session...` at 22:21:37 (no user cut);
+          cascade to macOS/Chrome/iOS; all timers frozen. Root cause: latch fires
+          from any ≥3s Firestore stream null, not only from VM disposal.
+          Phase 6 B1 irrelevant for this trigger path. Conclusion: focalized
+          hardenings exhausted; sync architecture rewrite required. Pass 2 cancelled.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
@@ -287,6 +353,11 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 10 — Auto-adjust breaks on valid pomodoro changes and break edits (focus-loss adjustment; Task Editor + Edit Preset) (validation pending).
 - Phase 10 — Task weight (%) is selection-scoped in Edit Task + info modal (validation pending).
 - Phase 13 — Mirror session gaps must not drop Run Mode to Ready (validation pending).
+- Phase 13 — **Fix 26 sync architecture rewrite required** (P0-F26-005 failed device validation
+  2026-03-14; Phase 6 B1+B2 patch verified insufficient — latch fires from spontaneous Firestore
+  stream null independent of VM disposal; all focalized hardenings exhausted; solution requires
+  decoupling timer from session stream, persistent (non-autoDispose) timer service, optimistic
+  rendering, and deterministic recovery state machine).
 - Phase 13 — Mirror must not start behind on resume (stale lastUpdatedAt compensation) (bug).
 - Phase 10 — Task Editor: total time chip + task color picker (new requirement).
 - Phase 9 — Task List: group name input + group summary + per-task total time + selection reset (new requirement).

@@ -1,7 +1,7 @@
 # Quick Pass Checklist — Fix 26 cycle 4
 
 Date: 2026-03-07
-Last reviewed: 2026-03-10
+Last reviewed: 2026-03-11
 Status: **Reopened (10/03/2026 regression — rollback to 961f7eb baseline, re-validation required)**
 
 - [x] iOS + Chrome run completed with debug logs saved.
@@ -246,3 +246,257 @@ flutter run -v --debug -d chrome --dart-define=APP_ENV=prod \
 - Root cause: `ref.invalidate(scheduledGroupCoordinatorProvider)` was disposing the coordinator's listeners, creating a race window where Firestore stream data arrived before the new coordinator instance rebuilt its subscriptions.
 - Fix: removed the invalidation — coordinator's `ref.listen<AppMode>` handles mode transitions naturally via `_resetForModeChange()` + `_handleGroups()`.
 - Fix commit: Block 550 in dev_log.md.
+
+## 2026-03-11 Phase 3 validation logs — second run (`f25f294`) — IN PROGRESS
+
+- [ ] All 4 devices running without freeze (monitoring)
+- [ ] HoldDiag events visible in debug logs (iOS/Chrome)
+- [ ] Network cut repro test pending
+- Log files:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_phase3_f25f294_macos_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_phase3_f25f294_android_RMX3771_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_phase3_f25f294_ios_iPhone17Pro_debug.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_phase3_f25f294_chrome_debug.log`
+
+---
+
+## 2026-03-11 Phase 2 validation logs captured (`8c6cb73`)
+
+- [x] Existing running-group smoke logs captured (macOS + Android RMX3771).
+- [x] New-group exact repro logs captured (iOS simulator + Chrome debug).
+- Log files:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_phase2_8c6cb73_macos_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_phase2_8c6cb73_android_RMX3771_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_refactor_8c6cb73_ios_iPhone17Pro_debug.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-11_fix26_refactor_8c6cb73_chrome_debug.log`
+
+---
+
+## 2026-03-12 Phase 4 validation run (`744f83b`) — REPRODUCED
+
+- Commit under validation: `744f83b` (Phase 4 runtime).
+- Log files confirmed:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-12_fix26_phase4_744f83b_macos_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-12_fix26_phase4_744f83b_android_RMX3771_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-12_fix26_phase4_744f83b_ios_iPhone17Pro_debug.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-12_fix26_phase4_744f83b_chrome_debug.log`
+
+### Timeline reported (device run)
+
+- 12:43: Android started as owner (group execution started).
+- 13:10: network cut 10s on macOS+iOS+Chrome (Android kept online); no visible UI impact during this cut.
+- 13:12: ownership requested on iOS and granted (confirmed on device + Firestore).
+- 13:33:39: Android (mirror) entered `Syncing session...`, timer screen showed `Ready` with `60:00`.
+- 13:36:22: macOS entered the same state (`Syncing session...` + `Ready` + `60:00`).
+- From then on, all devices eventually ended frozen; user-reported last to freeze was iOS (frozen without prolonged `Syncing session...` overlay).
+
+### Firestore `activeSession/current` evidence (reported)
+
+- 13:33:15 `lastUpdatedAt`, owner remained iOS:
+  - `ownerDeviceId=iOS-2c0371a1-461c-4bab-b636-5b6e156a3b99`
+  - `phase=pomodoro`
+  - `phaseDurationSeconds=3600`
+  - `phaseStartedAt=2026-03-12 13:13:01 (UTC+1)`
+- 13:36:16 `lastUpdatedAt`: owner still iOS while mirrors already showed `Syncing session...`.
+- 14:01:02 `lastUpdatedAt`: owner still iOS, `remainingSeconds=719`, backend still advancing while clients remained frozen.
+
+### Preliminary log notes from this packet
+
+- iOS/Chrome debug logs show continuous `[ActiveSession][snapshot]` and `[TimeSync]` lines through the failing window.
+- iOS/Chrome trigger scan shows no `[SyncOverlay]` lines in this packet.
+- iOS/Chrome include `Missing snapshot; clearing session` only around pre-run/startup window (~12:42), not at the reported freeze timestamps.
+- Android/macOS runs were captured in release mode; logs are less diagnostic for overlay trigger reason than iOS/Chrome debug logs.
+
+### Current closure status
+
+- Phase 4 device validation: **FAIL (reproduced freeze in production-like run)**.
+- Fix 26 remains **open**.
+
+---
+
+## 2026-03-13 Phase 5 validation run (`7daf636`) — IN PROGRESS
+
+- Commit under validation: `7daf636` (Phase 5 runtime lifecycle observability).
+- Objective: capture `[VMLifecycle]`, `[SessionSub]`, `[StaleClearDiag]`, `[ScheduledActionDiag]` to identify what closes `_sessionSub` during freeze.
+- Log files:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase5_7daf636_android_RMX3771_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase5_7daf636_ios_iPhone17Pro_debug.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase5_7daf636_macos_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase5_7daf636_chrome_debug.log`
+
+### Commands used
+
+```bash
+# Android RMX3771 (release)
+flutter run -v --release -d 192.168.1.25:5555 \
+  --dart-define=APP_ENV=prod \
+  2>&1 | tee docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase5_7daf636_android_RMX3771_diag.log
+
+# iOS iPhone 17 Pro (debug)
+flutter run -v --debug -d 9A6B6687-8DE2-4573-A939-E4FFD0190E1A \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase5_7daf636_ios_iPhone17Pro_debug.log
+
+# macOS (release)
+flutter run -v --release -d macos \
+  --dart-define=APP_ENV=prod \
+  2>&1 | tee docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase5_7daf636_macos_diag.log
+
+# Chrome (debug)
+flutter run -v --debug -d chrome \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-13_fix26_phase5_7daf636_chrome_debug.log
+```
+
+### Key events to grep after run completes
+
+```bash
+# vmToken consistency (detect ViewModel recreation)
+grep "\[VMLifecycle\]" <log>
+
+# SessionSub close reason (detect what closed _sessionSub)
+grep "\[SessionSub\]" <log>
+
+# Stale-clear decisions during active session
+grep "\[StaleClearDiag\]" <log>
+
+# Scheduled actions near freeze timestamp
+grep "\[ScheduledActionDiag\]" <log>
+
+# SyncOverlay transitions
+grep "\[SyncOverlay\]" <log>
+```
+
+### Root cause analysis (2026-03-13)
+
+**Chrome (froze 15:30:36) — full trace recovered:**
+```
+15:30:08.572  [ActiveSession][snapshot] remaining=773 owner=macOS   ← last snapshot
+15:30:24.996  [ActiveSession][snapshot] remaining=773               ← stale resync
++10017 ms     [SessionSub] close vmToken=b2ce33ee reason=provider-dispose
++9 ms         [VMLifecycle] dispose vmToken=b2ce33ee
++158 ms       [ScheduledGroups] timer-state runningExpiry=true
+[RunModeDiag] Auto-open suppressed (opened=aa8794d0 route=/timer/aa8794d0)
+```
+No `[VMLifecycle] init` after dispose — screen stayed at `/timer/...` with dead VM → `Ready + 25:00`.
+
+**iOS (froze 15:35:16):** identical pattern. `provider-dispose` 18.6s after last Firestore activity.
+
+**Android/macOS:** release logs have no Phase 5 diagnostic events (release mode filters them).
+macOS crash at 15:48:18 (SIGSEGV from Firestore transaction) is a separate issue.
+
+**Root cause confirmed (two sub-bugs):**
+
+- **B1**: `autoDispose` + `_keepAliveLink` race — keepAlive closes during 10s Firestore
+  quiet window → Riverpod disposes VM while session still active in Firestore.
+- **B2**: `_autoOpenedGroupId == groupId` guard in `ActiveSessionAutoOpener` blocks
+  re-navigation even after VM is dead. `ref.exists()` not checked.
+
+**Phase 6 fix plan:** see `docs/specs.md` section 10.4.9.
+
+### Current closure status
+
+- Phase 5 device validation: **COMPLETE — root cause confirmed 2026-03-13**.
+- Phase 6 runtime (B1+B2): **IMPLEMENTED (local validation PASS, 2026-03-13)**.
+- Phase 6 device validation: **FAILED** (exact repro REPRODUCED 2026-03-14; pass 2 cancelled; architecture rewrite required).
+
+### Phase 6 local validation evidence (2026-03-13)
+
+```bash
+dart analyze \
+  lib/presentation/viewmodels/pomodoro_view_model.dart \
+  lib/widgets/active_session_auto_opener.dart \
+  test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart \
+  test/presentation/timer_screen_syncing_overlay_test.dart
+# PASS (2 pre-existing info hints in test helper)
+
+flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart \
+  --plain-name "[PHASE6]" --reporter compact
+# PASS
+
+flutter test test/presentation/timer_screen_syncing_overlay_test.dart \
+  --plain-name "[PHASE6]" --reporter compact
+# PASS
+```
+
+### Phase 6 device runbook (P0-F26-005)
+
+Validation devices (fixed):
+- Android: `RMX3771`
+- iOS: `iPhone 17 Pro`
+- Desktop: `macOS`
+- Web: `Chrome`
+
+#### Pass 1 (today, 1h) — log capture commands
+
+```bash
+LOG_DIR="docs/bugs/validation_fix_2026_03_07-01/logs"
+mkdir -p "$LOG_DIR"
+
+# Android RMX3771 (debug)
+flutter run -v --debug -d "RMX3771" \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-13_fix26_phase6_2fc65e4_pass1_1h_android_RMX3771_debug.log"
+
+# iOS iPhone 17 Pro (debug)
+flutter run -v --debug -d "iPhone 17 Pro" \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-13_fix26_phase6_2fc65e4_pass1_1h_ios_iPhone17Pro_debug.log"
+
+# macOS (debug)
+flutter run -v --debug -d macos \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-13_fix26_phase6_2fc65e4_pass1_1h_macos_debug.log"
+
+# Chrome (debug)
+flutter run -v --debug -d chrome \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-13_fix26_phase6_2fc65e4_pass1_1h_chrome_debug.log"
+```
+
+#### Pass 2 (tomorrow, 4h30) — log capture commands
+
+```bash
+LOG_DIR="docs/bugs/validation_fix_2026_03_07-01/logs"
+mkdir -p "$LOG_DIR"
+
+# Android RMX3771 (debug)
+flutter run -v --debug -d "RMX3771" \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_phase6_2fc65e4_pass2_4h30_android_RMX3771_debug.log"
+
+# iOS iPhone 17 Pro (debug)
+flutter run -v --debug -d "iPhone 17 Pro" \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_phase6_2fc65e4_pass2_4h30_ios_iPhone17Pro_debug.log"
+
+# macOS (debug)
+flutter run -v --debug -d macos \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_phase6_2fc65e4_pass2_4h30_macos_debug.log"
+
+# Chrome (debug)
+flutter run -v --debug -d chrome \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_phase6_2fc65e4_pass2_4h30_chrome_debug.log"
+```
+
+#### Phase 6 event checks after each pass
+
+```bash
+grep -E "\[VMLifecycle\]|\[SessionSub\]|\[SyncOverlay\]|\[HoldDiag\]|Auto-open recovery" <log>
+grep -E "provider-dispose|resume-rebind|Unhandled Exception|SIGSEGV|EXC_BAD_ACCESS" <log>
+```
+
+If a device selector by name fails, run `flutter devices` and replace `-d "<name>"`
+with the concrete device id.

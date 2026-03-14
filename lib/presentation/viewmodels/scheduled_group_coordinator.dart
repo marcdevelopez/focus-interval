@@ -71,6 +71,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
   final Map<String, DateTime> _scheduledNotices = {};
   List<TaskRunGroup> _lastGroups = const [];
   final Uuid _uuid = const Uuid();
+  final String _coordinatorToken = const Uuid().v4();
   int? _noticeFallbackMinutes;
   DateTime? _noticeFallbackFetchedAt;
 
@@ -85,6 +86,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
   void _init() {
     if (_initialized) return;
     _initialized = true;
+    _logLifecycle(event: 'init');
     ref.onDispose(_dispose);
     ref.listen<AsyncValue<List<TaskRunGroup>>>(taskRunGroupStreamProvider, (
       _,
@@ -159,6 +161,7 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
 
   void _dispose() {
     _debugLogTimerState(reason: 'dispose');
+    _logLifecycle(event: 'dispose');
     _disposed = true;
     _scheduledTimer?.cancel();
     _preAlertTimer?.cancel();
@@ -200,17 +203,62 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
   }
 
   void _emitOpenTimer(String groupId) {
+    final actionToken = DateTime.now().microsecondsSinceEpoch;
+    _logScheduledActionDiag(
+      actionType: ScheduledGroupActionType.openTimer.name,
+      actionToken: actionToken,
+      groupId: groupId,
+      groupIds: null,
+      anchor: null,
+    );
     state = ScheduledGroupAction.openTimer(
       groupId: groupId,
-      token: DateTime.now().microsecondsSinceEpoch,
+      token: actionToken,
     );
   }
 
   void _emitLateStartQueue(List<String> groupIds, DateTime anchor) {
+    final actionToken = DateTime.now().microsecondsSinceEpoch;
+    _logScheduledActionDiag(
+      actionType: ScheduledGroupActionType.lateStartQueue.name,
+      actionToken: actionToken,
+      groupId: null,
+      groupIds: groupIds,
+      anchor: anchor,
+    );
     state = ScheduledGroupAction.lateStartQueue(
       groupIds: groupIds,
       anchor: anchor,
-      token: DateTime.now().microsecondsSinceEpoch,
+      token: actionToken,
+    );
+  }
+
+  void _logLifecycle({required String event}) {
+    if (!kDebugMode) return;
+    debugPrint('[CoordinatorLifecycle] event=$event vmToken=$_coordinatorToken');
+  }
+
+  void _logScheduledActionDiag({
+    required String actionType,
+    required int actionToken,
+    required String? groupId,
+    required List<String>? groupIds,
+    required DateTime? anchor,
+  }) {
+    if (!kDebugMode) return;
+    final resolvedGroupId = groupId ?? 'none';
+    final resolvedGroupIds = groupIds == null || groupIds.isEmpty
+        ? 'none'
+        : groupIds.join(',');
+    final resolvedAnchor = anchor?.toIso8601String() ?? 'none';
+    debugPrint(
+      '[ScheduledActionDiag] '
+      'vmToken=$_coordinatorToken '
+      'actionType=$actionType '
+      'actionToken=$actionToken '
+      'groupId=$resolvedGroupId '
+      'groupIds=$resolvedGroupIds '
+      'anchor=$resolvedAnchor',
     );
   }
 
@@ -774,11 +822,35 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
   Future<bool> _clearStaleActiveSessionIfNeeded(
     List<TaskRunGroup> groups,
   ) async {
-    if (!_canUseRef) return false;
+    if (!_canUseRef) {
+      _logStaleClearDiag(
+        sessionGroupId: null,
+        lookup: 'not-evaluated',
+        decision: 'keep',
+        reason: 'disposed',
+      );
+      return false;
+    }
     final session = ref.read(activePomodoroSessionProvider);
-    if (session == null) return false;
+    if (session == null) {
+      _logStaleClearDiag(
+        sessionGroupId: null,
+        lookup: 'none',
+        decision: 'keep',
+        reason: 'no-active-session',
+      );
+      return false;
+    }
     final groupId = session.groupId;
-    if (groupId == null || groupId.isEmpty) return false;
+    if (groupId == null || groupId.isEmpty) {
+      _logStaleClearDiag(
+        sessionGroupId: groupId,
+        lookup: 'none',
+        decision: 'keep',
+        reason: 'missing-group-id',
+      );
+      return false;
+    }
 
     TaskRunGroup? group;
     for (final candidate in groups) {
@@ -791,13 +863,33 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     if (group == null) {
       final repo = ref.read(taskRunGroupRepositoryProvider);
       final latest = await repo.getById(groupId);
-      if (!_canUseRef) return false;
+      if (!_canUseRef) {
+        _logStaleClearDiag(
+          sessionGroupId: groupId,
+          lookup: latest == null ? 'repo:null' : 'repo:${latest.status.name}',
+          decision: 'keep',
+          reason: 'disposed-after-lookup',
+        );
+        return false;
+      }
       if (latest == null || latest.status != TaskRunStatus.running) {
         await ref
             .read(pomodoroSessionRepositoryProvider)
             .clearSessionIfGroupNotRunning();
+        _logStaleClearDiag(
+          sessionGroupId: groupId,
+          lookup: latest == null ? 'repo:null' : 'repo:${latest.status.name}',
+          decision: 'clear',
+          reason: 'group-not-running-after-repo-lookup',
+        );
         return true;
       }
+      _logStaleClearDiag(
+        sessionGroupId: groupId,
+        lookup: 'repo:${latest.status.name}',
+        decision: 'keep',
+        reason: 'repo-running',
+      );
       return false;
     }
 
@@ -805,10 +897,39 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       await ref
           .read(pomodoroSessionRepositoryProvider)
           .clearSessionIfGroupNotRunning();
+      _logStaleClearDiag(
+        sessionGroupId: groupId,
+        lookup: 'memory:${group.status.name}',
+        decision: 'clear',
+        reason: 'group-not-running-in-memory',
+      );
       return true;
     }
 
+    _logStaleClearDiag(
+      sessionGroupId: groupId,
+      lookup: 'memory:${group.status.name}',
+      decision: 'keep',
+      reason: 'group-running',
+    );
     return false;
+  }
+
+  void _logStaleClearDiag({
+    required String? sessionGroupId,
+    required String lookup,
+    required String decision,
+    required String reason,
+  }) {
+    if (!kDebugMode) return;
+    debugPrint(
+      '[StaleClearDiag] '
+      'vmToken=$_coordinatorToken '
+      'sessionGroupId=${sessionGroupId ?? 'none'} '
+      'lookup=$lookup '
+      'decision=$decision '
+      'reason=$reason',
+    );
   }
 
   Future<int> _resolveNoticeMinutes(TaskRunGroup group) async {
