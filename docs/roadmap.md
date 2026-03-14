@@ -276,6 +276,16 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           (red-first, no runtime changes): 5 invariants targeted; result
           1 pass / 4 fail confirms current runtime still violates rewrite
           contract and implementation work is required.
+      14/03/2026: Fix 26 rewrite Stage A runtime (partial) implemented:
+          introduced app-scope `TimerService` (non-autoDispose) and wired
+          `PomodoroViewModel` to project countdown from service during
+          `sessionMissingHold` (stream-null latch path) without freezing.
+          `[REWRITE-CORE]` Invariant 1 now PASS; Invariants 3/4/5 remain
+          intentionally pending by contract gates.
+      14/03/2026: Fix 26 rewrite Invariant 5 activated from contract-gate:
+          VM dispose/rebuild continuity test implemented and PASS; updated
+          `[REWRITE-CORE]` baseline is now 3 PASS / 2 FAIL (remaining
+          intentional gates: Invariants 3 and 4).
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling

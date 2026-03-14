@@ -10948,3 +10948,108 @@ With contract section 10.4.10 approved in principle, next step was to author
 - No runtime `lib/` edits in this block.
 - Red baseline confirmed; next step is runtime implementation to make
   `[REWRITE-CORE]` green.
+
+---
+
+# 🔹 Block 580 — Rewrite Stage A runtime partial: TimerService gap projection (14/03/2026)
+
+## 📋 Context
+
+`[REWRITE-CORE]` red-first baseline (`11d3866`) confirmed Invariant 1 regression:
+countdown froze after stream-null latch (`_sessionMissingWhileRunning`).
+
+Stage A target was to decouple countdown continuity from latch freeze without
+changing ownership/handoff contracts yet.
+
+## ✔ Work completed
+
+- Added new runtime service:
+  - `lib/data/services/timer_service.dart`
+  - app-scope `Notifier<TimerRuntimeState>` with non-autoDispose provider
+    contract fields (`groupId`, `currentTaskId`, `status`, `phase`,
+    `remainingSeconds`, `totalSeconds`, pomodoro counters, `phaseStartedAt`,
+    `ownerDeviceId`, `syncHealth`).
+- Registered `timerServiceProvider` in `lib/presentation/providers.dart` as
+  `NotifierProvider<TimerService, TimerRuntimeState>` (non-autoDispose).
+- Wired `PomodoroViewModel` to Stage A runtime path:
+  - ingests active snapshots into `TimerService` (`applyOwnerSnapshot`),
+  - on debounce latch fire, signals `notifySessionGap(...)`,
+  - projects countdown from `TimerService` while `sessionMissingHold` is active,
+    preventing freeze in the null-stream hold window,
+  - clears service tick when session is authoritatively cleared.
+- Preserved legacy ownership/request/handoff behavior (no Stage B/C migration in this block).
+
+## 🧪 Validation run (local)
+
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart --plain-name "[REWRITE-CORE]" --reporter compact`
+  - Result: **2 pass / 3 fail**
+  - PASS: Invariant 1 (`stream null must not freeze countdown progression`)
+  - PASS: Invariant 2 (`syncing state remains informational`)
+  - FAIL (intentional contract gates): Invariants 3/4/5
+- Regression smoke:
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart --plain-name "[PHASE" --reporter compact` → PASS
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart test/presentation/timer_screen_syncing_overlay_test.dart --reporter compact` → PASS
+- `flutter analyze` (touched scope) → PASS with 2 pre-existing info hints in test code (`use_super_parameters`).
+
+## 📁 Updated files
+
+- `lib/data/services/timer_service.dart` (new)
+- `lib/presentation/providers.dart`
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`
+- `docs/roadmap.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- Stage A is intentionally partial: Invariants 3/4/5 remain pending until
+  TimerService-authoritative command delegation, deterministic recovery state machine,
+  and VM continuity contract tests are implemented.
+- No merge/closure yet for `P0-F26-006`.
+
+---
+
+# 🔹 Block 581 — Rewrite Invariant 5 promoted to executable test (14/03/2026)
+
+## 📋 Context
+
+After Stage A runtime bridge (`248d963`), `[REWRITE-CORE]` still had three pending
+contract-gate failures (Invariants 3/4/5). Invariant 5 became testable because
+`TimerService` is now app-scope and non-autoDispose.
+
+## ✔ Work completed
+
+- Replaced Invariant 5 `fail()` gate in:
+  - `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- New test behavior for Invariant 5:
+  - load active group/session,
+  - force stream-null hold (debounce expiry) so runtime countdown is controlled by
+    `TimerService` degraded projection,
+  - dispose the VM boundary (`vmSub.close()` + `container.invalidate(pomodoroViewModelProvider)`),
+  - verify `timerServiceProvider.remainingSeconds` keeps decrementing while VM is disposed,
+  - rebuild VM listener and verify runtime was not reset.
+
+## 🧪 Validation run (local)
+
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart --plain-name "[REWRITE-CORE]" --reporter compact`
+  - Result: **3 pass / 2 fail**
+  - PASS: Invariants 1, 2, 5
+  - FAIL (intentional contract gates): Invariants 3, 4
+- Full rewrite-related suite:
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart test/presentation/timer_screen_syncing_overlay_test.dart --reporter compact`
+  - Result: **26 pass / 2 fail**
+  - Only fails are intentional gates for Invariants 3 and 4.
+- `flutter analyze` (touched scope) → PASS with 2 pre-existing info hints in test code (`use_super_parameters`).
+
+## 📁 Updated files
+
+- `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- `docs/roadmap.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- No new runtime `lib/` edits in this block.
+- Next runtime milestones remain Invariant 3 (authoritative TimerService command path)
+  and Invariant 4 (deterministic ownership recovery state machine).
