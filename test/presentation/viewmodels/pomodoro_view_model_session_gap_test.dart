@@ -111,6 +111,10 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
     _controller.add(session);
   }
 
+  void emitError(Object error, [StackTrace? stackTrace]) {
+    _controller.addError(error, stackTrace);
+  }
+
   @override
   Future<PomodoroSession?> fetchSession({bool preferServer = false}) async {
     return _lastSession;
@@ -865,6 +869,117 @@ void main() {
             'AP-2: debounce cancelled by real session; no latch should fire',
       );
       expect(vm.activeSessionForCurrentGroup, isNotNull);
+    },
+  );
+
+  test(
+    'stream AsyncError does not trigger missing-session hold latch',
+    () async {
+      final now = DateTime.now();
+      final group = _buildRunningGroup(id: 'group-stream-error-ignore', start: now);
+      final session = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        ownerDeviceId: 'other-device',
+        now: now,
+      );
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      addTearDown(() {
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      container.listen<PomodoroState>(pomodoroViewModelProvider, (_, __) {});
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      sessionRepo.emitError(StateError('stream-error'));
+      await _pumpQueue();
+      await Future<void>.delayed(const Duration(seconds: 4));
+      await _pumpQueue();
+
+      expect(
+        vm.isSessionMissingWhileRunning,
+        isFalse,
+        reason:
+            'AsyncError must be ignored by SessionSyncService and never treated as null session.',
+      );
+    },
+  );
+
+  test(
+    'stream AsyncLoading does not trigger missing-session hold latch',
+    () async {
+      final now = DateTime.now();
+      final group = _buildRunningGroup(
+        id: 'group-stream-loading-ignore',
+        start: now,
+      );
+      final session = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        ownerDeviceId: 'other-device',
+        now: now,
+      );
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      addTearDown(() {
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      container.listen<PomodoroState>(pomodoroViewModelProvider, (_, __) {});
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      container.invalidate(pomodoroSessionStreamProvider);
+      await _pumpQueue();
+      await Future<void>.delayed(const Duration(seconds: 4));
+      await _pumpQueue();
+
+      expect(
+        vm.isSessionMissingWhileRunning,
+        isFalse,
+        reason:
+            'AsyncLoading must be ignored by SessionSyncService and never treated as null session.',
+      );
     },
   );
 
@@ -2085,15 +2200,13 @@ void main() {
 // fetchSession always returns [serverSession] regardless of stream state,
 // simulating a server that has the active session even when the stream is null.
 class _FakeSessionRepoClaimFails extends FakePomodoroSessionRepository {
-  _FakeSessionRepoClaimFails(PomodoroSession initialSession)
-    : _serverSession = initialSession,
-      super(initialSession);
+  _FakeSessionRepoClaimFails(super.initialSession)
+    : _serverSession = initialSession!;
 
   _FakeSessionRepoClaimFails.withServer(
-    PomodoroSession initialSession,
+    super.initialSession,
     PomodoroSession serverSession,
-  ) : _serverSession = serverSession,
-      super(initialSession);
+  ) : _serverSession = serverSession;
 
   final PomodoroSession _serverSession;
 

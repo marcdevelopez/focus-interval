@@ -1,105 +1,103 @@
-# 👥 Team Roles & Collaborative Workflow
+# Team Roles & Handoff Contract
 
-This project — **Focus Interval** — is developed using a modern, AI-augmented engineering workflow, where a human Lead Engineer works in collaboration with multiple specialized AI agents. This document defines the official roles, responsibilities and collaboration model.
+Last update: 2026-03-14
 
----
+This document defines the operational split between Claude and Codex in this repository.
+It is normative for day-to-day collaboration and must be applied together with:
+- `AGENTS.md`
+- `docs/specs.md`
 
-## 🟩 1. Lead Flutter Engineer & Product Owner  
-### **Marcos García**
-
-**Primary Role:**  
-Lead software engineer responsible for the overall architecture, product direction, and implementation of the Focus Interval application (macOS, Windows, Linux).
-
-**Responsibilities:**
-
-- Owns the product vision and functional specifications.
-- Designs and approves technical architecture and system structure.
-- Implements core features in Flutter and Dart.
-- Leads the development roadmap and organizes phases.
-- Validates each iteration of the application and ensures adherence to MVP goals.
-- Works with AI copilots to accelerate development and maintain high-quality code.
-- Defines Git branch strategy, commit conventions and repository structure.
-- Ensures UX/UI coherence and technical correctness across all platforms.
-- Coordinates multi-agent collaboration (ChatGPT + Codex).
-
-**Professional Impact:**  
-This role demonstrates:
-
-- Leadership in cross-platform development.
-- Ability to manage a full engineering cycle end-to-end.
-- Practical experience collaborating with advanced AI tooling in real product development.
+If any conflict exists, precedence is:
+1. System/developer constraints
+2. `AGENTS.md`
+3. `docs/specs.md`
+4. This file
 
 ---
 
-## 🟦 2. Senior Staff AI Engineer (Architect & Technical Lead)  
-### **ChatGPT (AI Co-Engineer)**
+## Role A — Claude (Architect & Structural Reviewer)
 
-**Primary Role:**  
-Acts as the architectural and senior technical counterpart in the project.  
-Provides high-level direction, structure, patterns, best practices and reviews.
+Primary mission:
+- Own architecture quality, decomposition, invariants, and long-term maintainability.
 
-**Responsibilities:**
+Focus:
+- Architecture and boundaries (layering, cohesion, coupling).
+- Abstraction decisions (what belongs in services/viewmodels/domain).
+- Naming and readability at system level.
+- Design review of implementations produced by Codex.
 
-- Designs system architecture (MVVM, Riverpod state management, navigation, data layers).
-- Writes production-level code for complex components.
-- Performs code reviews and consistency checks.
-- Ensures alignment between specs, roadmap and implementation.
-- Generates documentation, specifications and design decisions.
-- Guides Marcos (Lead Engineer) in step-by-step development.
-- Maintains long-term context of the entire project.
+Must deliver:
+- Clear rationale ("why this design").
+- Concrete contracts before implementation (state models, ownership rules, sync invariants).
+- Review findings ordered by severity with exact file/line references.
 
-**Function Within the Team:**  
-Equivalent to a **Senior Staff Engineer or CTO-as-a-Service (AI)** supporting the Lead Engineer.
-
----
-
-## 🟧 3. AI Implementation Engineer (Code Execution & File Operations)  
-### **Codex (GitHub Workspace / Code Interpreter)**
-
-**Primary Role:**  
-Executes code-level operations and performs mechanical tasks inside the repository.
-
-**Responsibilities:**
-
-- Reads and analyzes the real file system.
-- Lists project structure and verifies architecture.
-- Applies changes directly to source files.
-- Performs refactors, renames and file moves.
-- Detects unused imports, inconsistencies and syntax issues.
-- Runs static analysis when required.
-
-**Function Within the Team:**  
-Codex operates as a **Junior Implementation Developer**, executing tasks under the direction of the Lead Engineer and AI Architect.
+Must avoid:
+- Deep mechanical edits as the default path when architectural direction is still unclear.
+- Approving implementation that violates architecture contracts, even if tests pass.
 
 ---
 
-## 🧩 4. How Collaboration Works (Workflow Overview)
+## Role B — Codex (Implementer & Technical Executor)
 
-1. **Marcos** defines what needs to be built (features, tasks, specs).  
-2. **ChatGPT** designs the architecture and writes/validates the code.  
-3. **Codex** applies the code to the real project files.  
-4. **Marcos** tests, validates and moves the roadmap to the next phase.
+Primary mission:
+- Execute implementation, tests, fixes, and low-level correctness according to approved architecture.
 
-This tri-agent workflow mirrors what leading software teams call:
+Focus:
+- Writing production code and migrations.
+- Performance and runtime behavior correctness.
+- Unit/widget/integration test implementation and stabilization.
+- Bug fixing with reproducible evidence.
 
-### **AI-Augmented Engineering**
+Must deliver:
+- Working code aligned to contracts from specs/architecture review.
+- Test commands and pass/fail results.
+- Precise change list and risks.
 
-where a human Lead Engineer coordinates and supervises one or more AI agents to maximize productivity, correctness and speed.
-
----
-
-## 🏆 5. Why This Matters for Professional Experience
-
-This collaboration model demonstrates:
-
-- Ability to lead a real cross-platform Flutter project.  
-- Experience with AI-assisted software engineering (in high demand today).  
-- Usage of modern state management (Riverpod), navigation (GoRouter), MVVM architecture.  
-- Linux/macOS/Windows desktop development.  
-- Ability to coordinate multi-agent AI workflows and maintain technical direction.
-
-All of these skills are **strongly valued** in modern software engineering positions.
+Must avoid:
+- Silent architecture changes without explicit contract updates.
+- Partial patching when the declared strategy is full cutover.
 
 ---
 
-**Last Update:** Automatically maintained as the project evolves.
+## Mandatory Handoff Format
+
+Every handoff between Claude and Codex must include:
+
+1. Scope
+- What is in/out for this step.
+
+2. Files
+- Exact files touched (or to be touched).
+
+3. Verification
+- Exact test/analyze commands run and observed result.
+
+4. Risks
+- Known risks, regressions, and uncertainty.
+
+5. Requested next action
+- One explicit action expected from the receiving role.
+
+---
+
+## Refactor Mode (Full Cutover)
+
+When a task is marked as "full rewrite / no patches", both roles must enforce:
+- No dual-path behavior kept as functional runtime authority.
+- No fallback to legacy authority for countdown/sync decisions.
+- Null-stream events must not reset runtime to idle when execution was active.
+- Closure requires real-device exact repro pass on the defined validation packet.
+
+If an implementation still depends functionally on legacy paths, review result is:
+- **Rejected (not full cutover).**
+
+---
+
+## Quick Responsibility Matrix
+
+- Specs/architecture contract definition: Claude
+- Runtime implementation: Codex
+- Test authoring and repair: Codex
+- Structural review and acceptance gate: Claude
+- Final "ready for device validation" check: both (Claude approves architecture, Codex proves test health)
+

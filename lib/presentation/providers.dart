@@ -33,6 +33,7 @@ import '../data/services/task_run_notice_service.dart';
 import '../data/services/app_mode_service.dart';
 import '../data/services/time_sync_service.dart';
 import '../data/services/timer_service.dart';
+import 'viewmodels/session_sync_service.dart';
 
 // VIEWMODELS
 import 'viewmodels/pomodoro_view_model.dart';
@@ -153,6 +154,11 @@ final pomodoroMachineProvider = Provider.autoDispose<PomodoroMachine>((ref) {
 
 final timerServiceProvider = NotifierProvider<TimerService, TimerRuntimeState>(
   TimerService.new,
+);
+
+final sessionSyncServiceProvider =
+    NotifierProvider<SessionSyncService, SessionSyncState>(
+  SessionSyncService.new,
 );
 
 //

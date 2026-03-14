@@ -48,6 +48,26 @@ Daily specs hygiene (hard rule):
 - If issues are found, record them immediately and propose fixes before
   implementing new behavior. Specs are the app's supreme source of truth.
 
+## 1️⃣A Role Operating Model (Claude/Codex) (hard rule)
+
+Canonical role definitions and handoff protocol are maintained in:
+- `docs/team_roles.md`
+
+Operational split:
+- **Claude**: architecture authority and structural review (the "why/where").
+- **Codex**: implementation, debugging, tests, and low-level correctness (the "how").
+
+Mandatory handoff contract (both directions):
+- Context and scope
+- Files changed
+- Tests executed (exact commands + results)
+- Known risks and open questions
+- Explicit next action expected from the other role
+
+Conflict rule:
+- If architecture intent and implementation details diverge, stop and resolve via
+  `docs/specs.md` + `docs/team_roles.md` before continuing.
+
 ---
 
 ## 2️⃣ Documentation-first rule (hard rule)
