@@ -121,7 +121,9 @@ class TimerService extends Notifier<TimerRuntimeState> {
       phaseStartedAt: phaseStartedAt ?? state.phaseStartedAt,
       ownerDeviceId: ownerDeviceId ?? state.ownerDeviceId,
     );
-    _ensureTickRunning();
+    if (_shouldRunTickerForHealth()) {
+      _ensureTickRunning();
+    }
   }
 
   void pauseTick() {
@@ -133,7 +135,9 @@ class TimerService extends Notifier<TimerRuntimeState> {
   void resumeTick() {
     final status = _statusForPhase(state.phase);
     state = state.copyWith(status: status);
-    _ensureTickRunning();
+    if (_shouldRunTickerForHealth()) {
+      _ensureTickRunning();
+    }
   }
 
   void stopTick() {
@@ -219,6 +223,10 @@ class TimerService extends Notifier<TimerRuntimeState> {
       final next = current.remainingSeconds - 1;
       state = current.copyWith(remainingSeconds: next < 0 ? 0 : next);
     });
+  }
+
+  bool _shouldRunTickerForHealth() {
+    return state.syncHealth != SyncHealth.healthy;
   }
 
   PomodoroStatus _statusForPhase(PomodoroPhase phase) {
