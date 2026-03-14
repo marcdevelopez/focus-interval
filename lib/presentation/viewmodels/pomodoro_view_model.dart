@@ -20,6 +20,7 @@ import '../../data/services/foreground_service.dart';
 import '../../data/services/app_mode_service.dart';
 import '../../data/services/time_sync_service.dart';
 import '../../data/services/timer_service.dart';
+import 'ownership_sync_state.dart';
 
 enum PomodoroGroupLoadResult { loaded, notFound, blockedByActiveSession }
 
@@ -2592,6 +2593,26 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       _resolveSessionForCurrentGroup(_latestSession);
 
   bool get isSessionMissingWhileRunning => _sessionMissingWhileRunning;
+
+  OwnershipSyncState get ownershipSyncState {
+    if (_currentGroup == null) return OwnershipSyncState.unloaded;
+    if (_sessionMissingWhileRunning) {
+      final gap = _sessionGapDurationNow();
+      if (gap >= _staleSessionGrace) return OwnershipSyncState.recovery;
+      return OwnershipSyncState.degraded;
+    }
+
+    final session =
+        _resolveSessionForCurrentGroup(_latestSession) ??
+        _resolveSessionForCurrentGroup(_remoteSession);
+    if (session == null || !session.status.isActiveExecution) {
+      return OwnershipSyncState.unloaded;
+    }
+
+    return session.ownerDeviceId == _deviceInfo.deviceId
+        ? OwnershipSyncState.owned
+        : OwnershipSyncState.mirroring;
+  }
 
   String? get currentOwnerDeviceId =>
       activeSessionForCurrentGroup?.ownerDeviceId;
