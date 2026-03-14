@@ -500,3 +500,53 @@ grep -E "provider-dispose|resume-rebind|Unhandled Exception|SIGSEGV|EXC_BAD_ACCE
 
 If a device selector by name fails, run `flutter devices` and replace `-d "<name>"`
 with the concrete device id.
+
+## 2026-03-14 Rewrite Stage B device packet (P0-F26-006) — exact repro pass 1 (1h)
+
+Status: **PLANNED** (run with current rewrite baseline `3b11847`)
+
+Validation devices (exact IDs):
+- Android USB: `HYGUT4GMJJOFVWSS` (RMX3771)
+- iOS: `9A6B6687-8DE2-4573-A939-E4FFD0190E1A` (iPhone 17 Pro)
+- macOS: `macos`
+- Chrome: `chrome`
+
+Scenario protocol (exact repro target):
+- No manual network cut.
+- No manual pause/resume action.
+- Let active session run for 1h and observe spontaneous hold path behavior.
+
+```bash
+LOG_DIR="/Users/devcodex/development/focus_interval/docs/bugs/validation_fix_2026_03_07-01/logs"
+mkdir -p "$LOG_DIR"
+
+# Android RMX3771 via USB (debug)
+flutter run -v --debug -d HYGUT4GMJJOFVWSS \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageB_3b11847_pass1_1h_android_HYGUT4GMJJOFVWSS_debug.log"
+
+# iPhone 17 Pro (debug)
+flutter run -v --debug -d 9A6B6687-8DE2-4573-A939-E4FFD0190E1A \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageB_3b11847_pass1_1h_ios_iPhone17Pro_9A6B6687_debug.log"
+
+# macOS (debug)
+flutter run -v --debug -d macos \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageB_3b11847_pass1_1h_macos_debug.log"
+
+# Chrome (debug)
+flutter run -v --debug -d chrome \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageB_3b11847_pass1_1h_chrome_debug.log"
+```
+
+Log URLs (repo-relative):
+- `/docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-14_fix26_rewrite_stageB_3b11847_pass1_1h_android_HYGUT4GMJJOFVWSS_debug.log`
+- `/docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-14_fix26_rewrite_stageB_3b11847_pass1_1h_ios_iPhone17Pro_9A6B6687_debug.log`
+- `/docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-14_fix26_rewrite_stageB_3b11847_pass1_1h_macos_debug.log`
+- `/docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-14_fix26_rewrite_stageB_3b11847_pass1_1h_chrome_debug.log`
