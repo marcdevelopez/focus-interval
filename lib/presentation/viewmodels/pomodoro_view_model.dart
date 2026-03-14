@@ -21,6 +21,7 @@ import '../../data/services/app_mode_service.dart';
 import '../../data/services/time_sync_service.dart';
 import '../../data/services/timer_service.dart';
 import 'ownership_sync_state.dart';
+import 'session_sync_service.dart';
 
 enum PomodoroGroupLoadResult { loaded, notFound, blockedByActiveSession }
 
@@ -88,12 +89,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   DateTime? _currentTaskStartedAt;
   final Map<int, TaskTimeRange> _completedTaskRanges = {};
   DateTime? _timelinePhaseStartedAt;
-  ProviderSubscription<AsyncValue<PomodoroSession?>>? _sessionSub;
   Timer? _mirrorTimer;
   Timer? _pausedHeartbeatTimer;
   Timer? _inactiveResyncTimer;
   Timer? _postResumeResyncTimer;
-  Timer? _sessionMissingLatchTimer;
   Timer? _keepAliveGraceTimer;
   String? _remoteOwnerId;
   PomodoroSession? _remoteSession;
@@ -104,7 +103,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   DateTime? _lastActiveSessionTimestamp;
   String? _lastActiveSessionGroupId;
   String? _lastActiveSessionTaskId;
-  bool _sessionMissingWhileRunning = false;
+  // holdActive is owned by SessionSyncService — this getter is the single
+  // read point for all VM logic that previously used the mutable field.
+  bool get _sessionMissingWhileRunning =>
+      ref.read(sessionSyncServiceProvider).holdActive;
   OwnershipRequest? _optimisticOwnershipRequest;
   DateTime? _localPhaseStartedAt;
   DateTime? _lastHeartbeatAt;
@@ -161,10 +163,15 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       fireImmediately: true,
     );
 
+    ref.listen<SessionSyncState>(
+      sessionSyncServiceProvider,
+      (prev, next) => _onSyncStateChanged(prev, next),
+    );
+
     ref.listen<AppMode>(appModeProvider, (previous, next) {
       if (previous == next) return;
       if (next != AppMode.account) {
-        _closeSessionSubscription(reason: 'mode-switch');
+        ref.read(sessionSyncServiceProvider.notifier).detach();
         _clearPendingIntent(reason: 'mode-change');
         _clearTimeSyncWait();
         _clearAwaitingSessionConfirmation(reason: 'mode-change');
@@ -177,12 +184,13 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     // Clean up resources.
     ref.onDispose(() {
       _sub?.cancel();
-      _closeSessionSubscription(reason: 'provider-dispose');
+      // Do NOT detach SessionSyncService here — the stream must survive VM
+      // rebuild to maintain session continuity across Riverpod invalidations
+      // (AP-1 anti-pattern). SSS.detach() is called only on mode switch.
       _mirrorTimer?.cancel();
       _pausedHeartbeatTimer?.cancel();
       _inactiveResyncTimer?.cancel();
       _postResumeResyncTimer?.cancel();
-      _sessionMissingLatchTimer?.cancel();
       _keepAliveGraceTimer?.cancel();
       _stopForegroundService();
       _keepAliveLink?.close();
@@ -204,9 +212,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     } else {
       _clearSessionSnapshotTracking();
     }
-    _sessionMissingLatchTimer?.cancel();
-    _sessionMissingLatchTimer = null;
-    _sessionMissingWhileRunning = false;
+    // Attach SSS to this group. Idempotent if already attached to same group.
+    ref.read(sessionSyncServiceProvider.notifier).attach(groupId);
+    // Clear any stale hold state from a previous group.
+    ref.read(sessionSyncServiceProvider.notifier).clearHold();
     _syncOptimisticOwnershipRequest(session);
     _awaitingSessionRevision = null;
     final group =
@@ -1236,6 +1245,18 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (canWrite) {
       _syncPausedHeartbeat();
     }
+    // Recovery didn't resolve the session — hold remains active.
+    if (_sessionMissingWhileRunning) {
+      _logHoldLifecycle(
+        event: 'hold-extend',
+        path: 'recovery',
+        reason: 'server-null',
+        gateDecision: 'extend',
+        wasMissingBefore: true,
+        isMissingAfter: true,
+        projectionSource: 'none',
+      );
+    }
   }
 
   void _setResyncInProgress(bool value) {
@@ -1364,165 +1385,21 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   void _subscribeToRemoteSession({required String reason}) {
-    _closeSessionSubscription(reason: reason);
-    _sessionSub = ref.listen<AsyncValue<PomodoroSession?>>(
-      pomodoroSessionStreamProvider,
-      (previous, next) {
-        final previousSession = _latestSession;
-        final wasMissing = _sessionMissingWhileRunning;
-        var session = _resolveSessionSnapshot(previous, next);
-        if (session == null) {
-          final shouldHoldForMissing = _shouldTreatMissingSessionAsRunning(
-            previousSession,
-          );
-          if (shouldHoldForMissing) {
-            if (kDebugMode) {
-              debugPrint('[ActiveSession] Missing snapshot; deferring latch.');
-            }
-            _logHoldLifecycle(
-              event: 'hold-extend',
-              path: 'stream',
-              reason: 'null-stream',
-              gateDecision: 'extend',
-              wasMissingBefore: wasMissing,
-              isMissingAfter: true,
-              projectionSource: 'none',
-            );
-            // Debounce before latching to tolerate brief Firestore reconnect
-            // windows where the stream emits AsyncData<null> transiently.
-            _sessionMissingLatchTimer ??= Timer(
-              const Duration(seconds: 3),
-              _onSessionMissingLatchDebounced,
-            );
-            return;
-          }
-          if (wasMissing && !_isCurrentGroupTerminalCorroborated()) {
-            _sessionMissingWhileRunning = true;
-            _timerService.notifySessionGap(_sessionGapDurationNow());
-            _logHoldLifecycle(
-              event: 'hold-extend',
-              path: 'stream',
-              reason: 'null-without-terminal-corroboration',
-              gateDecision: 'extend',
-              wasMissingBefore: true,
-              isMissingAfter: true,
-              projectionSource: 'none',
-            );
-            _attemptMissingSessionRecovery(reason: 'stream-missing-extended');
-            _notifySessionMetaChanged();
-            return;
-          }
-          _sessionMissingLatchTimer?.cancel();
-          _sessionMissingLatchTimer = null;
-          if (kDebugMode) {
-            debugPrint('[ActiveSession] Missing snapshot; clearing session.');
-          }
-          _sessionMissingWhileRunning = false;
-          _latestSession = null;
-          _clearSessionSnapshotTracking();
-          _clearAwaitingSessionConfirmation(reason: 'session-cleared');
-          _mirrorTimer?.cancel();
-          _remoteOwnerId = null;
-          _remoteSession = null;
-          // Do not stop the ticker here. TimerService is the sole countdown
-          // authority; it must not be killed by a stream null (which can be
-          // transient — stale group cache, reconnect, VM rebuild).  When the
-          // session truly ends the ticker is stopped via stopTick() in the
-          // explicit user-stop path (_stopInternal) or group-stream termination.
-          _localPhaseStartedAt = null;
-          _pauseStartedAt = null;
-          _lastAutoTakeoverAttemptAt = null;
-          _stopPausedHeartbeat();
-          _stopForegroundService();
-          // If the owner cancels and clears the session, mirror idle.
-          if (_currentItem != null || _currentTask != null) {
-            final base = _machine.state;
-            state = base.status == PomodoroStatus.idle && base.totalSeconds > 0
-                ? base
-                : _idlePreviewState();
-          }
-          if (previousSession != null || wasMissing) {
-            _notifySessionMetaChanged();
-          }
-          _syncKeepAliveState();
-          return;
-        }
-
-        if (_shouldExtendHoldForTransitionalSnapshot(
-          session,
-          wasMissing: wasMissing,
-          path: 'stream',
-        )) {
-          _sessionMissingWhileRunning = true;
-          _attemptMissingSessionRecovery(reason: 'stream-transitional');
-          _notifySessionMetaChanged();
-          return;
-        }
-
-        final group = _currentGroup;
-        if (group != null && session.groupId == group.id) {
-          final repaired = _repairInconsistentSessionCursor(
-            session,
-            group,
-            DateTime.now(),
-          );
-          if (!identical(repaired, session)) {
-            if (kDebugMode) {
-              debugPrint(
-                '[ActiveSession] Repaired inconsistent cursor from stream '
-                'group=${group.id} '
-                'taskIndex=${session.currentTaskIndex ?? -1}->${repaired.currentTaskIndex ?? -1} '
-                'pomodoro=${session.currentPomodoro}/${session.totalPomodoros}'
-                '->${repaired.currentPomodoro}/${repaired.totalPomodoros}',
-              );
-            }
-            session = repaired;
-            final appMode = ref.read(appModeProvider);
-            if (appMode == AppMode.account &&
-                repaired.ownerDeviceId == _deviceInfo.deviceId) {
-              unawaited(_sessionRepo.publishSession(repaired));
-            }
-          }
-        }
-
-        _ingestResolvedSession(
-          session,
-          previousSession: previousSession,
-          wasMissing: wasMissing,
-        );
-      },
-      fireImmediately: true,
-    );
-    _logSessionSubscriptionOpen(reason: reason);
-  }
-
-  void _onSessionMissingLatchDebounced() {
-    _sessionMissingLatchTimer = null;
-    if (_sessionMissingWhileRunning) return;
-    if (!_shouldTreatMissingSessionAsRunning(_latestSession)) return;
+    // Session stream is now owned by SessionSyncService. Attach is idempotent.
+    final groupId = _currentGroup?.id;
+    if (groupId == null) return;
     if (kDebugMode) {
+      // Log close for the prior subscription slot (SSS handles actual lifecycle).
+      debugPrint('[SessionSub] close vmToken=$_vmToken reason=$reason');
       debugPrint(
-        '[ActiveSession] Missing snapshot latch fired after debounce.',
+        '[SessionSub] open (→SSS) vmToken=$_vmToken groupId=$groupId reason=$reason',
       );
     }
-    _sessionMissingWhileRunning = true;
-    _timerService.notifySessionGap(const Duration(seconds: 3));
-    _logHoldLifecycle(
-      event: 'hold-enter',
-      path: 'stream',
-      reason: 'debounce-expired',
-      gateDecision: 'extend',
-      wasMissingBefore: false,
-      isMissingAfter: true,
-      projectionSource: 'none',
-    );
-    _mirrorTimer?.cancel();
-    _stopPausedHeartbeat();
-    _stopForegroundService();
-    _attemptMissingSessionRecovery(reason: 'stream-missing-debounced');
-    _applyTimerRuntimeProjection(ref.read(timerServiceProvider), force: true);
-    _notifySessionMetaChanged();
+    ref.read(sessionSyncServiceProvider.notifier).attach(groupId);
   }
+
+  // _onSessionMissingLatchDebounced removed — hold/latch is now owned by
+  // SessionSyncService. _onHoldStarted handles the equivalent VM side-effects.
 
   Duration _sessionGapDurationNow() {
     final lastActiveAt = _lastActiveSessionSnapshotAt;
@@ -1556,13 +1433,66 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _syncKeepAliveState();
   }
 
-  PomodoroSession? _resolveSessionSnapshot(
-    AsyncValue<PomodoroSession?>? previous,
-    AsyncValue<PomodoroSession?> next,
-  ) {
-    if (next is AsyncData<PomodoroSession?>) return next.value;
-    if (previous is AsyncData<PomodoroSession?>) return previous.value;
-    return null;
+  /// Called when SessionSyncService state changes.
+  /// Routes session ingestion and hold lifecycle side-effects to VM handlers.
+  void _onSyncStateChanged(SessionSyncState? prev, SessionSyncState next) {
+    final prevSession = prev?.latestSession;
+    final newSession = next.latestSession;
+    final holdStarted = !(prev?.holdActive ?? false) && next.holdActive;
+    final holdEnded = (prev?.holdActive ?? false) && !next.holdActive;
+
+    if (newSession != null && !identical(newSession, prevSession)) {
+      final wasMissing = prev?.holdActive ?? false;
+      _latestSession = newSession;
+      _ingestResolvedSession(
+        newSession,
+        previousSession: prevSession,
+        wasMissing: wasMissing,
+      );
+    }
+
+    if (holdStarted) _onHoldStarted();
+    if (holdEnded) _onHoldEnded();
+
+    _notifySessionMetaChanged();
+    _syncKeepAliveState();
+  }
+
+  void _onHoldStarted() {
+    _mirrorTimer?.cancel();
+    _stopPausedHeartbeat();
+    _stopForegroundService();
+    _logHoldLifecycle(
+      event: 'hold-enter',
+      path: 'sync-service',
+      reason: 'session-gap-debounce',
+      gateDecision: 'hold',
+      wasMissingBefore: false,
+      isMissingAfter: true,
+      projectionSource: _latestSession != null
+          ? _projectionSourceForSession(_latestSession!)
+          : 'none',
+      session: _latestSession,
+    );
+    _attemptMissingSessionRecovery(reason: 'session-sync-hold');
+    _applyTimerRuntimeProjection(ref.read(timerServiceProvider), force: true);
+  }
+
+  void _onHoldEnded() {
+    _syncPausedHeartbeat();
+    _logHoldLifecycle(
+      event: 'hold-exit',
+      path: 'sync-service',
+      reason: 'hold-cleared',
+      gateDecision: 'apply',
+      wasMissingBefore: true,
+      isMissingAfter: false,
+      projectionSource: _latestSession != null
+          ? _projectionSourceForSession(_latestSession!)
+          : 'none',
+      session: _latestSession,
+    );
+    _applyTimerRuntimeProjection(ref.read(timerServiceProvider), force: true);
   }
 
   void _recordSessionSnapshot(PomodoroSession session, {DateTime? now}) {
@@ -1614,12 +1544,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     return isTerminalSession && isTerminalGroup;
   }
 
-  bool _isCurrentGroupTerminalCorroborated() {
-    final status = _currentGroup?.status;
-    return status == TaskRunStatus.completed ||
-        status == TaskRunStatus.canceled;
-  }
-
   String _projectionSourceForSession(PomodoroSession session) {
     final appMode = ref.read(appModeProvider);
     if (appMode != AppMode.account) return 'localFallback';
@@ -1664,25 +1588,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (!kDebugMode) return;
     debugPrint(
       '[VMLifecycle] dispose vmToken=$_vmToken groupId=${_currentGroup?.id ?? 'none'}',
-    );
-  }
-
-  void _closeSessionSubscription({required String reason}) {
-    final sub = _sessionSub;
-    if (sub == null) return;
-    if (kDebugMode) {
-      debugPrint(
-        '[SessionSub] close vmToken=$_vmToken groupId=${_currentGroup?.id ?? 'none'} reason=$reason',
-      );
-    }
-    sub.close();
-    _sessionSub = null;
-  }
-
-  void _logSessionSubscriptionOpen({required String reason}) {
-    if (!kDebugMode) return;
-    debugPrint(
-      '[SessionSub] open vmToken=$_vmToken groupId=${_currentGroup?.id ?? 'none'} reason=$reason',
     );
   }
 
@@ -1817,12 +1722,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       wasMissing: wasMissing,
       path: 'ingest',
     )) {
-      _sessionMissingWhileRunning = true;
+      ref.read(sessionSyncServiceProvider.notifier).extendHold();
       return;
     }
-    _sessionMissingLatchTimer?.cancel();
-    _sessionMissingLatchTimer = null;
-    _sessionMissingWhileRunning = false;
+    ref.read(sessionSyncServiceProvider.notifier).clearHold();
     _latestSession = session;
     _recordSessionSnapshot(session);
     _clearAwaitingSessionConfirmationIfSatisfied(session);
@@ -2054,6 +1957,8 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       debugKeepAliveGraceWindowOverride ?? _defaultKeepAliveGraceWindow;
 
   bool _hasKeepAliveActiveExecutionSignal() {
+    // A completed group can never have an active execution signal.
+    if (_groupCompleted) return false;
     if (_machine.state.status.isActiveExecution) return true;
     if (_latestSession?.status.isActiveExecution ?? false) return true;
     if (_remoteSession?.status.isActiveExecution ?? false) return true;
@@ -2406,6 +2311,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (_currentGroup?.id != group.id) return;
     _currentGroup = group;
     _groupCompleted = group.status == TaskRunStatus.completed;
+    _syncKeepAliveState();
   }
 
   TaskRunItem? get previousItem {
@@ -3144,7 +3050,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
           if (kDebugMode) {
             debugPrint('[ActiveSession] Resync missing; holding state.');
           }
-          _sessionMissingWhileRunning = true;
+          ref.read(sessionSyncServiceProvider.notifier).extendHold();
           _logHoldLifecycle(
             event: 'hold-extend',
             path: 'resync',
@@ -3159,12 +3065,13 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
             _notifySessionMetaChanged();
           }
         } else {
-          if (wasMissing && !_isCurrentGroupTerminalCorroborated()) {
-            _sessionMissingWhileRunning = true;
+          // If timer is still running, keep hold to protect active countdown.
+          if (wasMissing && _timerService.state.isTickingCandidate) {
+            ref.read(sessionSyncServiceProvider.notifier).extendHold();
             _logHoldLifecycle(
               event: 'hold-extend',
               path: 'resync',
-              reason: 'server-null-without-terminal-corroboration',
+              reason: 'server-null-timer-running',
               gateDecision: 'extend',
               wasMissingBefore: true,
               isMissingAfter: true,
@@ -3177,7 +3084,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
           if (kDebugMode) {
             debugPrint('[ActiveSession] Resync missing; clearing state.');
           }
-          _sessionMissingWhileRunning = false;
+          ref.read(sessionSyncServiceProvider.notifier).clearHold();
           _latestSession = null;
           _clearSessionSnapshotTracking();
           _clearAwaitingSessionConfirmation(reason: 'resync-session-cleared');
@@ -3192,7 +3099,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         wasMissing: wasMissing,
         path: 'resync',
       )) {
-        _sessionMissingWhileRunning = true;
+        ref.read(sessionSyncServiceProvider.notifier).extendHold();
         _attemptMissingSessionRecovery(reason: 'resync-transitional');
         _notifySessionMetaChanged();
         return;
@@ -3689,22 +3596,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     return session.groupId != groupId;
   }
 
-  PomodoroState _idlePreviewState() {
-    final item = _currentItem;
-    final task = _currentTask;
-    if (item == null && task == null) return PomodoroState.idle();
-    final total = item != null
-        ? item.pomodoroMinutes * 60
-        : task!.pomodoroMinutes * 60;
-    return PomodoroState(
-      status: PomodoroStatus.idle,
-      phase: PomodoroPhase.pomodoro,
-      currentPomodoro: 0,
-      totalPomodoros: item?.totalPomodoros ?? task!.totalPomodoros,
-      totalSeconds: total,
-      remainingSeconds: total,
-    );
-  }
 
   PomodoroState _projectStateFromSession(
     PomodoroSession session, {

@@ -147,10 +147,24 @@ class TimerService extends Notifier<TimerRuntimeState> {
     final total = snapshot.phaseDurationSeconds < 0
         ? 0
         : snapshot.phaseDurationSeconds;
-    final remaining = snapshot.remainingSeconds.clamp(
-      0,
-      total > 0 ? total : snapshot.remainingSeconds,
-    );
+    // Prefer timeline projection from phaseStartedAt when running — this gives
+    // an accurate remaining value even when snapshot.remainingSeconds is stale.
+    final int remaining;
+    final phaseStart = snapshot.phaseStartedAt;
+    if (phaseStart != null &&
+        total > 0 &&
+        snapshot.status.isActiveExecution) {
+      var elapsed = DateTime.now().difference(phaseStart).inSeconds -
+          snapshot.accumulatedPausedSeconds;
+      if (elapsed < 0) elapsed = 0;
+      if (elapsed > total) elapsed = total;
+      remaining = total - elapsed;
+    } else {
+      remaining = snapshot.remainingSeconds.clamp(
+        0,
+        total > 0 ? total : snapshot.remainingSeconds,
+      );
+    }
     state = state.copyWith(
       groupId: snapshot.groupId,
       currentTaskId: snapshot.currentTaskId,
