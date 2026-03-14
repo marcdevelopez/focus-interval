@@ -11286,3 +11286,57 @@ are the sole runtime/sync authority and keep VM as UI adapter.
 - Open low-priority observation:
   transient race windows around remote pause propagation may require follow-up
   hardening in a later block if observed in device logs.
+
+---
+
+# 🔹 Block 587 — GAP-1 + GAP-2 closed before Stage C validation (14/03/2026)
+
+## 📋 Context
+
+Full architectural review of all docs (specs, bug_log, dev_log, roadmap, validation
+plans) against the Stage C baseline (`aa2d09b`) identified two code gaps that had to
+be closed before device validation could produce a valid result.
+
+## ✔ Work completed
+
+### GAP-1 — `_stopForegroundService()` removed from `_onHoldStarted()`
+
+- **Root cause:** `_onHoldStarted()` was calling `ForegroundService.stop()`, killing the
+  Android foreground service exactly when a network cut triggers the hold. Without the
+  foreground service, the OS is free to kill the process; `TimerService` and
+  `SessionSyncService` recovery disappear.
+- **Connection to bug log:** BUG-008 (owner stale while foreground / auto-claim loop) and
+  the original Fix 26 vector (background + red cortada → irrecoverable Syncing session).
+- **Fix:** Removed `_stopForegroundService()` from `_onHoldStarted()`. The foreground
+  service now survives hold. It is only stopped on group completion, explicit user stop,
+  VM dispose, or mode switch.
+
+### GAP-2 — `_isValidHoldExitSnapshot()` corroboration added (Guardrail G-6)
+
+- **Root cause:** `if (session.status.isActiveExecution) return true` allowed hold exit
+  without verifying `group.status == TaskRunStatus.running`. In a race window where
+  another device canceled the group but this device hadn't received that update yet,
+  the hold would clear on a false active-session signal.
+- **Connection to docs:** Guardrail G-6 in CLAUDE.md explicitly requires corroboration
+  from group state before clearing running-state latch.
+- **Fix:** Added `return group.status == TaskRunStatus.running;` inside the
+  `isActiveExecution` branch.
+
+## 🧪 Validation run (local)
+
+- `flutter analyze` → **No issues found**.
+- Mandatory suite:
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart test/presentation/timer_screen_syncing_overlay_test.dart`
+  - Result: **30/30 PASS**.
+
+## 📁 Updated files
+
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- Both changes are in `pomodoro_view_model.dart` only. No other files touched.
+- Stage C device validation can now proceed against this updated baseline.
+- Open bugs out of scope for this rewrite (BUG-002, 003, 004, 005, 006, 009) remain
+  tracked in bug_log.md and are not blocked by Stage C.

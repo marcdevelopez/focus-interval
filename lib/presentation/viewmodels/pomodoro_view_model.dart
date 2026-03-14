@@ -1380,7 +1380,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   void _onHoldStarted() {
     _mirrorTimer?.cancel();
     _stopPausedHeartbeat();
-    _stopForegroundService();
     _logHoldLifecycle(
       event: 'hold-enter',
       path: 'sync-service',
@@ -1450,7 +1449,9 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     final group = _currentGroup;
     if (group == null) return false;
     if (session.groupId != group.id) return false;
-    if (session.status.isActiveExecution) return true;
+    if (session.status.isActiveExecution) {
+      return group.status == TaskRunStatus.running;
+    }
     final isTerminalSession =
         session.status == PomodoroStatus.finished ||
         session.status == PomodoroStatus.idle;
