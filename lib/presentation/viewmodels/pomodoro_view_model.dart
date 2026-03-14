@@ -1531,7 +1531,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     TimerRuntimeState runtime, {
     bool force = false,
   }) {
-    if (!force && !_sessionMissingWhileRunning) return;
     final group = _currentGroup;
     if (group == null) return;
     if (runtime.groupId != group.id) return;

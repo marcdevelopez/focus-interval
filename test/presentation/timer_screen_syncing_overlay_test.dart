@@ -608,6 +608,11 @@ void main() {
       reason:
           'Phase-6 contract: recovery path must re-open timer route instead of staying suppressed.',
     );
+
+    // Dispose the container before the test ends so the TimerService ticker
+    // is cancelled before testWidgets checks for pending timers.
+    vmSub.close();
+    container.dispose();
   });
 
   testWidgets(
