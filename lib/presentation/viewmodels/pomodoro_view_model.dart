@@ -19,6 +19,7 @@ import '../../data/services/notification_service.dart';
 import '../../data/services/foreground_service.dart';
 import '../../data/services/app_mode_service.dart';
 import '../../data/services/time_sync_service.dart';
+import '../../data/services/timer_service.dart';
 
 enum PomodoroGroupLoadResult { loaded, notFound, blockedByActiveSession }
 
@@ -74,6 +75,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   late TaskRunGroupRepository _groupRepo;
   late DeviceInfoService _deviceInfo;
   late TimeSyncService _timeSyncService;
+  late TimerService _timerService;
   final Uuid _uuid = const Uuid();
   final String _vmToken = const Uuid().v4();
   bool _didLogLifecycleInit = false;
@@ -138,6 +140,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _groupRepo = ref.watch(taskRunGroupRepositoryProvider);
     _deviceInfo = ref.watch(deviceInfoServiceProvider);
     _timeSyncService = ref.watch(timeSyncServiceProvider);
+    _timerService = ref.read(timerServiceProvider.notifier);
     _serverTimeOffset = _timeSyncService.offset;
 
     // Listen to states.
@@ -151,6 +154,12 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       _syncKeepAliveState();
     });
 
+    ref.listen<TimerRuntimeState>(
+      timerServiceProvider,
+      (_, runtime) => _applyTimerRuntimeProjection(runtime),
+      fireImmediately: true,
+    );
+
     ref.listen<AppMode>(appModeProvider, (previous, next) {
       if (previous == next) return;
       if (next != AppMode.account) {
@@ -159,6 +168,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         _clearTimeSyncWait();
         _clearAwaitingSessionConfirmation(reason: 'mode-change');
         _lastActiveSessionTimestamp = null;
+        _timerService.stopTick();
       }
       _syncKeepAliveState();
     });
@@ -1370,6 +1380,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
           }
           if (wasMissing && !_isCurrentGroupTerminalCorroborated()) {
             _sessionMissingWhileRunning = true;
+            _timerService.notifySessionGap(_sessionGapDurationNow());
             _logHoldLifecycle(
               event: 'hold-extend',
               path: 'stream',
@@ -1395,6 +1406,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
           _mirrorTimer?.cancel();
           _remoteOwnerId = null;
           _remoteSession = null;
+          _timerService.stopTick();
           _localPhaseStartedAt = null;
           _pauseStartedAt = null;
           _lastAutoTakeoverAttemptAt = null;
@@ -1472,6 +1484,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       );
     }
     _sessionMissingWhileRunning = true;
+    _timerService.notifySessionGap(const Duration(seconds: 3));
     _logHoldLifecycle(
       event: 'hold-enter',
       path: 'stream',
@@ -1485,7 +1498,41 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _stopPausedHeartbeat();
     _stopForegroundService();
     _attemptMissingSessionRecovery(reason: 'stream-missing-debounced');
+    _applyTimerRuntimeProjection(ref.read(timerServiceProvider), force: true);
     _notifySessionMetaChanged();
+  }
+
+  Duration _sessionGapDurationNow() {
+    final lastActiveAt = _lastActiveSessionSnapshotAt;
+    if (lastActiveAt == null) return const Duration(seconds: 3);
+    final gap = DateTime.now().difference(lastActiveAt);
+    return gap.isNegative ? Duration.zero : gap;
+  }
+
+  void _applyTimerRuntimeProjection(
+    TimerRuntimeState runtime, {
+    bool force = false,
+  }) {
+    if (!force && !_sessionMissingWhileRunning) return;
+    final group = _currentGroup;
+    if (group == null) return;
+    if (runtime.groupId != group.id) return;
+    if (!runtime.status.isActiveExecution) return;
+
+    final projected = state.copyWith(
+      status: runtime.status,
+      phase: runtime.phase,
+      currentPomodoro: runtime.currentPomodoro,
+      totalPomodoros: runtime.totalPomodoros,
+      totalSeconds: runtime.totalSeconds,
+      remainingSeconds: runtime.remainingSeconds,
+    );
+
+    if (_isSameState(state, projected)) return;
+    state = projected;
+    _logSyncOverlayTransitionIfNeeded();
+    _syncForegroundService(projected);
+    _syncKeepAliveState();
   }
 
   PomodoroSession? _resolveSessionSnapshot(
@@ -1505,6 +1552,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _lastActiveSessionTimestamp = timestamp;
     _lastActiveSessionGroupId = session.groupId;
     _lastActiveSessionTaskId = session.taskId;
+    _timerService.applyOwnerSnapshot(session);
     _syncKeepAliveState();
     if (kDebugMode) {
       debugPrint(
