@@ -11160,3 +11160,35 @@ After Block 582, Stage B had executable red tests for Invariants 3/4:
 
 - Stage B contract is now green locally.
 - Stage C (cleanup/removal of obsolete latch/freeze paths) and multi-device validation remain pending before closure.
+
+---
+
+# 🔹 Block 584 — Device validation runbook registered with exact IDs (14/03/2026)
+
+## 📋 Context
+
+After Stage B local green, next mandatory gate is real-device exact repro packet for `P0-F26-006`.
+User provided exact current selectors/IDs for all 4 targets.
+
+## ✔ Work completed
+
+- Updated validation docs with exact device selectors:
+  - Android USB `HYGUT4GMJJOFVWSS` (RMX3771)
+  - iOS `9A6B6687-8DE2-4573-A939-E4FFD0190E1A` (iPhone 17 Pro)
+  - macOS `macos`
+  - Chrome `chrome`
+- Added command blocks for pass1 (1h) on current rewrite baseline `3b11847`.
+- Added explicit log URLs/paths for each device output file.
+- Registered this packet in global ledger (`P0-F26-006`) as next active validation gate.
+
+## 📁 Updated files
+
+- `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`
+- `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- Run protocol for exact repro packet remains: no manual network cut, no manual pause/resume.
+- Stage C remains blocked until this device packet is executed and analyzed.

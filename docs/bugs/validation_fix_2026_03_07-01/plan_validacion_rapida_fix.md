@@ -683,3 +683,51 @@ spontaneous stream-null path (Firebase SDK reconnect/auth-refresh/cache-miss) su
 This is an architectural problem, not a missing hardening.
 
 Conclusion: no more focalized hardenings. Sync architecture rewrite required.
+
+## 2026-03-14 — Rewrite Stage B device validation packet (current baseline `3b11847`)
+
+Status: **PLANNED** (exact repro packet A, 1h)
+
+Target devices (exact selectors):
+- Android RMX3771 (USB): `HYGUT4GMJJOFVWSS`
+- iPhone 17 Pro: `9A6B6687-8DE2-4573-A939-E4FFD0190E1A`
+- macOS: `macos`
+- Chrome: `chrome`
+
+Protocol:
+- Run active session for 1h.
+- No manual network cut, no manual pause/resume.
+- Objective: verify spontaneous stream-null hold path does not freeze countdown and clears deterministically.
+
+Command block:
+
+```bash
+LOG_DIR="/Users/devcodex/development/focus_interval/docs/bugs/validation_fix_2026_03_07-01/logs"
+mkdir -p "$LOG_DIR"
+
+flutter run -v --debug -d HYGUT4GMJJOFVWSS \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageB_3b11847_pass1_1h_android_HYGUT4GMJJOFVWSS_debug.log"
+
+flutter run -v --debug -d 9A6B6687-8DE2-4573-A939-E4FFD0190E1A \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageB_3b11847_pass1_1h_ios_iPhone17Pro_9A6B6687_debug.log"
+
+flutter run -v --debug -d macos \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageB_3b11847_pass1_1h_macos_debug.log"
+
+flutter run -v --debug -d chrome \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageB_3b11847_pass1_1h_chrome_debug.log"
+```
+
+Log URLs (repo-relative):
+- `/docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-14_fix26_rewrite_stageB_3b11847_pass1_1h_android_HYGUT4GMJJOFVWSS_debug.log`
+- `/docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-14_fix26_rewrite_stageB_3b11847_pass1_1h_ios_iPhone17Pro_9A6B6687_debug.log`
+- `/docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-14_fix26_rewrite_stageB_3b11847_pass1_1h_macos_debug.log`
+- `/docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-14_fix26_rewrite_stageB_3b11847_pass1_1h_chrome_debug.log`
