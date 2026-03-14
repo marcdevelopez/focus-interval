@@ -569,7 +569,7 @@ Result:
 - **FAIL**. Stage B local green (`[REWRITE-CORE]` + smoke) did not hold on real-device exact repro.
 - Cascading `Syncing session...` and frozen/ready fallback screens are still reproducible across all four devices.
 
-## 2026-03-14 Rewrite Stage C device packet (baseline `aa2d09b`) — command reference
+## 2026-03-14 Rewrite Stage C device packet (baseline `c0add32`) — command reference
 
 Status: **PLANNED** (normalized run commands for copy/paste)
 
@@ -581,23 +581,23 @@ mkdir -p "$LOG_DIR"
 flutter run -v --debug -d HYGUT4GMJJOFVWSS \
   --dart-define=APP_ENV=prod \
   --dart-define=ALLOW_PROD_IN_DEBUG=true \
-  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageC_aa2d09b_pass1_1h_android_HYGUT4GMJJOFVWSS_debug.log"
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageC_c0add32_pass1_1h_android_HYGUT4GMJJOFVWSS_debug.log"
 
 # iPhone 17 Pro (debug)
 flutter run -v --debug -d 9A6B6687-8DE2-4573-A939-E4FFD0190E1A \
   --dart-define=APP_ENV=prod \
   --dart-define=ALLOW_PROD_IN_DEBUG=true \
-  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageC_aa2d09b_pass1_1h_ios_iPhone17Pro_9A6B6687_debug.log"
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageC_c0add32_pass1_1h_ios_iPhone17Pro_9A6B6687_debug.log"
 
 # macOS (debug)
 flutter run -v --debug -d macos \
   --dart-define=APP_ENV=prod \
   --dart-define=ALLOW_PROD_IN_DEBUG=true \
-  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageC_aa2d09b_pass1_1h_macos_debug.log"
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageC_c0add32_pass1_1h_macos_debug.log"
 
 # Chrome (debug)
 flutter run -v --debug -d chrome \
   --dart-define=APP_ENV=prod \
   --dart-define=ALLOW_PROD_IN_DEBUG=true \
-  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageC_aa2d09b_pass1_1h_chrome_debug.log"
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageC_c0add32_pass1_1h_chrome_debug.log"
 ```

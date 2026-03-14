@@ -732,7 +732,7 @@ Log URLs (repo-relative):
 - `/docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-14_fix26_rewrite_stageB_3b11847_pass1_1h_macos_debug.log`
 - `/docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-14_fix26_rewrite_stageB_3b11847_pass1_1h_chrome_debug.log`
 
-## 2026-03-14 — Rewrite Stage C command reference (baseline `aa2d09b`)
+## 2026-03-14 — Rewrite Stage C command reference (baseline `c0add32`)
 
 Status: **PLANNED** (normalized command packet for execution traceability)
 
@@ -743,20 +743,20 @@ mkdir -p "$LOG_DIR"
 flutter run -v --debug -d HYGUT4GMJJOFVWSS \
   --dart-define=APP_ENV=prod \
   --dart-define=ALLOW_PROD_IN_DEBUG=true \
-  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageC_aa2d09b_pass1_1h_android_HYGUT4GMJJOFVWSS_debug.log"
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageC_c0add32_pass1_1h_android_HYGUT4GMJJOFVWSS_debug.log"
 
 flutter run -v --debug -d 9A6B6687-8DE2-4573-A939-E4FFD0190E1A \
   --dart-define=APP_ENV=prod \
   --dart-define=ALLOW_PROD_IN_DEBUG=true \
-  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageC_aa2d09b_pass1_1h_ios_iPhone17Pro_9A6B6687_debug.log"
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageC_c0add32_pass1_1h_ios_iPhone17Pro_9A6B6687_debug.log"
 
 flutter run -v --debug -d macos \
   --dart-define=APP_ENV=prod \
   --dart-define=ALLOW_PROD_IN_DEBUG=true \
-  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageC_aa2d09b_pass1_1h_macos_debug.log"
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageC_c0add32_pass1_1h_macos_debug.log"
 
 flutter run -v --debug -d chrome \
   --dart-define=APP_ENV=prod \
   --dart-define=ALLOW_PROD_IN_DEBUG=true \
-  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageC_aa2d09b_pass1_1h_chrome_debug.log"
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageC_c0add32_pass1_1h_chrome_debug.log"
 ```
