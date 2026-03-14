@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Fix 26 Phase 6 device validation FAILED (rewrite required)**
-Current focus: **Sync architecture rewrite planning (post-Fix 26 failure)**
+Current focus: **Fix 26 rewrite runtime implementation from REWRITE-CORE red baseline**
 Last update: **14/03/2026**
 
 ---
@@ -10833,3 +10833,118 @@ progress loss while moving toward the sync rewrite branch.
 
 - No runtime code changes in this block (docs/process only).
 - Next implementation branch remains pending: `rewrite-sync-architecture`.
+
+---
+
+# 🔹 Block 577 — Rewrite docs-first contract opened (14/03/2026)
+
+## 📋 Context
+
+After Phase 6 failure (`P0-F26-005`), rewrite work moved to branch
+`rewrite-sync-architecture` with a strict docs-first gate: no runtime code and no
+`[REWRITE-CORE]` tests before contract review approval.
+
+## ✔ Work completed
+
+- Updated roadmap to mark rewrite branch opening and the explicit review gate
+  before tests/runtime edits.
+- Added rewrite architecture contract draft in `docs/specs.md` section 10.4.10,
+  including these mandatory invariants:
+  1. **TimerService persistence model:** app-scope Riverpod `NotifierProvider`
+     (non-autoDispose), lifecycle bound to `ProviderContainer`.
+  2. **Stream-null policy:** exact thresholds and behavior (`<3s` no visual change,
+     `>=3s` non-blocking syncing overlay, `>=45s` recovery mode with timer still running).
+  3. **Ownership stale timeout policy:** keep 45s unchanged in rewrite v1.
+  4. **Cutover strategy:** staged dual-path migration (services first, adapter switch,
+     then legacy-path cleanup after parity validation).
+- Updated validation ledger with new P0 item `P0-F26-006` (rewrite contract)
+  and explicit block on tests until contract approval.
+
+## 📁 Updated docs
+
+- `docs/specs.md`
+- `docs/roadmap.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- No `lib/` edits in this block.
+- No test changes in this block.
+- Next step is contract review/approval; only after approval can `[REWRITE-CORE]`
+  tests be introduced.
+
+---
+
+# 🔹 Block 578 — Rewrite contract refinement: interfaces required for test design (14/03/2026)
+
+## 📋 Context
+
+Contract review feedback approved rewrite direction in principle but blocked
+`[REWRITE-CORE]` test authoring until concrete interfaces were defined.
+
+## ✔ Work completed
+
+- Refined `docs/specs.md` section 10.4.10 with concrete interface contracts:
+  - `TimerRuntimeState` minimal required fields (group/task/status/phase/remaining/
+    counters/phase anchor/owner/sync health).
+  - `SessionSyncService` API contract and strict one-way integration
+    (`SessionSyncService` -> `TimerService`) for runtime updates.
+  - `PomodoroViewModel` adapter contract for Stage A/B compatibility
+    (`Notifier<PomodoroState>` remains UI-facing while runtime authority lives
+    in persistent `TimerService`).
+- Kept ownership stale timeout policy at 45s and reaffirmed stream-null
+  non-freeze semantics.
+- Updated roadmap and validation ledger to reflect the refined contract and
+  continued review gate before tests/runtime edits.
+
+## 📁 Updated docs
+
+- `docs/specs.md`
+- `docs/roadmap.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- No runtime code changes in this block.
+- No tests added in this block.
+- Next step remains contract approval; only then `[REWRITE-CORE]` tests can start.
+
+---
+
+# 🔹 Block 579 — REWRITE-CORE tests authored (red-first baseline, no runtime edits) (14/03/2026)
+
+## 📋 Context
+
+With contract section 10.4.10 approved in principle, next step was to author
+`[REWRITE-CORE]` tests before runtime changes.
+
+## ✔ Work completed
+
+- Added 5 rewrite contract tests to:
+  - `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- Coverage target: invariants from specs 10.4.10.7:
+  1. stream null must not freeze countdown progression,
+  2. syncing state is informational (active execution preserved),
+  3. authoritative transitions originate from `TimerService`,
+  4. ownership recovery is deterministic via explicit state machine,
+  5. VM dispose/rebuild must not reset runtime continuity.
+- Executed targeted subset:
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart --plain-name "[REWRITE-CORE]" --reporter compact`
+- Result: **1 pass / 4 fail** (expected red-first baseline).
+  - Invariant 1 failed (countdown froze during stream-null hold).
+  - Invariants 3/4/5 are contract-gate failures pending rewrite runtime.
+
+## 📁 Updated docs/code
+
+- `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- `docs/roadmap.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- No runtime `lib/` edits in this block.
+- Red baseline confirmed; next step is runtime implementation to make
+  `[REWRITE-CORE]` green.

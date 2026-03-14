@@ -263,6 +263,19 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           from any ≥3s Firestore stream null, not only from VM disposal.
           Phase 6 B1 irrelevant for this trigger path. Conclusion: focalized
           hardenings exhausted; sync architecture rewrite required. Pass 2 cancelled.
+      14/03/2026: Fix 26 rewrite branch opened (`rewrite-sync-architecture`) and
+          docs-first contract drafting started. Runtime/tests are blocked until
+          contract review approval (TimerService persistence model, stream-null
+          UX policy, ownership timeout policy, and cutover strategy).
+      14/03/2026: Fix 26 rewrite contract refined with concrete interfaces:
+          `TimerRuntimeState` minimum fields, `SessionSyncService` API and
+          unidirectional sync->timer integration, and `PomodoroViewModel`
+          adapter contract for Stage A/B compatibility. Contract remains
+          review-gated before `[REWRITE-CORE]` tests.
+      14/03/2026: `[REWRITE-CORE]` baseline tests drafted and executed
+          (red-first, no runtime changes): 5 invariants targeted; result
+          1 pass / 4 fail confirms current runtime still violates rewrite
+          contract and implementation work is required.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
@@ -357,7 +370,8 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
   2026-03-14; Phase 6 B1+B2 patch verified insufficient — latch fires from spontaneous Firestore
   stream null independent of VM disposal; all focalized hardenings exhausted; solution requires
   decoupling timer from session stream, persistent (non-autoDispose) timer service, optimistic
-  rendering, and deterministic recovery state machine).
+  rendering, and deterministic recovery state machine; contract review must be approved before
+  `[REWRITE-CORE]` tests or runtime edits).
 - Phase 13 — Mirror must not start behind on resume (stale lastUpdatedAt compensation) (bug).
 - Phase 10 — Task Editor: total time chip + task color picker (new requirement).
 - Phase 9 — Task List: group name input + group summary + per-task total time + selection reset (new requirement).
