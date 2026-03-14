@@ -1568,6 +1568,169 @@ void main() {
     },
   );
 
+  // ─── Rewrite contract tests (specs 10.4.10.7) ────────────────────────────
+  // These tests define rewrite-target behavior before runtime implementation.
+  // [REWRITE-CORE] tests are expected to be red until TimerService/SessionSyncService
+  // architecture is introduced.
+
+  test(
+    '[REWRITE-CORE] stream null must not freeze countdown progression (Invariant 1)',
+    () async {
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(id: 'group-rewrite-core-1', start: now);
+      final session = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        ownerDeviceId: 'other-device',
+        now: now,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      addTearDown(() {
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      final vmSub = container.listen<PomodoroState>(
+        pomodoroViewModelProvider,
+        (_, __) {},
+      );
+      addTearDown(vmSub.close);
+
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      sessionRepo.emit(null);
+      await _pumpQueue();
+      await Future<void>.delayed(const Duration(seconds: 4));
+      await _pumpQueue();
+
+      final duringGap = container.read(pomodoroViewModelProvider).remainingSeconds;
+
+      await Future<void>.delayed(const Duration(seconds: 2));
+      await _pumpQueue();
+
+      final later = container.read(pomodoroViewModelProvider).remainingSeconds;
+      expect(
+        later,
+        lessThan(duringGap),
+        reason:
+            'Invariant 1: countdown must keep progressing even while session stream is null.',
+      );
+    },
+  );
+
+  test(
+    '[REWRITE-CORE] syncing state must be informational and preserve active execution (Invariant 2)',
+    () async {
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(id: 'group-rewrite-core-2', start: now);
+      final session = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        ownerDeviceId: 'other-device',
+        now: now,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      addTearDown(() {
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      final vmSub = container.listen<PomodoroState>(
+        pomodoroViewModelProvider,
+        (_, __) {},
+      );
+      addTearDown(vmSub.close);
+
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      sessionRepo.emit(null);
+      await _pumpQueue();
+      await Future<void>.delayed(const Duration(seconds: 4));
+      await _pumpQueue();
+
+      final state = container.read(pomodoroViewModelProvider);
+      expect(
+        state.status.isActiveExecution,
+        isTrue,
+        reason:
+            'Invariant 2: syncing/degraded state must remain informational and keep active execution status.',
+      );
+    },
+  );
+
+  test(
+    '[REWRITE-CORE] authoritative runtime transitions must originate from TimerService (Invariant 3)',
+    () {
+      fail(
+        'Invariant 3 contract gate: pending rewrite runtime. Add TimerService-backed start/pause/resume/cancel delegation and replace VM-owned authoritative transitions.',
+      );
+    },
+  );
+
+  test(
+    '[REWRITE-CORE] ownership recovery must be deterministic via explicit recovery states (Invariant 4)',
+    () {
+      fail(
+        'Invariant 4 contract gate: pending rewrite runtime. Implement explicit ownership recovery state machine and assert deterministic transitions.',
+      );
+    },
+  );
+
+  test(
+    '[REWRITE-CORE] VM dispose/rebuild must not reset runtime continuity (Invariant 5)',
+    () {
+      fail(
+        'Invariant 5 contract gate: pending rewrite runtime. Add persistent TimerService continuity checks across PomodoroViewModel dispose/rebuild.',
+      );
+    },
+  );
+
   test(
     '[PHASE3] hold diagnostics must emit enter/extend/exit with projectionSource',
     () async {

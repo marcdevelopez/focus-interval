@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Fix 26 Phase 6 device validation FAILED (rewrite required)**
-Current focus: **Fix 26 rewrite docs-first contract review gate**
+Current focus: **Fix 26 rewrite runtime implementation from REWRITE-CORE red baseline**
 Last update: **14/03/2026**
 
 ---
@@ -10910,3 +10910,41 @@ Contract review feedback approved rewrite direction in principle but blocked
 - No runtime code changes in this block.
 - No tests added in this block.
 - Next step remains contract approval; only then `[REWRITE-CORE]` tests can start.
+
+---
+
+# 🔹 Block 579 — REWRITE-CORE tests authored (red-first baseline, no runtime edits) (14/03/2026)
+
+## 📋 Context
+
+With contract section 10.4.10 approved in principle, next step was to author
+`[REWRITE-CORE]` tests before runtime changes.
+
+## ✔ Work completed
+
+- Added 5 rewrite contract tests to:
+  - `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- Coverage target: invariants from specs 10.4.10.7:
+  1. stream null must not freeze countdown progression,
+  2. syncing state is informational (active execution preserved),
+  3. authoritative transitions originate from `TimerService`,
+  4. ownership recovery is deterministic via explicit state machine,
+  5. VM dispose/rebuild must not reset runtime continuity.
+- Executed targeted subset:
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart --plain-name "[REWRITE-CORE]" --reporter compact`
+- Result: **1 pass / 4 fail** (expected red-first baseline).
+  - Invariant 1 failed (countdown froze during stream-null hold).
+  - Invariants 3/4/5 are contract-gate failures pending rewrite runtime.
+
+## 📁 Updated docs/code
+
+- `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- `docs/roadmap.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- No runtime `lib/` edits in this block.
+- Red baseline confirmed; next step is runtime implementation to make
+  `[REWRITE-CORE]` green.

@@ -272,6 +272,10 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           unidirectional sync->timer integration, and `PomodoroViewModel`
           adapter contract for Stage A/B compatibility. Contract remains
           review-gated before `[REWRITE-CORE]` tests.
+      14/03/2026: `[REWRITE-CORE]` baseline tests drafted and executed
+          (red-first, no runtime changes): 5 invariants targeted; result
+          1 pass / 4 fail confirms current runtime still violates rewrite
+          contract and implementation work is required.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
