@@ -1626,7 +1626,9 @@ void main() {
       await Future<void>.delayed(const Duration(seconds: 4));
       await _pumpQueue();
 
-      final duringGap = container.read(pomodoroViewModelProvider).remainingSeconds;
+      final duringGap = container
+          .read(pomodoroViewModelProvider)
+          .remainingSeconds;
 
       await Future<void>.delayed(const Duration(seconds: 2));
       await _pumpQueue();
@@ -1724,9 +1726,96 @@ void main() {
 
   test(
     '[REWRITE-CORE] VM dispose/rebuild must not reset runtime continuity (Invariant 5)',
-    () {
-      fail(
-        'Invariant 5 contract gate: pending rewrite runtime. Add persistent TimerService continuity checks across PomodoroViewModel dispose/rebuild.',
+    () async {
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(id: 'group-rewrite-core-5', start: now);
+      final session = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        ownerDeviceId: 'other-device',
+        now: now,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      addTearDown(() {
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      final vmSub = container.listen<PomodoroState>(
+        pomodoroViewModelProvider,
+        (_, __) {},
+      );
+      addTearDown(vmSub.close);
+
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      sessionRepo.emit(null);
+      await _pumpQueue();
+      await Future<void>.delayed(const Duration(seconds: 4));
+      await _pumpQueue();
+
+      final runtimeDuringGap = container.read(timerServiceProvider);
+      expect(
+        runtimeDuringGap.remainingSeconds,
+        greaterThan(0),
+        reason:
+            'Invariant 5 setup: timer runtime must be active before VM dispose.',
+      );
+
+      // Force VM dispose/rebuild boundary while keeping ProviderContainer alive.
+      vmSub.close();
+      container.invalidate(pomodoroViewModelProvider);
+      await _pumpQueue();
+      expect(container.exists(pomodoroViewModelProvider), isFalse);
+
+      await Future<void>.delayed(const Duration(seconds: 2));
+      await _pumpQueue();
+
+      final runtimeAfterDispose = container.read(timerServiceProvider);
+      expect(
+        runtimeAfterDispose.remainingSeconds,
+        lessThan(runtimeDuringGap.remainingSeconds),
+        reason:
+            'Invariant 5: runtime countdown must continue while VM is disposed.',
+      );
+
+      final rebuiltVmSub = container.listen<PomodoroState>(
+        pomodoroViewModelProvider,
+        (_, __) {},
+      );
+      addTearDown(rebuiltVmSub.close);
+      await _pumpQueue();
+      expect(container.exists(pomodoroViewModelProvider), isTrue);
+
+      final runtimeAfterRebuild = container.read(timerServiceProvider);
+      expect(
+        runtimeAfterRebuild.remainingSeconds,
+        lessThan(runtimeDuringGap.remainingSeconds),
+        reason:
+            'Invariant 5: VM rebuild must not reset TimerService runtime continuity.',
       );
     },
   );

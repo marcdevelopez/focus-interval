@@ -11006,3 +11006,50 @@ changing ownership/handoff contracts yet.
   TimerService-authoritative command delegation, deterministic recovery state machine,
   and VM continuity contract tests are implemented.
 - No merge/closure yet for `P0-F26-006`.
+
+---
+
+# 🔹 Block 581 — Rewrite Invariant 5 promoted to executable test (14/03/2026)
+
+## 📋 Context
+
+After Stage A runtime bridge (`248d963`), `[REWRITE-CORE]` still had three pending
+contract-gate failures (Invariants 3/4/5). Invariant 5 became testable because
+`TimerService` is now app-scope and non-autoDispose.
+
+## ✔ Work completed
+
+- Replaced Invariant 5 `fail()` gate in:
+  - `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- New test behavior for Invariant 5:
+  - load active group/session,
+  - force stream-null hold (debounce expiry) so runtime countdown is controlled by
+    `TimerService` degraded projection,
+  - dispose the VM boundary (`vmSub.close()` + `container.invalidate(pomodoroViewModelProvider)`),
+  - verify `timerServiceProvider.remainingSeconds` keeps decrementing while VM is disposed,
+  - rebuild VM listener and verify runtime was not reset.
+
+## 🧪 Validation run (local)
+
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart --plain-name "[REWRITE-CORE]" --reporter compact`
+  - Result: **3 pass / 2 fail**
+  - PASS: Invariants 1, 2, 5
+  - FAIL (intentional contract gates): Invariants 3, 4
+- Full rewrite-related suite:
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart test/presentation/timer_screen_syncing_overlay_test.dart --reporter compact`
+  - Result: **26 pass / 2 fail**
+  - Only fails are intentional gates for Invariants 3 and 4.
+- `flutter analyze` (touched scope) → PASS with 2 pre-existing info hints in test code (`use_super_parameters`).
+
+## 📁 Updated files
+
+- `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- `docs/roadmap.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- No new runtime `lib/` edits in this block.
+- Next runtime milestones remain Invariant 3 (authoritative TimerService command path)
+  and Invariant 4 (deterministic ownership recovery state machine).
