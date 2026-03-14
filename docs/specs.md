@@ -2373,7 +2373,58 @@ foreground owner must **not** freeze progression.
   - Apply retry backoff after transient failures to avoid repeated takeover
     storms during connectivity loss/resume windows.
 
-### **10.4.9. Ownership visibility in Run Mode**
+### 10.4.10 Fix 26 rewrite sync architecture contract (draft, review-gated)
+
+Status: draft contract on branch `rewrite-sync-architecture`.
+Implementation and `[REWRITE-CORE]` tests are blocked until explicit contract review approval.
+
+#### 10.4.10.1 Timer runtime authority and provider persistence model
+
+- `TimerService` must be implemented as an app-scope Riverpod service using
+  `NotifierProvider<TimerService, TimerRuntimeState>` (non-autoDispose).
+- `TimerService` must never use `autoDispose`.
+- `TimerService` instance lifetime must match the app `ProviderContainer` lifetime
+  (created once per app start; disposed only when the container is disposed on app exit).
+- `PomodoroViewModel` becomes an adapter/projection layer and must not own
+  authoritative runtime transitions.
+
+#### 10.4.10.2 Stream-null policy (exact timing and UX behavior)
+
+- A stream `null` is never authoritative session deletion by itself.
+- Visibility and behavior thresholds:
+  - `< 3s` continuous null/missing: no visual change; keep normal runtime rendering.
+  - `>= 3s` and `< 45s`: show non-blocking `Syncing session...` informational overlay.
+    Timer countdown must continue from local authoritative projection.
+  - `>= 45s` (ownership stale threshold): enter explicit recovery state; keep timer rendering
+    active, but gate ownership-mutating actions until ownership/session is reconfirmed.
+- Freeze-on-null is forbidden. Null/missing stream may degrade sync confidence, not timer continuity.
+
+#### 10.4.10.3 Ownership stale threshold policy
+
+- Ownership stale timeout remains **45 seconds** in rewrite v1.
+- Rationale: preserve compatibility with existing ownership/request semantics and avoid
+  changing multiple behavioral contracts in the same rewrite milestone.
+- Any future change to this threshold requires a dedicated specs delta and validation plan.
+
+#### 10.4.10.4 Cutover strategy
+
+- Rewrite cutover is **dual-path staged**, not big-bang replacement:
+  1. Stage A: introduce `TimerService` + `SessionSyncService` with adapter hooks, while
+     legacy `PomodoroViewModel` paths still exist.
+  2. Stage B: switch Run Mode rendering/commands to the adapter backed by new services.
+  3. Stage C: remove obsolete latch/freeze paths from legacy VM once parity is validated.
+- During stages A/B, legacy behavior tests remain as regression guards until
+  `[REWRITE-CORE]` parity coverage is complete.
+
+#### 10.4.10.5 Rewrite acceptance invariants (must be testable)
+
+1. Timer must not freeze when Firestore stream emits null for any duration.
+2. `Syncing session...` must remain informational (visibility), never authoritative timer stop.
+3. Authoritative runtime transitions must originate from `TimerService`, not UI widgets.
+4. Ownership recovery must be deterministic with explicit states/transitions.
+5. `PomodoroViewModel` disposal/rebuild must not reset runtime continuity.
+
+### **10.4.11 Ownership visibility in Run Mode**
 
 - The owner/mirror rule must be visible and understandable without banners.
 - Show a persistent, compact indicator in the Run Mode header:

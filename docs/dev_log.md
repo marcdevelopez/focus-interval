@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Fix 26 Phase 6 device validation FAILED (rewrite required)**
-Current focus: **Sync architecture rewrite planning (post-Fix 26 failure)**
+Current focus: **Fix 26 rewrite docs-first contract review gate**
 Last update: **14/03/2026**
 
 ---
@@ -10833,3 +10833,43 @@ progress loss while moving toward the sync rewrite branch.
 
 - No runtime code changes in this block (docs/process only).
 - Next implementation branch remains pending: `rewrite-sync-architecture`.
+
+---
+
+# 🔹 Block 577 — Rewrite docs-first contract opened (14/03/2026)
+
+## 📋 Context
+
+After Phase 6 failure (`P0-F26-005`), rewrite work moved to branch
+`rewrite-sync-architecture` with a strict docs-first gate: no runtime code and no
+`[REWRITE-CORE]` tests before contract review approval.
+
+## ✔ Work completed
+
+- Updated roadmap to mark rewrite branch opening and the explicit review gate
+  before tests/runtime edits.
+- Added rewrite architecture contract draft in `docs/specs.md` section 10.4.10,
+  including these mandatory invariants:
+  1. **TimerService persistence model:** app-scope Riverpod `NotifierProvider`
+     (non-autoDispose), lifecycle bound to `ProviderContainer`.
+  2. **Stream-null policy:** exact thresholds and behavior (`<3s` no visual change,
+     `>=3s` non-blocking syncing overlay, `>=45s` recovery mode with timer still running).
+  3. **Ownership stale timeout policy:** keep 45s unchanged in rewrite v1.
+  4. **Cutover strategy:** staged dual-path migration (services first, adapter switch,
+     then legacy-path cleanup after parity validation).
+- Updated validation ledger with new P0 item `P0-F26-006` (rewrite contract)
+  and explicit block on tests until contract approval.
+
+## 📁 Updated docs
+
+- `docs/specs.md`
+- `docs/roadmap.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- No `lib/` edits in this block.
+- No test changes in this block.
+- Next step is contract review/approval; only after approval can `[REWRITE-CORE]`
+  tests be introduced.

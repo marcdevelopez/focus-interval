@@ -263,6 +263,10 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           from any ≥3s Firestore stream null, not only from VM disposal.
           Phase 6 B1 irrelevant for this trigger path. Conclusion: focalized
           hardenings exhausted; sync architecture rewrite required. Pass 2 cancelled.
+      14/03/2026: Fix 26 rewrite branch opened (`rewrite-sync-architecture`) and
+          docs-first contract drafting started. Runtime/tests are blocked until
+          contract review approval (TimerService persistence model, stream-null
+          UX policy, ownership timeout policy, and cutover strategy).
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
@@ -357,7 +361,8 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
   2026-03-14; Phase 6 B1+B2 patch verified insufficient — latch fires from spontaneous Firestore
   stream null independent of VM disposal; all focalized hardenings exhausted; solution requires
   decoupling timer from session stream, persistent (non-autoDispose) timer service, optimistic
-  rendering, and deterministic recovery state machine).
+  rendering, and deterministic recovery state machine; contract review must be approved before
+  `[REWRITE-CORE]` tests or runtime edits).
 - Phase 13 — Mirror must not start behind on resume (stale lastUpdatedAt compensation) (bug).
 - Phase 10 — Task Editor: total time chip + task color picker (new requirement).
 - Phase 9 — Task List: group name input + group summary + per-task total time + selection reset (new requirement).
