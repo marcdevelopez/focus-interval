@@ -503,7 +503,7 @@ with the concrete device id.
 
 ## 2026-03-14 Rewrite Stage B device packet (P0-F26-006) — exact repro pass 1 (1h)
 
-Status: **PLANNED** (run with current rewrite baseline `3b11847`)
+Status: **FAILED — exact repro REPRODUCED (2026-03-14)**
 
 Validation devices (exact IDs):
 - Android USB: `HYGUT4GMJJOFVWSS` (RMX3771)
@@ -550,3 +550,54 @@ Log URLs (repo-relative):
 - `/docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-14_fix26_rewrite_stageB_3b11847_pass1_1h_ios_iPhone17Pro_9A6B6687_debug.log`
 - `/docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-14_fix26_rewrite_stageB_3b11847_pass1_1h_macos_debug.log`
 - `/docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-14_fix26_rewrite_stageB_3b11847_pass1_1h_chrome_debug.log`
+
+Execution notes (reported timeline):
+- Planned group: `1e8e5564-9617-4a40-879b-1a8bbe18435a` (scheduled by Android).
+- Pre-run entered at `13:14:00`; run started at `13:15:00` (expected).
+- Initial owner at run start: macOS.
+- `13:30:40` Android switched Wi-Fi -> mobile data; `13:30:50` switched back to Wi-Fi (no immediate issue).
+- `13:32:00` Wi-Fi cut for `15s` on macOS/iOS/Chrome: no `Syncing session...` shown.
+- `13:43:33` Android to background; `13:45:33` foreground resume: continued correctly.
+- `14:01:21` Android (mirror) entered `Syncing session...` with background in `Ready 15:00`.
+- `14:01:53` macOS (owner) entered `Syncing session...` with timer frozen at `08:09`.
+- `14:02:07` Chrome entered `Syncing session...` with background in `Ready 15:00`.
+- `14:02:14` iOS entered `Syncing session...` with background in `Ready 15:00`.
+- `14:02:15` macOS removed `Syncing session...` overlay but remained frozen (`08:09`).
+- `14:04:18` state still frozen while backend `current` continued running (`status=pomodoroRunning`, `remainingSeconds=347`, `ownerDeviceId=macOS...`).
+
+Result:
+- **FAIL**. Stage B local green (`[REWRITE-CORE]` + smoke) did not hold on real-device exact repro.
+- Cascading `Syncing session...` and frozen/ready fallback screens are still reproducible across all four devices.
+
+## 2026-03-14 Rewrite Stage C device packet (baseline `c0add32`) — command reference
+
+Status: **PLANNED** (normalized run commands for copy/paste)
+
+```bash
+LOG_DIR="/Users/devcodex/development/focus_interval/docs/bugs/validation_fix_2026_03_07-01/logs"
+mkdir -p "$LOG_DIR"
+
+# Android RMX3771 via USB (debug)
+flutter run -v --debug -d HYGUT4GMJJOFVWSS \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageC_c0add32_pass1_1h_android_HYGUT4GMJJOFVWSS_debug.log"
+
+# iPhone 17 Pro (debug)
+flutter run -v --debug -d 9A6B6687-8DE2-4573-A939-E4FFD0190E1A \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageC_c0add32_pass1_1h_ios_iPhone17Pro_9A6B6687_debug.log"
+
+# macOS (debug)
+flutter run -v --debug -d macos \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageC_c0add32_pass1_1h_macos_debug.log"
+
+# Chrome (debug)
+flutter run -v --debug -d chrome \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageC_c0add32_pass1_1h_chrome_debug.log"
+```

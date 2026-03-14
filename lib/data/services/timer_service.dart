@@ -121,9 +121,7 @@ class TimerService extends Notifier<TimerRuntimeState> {
       phaseStartedAt: phaseStartedAt ?? state.phaseStartedAt,
       ownerDeviceId: ownerDeviceId ?? state.ownerDeviceId,
     );
-    if (_shouldRunTickerForHealth()) {
-      _ensureTickRunning();
-    }
+    _ensureTickRunning();
   }
 
   void pauseTick() {
@@ -135,9 +133,7 @@ class TimerService extends Notifier<TimerRuntimeState> {
   void resumeTick() {
     final status = _statusForPhase(state.phase);
     state = state.copyWith(status: status);
-    if (_shouldRunTickerForHealth()) {
-      _ensureTickRunning();
-    }
+    _ensureTickRunning();
   }
 
   void stopTick() {
@@ -151,10 +147,24 @@ class TimerService extends Notifier<TimerRuntimeState> {
     final total = snapshot.phaseDurationSeconds < 0
         ? 0
         : snapshot.phaseDurationSeconds;
-    final remaining = snapshot.remainingSeconds.clamp(
-      0,
-      total > 0 ? total : snapshot.remainingSeconds,
-    );
+    // Prefer timeline projection from phaseStartedAt when running — this gives
+    // an accurate remaining value even when snapshot.remainingSeconds is stale.
+    final int remaining;
+    final phaseStart = snapshot.phaseStartedAt;
+    if (phaseStart != null &&
+        total > 0 &&
+        snapshot.status.isActiveExecution) {
+      var elapsed = DateTime.now().difference(phaseStart).inSeconds -
+          snapshot.accumulatedPausedSeconds;
+      if (elapsed < 0) elapsed = 0;
+      if (elapsed > total) elapsed = total;
+      remaining = total - elapsed;
+    } else {
+      remaining = snapshot.remainingSeconds.clamp(
+        0,
+        total > 0 ? total : snapshot.remainingSeconds,
+      );
+    }
     state = state.copyWith(
       groupId: snapshot.groupId,
       currentTaskId: snapshot.currentTaskId,
@@ -168,8 +178,10 @@ class TimerService extends Notifier<TimerRuntimeState> {
       ownerDeviceId: snapshot.ownerDeviceId,
       syncHealth: SyncHealth.healthy,
     );
+    // Reset ticker so it restarts from the authoritative remaining value.
     _tickTimer?.cancel();
     _tickTimer = null;
+    _ensureTickRunning();
   }
 
   void notifySessionGap(Duration gap) {
@@ -183,14 +195,8 @@ class TimerService extends Notifier<TimerRuntimeState> {
     if (state.syncHealth != health) {
       state = state.copyWith(syncHealth: health);
     }
-    if (health == SyncHealth.healthy) {
-      _tickTimer?.cancel();
-      _tickTimer = null;
-      return;
-    }
-    if (state.isTickingCandidate && state.remainingSeconds > 0) {
-      _ensureTickRunning();
-    }
+    // Ticker runs whenever isTickingCandidate, independent of health state.
+    _ensureTickRunning();
   }
 
   void applyDriftCorrection(Duration delta) {
@@ -223,10 +229,6 @@ class TimerService extends Notifier<TimerRuntimeState> {
       final next = current.remainingSeconds - 1;
       state = current.copyWith(remainingSeconds: next < 0 ? 0 : next);
     });
-  }
-
-  bool _shouldRunTickerForHealth() {
-    return state.syncHealth != SyncHealth.healthy;
   }
 
   PomodoroStatus _statusForPhase(PomodoroPhase phase) {
