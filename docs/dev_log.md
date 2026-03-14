@@ -11192,3 +11192,38 @@ User provided exact current selectors/IDs for all 4 targets.
 
 - Run protocol for exact repro packet remains: no manual network cut, no manual pause/resume.
 - Stage C remains blocked until this device packet is executed and analyzed.
+
+---
+
+# 🔹 Block 585 — Claude/Codex role contract formalized (14/03/2026)
+
+## 📋 Context
+
+Collaboration needed explicit, non-ambiguous role boundaries between Claude
+(architecture/review) and Codex (implementation/tests), plus a mandatory
+handoff format to avoid drift during the sync rewrite.
+
+## ✔ Work completed
+
+- Updated `AGENTS.md` with an authoritative "Role Operating Model" section:
+  - Canonical source pointer to `docs/team_roles.md`
+  - Operational split (Claude vs Codex)
+  - Mandatory handoff payload
+  - Conflict-resolution rule against specs and guardrails
+- Replaced `docs/team_roles.md` with an operational contract:
+  - Role A (Claude) responsibilities and constraints
+  - Role B (Codex) responsibilities and constraints
+  - Mandatory handoff format
+  - Full-cutover enforcement rules ("no dual-path authority")
+  - Quick responsibility matrix
+
+## 📁 Updated files
+
+- `AGENTS.md`
+- `docs/team_roles.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- Process/documentation change only (no runtime logic change).
+- Existing uncommitted runtime work on rewrite branch remains untouched.
