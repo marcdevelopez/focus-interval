@@ -325,6 +325,18 @@ Future<void> _pumpQueue() async {
   await Future<void>.delayed(const Duration(milliseconds: 20));
 }
 
+String _ownershipSyncStateName(PomodoroViewModel vm) {
+  try {
+    final dynamic dynamicVm = vm;
+    final dynamic value = dynamicVm.ownershipSyncState;
+    if (value == null) return '__missing__';
+    if (value is Enum) return value.name;
+    return value.toString();
+  } catch (_) {
+    return '__missing__';
+  }
+}
+
 void main() {
   test('missing session holds sync when lastUpdatedAt is null', () async {
     final now = DateTime.now();
@@ -1708,18 +1720,180 @@ void main() {
 
   test(
     '[REWRITE-CORE] authoritative runtime transitions must originate from TimerService (Invariant 3)',
-    () {
-      fail(
-        'Invariant 3 contract gate: pending rewrite runtime. Add TimerService-backed start/pause/resume/cancel delegation and replace VM-owned authoritative transitions.',
+    () async {
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(id: 'group-rewrite-core-3', start: now);
+      final ownerSession = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        ownerDeviceId: deviceInfo.deviceId,
+        now: now,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(ownerSession);
+      final appModeService = AppModeService.memory();
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      addTearDown(() {
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      final vmSub = container.listen<PomodoroState>(
+        pomodoroViewModelProvider,
+        (_, __) {},
+      );
+      addTearDown(vmSub.close);
+
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      final runtimeBeforePause = container.read(timerServiceProvider);
+      expect(runtimeBeforePause.status.isActiveExecution, isTrue);
+
+      vm.pause();
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      await _pumpQueue();
+
+      final publishedAfterPause = sessionRepo.lastPublished;
+      expect(
+        publishedAfterPause?.status,
+        PomodoroStatus.paused,
+        reason:
+            'Invariant 3 setup: VM pause command path must publish a paused authoritative session snapshot.',
+      );
+
+      final runtimeAfterPause = container.read(timerServiceProvider);
+      expect(
+        runtimeAfterPause.status,
+        PomodoroStatus.paused,
+        reason:
+            'Invariant 3: vm.pause() must produce the corresponding authoritative transition in TimerService.',
       );
     },
   );
 
   test(
     '[REWRITE-CORE] ownership recovery must be deterministic via explicit recovery states (Invariant 4)',
-    () {
-      fail(
-        'Invariant 4 contract gate: pending rewrite runtime. Implement explicit ownership recovery state machine and assert deterministic transitions.',
+    () async {
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(id: 'group-rewrite-core-4', start: now);
+      final runningSnapshot = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        ownerDeviceId: 'other-device',
+        now: now,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(runningSnapshot);
+      final appModeService = AppModeService.memory();
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      addTearDown(() {
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      final vmSub = container.listen<PomodoroState>(
+        pomodoroViewModelProvider,
+        (_, __) {},
+      );
+      addTearDown(vmSub.close);
+
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      final initialOwnershipState = _ownershipSyncStateName(vm);
+      expect(
+        initialOwnershipState,
+        isNot('__missing__'),
+        reason:
+            'Invariant 4: PomodoroViewModel must expose ownershipSyncState as observable state.',
+      );
+
+      sessionRepo.emit(null);
+      await _pumpQueue();
+      await Future<void>.delayed(const Duration(seconds: 4));
+      await _pumpQueue();
+
+      final degradedState = _ownershipSyncStateName(vm);
+      expect(
+        degradedState,
+        equals('degraded'),
+        reason:
+            'Invariant 4: null-stream debounce expiry must transition to degraded.',
+      );
+
+      sessionRepo.emit(
+        PomodoroSession(
+          taskId: runningSnapshot.taskId,
+          groupId: runningSnapshot.groupId,
+          currentTaskId: runningSnapshot.currentTaskId,
+          currentTaskIndex: runningSnapshot.currentTaskIndex,
+          totalTasks: runningSnapshot.totalTasks,
+          dataVersion: runningSnapshot.dataVersion,
+          sessionRevision: runningSnapshot.sessionRevision + 1,
+          ownerDeviceId: runningSnapshot.ownerDeviceId,
+          status: runningSnapshot.status,
+          phase: runningSnapshot.phase,
+          currentPomodoro: runningSnapshot.currentPomodoro,
+          totalPomodoros: runningSnapshot.totalPomodoros,
+          phaseDurationSeconds: runningSnapshot.phaseDurationSeconds,
+          remainingSeconds: runningSnapshot.remainingSeconds,
+          accumulatedPausedSeconds: runningSnapshot.accumulatedPausedSeconds,
+          phaseStartedAt: runningSnapshot.phaseStartedAt,
+          currentTaskStartedAt: runningSnapshot.currentTaskStartedAt,
+          pausedAt: runningSnapshot.pausedAt,
+          lastUpdatedAt: now.add(const Duration(seconds: 10)),
+          finishedAt: runningSnapshot.finishedAt,
+          pauseReason: runningSnapshot.pauseReason,
+          ownershipRequest: runningSnapshot.ownershipRequest,
+        ),
+      );
+      await _pumpQueue();
+
+      final recoveredState = _ownershipSyncStateName(vm);
+      expect(
+        recoveredState,
+        equals(initialOwnershipState),
+        reason:
+            'Invariant 4: valid snapshot recovery must deterministically exit degraded to stable ownership state.',
       );
     },
   );

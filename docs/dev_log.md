@@ -11053,3 +11053,54 @@ contract-gate failures (Invariants 3/4/5). Invariant 5 became testable because
 - No new runtime `lib/` edits in this block.
 - Next runtime milestones remain Invariant 3 (authoritative TimerService command path)
   and Invariant 4 (deterministic ownership recovery state machine).
+
+---
+
+# 🔹 Block 582 — Stage B docs/test gate activated (14/03/2026)
+
+## 📋 Context
+
+After Stage A, rewrite baseline was `3 PASS / 2 FAIL`, but Invariants 3/4 still needed
+executable (non-placeholder) red tests tied to explicit Stage B contracts.
+
+## ✔ Work completed
+
+- Updated `docs/specs.md` with Stage B contracts:
+  - `10.4.10.8` command delegation contract (`_startInternal/_pauseInternal/_resumeInternal/cancel` -> `TimerService` APIs),
+  - `10.4.10.9` deterministic ownership recovery state machine contract
+    (`OwnershipSyncState`: `unloaded|owned|mirroring|degraded|recovery`).
+- Replaced Stage B contract gates in
+  `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`:
+  - Invariant 3 is now an executable red assertion (no `fail()` stub),
+  - Invariant 4 is now an executable red assertion (no `fail()` stub).
+- Stabilized Invariant 3 failure mode to avoid timeout/lifecycle race:
+  - switched from `vm.start()` timeout-prone path to deterministic `vm.pause()`
+    delegation check,
+  - kept failure focused on missing `TimerService` authoritative transition.
+
+## 🧪 Validation run (local)
+
+- Rewrite-only gate:
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart --plain-name "[REWRITE-CORE]" --reporter compact`
+  - Result: **3 PASS / 2 FAIL**
+  - PASS: Invariants 1, 2, 5
+  - FAIL (expected Stage B runtime pending):
+    - Invariant 3: `TimerService` status does not reflect `vm.pause()` authoritative command path yet
+    - Invariant 4: `ownershipSyncState` observable contract not exposed yet
+- Full smoke set:
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart test/presentation/timer_screen_syncing_overlay_test.dart --reporter compact`
+  - Result: **26 PASS / 2 FAIL**
+  - Only failing tests are the two expected Stage B rewrite invariants (3/4).
+
+## 📁 Updated files
+
+- `docs/specs.md`
+- `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- `docs/roadmap.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- No new runtime `lib/` edits in this block (docs/tests only).
+- Next step remains Stage B runtime implementation for Invariants 3/4.
