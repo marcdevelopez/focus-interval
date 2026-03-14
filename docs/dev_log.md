@@ -11104,3 +11104,59 @@ executable (non-placeholder) red tests tied to explicit Stage B contracts.
 
 - No new runtime `lib/` edits in this block (docs/tests only).
 - Next step remains Stage B runtime implementation for Invariants 3/4.
+
+---
+
+# 🔹 Block 583 — Stage B runtime green (Invariants 3/4) (14/03/2026)
+
+## 📋 Context
+
+After Block 582, Stage B had executable red tests for Invariants 3/4:
+- Invariant 3 failed because VM command intent (`pause`) did not update `TimerService` runtime status.
+- Invariant 4 failed because `PomodoroViewModel` did not expose observable `ownershipSyncState`.
+
+## ✔ Work completed
+
+### Commit A — `4112408`
+`refactor(f26): delegate vm start/pause/resume commands to timer service`
+
+- `PomodoroViewModel` now delegates command path to `TimerService`:
+  - `_startInternal` -> `_timerService.startTick(...)`
+  - `_pauseInternal` -> `_timerService.pauseTick()`
+  - `_resumeInternal` -> `_timerService.resumeTick()`
+- `TimerService` start/resume now respect health mode for ticker activation:
+  - ticker runs only when `syncHealth != healthy` (prevents reintroducing pending-timer regressions in healthy UI/widget scenarios).
+
+### Commit B — `617cae4`
+`refactor(f26): expose deterministic ownership sync state in vm`
+
+- Added `OwnershipSyncState` enum:
+  - `unloaded`, `owned`, `mirroring`, `degraded`, `recovery`
+- Added `PomodoroViewModel.ownershipSyncState` getter:
+  - returns deterministic stable states from current ownership snapshot,
+  - transitions to `degraded/recovery` while missing-session hold is active based on gap duration (`<45s` / `>=45s`).
+
+## 🧪 Validation run (local)
+
+- Rewrite gate:
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart --plain-name "[REWRITE-CORE]" --reporter compact`
+  - Result: **5 PASS / 0 FAIL**
+  - Invariants 1–5 all green.
+
+- Smoke suite:
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart test/presentation/timer_screen_syncing_overlay_test.dart --reporter compact`
+  - Result: **28 PASS / 0 FAIL**
+
+## 📁 Updated files
+
+- `lib/data/services/timer_service.dart`
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`
+- `lib/presentation/viewmodels/ownership_sync_state.dart`
+- `docs/roadmap.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- Stage B contract is now green locally.
+- Stage C (cleanup/removal of obsolete latch/freeze paths) and multi-device validation remain pending before closure.
