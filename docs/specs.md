@@ -2387,6 +2387,22 @@ Implementation and `[REWRITE-CORE]` tests are blocked until explicit contract re
   (created once per app start; disposed only when the container is disposed on app exit).
 - `PomodoroViewModel` becomes an adapter/projection layer and must not own
   authoritative runtime transitions.
+- Minimum `TimerRuntimeState` fields required by contract:
+  - `String? groupId`
+  - `String? currentTaskId`
+  - `PomodoroStatus status`
+  - `PomodoroPhase phase`
+  - `int remainingSeconds`
+  - `int totalSeconds`
+  - `int currentPomodoro`
+  - `int totalPomodoros`
+  - `DateTime? phaseStartedAt`
+  - `String? ownerDeviceId`
+  - `SyncHealth syncHealth`
+- `SyncHealth` values are fixed for rewrite v1:
+  - `healthy`
+  - `degraded`
+  - `recovery`
 
 #### 10.4.10.2 Stream-null policy (exact timing and UX behavior)
 
@@ -2406,7 +2422,36 @@ Implementation and `[REWRITE-CORE]` tests are blocked until explicit contract re
   changing multiple behavioral contracts in the same rewrite milestone.
 - Any future change to this threshold requires a dedicated specs delta and validation plan.
 
-#### 10.4.10.4 Cutover strategy
+#### 10.4.10.4 SessionSyncService API contract and relation to TimerService
+
+- Authority split:
+  - `TimerService` is authoritative for local runtime progression/tick.
+  - `SessionSyncService` is authoritative for remote session ingestion/reconciliation input only.
+- Integration direction is strictly one-way for runtime updates:
+  - `SessionSyncService` -> `TimerService`
+  - `TimerService` must not depend on callbacks from `SessionSyncService` to keep ticking.
+- `SessionSyncService` external API (minimum):
+  - `Future<void> forceResync()`
+  - `SyncHealth get currentHealth`
+- `SessionSyncService` -> `TimerService` required events (minimum contract):
+  - `applyOwnerSnapshot(PomodoroSession snapshot)`
+  - `applyDriftCorrection(Duration delta)`
+  - `notifySessionGap(Duration gap)`
+- While sync is degraded/recovery, timer progression must continue from
+  `TimerService` projection and must not block on network round-trips.
+
+#### 10.4.10.5 PomodoroViewModel adapter interface contract
+
+- In Stage A/B, UI continues reading `pomodoroViewModelProvider` with
+  `Notifier<PomodoroState>` interface for compatibility.
+- In Stage A/B, `PomodoroViewModel` reads from `TimerService` and maps runtime
+  state into `PomodoroState` for presentation.
+- `PomodoroViewModel` may remain `autoDispose` in Stage A/B because authoritative
+  runtime state is moved to persistent `TimerService`.
+- `PomodoroViewModel` must not own authoritative runtime transitions in rewrite v1.
+  Any start/pause/resume/cancel command must delegate to service layer contracts.
+
+#### 10.4.10.6 Cutover strategy
 
 - Rewrite cutover is **dual-path staged**, not big-bang replacement:
   1. Stage A: introduce `TimerService` + `SessionSyncService` with adapter hooks, while
@@ -2416,7 +2461,7 @@ Implementation and `[REWRITE-CORE]` tests are blocked until explicit contract re
 - During stages A/B, legacy behavior tests remain as regression guards until
   `[REWRITE-CORE]` parity coverage is complete.
 
-#### 10.4.10.5 Rewrite acceptance invariants (must be testable)
+#### 10.4.10.7 Rewrite acceptance invariants (must be testable)
 
 1. Timer must not freeze when Firestore stream emits null for any duration.
 2. `Syncing session...` must remain informational (visibility), never authoritative timer stop.

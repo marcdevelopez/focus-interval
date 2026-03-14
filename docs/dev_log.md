@@ -10873,3 +10873,40 @@ After Phase 6 failure (`P0-F26-005`), rewrite work moved to branch
 - No test changes in this block.
 - Next step is contract review/approval; only after approval can `[REWRITE-CORE]`
   tests be introduced.
+
+---
+
+# 🔹 Block 578 — Rewrite contract refinement: interfaces required for test design (14/03/2026)
+
+## 📋 Context
+
+Contract review feedback approved rewrite direction in principle but blocked
+`[REWRITE-CORE]` test authoring until concrete interfaces were defined.
+
+## ✔ Work completed
+
+- Refined `docs/specs.md` section 10.4.10 with concrete interface contracts:
+  - `TimerRuntimeState` minimal required fields (group/task/status/phase/remaining/
+    counters/phase anchor/owner/sync health).
+  - `SessionSyncService` API contract and strict one-way integration
+    (`SessionSyncService` -> `TimerService`) for runtime updates.
+  - `PomodoroViewModel` adapter contract for Stage A/B compatibility
+    (`Notifier<PomodoroState>` remains UI-facing while runtime authority lives
+    in persistent `TimerService`).
+- Kept ownership stale timeout policy at 45s and reaffirmed stream-null
+  non-freeze semantics.
+- Updated roadmap and validation ledger to reflect the refined contract and
+  continued review gate before tests/runtime edits.
+
+## 📁 Updated docs
+
+- `docs/specs.md`
+- `docs/roadmap.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- No runtime code changes in this block.
+- No tests added in this block.
+- Next step remains contract approval; only then `[REWRITE-CORE]` tests can start.

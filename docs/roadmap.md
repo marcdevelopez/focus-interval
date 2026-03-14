@@ -267,6 +267,11 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           docs-first contract drafting started. Runtime/tests are blocked until
           contract review approval (TimerService persistence model, stream-null
           UX policy, ownership timeout policy, and cutover strategy).
+      14/03/2026: Fix 26 rewrite contract refined with concrete interfaces:
+          `TimerRuntimeState` minimum fields, `SessionSyncService` API and
+          unidirectional sync->timer integration, and `PomodoroViewModel`
+          adapter contract for Stage A/B compatibility. Contract remains
+          review-gated before `[REWRITE-CORE]` tests.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
