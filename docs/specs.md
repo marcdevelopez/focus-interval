@@ -2373,7 +2373,103 @@ foreground owner must **not** freeze progression.
   - Apply retry backoff after transient failures to avoid repeated takeover
     storms during connectivity loss/resume windows.
 
-### **10.4.9. Ownership visibility in Run Mode**
+### 10.4.10 Fix 26 rewrite sync architecture contract (draft, review-gated)
+
+Status: draft contract on branch `rewrite-sync-architecture`.
+Implementation and `[REWRITE-CORE]` tests are blocked until explicit contract review approval.
+
+#### 10.4.10.1 Timer runtime authority and provider persistence model
+
+- `TimerService` must be implemented as an app-scope Riverpod service using
+  `NotifierProvider<TimerService, TimerRuntimeState>` (non-autoDispose).
+- `TimerService` must never use `autoDispose`.
+- `TimerService` instance lifetime must match the app `ProviderContainer` lifetime
+  (created once per app start; disposed only when the container is disposed on app exit).
+- `PomodoroViewModel` becomes an adapter/projection layer and must not own
+  authoritative runtime transitions.
+- Minimum `TimerRuntimeState` fields required by contract:
+  - `String? groupId`
+  - `String? currentTaskId`
+  - `PomodoroStatus status`
+  - `PomodoroPhase phase`
+  - `int remainingSeconds`
+  - `int totalSeconds`
+  - `int currentPomodoro`
+  - `int totalPomodoros`
+  - `DateTime? phaseStartedAt`
+  - `String? ownerDeviceId`
+  - `SyncHealth syncHealth`
+- `SyncHealth` values are fixed for rewrite v1:
+  - `healthy`
+  - `degraded`
+  - `recovery`
+
+#### 10.4.10.2 Stream-null policy (exact timing and UX behavior)
+
+- A stream `null` is never authoritative session deletion by itself.
+- Visibility and behavior thresholds:
+  - `< 3s` continuous null/missing: no visual change; keep normal runtime rendering.
+  - `>= 3s` and `< 45s`: show non-blocking `Syncing session...` informational overlay.
+    Timer countdown must continue from local authoritative projection.
+  - `>= 45s` (ownership stale threshold): enter explicit recovery state; keep timer rendering
+    active, but gate ownership-mutating actions until ownership/session is reconfirmed.
+- Freeze-on-null is forbidden. Null/missing stream may degrade sync confidence, not timer continuity.
+
+#### 10.4.10.3 Ownership stale threshold policy
+
+- Ownership stale timeout remains **45 seconds** in rewrite v1.
+- Rationale: preserve compatibility with existing ownership/request semantics and avoid
+  changing multiple behavioral contracts in the same rewrite milestone.
+- Any future change to this threshold requires a dedicated specs delta and validation plan.
+
+#### 10.4.10.4 SessionSyncService API contract and relation to TimerService
+
+- Authority split:
+  - `TimerService` is authoritative for local runtime progression/tick.
+  - `SessionSyncService` is authoritative for remote session ingestion/reconciliation input only.
+- Integration direction is strictly one-way for runtime updates:
+  - `SessionSyncService` -> `TimerService`
+  - `TimerService` must not depend on callbacks from `SessionSyncService` to keep ticking.
+- `SessionSyncService` external API (minimum):
+  - `Future<void> forceResync()`
+  - `SyncHealth get currentHealth`
+- `SessionSyncService` -> `TimerService` required events (minimum contract):
+  - `applyOwnerSnapshot(PomodoroSession snapshot)`
+  - `applyDriftCorrection(Duration delta)`
+  - `notifySessionGap(Duration gap)`
+- While sync is degraded/recovery, timer progression must continue from
+  `TimerService` projection and must not block on network round-trips.
+
+#### 10.4.10.5 PomodoroViewModel adapter interface contract
+
+- In Stage A/B, UI continues reading `pomodoroViewModelProvider` with
+  `Notifier<PomodoroState>` interface for compatibility.
+- In Stage A/B, `PomodoroViewModel` reads from `TimerService` and maps runtime
+  state into `PomodoroState` for presentation.
+- `PomodoroViewModel` may remain `autoDispose` in Stage A/B because authoritative
+  runtime state is moved to persistent `TimerService`.
+- `PomodoroViewModel` must not own authoritative runtime transitions in rewrite v1.
+  Any start/pause/resume/cancel command must delegate to service layer contracts.
+
+#### 10.4.10.6 Cutover strategy
+
+- Rewrite cutover is **dual-path staged**, not big-bang replacement:
+  1. Stage A: introduce `TimerService` + `SessionSyncService` with adapter hooks, while
+     legacy `PomodoroViewModel` paths still exist.
+  2. Stage B: switch Run Mode rendering/commands to the adapter backed by new services.
+  3. Stage C: remove obsolete latch/freeze paths from legacy VM once parity is validated.
+- During stages A/B, legacy behavior tests remain as regression guards until
+  `[REWRITE-CORE]` parity coverage is complete.
+
+#### 10.4.10.7 Rewrite acceptance invariants (must be testable)
+
+1. Timer must not freeze when Firestore stream emits null for any duration.
+2. `Syncing session...` must remain informational (visibility), never authoritative timer stop.
+3. Authoritative runtime transitions must originate from `TimerService`, not UI widgets.
+4. Ownership recovery must be deterministic with explicit states/transitions.
+5. `PomodoroViewModel` disposal/rebuild must not reset runtime continuity.
+
+### **10.4.11 Ownership visibility in Run Mode**
 
 - The owner/mirror rule must be visible and understandable without banners.
 - Show a persistent, compact indicator in the Run Mode header:
