@@ -716,6 +716,21 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _markTimelinePhaseStarted(now: now);
     _bumpSessionRevision();
     _publishCurrentSession(now: now);
+    final groupId = _currentGroup?.id;
+    final phase = _machine.state.phase ?? PomodoroPhase.pomodoro;
+    if (groupId != null) {
+      _timerService.startTick(
+        remainingSeconds: _machine.state.remainingSeconds,
+        totalSeconds: _machine.state.totalSeconds,
+        phase: phase,
+        status: _machine.state.status,
+        groupId: groupId,
+        currentPomodoro: _machine.state.currentPomodoro,
+        totalPomodoros: _machine.state.totalPomodoros,
+        phaseStartedAt: _localPhaseStartedAt,
+        ownerDeviceId: _deviceInfo.deviceId,
+      );
+    }
     _markAwaitingSessionConfirmation();
   }
 
@@ -804,6 +819,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _machine.pause();
     _bumpSessionRevision();
     _publishCurrentSession(now: now);
+    _timerService.pauseTick();
     _markAwaitingSessionConfirmation();
   }
 
@@ -834,6 +850,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     }
     _bumpSessionRevision();
     _publishCurrentSession(now: now);
+    _timerService.resumeTick();
     _markAwaitingSessionConfirmation();
   }
 
