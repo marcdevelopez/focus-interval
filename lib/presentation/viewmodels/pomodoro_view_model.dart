@@ -1424,7 +1424,11 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
           _mirrorTimer?.cancel();
           _remoteOwnerId = null;
           _remoteSession = null;
-          _timerService.stopTick();
+          // Do not stop the ticker here. TimerService is the sole countdown
+          // authority; it must not be killed by a stream null (which can be
+          // transient — stale group cache, reconnect, VM rebuild).  When the
+          // session truly ends the ticker is stopped via stopTick() in the
+          // explicit user-stop path (_stopInternal) or group-stream termination.
           _localPhaseStartedAt = null;
           _pauseStartedAt = null;
           _lastAutoTakeoverAttemptAt = null;
