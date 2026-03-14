@@ -2469,6 +2469,53 @@ Implementation and `[REWRITE-CORE]` tests are blocked until explicit contract re
 4. Ownership recovery must be deterministic with explicit states/transitions.
 5. `PomodoroViewModel` disposal/rebuild must not reset runtime continuity.
 
+#### 10.4.10.8 Stage B command-delegation contract (authoritative runtime path)
+
+- Stage B introduces explicit command-to-service delegation for runtime authority.
+- For user control commands, `PomodoroViewModel` must produce observable transitions in
+  `TimerService` state:
+  - `_startInternal` (success path after session claim) -> `TimerService.startTick(...)`
+  - `_pauseInternal` -> `TimerService.pauseTick()`
+  - `_resumeInternal` -> `TimerService.resumeTick()`
+  - `cancel()` -> `TimerService.stopTick()`
+- `applyOwnerSnapshot(...)` remains valid as sync ingestion path (not command delegation).
+- Stage B minimum acceptance for Invariant 3:
+  - after `vm.start()` succeeds, `timerServiceProvider.state.status.isActiveExecution`
+    must be `true` in the same `ProviderContainer` context.
+- Scope boundary for Stage B:
+  - phase-transition orchestration (`pomodoro -> break`, etc.) may remain in legacy VM/machine
+    path for now,
+  - but command intent must be reflected in `TimerService` as authoritative runtime state.
+
+#### 10.4.10.9 Stage B deterministic ownership recovery state machine
+
+- Stage B replaces ad-hoc ownership-recovery signaling (`_sessionMissingWhileRunning` + timers)
+  with an explicit, testable state machine exposed by `PomodoroViewModel`.
+- Required observable enum contract:
+
+```dart
+enum OwnershipSyncState {
+  unloaded,   // no group loaded
+  owned,      // this device is owner, stream healthy
+  mirroring,  // another device is owner, stream healthy
+  degraded,   // stream missing/null < 45s, timer continues
+  recovery,   // stream missing/null >= 45s, ownership-mutating actions gated
+}
+```
+
+- Required adapter exposure:
+  - `PomodoroViewModel` must expose `OwnershipSyncState get ownershipSyncState`.
+- Deterministic transition requirements (minimum):
+  - healthy owner snapshot for current group -> `owned` or `mirroring` (based on owner id),
+  - missing/null stream debounce expiry (>=3s and <45s) -> `degraded`,
+  - gap >=45s -> `recovery`,
+  - valid active snapshot recovery -> deterministic exit to `owned`/`mirroring`
+    with no ambiguous intermediate state.
+- Stage B minimum acceptance for Invariant 4:
+  - test scenario must assert state transition sequence
+    `mirroring -> degraded -> mirroring` (or `owned -> degraded -> owned`)
+    using only observable VM state, not debug logs.
+
 ### **10.4.11 Ownership visibility in Run Mode**
 
 - The owner/mirror rule must be visible and understandable without banners.

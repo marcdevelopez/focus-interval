@@ -286,6 +286,13 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           VM dispose/rebuild continuity test implemented and PASS; updated
           `[REWRITE-CORE]` baseline is now 3 PASS / 2 FAIL (remaining
           intentional gates: Invariants 3 and 4).
+      14/03/2026: Fix 26 rewrite Stage B docs/test gate opened:
+          specs section 10.4.10 expanded with Stage B command delegation
+          contract (`10.4.10.8`) and deterministic ownership recovery state
+          machine contract (`10.4.10.9`); Invariants 3/4 replaced from
+          `fail()` placeholders to executable red tests with deterministic
+          expectations. Baseline remains 3 PASS / 2 FAIL, now with actionable
+          failures only (no timeout/lifecycle race in rewrite tests).
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
@@ -380,8 +387,8 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
   2026-03-14; Phase 6 B1+B2 patch verified insufficient — latch fires from spontaneous Firestore
   stream null independent of VM disposal; all focalized hardenings exhausted; solution requires
   decoupling timer from session stream, persistent (non-autoDispose) timer service, optimistic
-  rendering, and deterministic recovery state machine; contract review must be approved before
-  `[REWRITE-CORE]` tests or runtime edits).
+  rendering, and deterministic recovery state machine; rewrite contract is approved, Stage A is
+  complete, and Stage B runtime remains pending behind executable red tests for Invariants 3/4).
 - Phase 13 — Mirror must not start behind on resume (stale lastUpdatedAt compensation) (bug).
 - Phase 10 — Task Editor: total time chip + task color picker (new requirement).
 - Phase 9 — Task List: group name input + group summary + per-task total time + selection reset (new requirement).
