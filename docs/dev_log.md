@@ -25,9 +25,9 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **Fix 26 Phase 6 device validation FAILED (rewrite required)**
-Current focus: **Fix 26 rewrite runtime ready for multi-device validation packet (4-device soak)**
-Last update: **14/03/2026**
+Last bug fix: **Fix 26 rewrite Stage C follow-up packet (O-1/O-2) implemented locally**
+Current focus: **Fix 26 rewrite pass2 soak evidence review for closure**
+Last update: **16/03/2026**
 
 ---
 
@@ -11340,3 +11340,55 @@ be closed before device validation could produce a valid result.
 - Stage C device validation can now proceed against this updated baseline.
 - Open bugs out of scope for this rewrite (BUG-002, 003, 004, 005, 006, 009) remain
   tracked in bug_log.md and are not blocked by Stage C.
+
+---
+
+# 🔹 Block 588 — Stage C pass1 review follow-up (`O-1` + `O-2`) implemented (16/03/2026)
+
+## 📋 Context
+
+Stage C pass1 logs (`c0add32`) were reviewed and accepted for the target P0 vectors
+(`AP-1`/`AP-2` not reproduced). The review produced two implementation follow-ups:
+- `O-1`: avoid hold-loop at natural session boundary (`finished -> null`) when
+  group terminality is already corroborated.
+- `O-2`: eliminate delayed async/timer callback paths that can use `Ref` after VM
+  disposal.
+
+## ✔ Work completed
+
+- `SessionSyncService` terminal-boundary reconciliation:
+  - non-active terminal snapshots can now be reconciled against
+    `TaskRunGroup.status` (`completed`/`canceled`) before hold escalation.
+  - when corroborated terminal, the terminal snapshot is applied to
+    `TimerService`, hold/retry loop is cleared, and recovery state returns to idle.
+  - added in-flight dedupe guards to prevent duplicate terminal reconciliation.
+- `PomodoroViewModel` dispose safety hardening:
+  - added `ref.mounted` guards in delayed callbacks and async recovery/resync paths
+    before any `ref.read` or state mutation.
+  - hardened post-resume and periodic callbacks so they self-cancel/no-op after
+    provider disposal.
+- Regression tests extended:
+  - terminal snapshot + terminal group corroboration does not enter hold loop.
+  - post-resume delayed resync callback does not use disposed ref.
+
+## 🧪 Validation run (local)
+
+- `dart format lib/presentation/viewmodels/session_sync_service.dart lib/presentation/viewmodels/pomodoro_view_model.dart test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- `flutter analyze` → **No issues found**.
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart test/presentation/timer_screen_syncing_overlay_test.dart` → **PASS**.
+
+## 📁 Updated files
+
+- `lib/presentation/viewmodels/session_sync_service.dart`
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`
+- `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`
+- `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- `P0-F26-006` remains **In validation** until Stage C pass2 soak logs are
+  reviewed (`android` + `macOS`) against hold/overlay closure criteria.

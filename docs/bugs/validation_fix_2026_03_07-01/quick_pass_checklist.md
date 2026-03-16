@@ -571,7 +571,105 @@ Result:
 
 ## 2026-03-14 Rewrite Stage C device packet (baseline `c0add32`) — command reference
 
-Status: **PLANNED** (normalized run commands for copy/paste)
+Status: **Pass 1 (1h) COMPLETE + architecturally approved; pass 2 (soak +4h) IN PROGRESS (2026-03-16)**
+
+### Pass 1 evidence (2026-03-14, 1h, all 4 devices)
+- Logs already captured (see `/logs/2026-03-14_fix26_rewrite_stageC_c0add32_pass1_1h_*`)
+- Claude architectural review (2026-03-16): **PASS** for P0 vectors (AP-1/AP-2 not reproduced).
+- Follow-up observations from review:
+  - `O-1`: hold can latch on natural session boundary (`finished -> null`) if terminal corroboration is delayed.
+  - `O-2`: late async callbacks can hit `Ref` after VM dispose in recovery/resync paths (macOS signal).
+
+### Pass 2 — soak +4h Android + macOS (2026-03-16)
+
+Objetivo: soak continuo en los dos devices de mayor riesgo mientras se trabaja en
+paralelo. Si aparece `Syncing session...` irrecuperable quedará en log para revisión.
+
+```bash
+LOG_DIR="/Users/devcodex/development/focus_interval/docs/bugs/validation_fix_2026_03_07-01/logs"
+
+# Android RMX3771 via USB (debug)
+flutter run -v --debug -d RMX3771 \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-16_fix26_rewrite_stageC_c0add32_pass2_4h_android_RMX3771_debug.log"
+
+# macOS (debug)
+flutter run -v --debug -d macos \
+  --dart-define=APP_ENV=prod \
+  --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee "$LOG_DIR/2026-03-16_fix26_rewrite_stageC_c0add32_pass2_4h_macos_debug.log"
+```
+
+#### Triage después del soak — buscar señales del bug
+
+```bash
+# --- Android ---
+LOG="$LOG_DIR/2026-03-16_fix26_rewrite_stageC_c0add32_pass2_4h_android_RMX3771_debug.log"
+
+# ¿Entró en hold? ¿Salió?
+grep -E "\[HoldDiag\]" "$LOG"
+
+# ¿Se cerró _sessionSub inesperadamente?
+grep -E "\[SessionSub\]" "$LOG"
+
+# ¿Se destruyó el VM durante sesión activa?
+grep -E "\[VMLifecycle\]" "$LOG"
+
+# ¿Apareció el overlay? ¿Cuántas veces?
+grep -E "\[SyncOverlay\]|Syncing session" "$LOG" | wc -l
+grep -E "\[SyncOverlay\]|Syncing session" "$LOG"
+
+# ¿Hubo errores Firestore o excepciones?
+grep -E "cloud_firestore/unavailable|UnknownHostException|Unhandled Exception" "$LOG"
+
+# ¿Hubo token refresh (trigger AP-1)?
+grep -E "runningExpiry|FirebaseAuth|token.refresh" "$LOG"
+
+# --- macOS ---
+LOG="$LOG_DIR/2026-03-16_fix26_rewrite_stageC_c0add32_pass2_4h_macos_debug.log"
+grep -E "\[HoldDiag\]|\[SessionSub\]|\[VMLifecycle\]|\[SyncOverlay\]|Syncing session" "$LOG"
+grep -E "cloud_firestore/unavailable|UnknownHostException|Unhandled Exception|runningExpiry" "$LOG"
+```
+
+#### Criterio de alarma (pasar log a Claude para revisión)
+
+- `[HoldDiag] hold-enter` aparece pero NO seguido de `hold-exit` en los siguientes 30s → **freeze**
+- `[SessionSub] close reason=provider-dispose` durante sesión activa → **AP-1 vector activo**
+- `Syncing session` presente más de 60s sin `hold-exit` → **freeze confirmado**
+- Si ninguna de estas condiciones aparece → **soak PASS**
+
+### 2026-03-16 — Codex implementation packet for Stage C observations (`O-1`, `O-2`)
+
+Status: **IMPLEMENTED (local validation PASS) — device soak evidence pending**
+
+Scope implemented:
+- `O-1` (session-boundary hold suppression): `SessionSyncService` now accepts a terminal
+  non-active snapshot only after corroborating terminal `TaskRunGroup.status`
+  (`completed` / `canceled`) and clears hold/recovery loop through the single sync path.
+- `O-2` (ref-after-dispose hardening): VM async/timer callbacks now guard on `ref.mounted`
+  before any `ref.read`/state mutation in delayed recovery/resync paths.
+
+Code/tests touched:
+- `lib/presentation/viewmodels/session_sync_service.dart`
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`
+- `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+
+Local validation evidence:
+- `flutter analyze` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart test/presentation/timer_screen_syncing_overlay_test.dart` → PASS
+- New regression tests added:
+  - terminal snapshot + terminal group corroboration does not enter hold loop
+  - post-resume resync callback does not use disposed ref
+
+Next mandatory gate:
+- Keep Stage C pass 2 soak running and review
+  `2026-03-16_fix26_rewrite_stageC_c0add32_pass2_4h_{android,macos}_debug.log`
+  against hold/overlay criteria before closure.
+
+---
+
+### Pass 1 — todos los devices (2026-03-14, archived)
 
 ```bash
 LOG_DIR="/Users/devcodex/development/focus_interval/docs/bugs/validation_fix_2026_03_07-01/logs"

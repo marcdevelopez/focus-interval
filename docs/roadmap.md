@@ -299,6 +299,16 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           (`unloaded|owned|mirroring|degraded|recovery`) per contract.
           `[REWRITE-CORE]` is now 5 PASS / 0 FAIL; local smoke suite is
           28 PASS / 0 FAIL.
+      16/03/2026: Fix 26 rewrite Stage C pass1 (baseline `c0add32`) reviewed
+          from 4-device packet logs (`android/ios/macos/chrome`):
+          AP-1/AP-2 vectors not reproduced; pass1 accepted for P0 objective.
+      16/03/2026: Stage C follow-up implementation packet completed for
+          observations `O-1` and `O-2`:
+          terminal-boundary hold suppression added to `SessionSyncService`
+          (terminal snapshot requires terminal group corroboration) and
+          ref-after-dispose hardening added in delayed VM callbacks (`ref.mounted`
+          guards). Local analyze/test gate PASS; closure still blocked by pass2
+          soak evidence review.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
@@ -394,7 +404,8 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
   stream null independent of VM disposal; all focalized hardenings exhausted; solution requires
   decoupling timer from session stream, persistent (non-autoDispose) timer service, optimistic
   rendering, and deterministic recovery state machine; rewrite contract is approved, Stages A/B
-  are complete and locally green, and next gate is Stage C cleanup + multi-device validation).
+  are complete and locally green; Stage C pass1 was approved and O-1/O-2 follow-up
+  implementation is merged locally; final gate is pass2 soak evidence review for closure).
 - Phase 13 — Mirror must not start behind on resume (stale lastUpdatedAt compensation) (bug).
 - Phase 10 — Task Editor: total time chip + task color picker (new requirement).
 - Phase 9 — Task List: group name input + group summary + per-task total time + selection reset (new requirement).

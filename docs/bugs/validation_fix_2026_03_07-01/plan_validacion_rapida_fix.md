@@ -760,3 +760,48 @@ flutter run -v --debug -d chrome \
   --dart-define=ALLOW_PROD_IN_DEBUG=true \
   2>&1 | tee "$LOG_DIR/2026-03-14_fix26_rewrite_stageC_c0add32_pass1_1h_chrome_debug.log"
 ```
+
+## 2026-03-16 — Stage C pass1 review outcome + Codex follow-up packet
+
+Status: **P0 vectors PASS in pass1; follow-up implementation local PASS; soak evidence pending**
+
+Architectural review outcome (Claude, based on Stage C pass1 logs):
+- `AP-1` (`runningExpiry` -> provider rebuild -> stream detach) not reproduced.
+- `AP-2` (network cut -> immediate irrecoverable hold) not reproduced.
+- Stage C pass1 accepted for target P0 vectors.
+- Two follow-up observations assigned to Codex:
+  - `O-1`: suppress terminal-boundary hold loop (`finished -> null`) when group terminality is corroborated.
+  - `O-2`: harden against `Ref` usage after VM disposal in delayed recovery/resync callbacks.
+
+Codex implementation scope completed:
+- `lib/presentation/viewmodels/session_sync_service.dart`
+  - terminal snapshot reconciliation with `TaskRunGroup` corroboration before hold path.
+  - dedup/in-flight guards for terminal reconciliation path.
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`
+  - mounted-guard hardening for async/timer callbacks (`ref.mounted` checks) across recovery/resync paths.
+- `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+  - added regressions for `O-1` and `O-2`.
+
+Local validation executed:
+
+```bash
+dart format lib/presentation/viewmodels/session_sync_service.dart \
+  lib/presentation/viewmodels/pomodoro_view_model.dart \
+  test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart
+
+flutter analyze
+
+flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart \
+  test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart \
+  test/presentation/timer_screen_syncing_overlay_test.dart
+```
+
+Result:
+- `flutter analyze` PASS (`No issues found`).
+- Targeted test suite PASS (`All tests passed`).
+
+Next action (closure gate unchanged):
+- Complete and analyze Stage C pass2 soak logs:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-16_fix26_rewrite_stageC_c0add32_pass2_4h_android_RMX3771_debug.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-16_fix26_rewrite_stageC_c0add32_pass2_4h_macos_debug.log`
+- Only then decide final closure status for `P0-F26-006`.

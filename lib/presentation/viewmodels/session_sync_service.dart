@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/pomodoro_session.dart';
+import '../../data/models/task_run_group.dart';
 import '../../data/services/app_mode_service.dart';
 import '../../domain/pomodoro_machine.dart';
 import '../providers.dart';
@@ -27,12 +28,12 @@ class SessionSyncState {
   });
 
   factory SessionSyncState.initial() => const SessionSyncState(
-        holdActive: false,
-        latestSession: null,
-        lastActiveAt: null,
-        attachedGroupId: null,
-        recoveryStatus: RecoveryStatus.idle,
-      );
+    holdActive: false,
+    latestSession: null,
+    lastActiveAt: null,
+    attachedGroupId: null,
+    recoveryStatus: RecoveryStatus.idle,
+  );
 
   SessionSyncState copyWith({
     bool? holdActive,
@@ -44,8 +45,9 @@ class SessionSyncState {
   }) {
     return SessionSyncState(
       holdActive: holdActive ?? this.holdActive,
-      latestSession:
-          clearLatestSession ? null : (latestSession ?? this.latestSession),
+      latestSession: clearLatestSession
+          ? null
+          : (latestSession ?? this.latestSession),
       lastActiveAt: lastActiveAt ?? this.lastActiveAt,
       attachedGroupId: attachedGroupId ?? this.attachedGroupId,
       recoveryStatus: recoveryStatus ?? this.recoveryStatus,
@@ -74,6 +76,8 @@ class SessionSyncService extends Notifier<SessionSyncState> {
   ProviderSubscription<AsyncValue<PomodoroSession?>>? _sessionSub;
   DateTime? _lastRecoveryAttemptAt;
   Future<void>? _recoveryInFlight;
+  Future<void>? _terminalReconcileInFlight;
+  String? _terminalReconcileKey;
 
   @override
   SessionSyncState build() {
@@ -95,6 +99,8 @@ class SessionSyncService extends Notifier<SessionSyncState> {
     _recoveryRetryTimer?.cancel();
     _recoveryRetryTimer = null;
     _recoveryInFlight = null;
+    _terminalReconcileInFlight = null;
+    _terminalReconcileKey = null;
     _lastRecoveryAttemptAt = null;
     if (state.attachedGroupId != groupId) {
       // Switching groups: reset sync state for the new group.
@@ -119,6 +125,8 @@ class SessionSyncService extends Notifier<SessionSyncState> {
     _recoveryRetryTimer?.cancel();
     _recoveryRetryTimer = null;
     _recoveryInFlight = null;
+    _terminalReconcileInFlight = null;
+    _terminalReconcileKey = null;
     _lastRecoveryAttemptAt = null;
     _sessionSub?.close();
     _sessionSub = null;
@@ -156,6 +164,7 @@ class SessionSyncService extends Notifier<SessionSyncState> {
     // This prevents stale terminal/transitional snapshots from overriding
     // an active countdown that still has authoritative runtime continuity.
     if (shouldIgnoreNonActive) {
+      _maybeReconcileTerminalSnapshot(session, wasHold: wasHold);
       if (state.recoveryStatus != RecoveryStatus.failed) {
         state = state.copyWith(recoveryStatus: RecoveryStatus.failed);
       }
@@ -206,9 +215,7 @@ class SessionSyncService extends Notifier<SessionSyncState> {
     }
     if (state.holdActive) {
       // Already in hold — extend and refresh TimerService health.
-      ref
-          .read(timerServiceProvider.notifier)
-          .notifySessionGap(_gapDuration());
+      ref.read(timerServiceProvider.notifier).notifySessionGap(_gapDuration());
       if (kDebugMode) {
         debugPrint('[SessionSync] hold extended — null stream while ticking');
       }
@@ -257,6 +264,71 @@ class SessionSyncService extends Notifier<SessionSyncState> {
     if (lastAt == null) return const Duration(seconds: 3);
     final gap = DateTime.now().difference(lastAt);
     return gap.isNegative ? Duration.zero : gap;
+  }
+
+  bool _isTerminalSessionStatus(PomodoroStatus status) {
+    return status == PomodoroStatus.finished || status == PomodoroStatus.idle;
+  }
+
+  void _maybeReconcileTerminalSnapshot(
+    PomodoroSession session, {
+    required bool wasHold,
+  }) {
+    if (!_isTerminalSessionStatus(session.status)) return;
+    final key =
+        '${session.groupId}:${session.sessionRevision}:${session.status.name}:'
+        '${session.lastUpdatedAt?.microsecondsSinceEpoch ?? -1}';
+    if (_terminalReconcileKey == key && _terminalReconcileInFlight != null) {
+      return;
+    }
+    final future = _reconcileTerminalSnapshot(session, wasHold: wasHold);
+    _terminalReconcileKey = key;
+    _terminalReconcileInFlight = future;
+    unawaited(
+      future.whenComplete(() {
+        if (identical(_terminalReconcileInFlight, future)) {
+          _terminalReconcileInFlight = null;
+          _terminalReconcileKey = null;
+        }
+      }),
+    );
+  }
+
+  Future<void> _reconcileTerminalSnapshot(
+    PomodoroSession session, {
+    required bool wasHold,
+  }) async {
+    try {
+      final groupId = session.groupId;
+      if (groupId == null || groupId.isEmpty) return;
+      final repo = ref.read(taskRunGroupRepositoryProvider);
+      final group = await repo.getById(groupId);
+      if (!_isSessionForGroup(session)) return;
+      final isTerminalGroup =
+          group?.status == TaskRunStatus.completed ||
+          group?.status == TaskRunStatus.canceled;
+      if (!isTerminalGroup) return;
+      _latchTimer?.cancel();
+      _latchTimer = null;
+      _recoveryRetryTimer?.cancel();
+      _recoveryRetryTimer = null;
+      ref.read(timerServiceProvider.notifier).applyOwnerSnapshot(session);
+      state = state.copyWith(
+        holdActive: false,
+        latestSession: session,
+        lastActiveAt: DateTime.now(),
+        recoveryStatus: RecoveryStatus.idle,
+      );
+      if (kDebugMode) {
+        debugPrint(
+          '[SessionSync] terminal snapshot accepted after group corroboration '
+          'hold=$wasHold '
+          'groupId=${session.groupId} status=${session.status.name}',
+        );
+      }
+    } catch (_) {
+      // Keep existing non-active ignore behavior when corroboration fails.
+    }
   }
 
   Future<void> _attemptRecovery({required String trigger}) async {

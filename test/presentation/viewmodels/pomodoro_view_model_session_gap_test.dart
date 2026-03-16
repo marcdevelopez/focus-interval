@@ -87,12 +87,16 @@ class FakeTaskRunGroupRepository implements TaskRunGroupRepository {
 }
 
 class FakePomodoroSessionRepository implements PomodoroSessionRepository {
-  FakePomodoroSessionRepository(this._initialSession);
+  FakePomodoroSessionRepository(
+    this._initialSession, {
+    Duration fetchDelay = Duration.zero,
+  }) : _fetchDelay = fetchDelay;
 
   final StreamController<PomodoroSession?> _controller =
       StreamController<PomodoroSession?>.broadcast();
   PomodoroSession? _lastSession;
   PomodoroSession? _initialSession;
+  final Duration _fetchDelay;
   int publishCount = 0;
   PomodoroSession? lastPublished;
 
@@ -117,6 +121,9 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
 
   @override
   Future<PomodoroSession?> fetchSession({bool preferServer = false}) async {
+    if (_fetchDelay > Duration.zero) {
+      await Future<void>.delayed(_fetchDelay);
+    }
     return _lastSession;
   }
 
@@ -873,18 +880,46 @@ void main() {
   );
 
   test(
-    'stream AsyncError does not trigger missing-session hold latch',
+    'terminal session snapshot with terminal group corroboration does not enter hold loop',
     () async {
       final now = DateTime.now();
-      final group = _buildRunningGroup(id: 'group-stream-error-ignore', start: now);
-      final session = _buildRunningSession(
-        groupId: group.id,
-        taskId: group.tasks.first.sourceTaskId,
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final runningGroup = _buildRunningGroup(
+        id: 'group-terminal-boundary',
+        start: now,
+      );
+      final runningSession = _buildRunningSession(
+        groupId: runningGroup.id,
+        taskId: runningGroup.tasks.first.sourceTaskId,
         ownerDeviceId: 'other-device',
         now: now,
       );
-      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
-      final sessionRepo = FakePomodoroSessionRepository(session);
+      final terminalSession = PomodoroSession(
+        taskId: runningSession.taskId,
+        groupId: runningSession.groupId,
+        currentTaskId: runningSession.currentTaskId,
+        currentTaskIndex: runningSession.currentTaskIndex,
+        totalTasks: runningSession.totalTasks,
+        dataVersion: runningSession.dataVersion,
+        sessionRevision: runningSession.sessionRevision + 1,
+        ownerDeviceId: runningSession.ownerDeviceId,
+        status: PomodoroStatus.finished,
+        phase: runningSession.phase,
+        currentPomodoro: runningSession.currentPomodoro,
+        totalPomodoros: runningSession.totalPomodoros,
+        phaseDurationSeconds: runningSession.phaseDurationSeconds,
+        remainingSeconds: 0,
+        accumulatedPausedSeconds: runningSession.accumulatedPausedSeconds,
+        phaseStartedAt: runningSession.phaseStartedAt,
+        currentTaskStartedAt: runningSession.currentTaskStartedAt,
+        pausedAt: null,
+        lastUpdatedAt: now.add(const Duration(seconds: 1)),
+        finishedAt: now.add(const Duration(seconds: 1)),
+        pauseReason: null,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(runningGroup);
+      final sessionRepo = FakePomodoroSessionRepository(runningSession);
       final appModeService = AppModeService.memory();
 
       final container = ProviderContainer(
@@ -892,6 +927,7 @@ void main() {
           taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
           pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
           appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
           soundServiceProvider.overrideWithValue(FakeSoundService()),
           timeSyncServiceProvider.overrideWithValue(
             FakeTimeSyncService(offset: Duration.zero),
@@ -908,11 +944,20 @@ void main() {
 
       container.listen<PomodoroState>(pomodoroViewModelProvider, (_, __) {});
       final vm = container.read(pomodoroViewModelProvider.notifier);
-      final result = await vm.loadGroup(group.id);
+      final result = await vm.loadGroup(runningGroup.id);
       expect(result, PomodoroGroupLoadResult.loaded);
       await _pumpQueue();
 
-      sessionRepo.emitError(StateError('stream-error'));
+      await groupRepo.save(
+        runningGroup.copyWith(
+          status: TaskRunStatus.completed,
+          updatedAt: now.add(const Duration(seconds: 1)),
+        ),
+      );
+      sessionRepo.emit(terminalSession);
+      await _pumpQueue();
+
+      sessionRepo.emit(null);
       await _pumpQueue();
       await Future<void>.delayed(const Duration(seconds: 4));
       await _pumpQueue();
@@ -921,10 +966,70 @@ void main() {
         vm.isSessionMissingWhileRunning,
         isFalse,
         reason:
-            'AsyncError must be ignored by SessionSyncService and never treated as null session.',
+            'Terminal boundary must not leave VM in missing-session hold when group is already terminal.',
+      );
+      expect(
+        container.read(sessionSyncServiceProvider).holdActive,
+        isFalse,
+        reason:
+            'SessionSyncService must clear/suppress hold once terminal snapshot is corroborated.',
       );
     },
   );
+
+  test('stream AsyncError does not trigger missing-session hold latch', () async {
+    final now = DateTime.now();
+    final group = _buildRunningGroup(
+      id: 'group-stream-error-ignore',
+      start: now,
+    );
+    final session = _buildRunningSession(
+      groupId: group.id,
+      taskId: group.tasks.first.sourceTaskId,
+      ownerDeviceId: 'other-device',
+      now: now,
+    );
+    final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+    final sessionRepo = FakePomodoroSessionRepository(session);
+    final appModeService = AppModeService.memory();
+
+    final container = ProviderContainer(
+      overrides: [
+        taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+        pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+        appModeServiceProvider.overrideWithValue(appModeService),
+        soundServiceProvider.overrideWithValue(FakeSoundService()),
+        timeSyncServiceProvider.overrideWithValue(
+          FakeTimeSyncService(offset: Duration.zero),
+        ),
+      ],
+    );
+    addTearDown(() {
+      sessionRepo.dispose();
+      container.dispose();
+    });
+
+    await container.read(appModeProvider.notifier).setAccount();
+    await _pumpQueue();
+
+    container.listen<PomodoroState>(pomodoroViewModelProvider, (_, __) {});
+    final vm = container.read(pomodoroViewModelProvider.notifier);
+    final result = await vm.loadGroup(group.id);
+    expect(result, PomodoroGroupLoadResult.loaded);
+    await _pumpQueue();
+
+    sessionRepo.emitError(StateError('stream-error'));
+    await _pumpQueue();
+    await Future<void>.delayed(const Duration(seconds: 4));
+    await _pumpQueue();
+
+    expect(
+      vm.isSessionMissingWhileRunning,
+      isFalse,
+      reason:
+          'AsyncError must be ignored by SessionSyncService and never treated as null session.',
+    );
+  });
 
   test(
     'stream AsyncLoading does not trigger missing-session hold latch',
@@ -1272,6 +1377,88 @@ void main() {
       );
     },
   );
+
+  test('post-resume resync callback does not use disposed ref', () async {
+    final errors = <Object>[];
+    await runZonedGuarded(
+      () async {
+        final now = DateTime.now();
+        final deviceInfo = DeviceInfoService.ephemeral();
+        final group = _buildRunningGroup(
+          id: 'group-dispose-safe-resync',
+          start: now,
+        );
+        final session = _buildRunningSession(
+          groupId: group.id,
+          taskId: group.tasks.first.sourceTaskId,
+          ownerDeviceId: 'other-device',
+          now: now,
+        );
+
+        final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+        final sessionRepo = FakePomodoroSessionRepository(
+          session,
+          fetchDelay: const Duration(milliseconds: 600),
+        );
+        final appModeService = AppModeService.memory();
+
+        final container = ProviderContainer(
+          overrides: [
+            taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+            pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+            appModeServiceProvider.overrideWithValue(appModeService),
+            deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+            soundServiceProvider.overrideWithValue(FakeSoundService()),
+            timeSyncServiceProvider.overrideWithValue(
+              FakeTimeSyncService(offset: Duration.zero),
+            ),
+          ],
+        );
+
+        final vmSub = container.listen<PomodoroState>(
+          pomodoroViewModelProvider,
+          (_, __) {},
+        );
+        var disposed = false;
+        try {
+          await container.read(appModeProvider.notifier).setAccount();
+          await _pumpQueue();
+
+          final vm = container.read(pomodoroViewModelProvider.notifier);
+          final result = await vm.loadGroup(group.id);
+          expect(result, PomodoroGroupLoadResult.loaded);
+          await _pumpQueue();
+
+          vm.handleAppResumed();
+          await Future<void>.delayed(const Duration(milliseconds: 2100));
+          await _pumpQueue();
+
+          container.dispose();
+          sessionRepo.dispose();
+          disposed = true;
+
+          await Future<void>.delayed(const Duration(seconds: 1));
+          await _pumpQueue();
+        } finally {
+          if (!disposed) {
+            container.dispose();
+            sessionRepo.dispose();
+          }
+          vmSub.close();
+        }
+      },
+      (error, _) {
+        errors.add(error);
+      },
+    );
+
+    expect(
+      errors,
+      isEmpty,
+      reason:
+          'Post-resume sync callbacks must be no-op after dispose and never touch invalid Ref.',
+    );
+  });
 
   test(
     '[PHASE5] VM lifecycle/session-sub diagnostics must include vmToken and lifecycle reasons',

@@ -1125,6 +1125,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _pausedHeartbeatTimer = Timer.periodic(
       const Duration(seconds: _heartbeatIntervalSeconds),
       (_) {
+        if (!ref.mounted) {
+          _stopPausedHeartbeat();
+          return;
+        }
         if (!_controlsEnabled) {
           _stopPausedHeartbeat();
           return;
@@ -1160,6 +1164,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   }
 
   void _setResyncInProgress(bool value) {
+    if (!ref.mounted) return;
     if (_resyncInProgress == value) return;
     _resyncInProgress = value;
     state = state;
@@ -1834,8 +1839,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     String? reason,
     bool force = false,
   }) async {
+    if (!ref.mounted) return;
     if (ref.read(appModeProvider) != AppMode.account) return;
     final offset = await _timeSyncService.refresh(force: force);
+    if (!ref.mounted) return;
     if (offset != null) {
       _serverTimeOffset = offset;
       _clearTimeSyncWait();
@@ -1897,7 +1904,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   void _scheduleKeepAliveGraceTimer(Duration remaining) {
     final delay = remaining <= Duration.zero ? Duration.zero : remaining;
     _keepAliveGraceTimer?.cancel();
-    _keepAliveGraceTimer = Timer(delay, _syncKeepAliveState);
+    _keepAliveGraceTimer = Timer(delay, () {
+      if (!ref.mounted) return;
+      _syncKeepAliveState();
+    });
   }
 
   void _syncKeepAliveState() {
@@ -2131,6 +2141,11 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     }
     if (session.status.isActiveExecution) {
       _mirrorTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (!ref.mounted) {
+          _mirrorTimer?.cancel();
+          _mirrorTimer = null;
+          return;
+        }
         _updateMirrorStateFromSession(session);
         if (allowAutoTakeover) {
           _maybeAutoTakeoverStaleOwner(session);
@@ -2885,6 +2900,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (_inactiveResyncTimer != null) return;
     if (!_shouldResyncWhileInactive()) return;
     _inactiveResyncTimer = Timer.periodic(_inactiveResyncInterval, (_) {
+      if (!ref.mounted) {
+        _stopInactiveResync();
+        return;
+      }
       if (!_shouldResyncWhileInactive()) {
         _stopInactiveResync();
         return;
@@ -2908,6 +2927,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _postResumeResyncTimer?.cancel();
     _postResumeResyncTimer = Timer(const Duration(seconds: 2), () {
       _postResumeResyncTimer = null;
+      if (!ref.mounted) return;
       if (ref.read(appModeProvider) != AppMode.account) return;
       if (_resyncInProgress) return;
       unawaited(
@@ -2929,9 +2949,11 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     bool preferServer = false,
     String? reason,
   }) async {
+    if (!ref.mounted) return;
     if (_resyncInProgress) return;
     _setResyncInProgress(true);
     try {
+      if (!ref.mounted) return;
       final previousSession = _latestSession;
       final wasMissing = _sessionMissingWhileRunning;
       if (kDebugMode && reason != null) {
@@ -2941,12 +2963,16 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         reason: reason ?? 'resync',
         force: preferServer,
       );
+      if (!ref.mounted) return;
       final rawSession = await _fetchSessionSnapshot(
         preferServer: preferServer,
       );
+      if (!ref.mounted) return;
       final session = await _sanitizeActiveSession(rawSession);
+      if (!ref.mounted) return;
       if (refreshGroup && _currentGroup != null) {
         final group = await _groupRepo.getById(_currentGroup!.id);
+        if (!ref.mounted) return;
         if (group != null) {
           updateGroup(group);
         }
@@ -3058,11 +3084,13 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     PomodoroSession? session,
   ) async {
     if (session == null) return session;
+    if (!ref.mounted) return session;
     final groupId = session.groupId;
     if (groupId == null || groupId.isEmpty) return session;
     final now = DateTime.now();
     try {
       final group = await _groupRepo.getById(groupId);
+      if (!ref.mounted) return session;
       if (group == null || group.status != TaskRunStatus.running) {
         await _sessionRepo.clearSessionIfGroupNotRunning();
         return null;
@@ -3127,6 +3155,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
             '->${repaired.currentPomodoro}/${repaired.totalPomodoros}',
           );
         }
+        if (!ref.mounted) return repaired;
         final appMode = ref.read(appModeProvider);
         if (appMode == AppMode.account &&
             !session.status.isActiveExecution &&
@@ -3142,7 +3171,9 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
           );
           try {
             await _sessionRepo.clearSessionIfStale(now: now);
+            if (!ref.mounted) return repaired;
             final claimed = await _sessionRepo.tryClaimSession(claimSession);
+            if (!ref.mounted) return repaired;
             if (claimed) {
               if (kDebugMode) {
                 debugPrint(
@@ -3153,6 +3184,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
               return claimSession;
             }
             final fresh = await _fetchSessionSnapshot(preferServer: true);
+            if (!ref.mounted) return repaired;
             if (fresh != null) {
               return fresh;
             }
@@ -3164,6 +3196,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
             repaired.ownerDeviceId == _deviceInfo.deviceId) {
           try {
             await _sessionRepo.publishSession(repaired);
+            if (!ref.mounted) return repaired;
           } catch (_) {
             // Keep local recovery even if publish fails transiently.
           }
@@ -3430,7 +3463,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     if (session.groupId == null) return true;
     return session.groupId != groupId;
   }
-
 
   PomodoroState _projectStateFromSession(
     PomodoroSession session, {
