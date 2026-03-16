@@ -48,25 +48,30 @@ Daily specs hygiene (hard rule):
 - If issues are found, record them immediately and propose fixes before
   implementing new behavior. Specs are the app's supreme source of truth.
 
-## 1️⃣A Role Operating Model (Claude/Codex) (hard rule)
+## 1️⃣A Role Operating Model (Claude/Codex/Gemini) (hard rule)
 
-Canonical role definitions and handoff protocol are maintained in:
+Canonical role definitions, master workflow, and handoff protocol are maintained in:
 - `docs/team_roles.md`
 
 Operational split:
-- **Claude**: architecture authority and structural review (the "why/where").
+- **Claude**: orchestrator, architecture authority, and structural review (the "why/where").
 - **Codex**: implementation, debugging, tests, and low-level correctness (the "how").
+- **Gemini**: full-repository context analysis, large-doc ingestion, cross-module impact scans.
 
-Mandatory handoff contract (both directions):
+Master workflow (standard path): user → Claude → Gemini (impact scan) → Claude (plan) → Codex (implementation) → Claude + Gemini (closure review).
+Fast path for P0 bugs: skip Gemini step if it delays the fix; run full path after P0 is resolved.
+
+Mandatory handoff contract (all directions):
 - Context and scope
 - Files changed
 - Tests executed (exact commands + results)
 - Known risks and open questions
-- Explicit next action expected from the other role
+- Explicit next action expected from the receiving role
 
 Conflict rule:
 - If architecture intent and implementation details diverge, stop and resolve via
   `docs/specs.md` + `docs/team_roles.md` before continuing.
+- Claude has the final word on all design decisions regardless of source.
 
 ---
 

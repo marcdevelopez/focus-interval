@@ -35,7 +35,7 @@ Notes:
 
 ---
 
-## Recommended execution order (updated 06/03/2026)
+## Recommended execution order (updated 16/03/2026)
 
 This section defines the recommended implementation order. The idea entries
 below remain in chronological order; new ideas must be appended at the end.
@@ -43,41 +43,43 @@ When a new idea is added, update this list to place it in the appropriate
 execution slot.
 
 1. IDEA-036 — Runtime Internationalization (l10n) Foundation
-2. IDEA-014 — Disable Task Weight When Only One Task Is Selected
-3. IDEA-026 — Manage Presets Item UX Consistency
-4. IDEA-015 — Live "Start Now" Time Ranges in Task List
-5. IDEA-004 — Schedule Auto-Start Conditions Disclosure (Planning UX)
-6. IDEA-017 — Start Time Picker Minimum Valid Time (Pre-Run Aware)
-7. IDEA-007 — Time Until Scheduled Start (Plan Group + Groups Hub Summary)
-8. IDEA-016 — Live Plan Group Preview + Real-Time Conflict Gating
-9. IDEA-012 — Exact End Time Option for Scheduled Planning
-10. IDEA-006 — Scheduled vs Actual End in Groups Hub Summary
-11. IDEA-020 — Show "Scheduled By" in Group Summary
-12. IDEA-030 — Postpone UX Clarity (Groups Hub + Snackbar)
-13. IDEA-031 — Highlight Running Card After Completion Modal
-14. IDEA-032 — Plan Group Pre-Run Notice Control
-15. IDEA-033 — Conflict Modal Context Details
-16. IDEA-029 — Live Pause Time Ranges (Forward-Only)
-17. IDEA-018 — Live Pause Time Range Updates in Run Mode Task List
-18. IDEA-005 — Pause Time Visibility (Run Mode + Groups Hub)
-19. IDEA-013 — Global Group Remaining Time + Pending Tasks
-20. IDEA-009 — Sticky "Go to Task List" CTA in Groups Hub
-21. IDEA-008 — Collapsible Groups Hub Sections + Counts
-22. IDEA-002 — Simplification of Status Boxes in Run Mode
-23. IDEA-003 — Responsive Timer Scaling (Desktop/Web)
-24. IDEA-010 — Ownership Request Explainer (Run Mode)
-25. IDEA-011 — Mirror Notifications for Active Runs
-26. IDEA-034 — Offline Continuation With Rejoin/Sync Choice
-27. IDEA-019 — Break Tasks List in Run Mode
-28. IDEA-001 — Circular group progress ring around timer
-29. IDEA-027 — Unified Mode Indicator + Session Context
-30. IDEA-021 — Account Deletion Action in Settings
-31. IDEA-022 — Verified Presence + Activity Heatmap
-32. IDEA-028 — Verified Activity Summary + Week Start Setting
-33. IDEA-023 — Resume Canceled Groups
-34. IDEA-024 — Workspaces With Shared TaskRunGroups
-35. IDEA-025 — Workspace Break Chat (Text + Deferred DM)
-36. IDEA-035 — Global SnackBar Theme + Unified UI Messaging
+2. IDEA-038 — Tab Pager Navigation (Task List ↔ Groups Hub)
+3. IDEA-014 — Disable Task Weight When Only One Task Is Selected
+4. IDEA-026 — Manage Presets Item UX Consistency
+5. IDEA-015 — Live "Start Now" Time Ranges in Task List
+6. IDEA-004 — Schedule Auto-Start Conditions Disclosure (Planning UX)
+7. IDEA-017 — Start Time Picker Minimum Valid Time (Pre-Run Aware)
+8. IDEA-007 — Time Until Scheduled Start (Plan Group + Groups Hub Summary)
+9. IDEA-016 — Live Plan Group Preview + Real-Time Conflict Gating
+10. IDEA-012 — Exact End Time Option for Scheduled Planning
+11. IDEA-006 — Scheduled vs Actual End in Groups Hub Summary
+12. IDEA-020 — Show "Scheduled By" in Group Summary
+13. IDEA-030 — Postpone UX Clarity (Groups Hub + Snackbar)
+14. IDEA-031 — Highlight Running Card After Completion Modal
+15. IDEA-032 — Plan Group Pre-Run Notice Control
+16. IDEA-033 — Conflict Modal Context Details
+17. IDEA-029 — Live Pause Time Ranges (Forward-Only)
+18. IDEA-018 — Live Pause Time Range Updates in Run Mode Task List
+19. IDEA-005 — Pause Time Visibility (Run Mode + Groups Hub)
+20. IDEA-013 — Global Group Remaining Time + Pending Tasks
+21. IDEA-009 — Sticky "Go to Task List" CTA in Groups Hub [superseded by IDEA-038 — review before implementing]
+22. IDEA-008 — Collapsible Groups Hub Sections + Counts
+23. IDEA-002 — Simplification of Status Boxes in Run Mode
+24. IDEA-003 — Responsive Timer Scaling (Desktop/Web)
+25. IDEA-010 — Ownership Request Explainer (Run Mode)
+26. IDEA-011 — Mirror Notifications for Active Runs
+27. IDEA-034 — Offline Continuation With Rejoin/Sync Choice
+28. IDEA-037 — Local Mode Pause Continuity Across Relaunch/Resume
+29. IDEA-019 — Break Tasks List in Run Mode
+30. IDEA-001 — Circular group progress ring around timer
+31. IDEA-027 — Unified Mode Indicator + Session Context
+32. IDEA-021 — Account Deletion Action in Settings
+33. IDEA-022 — Verified Presence + Activity Heatmap
+34. IDEA-028 — Verified Activity Summary + Week Start Setting
+35. IDEA-023 — Resume Canceled Groups
+36. IDEA-024 — Workspaces With Shared TaskRunGroups
+37. IDEA-025 — Workspace Break Chat (Text + Deferred DM)
+38. IDEA-035 — Global SnackBar Theme + Unified UI Messaging
 
 Notes:
 
@@ -86,6 +88,12 @@ Notes:
 - IDEA-029 and IDEA-018 overlap; keep both for now and merge later if needed.
 - IDEA-034 depends on Fix 22 (timeSync + single source of truth). Optional
   presence signaling can piggyback on IDEA-022/IDEA-024.
+- IDEA-037 requires a spec update first (Local Mode pause persistence currently
+  documented as unsupported in section 8.2).
+- IDEA-037 should align with Planned Breaks pause semantics to avoid two pause
+  models in Local Mode.
+- IDEA-038 supersedes IDEA-009. Once IDEA-038 is done, IDEA-009 must be reviewed
+  and either closed as redundant or repurposed as an in-tab CTA within Groups Hub.
 
 ## In progress
 
@@ -2934,3 +2942,219 @@ Notes:
 Implement in phased rollouts to reduce regression risk:
 1) infrastructure, 2) core screens, 3) remaining UI, 4) cleanup/lint guard
 against new hardcoded UI strings.
+
+---
+
+## IDEA-037 — Local Mode Pause Continuity Across Relaunch/Resume
+
+ID: IDEA-037
+Title: Local Mode Pause Continuity Across Relaunch/Resume
+Type: Behavior / UX
+Scope: L
+Priority: P1
+Status: idea
+
+Problem / Goal:
+In Local Mode, active session pause state is not persisted. If the app is
+closed or backgrounded while paused, reopening projects from
+`TaskRunGroup.actualStartTime` and loses pause continuity. This weakens Local
+Mode usability for real interruptions.
+
+Summary:
+Persist a Local Mode paused execution snapshot so a paused group remains paused
+after app relaunch/foreground, and Resume continues from the correct timeline
+point without jumps. The same continuity model must be compatible with future
+Planned Breaks pause flows.
+
+Design / UX:
+Layout / placement:
+Keep current Pause/Resume controls and execution layout. Remove/replace any
+copy that states pause is lost on app close once this behavior is implemented.
+
+Visual states:
+If a group was paused, reopening the app must render it as paused immediately
+with frozen countdown/progress and consistent status boxes + contextual ranges.
+
+Animation rules:
+Countdown and progress do not advance while paused, including across
+background/foreground and full app relaunch.
+
+Interaction:
+User can press Pause, close the app (or stay backgrounded), reopen, and still
+find the same group paused. Resume continues from that paused point only on an
+explicit user action.
+
+Text / typography:
+Use concise Local Mode copy that confirms pause continuity and avoids sync/cloud
+implications.
+
+Data & Logic:
+Source of truth:
+For Local Mode only, persist an authoritative local active-session snapshot
+including pause metadata (pausedAt, accumulated pause offset, pause reason/type)
+required for deterministic reconstruction.
+
+Calculations:
+On reopen while paused, timeline projection is reconstructed from persisted
+pause metadata. On resume, pause offset is applied once and the group timeline
+continues without discontinuities.
+
+Sync / multi-device:
+No Firestore authority changes. Local Mode remains device-local with no implicit
+merge/import. Account Mode behavior remains unchanged.
+
+Edge cases:
+Force-close while paused, long background periods, device clock changes,
+storage migration with missing pause fields, and planned-break-active pause
+during relaunch.
+
+Accessibility:
+Paused-state semantics and resume controls must be announced correctly after
+reopen, with no hidden state change.
+
+Dependencies:
+Specs update required before implementation (current Local Mode rule in section
+8.2 explicitly states pause-loss on close).
+Planned Breaks design/spec must share the same pause continuity contract.
+Local storage schema/version update if new pause metadata fields are needed.
+
+Risks:
+Divergence between TaskRunGroup and persisted local active snapshot, stale
+pause records after abnormal exits, and mode-switch confusion if copy is not
+explicit.
+
+Acceptance criteria:
+Pause -> close app -> reopen keeps the same group paused in Local Mode.
+Pause -> long background -> foreground keeps paused state with frozen timeline.
+Resume after reopen continues from the correct remaining time with no jump.
+Planned-break-related pause continuity follows the same contract in Local Mode.
+No implicit sync/merge side effects are introduced.
+
+Notes:
+This idea intentionally replaces the current Local Mode limitation that warns
+pause is not preserved on app close.
+
+---
+
+## IDEA-038 — Tab Pager Navigation (Task List ↔ Groups Hub)
+
+ID: IDEA-038
+Title: Tab Pager Navigation (Task List ↔ Groups Hub)
+Type: UX / Navigation
+Scope: M
+Priority: P1
+Status: idea
+
+Problem / Goal:
+The two most-used screens — Task List and Groups Hub — lack a consistent primary
+navigation pattern. The access CTA/button between them changes position depending
+on which screen the user is on, forcing the user to search for it each time.
+This inconsistency increases friction in a flow the user repeats constantly
+(prepare group ↔ review groups) and prevents a natural horizontal swipe gesture
+between the two screens. Additionally, there is no scalable slot for a third main
+tab in the future.
+
+Summary:
+Replace the current ad-hoc navigation CTAs between Task List and Groups Hub with
+a tab pager that keeps both screens one tap (or swipe) away at all times. The
+tabs must be in a fixed, consistent position. The architecture must support adding
+a third tab in the future without restructuring the main navigation shell.
+
+Design / UX:
+Layout / placement:
+Tab bar at a fixed position (top or bottom — to be decided during implementation
+based on platform conventions and existing screen headers). Tab 1: Task List.
+Tab 2: Groups Hub. Tab labels must use the canonical project names exactly.
+
+Visual states:
+Active tab: clearly highlighted. Inactive tab: visually de-emphasized but legible.
+No badge or counter on tabs in this iteration. Tab position never shifts regardless
+of the content state of either screen.
+
+Animation rules:
+Horizontal slide transition when switching tabs by tap or swipe (standard
+PageView/TabBarView behavior). No custom animation required beyond the default
+Flutter page transition.
+
+Interaction:
+- Tap a tab label to navigate to that screen.
+- Swipe horizontally between screens where the platform gesture model supports it
+  (iOS and Android standard; may be disabled on desktop/web if it conflicts with
+  horizontal scroll content inside the screens).
+- Deep links and programmatic navigation from other parts of the app (e.g., timer
+  screen "Back" actions) must land on the correct tab without visual glitches.
+
+Text / typography:
+Tab labels: "Task List" and "Groups Hub" (exact project naming, no abbreviation).
+
+Data & Logic:
+Source of truth:
+No change to business logic. Task List and Groups Hub retain their existing
+ViewModels and data sources. The tab pager is a pure navigation shell with no
+authoritative state of its own.
+
+Calculations:
+N/A — no data computations required for navigation.
+
+Sync / multi-device:
+N/A — no Firestore or sync changes. Tab state is ephemeral (not persisted across
+app restarts; default tab on launch is Task List or last active tab — TBD in
+implementation plan).
+
+Edge cases:
+- Deep link or push navigation that opens Groups Hub directly must activate tab 2
+  without a visible flash of tab 1.
+- If the user is in Run Mode (timer running), tapping a tab must still work; the
+  timer screen is a separate route and is not one of the tabs.
+- Existing in-screen CTAs that say "Go to Groups Hub" or "Go to Task List" must
+  be audited and removed/replaced to avoid redundancy with the tab bar.
+- Swipe gesture must not conflict with horizontal scroll content within either
+  screen (e.g., horizontal lists, sliders). If a conflict exists, swipe-to-switch
+  must yield to in-screen scroll interactions.
+- Adding a third tab in the future must require only adding a new tab entry to the
+  shell; no structural refactor of the existing two tabs.
+
+Accessibility:
+Tab bar must be accessible via screen reader. Active tab must announce its label
+and "selected" state. Swiping between tabs must be achievable via accessibility
+actions as an alternative to the swipe gesture.
+
+Dependencies:
+- IDEA-009 (Sticky "Go to Task List" CTA in Groups Hub) is superseded by this
+  feature. Review IDEA-009 before or during implementation: close it as redundant
+  or repurpose it as an in-tab contextual CTA if still needed after tabs exist.
+- No dependency on sync, session, or timer code. Safe to implement while P0 Fix 26
+  is open (no overlap with session/sync files).
+- l10n (IDEA-036): if l10n is implemented first, tab labels must use localizable
+  strings from the start.
+
+Risks:
+- Routing/navigation stack changes may affect back-button behavior on Android
+  (back from tab 2 must not exit the app unexpectedly; must return to tab 1 or
+  follow standard Android back behavior — confirm in implementation plan).
+- Existing navigation flows from the timer screen or modals that push Task List or
+  Groups Hub as routes may need updating to instead activate the correct tab.
+- Any screen that embeds Task List or Groups Hub in a custom route context must be
+  audited to avoid duplicating the tab shell.
+
+Acceptance criteria:
+- Tab bar is visible at a fixed position on both Task List and Groups Hub.
+- Tapping "Task List" tab navigates to Task List from anywhere within the main nav.
+- Tapping "Groups Hub" tab navigates to Groups Hub from anywhere within the main nav.
+- Swiping horizontally switches between the two tabs on Android and iOS.
+- Active tab is clearly differentiated from inactive tab visually.
+- Existing "Go to Groups Hub" / "Go to Task List" CTAs inside screens are audited
+  and removed where the tab bar makes them redundant.
+- Timer/Run Mode screen is unaffected (it remains a separate route, not a tab).
+- Deep link or programmatic navigation to Groups Hub activates tab 2 correctly.
+- No regression on Task List or Groups Hub business logic.
+- flutter analyze passes with no new issues.
+- Architecture allows adding a third tab without restructuring the shell.
+
+Notes:
+- IDEA-009 must be reviewed and resolved (close or repurpose) before or during
+  this implementation to avoid conflicting navigation patterns.
+- Tab persistence (remember last active tab across app restarts) is out of scope
+  for this iteration. Default tab on launch is Task List.
+- The timer/run screen is intentionally excluded from the tab pager; it is a
+  full-screen modal-style route launched on top of the main tab shell.
