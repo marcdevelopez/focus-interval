@@ -25,8 +25,8 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **Fix 26 rewrite validated in Stage C pass2 soak and closed (`P0-F26-006`)**
-Current focus: **Sync closure docs + continue next pending validation items**
+Last bug fix: **Fix 25 re-validation packet implemented (BUG-F25-A/B/C) — pending exact repro closure**
+Current focus: **Fix 25 device re-validation (owner+mirror) and closure docs synchronization**
 Last update: **16/03/2026**
 
 ---
@@ -11438,3 +11438,146 @@ Claude reviewed both pass2 logs and approved closure.
 
 - `P0-F26-006` is closed. Any future changes in sync/timer ownership behavior must
   be treated as a new validation item with fresh exact repro + soak evidence.
+
+---
+
+# 🔹 Block 590 — Fix 25 re-validation architectural review; BUG-F25-A/B/C documented (16/03/2026)
+
+## 📋 Context
+
+Fix 25 re-validation run completed (2026-03-16, main branch post Fix-26 rewrite).
+Devices: iOS simulator iPhone 17 Pro (owner) + Chrome (mirror).
+Protocol: 2 groups 1 min apart; Chrome switches to Local Mode during Grupo A;
+returns to Account after Grupo B start time.
+
+Logs:
+- `docs/bugs/validation_fix_2026_03_05/logs/2026-03-16_fix25_reval_ios_iPhone17Pro_debug.log`
+- `docs/bugs/validation_fix_2026_03_05/logs/2026-03-16_fix25_reval_chrome_debug.log`
+
+## ✔ Work completed
+
+Architectural review of re-validation logs identified three blocking bugs:
+
+**BUG-F25-A** — `requestLateStartOwnership` Firestore transaction order violation
+- File: `lib/data/repositories/firestore_task_run_group_repository.dart:292`
+- Root cause: per-group loop interleaves tx.get() and tx.set() across iterations.
+  When groups.length > 1, tx.get(group[1]) is issued AFTER tx.set(group[0]),
+  which violates the Firestore SDK invariant that all reads must precede all writes.
+  The SDK throws `_commands.isEmpty` assertion.
+- Evidence: 4 consecutive failures in iOS log (lines 50742/50775/50796/50819);
+  Chrome received zero ownership requests during the entire session.
+- Fix: split into Phase 1 (all reads, collect results) + Phase 2 (all writes).
+
+**BUG-F25-B** — `_showOwnerResolvedDialog` OK button context-after-dispose
+- File: `lib/presentation/screens/late_start_overlap_queue_screen.dart:563`
+- Root cause: OK button closure captures the outer `BuildContext`. If
+  `_LateStartOverlapQueueScreenState` is disposed before the user taps OK
+  (e.g., stream update navigates away), `Navigator.of(context)` throws.
+  The `if (!mounted) return` guard at line 570 protects only the post-await
+  `context.go('/groups')` call, not the button callback itself.
+- Evidence: Chrome re-validation log: exception cascade on dialog dismiss.
+- Fix: capture `final nav = Navigator.of(context, rootNavigator: true)` before
+  `await showDialog(...)` and use `nav.pop()` in the button `onPressed`.
+
+**BUG-F25-C** — "Owner resolved" modal incorrectly shown on owner device
+- File: `lib/presentation/screens/late_start_overlap_queue_screen.dart:176`
+- Root cause: `isOwner` is derived from `ownerDeviceId == deviceId`. After
+  the owner resolves the conflict, Firestore clears/nulls `ownerDeviceId`
+  in the next snapshot → `isOwner` evaluates false on the resolving device
+  → `!isOwner && allCanceled` fires → mirror-only dialog shown on owner.
+- Evidence: iOS re-validation log (dialog triggered on owner after successful
+  resolution); confirmed by user architectural review 2026-03-16.
+- Fix: add `bool _resolved = false` flag in `_LateStartOverlapQueueScreenState`;
+  set `_resolved = true` on successful completion of `_confirmSelection()` /
+  `_cancelAllQueue()`; add `&& !_resolved` to the condition at line 176.
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md` — BUG-F25-A, BUG-F25-B, BUG-F25-C entries added
+- `docs/validation/validation_ledger.md` — BUG-F25-A (P0), BUG-F25-B (P0),
+  BUG-F25-C (P1) entries added; P0-F25-001 evidence field updated
+- `docs/dev_log.md` — this block
+
+## ⚠️ Notes
+
+- P0-F25-001 remains open — re-validation confirmed bugs prevent Fix 25 closure.
+- BUG-F25-A and BUG-F25-B are P0: ownership delivery is broken and the
+  "Owner resolved" dialog is unresponsive when affected.
+- BUG-F25-C is P1: UX confusion for owner; dialog content is incorrect.
+- All three must be fixed and re-validated before Fix 25 can close.
+- Codex handoff: implementation spec is in bug_log.md entries BUG-F25-A/B/C.
+
+---
+
+# 🔹 Block 591 — Fix 25 implementation packet (BUG-F25-A/B/C) ready for re-validation (16/03/2026)
+
+## 📋 Context
+
+User approved implementation after Block 590 handoff. Work executed on branch
+`fix-f25-transaction-order-and-owner-dialog` (not on `main`).
+
+Scope:
+- BUG-F25-A: Firestore transaction order violation in
+  `requestLateStartOwnership`.
+- BUG-F25-B: `Owner resolved` dialog OK callback used disposed context.
+- BUG-F25-C: owner device incorrectly saw mirror-only `Owner resolved` dialog.
+
+## ✔ Work completed
+
+Code implementation:
+
+1. BUG-F25-A (`lib/data/repositories/firestore_task_run_group_repository.dart`)
+   - Refactored `requestLateStartOwnership` transaction to two explicit phases:
+     - Phase 1: read all group documents (`tx.get`) and cache payloads.
+     - Phase 2: write ownership claim fields (`tx.set`) after reads complete.
+   - This removes read-write interleaving across loop iterations and aligns with
+     Firestore transaction invariants.
+
+2. BUG-F25-B (`lib/presentation/screens/late_start_overlap_queue_screen.dart`)
+   - Hardened `_showOwnerResolvedDialog`:
+     - early mounted guard before opening dialog,
+     - captured root navigator before `await showDialog(...)`,
+     - OK button now calls captured `nav.pop()` instead of
+       `Navigator.of(context, ...)` inside callback closure.
+
+3. BUG-F25-C (`lib/presentation/screens/late_start_overlap_queue_screen.dart`)
+   - Added local resolver flag `bool _resolved = false`.
+   - Set `_resolved = true` after successful `_applySelection` completion.
+   - Updated mirror dialog gate to require `!isOwner && !_resolved` before
+     showing `Owner resolved`.
+
+Docs synchronization:
+- Updated `quick_pass_checklist.md` (Fix 25 row) with failed re-validation
+  review + implementation packet + local verification results.
+- Updated `plan_validacion_rapida_fix.md` with reopened Fix 25 status,
+  blocker list, implementation notes, and closure criteria.
+- Updated `validation_ledger.md`:
+  - `P0-F25-001` moved to `In validation`,
+  - `BUG-F25-A/B/C` moved to `In validation`.
+- Updated `bug_log.md` entries BUG-F25-A/B/C from "pending implementation"
+  to "implemented, pending device re-validation".
+- Updated `roadmap.md` timeline with Fix 25 reopen + implementation packet.
+
+## 🧪 Validation run (local)
+
+- `flutter analyze` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` → PASS
+
+## 📁 Updated files
+
+- `lib/data/repositories/firestore_task_run_group_repository.dart`
+- `lib/presentation/screens/late_start_overlap_queue_screen.dart`
+- `docs/bugs/bug_log.md`
+- `docs/bugs/validation_fix_2026_03_05/quick_pass_checklist.md`
+- `docs/bugs/validation_fix_2026_03_05/plan_validacion_rapida_fix.md`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- This packet is implementation-complete but not closure-complete.
+- Device exact repro re-validation is still required before marking
+  `P0-F25-001` and BUG-F25-A/B/C as `Closed/OK`.

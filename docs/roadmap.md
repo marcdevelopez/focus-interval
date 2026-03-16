@@ -315,6 +315,16 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           and no irrecoverable `Syncing session...`; AP-1/AP-2 remain non-repro.
           `P0-F26-006` closure criteria met and moved to Closed/OK with
           implementation commit `cbd800a`.
+      16/03/2026: Fix 25 re-validation packet (`validation_fix_2026_03_05`,
+          iOS + Chrome) failed and reopened with three blockers:
+          BUG-F25-A (transaction read/write order), BUG-F25-B (dialog
+          context-after-dispose), BUG-F25-C (owner sees mirror-only dialog).
+      16/03/2026: Fix 25 implementation packet completed on branch
+          `fix-f25-transaction-order-and-owner-dialog`:
+          transaction two-phase read/write ordering applied, owner-resolved
+          dialog navigator capture hardening added, and resolver-local gate
+          (`_resolved`) added to suppress mirror-only dialog on owner.
+          Local analyze/tests PASS; closure pending exact repro re-validation.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling

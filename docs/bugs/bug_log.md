@@ -983,3 +983,206 @@ None.
 
 Status:
 Open. Medium priority (visible correctness issue).
+
+---
+
+## BUG-F25-A — Firestore transaction read-write ordering violation in requestLateStartOwnership
+
+ID: BUG-F25-A
+Date: 16/03/2026 (UTC+1)
+Platforms: iOS (confirmed), all platforms with multiple conflict groups
+Context: Fix 25 re-validation run (post Fix-26 rewrite, main branch). iOS
+simulator iPhone 17 Pro as owner, Chrome as mirror. Two scheduled groups with
+overlap; iOS triggered requestLateStartOwnership for both groups.
+
+Repro steps:
+- Run Account Mode with 2+ overlapping scheduled groups.
+- On the mirror device, let it trigger requestLateStartOwnership (when owner is
+  stale or absent).
+- Observe console for Firestore transaction assertion error.
+
+Symptom:
+All ownership request attempts silently fail. Chrome never receives any request.
+Mirror stays blocked in the queue screen without an owner.
+
+Observed behavior:
+- iOS logged 4 consecutive requestLateStartOwnership failures at lines 50742,
+  50775, 50796, 50819 of the re-validation log.
+- Each failure is a Firestore SDK assertion: `_commands.isEmpty` — the SDK
+  rejects a read that follows a write within the same transaction.
+- In firestore_task_run_group_repository.dart:285, the loop interleaves reads
+  and writes:
+  Iteration 1: tx.get(group[0]) → tx.set(group[0])
+  Iteration 2: tx.get(group[1]) → FAILS (_commands.isEmpty: write already issued)
+- Chrome received zero ownership claim requests across the entire session.
+
+Expected behavior:
+All groups are read first (Phase 1), then all writes are issued (Phase 2),
+so the Firestore transaction invariant is respected.
+
+Evidence:
+- iOS re-validation log:
+  docs/bugs/validation_fix_2026_03_05/logs/2026-03-16_fix25_reval_ios_iPhone17Pro_debug.log
+  Lines 50742, 50775, 50796, 50819 (repeated transaction assertion failures).
+- Chrome re-validation log:
+  docs/bugs/validation_fix_2026_03_05/logs/2026-03-16_fix25_reval_chrome_debug.log
+  No ownership request arrival logged.
+
+Workaround:
+None. Ownership requests cannot be delivered while >1 group is in conflict.
+
+Hypothesis:
+Firestore Client SDK enforces that all reads precede all writes within a
+transaction. The current loop structure (read-write per group) violates this
+when groups.length > 1.
+
+Fix applied:
+- Implemented 16/03/2026 on branch `fix-f25-transaction-order-and-owner-dialog`.
+- `requestLateStartOwnership` now executes in 2 phases inside one transaction:
+  1. Read all conflict group documents first (`tx.get` only).
+  2. Apply all writes (`tx.set`) after reads complete.
+- File updated: `lib/data/repositories/firestore_task_run_group_repository.dart`.
+- Local verification:
+  - `flutter analyze` PASS
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` PASS
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS
+  - `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` PASS
+
+Status:
+In validation. P0 — pending device re-validation (owner + mirror) to confirm
+ownership requests are delivered with multi-group conflicts.
+
+---
+
+## BUG-F25-B — context-after-dispose in _showOwnerResolvedDialog OK button
+
+ID: BUG-F25-B
+Date: 16/03/2026 (UTC+1)
+Platforms: All (widget lifecycle issue)
+Context: Fix 25 re-validation run. iOS simulator as owner, Chrome as mirror.
+After the owner resolved the queue, Chrome's LateStartOverlapQueueScreen
+transitioned to the "Owner resolved" state and showed the dialog. The state
+was disposed before the user tapped OK.
+
+Repro steps:
+- Open the late-start overlap queue screen on a mirror device.
+- Have the owner resolve the conflict on their device.
+- The mirror screen transitions to "Owner resolved" and shows the dialog.
+- Navigate away from the mirror screen (e.g., tap outside the dialog while
+  the underlying screen is being disposed) before tapping OK.
+- Tap OK in the dialog.
+
+Symptom:
+Cascade of exceptions; dialog cannot be dismissed cleanly; app may show errors.
+
+Observed behavior:
+- _showOwnerResolvedDialog (late_start_overlap_queue_screen.dart:549) shows
+  an AlertDialog whose OK button captures the outer BuildContext:
+    onPressed: () =>
+        Navigator.of(context, rootNavigator: true).pop()  // line 563-564
+- If _LateStartOverlapQueueScreenState is disposed before OK is tapped,
+  accessing `context` here causes an "Element not mounted" assertion.
+- The mounted guard at line 570 (`if (!mounted) return;`) protects the
+  `context.go('/groups')` call AFTER the await, but does NOT protect the
+  button callback itself.
+
+Expected behavior:
+OK button navigation always uses a captured Navigator reference, safe even
+if the parent state disposes during the dialog lifetime.
+
+Evidence:
+- Chrome re-validation log:
+  docs/bugs/validation_fix_2026_03_05/logs/2026-03-16_fix25_reval_chrome_debug.log
+  Exception cascade on dialog dismiss attempt.
+- Code location: late_start_overlap_queue_screen.dart:563-564.
+
+Workaround:
+None. Modal cannot be dismissed without exceptions on the affected device.
+
+Hypothesis:
+The dialog builder captures the State's BuildContext directly. The fix is to
+capture the Navigator before the await showDialog call so the callback does
+not depend on a mounted context.
+
+Fix applied:
+- Implemented 16/03/2026 on branch `fix-f25-transaction-order-and-owner-dialog`.
+- `_showOwnerResolvedDialog` now captures root navigator before `await showDialog`
+  and uses that captured navigator in the OK button callback.
+- Added mounted pre-check (`if (!mounted || _ownerResolvedDialogShown) return;`)
+  before opening the dialog.
+- File updated: `lib/presentation/screens/late_start_overlap_queue_screen.dart`.
+- Local verification:
+  - `flutter analyze` PASS
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` PASS
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS
+  - `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` PASS
+
+Status:
+In validation. P0 — pending device re-validation to confirm dialog dismisses
+without exceptions during state disposal/navigation races.
+
+---
+
+## BUG-F25-C — "Owner resolved" modal shown on owner device after conflict resolution
+
+ID: BUG-F25-C
+Date: 16/03/2026 (UTC+1)
+Platforms: All (Account Mode, late-start overlap queue)
+Context: Fix 25 re-validation run. iOS simulator as owner. After iOS resolved
+the conflict (canceled groups or confirmed selection), the "Owner resolved"
+modal appeared on the iOS device itself — the one that performed the resolution.
+
+Repro steps:
+- Open the late-start overlap queue as the owner device (Account Mode).
+- Cancel all groups or confirm a selection to resolve the conflict.
+- Observe: the "Owner resolved" dialog appears on the resolving device.
+
+Symptom:
+The owner device sees "This overlap was resolved on another device" — a message
+intended only for mirror devices.
+
+Observed behavior:
+After the owner resolves the conflict, Firestore writes clear lateStartOwnerDeviceId
+(set to null when isCancelAll is false, line 736) or the state transitions so that
+ownerDeviceId is null in the next snapshot. Then:
+  isOwner = !isAccountMode || ownerDeviceId == deviceId
+          = false  (Account Mode, null != deviceId)
+  !isOwner && allCanceled → true
+→ _showOwnerResolvedDialog() fires on the owner's own device.
+
+Expected behavior:
+"Owner resolved" dialog must appear ONLY on devices that did not initiate
+the resolution. The resolving device should navigate directly to Groups Hub
+(or remain on a completion state) without seeing the mirror-targeted dialog.
+
+Evidence:
+- iOS re-validation log:
+  docs/bugs/validation_fix_2026_03_05/logs/2026-03-16_fix25_reval_ios_iPhone17Pro_debug.log
+  "Owner resolved" dialog trigger logged on iOS (owner) immediately after
+  conflict resolution write completed.
+- Code location: late_start_overlap_queue_screen.dart:176-189.
+- Root cause confirmed by user during architectural review 2026-03-16.
+
+Workaround:
+None. Owner must dismiss a confusing dialog after completing a valid action.
+
+Hypothesis:
+isOwner is derived solely from Firestore state (ownerDeviceId == deviceId).
+After the owner resolves, ownerDeviceId is cleared → isOwner evaluates false
+on the resolving device, incorrectly triggering the mirror-only dialog.
+
+Fix applied:
+- Implemented 16/03/2026 on branch `fix-f25-transaction-order-and-owner-dialog`.
+- Added local state flag `_resolved` in `_LateStartOverlapQueueScreenState`.
+- `_resolved` is set to true after successful `_applySelection` completion.
+- Owner-resolved mirror dialog gate now requires `!isOwner && !_resolved`.
+- File updated: `lib/presentation/screens/late_start_overlap_queue_screen.dart`.
+- Local verification:
+  - `flutter analyze` PASS
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` PASS
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS
+  - `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` PASS
+
+Status:
+In validation. P1 — pending device re-validation to confirm owner no longer
+sees mirror-only "Owner resolved" messaging.

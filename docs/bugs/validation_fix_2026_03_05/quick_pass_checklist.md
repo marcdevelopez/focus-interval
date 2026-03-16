@@ -32,6 +32,18 @@ Gate:
      - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_04.png`
      - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_05.png`
 3. [ ] Local → Account sin overlaps falsos; request ownership llega (Fix 25).
+   Re-validation run (2026-03-16, post Fix-26 rewrite, main branch):
+   - iOS simulator iPhone 17 Pro (owner): `docs/bugs/validation_fix_2026_03_05/logs/2026-03-16_fix25_reval_ios_iPhone17Pro_debug.log`
+   - Chrome (mirror): `docs/bugs/validation_fix_2026_03_05/logs/2026-03-16_fix25_reval_chrome_debug.log`
+   - Protocol: 2 groups 1 min apart; one device switches to Local Mode during Grupo A; returns to Account after Grupo B start time.
+   - Review result: FAIL (three blockers found) — BUG-F25-A, BUG-F25-B, BUG-F25-C.
+   - Fix implementation (16/03/2026): applied on branch `fix-f25-transaction-order-and-owner-dialog`.
+   - Code verification:
+     - `flutter analyze` → PASS
+     - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` → PASS
+     - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
+     - `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` → PASS
+   - Validation status: pending exact repro re-run on devices (owner + mirror).
 
 ## New finding (outside Fix 24 scope)
 - [x] Fix 26 — Mirror/owner no queda en `Syncing session...` tras cancel y en
