@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' as foundation;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -154,7 +155,6 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
   @override
   Future<void> clearSessionIfGroupNotRunning() async {}
 
-  @override
   Future<void> clearSessionIfInactive({String? expectedGroupId}) async {}
 
   @override
@@ -505,6 +505,78 @@ void main() {
       final stored = await groupRepo.getById(group.id);
       expect(stored?.status, TaskRunStatus.running);
     });
+
+    test(
+        '[PHASE5] stale-clear diagnostics must include instance token and clear decision metadata',
+        () async {
+      final groupRepo = FakeTaskRunGroupRepository();
+      final sessionRepo = FakePomodoroSessionRepository();
+      final appModeService = AppModeService.memory();
+      final logs = <String>[];
+      final previousDebugPrint = foundation.debugPrint;
+      foundation.debugPrint = (String? message, {int? wrapWidth}) {
+        if (message != null) logs.add(message);
+      };
+
+      final container = ProviderContainer(
+        overrides: [
+          appModeServiceProvider.overrideWithValue(appModeService),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+        ],
+      );
+      addTearDown(() {
+        foundation.debugPrint = previousDebugPrint;
+        groupRepo.dispose();
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      container.read(scheduledGroupCoordinatorProvider);
+
+      final now = DateTime.now();
+      final group = _buildRunningGroup(
+        id: 'group-phase5-stale-clear',
+        start: now.subtract(const Duration(hours: 2)),
+        theoreticalEnd: now.add(const Duration(hours: 2)),
+      );
+      final runningSession = _buildRunningSession(
+        groupId: 'group-phase5-other',
+        ownerId: 'device-1',
+        now: now,
+      );
+
+      sessionRepo.emit(runningSession);
+      groupRepo.seed(group);
+      await _pumpQueue();
+      foundation.debugPrint = previousDebugPrint;
+
+      final merged = logs.join('\n');
+      expect(
+        merged.contains('[StaleClearDiag]'),
+        isTrue,
+        reason:
+            'Phase-5 diagnostics contract: stale-clear evaluation must emit a dedicated diagnostic event.',
+      );
+      expect(
+        merged.contains('vmToken='),
+        isTrue,
+        reason:
+            'Phase-5 diagnostics contract: stale-clear diagnostics must include instance token correlation.',
+      );
+      expect(
+        merged.contains('decision='),
+        isTrue,
+        reason:
+            'Phase-5 diagnostics contract: stale-clear diagnostics must include clear/keep decision metadata.',
+      );
+      expect(
+        merged.contains('sessionGroupId='),
+        isTrue,
+        reason:
+            'Phase-5 diagnostics contract: stale-clear diagnostics must include evaluated session groupId metadata.',
+      );
+    });
   });
 
   group('ScheduledGroupCoordinator late-start queue', () {
@@ -561,6 +633,94 @@ void main() {
       expect(action.type, ScheduledGroupActionType.lateStartQueue);
       expect(action.groupIds, ['group-a', 'group-b']);
       expect(action.anchor, isNotNull);
+    });
+
+    test(
+        '[PHASE5] scheduled-action diagnostics must include vmToken and action metadata',
+        () async {
+      final groupRepo = FakeTaskRunGroupRepository();
+      final sessionRepo = FakePomodoroSessionRepository();
+      final appModeService = AppModeService.memory();
+      final logs = <String>[];
+      final previousDebugPrint = foundation.debugPrint;
+      foundation.debugPrint = (String? message, {int? wrapWidth}) {
+        if (message != null) logs.add(message);
+      };
+      final actionCompleter = Completer<ScheduledGroupAction>();
+      final container = ProviderContainer(
+        overrides: [
+          appModeServiceProvider.overrideWithValue(appModeService),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+        ],
+      );
+      addTearDown(() {
+        foundation.debugPrint = previousDebugPrint;
+        groupRepo.dispose();
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      final sub = container.listen<ScheduledGroupAction?>(
+        scheduledGroupCoordinatorProvider,
+        (_, next) {
+          if (next != null && !actionCompleter.isCompleted) {
+            actionCompleter.complete(next);
+          }
+        },
+      );
+      addTearDown(sub.close);
+
+      container.read(scheduledGroupCoordinatorProvider);
+
+      final now = DateTime.now();
+      final first = _buildScheduledGroup(
+        id: 'group-phase5-action-a',
+        scheduledStart: now.subtract(const Duration(hours: 2)),
+        durationMinutes: 30,
+        noticeMinutes: 5,
+      );
+      final second = _buildScheduledGroup(
+        id: 'group-phase5-action-b',
+        scheduledStart: now.subtract(const Duration(hours: 1)),
+        durationMinutes: 30,
+        noticeMinutes: 5,
+      );
+
+      sessionRepo.emit(null);
+      await groupRepo.saveAll([first, second]);
+      await _pumpQueue();
+
+      final action = await actionCompleter.future.timeout(
+        const Duration(seconds: 1),
+      );
+      expect(action.type, ScheduledGroupActionType.lateStartQueue);
+
+      final merged = logs.join('\n');
+      expect(
+        merged.contains('[ScheduledActionDiag]'),
+        isTrue,
+        reason:
+            'Phase-5 diagnostics contract: coordinator scheduled-action bridge must emit a dedicated diagnostic event.',
+      );
+      expect(
+        merged.contains('vmToken='),
+        isTrue,
+        reason:
+            'Phase-5 diagnostics contract: scheduled-action diagnostics must include vmToken correlation.',
+      );
+      expect(
+        merged.contains('actionType='),
+        isTrue,
+        reason:
+            'Phase-5 diagnostics contract: scheduled-action diagnostics must include action type metadata.',
+      );
+      expect(
+        merged.contains('groupIds='),
+        isTrue,
+        reason:
+            'Phase-5 diagnostics contract: scheduled-action diagnostics must include group payload metadata.',
+      );
     });
 
     test('emits late-start queue when three overdue groups exist', () async {

@@ -679,16 +679,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
     if (currentGroup?.status == TaskRunStatus.canceled &&
         !_cancelNavigationHandled) {
-      // Do not navigate synchronously inside build() — that causes setState
-      // during build. Mark the flag immediately so subsequent rebuilds don't
-      // re-queue the callback, then defer the actual navigation.
-      _cancelNavigationHandled = true;
-      _cancelNavRetryAttempts = 0;
-      _cancelNavTargetGroupId = widget.groupId;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        _attemptNavigateToGroupsHub('build canceled');
-      });
+      _navigateToGroupsHub(reason: 'build canceled');
     }
 
     if (isPreRun) {
@@ -1801,10 +1792,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _cancelNavigationHandled = true;
     _cancelNavRetryAttempts = 0;
     _cancelNavTargetGroupId = widget.groupId;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _attemptNavigateToGroupsHub(reason);
-    });
+    _attemptNavigateToGroupsHub(reason);
   }
 
   void _attemptNavigateToGroupsHub(String reason) {

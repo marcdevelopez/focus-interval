@@ -1,5 +1,7 @@
 # 📝 Focus Interval — Dev Log (MVP 1.2)
 
+---
+
 Chronological history of the MVP 1.2 development using work blocks.
 Each block represents significant progress within the same day or sprint.
 
@@ -23,7 +25,9 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last update: **07/03/2026**
+Last bug fix: **Fix 26 rewrite validated in Stage C pass2 soak and closed (`P0-F26-006`)**
+Current focus: **Sync closure docs + continue next pending validation items**
+Last update: **16/03/2026**
 
 ---
 
@@ -9585,3 +9589,1852 @@ implementation made things **worse** than before:
 
 - Continue Fix 26 two-day monitoring window (closes 2026-03-09).
 - Resume planned roadmap work.
+
+---
+
+# 🔹 Block 551 — Fix 26 reopened hardening v4 implementation (09/03/2026)
+
+**Date:** 09/03/2026  
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`  
+**Scope:** Harden missing-session recovery for the single-device background/offline scenario reported on 2026-03-08.
+
+### ✔ Work completed:
+
+- Documentation-first updates:
+  - `docs/specs.md`: added explicit requirements for:
+    - periodic foreground missing-session retries with bounded backoff,
+    - repo-backed group recheck before destructive clear,
+    - resume listener stability (no forced close/recreate on every resume).
+- Implemented VM/session hardening:
+  - `lib/presentation/viewmodels/pomodoro_view_model.dart`
+    - Replaced one-shot foreground hold resync with periodic bounded-backoff retry loop (`5s -> 10s -> 20s -> max 30s`).
+    - Added asynchronous missing-session handling with decision token guard to avoid stale clear races.
+    - Added repo recheck (`_groupRepo.getById`) before destructive missing-session clear; keep hold when running state cannot be safely ruled out.
+    - Added non-destructive clear helper that avoids forcing idle when group remains running.
+    - Added session listener rebind guard on resume (rebind only when absent or stalled, with cooldown).
+    - Added `isSessionGapStalled` + `retrySessionGapRecovery()` for manual recovery path.
+  - `lib/presentation/screens/timer_screen.dart`
+    - Sync overlay retry now supports both time-sync stalls and session-gap stalls.
+- Test hygiene update:
+  - `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+    - Corrected assertion to match existing spec rule: Account Mode without timeSync must block authoritative publish and force sync refresh.
+- Updated tracking docs for reopened Fix 26 status:
+  - `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`
+  - `docs/validation/validation_ledger.md`
+  - `docs/roadmap.md`
+
+### 🧪 Tests:
+
+- `flutter analyze` (pass, no issues).
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart` (pass).
+- Commit: `418c75f` — `fix: guard timesync offset against reconnect poisoning`.
+- Commit: `3ad6c98` — `fix: harden fix26 missing-session recovery and resume sync`.
+
+### ⚠️ Issues found:
+
+- Fix 26 remains open until exact repro + regression smoke are re-run with evidence on the single-device degraded-network scenario.
+
+### 🎯 Next steps:
+
+- Run exact repro validation on Android + macOS sleep/background path with logs.
+- Run regression smoke checks (Fix 24 / Fix 25 / Fix 27 + overlap flow).
+- If all pass, close Fix 26 in validation docs + roadmap + ledger with commit traceability.
+
+---
+
+# 🔹 Block 552 — Fix 26 cancellation race guard (09/03/2026)
+
+**Date:** 09/03/2026
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`
+**Scope:** Surgical follow-up to Block 551: guard against stale async missing-session hold after remote cancellation.
+
+### ✔ Work completed:
+
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`
+  - `applyRemoteCancellation()`: added `_missingSessionDecisionToken += 1` and `_cancelForegroundMissingResync()` before resetting `_sessionMissingWhileRunning`.
+  - This prevents an in-flight `_handleMissingSessionFromStream()` (awaiting group repo recheck) from overriding the cancellation state when the token check runs after the async gap.
+- Updated tracking docs:
+  - `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`
+  - `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`
+  - `docs/dev_log.md`
+
+### 🧪 Tests:
+
+- `flutter analyze` (pass, no issues).
+
+### ⚠️ Issues found:
+
+- None. Change is additive and does not alter any existing path; it only closes a stale-decision race window that was low-severity but logically incorrect.
+
+---
+
+# 🔹 Block 553 — Fix 26 reconnect desync guard in TimeSyncService (09/03/2026)
+
+**Date:** 09/03/2026  
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`  
+**Scope:** Prevent transient wrong timer projection after offline/background reconnect in iOS+Chrome quick packet.
+
+### ✔ Work completed:
+
+- Root-cause confirmed from quick packet logs:
+  - Chrome accepted a poisoned time-sync sample on reconnect (`offset=+45550ms`)
+    and projected timer with a transient ~45s skew before the next sync corrected it.
+- Documentation-first update:
+  - `docs/specs.md`: added explicit rules for invalid time-sync measurement
+    handling (roundtrip validity, offset-jump guard, reject cooldown behavior).
+- Implemented surgical guard in:
+  - `lib/data/services/time_sync_service.dart`
+    - Added reject cooldown (`3s`) to avoid tight retry loops after rejected samples.
+    - Rejects measurement if reconnect roundtrip is too large (`>3s`).
+    - Rejects abrupt offset jumps (`>5s`) when a previous valid offset exists.
+    - On rejection: keeps previous valid offset and does not update
+      `lastSyncAt` so a new valid measurement can happen soon.
+- Updated validation tracking docs:
+  - `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`
+  - `docs/validation/validation_ledger.md`
+  - `docs/roadmap.md`
+
+### 🧪 Tests:
+
+- `flutter analyze` (pass, no issues).
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart` (pass).
+
+### ⚠️ Issues found:
+
+- Fix 26 remains open until the quick packet is re-run after this guard and
+  confirms no transient reconnect desync.
+
+### 🎯 Next steps:
+
+- Re-run iOS+Chrome quick packet using existing log commands.
+- If reconnect desync is gone and no regressions appear, close Fix 26 in
+  checklist/plan/ledger/roadmap with commit traceability.
+
+---
+
+# 🔹 Block 554 — Fix 26 re-validation PASS and closure (09/03/2026)
+
+**Date:** 09/03/2026  
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`  
+**Scope:** Close reopened Fix 26 after rerun of the degraded-network quick packet.
+
+### ✔ Work completed:
+
+- Re-checked quick packet logs after `418c75f`:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_09_fix26_quick_chrome_debug.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_09_fix26_quick_ios_debug.log`
+- Confirmed `TimeSync` guard behavior in Chrome:
+  - invalid reconnect samples were rejected (`rejected measurement` events at lines 2255, 2466, 2506),
+  - no large positive `offset` projection was accepted in the rerun.
+- User-run validation outcome:
+  - `Syncing session...` duration matched only the real offline interval,
+  - previous reconnect timer drift was not reproduced in the same scenario.
+- Updated closure traceability docs:
+  - `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`
+  - `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`
+  - `docs/validation/validation_ledger.md`
+  - `docs/roadmap.md`
+
+### 🧪 Tests:
+
+- No new code changes in this block; validation evidence is log-based on the rerun.
+
+### ⚠️ Issues found:
+
+- None. Fix 26 closure criteria met for current scope.
+
+### 🎯 Next steps:
+
+- Continue normal roadmap order with remaining P0 validation blocker (`P0-F25-001`).
+
+---
+
+# 🔹 Block 555 — Fix 26 regression detected + rollback to 961f7eb baseline (10/03/2026)
+
+**Date:** 10/03/2026
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`
+**Scope:** Regression in "Syncing session..." hold reintroduced by second/third-cycle hardening; rolled back to last known-good baseline.
+
+### ✔ Work completed:
+
+- Regression confirmed from Android + macOS logs (`2026_03_10_fix26_observation_partial_android_d03c150.log`):
+  - At ~12:15 CET, a Firebase Auth token refresh caused a brief `runningExpiry=true`
+    false-positive (56ms spike) in `ScheduledGroups`.
+  - The spike silently disconnected the Firestore session listener on Android.
+  - With the session stream dead, `_sessionMissingWhileRunning = true` was set and
+    never cleared — Android stuck in `Syncing session...` for 40+ minutes despite
+    Firestore showing a healthy `pomodoroRunning` session.
+  - Root cause traced to commit `9bab880` (second-cycle hardening):
+    `PomodoroViewModel.build()` was modified to unconditionally cancel `_sessionSub`
+    at start (`_sessionSub?.close(); _sessionSub = null`) to prevent duplicate
+    subscriptions on Riverpod re-runs. This is fundamentally incorrect because
+    `Notifier.build()` re-runs for **any** watched-provider change — not only
+    session-related events. A Firebase Auth token refresh causes
+    `pomodoroSessionRepositoryProvider` to re-emit, which triggers a `build()` re-run,
+    which kills the Firestore session stream. Re-subscription at the end of `build()`
+    is conditional (`if (appMode == account && hasLoadedContext)`); even when the
+    condition is met, the new Firestore stream emits `null` during the auth-reconnect
+    window → `_sessionMissingWhileRunning = true` latches. The foreground retry (also
+    from this second-cycle) then sees `group=running` and keeps the hold indefinitely.
+    At `961f7eb`, `_sessionSub` was a `ProviderSubscription` (`ref.listen`) managed
+    by Riverpod — `build()` re-runs left it completely untouched, only
+    `ref.onDispose()` closed it. **Rule for future implementations:** never cancel
+    a `ref.listen` subscription inside `build()`; let Riverpod own its lifecycle.
+  - `418c75f` (TimeSync guard) confirmed **not involved** — no rejected measurements
+    appear in the logs; all offsets were clean (-136ms to -214ms) throughout the incident.
+- Rollback performed to `961f7eb` baseline for the affected code files:
+  - `lib/presentation/viewmodels/pomodoro_view_model.dart`
+  - `lib/presentation/screens/timer_screen.dart`
+  - `lib/data/repositories/firestore_pomodoro_session_repository.dart`
+  - `lib/data/repositories/pomodoro_session_repository.dart`
+  - `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+  - `test/data/repositories/firestore_pomodoro_session_repository_test.dart` (deleted — tested rolled-back symbols)
+- Preserved (not rolled back):
+  - Fix 27 (`app_mode_change_guard.dart`, `scheduled_group_coordinator.dart`) — confirmed no overlap with rolled-back files.
+  - `418c75f` (`lib/data/services/time_sync_service.dart`) — TimeSync guard is independent and valid.
+
+### 🧪 Tests:
+
+- `flutter analyze` (pass — 4 test-mock warnings only, no errors).
+
+### ⚠️ Issues found:
+
+- Fix 26 is **reopened**. The 961f7eb baseline was previously validated (06/03/2026) but
+  was then reopened on 07/03/2026 for recurrent edge-case scenarios. A fresh validation
+  run is required to confirm the baseline still holds under current conditions.
+
+### 🎯 Next steps:
+
+- Rebuild and redeploy on all devices with commit `4195ef1`.
+- Re-validate Fix 26 exact repro (single-device background + reconnect scenario).
+- If validation passes, close P0-F26-001 with new commit hash.
+
+---
+
+# 🔹 Block 556 — Fix 26 rollback partial re-validation kept open (10/03/2026)
+
+**Date:** 10/03/2026  
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`  
+**Scope:** Review new rollback logs and keep closure blocked until longer validation.
+
+### ✔ Work completed:
+
+- Reviewed new rollback logs generated on commit `4195ef1`:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_10_fix26_observation_partial_android_4195ef1.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026_03_10_fix26_observation_partial_macos_4195ef1.log`
+- Observed in the sampled window (~13:19–13:46 CET):
+  - Android resumed with `Resync start (resume)` and `Resync start (post-resume)`.
+  - Active session snapshots kept advancing (no destructive `Missing snapshot; clearing session` signal in this partial run).
+  - No irrecoverable `Syncing session...` hold reproduced in this short window.
+- Updated validation docs to keep strict caution status:
+  - `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`
+  - `docs/validation/validation_ledger.md`
+  - `docs/roadmap.md`
+
+### 🧪 Tests:
+
+- No code changes in this block; validation work is log/documentation based.
+
+### ⚠️ Issues found:
+
+- Validation window is still too short (<1h). Regression cannot be considered resolved yet.
+
+### 🎯 Next steps:
+
+- Complete exact degraded-network repro packet end-to-end on rollback commit `4195ef1`.
+- Complete extended soak window (>=4h) before any closure attempt.
+
+---
+
+# 🔹 Block 557 — Fix 26 regression-cause review + mandatory guardrails (10/03/2026)
+
+**Date:** 10/03/2026  
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`  
+**Scope:** Validate documented root cause and lock prevention rules for next implementations.
+
+### ✔ Work completed:
+
+- Reviewed the documented root cause against:
+  - `2026_03_10_fix26_observation_partial_android_d03c150.log`
+  - commits `9bab880`, `4f55010`, `26f0c7e`, `3ad6c98`
+- Confirmed the main mechanism is consistent:
+  - `9bab880` added unconditional `_sessionSub?.close(); _sessionSub = null;`
+    at `build()` start.
+  - `build()` can re-run on auth/token-driven provider refreshes.
+  - re-open after build may see transient `null`; hold latch then persists in bad paths.
+- Added precision note:
+  - `26f0c7e` microtask guard (`if (_sessionSub != null) return`) was ineffective
+    because `_sessionSub` had already been nulled at build start.
+- Added mandatory prevention guardrails in:
+  - `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`
+
+### 🧪 Tests:
+
+- No production code changes in this block; review + process hardening only.
+
+### ⚠️ Issues found:
+
+- Regression risk remains high for any future listener-lifecycle edits unless
+  guardrails and validation gates are followed strictly.
+
+### 🎯 Next steps:
+
+- Apply guardrails as a merge gate on the next Fix 26 implementation attempt.
+- Keep Fix 26 open until exact repro + >=4h soak pass on the same commit.
+
+---
+
+# 🔹 Block 558 — Root-cause analysis + fix: transient AsyncData<null> latch (10/03/2026)
+
+**Date:** 10/03/2026
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`
+**Scope:** Reproduce and permanently fix the "Syncing session..." infinite freeze triggered by a brief network cut on the session owner device.
+
+### Root cause (confirmed from 10/03 incident logs):
+
+The "Syncing session..." freeze is triggered by a two-step failure:
+
+**Step 1 — Spurious latch via `AsyncData<null>`:**
+When the owner device (macOS) experiences a brief internet cut, the Firestore SDK begins reconnecting. During this window the `snapshots()` stream listener (backing `pomodoroSessionStreamProvider`) can emit `AsyncData<null>` — either from a cache miss or a transient SDK state. `_resolveSessionSnapshot` treats `AsyncData<null>` the same as a genuine deletion and returns `null`. With a valid recent `_latestSession` present, `_shouldTreatMissingSessionAsRunning` returns `true` and `_sessionMissingWhileRunning` latches **immediately** — before any real session data is lost.
+
+**Step 2 — Auto-recovery fails silently:**
+`_recoverMissingSession` calls `tryClaimSession` (returns `false` — Android's document exists) then `publishSession` (transaction reads Android as owner → returns without writing). Both calls fail silently. Nothing clears the latch. Heartbeats stop (`_controlsEnabled = false`). macOS freezes indefinitely in "Syncing session...".
+
+The latch could self-clear if the Firestore stream later delivers the Android-owned session (line 1347), but if the SDK does not re-emit after reconnect (or takes too long), the device stays frozen until `handleAppResumed()` (macOS window click) or `loadGroup()` (Android re-navigation) runs.
+
+### Fix (two-part, both defensive layers):
+
+**Part 1 — 3-second debounce before latching (stream path only):**
+Added `_sessionMissingLatchTimer`. When `_subscribeToRemoteSession` detects a potentially missing session from the stream, it starts a 3-second timer via `_onSessionMissingLatchDebounced()` instead of latching immediately. If a valid session arrives within 3 seconds (normal reconnect), the timer is cancelled and no latch ever fires. Only if the stream remains silent for >3 seconds does `_onSessionMissingLatchDebounced()` fire and set the latch. The `syncWithRemoteSession` resync path (explicit fetch on resume) bypasses the debounce and sets the latch synchronously as before.
+
+**Part 2 — Server fetch fallback in `_recoverMissingSession`:**
+After `tryClaimSession` fails and `publishSession` is blocked, immediately fetch from the server (`preferServer: true`). If the response shows another device owns an active session for the current context, clear the latch, apply the remote session via `_primeMirrorSession`, and return. This means even if the debounce is bypassed (e.g. >3s reconnect), the first recovery attempt at `t+5s` will discover the remote owner via server fetch and self-heal automatically — no manual intervention required.
+
+### Files changed:
+
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`:
+  - Added `Timer? _sessionMissingLatchTimer` field (line ~87).
+  - Added `_sessionMissingLatchTimer?.cancel()` in `ref.onDispose` and `loadGroup`.
+  - `_subscribeToRemoteSession` null-latch branch: replaced immediate latch with 3-second debounce timer.
+  - Added `_sessionMissingLatchTimer` cancel in the clear-session and non-null session paths.
+  - Added `_onSessionMissingLatchDebounced()` method after `_subscribeToRemoteSession`.
+  - `_recoverMissingSession`: after `publishSession` fails, fetch from server; if remote-owned active session found, clear latch and enter mirror mode immediately.
+
+### 🧪 Tests:
+
+- Dart analyzer: no issues.
+- Manual validation required (same degraded-network repro scenario from 10/03 incident).
+
+### ⚠️ Issues found:
+
+- The stream-based debounce only protects the `_subscribeToRemoteSession` path. The `syncWithRemoteSession` resync path still latches immediately when it fetches null — this is intentional (explicit server fetch is authoritative).
+- The server fetch in `_recoverMissingSession` adds one extra Firestore read per recovery attempt when another device owns the session. Recovery cooldown is 5 seconds; this is acceptable.
+
+### 🎯 Next steps:
+
+- Deploy and run the same degraded-network repro (macOS brief network cut during Android ownership takeover).
+- Verify macOS auto-recovers within ~5–8 seconds without any manual intervention.
+- If stable: close P0-F26-001 and P0-F26-002.
+
+---
+
+# 🔹 Block 559 — Fix 26 follow-up: cursor repair on reopen/owner switch (10/03/2026)
+
+**Date:** 10/03/2026  
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`  
+**Scope:** Prevent reopening Run Mode in the wrong task/time when `activeSession/current`
+persists an invalid cursor (e.g. `currentPomodoro > totalPomodoros`).
+
+### ✔ Work completed:
+
+- Implemented active-session cursor repair in
+  `lib/presentation/viewmodels/pomodoro_view_model.dart`:
+  - Added repair path in `_sanitizeActiveSession(...)`.
+  - Added repair path in `_subscribeToRemoteSession(...)` stream callback.
+  - New helpers:
+    - `_repairInconsistentSessionCursor(...)`
+    - `_projectFromGroupTimelineWithPauseOffset(...)`
+    - `_phaseDurationForItemPhase(...)`
+    - `_isSameSessionSnapshot(...)`
+- Repair behavior:
+  - Detects invalid session cursor (taskId/index mismatch, task total mismatch,
+    out-of-range pomodoro such as `2/1`).
+  - Reprojects against the running group timeline anchor and rebuilds a coherent
+    session snapshot for hydration.
+  - If local device is owner in Account Mode, republishes repaired snapshot to
+    Firestore to converge remote state.
+- Added regression test:
+  - `loadGroup repairs invalid task cursor and lands on expected running task`
+  - file:
+    `test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart`
+
+### 🧪 Tests:
+
+- `dart analyze lib/presentation/viewmodels/pomodoro_view_model.dart test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
+- `flutter analyze` → PASS
+
+### ⚠️ Issues found:
+
+- Manual multi-device validation is still pending for the exact owner-switch reopen
+  path on Android RMX3771 + macOS.
+
+### 🎯 Next steps:
+
+- Execute post-fix release logs on Android RMX3771 and macOS.
+- Confirm reopen lands on the correct task (`Trading`) and no `Pomodoro 2 of 1`
+  reappears.
+- If pass, close `P0-F26-003` in validation ledger and checklist.
+
+---
+
+# 🔹 Block 560 — Fix 26 follow-up v2: recover `running` group + `finished` session mismatch (10/03/2026)
+
+**Date:** 10/03/2026  
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`  
+**Scope:** Prevent `00:00 Syncing session...` loop when Firestore keeps `TaskRunGroup.status=running`
+but `activeSession/current.status=finished` with stale cursor data.
+
+### ✔ Work completed:
+
+- Extended the active-session reconciliation path in
+  `lib/presentation/viewmodels/pomodoro_view_model.dart`:
+  - `_sanitizeActiveSession(...)` no longer exits early for non-active statuses.
+  - `_repairInconsistentSessionCursor(...)` now treats
+    `!session.status.isActiveExecution && group.status == running` as a repair trigger.
+  - For that case, it reprojects from running-group timeline anchor (with pause-offset model),
+    and rebuilds a coherent active snapshot instead of preserving stale `finished` payload.
+- Added dedicated regression coverage in
+  `test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart`:
+  - `loadGroup repairs finished invalid cursor when group is still running`
+  - Simulates exact inconsistent payload observed in production:
+    `status=finished`, `phase=null`, `remainingSeconds=0`, `currentPomodoro=2`, `totalPomodoros=1`
+    while group remains `running`.
+
+### 🧪 Tests:
+
+- `dart analyze lib/presentation/viewmodels/pomodoro_view_model.dart test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
+
+### ⚠️ Issues found:
+
+- Device validation is still pending for this exact scenario on Android RMX3771 + macOS.
+- `ios/Flutter/AppFrameworkInfo.plist` remains locally modified and was intentionally excluded.
+
+### 🎯 Next steps:
+
+- Run clean reopen/install packet with release logs on macOS + RMX3771.
+- Confirm no repeated `Auto-start abort (state not idle) state=finished`.
+- Confirm timer lands on projected running segment (`Trading`) and no indefinite syncing hold.
+
+---
+
+# 🔹 Block 561 — Fix 26 follow-up v3: stale finished owner recovery + expiry safety (10/03/2026)
+
+**Date:** 10/03/2026  
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`  
+**Scope:** Close the no-owner gap when Firestore keeps a stale `finished` activeSession while group remains `running`, without forcing running if timeline is already expired.
+
+### ✔ Work completed:
+
+- Added stale non-active ownership recovery in
+  `lib/presentation/viewmodels/pomodoro_view_model.dart`:
+  - During sanitize, after cursor repair, when original snapshot is non-active/stale
+    and repaired snapshot is active:
+    - clear stale session (`clearSessionIfStale`)
+    - attempt `tryClaimSession` with rebuilt active snapshot and bumped revision.
+  - If claim loses race, fetch server snapshot and continue safely.
+- Added expiry safety guard:
+  - if group is already expired by timeline (`actualStartTime` + duration + pause offset via `theoreticalEndTime`), sanitize **does not reclaim** owner;
+    it completes the group + clears stale session.
+- Added helper:
+  - `_buildOwnedRecoveredSession(...)`
+
+### 🧪 Tests:
+
+- Updated regression test file:
+  `test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart`
+  - existing: `loadGroup repairs finished invalid cursor when group is still running`
+    now asserts recovered owner is current device.
+  - new: `expired running-group + stale finished session is completed instead of re-claimed`
+- Validation:
+  - `dart analyze lib/presentation/viewmodels/pomodoro_view_model.dart test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
+  - `flutter analyze` → PASS
+
+### ⚠️ Issues found:
+
+- Device validation still pending for this v3 behavior on Android RMX3771 + macOS.
+- `ios/Flutter/AppFrameworkInfo.plist` remains locally modified and intentionally excluded.
+
+### 🎯 Next steps:
+
+- Run new release logs on RMX3771 + macOS with this commit.
+- Confirm:
+  1) stale `finished` session is replaced by an active owned session when group is still running;
+  2) no-owner gap is gone;
+  3) if group is truly expired, it completes (no forced running reclaim).
+
+---
+
+# 🔹 Block 562 — Fix 26 `P0-F26-003` closure validation PASS (10/03/2026)
+
+**Date:** 10/03/2026  
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`  
+**Scope:** Close validation item `P0-F26-003` (reopen/owner-switch cursor mismatch + stale finished/no-owner recovery) with real-device evidence.
+
+### ✔ Work completed:
+
+- Reviewed closure logs from release runs:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-10_fix26_postfix_250c24d_macos_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-10_fix26_postfix_250c24d_android_RMX3771_diag.log`
+- Confirmed both clients auto-opened Run Mode correctly for the running group.
+- Confirmed no recurrence of the reopened bug signatures:
+  - no `Pomodoro 2 of 1`
+  - no indefinite `00:00 Syncing session...`
+  - no stale mirror/no-owner dead state.
+- Verified deterministic ownership behavior from logs:
+  - stable owner snapshots while running,
+  - clean owner handoff (`macOS -> Android`) without sync latch.
+- Verified timer coherence against phase window + wall-clock (second-level rounding only).
+- Updated closure docs:
+  - `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`
+  - `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`
+  - `docs/validation/validation_ledger.md`
+  - `docs/roadmap.md`
+
+### 🧪 Validation result:
+
+- `P0-F26-003`: **Closed/OK**
+  - closed implementation commit: `250c24d`
+  - message: `fix(f26): recover stale finished session ownership with expiry-safe guard`
+- `P0-F26-001`: remains open (`In validation`) pending exact degraded-network repro + extended soak criteria.
+
+### ⚠️ Notes:
+
+- `ios/Flutter/AppFrameworkInfo.plist` remains locally modified and intentionally excluded from all staging/commits.
+
+# 🔹 Block 563 — Fix 26 reopen: owner-handoff timestamp regression gate (10/03/2026)
+
+**Date:** 10/03/2026  
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`  
+**Scope:** Address mirror `Syncing session...` latch when stream is alive but ViewModel timeline gate skips remote snapshots after owner handoff.
+
+### ✔ Work completed:
+
+- Reviewed incident logs reported as current:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-10_fix26_postfix_250c24d_macos_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-10_fix26_postfix_250c24d_android_RMX3771_diag.log`
+- Confirmed stream stayed alive (`[RunModeDiag] Active session change` every ~30s, owner Android), while UI still showed `Syncing session...`.
+- Added owner-handoff safeguard in timeline gate:
+  - `lib/presentation/viewmodels/pomodoro_view_model.dart`
+  - `_shouldApplySessionTimeline(...)` now accepts `previousSession` and always applies first snapshot when `ownerDeviceId` changes (prevents lockout when `lastUpdatedAt` regresses across devices).
+  - Applied in both stream listener path and explicit resync path.
+- Added regression test scenario with dynamic stream:
+  - `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+  - New test: `owner handoff applies timeline even when updatedAt regresses`.
+- Updated existing debounce-aware expectation:
+  - `missing session holds sync when lastUpdatedAt is null` now waits for debounce before asserting latch.
+
+### 🧪 Validation run (local):
+
+- `dart analyze lib/presentation/viewmodels/pomodoro_view_model.dart test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
+
+### 🔖 Tracking:
+
+- Implementation commit: `cb31ddf`
+- Message: `fix(f26): rebase timeline on owner handoff with regressed timestamps`
+
+### ⚠️ Notes:
+
+- `ios/Flutter/AppFrameworkInfo.plist` remains locally modified and intentionally excluded.
+- Device validation pending on release logs after this patch.
+
+---
+
+# 🔹 Block 564 — Fix 26 reopen: missing-session latch not clearing on UI after timeline skip (10/03/2026)
+
+**Date:** 10/03/2026
+**Branch:** `fix26-reopen-black-syncing-2026-03-09`
+**Scope:** Root-cause and fix the persistent `Syncing session...` overlay on mirror (macOS) and frozen timer/gray circle on owner (Android) that reappeared after commit `250c24d`.
+
+### ✔ Work completed:
+
+- Analysed incident logs (same log files as Block 563):
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-10_fix26_postfix_250c24d_macos_diag.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-10_fix26_postfix_250c24d_android_RMX3771_diag.log`
+- Confirmed Block 563 fix (`cb31ddf`) targeted a different failure mode (owner-handoff with regressed `lastUpdatedAt`) that was **not** the actual root cause for this incident (Android remained owner throughout, no handoff).
+- Identified true root cause:
+
+  **Bug sequence:**
+  1. `loadGroup` fetches session with `preferServer: true` → sets `_lastAppliedSessionUpdatedAt = T_server_fresh`.
+  2. `_primeMirrorSession` starts the mirror timer; UI shows running state.
+  3. `_subscribeToRemoteSession(fireImmediately: true)` fires `AsyncLoading` → null → 3 s debounce starts.
+  4. After 3 s: `_sessionMissingWhileRunning = true`, mirror timer cancelled, `_notifySessionMetaChanged()` → UI shows `Syncing session...`.
+  5. Real Firestore snapshot arrives: `lastUpdatedAt = T_cached ≤ T_server_fresh` → `shouldApplyTimeline = false`.
+  6. `wasMissing = true` was captured before the clear at step 4, but the `!shouldApplyTimeline` early-return block only called `_notifySessionMetaChanged()` when `ownershipMetaChanged`, **not** when `wasMissing`.
+  7. Result: no rebuild triggered → UI permanently stuck at `Syncing session...`.
+  8. Additionally, `_lastAppliedSessionUpdatedAt` is only updated inside the `shouldApplyTimeline=true` block, so all subsequent stream events also fail the gate → indefinite lock.
+
+- Applied fix in `lib/presentation/viewmodels/pomodoro_view_model.dart`:
+  - In `_subscribeToRemoteSession` listener, at the `!shouldApplyTimeline` early-return (line ~1408):
+  - **Before:** `if (ownershipMetaChanged) { _notifySessionMetaChanged(); }`
+  - **After:** `if (ownershipMetaChanged || wasMissing) { _notifySessionMetaChanged(); }`
+  - This ensures a UI rebuild fires when the missing-session latch clears, even when the stream snapshot doesn't pass the timeline gate.
+
+### 🧪 Validation run (local):
+
+- `dart analyze lib/presentation/viewmodels/pomodoro_view_model.dart` → PASS
+- `flutter analyze` → PASS
+
+### 🔖 Tracking:
+
+- Implementation commit: `b085ea6`
+- Message: `fix(f26): notify UI when missing-session latch clears but timeline skips`
+
+### ⚠️ Notes:
+
+- **Partial limitation**: The fix clears the `Syncing session...` overlay immediately. The mirror timer position (frozen seconds) will unfreeze on the next Firestore write where `lastUpdatedAt > T_server_fresh` (~30 s max). A full immediate unfreeze would require calling `_setMirrorSession(session)` inside the `wasMissing` branch — deferred to device validation.
+- `ios/Flutter/AppFrameworkInfo.plist` remains locally modified and intentionally excluded.
+- Device validation in progress (release logs running on Android RMX3771 + macOS as of 10/03/2026).
+
+---
+
+# 🔹 Block 565 — Fix 26 Phase 2: unified session snapshot pipeline (11/03/2026)
+
+**Date:** 11/03/2026  
+**Branch:** `refactor-run-mode-sync-core`  
+**Scope:** Apply the specs 10.4.8.b contract in runtime by centralizing
+snapshot application (`stream` + `fetch/resync` + `recovery`) and enforcing the
+single-shot missing-session bypass with atomic watermark reset.
+
+### ✔ Work completed:
+
+- Refactored `lib/presentation/viewmodels/pomodoro_view_model.dart`:
+  - Added `_applySessionSnapshot(...)` as the single gate/application entry:
+    - computes `shouldBypassGate = wasMissing && _isValidHoldExitSnapshot(session)`
+    - applies single-shot bypass
+    - resets applied watermarks atomically on bypass
+    - resumes normal gate path immediately after exit event.
+  - Added `_isValidHoldExitSnapshot(...)` with spec-aligned validity checks:
+    `groupId` match + active execution status (or terminal+terminal reconciliation).
+  - Added `_ingestResolvedSession(...)` so stream/fetch/recovery all delegate to
+    the same ingest + gate + projection path.
+  - Added `_applySessionTimelineProjection(...)` and
+    `_clearRemoteSessionForContextMismatch(...)` to keep projection behavior
+    centralized and deterministic.
+- Rewired all three session paths to the shared pipeline:
+  - `_subscribeToRemoteSession(...)` now delegates non-null snapshots to
+    `_ingestResolvedSession(...)`.
+  - `syncWithRemoteSession(...)` now delegates non-null snapshots to
+    `_ingestResolvedSession(...)`.
+  - `_recoverMissingSession(...)` (server-session branch) now delegates to
+    `_ingestResolvedSession(...)` instead of applying state through a parallel path.
+
+### 🧪 Validation run (local):
+
+- `dart analyze lib/presentation/viewmodels/pomodoro_view_model.dart test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` → PASS (infos only).
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` → PASS (7/7).
+- Contract-focused tests confirmed:
+  - `[REFACTOR] missing-session exit resets watermark... (AP-4 full fix)` → PASS.
+  - `stream null within debounce window... (AP-2)` → PASS.
+  - `recovery clears latch when server session is active... (AP-3)` → PASS.
+
+### ⚠️ Notes:
+
+- Full repository test suite still has pre-existing failures in
+  `scheduled_group_coordinator_test.dart` (AppModeService initialization path);
+  these failures are outside this refactor scope.
+- Device validation for Fix 26 degraded-network repro remains pending.
+
+---
+
+# 🔹 Block 566 — Fix 26 Phase 3 contract draft: single exit point + diagnostics (11/03/2026)
+
+**Date:** 11/03/2026  
+**Branch:** `refactor-run-mode-sync-core`  
+**Scope:** Documentation-first Phase 3 delta before runtime implementation:
+formalize latch-exit invariants and add contract tests reproducing field
+validation failures from Android/macOS/iOS/Chrome runs.
+
+### ✔ Work completed:
+
+- Updated `docs/specs.md` section **10.4.8.b** with Phase 3 contracts:
+  - single latch exit-point invariant (`true -> false` only via shared ingest),
+  - non-owner recovery reads allowed (`preferServer: true`) with write ownership
+    kept owner-scoped,
+  - transitional-state hold extension rule (`null`/`idle`/`finished` at
+    phase boundaries cannot clear hold without terminal corroboration),
+  - mandatory diagnostics with lifecycle events
+    (`hold-enter`/`hold-extend`/`hold-exit`/`hold-timeout`),
+  - mandatory `projectionSource` field:
+    `serverOffset | localFallback | snapshotRemaining | none`,
+    including required behavior for `projectionSource=none`
+    (do not render-resolve hold; extend with `projection-unavailable`).
+- Updated contract tests in
+  `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`:
+  - strengthened AP-4 assertion to verify hold-exit projection is timeline-based
+    (not stale `session.remainingSeconds`),
+  - added `projection_uses_phase_start_not_snapshot_remaining_on_hold_exit`,
+  - added `[PHASE3] transitional non-active snapshot must not clear hold...`,
+  - added `[PHASE3] non-owner recovery may read server and exit hold...`,
+  - added `[PHASE3] hold diagnostics must emit enter/extend/exit with projectionSource`.
+
+### 🧪 Validation run (local):
+
+- `dart analyze test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` → PASS (infos only).
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart --reporter compact`
+  → expected contract failures (pre-implementation):
+  - `[PHASE3] transitional non-active snapshot must not clear hold...`
+  - `[PHASE3] non-owner recovery may read server and exit hold...`
+  - `[PHASE3] hold diagnostics must emit enter/extend/exit with projectionSource`
+
+### ⚠️ Notes:
+
+- No runtime implementation changes were made in this block.
+- This block is review-only (specs + contract tests) before coding Phase 3
+  runtime changes.
+
+---
+
+# 🔹 Block 567 — Fix 26 Phase 3 runtime: single-exit hold + non-owner read recovery + diagnostics (11/03/2026)
+
+**Date:** 11/03/2026  
+**Branch:** `refactor-run-mode-sync-core`  
+**Scope:** Implement runtime behavior to satisfy Phase 3 contracts added in
+Block 566, without introducing patch-only side paths.
+
+### ✔ Work completed:
+
+- Updated `lib/presentation/viewmodels/pomodoro_view_model.dart`:
+  - **Gap 1 (transitional hold safety):**
+    - Added transitional guard so non-valid hold-exit snapshots while
+      `wasMissing=true` extend hold instead of clearing it.
+    - Prevented direct hold clear on `null` stream/resync while already in hold
+      unless terminality is corroborated.
+  - **Gap 2 (non-owner read recovery):**
+    - Missing-session recovery now allows server reads for non-owner devices.
+    - Ownership checks remain write-scoped (`tryClaimSession` / publish path).
+    - If server fetch returns active same-context session, it is ingested through
+      the shared pipeline and can clear hold.
+  - **Gap 3 (diagnostics):**
+    - Added hold lifecycle diagnostics events:
+      `hold-enter`, `hold-extend`, `hold-exit`.
+    - Added projection source classification in diagnostics:
+      `serverOffset | localFallback | snapshotRemaining | none`.
+
+### 🧪 Validation run (local):
+
+- `dart analyze lib/presentation/viewmodels/pomodoro_view_model.dart test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+  → PASS (2 info-level style hints in test helper only).
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart --reporter compact`
+  → PASS (`11/11`).
+  - Includes previously failing Phase 3 contracts:
+    - transitional non-active snapshot must not clear hold,
+    - non-owner recovery via server read,
+    - hold diagnostics with projection source.
+
+### ⚠️ Notes:
+
+- Device validation is still pending for this runtime phase.
+- Existing unrelated local modifications were preserved
+  (`docs/bugs/...`, `ios/Flutter/AppFrameworkInfo.plist`).
+
+---
+
+# 🔹 Block 568 — Fix 26 Phase 4 contract draft: render/sync decoupling + overlay-trigger diagnostics (12/03/2026)
+
+**Date:** 12/03/2026  
+**Branch:** `refactor-run-mode-sync-core`  
+**Scope:** Documentation-first Phase 4 delta after validation evidence showed
+freeze reproduction outside the Phase 3 hold path.
+
+### ✔ Work completed:
+
+- Updated `docs/specs.md` section **10.4.8.b** with Phase 4 contracts:
+  - render/sync decoupling invariant (active countdown projection from
+    `phaseStartedAt` + elapsed; `session.remainingSeconds` seed-only),
+  - non-blocking overlay invariant (`Syncing session...` must not freeze active
+    countdown rendering),
+  - mandatory overlay-trigger diagnostics with explicit reason taxonomy:
+    `sessionMissingHold | runningWithoutSession | timeSyncUnready |
+    awaitingSessionConfirmation`,
+  - deterministic `primaryReason` priority and required transition payload.
+- Added Phase 4 contract tests (no runtime implementation) in:
+  - `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+    - `[PHASE4] active projection must continue with local fallback when timeSync is unavailable`
+  - `test/presentation/timer_screen_syncing_overlay_test.dart`
+    - `[PHASE4] sync overlay diagnostics must emit explicit trigger reason (timeSyncUnready)`
+
+### 🧪 Validation run (local):
+
+- `dart analyze test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart`
+  → PASS (2 info-level style hints in existing test helper only).
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart --reporter compact`
+  → FAIL (expected contract-first failure):
+  - `[PHASE4] active projection must continue with local fallback when timeSync is unavailable`
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart --reporter compact`
+  → FAIL (expected contract-first failure):
+  - `[PHASE4] sync overlay diagnostics must emit explicit trigger reason (timeSyncUnready)`
+
+### ⚠️ Notes:
+
+- No runtime changes were made in this block.
+- This block formalizes Phase 4 target behavior before implementation.
+
+---
+
+# 🔹 Block 569 — Fix 26 Phase 4 runtime: local-fallback projection + sync-overlay diagnostics (12/03/2026)
+
+**Date:** 12/03/2026  
+**Branch:** `refactor-run-mode-sync-core`  
+**Scope:** Implement Phase 4 runtime contracts to decouple countdown rendering
+from sync/offset availability and to expose deterministic diagnostics for
+`Syncing session...` transitions.
+
+### ✔ Work completed:
+
+- Updated `lib/presentation/viewmodels/pomodoro_view_model.dart`:
+  - projection fallback:
+    - `_projectionNowForSession(...)` now falls back to local time when server
+      offset is unavailable (while still triggering async TimeSync refresh),
+    - active render projection no longer returns `null` anchor in account mode
+      during offset gaps.
+  - hold diagnostics projection source:
+    - `_projectionSourceForSession(...)` now reports `localFallback` (instead of
+      `snapshotRemaining`) when timeline anchors exist but offset is unavailable.
+  - sync-overlay diagnostics:
+    - added deterministic trigger derivation in ViewModel for:
+      `sessionMissingHold`, `runningWithoutSession`,
+      `awaitingSessionConfirmation`, `timeSyncUnready`,
+    - added `[SyncOverlay]` transition log emission with:
+      `overlayVisibleBefore/After`, `activeReasons`, `primaryReason`, `groupId`,
+    - diagnostics are emitted from ViewModel state/meta transitions, not inline
+      in widget build logic.
+  - state/meta hooks:
+    - `_notifySessionMetaChanged()` and `_applyProjectedState(...)` now reconcile
+      and emit sync-overlay transition diagnostics on change.
+
+- Updated test coverage:
+  - `test/presentation/timer_screen_syncing_overlay_test.dart`:
+    - stabilized debug-print restoration ordering in the new Phase 4 diagnostics
+      test to avoid widget-test foundation invariant violations.
+
+### 🧪 Validation run (local):
+
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart --reporter compact`
+  → PASS (`14/14`).
+- `dart analyze lib/presentation/viewmodels/pomodoro_view_model.dart test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart`
+  → PASS (2 pre-existing info-level style hints in test helper).
+
+### ⚠️ Notes:
+
+- Device validation remains pending for this runtime phase.
+- Existing unrelated local modifications were preserved
+  (`docs/bugs/...`, `ios/Flutter/AppFrameworkInfo.plist`).
+
+---
+
+# 🔹 Block 570 — Fix 26 Phase 5 docs-first: VM/session lifecycle observability contract (13/03/2026)
+
+**Date:** 13/03/2026  
+**Branch:** `refactor-run-mode-sync-core`  
+**Scope:** Documentation-first diagnostic phase to pinpoint the `_sessionSub`
+loss trigger observed in device logs, without changing runtime behavior.
+
+### ✔ Work completed:
+
+- Updated `docs/specs.md` section **10.4.8.b** with a Phase 5
+  observability-only contract:
+  - mandatory stable `vmToken` per `PomodoroViewModel` instance,
+  - mandatory `[VMLifecycle]` init/dispose logs with token correlation,
+  - mandatory `[SessionSub]` open/close logs with explicit `reason`,
+  - mandatory scheduled-action bridge diagnostics with action metadata +
+    token correlation,
+  - mandatory `_clearStaleActiveSessionIfNeeded` decision diagnostics with
+    structured fields (`sessionGroupId`, lookup status, clear/keep decision).
+- Added Phase 5 smoke tests (contract-first, expected to fail before runtime):
+  - `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+    - `[PHASE5] VM lifecycle/session-sub diagnostics must include vmToken and lifecycle reasons`
+  - `test/presentation/timer_screen_syncing_overlay_test.dart`
+    - `[PHASE5] sync overlay diagnostics must include vmToken for lifecycle correlation`
+  - `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+    - `[PHASE5] scheduled-action diagnostics must include vmToken and action metadata`
+    - `[PHASE5] stale-clear diagnostics must include instance token and clear decision metadata`
+- Updated project tracking docs to mark Phase 5 as opened in docs-first mode:
+  - `docs/roadmap.md` (global status + reopened phases),
+  - `docs/validation/validation_ledger.md` (new Fix 26 Phase 5 pending item).
+
+### 🧪 Validation run (local):
+
+- `dart analyze` on updated docs/tests target set → PASS (or info-only).
+- Phase 5 smoke tests are intentionally contract-first and expected to fail
+  until runtime instrumentation is implemented in the next phase.
+
+### ⚠️ Notes:
+
+- No runtime behavior changes were made in this block.
+- Phase 6 scope remains blocked on Phase 5 diagnostic evidence from device logs.
+
+---
+
+# 🔹 Block 571 — Fix 26 Phase 5 runtime: vmToken lifecycle instrumentation (13/03/2026)
+
+**Date:** 13/03/2026  
+**Branch:** `refactor-run-mode-sync-core`  
+**Scope:** Implement runtime diagnostics required by the Phase 5 observability
+contract (no business-behavior changes).
+
+### ✔ Work completed:
+
+- Updated `lib/presentation/viewmodels/pomodoro_view_model.dart`:
+  - added stable `vmToken` per `PomodoroViewModel` instance (`Uuid.v4()`),
+  - added `[VMLifecycle] init|dispose` diagnostics,
+  - added `[SessionSub] open|close` diagnostics with explicit `reason`,
+  - replaced raw subscription close calls with reasoned helper paths:
+    `load-group`, `resume-rebind`, `mode-switch`, `provider-dispose`,
+  - extended `[SyncOverlay]` diagnostics payload with `vmToken`.
+- Updated `lib/presentation/viewmodels/scheduled_group_coordinator.dart`:
+  - added stable coordinator instance token (`vmToken` field in diagnostics),
+  - added `[ScheduledActionDiag]` on `openTimer`/`lateStartQueue` emission with
+    action type/token and payload metadata,
+  - added `[StaleClearDiag]` on `_clearStaleActiveSessionIfNeeded` evaluations
+    with `sessionGroupId`, lookup source/status, decision (`clear|keep`), and reason.
+
+### 🧪 Validation run (local):
+
+- `dart analyze lib/presentation/viewmodels/pomodoro_view_model.dart lib/presentation/viewmodels/scheduled_group_coordinator.dart test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+  → PASS (2 pre-existing info-level style hints in test helper only).
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart --reporter compact`
+  → PASS (`16/16`).
+- Phase 5 smoke tests:
+  - `flutter test ...pomodoro_view_model_session_gap_test.dart --plain-name "[PHASE5]"`
+    → PASS,
+  - `flutter test ...timer_screen_syncing_overlay_test.dart --plain-name "[PHASE5]"`
+    → PASS,
+  - `flutter test ...scheduled_group_coordinator_test.dart --plain-name "[PHASE5]"`
+    → PASS.
+
+### ⚠️ Notes:
+
+- Full `scheduled_group_coordinator_test.dart` still contains pre-existing
+  `AppModeService` harness failures outside Phase 5 scope.
+- Phase 6 remains blocked until device validation captures the new diagnostics
+  and identifies the exact `_sessionSub` loss trigger path.
+
+---
+
+# 🔹 Block 572 — Fix 26 Phase 5 device validation: root cause confirmed (13/03/2026)
+
+## 📋 Context
+
+Phase 5 device run on commit `7daf636` with 4 devices (Android RMX3771 release, macOS
+release, iOS iPhone17Pro debug, Chrome debug). Group `aa8794d0`, scheduled 14:43, owner
+macOS. All devices froze with `Syncing session...` / `Ready + 25:00` between 15:30 and
+15:35. macOS crashed at 15:48 (SIGSEGV).
+
+## 🔍 Key findings from Phase 5 logs
+
+### Chrome (debug log — full trace available)
+
+Last event sequence before freeze:
+```
+15:30:08.572  [ActiveSession][snapshot] remaining=773  ← last Firestore snapshot
+15:30:24.996  [ActiveSession][snapshot] remaining=773  ← stale resync (unchanged)
++10017 ms gap (no Firestore events)
+[SessionSub] close vmToken=b2ce33ee reason=provider-dispose
+[VMLifecycle] dispose vmToken=b2ce33ee
+[ScheduledGroups] timer-state runningExpiry=true        ← coordinator still alive
+[RunModeDiag] Auto-open suppressed (opened=aa8794d0 route=/timer/aa8794d0)
+```
+
+- `provider-dispose` fired while the timer screen was still on `/timer/aa8794d0`
+- No `[VMLifecycle] init` appeared after dispose → no VM recovery
+- Coordinator saw `decision=keep reason=group-running` continuously — session was NOT deleted
+
+### iOS (debug log)
+
+Identical pattern: `provider-dispose` 18.6s after last Firestore activity. Same
+`Auto-open suppressed` guard block.
+
+### Android / macOS (release logs)
+
+Phase 5 diagnostic events absent in `--release` mode (need debug for next run).
+macOS showed frozen RUNNING timer (not Ready) — consistent with owner's
+`_machine.state.status.isActiveExecution` keeping keepAlive alive longer.
+macOS crash at 15:48:18 (SIGSEGV `EXC_BAD_ACCESS`) — Firestore transaction path, unrelated to Fix 26.
+
+### Codex corrections on the diagnosis
+
+1. `pomodoroViewModelProvider` confirmed `autoDispose` at `providers.dart:325` ✓
+2. `[StaleClearDiag]` events have coordinator `vmToken` (not VM token) — separate instance ✓
+3. `runningExpiry=true` = `_runningExpiryTimer` was armed at time of `_handleGroupsAsync` entry, NOT that the group expired ✓
+4. macOS crash thread is Firestore transaction, not Flutter build recursion ✓
+
+## 🐛 Two confirmed sub-bugs
+
+### B1 — autoDispose keepAlive race condition
+
+`pomodoroViewModelProvider` is `NotifierProvider.autoDispose`. The `_keepAliveLink`
+can close during a Firestore quiet window (10–18s between snapshots) if
+`_syncKeepAliveState()` is called at a moment where all of:
+- `_machine.state.status.isActiveExecution` → false
+- `_latestSession?.status.isActiveExecution` → false/null
+- `_remoteSession?.status.isActiveExecution` → false/null
+
+Then Riverpod disposes the VM even though the session is still running in Firestore.
+
+### B2 — Auto-open guard blocks recovery navigation
+
+`ActiveSessionAutoOpener._autoOpenedGroupId == groupId` suppresses re-navigation
+without checking if the VM was disposed. After a `provider-dispose`, the screen stays
+on `/timer/groupId` with a dead ViewModel showing `Ready + 25:00`.
+`ref.exists(pomodoroViewModelProvider)` is not checked.
+
+## 📐 Phase 6 plan (docs-first, contracts in specs.md section 10.4.9)
+
+### B1 fix
+
+Add `DateTime? _lastActiveSessionTimestamp` to `PomodoroViewModel`. Update it whenever
+`_ingestResolvedSession` processes a snapshot with `isActiveExecution == true`. In
+`_shouldKeepAlive()`, add:
+```dart
+final lastActive = _lastActiveSessionTimestamp;
+if (lastActive != null &&
+    DateTime.now().difference(lastActive) < const Duration(minutes: 2)) return true;
+```
+2-minute grace window > Firestore reconnect window (≤ 30s) and < stale threshold.
+
+### B2 fix
+
+In `active_session_auto_opener.dart` at the suppression block (line ~147):
+```dart
+if (_autoOpenedGroupId == groupId && !ref.exists(pomodoroViewModelProvider)) {
+  // VM was disposed while screen still showed timer — allow recovery
+  _autoOpenedGroupId = null;
+  // fall through to navigation
+} else {
+  return; // normal suppression
+}
+```
+
+### Android/iOS validation note
+
+For the next run, use `--debug` on ALL devices to capture Phase 5 diagnostic events.
+Release mode strips them.
+
+## ✅ Status
+
+- Root cause confirmed. Phase 6 plan written. Implementation pending.
+
+---
+
+# 🔹 Block 573 — Fix 26 Phase 6 runtime: B1 keepAlive grace + B2 auto-open recovery (13/03/2026)
+
+## 📋 Context
+
+Phase 5 validation confirmed two runtime bugs:
+- **B1**: `autoDispose` race disposed `PomodoroViewModel` during Firestore quiet windows.
+- **B2**: `ActiveSessionAutoOpener` suppressed re-navigation for an already-opened
+  group without verifying whether the VM had already been disposed.
+
+Implementation commit:
+- `2fc65e4` — `fix(f26): implement phase 6 runtime keepalive grace + auto-open recovery`
+
+Phase 6 contract was defined in `docs/specs.md` section **10.4.9** before coding.
+
+## ✔ Work completed
+
+- Updated `lib/presentation/viewmodels/pomodoro_view_model.dart`:
+  - added `_lastActiveSessionTimestamp` (local processing time stamp),
+  - added keepAlive grace policy (`_defaultKeepAliveGraceWindow = 2 min`),
+  - added grace timer re-check (`_keepAliveGraceTimer`) to release keepAlive
+    once grace expires when no active execution signal remains,
+  - extended `_syncKeepAliveState()` / `_shouldKeepAlive()` with explicit
+    active-signal and grace-window logic,
+  - synchronized keepAlive state after stream-null handling and after resolved
+    session ingestion to avoid stale keepAlive decisions.
+- Updated `lib/widgets/active_session_auto_opener.dart`:
+  - added VM existence transition tracking via
+    `ref.exists(pomodoroViewModelProvider)`,
+  - added recovery branch that clears stale `_autoOpenedGroupId` when VM was
+    disposed while session remains active,
+  - added forced timer refresh navigation path (`/timer/:id?refresh=...`) under
+    recovery mode, while preserving in-flight and bounce-window protections.
+- Added Phase 6 contract tests:
+  - `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+    (`[PHASE6]` keepAlive grace behavior),
+  - `test/presentation/timer_screen_syncing_overlay_test.dart`
+    (`[PHASE6]` auto-open guard recovery after VM disposal).
+
+## 🧪 Validation run (local)
+
+- `dart analyze lib/presentation/viewmodels/pomodoro_view_model.dart lib/widgets/active_session_auto_opener.dart test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/timer_screen_syncing_overlay_test.dart`
+  - PASS (2 pre-existing info-level hints in existing test helper).
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart --plain-name "[PHASE6]" --reporter compact`
+  - PASS.
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart --plain-name "[PHASE6]" --reporter compact`
+  - PASS.
+
+## ⚠️ Notes
+
+- Phase 6 is **not closed** yet: device exact repro + regression smoke packet is
+  still required before marking Closed/OK in validation docs.
+- Ledger updated:
+  - `P0-F26-004` moved to Closed/OK (Phase 5 diagnostics objective completed),
+  - `P0-F26-005` opened In validation for Phase 6 runtime closure criteria.
+
+---
+
+# 🔹 Block 574 — Phase 6 device validation runbook registration (13/03/2026)
+
+## 📋 Context
+
+After Phase 6 runtime commit (`2fc65e4`), device validation needed explicit and
+unambiguous log destinations for the two execution windows:
+- pass 1 (1h, same day),
+- pass 2 (4h30 soak, next day).
+
+## ✔ Work completed
+
+- Updated `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`:
+  - added fixed-device run commands in `--debug` for:
+    - `RMX3771`,
+    - `iPhone 17 Pro`,
+    - `macOS`,
+    - `Chrome`;
+  - registered definitive log filenames for:
+    - `2026-03-13 ... pass1_1h ...`,
+    - `2026-03-14 ... pass2_4h30 ...`;
+  - added grep patterns for Phase 6 diagnostic verification
+    (`[VMLifecycle]`, `[SessionSub]`, `[SyncOverlay]`, `[HoldDiag]`,
+    `Auto-open recovery`, crash/error signatures).
+- Updated `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`:
+  - added planned packet A/B sections with exact log paths for both passes,
+  - aligned closure gate text for `P0-F26-005`.
+
+## ⚠️ Notes
+
+- No runtime code changes in this block (docs-only validation logistics).
+- Phase 6 remains **In validation** until exact repro + regression smoke + soak
+  evidence are captured in the registered logs.
+
+
+---
+
+# 🔹 Block 575 — Phase 6 device validation FAILED + architecture rewrite decision (14/03/2026)
+
+## 📋 Context
+
+Phase 6 (commit `2fc65e4`) was a focalized fix for two root causes confirmed in Phase 5
+device validation (2026-03-13):
+- **B1**: `pomodoroViewModelProvider` disposed during Firestore quiet window (10s gap) →
+  `_sessionSub` torn down → new listener emits `null` → 3s debounce → latch.
+  Fix: 2-minute `keepAlive` grace window via `_lastActiveSessionTimestamp`.
+- **B2**: `_autoOpenedGroupId == groupId` guard in `ActiveSessionAutoOpener` blocks
+  re-navigation after VM disposal.
+  Fix: `ref.exists()` check to detect disposed VM and clear guard.
+
+## ❌ Validation result — FAILED
+
+**Pass 1 (2026-03-13, ~1h, 4 devices RMX3771 / iPhone 17 Pro / macOS / Chrome):**
+
+- 22:10:00 — 10s manual network cut on iOS/Chrome/macOS → **no Syncing session** (B1 working)
+- 22:21:37 — Android (owner) entered `Syncing session...` **spontaneously** (no user cut)
+  - Last session write: `lastUpdatedAt=22:21:20`, `remainingSeconds=521`, `sessionRevision=7`
+  - Stream emitted null for ≥3s → debounce fired → latch engaged
+  - 22:22:01: Syncing cleared but timer **frozen at 08:25**
+- 22:23:14 — macOS: `Syncing session...`, showing "ready" 15:00 (iOS now owner)
+- 22:23:26 — Chrome: same as macOS
+- 22:25:44 — iOS: `Syncing session...`, timer 04:22 frozen
+- 22:26:01 — iOS cleared Syncing but timer remained frozen
+- 22:37:50 — validation ended; Android recovered on wake from screen-off (owner = iOS)
+
+**Pass 2 (4h30 soak) cancelled** — exact repro already reproduced in pass 1.
+
+## 🔍 Root cause of failure
+
+B1 fixed the **VM-disposal trigger path**. The spontaneous Android freeze at 22:21:37
+was caused by a **different path**: Firebase SDK internal event (auth token refresh /
+Firestore reconnect / cache miss) caused the session stream to emit `null` for ≥3s
+**while the VM was still alive**. The 3-second debounce then latched
+`_sessionMissingWhileRunning = true` → freeze.
+
+This trigger path has always existed (AP-2). The 3s debounce was the only protection.
+It is insufficient for SDK-internal reconnect cycles.
+
+## 🏛️ Architecture decision — rewrite required
+
+All focalized hardenings (Phases 2–6) have been exhausted without eliminating the bug.
+The problem is **structural**:
+
+1. **Timer and session sync are tightly coupled** in an autoDisposable ViewModel.
+   Any stream null → timer freeze. No separation between "I have no data" and "timer must stop".
+
+2. **`_sessionMissingWhileRunning` latch** activates on any transient null (3s debounce)
+   and has complex, multi-path recovery that fails silently when ownership changes.
+
+3. **Ephemeral ViewModel for critical state** — `autoDispose` was the wrong choice for
+   the most critical runtime state in the app.
+
+**Decision (agreed by Claude + Codex, 2026-03-14):** no more focalized hardenings.
+Next step is a sync architecture rewrite with these principles:
+
+- `TimerService` — persistent (non-autoDispose), never interrupted by network events
+- `SessionSyncService` — background reconciler; adjusts timer drift without blocking it
+- **Optimistic rendering**: always show last known good state; escalate to error only after
+  N seconds with zero signal from all sources (stream + fetch + group state)
+- **No freeze on stream null**: "Syncing session..." overlay = informational, timer keeps running
+- **Deterministic recovery state machine**: explicit states, explicit transitions, no implicit latches
+
+## 📁 Updated docs
+
+- `docs/validation/validation_ledger.md`: P0-F26-005 → Failed — exact repro FAIL 2026-03-14
+- `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`: Phase 6 → FAILED
+- `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`: packets → FAILED + cancelled
+- `docs/roadmap.md`: Phase 6 entry replaced with "Sync architecture rewrite required"
+
+---
+
+# 🔹 Block 576 — iOS plist normalization confirmed + Git safety runbook finalized (14/03/2026)
+
+## 📋 Context
+
+After repeated iOS runs, `ios/Flutter/AppFrameworkInfo.plist` kept appearing as modified.
+In parallel, branch safety guidance needed a deterministic, low-risk sequence to avoid
+progress loss while moving toward the sync rewrite branch.
+
+## ✔ Work completed
+
+- Verified and confirmed `AppFrameworkInfo.plist` is now aligned to Flutter-generated output
+  (`MinimumOSVersion` removed) under commit `1b1dc33`.
+- Verified the branch graph state:
+  - `fix26-reopen-black-syncing-2026-03-09` is fully contained in
+    `refactor-run-mode-sync-core`.
+  - `refactor-run-mode-sync-core` is synced with `origin` at `51ccf0a`.
+- Finalized `docs/git_strategy.md` for executable, safe Git operations:
+  - corrected stale commit references,
+  - corrected failed-state tag target hash to `b1cb17e`,
+  - standardized policy for no merge to `main` with P0 bug open,
+  - documented rewrite branch creation flow from current refactor head.
+
+## 📁 Updated docs
+
+- `docs/git_strategy.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- No runtime code changes in this block (docs/process only).
+- Next implementation branch remains pending: `rewrite-sync-architecture`.
+
+---
+
+# 🔹 Block 577 — Rewrite docs-first contract opened (14/03/2026)
+
+## 📋 Context
+
+After Phase 6 failure (`P0-F26-005`), rewrite work moved to branch
+`rewrite-sync-architecture` with a strict docs-first gate: no runtime code and no
+`[REWRITE-CORE]` tests before contract review approval.
+
+## ✔ Work completed
+
+- Updated roadmap to mark rewrite branch opening and the explicit review gate
+  before tests/runtime edits.
+- Added rewrite architecture contract draft in `docs/specs.md` section 10.4.10,
+  including these mandatory invariants:
+  1. **TimerService persistence model:** app-scope Riverpod `NotifierProvider`
+     (non-autoDispose), lifecycle bound to `ProviderContainer`.
+  2. **Stream-null policy:** exact thresholds and behavior (`<3s` no visual change,
+     `>=3s` non-blocking syncing overlay, `>=45s` recovery mode with timer still running).
+  3. **Ownership stale timeout policy:** keep 45s unchanged in rewrite v1.
+  4. **Cutover strategy:** staged dual-path migration (services first, adapter switch,
+     then legacy-path cleanup after parity validation).
+- Updated validation ledger with new P0 item `P0-F26-006` (rewrite contract)
+  and explicit block on tests until contract approval.
+
+## 📁 Updated docs
+
+- `docs/specs.md`
+- `docs/roadmap.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- No `lib/` edits in this block.
+- No test changes in this block.
+- Next step is contract review/approval; only after approval can `[REWRITE-CORE]`
+  tests be introduced.
+
+---
+
+# 🔹 Block 578 — Rewrite contract refinement: interfaces required for test design (14/03/2026)
+
+## 📋 Context
+
+Contract review feedback approved rewrite direction in principle but blocked
+`[REWRITE-CORE]` test authoring until concrete interfaces were defined.
+
+## ✔ Work completed
+
+- Refined `docs/specs.md` section 10.4.10 with concrete interface contracts:
+  - `TimerRuntimeState` minimal required fields (group/task/status/phase/remaining/
+    counters/phase anchor/owner/sync health).
+  - `SessionSyncService` API contract and strict one-way integration
+    (`SessionSyncService` -> `TimerService`) for runtime updates.
+  - `PomodoroViewModel` adapter contract for Stage A/B compatibility
+    (`Notifier<PomodoroState>` remains UI-facing while runtime authority lives
+    in persistent `TimerService`).
+- Kept ownership stale timeout policy at 45s and reaffirmed stream-null
+  non-freeze semantics.
+- Updated roadmap and validation ledger to reflect the refined contract and
+  continued review gate before tests/runtime edits.
+
+## 📁 Updated docs
+
+- `docs/specs.md`
+- `docs/roadmap.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- No runtime code changes in this block.
+- No tests added in this block.
+- Next step remains contract approval; only then `[REWRITE-CORE]` tests can start.
+
+---
+
+# 🔹 Block 579 — REWRITE-CORE tests authored (red-first baseline, no runtime edits) (14/03/2026)
+
+## 📋 Context
+
+With contract section 10.4.10 approved in principle, next step was to author
+`[REWRITE-CORE]` tests before runtime changes.
+
+## ✔ Work completed
+
+- Added 5 rewrite contract tests to:
+  - `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- Coverage target: invariants from specs 10.4.10.7:
+  1. stream null must not freeze countdown progression,
+  2. syncing state is informational (active execution preserved),
+  3. authoritative transitions originate from `TimerService`,
+  4. ownership recovery is deterministic via explicit state machine,
+  5. VM dispose/rebuild must not reset runtime continuity.
+- Executed targeted subset:
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart --plain-name "[REWRITE-CORE]" --reporter compact`
+- Result: **1 pass / 4 fail** (expected red-first baseline).
+  - Invariant 1 failed (countdown froze during stream-null hold).
+  - Invariants 3/4/5 are contract-gate failures pending rewrite runtime.
+
+## 📁 Updated docs/code
+
+- `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- `docs/roadmap.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- No runtime `lib/` edits in this block.
+- Red baseline confirmed; next step is runtime implementation to make
+  `[REWRITE-CORE]` green.
+
+---
+
+# 🔹 Block 580 — Rewrite Stage A runtime partial: TimerService gap projection (14/03/2026)
+
+## 📋 Context
+
+`[REWRITE-CORE]` red-first baseline (`11d3866`) confirmed Invariant 1 regression:
+countdown froze after stream-null latch (`_sessionMissingWhileRunning`).
+
+Stage A target was to decouple countdown continuity from latch freeze without
+changing ownership/handoff contracts yet.
+
+## ✔ Work completed
+
+- Added new runtime service:
+  - `lib/data/services/timer_service.dart`
+  - app-scope `Notifier<TimerRuntimeState>` with non-autoDispose provider
+    contract fields (`groupId`, `currentTaskId`, `status`, `phase`,
+    `remainingSeconds`, `totalSeconds`, pomodoro counters, `phaseStartedAt`,
+    `ownerDeviceId`, `syncHealth`).
+- Registered `timerServiceProvider` in `lib/presentation/providers.dart` as
+  `NotifierProvider<TimerService, TimerRuntimeState>` (non-autoDispose).
+- Wired `PomodoroViewModel` to Stage A runtime path:
+  - ingests active snapshots into `TimerService` (`applyOwnerSnapshot`),
+  - on debounce latch fire, signals `notifySessionGap(...)`,
+  - projects countdown from `TimerService` while `sessionMissingHold` is active,
+    preventing freeze in the null-stream hold window,
+  - clears service tick when session is authoritatively cleared.
+- Preserved legacy ownership/request/handoff behavior (no Stage B/C migration in this block).
+
+## 🧪 Validation run (local)
+
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart --plain-name "[REWRITE-CORE]" --reporter compact`
+  - Result: **2 pass / 3 fail**
+  - PASS: Invariant 1 (`stream null must not freeze countdown progression`)
+  - PASS: Invariant 2 (`syncing state remains informational`)
+  - FAIL (intentional contract gates): Invariants 3/4/5
+- Regression smoke:
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart --plain-name "[PHASE" --reporter compact` → PASS
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart test/presentation/timer_screen_syncing_overlay_test.dart --reporter compact` → PASS
+- `flutter analyze` (touched scope) → PASS with 2 pre-existing info hints in test code (`use_super_parameters`).
+
+## 📁 Updated files
+
+- `lib/data/services/timer_service.dart` (new)
+- `lib/presentation/providers.dart`
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`
+- `docs/roadmap.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- Stage A is intentionally partial: Invariants 3/4/5 remain pending until
+  TimerService-authoritative command delegation, deterministic recovery state machine,
+  and VM continuity contract tests are implemented.
+- No merge/closure yet for `P0-F26-006`.
+
+---
+
+# 🔹 Block 581 — Rewrite Invariant 5 promoted to executable test (14/03/2026)
+
+## 📋 Context
+
+After Stage A runtime bridge (`248d963`), `[REWRITE-CORE]` still had three pending
+contract-gate failures (Invariants 3/4/5). Invariant 5 became testable because
+`TimerService` is now app-scope and non-autoDispose.
+
+## ✔ Work completed
+
+- Replaced Invariant 5 `fail()` gate in:
+  - `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- New test behavior for Invariant 5:
+  - load active group/session,
+  - force stream-null hold (debounce expiry) so runtime countdown is controlled by
+    `TimerService` degraded projection,
+  - dispose the VM boundary (`vmSub.close()` + `container.invalidate(pomodoroViewModelProvider)`),
+  - verify `timerServiceProvider.remainingSeconds` keeps decrementing while VM is disposed,
+  - rebuild VM listener and verify runtime was not reset.
+
+## 🧪 Validation run (local)
+
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart --plain-name "[REWRITE-CORE]" --reporter compact`
+  - Result: **3 pass / 2 fail**
+  - PASS: Invariants 1, 2, 5
+  - FAIL (intentional contract gates): Invariants 3, 4
+- Full rewrite-related suite:
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart test/presentation/timer_screen_syncing_overlay_test.dart --reporter compact`
+  - Result: **26 pass / 2 fail**
+  - Only fails are intentional gates for Invariants 3 and 4.
+- `flutter analyze` (touched scope) → PASS with 2 pre-existing info hints in test code (`use_super_parameters`).
+
+## 📁 Updated files
+
+- `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- `docs/roadmap.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- No new runtime `lib/` edits in this block.
+- Next runtime milestones remain Invariant 3 (authoritative TimerService command path)
+  and Invariant 4 (deterministic ownership recovery state machine).
+
+---
+
+# 🔹 Block 582 — Stage B docs/test gate activated (14/03/2026)
+
+## 📋 Context
+
+After Stage A, rewrite baseline was `3 PASS / 2 FAIL`, but Invariants 3/4 still needed
+executable (non-placeholder) red tests tied to explicit Stage B contracts.
+
+## ✔ Work completed
+
+- Updated `docs/specs.md` with Stage B contracts:
+  - `10.4.10.8` command delegation contract (`_startInternal/_pauseInternal/_resumeInternal/cancel` -> `TimerService` APIs),
+  - `10.4.10.9` deterministic ownership recovery state machine contract
+    (`OwnershipSyncState`: `unloaded|owned|mirroring|degraded|recovery`).
+- Replaced Stage B contract gates in
+  `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`:
+  - Invariant 3 is now an executable red assertion (no `fail()` stub),
+  - Invariant 4 is now an executable red assertion (no `fail()` stub).
+- Stabilized Invariant 3 failure mode to avoid timeout/lifecycle race:
+  - switched from `vm.start()` timeout-prone path to deterministic `vm.pause()`
+    delegation check,
+  - kept failure focused on missing `TimerService` authoritative transition.
+
+## 🧪 Validation run (local)
+
+- Rewrite-only gate:
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart --plain-name "[REWRITE-CORE]" --reporter compact`
+  - Result: **3 PASS / 2 FAIL**
+  - PASS: Invariants 1, 2, 5
+  - FAIL (expected Stage B runtime pending):
+    - Invariant 3: `TimerService` status does not reflect `vm.pause()` authoritative command path yet
+    - Invariant 4: `ownershipSyncState` observable contract not exposed yet
+- Full smoke set:
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart test/presentation/timer_screen_syncing_overlay_test.dart --reporter compact`
+  - Result: **26 PASS / 2 FAIL**
+  - Only failing tests are the two expected Stage B rewrite invariants (3/4).
+
+## 📁 Updated files
+
+- `docs/specs.md`
+- `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- `docs/roadmap.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- No new runtime `lib/` edits in this block (docs/tests only).
+- Next step remains Stage B runtime implementation for Invariants 3/4.
+
+---
+
+# 🔹 Block 583 — Stage B runtime green (Invariants 3/4) (14/03/2026)
+
+## 📋 Context
+
+After Block 582, Stage B had executable red tests for Invariants 3/4:
+- Invariant 3 failed because VM command intent (`pause`) did not update `TimerService` runtime status.
+- Invariant 4 failed because `PomodoroViewModel` did not expose observable `ownershipSyncState`.
+
+## ✔ Work completed
+
+### Commit A — `4112408`
+`refactor(f26): delegate vm start/pause/resume commands to timer service`
+
+- `PomodoroViewModel` now delegates command path to `TimerService`:
+  - `_startInternal` -> `_timerService.startTick(...)`
+  - `_pauseInternal` -> `_timerService.pauseTick()`
+  - `_resumeInternal` -> `_timerService.resumeTick()`
+- `TimerService` start/resume now respect health mode for ticker activation:
+  - ticker runs only when `syncHealth != healthy` (prevents reintroducing pending-timer regressions in healthy UI/widget scenarios).
+
+### Commit B — `617cae4`
+`refactor(f26): expose deterministic ownership sync state in vm`
+
+- Added `OwnershipSyncState` enum:
+  - `unloaded`, `owned`, `mirroring`, `degraded`, `recovery`
+- Added `PomodoroViewModel.ownershipSyncState` getter:
+  - returns deterministic stable states from current ownership snapshot,
+  - transitions to `degraded/recovery` while missing-session hold is active based on gap duration (`<45s` / `>=45s`).
+
+## 🧪 Validation run (local)
+
+- Rewrite gate:
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart --plain-name "[REWRITE-CORE]" --reporter compact`
+  - Result: **5 PASS / 0 FAIL**
+  - Invariants 1–5 all green.
+
+- Smoke suite:
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart test/presentation/timer_screen_syncing_overlay_test.dart --reporter compact`
+  - Result: **28 PASS / 0 FAIL**
+
+## 📁 Updated files
+
+- `lib/data/services/timer_service.dart`
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`
+- `lib/presentation/viewmodels/ownership_sync_state.dart`
+- `docs/roadmap.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- Stage B contract is now green locally.
+- Stage C (cleanup/removal of obsolete latch/freeze paths) and multi-device validation remain pending before closure.
+
+---
+
+# 🔹 Block 584 — Device validation runbook registered with exact IDs (14/03/2026)
+
+## 📋 Context
+
+After Stage B local green, next mandatory gate is real-device exact repro packet for `P0-F26-006`.
+User provided exact current selectors/IDs for all 4 targets.
+
+## ✔ Work completed
+
+- Updated validation docs with exact device selectors:
+  - Android USB `HYGUT4GMJJOFVWSS` (RMX3771)
+  - iOS `9A6B6687-8DE2-4573-A939-E4FFD0190E1A` (iPhone 17 Pro)
+  - macOS `macos`
+  - Chrome `chrome`
+- Added command blocks for pass1 (1h) on current rewrite baseline `3b11847`.
+- Added explicit log URLs/paths for each device output file.
+- Registered this packet in global ledger (`P0-F26-006`) as next active validation gate.
+
+## 📁 Updated files
+
+- `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`
+- `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- Run protocol for exact repro packet remains: no manual network cut, no manual pause/resume.
+- Stage C remains blocked until this device packet is executed and analyzed.
+
+---
+
+# 🔹 Block 585 — Claude/Codex role contract formalized (14/03/2026)
+
+## 📋 Context
+
+Collaboration needed explicit, non-ambiguous role boundaries between Claude
+(architecture/review) and Codex (implementation/tests), plus a mandatory
+handoff format to avoid drift during the sync rewrite.
+
+## ✔ Work completed
+
+- Updated `AGENTS.md` with an authoritative "Role Operating Model" section:
+  - Canonical source pointer to `docs/team_roles.md`
+  - Operational split (Claude vs Codex)
+  - Mandatory handoff payload
+  - Conflict-resolution rule against specs and guardrails
+- Replaced `docs/team_roles.md` with an operational contract:
+  - Role A (Claude) responsibilities and constraints
+  - Role B (Codex) responsibilities and constraints
+  - Mandatory handoff format
+  - Full-cutover enforcement rules ("no dual-path authority")
+  - Quick responsibility matrix
+
+## 📁 Updated files
+
+- `AGENTS.md`
+- `docs/team_roles.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- Process/documentation change only (no runtime logic change).
+- Existing uncommitted runtime work on rewrite branch remains untouched.
+
+---
+
+# 🔹 Block 586 — SSS authority cutover completed (14/03/2026)
+
+## 📋 Context
+
+After Stage B runtime green, the remaining architectural blockers were:
+- VM still owning missing-session recovery paths,
+- dual-path hold mutations (VM + SessionSyncService),
+- keepAlive coupling to `_sessionMissingWhileRunning`,
+- stream loading/error states being interpreted as missing-session null events.
+
+Goal of this block: complete the cutover so `SessionSyncService` + `TimerService`
+are the sole runtime/sync authority and keep VM as UI adapter.
+
+## ✔ Work completed
+
+- `SessionSyncService` now owns missing-session recovery:
+  - introduced `RecoveryStatus` (`idle | attempting | failed`),
+  - added internal recovery loop (`_attemptRecovery`, `_recoverFromServer`,
+    cooldown + retry scheduling),
+  - recovery updates are emitted through SSS state (VM no longer recovers).
+- Removed VM hold/recovery authority:
+  - deleted VM recovery methods (`_attemptMissingSessionRecovery`,
+    `_recoverMissingSession*`),
+  - removed all VM calls to `extendHold/clearHold`.
+- Hardened stream semantics in SSS:
+  - `_handleStreamEvent` now ignores non-`AsyncData` states
+    (`AsyncLoading`/`AsyncError`) explicitly.
+- KeepAlive authority aligned to runtime:
+  - `_hasKeepAliveActiveExecutionSignal` now uses
+    `timer.isTickingCandidate || recoveryStatus == attempting`,
+  - `_shouldKeepAlive` no longer gates directly on `_sessionMissingWhileRunning`.
+- Added regression tests:
+  - `stream AsyncError does not trigger missing-session hold latch`,
+  - `stream AsyncLoading does not trigger missing-session hold latch`.
+
+## 🧪 Validation run (local)
+
+- `flutter analyze` → **No issues found**.
+- Mandatory suite:
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart test/presentation/timer_screen_syncing_overlay_test.dart`
+  - Result: **30/30 PASS**.
+
+## 📁 Updated files
+
+- `lib/presentation/viewmodels/session_sync_service.dart`
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`
+- `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- Architectural cutover is locally green and ready to be used as baseline for
+  the 4-device validation packet.
+- Open low-priority observation:
+  transient race windows around remote pause propagation may require follow-up
+  hardening in a later block if observed in device logs.
+
+---
+
+# 🔹 Block 587 — GAP-1 + GAP-2 closed before Stage C validation (14/03/2026)
+
+## 📋 Context
+
+Full architectural review of all docs (specs, bug_log, dev_log, roadmap, validation
+plans) against the Stage C baseline (`aa2d09b`) identified two code gaps that had to
+be closed before device validation could produce a valid result.
+
+## ✔ Work completed
+
+### GAP-1 — `_stopForegroundService()` removed from `_onHoldStarted()`
+
+- **Root cause:** `_onHoldStarted()` was calling `ForegroundService.stop()`, killing the
+  Android foreground service exactly when a network cut triggers the hold. Without the
+  foreground service, the OS is free to kill the process; `TimerService` and
+  `SessionSyncService` recovery disappear.
+- **Connection to bug log:** BUG-008 (owner stale while foreground / auto-claim loop) and
+  the original Fix 26 vector (background + red cortada → irrecoverable Syncing session).
+- **Fix:** Removed `_stopForegroundService()` from `_onHoldStarted()`. The foreground
+  service now survives hold. It is only stopped on group completion, explicit user stop,
+  VM dispose, or mode switch.
+
+### GAP-2 — `_isValidHoldExitSnapshot()` corroboration added (Guardrail G-6)
+
+- **Root cause:** `if (session.status.isActiveExecution) return true` allowed hold exit
+  without verifying `group.status == TaskRunStatus.running`. In a race window where
+  another device canceled the group but this device hadn't received that update yet,
+  the hold would clear on a false active-session signal.
+- **Connection to docs:** Guardrail G-6 in CLAUDE.md explicitly requires corroboration
+  from group state before clearing running-state latch.
+- **Fix:** Added `return group.status == TaskRunStatus.running;` inside the
+  `isActiveExecution` branch.
+
+## 🧪 Validation run (local)
+
+- `flutter analyze` → **No issues found**.
+- Mandatory suite:
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart test/presentation/timer_screen_syncing_overlay_test.dart`
+  - Result: **30/30 PASS**.
+
+## 📁 Updated files
+
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- Both changes are in `pomodoro_view_model.dart` only. No other files touched.
+- Stage C device validation can now proceed against this updated baseline.
+- Open bugs out of scope for this rewrite (BUG-002, 003, 004, 005, 006, 009) remain
+  tracked in bug_log.md and are not blocked by Stage C.
+
+---
+
+# 🔹 Block 588 — Stage C pass1 review follow-up (`O-1` + `O-2`) implemented (16/03/2026)
+
+## 📋 Context
+
+Stage C pass1 logs (`c0add32`) were reviewed and accepted for the target P0 vectors
+(`AP-1`/`AP-2` not reproduced). The review produced two implementation follow-ups:
+- `O-1`: avoid hold-loop at natural session boundary (`finished -> null`) when
+  group terminality is already corroborated.
+- `O-2`: eliminate delayed async/timer callback paths that can use `Ref` after VM
+  disposal.
+
+## ✔ Work completed
+
+- `SessionSyncService` terminal-boundary reconciliation:
+  - non-active terminal snapshots can now be reconciled against
+    `TaskRunGroup.status` (`completed`/`canceled`) before hold escalation.
+  - when corroborated terminal, the terminal snapshot is applied to
+    `TimerService`, hold/retry loop is cleared, and recovery state returns to idle.
+  - added in-flight dedupe guards to prevent duplicate terminal reconciliation.
+- `PomodoroViewModel` dispose safety hardening:
+  - added `ref.mounted` guards in delayed callbacks and async recovery/resync paths
+    before any `ref.read` or state mutation.
+  - hardened post-resume and periodic callbacks so they self-cancel/no-op after
+    provider disposal.
+- Regression tests extended:
+  - terminal snapshot + terminal group corroboration does not enter hold loop.
+  - post-resume delayed resync callback does not use disposed ref.
+
+## 🧪 Validation run (local)
+
+- `dart format lib/presentation/viewmodels/session_sync_service.dart lib/presentation/viewmodels/pomodoro_view_model.dart test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- `flutter analyze` → **No issues found**.
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart test/presentation/timer_screen_syncing_overlay_test.dart` → **PASS**.
+
+## 📁 Updated files
+
+- `lib/presentation/viewmodels/session_sync_service.dart`
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`
+- `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`
+- `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- `P0-F26-006` remains **In validation** until Stage C pass2 soak logs are
+  reviewed (`android` + `macOS`) against hold/overlay closure criteria.
+
+---
+
+# 🔹 Block 589 — Stage C pass2 soak validated; `P0-F26-006` closed (16/03/2026)
+
+## 📋 Context
+
+After Block 588, the remaining closure gate for Fix 26 rewrite was Stage C pass2
+soak evidence (`android` + `macOS`, target >=4h). User completed a 5h+ stress soak
+with backgrounding, network failures, Wi-Fi/mobile switches, and pause/resume.
+Claude reviewed both pass2 logs and approved closure.
+
+## ✔ Work completed
+
+- Recorded Stage C pass2 verdict as PASS in validation docs.
+- Closed validation item `P0-F26-006` as **Closed/OK** in the global ledger
+  with implementation traceability:
+  - `closed_commit_hash`: `cbd800a`
+  - `closed_commit_message`:
+    `fix(f26): suppress terminal-boundary hold and harden ref-after-dispose in recovery paths`
+- Updated roadmap timeline with Stage C pass2 soak approval and closure state.
+- Marked the Fix 26 rewrite reopened-phase line as closed in roadmap.
+
+## 🧪 Closure evidence (from pass2 review)
+
+- Logs:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-16_fix26_rewrite_stageC_c0add32_pass2_4h_android_RMX3771_debug.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-16_fix26_rewrite_stageC_c0add32_pass2_4h_macos_debug.log`
+- Critical checks:
+  - no `hold-enter` without `hold-exit`,
+  - no `provider-dispose` during active session,
+  - no irrecoverable `Syncing session...`,
+  - ownership handoff stable; AP-1/AP-2 non-repro in soak window.
+
+## 📁 Updated files
+
+- `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`
+- `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- `P0-F26-006` is closed. Any future changes in sync/timer ownership behavior must
+  be treated as a new validation item with fresh exact repro + soak evidence.

@@ -115,7 +115,6 @@ class RecordingSessionRepository implements PomodoroSessionRepository {
   @override
   Future<void> clearSessionIfGroupNotRunning() async {}
 
-  @override
   Future<void> clearSessionIfInactive({String? expectedGroupId}) async {}
 
   @override

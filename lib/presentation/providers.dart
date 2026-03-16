@@ -32,6 +32,8 @@ import '../data/services/task_run_retention_service.dart';
 import '../data/services/task_run_notice_service.dart';
 import '../data/services/app_mode_service.dart';
 import '../data/services/time_sync_service.dart';
+import '../data/services/timer_service.dart';
+import 'viewmodels/session_sync_service.dart';
 
 // VIEWMODELS
 import 'viewmodels/pomodoro_view_model.dart';
@@ -149,6 +151,15 @@ final pomodoroMachineProvider = Provider.autoDispose<PomodoroMachine>((ref) {
   ref.onDispose(machine.dispose);
   return machine;
 });
+
+final timerServiceProvider = NotifierProvider<TimerService, TimerRuntimeState>(
+  TimerService.new,
+);
+
+final sessionSyncServiceProvider =
+    NotifierProvider<SessionSyncService, SessionSyncState>(
+  SessionSyncService.new,
+);
 
 //
 // ==============================================================
@@ -313,10 +324,10 @@ class RunningOverlapDecision {
 }
 
 final scheduledAutoStartGroupIdProvider = StateProvider<String?>((_) => null);
-final runningOverlapDecisionProvider =
-    StateProvider<RunningOverlapDecision?>((_) => null);
+final runningOverlapDecisionProvider = StateProvider<RunningOverlapDecision?>(
+  (_) => null,
+);
 final completionDialogVisibleProvider = StateProvider<bool>((_) => false);
-
 
 //
 // ==============================================================
@@ -369,11 +380,10 @@ final selectedTasksProvider = Provider<List<PomodoroTask>>((ref) {
   ];
 });
 
-final selectedTaskWeightPercentsProvider =
-    Provider<Map<String, int>>((ref) {
-      final selectedTasks = ref.watch(selectedTasksProvider);
-      return normalizeTaskWeightPercents(selectedTasks);
-    });
+final selectedTaskWeightPercentsProvider = Provider<Map<String, int>>((ref) {
+  final selectedTasks = ref.watch(selectedTasksProvider);
+  return normalizeTaskWeightPercents(selectedTasks);
+});
 
 final localSoundStorageProvider = Provider<LocalSoundStorage>((_) {
   return createLocalSoundStorage();

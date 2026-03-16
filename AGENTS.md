@@ -20,6 +20,7 @@ This file is authoritative.
 At the start of **every session**:
 
 1. Open and read:
+   - `CLAUDE.md` (project root) — confirmed anti-patterns and implementation guardrails
    - `docs/specs.md`
    - `docs/roadmap.md`
    - `docs/dev_log.md`
@@ -46,6 +47,31 @@ Daily specs hygiene (hard rule):
   incoherencies, contradictions, or missing edge cases.
 - If issues are found, record them immediately and propose fixes before
   implementing new behavior. Specs are the app's supreme source of truth.
+
+## 1️⃣A Role Operating Model (Claude/Codex/Gemini) (hard rule)
+
+Canonical role definitions, master workflow, and handoff protocol are maintained in:
+- `docs/team_roles.md`
+
+Operational split:
+- **Claude**: orchestrator, architecture authority, and structural review (the "why/where").
+- **Codex**: implementation, debugging, tests, and low-level correctness (the "how").
+- **Gemini**: full-repository context analysis, large-doc ingestion, cross-module impact scans.
+
+Master workflow (standard path): user → Claude → Gemini (impact scan) → Claude (plan) → Codex (implementation) → Claude + Gemini (closure review).
+Fast path for P0 bugs: skip Gemini step if it delays the fix; run full path after P0 is resolved.
+
+Mandatory handoff contract (all directions):
+- Context and scope
+- Files changed
+- Tests executed (exact commands + results)
+- Known risks and open questions
+- Explicit next action expected from the receiving role
+
+Conflict rule:
+- If architecture intent and implementation details diverge, stop and resolve via
+  `docs/specs.md` + `docs/team_roles.md` before continuing.
+- Claude has the final word on all design decisions regardless of source.
 
 ---
 
@@ -517,7 +543,63 @@ Rules:
 
 ---
 
-## 1️⃣3️⃣ Guiding principle
+## 1️⃣3️⃣ Session/sync confirmed anti-patterns (mandatory — do not repeat)
+
+**Read `CLAUDE.md` (project root) for full details and code examples.**
+
+These patterns caused irrecoverable `Syncing session...` freezes confirmed in production logs.
+Violating any of them will re-introduce the same bugs.
+
+### AP-1 — Never cancel `_sessionSub` inside `build()` [CRITICAL]
+
+`build()` re-runs on every `ref.watch()` emission (including auth token refresh).
+Canceling `_sessionSub` there kills the live Firestore listener. The reconnect emits
+`null` → `_sessionMissingWhileRunning = true` → permanent freeze.
+
+**Rule:** `_sessionSub?.close()` only in `ref.onDispose()`, `loadGroup`, explicit
+mode-switch handlers, and resume handlers. Never in `build()`.
+
+### AP-2 — Never treat stream `null` as authoritative session deletion
+
+`pomodoroSessionStreamProvider` emits `AsyncData<null>` for transient reasons:
+Firestore SDK cache miss, reconnect, `fireImmediately: true` before first snapshot.
+
+**Rule:** Always debounce ≥3s before latching `_sessionMissingWhileRunning = true`.
+Recovery must include a server-fetch fallback (`preferServer: true`) to confirm state.
+
+### AP-3 — Recovery paths must read, not only write
+
+A write-only recovery (`tryClaimSession` + `publishSession`) fails silently when
+another device is owner. This permanently blocks the latch clearance.
+
+**Rule:** After write fails, fetch from server to discover the current owner/session
+and apply it to clear the latch — even if this device is not the owner.
+
+### AP-4 — `!shouldApplyTimeline` gate must not block latch clearance
+
+When `wasMissing=true` and a real snapshot arrives but fails the timeline gate,
+the UI must still be notified or it stays permanently frozen.
+
+**Rule:**
+```dart
+if (!shouldApplyTimeline) {
+  if (ownershipMetaChanged || wasMissing) { _notifySessionMetaChanged(); }
+  return;
+}
+```
+
+### Implementation guardrails (summary)
+
+- Listener lifecycle changes → dedicated commit, no mixed UI edits
+- Any change to `_subscribeToRemoteSession` or `build()` → regression test proving
+  provider rebuild (auth token refresh) does NOT drop session-listener continuity
+- Before merge: exact degraded-network repro PASS + ≥4h soak window
+- No destructive clear without corroborated evidence (group repo recheck + debounce)
+- `TimeSyncService`: reject roundtrip >3s, reject offset jump >5s, 3s rejection cooldown
+
+---
+
+## 1️⃣4️⃣ Guiding principle
 
 > **Focus Interval must remain predictable.**
 >

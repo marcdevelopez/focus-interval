@@ -155,6 +155,166 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       07/03/2026: Fix 27 closed — PASS. Removed coordinator invalidation on mode
           switch; coordinator's ref.listen<AppMode> drives reset naturally.
           Validation: iOS + Chrome logs confirm immediate auto-start at 22:49.
+      09/03/2026: Fix 26 fourth-cycle hardening implemented:
+          bounded foreground missing-session retries, repo group recheck before
+          destructive clear, resume listener stability guard, and session-gap
+          retry CTA wiring. Validation pending on exact single-device degraded-
+          network repro.
+      09/03/2026: Fix 26 follow-up hardening (timeSync measurement safety):
+          reject poisoned offset samples after offline/background reconnect
+          (roundtrip validity + offset-jump guard + reject cooldown). Re-validated
+          PASS on iOS+Chrome quick packet rerun; Fix 26 closed/OK with
+          commit `418c75f`.
+      10/03/2026: Fix 26 regression observed — Android stuck in irrecoverable
+          `Syncing session...` (~12:15 CET). Root cause: second/third-cycle VM
+          hardening (`9bab880`, `4f55010`, `26f0c7e`, `3ad6c98`) introduced a path
+          where a Firebase Auth token refresh caused `runningExpiry=true` false-positive
+          (56ms) that silently disconnected the Firestore session listener.
+          `418c75f` (TimeSync guard) confirmed uninvolved.
+          Rollback to `961f7eb` baseline for VM + repository files (commit `4195ef1`).
+          Fix 27 and `418c75f` preserved. Fix 26 reopened — re-validation required.
+      10/03/2026: Rollback partial re-validation on commit `4195ef1`
+          (Android+macOS logs, ~13:19–13:46 CET) did not reproduce irreversible
+          sync hold in that short window, but closure is blocked until extended
+          soak (>=4h) plus exact degraded-network repro PASS.
+      10/03/2026: Fix 26 follow-up implemented for cursor inconsistency on
+          reopen/owner switch: detect and repair invalid activeSession task/pomodoro
+          cursor (e.g., `currentPomodoro > totalPomodoros`) using running-group
+          timeline anchor before Run Mode hydration. Validated in closure packet
+          `P0-F26-003` on 10/03/2026.
+      10/03/2026: Fix 26 follow-up v2 implemented for `running` group +
+          `finished` activeSession mismatch on reopen: sanitize/repair now also
+          reprojects non-active inconsistent sessions to the current running
+          timeline segment. Validated in closure packet `P0-F26-003` on 10/03/2026.
+      10/03/2026: Fix 26 follow-up v3 implemented for stale non-active owner
+          recovery: when `running` group coexists with stale `finished` session,
+          sanitize can claim a rebuilt active snapshot on current device; guard
+          added to avoid reclaim if group timeline is already expired. Validated in
+          closure packet `P0-F26-003` on 10/03/2026.
+      10/03/2026: Fix 26 follow-up cursor/owner mismatch packet re-validated
+          on Android RMX3771 + macOS (logs `2026-03-10_fix26_postfix_250c24d_*`):
+          no `Pomodoro 2 of 1`, no indefinite `Syncing session...`, deterministic
+          owner handoff preserved, and timer projection coherent with wall-clock.
+          Validation item `P0-F26-003` closed/OK on implementation commit `250c24d`.
+          Note: degraded-network regression item `P0-F26-001` remains open.
+      11/03/2026: Fix 26 Phase 2 sync-core refactor implemented on branch
+          `refactor-run-mode-sync-core`: single snapshot application pipeline
+          (`stream` + `resync/fetch` + `recovery`) with specs 10.4.8.b
+          single-shot missing-session bypass + atomic watermark reset.
+          Contract tests in `pomodoro_view_model_session_gap_test.dart`
+          pass (including `[REFACTOR] AP-4 full fix`). Device validation pending.
+      11/03/2026: Fix 26 Phase 3 documentation-first contract draft completed
+          (specs 10.4.8.b delta + pre-implementation contract tests):
+          single latch exit point, non-owner server-read recovery, transitional
+          hold-extension rule, mandatory hold diagnostics with `projectionSource`.
+          New contract tests intentionally fail on current runtime and define the
+          implementation target before coding.
+      11/03/2026: Fix 26 Phase 3 runtime implemented on
+          `refactor-run-mode-sync-core`:
+          transitional hold extension (no direct clear while missing),
+          non-owner recovery server-read path, and hold lifecycle diagnostics.
+          Contract suite `pomodoro_view_model_session_gap_test.dart` now passes
+          fully (`11/11`). Device validation pending.
+      12/03/2026: Fix 26 validation rerun reproduced cascade freeze across
+          owner handoffs (macOS -> Android -> web -> iOS) while Firestore
+          snapshots/revisions continued advancing. Hold diagnostics did not
+          trigger in the failing run, indicating the active failure path is
+          outside Phase 3 latch protections. Phase 4 opened (docs-first):
+          render/sync decoupling contract + overlay-trigger diagnostics
+          contract tests added; runtime implementation pending.
+      12/03/2026: Fix 26 Phase 4 runtime implemented on
+          `refactor-run-mode-sync-core`: active projection now falls back to
+          local elapsed-time anchors when server offset is unavailable, and
+          explicit `[SyncOverlay]` diagnostics now emit visibility transitions
+          with deterministic trigger reasons (`sessionMissingHold`,
+          `runningWithoutSession`, `awaitingSessionConfirmation`,
+          `timeSyncUnready`). Contract suites now pass.
+      13/03/2026: Fix 26 Phase 5 opened (docs-first, diagnostic scope):
+          lifecycle observability contract drafted with mandatory `vmToken`
+          correlation across ViewModel init/dispose, session subscription
+          open/close, scheduled-action bridge events, and stale-clear
+          evaluation logs. Runtime instrumentation pending.
+      13/03/2026: Fix 26 Phase 5 runtime instrumentation implemented:
+          added `[VMLifecycle]` init/dispose + `[SessionSub]` open/close
+          reasoned diagnostics in `PomodoroViewModel`, extended `[SyncOverlay]`
+          with `vmToken`, and added coordinator diagnostics
+          `[ScheduledActionDiag]` + `[StaleClearDiag]` with instance-token
+          correlation. Phase 5 smoke tests pass.
+      13/03/2026: Fix 26 Phase 5 device validation COMPLETED — root cause confirmed:
+          `pomodoroViewModelProvider` is `autoDispose`; `_keepAliveLink` closed
+          during Firestore quiet window (10s gap between snapshots) → Riverpod
+          disposed the VM while timer screen still visible (B1). Recovery blocked
+          by `_autoOpenedGroupId == groupId` guard in `ActiveSessionAutoOpener` —
+          guard does not check if VM was disposed, so re-navigation is suppressed
+          (B2). Phase 6 plan documented.
+      13/03/2026: Fix 26 Phase 6 opened (docs-first):
+          B1 — add `_lastActiveSessionTimestamp` grace window (2 min) to
+          `_shouldKeepAlive()` so VM survives Firestore quiet windows;
+          B2 — add `ref.exists(pomodoroViewModelProvider)` check in
+          `ActiveSessionAutoOpener` before suppressing re-navigation.
+          Contract and implementation pending.
+      13/03/2026: Fix 26 Phase 6 runtime implemented (B1+B2):
+          keepAlive grace window + timer-guard recovery refresh in
+          `ActiveSessionAutoOpener`; local Phase 6 smoke tests PASS.
+          Device exact-repro validation pending for closure.
+      14/03/2026: Fix 26 Phase 6 FAILED device validation (P0-F26-005):
+          Android spontaneous `Syncing session...` at 22:21:37 (no user cut);
+          cascade to macOS/Chrome/iOS; all timers frozen. Root cause: latch fires
+          from any ≥3s Firestore stream null, not only from VM disposal.
+          Phase 6 B1 irrelevant for this trigger path. Conclusion: focalized
+          hardenings exhausted; sync architecture rewrite required. Pass 2 cancelled.
+      14/03/2026: Fix 26 rewrite branch opened (`rewrite-sync-architecture`) and
+          docs-first contract drafting started. Runtime/tests are blocked until
+          contract review approval (TimerService persistence model, stream-null
+          UX policy, ownership timeout policy, and cutover strategy).
+      14/03/2026: Fix 26 rewrite contract refined with concrete interfaces:
+          `TimerRuntimeState` minimum fields, `SessionSyncService` API and
+          unidirectional sync->timer integration, and `PomodoroViewModel`
+          adapter contract for Stage A/B compatibility. Contract remains
+          review-gated before `[REWRITE-CORE]` tests.
+      14/03/2026: `[REWRITE-CORE]` baseline tests drafted and executed
+          (red-first, no runtime changes): 5 invariants targeted; result
+          1 pass / 4 fail confirms current runtime still violates rewrite
+          contract and implementation work is required.
+      14/03/2026: Fix 26 rewrite Stage A runtime (partial) implemented:
+          introduced app-scope `TimerService` (non-autoDispose) and wired
+          `PomodoroViewModel` to project countdown from service during
+          `sessionMissingHold` (stream-null latch path) without freezing.
+          `[REWRITE-CORE]` Invariant 1 now PASS; Invariants 3/4/5 remain
+          intentionally pending by contract gates.
+      14/03/2026: Fix 26 rewrite Invariant 5 activated from contract-gate:
+          VM dispose/rebuild continuity test implemented and PASS; updated
+          `[REWRITE-CORE]` baseline is now 3 PASS / 2 FAIL (remaining
+          intentional gates: Invariants 3 and 4).
+      14/03/2026: Fix 26 rewrite Stage B docs/test gate opened:
+          specs section 10.4.10 expanded with Stage B command delegation
+          contract (`10.4.10.8`) and deterministic ownership recovery state
+          machine contract (`10.4.10.9`); Invariants 3/4 replaced from
+          `fail()` placeholders to executable red tests with deterministic
+          expectations. Baseline remains 3 PASS / 2 FAIL, now with actionable
+          failures only (no timeout/lifecycle race in rewrite tests).
+      14/03/2026: Fix 26 rewrite Stage B runtime implemented:
+          VM command delegation now drives `TimerService` on start/pause/resume,
+          and `PomodoroViewModel` exposes deterministic `ownershipSyncState`
+          (`unloaded|owned|mirroring|degraded|recovery`) per contract.
+          `[REWRITE-CORE]` is now 5 PASS / 0 FAIL; local smoke suite is
+          28 PASS / 0 FAIL.
+      16/03/2026: Fix 26 rewrite Stage C pass1 (baseline `c0add32`) reviewed
+          from 4-device packet logs (`android/ios/macos/chrome`):
+          AP-1/AP-2 vectors not reproduced; pass1 accepted for P0 objective.
+      16/03/2026: Stage C follow-up implementation packet completed for
+          observations `O-1` and `O-2`:
+          terminal-boundary hold suppression added to `SessionSyncService`
+          (terminal snapshot requires terminal group corroboration) and
+          ref-after-dispose hardening added in delayed VM callbacks (`ref.mounted`
+          guards). Local analyze/test gate PASS; closure still blocked by pass2
+          soak evidence review.
+      16/03/2026: Fix 26 rewrite Stage C pass2 soak (`android` + `macOS`, 5h+)
+          reviewed and approved:
+          no unpaired `hold-enter`, no `provider-dispose` during active session,
+          and no irrecoverable `Syncing session...`; AP-1/AP-2 remain non-repro.
+          `P0-F26-006` closure criteria met and moved to Closed/OK with
+          implementation commit `cbd800a`.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
@@ -245,6 +405,14 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 10 — Auto-adjust breaks on valid pomodoro changes and break edits (focus-loss adjustment; Task Editor + Edit Preset) (validation pending).
 - Phase 10 — Task weight (%) is selection-scoped in Edit Task + info modal (validation pending).
 - Phase 13 — Mirror session gaps must not drop Run Mode to Ready (validation pending).
+- ~~Phase 13 — **Fix 26 sync architecture rewrite required** (P0-F26-005 failed device validation
+  2026-03-14; Phase 6 B1+B2 patch verified insufficient — latch fires from spontaneous Firestore
+  stream null independent of VM disposal; all focalized hardenings exhausted; solution requires
+  decoupling timer from session stream, persistent (non-autoDispose) timer service, optimistic
+  rendering, and deterministic recovery state machine; rewrite contract is approved, Stages A/B
+  are complete and locally green; Stage C pass1 was approved and O-1/O-2 follow-up
+  implementation is merged locally; final gate is pass2 soak evidence review for closure).~~
+  **Closed/OK on 16/03/2026 (`P0-F26-006`, commit `cbd800a`, pass2 soak logs validated).**
 - Phase 13 — Mirror must not start behind on resume (stale lastUpdatedAt compensation) (bug).
 - Phase 10 — Task Editor: total time chip + task color picker (new requirement).
 - Phase 9 — Task List: group name input + group summary + per-task total time + selection reset (new requirement).
@@ -271,7 +439,16 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 18 — Run Mode shows Syncing state when activeSession is missing + manual refresh (sync icon) (bug).
 - Phase 18 — Missing-session cleanup must not clear activeSession on transient
   group lookup/provider rebuild gaps; sync hold must recover without destructive clears (bug).
-- Phase 18 — Fix 26 monitoring window active (07/03–09/03) before closure.
+- Phase 18 — Reopen/owner-switch must auto-repair invalid activeSession cursor
+  (task/pomodoro mismatch, e.g. `2/1`) and land on the correct running task/time (bug).
+- ~~Phase 18 — Fix 26 reopened hardening (v4): bounded foreground retry +
+  non-destructive missing-session clear with repo recheck + resume listener
+  stability (validation pending exact repro on single-device degraded network).~~
+  **Closed/OK 09/03/2026** (re-validation PASS with v4+v5 stack).
+- ~~Phase 18 — Fix 26 timeSync reconnect desync follow-up (v5): reject invalid
+  timeSync offset measurements after offline/background reconnect and avoid
+  transient wrong timer projection (validation pending).~~
+  **Closed/OK 09/03/2026** (commit `418c75f`, quick packet rerun PASS).
 - Phase 18 — Completion modal + Groups Hub navigation must work on owner and mirror devices (validation pending).
 - Phase 18 — Run Mode ownership visibility + take ownership UX (new requirement).
 - Phase 18 — Ownership transfer requires owner approval + rejection state (new requirement).

@@ -1,105 +1,185 @@
-# 👥 Team Roles & Collaborative Workflow
+# Team Roles & Handoff Contract
 
-This project — **Focus Interval** — is developed using a modern, AI-augmented engineering workflow, where a human Lead Engineer works in collaboration with multiple specialized AI agents. This document defines the official roles, responsibilities and collaboration model.
+Last update: 2026-03-16
 
----
+This document defines the operational split between Claude, Codex, and Gemini in this repository.
+It is normative for day-to-day collaboration and must be applied together with:
+- `AGENTS.md`
+- `docs/specs.md`
 
-## 🟩 1. Lead Flutter Engineer & Product Owner  
-### **Marcos García**
-
-**Primary Role:**  
-Lead software engineer responsible for the overall architecture, product direction, and implementation of the Focus Interval application (macOS, Windows, Linux).
-
-**Responsibilities:**
-
-- Owns the product vision and functional specifications.
-- Designs and approves technical architecture and system structure.
-- Implements core features in Flutter and Dart.
-- Leads the development roadmap and organizes phases.
-- Validates each iteration of the application and ensures adherence to MVP goals.
-- Works with AI copilots to accelerate development and maintain high-quality code.
-- Defines Git branch strategy, commit conventions and repository structure.
-- Ensures UX/UI coherence and technical correctness across all platforms.
-- Coordinates multi-agent collaboration (ChatGPT + Codex).
-
-**Professional Impact:**  
-This role demonstrates:
-
-- Leadership in cross-platform development.
-- Ability to manage a full engineering cycle end-to-end.
-- Practical experience collaborating with advanced AI tooling in real product development.
+If any conflict exists, precedence is:
+1. System/developer constraints
+2. `AGENTS.md`
+3. `docs/specs.md`
+4. This file
 
 ---
 
-## 🟦 2. Senior Staff AI Engineer (Architect & Technical Lead)  
-### **ChatGPT (AI Co-Engineer)**
+## Role A — Claude (Orchestrator, Architect & Structural Reviewer)
 
-**Primary Role:**  
-Acts as the architectural and senior technical counterpart in the project.  
-Provides high-level direction, structure, patterns, best practices and reviews.
+Primary mission:
+- Own architecture quality, decomposition, invariants, and long-term maintainability.
+- Orchestrate the overall workflow: receive requirements, delegate to Gemini or Codex, and make final design decisions.
 
-**Responsibilities:**
+Focus:
+- Architecture and boundaries (layering, cohesion, coupling).
+- Abstraction decisions (what belongs in services/viewmodels/domain).
+- Naming and readability at system level.
+- Design review of implementations produced by Codex.
+- Business logic correctness (code works but outcome is wrong).
 
-- Designs system architecture (MVVM, Riverpod state management, navigation, data layers).
-- Writes production-level code for complex components.
-- Performs code reviews and consistency checks.
-- Ensures alignment between specs, roadmap and implementation.
-- Generates documentation, specifications and design decisions.
-- Guides Marcos (Lead Engineer) in step-by-step development.
-- Maintains long-term context of the entire project.
+Must deliver:
+- Clear rationale ("why this design").
+- Concrete contracts before implementation (state models, ownership rules, sync invariants).
+- Review findings ordered by severity with exact file/line references.
+- Delegation instructions to Gemini or Codex with explicit scope and expected output.
 
-**Function Within the Team:**  
-Equivalent to a **Senior Staff Engineer or CTO-as-a-Service (AI)** supporting the Lead Engineer.
+Must avoid:
+- Deep mechanical edits as the default path when architectural direction is still unclear.
+- Approving implementation that violates architecture contracts, even if tests pass.
+- Starting implementation without first requesting a Gemini impact scan for non-trivial changes
+  (exception: P0 bugs — see Master Workflow fast path below).
 
----
-
-## 🟧 3. AI Implementation Engineer (Code Execution & File Operations)  
-### **Codex (GitHub Workspace / Code Interpreter)**
-
-**Primary Role:**  
-Executes code-level operations and performs mechanical tasks inside the repository.
-
-**Responsibilities:**
-
-- Reads and analyzes the real file system.
-- Lists project structure and verifies architecture.
-- Applies changes directly to source files.
-- Performs refactors, renames and file moves.
-- Detects unused imports, inconsistencies and syntax issues.
-- Runs static analysis when required.
-
-**Function Within the Team:**  
-Codex operates as a **Junior Implementation Developer**, executing tasks under the direction of the Lead Engineer and AI Architect.
+Hierarchy rule:
+- Claude has the final word on all design decisions.
+- If Codex or Gemini suggest a structural change, Claude must validate it before adoption.
 
 ---
 
-## 🧩 4. How Collaboration Works (Workflow Overview)
+## Role B — Codex (Implementer & Technical Executor)
 
-1. **Marcos** defines what needs to be built (features, tasks, specs).  
-2. **ChatGPT** designs the architecture and writes/validates the code.  
-3. **Codex** applies the code to the real project files.  
-4. **Marcos** tests, validates and moves the roadmap to the next phase.
+Primary mission:
+- Execute implementation, tests, fixes, and low-level correctness according to approved architecture.
 
-This tri-agent workflow mirrors what leading software teams call:
+Focus:
+- Writing production code and migrations.
+- Performance and runtime behavior correctness.
+- Unit/widget/integration test implementation and stabilization.
+- Bug fixing with reproducible evidence.
+- Boilerplate and repetitive code once Claude has defined signatures and purpose.
+- Syntax conversions, library upgrades, and utility scripts.
 
-### **AI-Augmented Engineering**
+Must deliver:
+- Working code aligned to contracts from specs/architecture review.
+- Test commands and pass/fail results.
+- Precise change list and risks.
 
-where a human Lead Engineer coordinates and supervises one or more AI agents to maximize productivity, correctness and speed.
-
----
-
-## 🏆 5. Why This Matters for Professional Experience
-
-This collaboration model demonstrates:
-
-- Ability to lead a real cross-platform Flutter project.  
-- Experience with AI-assisted software engineering (in high demand today).  
-- Usage of modern state management (Riverpod), navigation (GoRouter), MVVM architecture.  
-- Linux/macOS/Windows desktop development.  
-- Ability to coordinate multi-agent AI workflows and maintain technical direction.
-
-All of these skills are **strongly valued** in modern software engineering positions.
+Must avoid:
+- Silent architecture changes without explicit contract updates.
+- Partial patching when the declared strategy is full cutover.
+- Structural changes without Claude validation.
 
 ---
 
-**Last Update:** Automatically maintained as the project evolves.
+## Role C — Gemini (Context Specialist & Repository Analyst)
+
+Primary mission:
+- Provide deep, cross-cutting analysis of the full repository that would exceed Claude's
+  practical context window.
+
+Note on access: Gemini operates via GitHub Copilot in VS Code with full autonomous access
+to the repository — it can list directories, search files, read any file, run terminal commands,
+and retrieve logs directly, without requiring manual context from the user.
+
+Focus:
+- Repository impact analysis: scan the full codebase to find hidden dependencies or conflicts
+  before Claude designs a solution.
+- Large document ingestion: read and summarize extensive external docs, PDFs, or API references.
+- Visual / UI review: analyze screenshots of visual bugs or design mockups and propose code structures.
+- Massive data processing: parse large logs, JSON/CSV exports, or audit trails that exceed
+  working memory of other agents.
+
+Must deliver:
+- Concise impact reports (affected modules, risks, edge cases) — not raw file dumps.
+- Targeted summaries that Claude can consume to make architectural decisions.
+
+Must avoid:
+- Making architectural decisions or modifying code without Claude validation.
+- Replacing Claude's own responsibility to understand context from CLAUDE.md and AGENTS.md.
+
+Efficiency rule:
+- Do not invoke Gemini for single-file analysis, simple autocompletion, or trivial lookups;
+  use Claude or Codex directly for those.
+
+---
+
+## Master Workflow
+
+### Standard path (features, non-urgent fixes, refactors)
+
+1. **Directive (user → Claude):** User requests a feature or fix. Claude takes command.
+2. **Mapping (Claude → Gemini):** Claude asks Gemini to scan the full repo for impact:
+   "Gemini, find how this change affects existing modules and flag hidden dependencies."
+3. **Planning (Claude):** Using Gemini's report, Claude drafts the attack plan and technical specs.
+4. **Execution (Claude → Codex):** Claude delegates repetitive code writing:
+   "Codex, implement the logic for these 3 functions following this plan."
+5. **Closure (Claude + Gemini):** Claude reviews final logic; Gemini confirms the resulting
+   file is coherent with the rest of the system. Mandatory tests (`flutter analyze` + relevant
+   test suite) must still pass — Gemini confirmation does not replace test results.
+
+### Fast path (P0 blockers, active freezes, critical regressions)
+
+When a P0 bug is active (e.g., irrecoverable `Syncing session...`), the Gemini mapping step
+(step 2) is **optional** — skip it if it would delay the fix. The priority is stopping the
+bleeding first. Document the skip and run the full standard path after the P0 is resolved.
+
+---
+
+## Coordination Golden Rules
+
+1. **Hierarchy:** Claude has the final word on design. Codex and Gemini proposals require
+   Claude validation before adoption.
+2. **Data efficiency:** Do not saturate Claude with raw large files or full log dumps.
+   Use Gemini as a filter — deliver to Claude only the relevant summary.
+3. **Speed:** Do not invoke Gemini for single-line autocompletion or trivial file lookups;
+   Codex is faster for those.
+4. **Whole-system view:** Invoke Gemini whenever you need to "see" the project as a whole,
+   assess cross-module impact, or process data that exceeds practical context limits.
+5. **Specs first:** No role may implement behavior that is not yet defined in `docs/specs.md`.
+   If a gap exists, Claude must update specs before implementation begins.
+
+---
+
+## Mandatory Handoff Format
+
+Every handoff between Claude, Codex, and Gemini must include:
+
+1. Scope
+- What is in/out for this step.
+
+2. Files
+- Exact files touched (or to be touched).
+
+3. Verification
+- Exact test/analyze commands run and observed result.
+
+4. Risks
+- Known risks, regressions, and uncertainty.
+
+5. Requested next action
+- One explicit action expected from the receiving role.
+
+---
+
+## Refactor Mode (Full Cutover)
+
+When a task is marked as "full rewrite / no patches", all roles must enforce:
+- No dual-path behavior kept as functional runtime authority.
+- No fallback to legacy authority for countdown/sync decisions.
+- Null-stream events must not reset runtime to idle when execution was active.
+- Closure requires real-device exact repro pass on the defined validation packet.
+
+If an implementation still depends functionally on legacy paths, review result is:
+- **Rejected (not full cutover).**
+
+---
+
+## Quick Responsibility Matrix
+
+- Specs/architecture contract definition: Claude
+- Cross-repo impact analysis: Gemini
+- Runtime implementation: Codex
+- Test authoring and repair: Codex
+- Structural review and acceptance gate: Claude
+- System coherence check at closure: Claude + Gemini (tests always mandatory regardless)
+- Final "ready for device validation" check: both Claude and Codex (Claude approves architecture, Codex proves test health)
