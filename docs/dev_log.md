@@ -25,8 +25,8 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **Fix 26 rewrite Stage C follow-up packet (O-1/O-2) implemented locally**
-Current focus: **Fix 26 rewrite pass2 soak evidence review for closure**
+Last bug fix: **Fix 26 rewrite validated in Stage C pass2 soak and closed (`P0-F26-006`)**
+Current focus: **Sync closure docs + continue next pending validation items**
 Last update: **16/03/2026**
 
 ---
@@ -11392,3 +11392,49 @@ Stage C pass1 logs (`c0add32`) were reviewed and accepted for the target P0 vect
 
 - `P0-F26-006` remains **In validation** until Stage C pass2 soak logs are
   reviewed (`android` + `macOS`) against hold/overlay closure criteria.
+
+---
+
+# 🔹 Block 589 — Stage C pass2 soak validated; `P0-F26-006` closed (16/03/2026)
+
+## 📋 Context
+
+After Block 588, the remaining closure gate for Fix 26 rewrite was Stage C pass2
+soak evidence (`android` + `macOS`, target >=4h). User completed a 5h+ stress soak
+with backgrounding, network failures, Wi-Fi/mobile switches, and pause/resume.
+Claude reviewed both pass2 logs and approved closure.
+
+## ✔ Work completed
+
+- Recorded Stage C pass2 verdict as PASS in validation docs.
+- Closed validation item `P0-F26-006` as **Closed/OK** in the global ledger
+  with implementation traceability:
+  - `closed_commit_hash`: `cbd800a`
+  - `closed_commit_message`:
+    `fix(f26): suppress terminal-boundary hold and harden ref-after-dispose in recovery paths`
+- Updated roadmap timeline with Stage C pass2 soak approval and closure state.
+- Marked the Fix 26 rewrite reopened-phase line as closed in roadmap.
+
+## 🧪 Closure evidence (from pass2 review)
+
+- Logs:
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-16_fix26_rewrite_stageC_c0add32_pass2_4h_android_RMX3771_debug.log`
+  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-16_fix26_rewrite_stageC_c0add32_pass2_4h_macos_debug.log`
+- Critical checks:
+  - no `hold-enter` without `hold-exit`,
+  - no `provider-dispose` during active session,
+  - no irrecoverable `Syncing session...`,
+  - ownership handoff stable; AP-1/AP-2 non-repro in soak window.
+
+## 📁 Updated files
+
+- `docs/bugs/validation_fix_2026_03_07-01/quick_pass_checklist.md`
+- `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- `P0-F26-006` is closed. Any future changes in sync/timer ownership behavior must
+  be treated as a new validation item with fresh exact repro + soak evidence.

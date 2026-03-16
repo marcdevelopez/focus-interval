@@ -571,7 +571,7 @@ Result:
 
 ## 2026-03-14 Rewrite Stage C device packet (baseline `c0add32`) — command reference
 
-Status: **Pass 1 (1h) COMPLETE + architecturally approved; pass 2 (soak +4h) IN PROGRESS (2026-03-16)**
+Status: **Pass 1 + Pass 2 COMPLETE (2026-03-16) — `P0-F26-006` Closed/OK**
 
 ### Pass 1 evidence (2026-03-14, 1h, all 4 devices)
 - Logs already captured (see `/logs/2026-03-14_fix26_rewrite_stageC_c0add32_pass1_1h_*`)
@@ -639,9 +639,26 @@ grep -E "cloud_firestore/unavailable|UnknownHostException|Unhandled Exception|ru
 - `Syncing session` presente más de 60s sin `hold-exit` → **freeze confirmado**
 - Si ninguna de estas condiciones aparece → **soak PASS**
 
+#### Pass 2 result (executed and reviewed on 2026-03-16)
+
+Logs reviewed:
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-16_fix26_rewrite_stageC_c0add32_pass2_4h_android_RMX3771_debug.log`
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-16_fix26_rewrite_stageC_c0add32_pass2_4h_macos_debug.log`
+
+Claude architectural review outcome:
+- **PASS** for Stage C pass2 soak (`5h+` run; intensive background/network use).
+- `hold-enter` without `hold-exit`: **NONE**
+- `provider-dispose` during active session: **NONE**
+- irrecoverable `Syncing session...`: **NONE**
+- ownership handoff stable; countdown continuity preserved.
+- multiple `runningExpiry=true` events did not close session subscription (`AP-1` non-repro).
+
+Closure decision:
+- `P0-F26-006` -> **Closed/OK** (soak closure criteria met).
+
 ### 2026-03-16 — Codex implementation packet for Stage C observations (`O-1`, `O-2`)
 
-Status: **IMPLEMENTED (local validation PASS) — device soak evidence pending**
+Status: **IMPLEMENTED + soak validated — contributes to `P0-F26-006` closure**
 
 Scope implemented:
 - `O-1` (session-boundary hold suppression): `SessionSyncService` now accepts a terminal
@@ -662,10 +679,13 @@ Local validation evidence:
   - terminal snapshot + terminal group corroboration does not enter hold loop
   - post-resume resync callback does not use disposed ref
 
-Next mandatory gate:
-- Keep Stage C pass 2 soak running and review
-  `2026-03-16_fix26_rewrite_stageC_c0add32_pass2_4h_{android,macos}_debug.log`
-  against hold/overlay criteria before closure.
+Final closure record:
+- Validation gate: `P0-F26-006` **Closed/OK** on `2026-03-16`.
+- Implementation commit: `cbd800a`
+- Commit message: `fix(f26): suppress terminal-boundary hold and harden ref-after-dispose in recovery paths`
+- Evidence: Stage C pass1 (`2026-03-14_fix26_rewrite_stageC_c0add32_pass1_1h_*`) +
+  Stage C pass2 soak (`2026-03-16_fix26_rewrite_stageC_c0add32_pass2_4h_{android,macos}_debug.log`) +
+  local analyze/test PASS.
 
 ---
 

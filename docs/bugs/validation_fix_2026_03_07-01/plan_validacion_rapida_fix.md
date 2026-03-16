@@ -763,7 +763,7 @@ flutter run -v --debug -d chrome \
 
 ## 2026-03-16 — Stage C pass1 review outcome + Codex follow-up packet
 
-Status: **P0 vectors PASS in pass1; follow-up implementation local PASS; soak evidence pending**
+Status: **P0 vectors PASS in pass1 + pass2 soak PASS — `P0-F26-006` Closed/OK**
 
 Architectural review outcome (Claude, based on Stage C pass1 logs):
 - `AP-1` (`runningExpiry` -> provider rebuild -> stream detach) not reproduced.
@@ -800,8 +800,18 @@ Result:
 - `flutter analyze` PASS (`No issues found`).
 - Targeted test suite PASS (`All tests passed`).
 
-Next action (closure gate unchanged):
-- Complete and analyze Stage C pass2 soak logs:
-  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-16_fix26_rewrite_stageC_c0add32_pass2_4h_android_RMX3771_debug.log`
-  - `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-16_fix26_rewrite_stageC_c0add32_pass2_4h_macos_debug.log`
-- Only then decide final closure status for `P0-F26-006`.
+Stage C pass2 soak closure evidence (reviewed 2026-03-16):
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-16_fix26_rewrite_stageC_c0add32_pass2_4h_android_RMX3771_debug.log`
+- `docs/bugs/validation_fix_2026_03_07-01/logs/2026-03-16_fix26_rewrite_stageC_c0add32_pass2_4h_macos_debug.log`
+- Claude review verdict:
+  - no `hold-enter` without paired `hold-exit`,
+  - no `provider-dispose` during active session,
+  - no irrecoverable `Syncing session...`,
+  - ownership handoff stable and countdown continuity preserved.
+
+Closure record:
+- Validation item: `P0-F26-006`
+- Final status: **Closed/OK**
+- Closed date: `2026-03-16`
+- closed_commit_hash: `cbd800a`
+- closed_commit_message: `fix(f26): suppress terminal-boundary hold and harden ref-after-dispose in recovery paths`
