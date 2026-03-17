@@ -1612,5 +1612,8 @@ Evidence:
   `docs/bugs/validation_ownership_cursor_2026_03_17/quick_pass_checklist.md`
 
 Status:
-Open (P1). Blocks closure of BUG-002 residual / BUG-F26-001 / BUG-F26-002
-until post-fix device validation is PASS.
+In validation. P1 — fix implemented in commit `92731b3`
+(`fix(f26): guard hot-swap publish path against snapshot write loop`).
+Local analyze + full test suite PASS. Device re-run pending to confirm
+no write loop and clean cancel behavior on Android RMX3771 + macOS.
+Blocks closure of BUG-002 residual / BUG-F26-001 / BUG-F26-002.
