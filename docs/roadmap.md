@@ -325,6 +325,14 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           dialog navigator capture hardening added, and resolver-local gate
           (`_resolved`) added to suppress mirror-only dialog on owner.
           Local analyze/tests PASS; closure pending exact repro re-validation.
+      17/03/2026: Fix 25 re-validation #2 (`fd788e6`, iOS + Chrome) reviewed:
+          BUG-F25-A PASS (ownership request delivery restored),
+          BUG-F25-B PASS (no context-after-dispose dialog crash),
+          BUG-F25-C FAIL in `Continue` path (owner still saw mirror-only modal).
+      17/03/2026: Fix 25 BUG-F25-C follow-up patch applied:
+          `_resolved = true` moved before first await in `_applySelection` to
+          close Firestore stream race on owner-side dialog gating. Local
+          analyze/tests PASS; device re-validation pending for final Fix 25 closure.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling

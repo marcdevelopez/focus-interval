@@ -44,6 +44,16 @@ Gate:
      - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
      - `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` → PASS
    - Validation status: pending exact repro re-run on devices (owner + mirror).
+   Re-validation run (2026-03-17, branch `fix-f25-transaction-order-and-owner-dialog`, commit `fd788e6`):
+   - iOS simulator iPhone 17 Pro (owner): `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval2_fd788e6_ios_iPhone17Pro_debug.log`
+   - Chrome (mirror): `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval2_fd788e6_chrome_debug.log`
+   - Result:
+     - BUG-F25-A: PASS (ownership request delivery/acceptance works).
+     - BUG-F25-B: PASS (no context-after-dispose exception on dialog close in this run).
+     - BUG-F25-C: FAIL (owner still sees `Owner resolved` modal on `Continue` path).
+   - Follow-up implementation (17/03/2026): moved `_resolved = true` before the
+     first `await` in `_applySelection` to remove owner-side race with Firestore
+     stream updates. Pending exact repro re-run for closure.
 
 ## New finding (outside Fix 24 scope)
 - [x] Fix 26 — Mirror/owner no queda en `Syncing session...` tras cancel y en

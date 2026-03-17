@@ -139,6 +139,15 @@ Each item below is a separate fix and must be committed separately.
       1. ownership request reaches owner,
       2. `Owner resolved` dialog dismisses without crash,
       3. owner does not see mirror-only dialog.
+  - Re-validation #2 (17/03/2026, commit `fd788e6`, iOS + Chrome):
+    - BUG-F25-A: PASS
+    - BUG-F25-B: PASS
+    - BUG-F25-C: FAIL (owner still sees mirror-only dialog in `Continue` path)
+  - Follow-up patch (17/03/2026):
+    - `_resolved = true` moved to pre-await setState in `_applySelection`
+      (before `repo.saveAll`) to prevent owner-side modal race when Firestore
+      emits snapshots during write.
+    - Closure still pending until re-validation confirms BUG-F25-C PASS.
 
 ## Fix 26 — Syncing hold after cancel/background recovery
 - Scope: owner/mirror queda en `Syncing session...` por hold stale cuando la sesion ya no existe o hay errores transitorios de Firestore al recuperar ownership stale.

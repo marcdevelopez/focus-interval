@@ -641,6 +641,9 @@ class _LateStartOverlapQueueScreenState
     if (_busy) return;
     setState(() {
       _busy = true;
+      // Guard owner-side dialog races: Firestore snapshots can land before the
+      // first await completes and temporarily flip isOwner to false.
+      _resolved = true;
     });
     try {
       final repo = ref.read(taskRunGroupRepositoryProvider);
@@ -743,9 +746,6 @@ class _LateStartOverlapQueueScreenState
       }
 
       if (!mounted) return;
-      setState(() {
-        _resolved = true;
-      });
       if (selectedGroups.isNotEmpty) {
         final target = selectedGroups.first;
         await _publishInitialSession(target, queueNow: queueNow);

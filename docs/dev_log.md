@@ -25,9 +25,9 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **Fix 25 re-validation packet implemented (BUG-F25-A/B/C) — pending exact repro closure**
-Current focus: **Fix 25 device re-validation (owner+mirror) and closure docs synchronization**
-Last update: **16/03/2026**
+Last bug fix: **Fix 25 BUG-F25-C race follow-up applied (A/B already validated PASS)**
+Current focus: **Fix 25 final closure (BUG-F25-C race fix + device re-validation)**
+Last update: **17/03/2026**
 
 ---
 
@@ -11581,3 +11581,63 @@ Docs synchronization:
 - This packet is implementation-complete but not closure-complete.
 - Device exact repro re-validation is still required before marking
   `P0-F25-001` and BUG-F25-A/B/C as `Closed/OK`.
+
+---
+
+# 🔹 Block 592 — Fix 25 re-validation #2 reviewed; BUG-F25-C race follow-up applied (17/03/2026)
+
+## 📋 Context
+
+User provided re-validation #2 logs for Fix 25 implementation commit `fd788e6`:
+
+- `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval2_fd788e6_chrome_debug.log`
+- `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval2_fd788e6_ios_iPhone17Pro_debug.log`
+
+Scenario validated:
+- Local -> Account overlap queue trigger after overdue schedule,
+- mirror ownership request delivery/acceptance flow,
+- resolve overlaps completion path.
+
+## ✔ Work completed
+
+Validation outcome recorded:
+
+1. BUG-F25-A: PASS in re-validation #2.
+   - Ownership request delivery/acceptance worked repeatedly.
+   - No Firestore transaction ordering assertion recurrence.
+
+2. BUG-F25-B: PASS in re-validation #2.
+   - No context-after-dispose / Navigator exception detected in run logs.
+
+3. BUG-F25-C: FAIL in re-validation #2 (commit `fd788e6`).
+   - Owner still saw mirror-only `Owner resolved` modal in `Continue` path.
+   - Root cause: race window; `_resolved` was set after awaited persistence,
+     but stream snapshots could flip `isOwner` before that set.
+
+Follow-up implementation applied (same branch):
+- `lib/presentation/screens/late_start_overlap_queue_screen.dart`
+  - moved `_resolved = true` into initial `setState` before first await in
+    `_applySelection` to close owner-side race window.
+  - removed delayed `_resolved` set after persistence.
+
+Docs synchronization:
+- `quick_pass_checklist.md`: re-validation #2 outcome updated (A/B PASS, C FAIL)
+  and follow-up patch noted.
+- `plan_validacion_rapida_fix.md`: re-validation #2 + race root cause + follow-up
+  patch added.
+- `validation_ledger.md`: BUG-F25-A/B moved to `Closed/OK`; BUG-F25-C remains
+  `In validation`; `P0-F25-001` remains `In validation`.
+- `bug_log.md`: BUG-F25-A/B statuses updated to closed; BUG-F25-C now includes
+  race diagnosis and follow-up patch details.
+
+## 🧪 Validation run (local)
+
+- `flutter analyze` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` → PASS
+
+## ⚠️ Notes
+
+- Remaining blocker for full Fix 25 closure is only BUG-F25-C device re-run
+  after this race patch.

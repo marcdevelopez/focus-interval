@@ -1049,8 +1049,9 @@ Fix applied:
   - `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` PASS
 
 Status:
-In validation. P0 — pending device re-validation (owner + mirror) to confirm
-ownership requests are delivered with multi-group conflicts.
+Closed/OK. P0 fixed and validated on 17/03/2026 re-validation #2
+(`2026-03-17_fix25_reval2_fd788e6_*`): ownership requests were delivered and
+accepted repeatedly with no transaction-order assertion.
 
 ---
 
@@ -1118,8 +1119,9 @@ Fix applied:
   - `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` PASS
 
 Status:
-In validation. P0 — pending device re-validation to confirm dialog dismisses
-without exceptions during state disposal/navigation races.
+Closed/OK. P0 fixed and validated on 17/03/2026 re-validation #2
+(`2026-03-17_fix25_reval2_fd788e6_*`): no context-after-dispose/Navigator
+exceptions were observed while closing owner-resolved dialog flows.
 
 ---
 
@@ -1172,12 +1174,19 @@ After the owner resolves, ownerDeviceId is cleared → isOwner evaluates false
 on the resolving device, incorrectly triggering the mirror-only dialog.
 
 Fix applied:
-- Implemented 16/03/2026 on branch `fix-f25-transaction-order-and-owner-dialog`.
-- Added local state flag `_resolved` in `_LateStartOverlapQueueScreenState`.
-- `_resolved` is set to true after successful `_applySelection` completion.
-- Owner-resolved mirror dialog gate now requires `!isOwner && !_resolved`.
+- First attempt (16/03/2026, commit `fd788e6`):
+  - Added local state flag `_resolved` in `_LateStartOverlapQueueScreenState`.
+  - Added gate `!isOwner && !_resolved` for owner-resolved mirror dialog.
+- Re-validation #2 result (17/03/2026): still FAIL in `Continue` path due race.
+  Firestore snapshot updates arrived before `_resolved` was set (it was updated
+  after awaited persistence), so owner briefly matched `!isOwner && !_resolved`
+  and showed mirror-only modal.
+- Follow-up patch (17/03/2026):
+  - Moved `_resolved = true` into the initial `setState` before the first await
+    in `_applySelection` (pre-`repo.saveAll`), removing the race window.
+  - `Cancel all` path remains correct: modal is mirror-only by design.
 - File updated: `lib/presentation/screens/late_start_overlap_queue_screen.dart`.
-- Local verification:
+- Local verification after follow-up patch:
   - `flutter analyze` PASS
   - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` PASS
   - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS
