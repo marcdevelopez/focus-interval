@@ -157,6 +157,7 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
     required String ownerDeviceId,
     required String requesterDeviceId,
     required bool approved,
+    Map<String, dynamic>? cursorSnapshot,
   }) async {}
 
   void dispose() {

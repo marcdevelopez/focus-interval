@@ -89,12 +89,23 @@ Temporary activeSession stream gaps on Android are interpreted as missing
 sessions. Gaps exceeding the 45s stale threshold can drop to Ready.
 
 Fix applied:
-Branch: bug-mirror-ready-screen
+Branch: bug-mirror-ready-screen (merged main, PR #78).
 Change: Guard in PomodoroViewModel keeps Syncing based on last session +
 lastUpdatedAt (45s).
+Superseded by Fix 26 rewrite: _shouldTreatMissingSessionAsRunning removed;
+TimerService now drives countdown independently and SSS debounces stream nulls
+(3s) before entering hold → mirror shows "Syncing session..." instead of Ready.
 
 Status:
-Validation pending on Android. Reproduced intermittently.
+Closed/OK (17/03/2026). Not reproduced in 10+ hours of device use post Fix 26
+rewrite, and confirmed again in the 17/03/2026 BUG-001/002 validation run
+(Android RMX3771 mirror + macOS owner). No Ready state was observed on either
+device during mirror stream gaps or ownership transfers throughout a sustained
+multi-ownership-transfer session. Mirror showed Syncing state (SSS hold) as
+expected and returned to the running timer without navigation. Formally closed
+with logs:
+  docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_android_RMX3771_debug.log
+  docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_macos_debug.log
 
 ---
 
@@ -241,11 +252,64 @@ Hypothesis:
   immediate Run Mode refresh appears to stabilize the accepted owner.
 
 Fix applied:
-Update ownership accept/reject to set lastUpdatedAt (branch:
-bug-ownership-sync-stabilization). Validation pending.
+Branch: bug-ownership-sync-stabilization (merged main, PR #121).
+Change: respondToOwnershipRequest sets lastUpdatedAt = serverTimestamp() on
+both approve and reject; sessionRevision incremented in both paths.
+
+Current state (17/03/2026, post Fix 26 rewrite, BUG-001/002 validation run):
+
+Devices: Android RMX3771 (mirror initially, then owner-swap) + macOS (owner initially).
+Group was already started before the run; multiple consecutive ownership transfers performed.
+Logs:
+  docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_android_RMX3771_debug.log
+  docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_macos_debug.log
+
+Confirmed resolved:
+- Ownership revert after accept: ✅ not reproduced.
+  lastUpdatedAt fresh after respondToOwnershipRequest; auto-claim does not fire
+  within 45s window.
+- Mirror Ready after rejection: ✅ not reproduced.
+  Fix 26 SSS debounce prevents drop to Ready on stream gaps.
+
+Residual symptom confirmed (rejection banner on owner):
+- After owner (macOS) rejects a request, the ownership request banner does NOT
+  clear immediately on the owner device.
+- First rejection (~20:06): banner cleared at ~20:06:52 — coinciding with the
+  next Firestore lastUpdatedAt heartbeat write (approximately one Firestore
+  propagation cycle delay).
+- Third rejection (~20:07:59): banner required a second Reject press to clear
+  (first press did not clear it; second press cleared it immediately).
+- Fourth rejection (~20:08:27+): same banner persistence observed.
+- Root cause: the owner's local rejection UI state is not cleared optimistically;
+  it waits for the Firestore snapshot to round-trip. When the snapshot arrives
+  with `ownershipRequest.status = rejected`, the owner clears the banner — but
+  this is one cycle later than expected. In some cases an intermediate snapshot
+  (e.g., from the lastUpdatedAt heartbeat) arrives before the rejection snapshot,
+  leaving the banner visible until the rejection snapshot catches up.
+- Additional observation: at the second rejection (~20:07), macOS owner briefly
+  showed `00:00` with a stale phase overlay before self-correcting. This is
+  likely a consequence of BUG-F26-001 (stale Firestore cursor with
+  `remainingSeconds: 0`) causing the owner to briefly apply the stale snapshot
+  before re-projecting from TimerService.
 
 Status:
-Open. Reproduced in real device test (Android + macOS). High priority.
+Partially open. Primary symptoms (revert, Ready state) resolved by Fix 26.
+Residual: rejection banner persistence on owner device (~1 Firestore cycle delay;
+occasionally requires second Reject press). Root cause is lack of optimistic
+banner clear on the owner side after respondToOwnershipRequest returns. See also
+BUG-F26-001 for the secondary 00:00 flash symptom.
+
+Code area: likely `lib/presentation/viewmodels/pomodoro_view_model.dart`
+`rejectOwnershipRequest()` / `approveOwnershipRequest()` — add optimistic local
+clear of the ownershipRequest banner state immediately after the Firestore write
+succeeds, without waiting for the next stream snapshot.
+
+Implementation update (17/03/2026):
+- Implemented on branch `fix-ownership-cursor-stamp`:
+  `rejectOwnershipRequest()` now applies immediate local ownership-request clear
+  on owner side and triggers `_notifySessionMetaChanged()` before Firestore
+  round-trip.
+- Status moved to **In validation** pending device re-run evidence.
 
 ---
 
@@ -1193,5 +1257,296 @@ Fix applied:
   - `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` PASS
 
 Status:
-In validation. P1 — pending device re-validation to confirm owner no longer
-sees mirror-only "Owner resolved" messaging.
+Closed/OK. P1 — validated in re-validation #3 (17/03/2026, commit `95494ab`,
+logs `2026-03-17_fix25_reval3_95494ab_*`). Owner (Chrome) confirmed Resolve
+overlaps via "Continue" path; no "Owner resolved" modal appeared on owner.
+
+---
+
+## BUG-F25-D — Riverpod StateController<RunningOverlapDecision?> modified during widget build
+
+ID: BUG-F25-D
+Date: 17/03/2026 (UTC+1)
+Platforms: Chrome (observed); likely all platforms
+Context: Fix 25 re-validation #3. iOS (owner) pressed Resume on a paused
+running group with a conflict imminent. At that moment Chrome (mirror) received
+a `runningOverlap` event that tried to update `StateController<RunningOverlapDecision?>`
+during the widget tree build phase.
+
+Repro steps:
+- Two devices in Account Mode with one group running/paused (owner iOS) and a
+  second group scheduled that overlaps if the paused group resumes.
+- Mirror device (Chrome) is on any screen that listens to the overlap provider.
+- Owner presses Resume → overlap is detected → mirror tries to update
+  `runningOverlapDecision` provider during widget build.
+
+Symptom:
+Chrome shows a red full-screen error overlay for <1 second:
+"At least one listener of the StateNotifier Instance of
+'StateController<RunningOverlapDecision?>' threw an exception when the notifier
+tried to update its state.
+Tried to modify a provider while the widget tree was building."
+Stack trace includes:
+  - `debugCanModifyProviders` in `flutter_riverpod/src/core/provider_scope.dart:333`
+  - `notifyListeners` in `riverpod/src/core/element.dart:768`
+The overlay disappears in <1 second and the app returns to its previous state.
+
+Expected behavior:
+Provider state updates must never be triggered synchronously during a build phase.
+The overlap detection logic that writes to `runningOverlapDecision` must be
+deferred (e.g., via `Future.microtask` or `WidgetsBinding.addPostFrameCallback`)
+when called from a context that may be inside a build cycle.
+
+Evidence:
+- Chrome reval3 log: `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval3_95494ab_chrome_debug.log`
+- iOS reval3 log: `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval3_95494ab_ios_iPhone17Pro_debug.log`
+  iOS log shows `runningOverlap=true` first appearing at line 51204 immediately
+  after Resume was pressed.
+
+Fix applied:
+None yet. Pending Codex implementation.
+Locate where `runningOverlapDecision` is written (likely in
+`ScheduledGroups`/`PomodoroViewModel`/`SessionSyncService` overlap detection path)
+and wrap the state mutation in `Future.microtask(() => ...)` or
+`WidgetsBinding.instance.addPostFrameCallback((_) => ...)` to defer it out of
+the build phase.
+
+Status:
+Open. P1 — UX regression (red error screen flash on mirror). Related to Phase 17
+running overlap work. Must be fixed before Phase 17 closure.
+
+---
+
+## BUG-F25-E — Re-plan conflict modal does not identify the conflicting group
+
+ID: BUG-F25-E
+Date: 17/03/2026 (UTC+1)
+Platforms: All (Account Mode, Re-plan flow)
+Context: Fix 25 re-validation #3. After canceling a running group, user attempted
+to re-plan it (Groups Hub → Re-plan group → select time). The conflict modal
+appeared but gave no information about which scheduled group causes the conflict
+or what its time range is.
+
+Repro steps:
+- Cancel a running group (status = canceled).
+- In Groups Hub, tap "Re-plan group".
+- Select a start time that overlaps an existing scheduled group.
+- Confirm → modal appears: "Conflict with scheduled group / A group is already
+  scheduled in that time range. Delete it to continue?"
+
+Symptom:
+The modal says "Conflict with scheduled group" without naming the group or showing
+its scheduled time range. User has no context to make an informed decision.
+
+Expected behavior:
+The conflict modal must show the name and scheduled time range of every conflicting
+group (e.g., "G2 — 13:21–13:36") so the user can decide whether to delete or cancel.
+
+Evidence:
+- iOS reval3 log: `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval3_95494ab_ios_iPhone17Pro_debug.log`
+- Observed at ~13:02:32 during re-plan of G1 (canceled) that conflicted with G2 (scheduled 13:21).
+
+Note: Phase 17 (roadmap line 440) covers the same context requirement for the
+RUNNING overlap conflict modal ("Scheduling conflict" modal shown when a running
+group approaches a scheduled group). This bug covers the RE-PLAN conflict modal —
+a distinct flow. Both must be addressed.
+
+Fix applied:
+None yet. Pending Codex implementation.
+In the re-plan conflict modal builder, pass the list of conflicting groups and
+render each group's name + scheduled time range inline in the dialog content.
+
+Status:
+Open. P2 — UX clarity. Add to Phase 17 scope for implementation.
+
+---
+
+## BUG-F25-F — Postpone snackbar shows redundant "pre-run" info when noticeMinutes = 0
+
+ID: BUG-F25-F
+Date: 17/03/2026 (UTC+1)
+Platforms: All (Account Mode, running overlap postpone)
+Context: Fix 25 re-validation #3. After owner pressed "Postpone scheduled" in
+the running overlap modal, a SnackBar appeared: "Scheduled start moved to 13:22
+(pre-run at 13:22)." The group had noticeMinutes = 0, making "(pre-run at 13:22)"
+identical to the start time and therefore meaningless.
+
+Repro steps:
+- Schedule a group with noticeMinutes = 0.
+- Start a running group that will overlap it.
+- In the running overlap modal, select "Postpone scheduled".
+- Observe snackbar text.
+
+Symptom:
+SnackBar: "Scheduled start moved to 13:22 (pre-run at 13:22)."
+When noticeMinutes = 0, pre-run time equals start time — showing both is
+redundant and confusing (implies there is a pre-run window when there is none).
+
+Expected behavior:
+When noticeMinutes = 0, the snackbar should omit the pre-run clause:
+"Scheduled start moved to 13:22."
+When noticeMinutes > 0, show both:
+"Scheduled start moved to 13:22 (pre-run at 13:21)."
+
+Specs reference:
+specs.md line 1716: "Show a confirmation SnackBar with the new start time and
+the pre-run time." This rule does not address the noticeMinutes = 0 case.
+A spec clarification is needed (suppress pre-run clause when noticeMinutes = 0).
+
+Evidence:
+- iOS reval3 log: `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval3_95494ab_ios_iPhone17Pro_debug.log`
+- Snackbar text observed at ~13:06:55.
+
+Fix applied:
+None yet. Pending Codex implementation + spec clarification.
+In the postpone snackbar builder: if `noticeMinutes == 0`, render only the start
+time clause; otherwise include the pre-run clause.
+Specs line 1716 must be updated to reflect this rule.
+
+Status:
+Open. P2 — UX clarity. Add to Phase 17 scope alongside postpone snackbar work.
+
+---
+
+## BUG-F26-001 — Session cursor stale in Firestore during active run with ownership churn
+
+ID: BUG-F26-001
+Date: 17/03/2026 (UTC+1)
+Platforms: Android + macOS (Account Mode)
+Context: BUG-001/002 validation run (17/03/2026). Group already started before
+the run began. Android RMX3771 (mirror initially, later owner via ownership
+transfers); macOS (owner initially). Multiple consecutive ownership transfers
+were performed over ~4 minutes.
+
+Symptom:
+Firestore `activeSession` document shows stale `phaseStartedAt` and
+`remainingSeconds: 0` throughout the entire session, despite devices displaying
+correct countdown timers and progressing through pomodoros normally.
+
+Observed behavior:
+- `phaseStartedAt: 7:31:07pm` (19:31:07) — unchanged throughout the entire
+  session (from first screenshot at 20:04 to last at 20:08+). The field reflects
+  the initial session start time and was never updated on phase transitions.
+- `remainingSeconds: 0` — persisted in Firestore across all ownership transfers
+  and phase boundaries. Timer countdowns visible on both devices (e.g., 18:33
+  remaining) confirm the field does not reflect actual state.
+- Consequence 1 — stale snapshot flash: at the second rejection (~20:07), macOS
+  owner briefly showed `00:00` with a stale phase overlay. This is the stale
+  Firestore snapshot (`remainingSeconds: 0`) being applied to the UI before
+  TimerService re-projects the correct value.
+- Consequence 2 — task shown as completed after app restart: after a device was
+  restarted/re-opened, the task appeared as already completed (time=0 remaining),
+  consistent with the app reading `remainingSeconds: 0` from Firestore on
+  cold-start before TimerService bootstraps.
+- Devices continued running via `TimerService` (Fix 26 decoupled timer), which
+  correctly drove the countdown independently of the stale Firestore cursor.
+
+Expected behavior:
+On each phase transition (pomodoro→break, break→pomodoro) and on each ownership
+transfer, the owner device must write the current `phaseStartedAt`, `phase`, and
+`remainingSeconds` to Firestore so that:
+1. Mirrors can project correctly from the snapshot.
+2. Cold-starting devices can bootstrap from a valid cursor.
+3. The `remainingSeconds: 0` state does not linger across phase boundaries.
+
+Evidence:
+- Validation run (17/03/2026):
+  docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_android_RMX3771_debug.log
+  docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_macos_debug.log
+- Firestore snapshots: `phaseStartedAt: 7:31:07pm` and `remainingSeconds: 0`
+  across all screenshots from 20:04 to 20:08+.
+- 00:00 flash on macOS at second rejection (~20:07) — stale snapshot applied.
+- Task shown as completed after app restart — `remainingSeconds: 0` used as
+  cold-start cursor.
+
+Workaround:
+None. Cold-starting a device will read a stale session cursor.
+
+Hypothesis:
+In the Fix 26 architecture, `TimerService` drives the countdown independently.
+The owner's write path for phase transitions may no longer update `phaseStartedAt`
+and `remainingSeconds` in Firestore on each phase change — either because:
+a. `PomodoroViewModel` (now a UI adapter) no longer triggers Firestore writes on
+   phase transitions as it did pre-Fix-26, and `SessionSyncService` doesn't have
+   a write-back path for phase transitions, OR
+b. The ownership transfer path clears or resets the cursor to `remainingSeconds: 0`
+   without rewriting the current phase state from `TimerService`.
+Need to trace from `TimerService` phase-advance callback → owner write path in
+`SessionSyncService`/`PomodoroViewModel` → Firestore update.
+
+Fix applied:
+Implemented on 17/03/2026 (branch `fix-ownership-cursor-stamp`), pending
+device re-validation:
+- Added `_pendingPublishAfterSync` retry path so publish writes dropped by
+  `isTimeSyncReady=false` replay immediately after time sync recovers.
+- Added atomic ownership approve cursor stamp by extending
+  `respondToOwnershipRequest(..., cursorSnapshot:)` and passing VM snapshot
+  cursor fields from `approveOwnershipRequest()`.
+- Added owner hot-swap fallback publish when hydration is skipped
+  (`shouldHydrate=false` and machine non-idle): bump revision + publish now.
+
+Status:
+In validation. P1 — implementation complete; awaiting device churn re-run
+evidence for closure in Phase 18.
+
+---
+
+## BUG-F26-002 — Pomodoro/task counter jumps on consecutive ownership transfers
+
+ID: BUG-F26-002
+Date: 17/03/2026 (UTC+1)
+Platforms: Android + macOS (Account Mode)
+Context: BUG-001/002 validation run (17/03/2026). Same session as BUG-F26-001.
+Consecutive ownership transfers performed in rapid succession.
+
+Symptom:
+Pomodoro counter advances (5→6, 6→7) without real phase completion on each
+ownership transfer. Both devices show jumps within seconds of the handoff
+without any intervening break or pomodoro completion.
+
+Observed behavior:
+- At 20:06:18 (macOS→android transfer): status boxes on both devices briefly
+  flip (long break → pomodoro 5). Timer stabilizes.
+- At 20:07:30 (android gets ownership again): timer on android jumps to
+  18:33 remaining; pomodoro counter advances to 6 of 7.
+- At 20:07:48 (macOS gets ownership): pomodoro counter advances to 7 of 7.
+- Neither transfer was preceded by a completed phase (no break/pomodoro
+  completion sound or transition animation observed).
+
+Expected behavior:
+Ownership transfer must not advance the pomodoro/phase counter. The new owner
+should read and apply the current cursor from `TimerService` (or from the last
+valid Firestore snapshot) without incrementing the phase index.
+
+Evidence:
+- Validation run (17/03/2026):
+  docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_android_RMX3771_debug.log
+  docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_macos_debug.log
+- Timeline: pomodoro 5→6 at 20:07:30, 6→7 at 20:07:48, no phase completion
+  events between transfers.
+
+Workaround:
+None. Counter advances with each ownership handoff.
+
+Hypothesis:
+Likely linked to BUG-F26-001. The stale Firestore cursor (`remainingSeconds: 0`)
+may be interpreted as "phase complete" by the new owner's claim logic, causing
+it to advance to the next phase and write the incremented cursor to Firestore.
+Alternatively, each owner may write its own `TimerService` cursor on claim, and
+if `TimerService` internal phase index is ahead of the real progression (due to
+stale bootstrap from `remainingSeconds: 0`), consecutive claims increment the
+stored phase.
+Root cause requires tracing the ownership-claim write path to see what cursor
+is committed to Firestore on each `respondToOwnershipRequest` → new owner
+heartbeat cycle.
+
+Fix applied:
+Implemented together with BUG-F26-001 hardening packet on 17/03/2026 (branch
+`fix-ownership-cursor-stamp`), pending device re-validation:
+- Ownership transfer now carries atomic cursor snapshot at approve write.
+- New owner hot-swap path now stamps live cursor immediately when hydration is
+  skipped, reducing stale phase-complete interpretation windows.
+
+Status:
+In validation. P1 — implementation complete; closure pending churn stress run
+evidence in Phase 18.

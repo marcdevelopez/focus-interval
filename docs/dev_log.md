@@ -25,8 +25,8 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **Fix 25 BUG-F25-C race follow-up applied (A/B already validated PASS)**
-Current focus: **Fix 25 final closure (BUG-F25-C race fix + device re-validation)**
+Last bug fix: **Ownership sync hardening packet implemented for BUG-002 residual + BUG-F26-001/002 (pending device validation)**
+Current focus: **Re-validate ownership churn on Android+macOS after hardening packet; keep Phase 17 bugs (BUG-F25-D/E/F) queued**
 Last update: **17/03/2026**
 
 ---
@@ -11641,3 +11641,185 @@ Docs synchronization:
 
 - Remaining blocker for full Fix 25 closure is only BUG-F25-C device re-run
   after this race patch.
+
+---
+
+# 🔹 Block 593 — Fix 25 fully closed; BUG-F25-D/E/F documented as Phase 17 scope (17/03/2026)
+
+## 📋 Context
+
+User provided re-validation #3 logs (commit `95494ab`, iOS iPhone17Pro owner + Chrome mirror):
+- `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval3_95494ab_ios_iPhone17Pro_debug.log`
+- `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval3_95494ab_chrome_debug.log`
+
+## ✔ Work completed
+
+Validation outcome:
+
+- BUG-F25-C: PASS. Chrome (owner) confirmed "Continue" in Resolve overlaps at 13:01:01;
+  no "Owner resolved" modal appeared on owner. Race condition fix (`_resolved=true`
+  pre-armed in initial setState) confirmed working.
+- P0-F25-001: Closed/OK. All three blockers (A/B/C) now validated across reval #2 and #3.
+
+Timing verification (user request):
+- First trigger (13:00:00): G1 overdue 60s; projected end 13:15:00; G2 starts 13:15:00
+  → exact overlap → Resolve overlaps correct ✅
+- Second trigger (13:05:12): G1 overdue 12s; projected end 13:20:12; G2 starts 13:21:00
+  → 48s gap → no overlap → auto-start without Resolve overlaps correct ✅
+
+New findings documented:
+
+1. BUG-F25-D (P1, open): Riverpod `StateController<RunningOverlapDecision?>` modified
+   during widget build on mirror when overlap fires on Resume. Red error screen <1s.
+   Added to Phase 17 scope in roadmap.
+
+2. BUG-F25-E (P2, open): Re-plan conflict modal shows no group name/time range.
+   Distinct from Phase 17 running overlap modal (line 440). Added to Phase 17 scope.
+
+3. BUG-F25-F (P2, open): Postpone snackbar shows "(pre-run at X)" when noticeMinutes=0
+   — redundant when pre-run equals start time. Requires spec clarification at specs.md:1716.
+   Added to Phase 17 scope.
+
+Additional findings (already documented in Phase 17 — no new entry needed):
+- Running overlap not detected during pause (paused overlap alerts, Phase 17 line 437).
+- Chrome Groups Hub stale after postpone (Phase 17 line 443).
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md` — BUG-F25-C closed; BUG-F25-D/E/F added
+- `docs/validation/validation_ledger.md` — P0-F25-001 + BUG-F25-C closed; BUG-F25-D/E/F added
+- `docs/bugs/validation_fix_2026_03_05/quick_pass_checklist.md` — reval #3 result + item 3 closed
+- `docs/roadmap.md` — BUG-F25-D/E/F added to Phase 17 scope
+
+---
+
+# 🔹 Block 594 — BUG-001/002 validation run analyzed; BUG-F26-001/002 documented (17/03/2026)
+
+## 📋 Context
+
+User provided BUG-001/002 validation run (Android RMX3771 + macOS, 17/03/2026).
+Group was already running from a previous session. Multiple consecutive ownership
+transfers were performed over ~4 minutes (20:04–20:08+). Log paths registered:
+- `docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_android_RMX3771_debug.log`
+- `docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_macos_debug.log`
+
+## ✔ Work completed
+
+**BUG-001 formally closed:**
+- No Ready state observed on either device at any point during the session.
+- Mirror showed Syncing state (SSS hold) during stream gaps and returned to the
+  running timer without navigation. BUG-001 Closed/OK with this run as final evidence.
+
+**BUG-002 residual confirmed and characterized:**
+- Primary symptoms (ownership revert, mirror Ready after rejection): ✅ not reproduced.
+- Residual confirmed: rejection banner on owner device does not clear immediately.
+  - Observed at all 4 rejection events during the run.
+  - First rejection: cleared at ~20:06:52 (next Firestore lastUpdatedAt heartbeat, ~1 cycle delay).
+  - Third rejection (~20:07:59): required second Reject press to clear.
+  - Fourth rejection (~20:08:27): same second-press pattern.
+  - Root cause: no optimistic banner clear on owner after `respondToOwnershipRequest`
+    returns; owner waits for Firestore snapshot round-trip.
+  - Code area: `rejectOwnershipRequest()` in `pomodoro_view_model.dart`.
+
+**New bugs documented:**
+
+1. BUG-F26-001 (P1, open): Session cursor stale in Firestore during active run.
+   - `phaseStartedAt: 7:31:07pm` (19:31:07) unchanged throughout entire run.
+   - `remainingSeconds: 0` persisted in Firestore despite devices counting down normally.
+   - TimerService drove the countdown correctly (Fix 26 decoupled architecture).
+   - Consequence: brief `00:00` flash on macOS at second rejection (stale snapshot
+     applied before TimerService re-projects); task shown as completed after app
+     restart (cold-start reads `remainingSeconds: 0`).
+   - Hypothesis: Fix 26 owner write path for phase transitions may no longer write
+     `phaseStartedAt`/`remainingSeconds` to Firestore on phase changes.
+
+2. BUG-F26-002 (P1, open): Pomodoro counter jumps on consecutive ownership transfers.
+   - Pomodoro 5→6 at 20:07:30 (android gets ownership); 6→7 at 20:07:48 (macOS gets
+     ownership). No phase completion events between transfers.
+   - Likely linked to BUG-F26-001: stale `remainingSeconds: 0` may be interpreted
+     as "phase complete" on each new owner claim, causing the phase index to advance.
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md` — BUG-001 closed (final evidence); BUG-002 residual expanded with
+  validation evidence; BUG-F26-001 + BUG-F26-002 added
+- `docs/validation/validation_ledger.md` — BUG-001 closed; BUG-002 partially open entry added;
+  BUG-F26-001/002 open entries added
+- `docs/roadmap.md` — BUG-F26-001/002 added to Phase 18 scope
+- `docs/dev_log.md` — header updated
+
+---
+
+# 🔹 Block 595 — Ownership sync hardening packet implemented (17/03/2026)
+
+## 📋 Context
+
+User requested Codex implementation of the architectural handoff for intermittent
+ownership churn issues:
+- BUG-002 residual (owner rejection banner delayed clear),
+- BUG-F26-001 (stale Firestore cursor on churn),
+- BUG-F26-002 (phase/pomodoro jumps on consecutive handoffs).
+
+Implementation done on branch `fix-ownership-cursor-stamp` (not `main`).
+
+## ✔ Work completed
+
+Code changes:
+
+1. **Fix 1 — publish retry after timeSync recovery**
+   - Added `_pendingPublishAfterSync` flag in `PomodoroViewModel`.
+   - `_publishCurrentSession()` now marks pending when `isTimeSyncReady=false`.
+   - `_refreshTimeSyncIfNeeded()` now replays pending publish immediately after
+     successful offset refresh.
+   - Pending flag is cleared on session reset / mode change.
+
+2. **Fix 2 — atomic cursor stamp in ownership approve path**
+   - Added `PomodoroSession.toCursorMap()` (cursor payload only).
+   - Extended `respondToOwnershipRequest(...)` signature with optional
+     `cursorSnapshot`.
+   - Firestore approve transaction now merges `cursorSnapshot` in the same
+     ownership transfer write (`ownerDeviceId` switch + revision/timestamp).
+   - `approveOwnershipRequest()` now builds current session snapshot and passes
+     `cursorSnapshot` to the repository call.
+
+3. **Fix 3 — fallback publish on owner hot-swap without hydration**
+   - In owner timeline projection branch, when `shouldHydrate == false` and
+     machine is already non-idle, VM now executes:
+     `_bumpSessionRevision()` + `_publishCurrentSession()`.
+   - This stamps live cursor immediately on mirror→owner hot-swap.
+
+4. **Fix 4 — optimistic clear for owner-side rejection banner**
+   - `rejectOwnershipRequest()` now clears pending ownership request locally
+     right after successful repository response (before Firestore round-trip).
+   - Added helper `_clearOwnershipRequestLocallyForOwner(...)` and immediate
+     `_notifySessionMetaChanged()` to remove banner without delay.
+
+Test scaffold updates:
+- Updated test fakes implementing `PomodoroSessionRepository` to include the new
+  optional `cursorSnapshot` parameter in `respondToOwnershipRequest(...)`.
+
+## 🧪 Validation run (local)
+
+- `flutter analyze` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_ownership_request_test.dart` → PASS
+
+## 📁 Updated files
+
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`
+- `lib/data/repositories/firestore_pomodoro_session_repository.dart`
+- `lib/data/repositories/pomodoro_session_repository.dart`
+- `lib/data/models/pomodoro_session.dart`
+- `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- `test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart`
+- `test/presentation/timer_screen_syncing_overlay_test.dart`
+- `test/presentation/viewmodels/pomodoro_view_model_ownership_request_test.dart`
+- `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+
+## ⚠️ Notes
+
+- This packet is **implementation complete** but not closure-complete.
+- Device re-validation is still required to close BUG-002 residual and
+  BUG-F26-001/002.

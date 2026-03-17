@@ -54,6 +54,18 @@ Gate:
    - Follow-up implementation (17/03/2026): moved `_resolved = true` before the
      first `await` in `_applySelection` to remove owner-side race with Firestore
      stream updates. Pending exact repro re-run for closure.
+   Re-validation run (2026-03-17, branch `fix-f25-transaction-order-and-owner-dialog`, commit `95494ab`):
+   - iOS simulator iPhone 17 Pro (owner): `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval3_95494ab_ios_iPhone17Pro_debug.log`
+   - Chrome (mirror): `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval3_95494ab_chrome_debug.log`
+   - Result:
+     - BUG-F25-C: PASS (owner saw no "Owner resolved" modal after confirming Continue).
+     - P0-F25-001: Closed/OK. All three blockers (A/B/C) validated across reval #2 and #3.
+   - New findings from this run (not Fix 25 scope):
+     - BUG-F25-D (P1): Riverpod StateController<RunningOverlapDecision?> modified
+       during build on mirror — red error screen <1s (open, Phase 17 scope).
+     - BUG-F25-E (P2): Re-plan conflict modal shows no group name/range (open, Phase 17 scope).
+     - BUG-F25-F (P2): Postpone snackbar shows "(pre-run at X)" when notice=0 (open, Phase 17 scope).
+3. [x] Local → Account sin overlaps falsos; request ownership llega (Fix 25) — **Closed/OK** (17/03/2026, commit `95494ab`).
 
 ## New finding (outside Fix 24 scope)
 - [x] Fix 26 — Mirror/owner no queda en `Syncing session...` tras cancel y en
