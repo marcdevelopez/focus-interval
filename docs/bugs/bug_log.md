@@ -1490,8 +1490,9 @@ Validation log paths (17/03/2026, commit `7ddc1e6`, Android RMX3771 + macOS):
   docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_macos_debug.log
 
 Status:
-In validation. P1 — implementation complete; awaiting device churn re-run
-evidence for closure in Phase 18.
+In validation (blocked). P1 — re-validation on `7ddc1e6` failed due
+BUG-F26-003 write loop regression; follow-up one-shot guard patch implemented
+and pending device churn re-run.
 
 ---
 
@@ -1556,5 +1557,60 @@ Validation log paths (17/03/2026, commit `7ddc1e6`, Android RMX3771 + macOS):
   docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_macos_debug.log
 
 Status:
-In validation. P1 — implementation complete; closure pending churn stress run
-evidence in Phase 18.
+In validation (blocked). P1 — blocked by BUG-F26-003 until post-fix device
+churn re-run confirms stable cursor writes and no counter jumps.
+
+---
+
+## BUG-F26-003 — Ownership hot-swap fallback publish write loop (regression in 7ddc1e6)
+
+ID: BUG-F26-003  
+Date: 17/03/2026 (UTC+1)  
+Platforms: Android RMX3771 + macOS (Account Mode)  
+Context: Re-validation of ownership cursor hardening packet (`7ddc1e6`) using
+newly started group (`Start now`, no pre-existing running group).
+
+Symptom:
+- `activeSession/current.sessionRevision` increased continuously in seconds
+  (observed 88 → 121 between 22:27:44 and 22:27:51).
+- `lastUpdatedAt` and `remainingSeconds` rewrote continuously in Firestore.
+- After canceling group at 22:28:35, `activeSession/current` appeared/disappeared
+  repeatedly (create/delete loop) until app closure.
+
+Observed behavior:
+- UI looked mostly correct in short run, but Firestore write rate was abnormal.
+- On cancel, app marked group canceled, yet backend kept oscillating `current` doc.
+- Flash samples at 22:28:36 / 22:28:38 / 22:28:39 showed `finishedAt=null` with
+  active phase fields while group was already canceled in UI.
+
+Expected behavior:
+- Hot-swap fallback publish must execute once per ownership acquisition, not on
+  every incoming snapshot.
+- `sessionRevision` should grow monotonically with discrete ownership/phase events,
+  not at near-continuous cadence.
+- Cancel must settle `activeSession/current` deterministically with no recreate loop.
+
+Root cause (confirmed in code):
+- In `PomodoroViewModel._applySessionTimelineProjection`, branch:
+  `else if (_machine.state.status != PomodoroStatus.idle) { _bumpSessionRevision(); _publishCurrentSession(); }`
+  lacked a one-shot guard.
+- Repeated snapshots while machine remained non-idle triggered repeated bump+publish,
+  creating Firestore feedback loop.
+
+Fix applied (pending device re-validation):
+- Added `int _hotSwapPublishedForRevision = -1`.
+- Guarded fallback publish so it runs once per ownership revision.
+- Marked revision before publish and reset guard on local session reset/mode switch.
+- Added regression test:
+  `owner hot-swap fallback publish is one-shot for repeated snapshots`.
+
+Evidence:
+- Validation logs:
+  `docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_android_RMX3771_debug.log`
+  `docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_macos_debug.log`
+- Validation notes in:
+  `docs/bugs/validation_ownership_cursor_2026_03_17/quick_pass_checklist.md`
+
+Status:
+Open (P1). Blocks closure of BUG-002 residual / BUG-F26-001 / BUG-F26-002
+until post-fix device validation is PASS.

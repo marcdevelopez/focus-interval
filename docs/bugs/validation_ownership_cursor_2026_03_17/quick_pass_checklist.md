@@ -40,7 +40,7 @@ flutter run -v --release -d macos \
 
 ### BUG-F26-001 — Cursor stale check (ownership churn)
 
-- [ ] 4–5 transferencias de ownership en ráfaga (< 30s entre cada una) ejecutadas.
+- [x] 4–5 transferencias de ownership en ráfaga (< 30s entre cada una) ejecutadas.
 - [ ] `phaseStartedAt` → hora real de la fase tras cada transfer (no inicio de sesión).
 - [ ] `remainingSeconds` → > 0 y coherente con el timer visible en Firestore.
 - [ ] `sessionRevision` → incrementa en cada transfer.
@@ -63,8 +63,8 @@ flutter run -v --release -d macos \
 
 ## Metadata del run (rellenar tras ejecución)
 
-- Start time: `___`
-- End time: `___`
+- Start time: `22:27:30`
+- End time: `22:28:39`
 - Android device: `RMX3771`
 - macOS device: `macos`
 - Logs:
@@ -77,19 +77,30 @@ flutter run -v --release -d macos \
 
 | Check | Android RMX3771 | macOS | Result |
 |---|---|---|---|
-| Cursor coherent after each transfer | | | |
-| Pomodoro counter stable | | | |
-| Rejection banner immediate clear | | | |
-| Timesync drop + retry | | | |
+| Cursor coherent after each transfer | UI timer coherent | UI timer coherent | **FAIL** (Firestore `sessionRevision` write loop; `remainingSeconds`/`lastUpdatedAt` churn) |
+| Pomodoro counter stable | No visible jumps in short run | No visible jumps in short run | **BLOCKED** (validation contaminated by write loop) |
+| Rejection banner immediate clear | Not executed | Not executed | **NOT RUN** |
+| Timesync drop + retry | Not executed | Not executed | **NOT RUN** |
 
-**Overall:** PASS / FAIL / PARTIAL
+**Overall:** **FAIL** (regression introduced by commit `7ddc1e6`)
 
 ---
 
 ## Decisión de cierre (rellenar tras ejecución)
 
-- BUG-002 decision: `___`
-- BUG-F26-001 decision: `___`
-- BUG-F26-002 decision: `___`
-- Closing commit hash: `7ddc1e6`
-- Notes: `___`
+- BUG-002 decision: `Pending` (not re-validated due blocker)
+- BUG-F26-001 decision: `Reopened` (validation fail caused by regression loop)
+- BUG-F26-002 decision: `Pending` (not re-validated due blocker)
+- Closing commit hash: `-`
+- Notes: `Regression: owner hot-swap fallback publish path created write loop in Firestore; activeSession/current recreated after cancel until app close.`
+
+---
+
+## Failure timeline (run on commit `7ddc1e6`)
+
+- 22:27:44: `sessionRevision=88` and increasing continuously.
+- 22:27:51: `sessionRevision=121` (unexpected rapid growth in seconds).
+- Firestore `lastUpdatedAt` and `remainingSeconds` updated continuously (high-frequency churn).
+- 22:28:35 cancel run: UI shows canceled, but `activeSession/current` keeps appearing/disappearing in Firestore.
+- 22:28:36–22:28:39: repeated flashes of `current` doc with `finishedAt=null`, `phase=pomodoro`.
+- Loop stops only after app close.

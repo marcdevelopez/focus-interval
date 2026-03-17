@@ -339,6 +339,11 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           ownership approve transaction, non-idle owner hot-swap fallback publish,
           and owner-side optimistic rejection banner clear. Local analyze/tests
           PASS; device churn re-validation pending.
+      17/03/2026: Ownership cursor re-validation on `7ddc1e6` FAILED:
+          non-idle hot-swap fallback publish caused Firestore write loop
+          (`sessionRevision` churn + `current` doc recreate/delete after cancel).
+          Follow-up one-shot guard patch implemented in `PomodoroViewModel`;
+          local analyze/tests PASS; device re-validation pending.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
@@ -474,6 +479,9 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 18 — Pomodoro counter jumps on consecutive ownership transfers without real
   phase completion (5→6→7 within seconds); likely shares root cause with `BUG-F26-001`
   stale cursor interpreted as phase-complete on ownership claim (`BUG-F26-002`) (bug).
+- Phase 18 — Ownership hot-swap fallback publish must be one-shot per acquisition;
+  avoid Firestore feedback write loop (`sessionRevision` rapid churn and
+  `activeSession/current` flapping after cancel) (`BUG-F26-003`) (bug).
 - ~~Phase 18 — Fix 26 reopened hardening (v4): bounded foreground retry +
   non-destructive missing-session clear with repo recheck + resume listener
   stability (validation pending exact repro on single-device degraded network).~~

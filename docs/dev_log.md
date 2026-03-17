@@ -25,8 +25,8 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **Ownership sync hardening packet implemented for BUG-002 residual + BUG-F26-001/002 (pending device validation)**
-Current focus: **Re-validate ownership churn on Android+macOS after hardening packet; keep Phase 17 bugs (BUG-F25-D/E/F) queued**
+Last bug fix: **Ownership hot-swap one-shot guard patch implemented to stop Firestore write loop regression (BUG-F26-003)**
+Current focus: **Re-validate ownership churn on Android+macOS after one-shot guard patch; close BUG-F26-003 blocker before BUG-002/F26 closure**
 Last update: **17/03/2026**
 
 ---
@@ -11823,3 +11823,74 @@ Test scaffold updates:
 - This packet is **implementation complete** but not closure-complete.
 - Device re-validation is still required to close BUG-002 residual and
   BUG-F26-001/002.
+
+---
+
+# 🔹 Block 596 — Re-validation FAIL on `7ddc1e6`; one-shot guard patch added (17/03/2026)
+
+## 📋 Context
+
+User executed ownership churn validation on Android RMX3771 + macOS using logs:
+- `docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_android_RMX3771_debug.log`
+- `docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_macos_debug.log`
+
+Run details:
+- Group started at ~22:27:30 (`Start now`, newly created group).
+- On UI, ownership looked mostly correct.
+- In Firestore, `sessionRevision` increased abnormally fast and `current` doc
+  oscillated after cancel.
+
+## ❌ Validation failure observed
+
+- `sessionRevision` jump: 88 → 121 between 22:27:44 and 22:27:51.
+- `lastUpdatedAt` + `remainingSeconds` rewritten continuously.
+- After cancel (~22:28:35), `activeSession/current` recreated/deleted in loop
+  until app close.
+
+Conclusion: commit `7ddc1e6` introduced regression (write feedback loop).
+
+## 🔍 Root cause (code-level)
+
+In `PomodoroViewModel._applySessionTimelineProjection`, fallback branch for
+non-idle owner hot-swap executed on repeated snapshots without one-shot guard:
+
+- `_bumpSessionRevision()`
+- `_publishCurrentSession()`
+
+This created Firestore feedback loop (snapshot → write → snapshot → write).
+
+## ✔ Follow-up patch implemented
+
+File:
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`
+
+Changes:
+- Added `int _hotSwapPublishedForRevision = -1`.
+- Reset guard on mode switch and `_resetLocalSessionState()`.
+- Guarded fallback publish to one-shot per ownership revision:
+  execute only when `session.sessionRevision` was not already published by this
+  hot-swap path.
+- Mark revision before publish to prevent re-entry loop.
+
+Regression test added:
+- `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+  - `owner hot-swap fallback publish is one-shot for repeated snapshots`
+
+## 🧪 Local verification
+
+- `flutter analyze` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_ownership_request_test.dart` → PASS
+
+## 📁 Updated files
+
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`
+- `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- `docs/bugs/validation_ownership_cursor_2026_03_17/quick_pass_checklist.md`
+- `docs/bugs/validation_ownership_cursor_2026_03_17/plan_validacion_rapida_fix.md`
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`

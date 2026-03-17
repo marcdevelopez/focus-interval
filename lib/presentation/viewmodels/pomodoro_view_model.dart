@@ -124,6 +124,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
   _PendingIntent? _pendingIntent;
   DateTime? _timeSyncWaitStartedAt;
   bool _pendingPublishAfterSync = false;
+  int _hotSwapPublishedForRevision = -1;
   int? _awaitingSessionRevision;
   bool _lastSyncOverlayVisible = false;
   List<String> _lastSyncOverlayReasons = const <String>[];
@@ -171,6 +172,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         ref.read(sessionSyncServiceProvider.notifier).detach();
         _clearPendingIntent(reason: 'mode-change');
         _pendingPublishAfterSync = false;
+        _hotSwapPublishedForRevision = -1;
         _clearTimeSyncWait();
         _clearAwaitingSessionConfirmation(reason: 'mode-change');
         _lastActiveSessionTimestamp = null;
@@ -986,6 +988,7 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   void _resetLocalSessionState({bool keepOptimistic = false}) {
     _pendingPublishAfterSync = false;
+    _hotSwapPublishedForRevision = -1;
     _finishedAt = null;
     _lastHeartbeatAt = null;
     _pauseReason = null;
@@ -1616,9 +1619,13 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
           _machine.state.status == PomodoroStatus.idle &&
           session.status != PomodoroStatus.idle;
       if (shouldHydrate) {
+        _hotSwapPublishedForRevision = session.sessionRevision;
         unawaited(_hydrateOwnerSession(session));
-      } else if (_machine.state.status != PomodoroStatus.idle) {
+      } else if (_machine.state.status != PomodoroStatus.idle &&
+          !_pendingPublishAfterSync &&
+          _hotSwapPublishedForRevision != session.sessionRevision) {
         _bumpSessionRevision();
+        _hotSwapPublishedForRevision = _sessionRevision;
         _publishCurrentSession();
       }
       return;

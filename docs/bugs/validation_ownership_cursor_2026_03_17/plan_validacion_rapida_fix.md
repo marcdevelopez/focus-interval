@@ -2,7 +2,7 @@
 
 Date: 2026-03-17
 Branch: `fix-ownership-cursor-stamp`
-Commit: `7ddc1e6`
+Commit: `7ddc1e6` (validation FAIL)
 Bugs: BUG-002 residual + BUG-F26-001 + BUG-F26-002
 Devices: Android RMX3771 + macOS
 
@@ -12,6 +12,41 @@ Devices: Android RMX3771 + macOS
 
 Confirmar que los tres bugs relacionados con el cursor de sesión durante ownership churn
 quedan resueltos con el commit `7ddc1e6`.
+
+---
+
+## Estado actual (post-validación 17/03/2026)
+
+`7ddc1e6` **NO es cerrable**. La validación en dispositivos detectó una regresión crítica:
+
+- `sessionRevision` sube en bucle (88→121 en ~7s).
+- `lastUpdatedAt` y `remainingSeconds` se reescriben continuamente.
+- Tras cancelar el grupo, el documento `activeSession/current` se recrea y elimina
+  en loop hasta cerrar la app.
+
+Root cause confirmado en código:
+
+- El fallback publish añadido para hot-swap owner en
+  `PomodoroViewModel._applySessionTimelineProjection` ejecuta
+  `_bumpSessionRevision()+_publishCurrentSession()` en snapshots repetidos sin
+  guardia one-shot por ownership acquisition.
+- Ese path genera feedback loop Firestore→VM→Firestore.
+
+Follow-up patch aplicado (pendiente de commit y revalidación):
+
+- Campo nuevo `_hotSwapPublishedForRevision` en `PomodoroViewModel`.
+- Fallback publish protegido para ejecutarse solo una vez por revision/handoff.
+- Reset del guard en `_resetLocalSessionState` y cambio de modo.
+- Test nuevo: `owner hot-swap fallback publish is one-shot for repeated snapshots`
+  en `pomodoro_view_model_session_gap_test.dart`.
+
+Local validation del follow-up patch:
+
+- `flutter analyze` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_ownership_request_test.dart` → PASS
 
 ---
 
