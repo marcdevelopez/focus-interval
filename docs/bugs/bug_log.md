@@ -1485,6 +1485,10 @@ device re-validation:
 - Added owner hot-swap fallback publish when hydration is skipped
   (`shouldHydrate=false` and machine non-idle): bump revision + publish now.
 
+Validation log paths (17/03/2026, commit `7ddc1e6`, Android RMX3771 + macOS):
+  docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_android_RMX3771_debug.log
+  docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_macos_debug.log
+
 Status:
 In validation. P1 — implementation complete; awaiting device churn re-run
 evidence for closure in Phase 18.
@@ -1546,6 +1550,10 @@ Implemented together with BUG-F26-001 hardening packet on 17/03/2026 (branch
 - Ownership transfer now carries atomic cursor snapshot at approve write.
 - New owner hot-swap path now stamps live cursor immediately when hydration is
   skipped, reducing stale phase-complete interpretation windows.
+
+Validation log paths (17/03/2026, commit `7ddc1e6`, Android RMX3771 + macOS):
+  docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_android_RMX3771_debug.log
+  docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_macos_debug.log
 
 Status:
 In validation. P1 — implementation complete; closure pending churn stress run
