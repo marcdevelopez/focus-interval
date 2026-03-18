@@ -216,10 +216,55 @@ flutter test test/presentation/timer_screen_syncing_overlay_test.dart
 
 ---
 
-## 8. Branching strategy — MANDATORY for all collaborators
+## 8. AI agent roles — protocol for all three collaborators
+
+This project uses three AI agents in a coordinated ecosystem. Each has a defined
+role. **Do not overlap roles without explicit user approval.**
+
+### Claude — Orchestrator and chief architect
+- Receives the user's request and breaks it into tasks.
+- Designs architecture, business logic, data-flow, and patterns (SOLID, DRY).
+- **QA reviewer**: reads every Codex implementation before device validation.
+  Never trust Codex's description — always read the actual `.dart` files.
+- Resolves logical bugs where code "works" but business outcome is incorrect.
+- Delegates to Gemini or Codex when appropriate. Has final say on design.
+
+### Gemini — Context specialist and data analyst
+- **When to invoke**: large-scale repository searches (entire codebase impact
+  analysis), ingestion of large external docs (PDFs > 100 pages), analysis of
+  heavy log files or JSON/CSV that exceed Claude's context, UI/UX screenshot
+  analysis for visual bugs or design mock-ups.
+- **When NOT to invoke**: single-file search, autocomplete, small code changes
+  (use Codex or Claude directly — Gemini is slower).
+- Gemini delivers a summary/report to Claude; Claude then plans and decides.
+
+### Codex — Implementation engineer
+- Writes the internal logic of functions, classes, and methods once Claude has
+  defined the signature, purpose, and constraints.
+- Writes unit/integration tests for isolated components.
+- Converts code between languages or updates library syntax.
+- Creates utility scripts (Bash/Python) for maintenance automation.
+- **Does NOT make architectural decisions** — any structural suggestion from Codex
+  must be validated by Claude before acceptance.
+
+### Master workflow
+
+```
+1. User → Claude: feature or bug request
+2. Claude → Gemini (if needed): "scan the full repo for impact of this change"
+3. Claude: plans the attack with Gemini's report; writes spec/handoff
+4. Claude → Codex: "implement these functions following this plan"
+5. Claude: reads every modified .dart file, traces the flow, confirms correctness
+6. Claude → user: ready for device validation
+7. Gemini (optional close): confirms the resulting files are coherent with the system
+```
+
+---
+
+## 9. Branching strategy — MANDATORY for all collaborators
 
 This project uses a three-tier branching model. **All collaborators (Claude, Codex,
-human devs) must follow this model without exception.**
+Gemini, human devs) must follow this model without exception.**
 
 ```
 fix/xxx  or  feature/xxx
