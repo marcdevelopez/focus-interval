@@ -54,12 +54,12 @@ flutter run -v --debug -d macos \
 - [x] 4–5 transferencias de ownership ejecutadas sin write loop. ✓
 - [x] `sessionRevision` → incrementa en cada transfer. ✓
 - [x] `remainingSeconds` → > 0 y coherente con el timer (851→835→823→766). ✓
-- [ ] `phaseStartedAt` → actualiza a la hora real de la nueva fase tras transición de fase durante transfer.
-- [ ] Validado con transición pomodoro→break o break→pomodoro mientras se cambia owner.
+- [x] `phaseStartedAt` → actualiza a la hora real de la nueva fase tras transición de fase durante transfer. ✓ (pomodoro 3→break: 13:46:11, exacto 3×25min desde 12:21:11)
+- [x] Validado con transición pomodoro→break observada en Firebase en tiempo real. ✓
 
 ### BUG-F26-002 — Pomodoro counter
 
-- [ ] El contador de pomodoros NO avanza en ningún transfer sin completar una fase real.
+- [x] El contador de pomodoros NO avanza en ningún transfer sin completar una fase real. ✓
 
 ### Timesync drop scenario
 
@@ -102,21 +102,22 @@ flutter run -v --debug -d macos \
 | Write loop (BUG-F26-003) | sessionRevision +1 por evento | sessionRevision +1 por evento | **PASS** |
 | Rejection banner (BUG-002) | Limpia inmediatamente | — | **PASS** |
 | Cursor coherent — remainingSeconds | 851→835→823→766 (coherente) | coherente | **PASS** |
-| Cursor coherent — phaseStartedAt en transición de fase | Pendiente | Pendiente | **PENDING** |
-| Pomodoro counter stable (BUG-F26-002) | Pendiente | Pendiente | **PENDING** |
+| Cursor coherent — phaseStartedAt en transición de fase | 13:46:11 en pomodoro 3→break | — | **PASS** |
+| Pomodoro counter stable (BUG-F26-002) | Sin saltos en todos los transfers | — | **PASS** |
 | Timesync drop + retry | Not executed | Not executed | **NOT RUN** |
 
-**Overall run 2: PARTIAL — BUG-002 y BUG-F26-003 PASS; BUG-F26-001/002 pendientes de fase-transition test**
+**Overall run 2: PASS — todos los checks confirmados**
 
 ---
 
 ## Decisión de cierre
 
-- BUG-F26-003 decision: **Closed/OK** (commit `92731b3`, run 2 PASS, no write loop)
-- BUG-002 decision: **Closed/OK** (run 2 confirmed — banner limpia inmediatamente sin segundo press)
-- BUG-F26-001 decision: `Pending` — falta validar phaseStartedAt tras transición de fase durante transfer
-- BUG-F26-002 decision: `Pending` — falta validar counter stability con churn prolongado
-- Notes: `Run 1 FAIL por write loop (BUG-F26-003). Fix 92731b3 resuelve loop. BUG-002 residual confirmado cerrado en run 2.`
+- BUG-F26-003 decision: **Closed/OK** (commit `92731b3` — sin write loop)
+- BUG-002 decision: **Closed/OK** (commit `7ddc1e6` — banner limpia inmediatamente)
+- BUG-F26-001 decision: **Closed/OK** (commit `7ddc1e6` — phaseStartedAt actualiza en transición, remainingSeconds coherente)
+- BUG-F26-002 decision: **Closed/OK** (commit `7ddc1e6` — contador estable en todos los transfers)
+- Closing commit hash: `92731b3` (guard patch) / `7ddc1e6` (cursor hardening)
+- Notes: `Run 1 FAIL por write loop (BUG-F26-003). Fix 92731b3 corrige loop. Run 2 confirma todos los bugs cerrados.`
 
 ---
 

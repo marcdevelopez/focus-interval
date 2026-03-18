@@ -1490,11 +1490,12 @@ Validation log paths (17/03/2026, commit `7ddc1e6`, Android RMX3771 + macOS):
   docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_macos_debug.log
 
 Status:
-Closed/OK. Re-validation 18/03/2026 (Android RMX3771 owner + macOS mirror,
-commit `92731b3`): rejection banner confirmed clearing immediately on owner
-device without second press. Fix: `_clearOwnershipRequestLocallyForOwner()` +
-`_notifySessionMetaChanged()` called before Firestore round-trip in
-`rejectOwnershipRequest()`.
+Closed/OK. Re-validation 18/03/2026 (Android RMX3771 + macOS, commit `92731b3`):
+- `phaseStartedAt` updated correctly on phase transition: pomodoro 3→break =
+  13:46:11 p.m. (exact: 3×25min from session start 12:21:11). ✓
+- `remainingSeconds` coherent throughout (851→835→823→766, never 0). ✓
+- No stale cursor observed after ownership transfers.
+Logs: `docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-18__guard_hot-swap_92731b3_android_RMX3771_debug.log`.
 Logs: `docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-18__guard_hot-swap_92731b3_android_RMX3771_debug.log`.
 
 ---
@@ -1560,8 +1561,12 @@ Validation log paths (17/03/2026, commit `7ddc1e6`, Android RMX3771 + macOS):
   docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_macos_debug.log
 
 Status:
-In validation (blocked). P1 — blocked by BUG-F26-003 until post-fix device
-churn re-run confirms stable cursor writes and no counter jumps.
+Closed/OK. Re-validation 18/03/2026 (Android RMX3771 + macOS, commit `92731b3`):
+- `phaseStartedAt` updated correctly on phase transition: pomodoro 3→break =
+  13:46:11 p.m. (exact: 3×25min from session start 12:21:11). ✓
+- `remainingSeconds` coherent throughout (851→835→823→766, never 0). ✓
+- `currentPomodoro` stable across ownership transfers (no spurious jumps). ✓
+Logs: `docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-18__guard_hot-swap_92731b3_android_RMX3771_debug.log`.
 
 ---
 
