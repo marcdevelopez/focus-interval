@@ -1304,16 +1304,24 @@ Evidence:
   after Resume was pressed.
 
 Fix applied:
-None yet. Pending Codex implementation.
-Locate where `runningOverlapDecision` is written (likely in
-`ScheduledGroups`/`PomodoroViewModel`/`SessionSyncService` overlap detection path)
-and wrap the state mutation in `Future.microtask(() => ...)` or
-`WidgetsBinding.instance.addPostFrameCallback((_) => ...)` to defer it out of
-the build phase.
+Three-commit fix on 18/03/2026:
+- `73d0f23` — coordinator: replace scheduler-phase check with `Future(() {})` in
+  `_runRunningOverlapMutation`. `Future.microtask` (prior attempt) is insufficient;
+  only a macrotask guarantees execution outside Riverpod's full propagation chain.
+- `79c534d` — widget: move `runningOverlapDecisionProvider` clear in
+  `GroupsHubScreen.build()` (line 283) and `TaskListScreen.build()` (line 561)
+  to `WidgetsBinding.instance.addPostFrameCallback` with `mounted` guard and
+  token guard to prevent clearing a newer decision.
+- Root cause had TWO sources: coordinator mutations (fixed by macrotask deferral)
+  and widget-level mutations inside `build()` (fixed by post-frame callback).
+
+Validation:
+- iOS (owner) + Chrome (mirror): Scenario A PASS — overlap modal appeared, no
+  red screen on mirror at conflict detection or after Postpone action.
+- Logs: `docs/bugs/validation_fix_2026_03_18-01/logs/`
 
 Status:
-Open. P1 — UX regression (red error screen flash on mirror). Related to Phase 17
-running overlap work. Must be fixed before Phase 17 closure.
+Closed/OK. closed_commit_hash: 79c534d
 
 ---
 

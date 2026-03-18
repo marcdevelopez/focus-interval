@@ -23,13 +23,13 @@ If you are about to edit any of these files, read the listed docs first:
 
 - **Specs**: `docs/specs.md` — authoritative source of truth for all behavior
 - **Active bugs**: `docs/bugs/bug_log.md`
-- **Current validation**: `docs/bugs/validation_fix_2026_03_07-01/plan_validacion_rapida_fix.md`
+- **Validation ledger**: `docs/validation/validation_ledger.md` — all open/closed P0/P1/P2
 - **Dev log**: `docs/dev_log.md` — full history, use to understand context of past decisions
 - **Roadmap**: `docs/roadmap.md` — active phase and open bugs
+- **Log commands**: `docs/bugs/README.md` — flutter run + tee templates per platform
 
-Current active branch: `fix26-reopen-black-syncing-2026-03-09`
-Last confirmed-safe baseline commit: `961f7eb`
-Latest fix commit: `b085ea6`
+Active branch: `develop` (created 2026-03-18; fix/feature branches merge here)
+Production branch: `main`
 
 ---
 
@@ -246,6 +246,11 @@ role. **Do not overlap roles without explicit user approval.**
 - Creates utility scripts (Bash/Python) for maintenance automation.
 - **Does NOT make architectural decisions** — any structural suggestion from Codex
   must be validated by Claude before acceptance.
+- **Reviews fix specifications before implementing.** Codex is a competent
+  programmer, not a blind executor. If a handoff contains a technical error
+  (wrong API, incorrect runtime assumption, logically insufficient fix), Codex
+  must stop and report the error to Claude with a clear explanation before
+  proceeding. Do not implement a spec that you know to be incorrect.
 
 ### Master workflow
 
@@ -254,6 +259,8 @@ role. **Do not overlap roles without explicit user approval.**
 2. Claude → Gemini (if needed): "scan the full repo for impact of this change"
 3. Claude: plans the attack with Gemini's report; writes spec/handoff
 4. Claude → Codex: "implement these functions following this plan"
+   → Codex reviews the spec first. If it spots a technical error, it reports
+     it to Claude before implementing. Claude corrects and re-issues the handoff.
 5. Claude: reads every modified .dart file, traces the flow, confirms correctness
 6. Claude → user: ready for device validation
 7. Gemini (optional close): confirms the resulting files are coherent with the system
@@ -304,9 +311,153 @@ All work happens on short-lived branches (`fix/xxx`, `feature/xxx`).
 
 ---
 
-## 9. When this file should be updated
+## 10. Validation folder structure — MANDATORY
 
-- After each confirmed bug closure: add the anti-pattern summary here.
+Every bug fix or feature that requires device validation gets **one** validation folder
+under `docs/bugs/`. The structure is fixed. Do not invent extra files.
+
+### Folder naming
+
+```
+docs/bugs/validation_<short-name>_YYYY_MM_DD/
+```
+
+Examples: `validation_ownership_cursor_2026_03_17/`, `validation_fix_2026_03_18-01/`
+
+### Permitted contents — exactly these, nothing else
+
+```
+validation_<name>_YYYY_MM_DD/
+  plan_validacion_rapida_fix.md   ← living document (see below)
+  quick_pass_checklist.md         ← checkboxes only
+  logs/                           ← .log files captured during runs
+  screenshots/                    ← device screenshots used as evidence
+```
+
+**Never create additional `.md` files** (no `repro_steps.md`, no `notes.md`,
+no `analysis.md`). Any extra content goes inside `plan_validacion_rapida_fix.md`.
+
+### `plan_validacion_rapida_fix.md` — what it must contain
+
+This is the single living document for the entire validation lifecycle.
+It is updated in-place as evidence arrives. Required sections:
+
+1. **Header**: date, branch, commit, bugs covered, devices.
+2. **Objetivo**: one-paragraph scope.
+3. **Síntoma original**: what the user sees without the fix.
+4. **Root cause**: technical explanation (file + method level).
+5. **Protocolo de validación**: numbered scenarios (A, B, C…) with exact
+   preconditions, numbered steps, expected result, reference result without fix.
+6. **Comandos de ejecución**: full `flutter run` commands with `tee` to
+   the correct log path (see log naming below). Copy-pasteable, no placeholders.
+7. **Log analysis — quick scan**: `grep` commands targeting the key signals for
+   this specific bug. One block for "error present" signals, one for "fix working".
+8. **Verificación local**: checklist of `flutter analyze` + `flutter test` results.
+9. **Criterios de cierre**: explicit list of what must be PASS to close.
+10. **Status** line (updated in-place): `Open` / `In validation` / `Closed/OK`.
+
+Sections 5–7 are the ones most commonly omitted. They are not optional.
+
+### `quick_pass_checklist.md` — what it must contain
+
+Checkboxes only. No explanations, no repro steps. Example format:
+
+```markdown
+## Exact repro
+- [ ] Scenario A PASS on owner+mirror.
+
+## Regression smoke
+- [ ] BUG-XXX still OK.
+- [x] flutter test ... PASS.
+
+## Local gate
+- [x] flutter analyze PASS.
+
+## Closure rule
+Close only when all boxes above are checked with evidence.
+```
+
+### Log naming convention
+
+```
+YYYY-MM-DD_<fix-id>_<short-commit>_<device>_<mode>.log
+```
+
+- `<fix-id>`: short identifier, e.g. `f25d`, `ownership_cursor`, `f26_phase6`
+- `<short-commit>`: 7-char commit hash, e.g. `07ac0cb`
+- `<device>`: `android_RMX3771`, `macos`, `ios_iPhone17Pro_9A6B6687`, `chrome`
+- `<mode>`: `debug` or `release`
+
+Example: `2026-03-18_f25d_07ac0cb_android_RMX3771_debug.log`
+
+---
+
+## 11. Bug lifecycle — complete flow
+
+Every bug follows this exact sequence. No step may be skipped.
+
+```
+1. DISCOVERY
+   → Add entry to docs/bugs/bug_log.md (status: Open, priority P0/P1/P2)
+   → Add entry to docs/validation/validation_ledger.md (status: Open)
+
+2. TRIAGE (Claude)
+   → Confirm bug exists in current code (read the actual files, do not assume)
+   → Explain: root cause + what the user sees/feels + proposed fix
+   → Wait for user confirmation before implementing
+
+3. IMPLEMENTATION (Codex)
+   → Claude writes handoff: function signatures, constraints, expected behavior
+   → Codex implements on fix/xxx or feature/xxx branch
+   → Codex runs: flutter analyze + targeted flutter test suite
+
+4. CLAUDE QA REVIEW (mandatory, before any device run)
+   → Claude reads every modified .dart file
+   → Traces the execution flow manually
+   → Verifies guards: one-shot, dispose, stale-key, race conditions
+   → Only after review: green light for device validation
+
+5. VALIDATION FOLDER
+   → Create docs/bugs/validation_<name>_YYYY_MM_DD/
+   → Create plan_validacion_rapida_fix.md (sections 1–10 per section 10 above)
+   → Create quick_pass_checklist.md
+   → Create logs/ and screenshots/ directories
+
+6. DEVICE VALIDATION
+   → Run flutter run commands from plan (copy-paste, do not modify)
+   → Save logs with correct naming convention
+   → Update plan_validacion_rapida_fix.md with results in-place
+
+7. CLOSURE (requires all 3)
+   → Exact repro PASS (with log evidence)
+   → Regression smoke PASS
+   → Local gate PASS (flutter analyze + tests)
+   Then:
+   → Update bug_log.md: status = Closed/OK + closed_commit_hash
+   → Update validation_ledger.md: status = Closed/OK + closed_commit_hash
+   → Merge fix branch → develop (never directly to main)
+   → Add Block to dev_log.md documenting the closure
+
+8. DEVELOP → MAIN
+   → Only when validation_ledger.md shows zero open [ ] P0/P1 entries
+   → P2 and RVP items do not block this merge
+```
+
+### Documents that must be updated at each step
+
+| Step | Documents to update |
+|---|---|
+| Discovery | `bug_log.md`, `validation_ledger.md` |
+| Implementation done | `bug_log.md` status → In validation; `roadmap.md` |
+| Validation folder created | new `plan_validacion_rapida_fix.md`, `quick_pass_checklist.md` |
+| Device run complete | `plan_validacion_rapida_fix.md` (results in-place) |
+| Closure | `bug_log.md`, `validation_ledger.md`, `dev_log.md` |
+
+---
+
+## 12. When this file should be updated
+
+- After each confirmed bug closure: add the anti-pattern summary to section 3.
 - After each spec incoherence is patched: update section 6.
 - When a new guardrail is confirmed necessary: add it to section 4.
 - **Do not add speculative rules** — only add confirmed patterns from real incidents.

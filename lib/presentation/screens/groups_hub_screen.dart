@@ -280,7 +280,14 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
         fallbackNoticeMinutes: _noticeFallbackMinutes,
       );
       if (!stillValid) {
-        ref.read(runningOverlapDecisionProvider.notifier).state = null;
+        final staleDecisionToken = overlapDecision.token;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          final currentDecision = ref.read(runningOverlapDecisionProvider);
+          if (currentDecision == null) return;
+          if (currentDecision.token != staleDecisionToken) return;
+          ref.read(runningOverlapDecisionProvider.notifier).state = null;
+        });
       }
     }
 

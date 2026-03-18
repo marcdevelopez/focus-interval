@@ -333,6 +333,12 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           `_resolved = true` moved before first await in `_applySelection` to
           close Firestore stream race on owner-side dialog gating. Local
           analyze/tests PASS; device re-validation pending for final Fix 25 closure.
+      18/03/2026: BUG-F25-D runtime patch implemented on branch
+          `fix-f25-d-overlap-build-phase`:
+          running-overlap provider mutation in `ScheduledGroupCoordinator` is now
+          scheduler-aware and deferred post-frame when build-phase callbacks are
+          active (with stale/dispose guards). Local analyze + targeted regression
+          suites PASS; exact owner+mirror repro validation pending.
       17/03/2026: Ownership sync hardening packet implemented on branch
           `fix-ownership-cursor-stamp` for BUG-002 residual + BUG-F26-001/002:
           pending publish replay after timeSync recovery, atomic cursor merge in
@@ -451,7 +457,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 17 — Running conflict modal must show conflicting group context (name + time range) (new requirement).
 - Phase 17 — Re-plan conflict modal must show conflicting group name + time range — currently shows generic "Conflict with scheduled group" with no identifying information (`BUG-F25-E`) (new requirement).
 - Phase 17 — Postpone snackbar must suppress "(pre-run at X)" clause when noticeMinutes=0 — currently shown even when pre-run equals start time (`BUG-F25-F`); requires spec clarification at specs.md:1716 (bug).
-- Phase 17 — Running overlap StateController<RunningOverlapDecision?> must not be modified during widget build — causes red error flash on mirror when overlap fires on Resume (`BUG-F25-D`) (bug).
+- Phase 17 — Running overlap StateController<RunningOverlapDecision?> must not be modified during widget build — causes red error flash on mirror when overlap fires on Resume (`BUG-F25-D`) (bug, runtime patch implemented 18/03/2026; validation pending).
 - Phase 17 — Pre-Run auto-open is idempotent on owner/mirror (no duplicate navigation / no Groups Hub bounce) and must not open Resolve overlaps without a real conflict (bug).
 - ~~Phase 17 — Local -> Account re-entry must re-evaluate overdue scheduled groups and auto-open Run Mode without app restart when there is no active conflict (bug).~~ **Closed/OK Fix 27 07/03/2026**
 - Phase 17 — Postpone effective schedule must refresh on mirrors in real time (no stale schedule) (bug).

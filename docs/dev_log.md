@@ -25,9 +25,9 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **Ownership hot-swap one-shot guard patch implemented to stop Firestore write loop regression (BUG-F26-003)**
-Current focus: **Re-validate ownership churn on Android+macOS after one-shot guard patch; close BUG-F26-003 blocker before BUG-002/F26 closure**
-Last update: **17/03/2026**
+Last bug fix: **Running-overlap provider build-phase mutation guard implemented for mirror red-flash regression (BUG-F25-D)**
+Current focus: **Run exact owner+mirror repro packet for BUG-F25-D and close validation if no red flash/regressions are observed**
+Last update: **18/03/2026**
 
 ---
 
@@ -11894,3 +11894,122 @@ Regression test added:
 - `docs/validation/validation_ledger.md`
 - `docs/roadmap.md`
 - `docs/dev_log.md`
+
+---
+
+# 🔹 Block 597 — BUG-F25-D runtime patch implemented (18/03/2026)
+
+## 📋 Context
+
+Claude handoff requested Codex implementation for `BUG-F25-D`:
+mirror red error flash (`Tried to modify a provider while the widget tree was building`)
+when running overlap is detected on Resume.
+
+## ✔ Work completed
+
+Runtime fix implemented in:
+- `lib/presentation/viewmodels/scheduled_group_coordinator.dart`
+
+Changes:
+1. Added scheduler-aware overlap mutation helper.
+2. Deferred `runningOverlapDecisionProvider` set/clear to post-frame only when
+   scheduler is in build-phase callbacks.
+3. Added stale/dispose guards to prevent deferred stale writes.
+4. Added safe fallback for environments where scheduler binding is not initialized
+   (keeps provider-container tests stable).
+
+Validation artifacts created:
+- `docs/bugs/validation_fix_2026_03_18-01/plan_validacion_rapida_fix.md`
+- `docs/bugs/validation_fix_2026_03_18-01/quick_pass_checklist.md`
+- `docs/bugs/validation_fix_2026_03_18-01/screenshots/`
+
+Documentation synchronization:
+- `docs/bugs/bug_log.md` (BUG-F25-D moved to "In validation", runtime fix noted)
+- `docs/validation/validation_ledger.md` (BUG-F25-D status updated to `In validation`)
+- `docs/roadmap.md` (18/03 entry added under active status timeline)
+- `docs/dev_log.md` (this block + header status update)
+- Implementation commit: `07ac0cb` (`fix(f25-d): defer running-overlap provider mutation out of build phase`)
+
+## 🧪 Verification run
+
+PASS:
+- `flutter analyze`
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart --plain-name "running overlap decision"`
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart`
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart`
+
+Global suite status:
+- `flutter test` → FAIL (`+90 -8`), with existing failures concentrated in
+  `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+  (missing `appModeServiceProvider` test override in multiple cases + one
+  `auto-claims late-start queue` timeout). Not introduced by BUG-F25-D patch.
+
+## ⚠️ Notes
+
+- BUG-F25-D is not closed yet: exact owner+mirror repro still pending in
+  `validation_fix_2026_03_18-01`.
+- Closure requires device evidence + regression smoke checks.
+
+---
+
+# 🔹 Block 598 — BUG-F25-D closed/OK (18/03/2026)
+
+## 📋 Context
+
+First fix (`07ac0cb`) failed: `SchedulerBinding.schedulerPhase` check insufficient —
+Riverpod's `_debugCurrentBuildingElement` is internal and not tied to Flutter's scheduler
+phase. Fix v2 (`f5b1d2c`) also failed: `Future.microtask` queues in the microtask queue,
+which can fire mid-Riverpod-propagation.
+
+Device logs revealed **two independent sources** of the same build-phase mutation error:
+
+1. **Coordinator** (`_runRunningOverlapMutation`): timer/Firestore callbacks mutating
+   `runningOverlapDecisionProvider` during Riverpod propagation.
+2. **Widgets** (`GroupsHubScreen.build():283`, `TaskListScreen.build():561`): direct
+   `ref.read(...).state = null` calls inside `build()` after discovering a stale overlap
+   decision (running group no longer in scope).
+
+## ✔ Work completed
+
+**Commit `73d0f23`** — Coordinator fix:
+- `_runRunningOverlapMutation` replaced with `Future(() { mutation(); })` (macrotask).
+  Macrotask runs after all pending microtasks, including Riverpod's full propagation chain.
+- Removed `SchedulerBinding` import (no longer used).
+- Tests updated: 4 tests in `'running overlap decision'` group now `await Future(() {})`
+  between coordinator call and provider read.
+
+**Commit `79c534d`** — Widget fix:
+- `GroupsHubScreen.build():283` and `TaskListScreen.build():561`: stale-decision clear
+  moved to `WidgetsBinding.instance.addPostFrameCallback` with `mounted` guard and token
+  guard. Token is captured before scheduling; callback checks `currentDecision.token !=
+  staleDecisionToken` to avoid clearing a newer decision written after the defer.
+
+**Protocol update** (same session):
+- `CLAUDE.md` section 8: Codex now reviews fix specs before implementing; reports
+  errors to Claude before writing code.
+- `AGENTS.md` + `docs/team_roles.md` updated with the same spec-review rule.
+
+## 🧪 Validation result
+
+Device: iOS iPhone 17 Pro (owner) + Chrome (mirror).
+- Overlap modal appeared correctly during pause.
+- No red screen on mirror at conflict detection.
+- No red screen on mirror after owner Postpone action.
+- Timer resumed normally after owner Resume.
+- Regression smoke (BUG-F25-C): owner did not see "Owner resolved" modal. PASS.
+- `flutter analyze` PASS.
+- All targeted tests PASS.
+
+## 📁 Updated files
+
+- `lib/presentation/viewmodels/scheduled_group_coordinator.dart`
+- `lib/presentation/screens/groups_hub_screen.dart`
+- `lib/presentation/screens/task_list_screen.dart`
+- `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+- `docs/bugs/bug_log.md` (BUG-F25-D → Closed/OK, `closed_commit_hash: 79c534d`)
+- `docs/validation/validation_ledger.md` (BUG-F25-D → [x] Closed/OK)
+- `docs/bugs/validation_fix_2026_03_18-01/plan_validacion_rapida_fix.md` (result in-place)
+- `docs/bugs/validation_fix_2026_03_18-01/quick_pass_checklist.md` (all boxes checked)
+- `CLAUDE.md`, `AGENTS.md`, `docs/team_roles.md` (Codex spec-review rule added)
+- `docs/dev_log.md` (this block)
