@@ -211,18 +211,21 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
       final anchorTime = _parseDateTime(existingAnchor);
       final hasAnchor = anchorTime != null;
       final existingOwner = _readString(data?['lateStartOwnerDeviceId']);
-      final existingHeartbeat =
-          _parseDateTime(data?['lateStartOwnerHeartbeatAt']);
-      final existingRequestId =
-          _readString(data?['lateStartClaimRequestId']);
-      final existingRequester =
-          _readString(data?['lateStartClaimRequestedByDeviceId']);
+      final existingHeartbeat = _parseDateTime(
+        data?['lateStartOwnerHeartbeatAt'],
+      );
+      final existingRequestId = _readString(data?['lateStartClaimRequestId']);
+      final existingRequester = _readString(
+        data?['lateStartClaimRequestedByDeviceId'],
+      );
       final hasPendingRequest =
           existingRequestId.isNotEmpty && existingRequester.isNotEmpty;
       if (hasAnchor && !allowOverride) {
         return;
       }
-      if (allowOverride && existingOwner.isNotEmpty && existingOwner != ownerDeviceId) {
+      if (allowOverride &&
+          existingOwner.isNotEmpty &&
+          existingOwner != ownerDeviceId) {
         final lastSeen = existingHeartbeat ?? anchorTime;
         final isStale = lastSeen == null
             ? true
@@ -238,8 +241,9 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
       final resolvedQueueId = existingQueueId.isNotEmpty
           ? existingQueueId
           : (localQueueId.isNotEmpty ? localQueueId : queueId);
-      final anchorValue =
-          hasAnchor ? existingAnchor : FieldValue.serverTimestamp();
+      final anchorValue = hasAnchor
+          ? existingAnchor
+          : FieldValue.serverTimestamp();
       for (final group in groups) {
         final order = orderLookup[group.id];
         tx.set(_collection(uid).doc(group.id), {
@@ -290,19 +294,28 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
     if (groups.isEmpty) return;
     final uid = await _uidOrThrow();
     await _db.runTransaction((tx) async {
+      // Firestore transactions require all reads to happen before writes.
+      final refsByGroupId = <String, DocumentReference<Map<String, dynamic>>>{};
+      final dataByGroupId = <String, Map<String, dynamic>?>{};
       for (final group in groups) {
         final ref = _collection(uid).doc(group.id);
+        refsByGroupId[group.id] = ref;
         final snap = await tx.get(ref);
-        final data = snap.data();
-        final existingRequestId =
-            _readString(data?['lateStartClaimRequestId']);
-        final existingRequester =
-            _readString(data?['lateStartClaimRequestedByDeviceId']);
+        dataByGroupId[group.id] = snap.data();
+      }
+      for (final group in groups) {
+        final data = dataByGroupId[group.id];
+        final existingRequestId = _readString(data?['lateStartClaimRequestId']);
+        final existingRequester = _readString(
+          data?['lateStartClaimRequestedByDeviceId'],
+        );
         final hasPending =
             existingRequestId.isNotEmpty && existingRequester.isNotEmpty;
         if (hasPending && existingRequester != requesterDeviceId) {
           continue;
         }
+        final ref = refsByGroupId[group.id];
+        if (ref == null) continue;
         tx.set(ref, {
           'lateStartClaimRequestId': requestId,
           'lateStartClaimRequestedByDeviceId': requesterDeviceId,
@@ -326,7 +339,9 @@ class FirestoreTaskRunGroupRepository implements TaskRunGroupRepository {
     for (final group in groups) {
       if (group.lateStartOwnerDeviceId != ownerDeviceId) continue;
       if (group.lateStartClaimRequestId != requestId) continue;
-      if (group.lateStartClaimRequestedByDeviceId != requesterDeviceId) continue;
+      if (group.lateStartClaimRequestedByDeviceId != requesterDeviceId) {
+        continue;
+      }
       if (approved) {
         batch.set(_collection(uid).doc(group.id), {
           'lateStartOwnerDeviceId': requesterDeviceId,

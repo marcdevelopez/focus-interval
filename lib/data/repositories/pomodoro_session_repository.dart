@@ -17,6 +17,7 @@ abstract class PomodoroSessionRepository {
     required String ownerDeviceId,
     required String requesterDeviceId,
     required bool approved,
+    Map<String, dynamic>? cursorSnapshot,
   });
 }
 
@@ -62,5 +63,6 @@ class NoopPomodoroSessionRepository implements PomodoroSessionRepository {
     required String ownerDeviceId,
     required String requesterDeviceId,
     required bool approved,
+    Map<String, dynamic>? cursorSnapshot,
   }) async {}
 }

@@ -25,8 +25,7 @@ class FakeTaskRunGroupRepository implements TaskRunGroupRepository {
   }
 
   @override
-  Stream<List<TaskRunGroup>> watchAll() =>
-      Stream.value(_store.values.toList());
+  Stream<List<TaskRunGroup>> watchAll() => Stream.value(_store.values.toList());
 
   @override
   Future<List<TaskRunGroup>> getAll() async => _store.values.toList();
@@ -137,6 +136,7 @@ class RecordingSessionRepository implements PomodoroSessionRepository {
     required String ownerDeviceId,
     required String requesterDeviceId,
     required bool approved,
+    Map<String, dynamic>? cursorSnapshot,
   }) async {}
 }
 
@@ -164,10 +164,7 @@ TaskRunItem _buildItem() {
   );
 }
 
-TaskRunGroup _buildRunningGroup({
-  required String id,
-  required DateTime start,
-}) {
+TaskRunGroup _buildRunningGroup({required String id, required DateTime start}) {
   return TaskRunGroup(
     id: id,
     ownerUid: 'user-1',

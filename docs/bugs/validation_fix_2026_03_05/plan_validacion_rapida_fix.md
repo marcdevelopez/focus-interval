@@ -119,6 +119,35 @@ Each item below is a separate fix and must be committed separately.
       - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_03.png`
       - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_04.png`
       - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_05.png`
+- Fix 25 (Scope 3): **Reopened / In validation** (16/03/2026).
+  - Re-validation packet (iOS + Chrome) failed with three blockers:
+    - BUG-F25-A: Firestore transaction read/write ordering violation in
+      `requestLateStartOwnership`.
+    - BUG-F25-B: context-after-dispose in `Owner resolved` dialog OK callback.
+    - BUG-F25-C: owner device incorrectly shows mirror-only `Owner resolved` dialog.
+  - Implementation packet applied on branch
+    `fix-f25-transaction-order-and-owner-dialog`:
+    - `lib/data/repositories/firestore_task_run_group_repository.dart`
+    - `lib/presentation/screens/late_start_overlap_queue_screen.dart`
+  - Local verification gate:
+    - `flutter analyze` PASS
+    - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` PASS
+    - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS
+    - `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` PASS
+  - Closure pending:
+    - Run exact repro on owner+mirror devices and confirm:
+      1. ownership request reaches owner,
+      2. `Owner resolved` dialog dismisses without crash,
+      3. owner does not see mirror-only dialog.
+  - Re-validation #2 (17/03/2026, commit `fd788e6`, iOS + Chrome):
+    - BUG-F25-A: PASS
+    - BUG-F25-B: PASS
+    - BUG-F25-C: FAIL (owner still sees mirror-only dialog in `Continue` path)
+  - Follow-up patch (17/03/2026):
+    - `_resolved = true` moved to pre-await setState in `_applySelection`
+      (before `repo.saveAll`) to prevent owner-side modal race when Firestore
+      emits snapshots during write.
+    - Closure still pending until re-validation confirms BUG-F25-C PASS.
 
 ## Fix 26 — Syncing hold after cancel/background recovery
 - Scope: owner/mirror queda en `Syncing session...` por hold stale cuando la sesion ya no existe o hay errores transitorios de Firestore al recuperar ownership stale.

@@ -175,6 +175,7 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
     required String ownerDeviceId,
     required String requesterDeviceId,
     required bool approved,
+    Map<String, dynamic>? cursorSnapshot,
   }) async {}
 
   void dispose() {
@@ -246,8 +247,7 @@ TaskRunGroup _buildScheduledGroup({
     noticeSentAt: null,
     noticeSentByDeviceId: null,
     actualStartTime: null,
-    theoreticalEndTime:
-        scheduledStart.add(Duration(minutes: durationMinutes)),
+    theoreticalEndTime: scheduledStart.add(Duration(minutes: durationMinutes)),
     status: TaskRunStatus.scheduled,
     noticeMinutes: noticeMinutes,
     totalTasks: 1,
@@ -356,79 +356,82 @@ void main() {
   });
 
   group('ScheduledGroupCoordinator paused expiry guard', () {
-    test('does not complete running group while session stream is loading',
-        () async {
-      final groupRepo = FakeTaskRunGroupRepository();
-      final sessionRepo = FakePomodoroSessionRepository();
-      final container = ProviderContainer(
-        overrides: [
-          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
-          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
-        ],
-      );
-      addTearDown(() {
-        groupRepo.dispose();
-        sessionRepo.dispose();
-        container.dispose();
-      });
+    test(
+      'does not complete running group while session stream is loading',
+      () async {
+        final groupRepo = FakeTaskRunGroupRepository();
+        final sessionRepo = FakePomodoroSessionRepository();
+        final container = ProviderContainer(
+          overrides: [
+            taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+            pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          ],
+        );
+        addTearDown(() {
+          groupRepo.dispose();
+          sessionRepo.dispose();
+          container.dispose();
+        });
 
-      container.read(scheduledGroupCoordinatorProvider);
+        container.read(scheduledGroupCoordinatorProvider);
 
-      final now = DateTime.now();
-      final group = _buildRunningGroup(
-        id: 'group-1',
-        start: now.subtract(const Duration(hours: 2)),
-        theoreticalEnd: now.subtract(const Duration(minutes: 30)),
-      );
-      groupRepo.seed(group);
+        final now = DateTime.now();
+        final group = _buildRunningGroup(
+          id: 'group-1',
+          start: now.subtract(const Duration(hours: 2)),
+          theoreticalEnd: now.subtract(const Duration(minutes: 30)),
+        );
+        groupRepo.seed(group);
 
-      await _pumpQueue();
+        await _pumpQueue();
 
-      final stored = await groupRepo.getById(group.id);
-      expect(stored?.status, TaskRunStatus.running);
-    });
+        final stored = await groupRepo.getById(group.id);
+        expect(stored?.status, TaskRunStatus.running);
+      },
+    );
 
-    test('does not complete running group when active session is paused',
-        () async {
-      final groupRepo = FakeTaskRunGroupRepository();
-      final sessionRepo = FakePomodoroSessionRepository();
-      final container = ProviderContainer(
-        overrides: [
-          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
-          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
-        ],
-      );
-      addTearDown(() {
-        groupRepo.dispose();
-        sessionRepo.dispose();
-        container.dispose();
-      });
+    test(
+      'does not complete running group when active session is paused',
+      () async {
+        final groupRepo = FakeTaskRunGroupRepository();
+        final sessionRepo = FakePomodoroSessionRepository();
+        final container = ProviderContainer(
+          overrides: [
+            taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+            pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          ],
+        );
+        addTearDown(() {
+          groupRepo.dispose();
+          sessionRepo.dispose();
+          container.dispose();
+        });
 
-      container.read(scheduledGroupCoordinatorProvider);
+        container.read(scheduledGroupCoordinatorProvider);
 
-      final now = DateTime.now();
-      final group = _buildRunningGroup(
-        id: 'group-2',
-        start: now.subtract(const Duration(hours: 2)),
-        theoreticalEnd: now.subtract(const Duration(minutes: 30)),
-      );
-      final pausedSession = _buildPausedSession(
-        groupId: group.id,
-        ownerId: 'device-1',
-        now: now,
-      );
+        final now = DateTime.now();
+        final group = _buildRunningGroup(
+          id: 'group-2',
+          start: now.subtract(const Duration(hours: 2)),
+          theoreticalEnd: now.subtract(const Duration(minutes: 30)),
+        );
+        final pausedSession = _buildPausedSession(
+          groupId: group.id,
+          ownerId: 'device-1',
+          now: now,
+        );
 
-      sessionRepo.emit(pausedSession);
-      groupRepo.seed(group);
+        sessionRepo.emit(pausedSession);
+        groupRepo.seed(group);
 
-      await _pumpQueue();
+        await _pumpQueue();
 
-      final stored = await groupRepo.getById(group.id);
-      expect(stored?.status, TaskRunStatus.running);
-    });
+        final stored = await groupRepo.getById(group.id);
+        expect(stored?.status, TaskRunStatus.running);
+      },
+    );
 
-    test('does not complete when first snapshot is null then paused',
-        () async {
+    test('does not complete when first snapshot is null then paused', () async {
       final groupRepo = FakeTaskRunGroupRepository();
       final sessionRepo = FakePomodoroSessionRepository();
       final container = ProviderContainer(
@@ -468,115 +471,118 @@ void main() {
       expect(stored?.status, TaskRunStatus.running);
     });
 
-    test('does not complete when active session belongs to another group',
-        () async {
-      final groupRepo = FakeTaskRunGroupRepository();
-      final sessionRepo = FakePomodoroSessionRepository();
-      final container = ProviderContainer(
-        overrides: [
-          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
-          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
-        ],
-      );
-      addTearDown(() {
-        groupRepo.dispose();
-        sessionRepo.dispose();
-        container.dispose();
-      });
+    test(
+      'does not complete when active session belongs to another group',
+      () async {
+        final groupRepo = FakeTaskRunGroupRepository();
+        final sessionRepo = FakePomodoroSessionRepository();
+        final container = ProviderContainer(
+          overrides: [
+            taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+            pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          ],
+        );
+        addTearDown(() {
+          groupRepo.dispose();
+          sessionRepo.dispose();
+          container.dispose();
+        });
 
-      container.read(scheduledGroupCoordinatorProvider);
+        container.read(scheduledGroupCoordinatorProvider);
 
-      final now = DateTime.now();
-      final group = _buildRunningGroup(
-        id: 'group-4',
-        start: now.subtract(const Duration(hours: 2)),
-        theoreticalEnd: now.subtract(const Duration(minutes: 30)),
-      );
-      final runningSession = _buildRunningSession(
-        groupId: 'other-group',
-        ownerId: 'device-1',
-        now: now,
-      );
+        final now = DateTime.now();
+        final group = _buildRunningGroup(
+          id: 'group-4',
+          start: now.subtract(const Duration(hours: 2)),
+          theoreticalEnd: now.subtract(const Duration(minutes: 30)),
+        );
+        final runningSession = _buildRunningSession(
+          groupId: 'other-group',
+          ownerId: 'device-1',
+          now: now,
+        );
 
-      sessionRepo.emit(runningSession);
-      groupRepo.seed(group);
-      await _pumpQueue();
+        sessionRepo.emit(runningSession);
+        groupRepo.seed(group);
+        await _pumpQueue();
 
-      final stored = await groupRepo.getById(group.id);
-      expect(stored?.status, TaskRunStatus.running);
-    });
+        final stored = await groupRepo.getById(group.id);
+        expect(stored?.status, TaskRunStatus.running);
+      },
+    );
 
     test(
-        '[PHASE5] stale-clear diagnostics must include instance token and clear decision metadata',
-        () async {
-      final groupRepo = FakeTaskRunGroupRepository();
-      final sessionRepo = FakePomodoroSessionRepository();
-      final appModeService = AppModeService.memory();
-      final logs = <String>[];
-      final previousDebugPrint = foundation.debugPrint;
-      foundation.debugPrint = (String? message, {int? wrapWidth}) {
-        if (message != null) logs.add(message);
-      };
+      '[PHASE5] stale-clear diagnostics must include instance token and clear decision metadata',
+      () async {
+        final groupRepo = FakeTaskRunGroupRepository();
+        final sessionRepo = FakePomodoroSessionRepository();
+        final appModeService = AppModeService.memory();
+        final logs = <String>[];
+        final previousDebugPrint = foundation.debugPrint;
+        foundation.debugPrint = (String? message, {int? wrapWidth}) {
+          if (message != null) logs.add(message);
+        };
 
-      final container = ProviderContainer(
-        overrides: [
-          appModeServiceProvider.overrideWithValue(appModeService),
-          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
-          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
-        ],
-      );
-      addTearDown(() {
+        final container = ProviderContainer(
+          overrides: [
+            appModeServiceProvider.overrideWithValue(appModeService),
+            taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+            pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          ],
+        );
+        addTearDown(() {
+          foundation.debugPrint = previousDebugPrint;
+          groupRepo.dispose();
+          sessionRepo.dispose();
+          container.dispose();
+        });
+
+        container.read(scheduledGroupCoordinatorProvider);
+
+        final now = DateTime.now();
+        final group = _buildRunningGroup(
+          id: 'group-phase5-stale-clear',
+          start: now.subtract(const Duration(hours: 2)),
+          theoreticalEnd: now.add(const Duration(hours: 2)),
+        );
+        final runningSession = _buildRunningSession(
+          groupId: 'group-phase5-other',
+          ownerId: 'device-1',
+          now: now,
+        );
+
+        sessionRepo.emit(runningSession);
+        groupRepo.seed(group);
+        await _pumpQueue();
         foundation.debugPrint = previousDebugPrint;
-        groupRepo.dispose();
-        sessionRepo.dispose();
-        container.dispose();
-      });
 
-      container.read(scheduledGroupCoordinatorProvider);
-
-      final now = DateTime.now();
-      final group = _buildRunningGroup(
-        id: 'group-phase5-stale-clear',
-        start: now.subtract(const Duration(hours: 2)),
-        theoreticalEnd: now.add(const Duration(hours: 2)),
-      );
-      final runningSession = _buildRunningSession(
-        groupId: 'group-phase5-other',
-        ownerId: 'device-1',
-        now: now,
-      );
-
-      sessionRepo.emit(runningSession);
-      groupRepo.seed(group);
-      await _pumpQueue();
-      foundation.debugPrint = previousDebugPrint;
-
-      final merged = logs.join('\n');
-      expect(
-        merged.contains('[StaleClearDiag]'),
-        isTrue,
-        reason:
-            'Phase-5 diagnostics contract: stale-clear evaluation must emit a dedicated diagnostic event.',
-      );
-      expect(
-        merged.contains('vmToken='),
-        isTrue,
-        reason:
-            'Phase-5 diagnostics contract: stale-clear diagnostics must include instance token correlation.',
-      );
-      expect(
-        merged.contains('decision='),
-        isTrue,
-        reason:
-            'Phase-5 diagnostics contract: stale-clear diagnostics must include clear/keep decision metadata.',
-      );
-      expect(
-        merged.contains('sessionGroupId='),
-        isTrue,
-        reason:
-            'Phase-5 diagnostics contract: stale-clear diagnostics must include evaluated session groupId metadata.',
-      );
-    });
+        final merged = logs.join('\n');
+        expect(
+          merged.contains('[StaleClearDiag]'),
+          isTrue,
+          reason:
+              'Phase-5 diagnostics contract: stale-clear evaluation must emit a dedicated diagnostic event.',
+        );
+        expect(
+          merged.contains('vmToken='),
+          isTrue,
+          reason:
+              'Phase-5 diagnostics contract: stale-clear diagnostics must include instance token correlation.',
+        );
+        expect(
+          merged.contains('decision='),
+          isTrue,
+          reason:
+              'Phase-5 diagnostics contract: stale-clear diagnostics must include clear/keep decision metadata.',
+        );
+        expect(
+          merged.contains('sessionGroupId='),
+          isTrue,
+          reason:
+              'Phase-5 diagnostics contract: stale-clear diagnostics must include evaluated session groupId metadata.',
+        );
+      },
+    );
   });
 
   group('ScheduledGroupCoordinator late-start queue', () {
@@ -636,92 +642,93 @@ void main() {
     });
 
     test(
-        '[PHASE5] scheduled-action diagnostics must include vmToken and action metadata',
-        () async {
-      final groupRepo = FakeTaskRunGroupRepository();
-      final sessionRepo = FakePomodoroSessionRepository();
-      final appModeService = AppModeService.memory();
-      final logs = <String>[];
-      final previousDebugPrint = foundation.debugPrint;
-      foundation.debugPrint = (String? message, {int? wrapWidth}) {
-        if (message != null) logs.add(message);
-      };
-      final actionCompleter = Completer<ScheduledGroupAction>();
-      final container = ProviderContainer(
-        overrides: [
-          appModeServiceProvider.overrideWithValue(appModeService),
-          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
-          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
-        ],
-      );
-      addTearDown(() {
-        foundation.debugPrint = previousDebugPrint;
-        groupRepo.dispose();
-        sessionRepo.dispose();
-        container.dispose();
-      });
+      '[PHASE5] scheduled-action diagnostics must include vmToken and action metadata',
+      () async {
+        final groupRepo = FakeTaskRunGroupRepository();
+        final sessionRepo = FakePomodoroSessionRepository();
+        final appModeService = AppModeService.memory();
+        final logs = <String>[];
+        final previousDebugPrint = foundation.debugPrint;
+        foundation.debugPrint = (String? message, {int? wrapWidth}) {
+          if (message != null) logs.add(message);
+        };
+        final actionCompleter = Completer<ScheduledGroupAction>();
+        final container = ProviderContainer(
+          overrides: [
+            appModeServiceProvider.overrideWithValue(appModeService),
+            taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+            pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          ],
+        );
+        addTearDown(() {
+          foundation.debugPrint = previousDebugPrint;
+          groupRepo.dispose();
+          sessionRepo.dispose();
+          container.dispose();
+        });
 
-      final sub = container.listen<ScheduledGroupAction?>(
-        scheduledGroupCoordinatorProvider,
-        (_, next) {
-          if (next != null && !actionCompleter.isCompleted) {
-            actionCompleter.complete(next);
-          }
-        },
-      );
-      addTearDown(sub.close);
+        final sub = container.listen<ScheduledGroupAction?>(
+          scheduledGroupCoordinatorProvider,
+          (_, next) {
+            if (next != null && !actionCompleter.isCompleted) {
+              actionCompleter.complete(next);
+            }
+          },
+        );
+        addTearDown(sub.close);
 
-      container.read(scheduledGroupCoordinatorProvider);
+        container.read(scheduledGroupCoordinatorProvider);
 
-      final now = DateTime.now();
-      final first = _buildScheduledGroup(
-        id: 'group-phase5-action-a',
-        scheduledStart: now.subtract(const Duration(hours: 2)),
-        durationMinutes: 30,
-        noticeMinutes: 5,
-      );
-      final second = _buildScheduledGroup(
-        id: 'group-phase5-action-b',
-        scheduledStart: now.subtract(const Duration(hours: 1)),
-        durationMinutes: 30,
-        noticeMinutes: 5,
-      );
+        final now = DateTime.now();
+        final first = _buildScheduledGroup(
+          id: 'group-phase5-action-a',
+          scheduledStart: now.subtract(const Duration(hours: 2)),
+          durationMinutes: 30,
+          noticeMinutes: 5,
+        );
+        final second = _buildScheduledGroup(
+          id: 'group-phase5-action-b',
+          scheduledStart: now.subtract(const Duration(hours: 1)),
+          durationMinutes: 30,
+          noticeMinutes: 5,
+        );
 
-      sessionRepo.emit(null);
-      await groupRepo.saveAll([first, second]);
-      await _pumpQueue();
+        sessionRepo.emit(null);
+        await groupRepo.saveAll([first, second]);
+        await _pumpQueue();
 
-      final action = await actionCompleter.future.timeout(
-        const Duration(seconds: 1),
-      );
-      expect(action.type, ScheduledGroupActionType.lateStartQueue);
+        final action = await actionCompleter.future.timeout(
+          const Duration(seconds: 1),
+        );
+        expect(action.type, ScheduledGroupActionType.lateStartQueue);
 
-      final merged = logs.join('\n');
-      expect(
-        merged.contains('[ScheduledActionDiag]'),
-        isTrue,
-        reason:
-            'Phase-5 diagnostics contract: coordinator scheduled-action bridge must emit a dedicated diagnostic event.',
-      );
-      expect(
-        merged.contains('vmToken='),
-        isTrue,
-        reason:
-            'Phase-5 diagnostics contract: scheduled-action diagnostics must include vmToken correlation.',
-      );
-      expect(
-        merged.contains('actionType='),
-        isTrue,
-        reason:
-            'Phase-5 diagnostics contract: scheduled-action diagnostics must include action type metadata.',
-      );
-      expect(
-        merged.contains('groupIds='),
-        isTrue,
-        reason:
-            'Phase-5 diagnostics contract: scheduled-action diagnostics must include group payload metadata.',
-      );
-    });
+        final merged = logs.join('\n');
+        expect(
+          merged.contains('[ScheduledActionDiag]'),
+          isTrue,
+          reason:
+              'Phase-5 diagnostics contract: coordinator scheduled-action bridge must emit a dedicated diagnostic event.',
+        );
+        expect(
+          merged.contains('vmToken='),
+          isTrue,
+          reason:
+              'Phase-5 diagnostics contract: scheduled-action diagnostics must include vmToken correlation.',
+        );
+        expect(
+          merged.contains('actionType='),
+          isTrue,
+          reason:
+              'Phase-5 diagnostics contract: scheduled-action diagnostics must include action type metadata.',
+        );
+        expect(
+          merged.contains('groupIds='),
+          isTrue,
+          reason:
+              'Phase-5 diagnostics contract: scheduled-action diagnostics must include group payload metadata.',
+        );
+      },
+    );
 
     test('emits late-start queue when three overdue groups exist', () async {
       final groupRepo = FakeTaskRunGroupRepository();
@@ -785,277 +792,295 @@ void main() {
     });
 
     test(
-        'does not auto-claim late-start queue when heartbeat is missing but anchor is fresh',
-        () async {
-      final groupRepo = FakeTaskRunGroupRepository();
-      final sessionRepo = FakePomodoroSessionRepository();
-      final container = ProviderContainer(
-        overrides: [
-          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
-          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
-        ],
-      );
-      addTearDown(() {
-        groupRepo.dispose();
-        sessionRepo.dispose();
-        container.dispose();
-      });
+      'does not auto-claim late-start queue when heartbeat is missing but anchor is fresh',
+      () async {
+        final groupRepo = FakeTaskRunGroupRepository();
+        final sessionRepo = FakePomodoroSessionRepository();
+        final container = ProviderContainer(
+          overrides: [
+            taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+            pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          ],
+        );
+        addTearDown(() {
+          groupRepo.dispose();
+          sessionRepo.dispose();
+          container.dispose();
+        });
 
-      container.read(scheduledGroupCoordinatorProvider);
+        container.read(scheduledGroupCoordinatorProvider);
 
-      final now = DateTime.now();
-      final anchor = now.subtract(const Duration(seconds: 10));
-      final first = _buildScheduledGroup(
-        id: 'group-stale-1',
-        scheduledStart: now.subtract(const Duration(hours: 2)),
-        durationMinutes: 15,
-        noticeMinutes: 1,
-      ).copyWith(
-        lateStartAnchorAt: anchor,
-        lateStartQueueId: 'queue-1',
-        lateStartQueueOrder: 0,
-        lateStartOwnerDeviceId: 'device-other',
-        lateStartOwnerHeartbeatAt: null,
-      );
-      final second = _buildScheduledGroup(
-        id: 'group-stale-1b',
-        scheduledStart: now.subtract(const Duration(hours: 1, minutes: 45)),
-        durationMinutes: 15,
-        noticeMinutes: 1,
-      ).copyWith(
-        lateStartAnchorAt: anchor,
-        lateStartQueueId: 'queue-1',
-        lateStartQueueOrder: 1,
-        lateStartOwnerDeviceId: 'device-other',
-        lateStartOwnerHeartbeatAt: null,
-      );
+        final now = DateTime.now();
+        final anchor = now.subtract(const Duration(seconds: 10));
+        final first =
+            _buildScheduledGroup(
+              id: 'group-stale-1',
+              scheduledStart: now.subtract(const Duration(hours: 2)),
+              durationMinutes: 15,
+              noticeMinutes: 1,
+            ).copyWith(
+              lateStartAnchorAt: anchor,
+              lateStartQueueId: 'queue-1',
+              lateStartQueueOrder: 0,
+              lateStartOwnerDeviceId: 'device-other',
+              lateStartOwnerHeartbeatAt: null,
+            );
+        final second =
+            _buildScheduledGroup(
+              id: 'group-stale-1b',
+              scheduledStart: now.subtract(
+                const Duration(hours: 1, minutes: 45),
+              ),
+              durationMinutes: 15,
+              noticeMinutes: 1,
+            ).copyWith(
+              lateStartAnchorAt: anchor,
+              lateStartQueueId: 'queue-1',
+              lateStartQueueOrder: 1,
+              lateStartOwnerDeviceId: 'device-other',
+              lateStartOwnerHeartbeatAt: null,
+            );
 
-      sessionRepo.emit(null);
-      await groupRepo.saveAll([first, second]);
+        sessionRepo.emit(null);
+        await groupRepo.saveAll([first, second]);
 
-      await _pumpQueue();
+        await _pumpQueue();
 
-      final stored = await groupRepo.getById(first.id);
-      expect(stored?.lateStartOwnerDeviceId, 'device-other');
-    });
+        final stored = await groupRepo.getById(first.id);
+        expect(stored?.lateStartOwnerDeviceId, 'device-other');
+      },
+    );
 
     test(
-        'auto-claims late-start queue when heartbeat is missing and anchor is stale',
-        () async {
-      final groupRepo = FakeTaskRunGroupRepository();
-      final sessionRepo = FakePomodoroSessionRepository();
-      final deviceInfo = DeviceInfoService.ephemeral();
-      final actionCompleter = Completer<ScheduledGroupAction>();
-      final container = ProviderContainer(
-        overrides: [
-          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
-          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
-          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
-        ],
-      );
-      addTearDown(() {
-        groupRepo.dispose();
-        sessionRepo.dispose();
-        container.dispose();
-      });
+      'auto-claims late-start queue when heartbeat is missing and anchor is stale',
+      () async {
+        final groupRepo = FakeTaskRunGroupRepository();
+        final sessionRepo = FakePomodoroSessionRepository();
+        final deviceInfo = DeviceInfoService.ephemeral();
+        final actionCompleter = Completer<ScheduledGroupAction>();
+        final container = ProviderContainer(
+          overrides: [
+            taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+            pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+            deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          ],
+        );
+        addTearDown(() {
+          groupRepo.dispose();
+          sessionRepo.dispose();
+          container.dispose();
+        });
 
-      final sub = container.listen<ScheduledGroupAction?>(
-        scheduledGroupCoordinatorProvider,
-        (_, next) {
-          if (next != null && !actionCompleter.isCompleted) {
-            actionCompleter.complete(next);
-          }
-        },
-      );
-      addTearDown(sub.close);
+        final sub = container.listen<ScheduledGroupAction?>(
+          scheduledGroupCoordinatorProvider,
+          (_, next) {
+            if (next != null && !actionCompleter.isCompleted) {
+              actionCompleter.complete(next);
+            }
+          },
+        );
+        addTearDown(sub.close);
 
-      container.read(scheduledGroupCoordinatorProvider);
+        container.read(scheduledGroupCoordinatorProvider);
 
-      final now = DateTime.now();
-      final anchor = now.subtract(const Duration(seconds: 60));
-      final first = _buildScheduledGroup(
-        id: 'group-stale-2',
-        scheduledStart: now.subtract(const Duration(hours: 2)),
-        durationMinutes: 15,
-        noticeMinutes: 1,
-      ).copyWith(
-        lateStartAnchorAt: anchor,
-        lateStartQueueId: 'queue-2',
-        lateStartQueueOrder: 0,
-        lateStartOwnerDeviceId: 'device-other',
-        lateStartOwnerHeartbeatAt: null,
-      );
-      final second = _buildScheduledGroup(
-        id: 'group-stale-2b',
-        scheduledStart: now.subtract(const Duration(hours: 1, minutes: 45)),
-        durationMinutes: 15,
-        noticeMinutes: 1,
-      ).copyWith(
-        lateStartAnchorAt: anchor,
-        lateStartQueueId: 'queue-2',
-        lateStartQueueOrder: 1,
-        lateStartOwnerDeviceId: 'device-other',
-        lateStartOwnerHeartbeatAt: null,
-      );
-      final initialOwnerId = resolveLateStartOwnerDeviceId([first, second]);
-      final initialAnchor = resolveLateStartAnchor([first, second]);
-      final initialLastSeen = resolveLateStartOwnerHeartbeat([first, second]) ?? initialAnchor;
-      final initialOwnerStale =
-          initialLastSeen != null &&
-          DateTime.now().difference(initialLastSeen) >=
-              const Duration(seconds: 45);
-      expect(initialOwnerId, 'device-other');
-      expect(initialOwnerStale, isTrue);
+        final now = DateTime.now();
+        final anchor = now.subtract(const Duration(seconds: 60));
+        final first =
+            _buildScheduledGroup(
+              id: 'group-stale-2',
+              scheduledStart: now.subtract(const Duration(hours: 2)),
+              durationMinutes: 15,
+              noticeMinutes: 1,
+            ).copyWith(
+              lateStartAnchorAt: anchor,
+              lateStartQueueId: 'queue-2',
+              lateStartQueueOrder: 0,
+              lateStartOwnerDeviceId: 'device-other',
+              lateStartOwnerHeartbeatAt: null,
+            );
+        final second =
+            _buildScheduledGroup(
+              id: 'group-stale-2b',
+              scheduledStart: now.subtract(
+                const Duration(hours: 1, minutes: 45),
+              ),
+              durationMinutes: 15,
+              noticeMinutes: 1,
+            ).copyWith(
+              lateStartAnchorAt: anchor,
+              lateStartQueueId: 'queue-2',
+              lateStartQueueOrder: 1,
+              lateStartOwnerDeviceId: 'device-other',
+              lateStartOwnerHeartbeatAt: null,
+            );
+        final initialOwnerId = resolveLateStartOwnerDeviceId([first, second]);
+        final initialAnchor = resolveLateStartAnchor([first, second]);
+        final initialLastSeen =
+            resolveLateStartOwnerHeartbeat([first, second]) ?? initialAnchor;
+        final initialOwnerStale =
+            initialLastSeen != null &&
+            DateTime.now().difference(initialLastSeen) >=
+                const Duration(seconds: 45);
+        expect(initialOwnerId, 'device-other');
+        expect(initialOwnerStale, isTrue);
 
-      sessionRepo.emit(null);
-      await groupRepo.saveAll([first, second]);
+        sessionRepo.emit(null);
+        await groupRepo.saveAll([first, second]);
 
-      await _pumpQueue();
+        await _pumpQueue();
 
-      final allGroups = await groupRepo.getAll();
-      final scheduledGroups = allGroups
-          .where(
-            (group) =>
-                group.status == TaskRunStatus.scheduled &&
-                group.scheduledStartTime != null,
-          )
-          .toList();
-      final conflicts = resolveLateStartConflictSet(
-        scheduled: scheduledGroups,
-        allGroups: allGroups,
-        activeSession: null,
-        now: DateTime.now(),
-      );
-      expect(conflicts, isNotEmpty);
-      final resolvedAnchor = resolveLateStartAnchor(conflicts);
-      expect(resolvedAnchor, isNotNull);
+        final allGroups = await groupRepo.getAll();
+        final scheduledGroups = allGroups
+            .where(
+              (group) =>
+                  group.status == TaskRunStatus.scheduled &&
+                  group.scheduledStartTime != null,
+            )
+            .toList();
+        final conflicts = resolveLateStartConflictSet(
+          scheduled: scheduledGroups,
+          allGroups: allGroups,
+          activeSession: null,
+          now: DateTime.now(),
+        );
+        expect(conflicts, isNotEmpty);
+        final resolvedAnchor = resolveLateStartAnchor(conflicts);
+        expect(resolvedAnchor, isNotNull);
 
-      final action = await actionCompleter.future.timeout(
-        const Duration(seconds: 1),
-      );
-      expect(action.type, ScheduledGroupActionType.lateStartQueue);
+        final action = await actionCompleter.future.timeout(
+          const Duration(seconds: 1),
+        );
+        expect(action.type, ScheduledGroupActionType.lateStartQueue);
 
-      await _awaitClaim(repo: groupRepo);
-      expect(groupRepo.claimLateStartCalls, greaterThan(0));
-      expect(groupRepo.lastClaimOwnerDeviceId, deviceInfo.deviceId);
+        await _awaitClaim(repo: groupRepo);
+        expect(groupRepo.claimLateStartCalls, greaterThan(0));
+        expect(groupRepo.lastClaimOwnerDeviceId, deviceInfo.deviceId);
 
-      final stored = await _awaitOwner(
-        repo: groupRepo,
-        groupId: first.id,
-        ownerId: deviceInfo.deviceId,
-      );
-      expect(stored?.lateStartOwnerDeviceId, deviceInfo.deviceId);
-    });
+        final stored = await _awaitOwner(
+          repo: groupRepo,
+          groupId: first.id,
+          ownerId: deviceInfo.deviceId,
+        );
+        expect(stored?.lateStartOwnerDeviceId, deviceInfo.deviceId);
+      },
+    );
   });
 
   group('ScheduledGroupCoordinator running overlap decision', () {
-    test('sets running overlap decision before pre-run window when overlap exists',
-        () async {
-      final groupRepo = FakeTaskRunGroupRepository();
-      final sessionRepo = FakePomodoroSessionRepository();
-      final appModeService = AppModeService.memory();
-      final container = ProviderContainer(
-        overrides: [
-          appModeServiceProvider.overrideWithValue(appModeService),
-          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
-          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
-        ],
-      );
-      addTearDown(() {
-        groupRepo.dispose();
-        sessionRepo.dispose();
-        container.dispose();
-      });
+    test(
+      'sets running overlap decision before pre-run window when overlap exists',
+      () async {
+        final groupRepo = FakeTaskRunGroupRepository();
+        final sessionRepo = FakePomodoroSessionRepository();
+        final appModeService = AppModeService.memory();
+        final container = ProviderContainer(
+          overrides: [
+            appModeServiceProvider.overrideWithValue(appModeService),
+            taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+            pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          ],
+        );
+        addTearDown(() {
+          groupRepo.dispose();
+          sessionRepo.dispose();
+          container.dispose();
+        });
 
-      final coordinator =
-          container.read(scheduledGroupCoordinatorProvider.notifier);
+        final coordinator = container.read(
+          scheduledGroupCoordinatorProvider.notifier,
+        );
 
-      final now = DateTime.now();
-      final running = _buildRunningGroup(
-        id: 'running-1',
-        start: now.subtract(const Duration(minutes: 30)),
-        theoreticalEnd: now.add(const Duration(minutes: 30)),
-      );
-      final scheduled = _buildScheduledGroup(
-        id: 'scheduled-1',
-        scheduledStart: now.add(const Duration(minutes: 10)),
-        durationMinutes: 30,
-        noticeMinutes: 5,
-      );
-      final preRunStart =
-          scheduled.scheduledStartTime!.subtract(Duration(minutes: 5));
-      expect(running.theoreticalEndTime.isAfter(preRunStart), isTrue);
-      expect(DateTime.now().isBefore(preRunStart), isTrue);
+        final now = DateTime.now();
+        final running = _buildRunningGroup(
+          id: 'running-1',
+          start: now.subtract(const Duration(minutes: 30)),
+          theoreticalEnd: now.add(const Duration(minutes: 30)),
+        );
+        final scheduled = _buildScheduledGroup(
+          id: 'scheduled-1',
+          scheduledStart: now.add(const Duration(minutes: 10)),
+          durationMinutes: 30,
+          noticeMinutes: 5,
+        );
+        final preRunStart = scheduled.scheduledStartTime!.subtract(
+          Duration(minutes: 5),
+        );
+        expect(running.theoreticalEndTime.isAfter(preRunStart), isTrue);
+        expect(DateTime.now().isBefore(preRunStart), isTrue);
 
-      coordinator.debugEvaluateRunningOverlap(
-        running: [running],
-        scheduled: [scheduled],
-        allGroups: [running, scheduled],
-        session: null,
-        now: DateTime.now(),
-      );
+        coordinator.debugEvaluateRunningOverlap(
+          running: [running],
+          scheduled: [scheduled],
+          allGroups: [running, scheduled],
+          session: null,
+          now: DateTime.now(),
+        );
 
-      final decision = container.read(runningOverlapDecisionProvider);
-      expect(decision, isNotNull);
-      expect(decision?.runningGroupId, running.id);
-      expect(decision?.scheduledGroupId, scheduled.id);
-    });
+        final decision = container.read(runningOverlapDecisionProvider);
+        expect(decision, isNotNull);
+        expect(decision?.runningGroupId, running.id);
+        expect(decision?.scheduledGroupId, scheduled.id);
+      },
+    );
 
-    test('sets running overlap decision in account mode for non-owner',
-        () async {
-      final now = DateTime.now();
-      final running = _buildRunningGroup(
-        id: 'running-2',
-        start: now.subtract(const Duration(minutes: 30)),
-        theoreticalEnd: now.add(const Duration(minutes: 30)),
-      );
-      final scheduled = _buildScheduledGroup(
-        id: 'scheduled-2',
-        scheduledStart: now.add(const Duration(minutes: 2)),
-        durationMinutes: 30,
-        noticeMinutes: 5,
-      );
-      final groupRepo = FakeTaskRunGroupRepository();
-      final sessionRepo = FakePomodoroSessionRepository();
-      final appModeService = AppModeService.memory();
-      final deviceInfo = DeviceInfoService.ephemeral();
-      final session = _buildRunningSession(
-        groupId: running.id,
-        ownerId: '${deviceInfo.deviceId}-other',
-        now: now,
-      );
-      final container = ProviderContainer(
-        overrides: [
-          appModeServiceProvider.overrideWithValue(appModeService),
-          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
-          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
-          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
-          activePomodoroSessionProvider.overrideWithValue(session),
-        ],
-      );
-      addTearDown(() {
-        groupRepo.dispose();
-        sessionRepo.dispose();
-        container.dispose();
-      });
+    test(
+      'sets running overlap decision in account mode for non-owner',
+      () async {
+        final now = DateTime.now();
+        final running = _buildRunningGroup(
+          id: 'running-2',
+          start: now.subtract(const Duration(minutes: 30)),
+          theoreticalEnd: now.add(const Duration(minutes: 30)),
+        );
+        final scheduled = _buildScheduledGroup(
+          id: 'scheduled-2',
+          scheduledStart: now.add(const Duration(minutes: 2)),
+          durationMinutes: 30,
+          noticeMinutes: 5,
+        );
+        final groupRepo = FakeTaskRunGroupRepository();
+        final sessionRepo = FakePomodoroSessionRepository();
+        final appModeService = AppModeService.memory();
+        final deviceInfo = DeviceInfoService.ephemeral();
+        final session = _buildRunningSession(
+          groupId: running.id,
+          ownerId: '${deviceInfo.deviceId}-other',
+          now: now,
+        );
+        final container = ProviderContainer(
+          overrides: [
+            appModeServiceProvider.overrideWithValue(appModeService),
+            taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+            pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+            deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+            activePomodoroSessionProvider.overrideWithValue(session),
+          ],
+        );
+        addTearDown(() {
+          groupRepo.dispose();
+          sessionRepo.dispose();
+          container.dispose();
+        });
 
-      final coordinator =
-          container.read(scheduledGroupCoordinatorProvider.notifier);
-      await container.read(appModeProvider.notifier).setAccount();
+        final coordinator = container.read(
+          scheduledGroupCoordinatorProvider.notifier,
+        );
+        await container.read(appModeProvider.notifier).setAccount();
 
-      coordinator.debugEvaluateRunningOverlap(
-        running: [running],
-        scheduled: [scheduled],
-        allGroups: [running, scheduled],
-        session: session,
-        now: DateTime.now(),
-      );
+        coordinator.debugEvaluateRunningOverlap(
+          running: [running],
+          scheduled: [scheduled],
+          allGroups: [running, scheduled],
+          session: session,
+          now: DateTime.now(),
+        );
 
-      final decision = container.read(runningOverlapDecisionProvider);
-      expect(decision, isNotNull);
-      expect(decision?.runningGroupId, running.id);
-      expect(decision?.scheduledGroupId, scheduled.id);
-    });
+        final decision = container.read(runningOverlapDecisionProvider);
+        expect(decision, isNotNull);
+        expect(decision?.runningGroupId, running.id);
+        expect(decision?.scheduledGroupId, scheduled.id);
+      },
+    );
 
     test('uses paused session projection to trigger overlap earlier', () async {
       final groupRepo = FakeTaskRunGroupRepository();
@@ -1074,8 +1099,9 @@ void main() {
         container.dispose();
       });
 
-      final coordinator =
-          container.read(scheduledGroupCoordinatorProvider.notifier);
+      final coordinator = container.read(
+        scheduledGroupCoordinatorProvider.notifier,
+      );
 
       final now = DateTime.now();
       final running = _buildRunningGroup(
@@ -1109,54 +1135,57 @@ void main() {
       expect(decision?.scheduledGroupId, scheduled.id);
     });
 
-    test('does not flag overlap when scheduled group follows running group',
-        () async {
-      final groupRepo = FakeTaskRunGroupRepository();
-      final sessionRepo = FakePomodoroSessionRepository();
-      final appModeService = AppModeService.memory();
-      final container = ProviderContainer(
-        overrides: [
-          appModeServiceProvider.overrideWithValue(appModeService),
-          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
-          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
-        ],
-      );
-      addTearDown(() {
-        groupRepo.dispose();
-        sessionRepo.dispose();
-        container.dispose();
-      });
+    test(
+      'does not flag overlap when scheduled group follows running group',
+      () async {
+        final groupRepo = FakeTaskRunGroupRepository();
+        final sessionRepo = FakePomodoroSessionRepository();
+        final appModeService = AppModeService.memory();
+        final container = ProviderContainer(
+          overrides: [
+            appModeServiceProvider.overrideWithValue(appModeService),
+            taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+            pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          ],
+        );
+        addTearDown(() {
+          groupRepo.dispose();
+          sessionRepo.dispose();
+          container.dispose();
+        });
 
-      final coordinator =
-          container.read(scheduledGroupCoordinatorProvider.notifier);
+        final coordinator = container.read(
+          scheduledGroupCoordinatorProvider.notifier,
+        );
 
-      final now = DateTime.now();
-      final running = _buildRunningGroup(
-        id: 'running-follow',
-        start: now.subtract(const Duration(minutes: 30)),
-        theoreticalEnd: now.add(const Duration(minutes: 20)),
-      );
-      final scheduled = _buildScheduledGroup(
-        id: 'scheduled-follow',
-        scheduledStart: now.add(const Duration(minutes: 10)),
-        durationMinutes: 30,
-        noticeMinutes: 5,
-      ).copyWith(postponedAfterGroupId: running.id);
+        final now = DateTime.now();
+        final running = _buildRunningGroup(
+          id: 'running-follow',
+          start: now.subtract(const Duration(minutes: 30)),
+          theoreticalEnd: now.add(const Duration(minutes: 20)),
+        );
+        final scheduled = _buildScheduledGroup(
+          id: 'scheduled-follow',
+          scheduledStart: now.add(const Duration(minutes: 10)),
+          durationMinutes: 30,
+          noticeMinutes: 5,
+        ).copyWith(postponedAfterGroupId: running.id);
 
-      coordinator.debugEvaluateRunningOverlap(
-        running: [running],
-        scheduled: [scheduled],
-        allGroups: [running, scheduled],
-        session: _buildRunningSession(
-          groupId: running.id,
-          ownerId: container.read(deviceInfoServiceProvider).deviceId,
+        coordinator.debugEvaluateRunningOverlap(
+          running: [running],
+          scheduled: [scheduled],
+          allGroups: [running, scheduled],
+          session: _buildRunningSession(
+            groupId: running.id,
+            ownerId: container.read(deviceInfoServiceProvider).deviceId,
+            now: now,
+          ),
           now: now,
-        ),
-        now: now,
-      );
+        );
 
-      final decision = container.read(runningOverlapDecisionProvider);
-      expect(decision, isNull);
-    });
+        final decision = container.read(runningOverlapDecisionProvider);
+        expect(decision, isNull);
+      },
+    );
   });
 }

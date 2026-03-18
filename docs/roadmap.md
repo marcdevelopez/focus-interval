@@ -315,6 +315,35 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           and no irrecoverable `Syncing session...`; AP-1/AP-2 remain non-repro.
           `P0-F26-006` closure criteria met and moved to Closed/OK with
           implementation commit `cbd800a`.
+      16/03/2026: Fix 25 re-validation packet (`validation_fix_2026_03_05`,
+          iOS + Chrome) failed and reopened with three blockers:
+          BUG-F25-A (transaction read/write order), BUG-F25-B (dialog
+          context-after-dispose), BUG-F25-C (owner sees mirror-only dialog).
+      16/03/2026: Fix 25 implementation packet completed on branch
+          `fix-f25-transaction-order-and-owner-dialog`:
+          transaction two-phase read/write ordering applied, owner-resolved
+          dialog navigator capture hardening added, and resolver-local gate
+          (`_resolved`) added to suppress mirror-only dialog on owner.
+          Local analyze/tests PASS; closure pending exact repro re-validation.
+      17/03/2026: Fix 25 re-validation #2 (`fd788e6`, iOS + Chrome) reviewed:
+          BUG-F25-A PASS (ownership request delivery restored),
+          BUG-F25-B PASS (no context-after-dispose dialog crash),
+          BUG-F25-C FAIL in `Continue` path (owner still saw mirror-only modal).
+      17/03/2026: Fix 25 BUG-F25-C follow-up patch applied:
+          `_resolved = true` moved before first await in `_applySelection` to
+          close Firestore stream race on owner-side dialog gating. Local
+          analyze/tests PASS; device re-validation pending for final Fix 25 closure.
+      17/03/2026: Ownership sync hardening packet implemented on branch
+          `fix-ownership-cursor-stamp` for BUG-002 residual + BUG-F26-001/002:
+          pending publish replay after timeSync recovery, atomic cursor merge in
+          ownership approve transaction, non-idle owner hot-swap fallback publish,
+          and owner-side optimistic rejection banner clear. Local analyze/tests
+          PASS; device churn re-validation pending.
+      17/03/2026: Ownership cursor re-validation on `7ddc1e6` FAILED:
+          non-idle hot-swap fallback publish caused Firestore write loop
+          (`sessionRevision` churn + `current` doc recreate/delete after cancel).
+          Follow-up one-shot guard patch implemented in `PomodoroViewModel`;
+          local analyze/tests PASS; device re-validation pending.
       08/02/2026: Pre-start planning redesign phase 1 implemented (full-screen planning screen,
                   info modal, preview).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
@@ -420,6 +449,9 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 17 — Late-start queue anchor (server time) + owner-only queue + realtime projections + activeSession creation on confirm + mirror Run Mode CTA + revalidate post-postpone overlaps (bug).
 - Phase 17 — Late-start queue Cancel all (no loop) + exit cleanly (no black screen) + mirror “Owner resolved” modal + zero-selection = Cancel all (bug).
 - Phase 17 — Running conflict modal must show conflicting group context (name + time range) (new requirement).
+- Phase 17 — Re-plan conflict modal must show conflicting group name + time range — currently shows generic "Conflict with scheduled group" with no identifying information (`BUG-F25-E`) (new requirement).
+- Phase 17 — Postpone snackbar must suppress "(pre-run at X)" clause when noticeMinutes=0 — currently shown even when pre-run equals start time (`BUG-F25-F`); requires spec clarification at specs.md:1716 (bug).
+- Phase 17 — Running overlap StateController<RunningOverlapDecision?> must not be modified during widget build — causes red error flash on mirror when overlap fires on Resume (`BUG-F25-D`) (bug).
 - Phase 17 — Pre-Run auto-open is idempotent on owner/mirror (no duplicate navigation / no Groups Hub bounce) and must not open Resolve overlaps without a real conflict (bug).
 - ~~Phase 17 — Local -> Account re-entry must re-evaluate overdue scheduled groups and auto-open Run Mode without app restart when there is no active conflict (bug).~~ **Closed/OK Fix 27 07/03/2026**
 - Phase 17 — Postpone effective schedule must refresh on mirrors in real time (no stale schedule) (bug).
@@ -441,6 +473,15 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
   group lookup/provider rebuild gaps; sync hold must recover without destructive clears (bug).
 - Phase 18 — Reopen/owner-switch must auto-repair invalid activeSession cursor
   (task/pomodoro mismatch, e.g. `2/1`) and land on the correct running task/time (bug).
+- Phase 18 — Session cursor stale in Firestore during ownership churn: `phaseStartedAt`
+  not updated on phase transitions; `remainingSeconds: 0` persists despite TimerService
+  counting down correctly; causes 00:00 flash and task-completed-on-cold-start (`BUG-F26-001`) (bug).
+- Phase 18 — Pomodoro counter jumps on consecutive ownership transfers without real
+  phase completion (5→6→7 within seconds); likely shares root cause with `BUG-F26-001`
+  stale cursor interpreted as phase-complete on ownership claim (`BUG-F26-002`) (bug).
+- Phase 18 — Ownership hot-swap fallback publish must be one-shot per acquisition;
+  avoid Firestore feedback write loop (`sessionRevision` rapid churn and
+  `activeSession/current` flapping after cancel) (`BUG-F26-003`) (bug).
 - ~~Phase 18 — Fix 26 reopened hardening (v4): bounded foreground retry +
   non-destructive missing-session clear with repo recheck + resume listener
   stability (validation pending exact repro on single-device degraded network).~~
