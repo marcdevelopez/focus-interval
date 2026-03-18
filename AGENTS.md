@@ -56,9 +56,11 @@ Canonical role definitions, master workflow, and handoff protocol are maintained
 Operational split:
 - **Claude**: orchestrator, architecture authority, and structural review (the "why/where").
 - **Codex**: implementation, debugging, tests, and low-level correctness (the "how").
+  Codex is not a blind executor — it reviews fix specifications before implementing.
+  If the spec contains a technical error, Codex reports it to Claude before writing code.
 - **Gemini**: full-repository context analysis, large-doc ingestion, cross-module impact scans.
 
-Master workflow (standard path): user → Claude → Gemini (impact scan) → Claude (plan) → Codex (implementation) → Claude + Gemini (closure review).
+Master workflow (standard path): user → Claude → Gemini (impact scan) → Claude (plan) → Codex (spec review + implementation) → Claude + Gemini (closure review).
 Fast path for P0 bugs: skip Gemini step if it delays the fix; run full path after P0 is resolved.
 
 Mandatory handoff contract (all directions):
@@ -103,112 +105,56 @@ Additional requirement:
   documentation path forward.
 
 Bug validation workflow (required):
-- All validation artifacts live under `docs/bugs/validation_fix_YYYY_MM_DD`
-  (use `validation_fix_YYYY_MM_DD-01`, `-02`, etc. for multiple validations
-  in the same day).
-- Never delete validation subdirectories in `docs/bugs`. Keep them for traceability and regression history.
-- Screenshots stay in the validation folder but are ignored by git.
-- Each validation folder must include:
-  - `quick_pass_checklist.md`
-  - `plan_validacion_rapida_fix.md`
-  - `screenshots/`
-- Every fix must include an **Exact Repro** of the original bug scenario (steps,
-  mode, device(s), timing, logs/screenshots). This repro must be executed as
-  part of the rapid validation; otherwise the validation is incomplete.
-- Every fix must include a **Regression smoke check** that re-tests the most
-  recent critical fixes (3–5 items). If the regression list changes, update it
-  in both `plan_validacion_rapida_fix.md` and `quick_pass_checklist.md`.
-- Fix closure rule (mandatory): when a fix is implemented, validated with
-  evidence, and no regressions are detected, mark it immediately as
-  **Closed/OK** in the validation docs. Do this automatically; do not ask for
-  extra confirmation.
-- A fix can be closed only if these three conditions are true:
-  - Exact Repro passes.
-  - Regression smoke checks pass.
-  - Evidence is recorded (at minimum checklist result + logs/screenshots when
-    applicable).
-- Always review the screenshots in the relevant validation folder before diagnosing or implementing fixes.
-- `quick_pass_checklist.md` is created **after** implementation and must match
-  the actual changes. For a brand new validation folder, it starts empty until
-  the implementation is complete.
-- `plan_validacion_rapida_fix.md` is updated by the agent based on the latest
-  completed checklist and reported bugs.
-- Keep validations isolated per folder; never mix evidence or steps across
-  different validation dates.
-- After each fix:
-  - Update `plan_validacion_rapida_fix.md` to mark the fix as completed and note
-    any order changes or new findings.
-  - Run the appropriate tests (unit or integration) for the fix’s scope and
-    only proceed if they pass.
-  - Record the commit hash and commit message in the plan tracking entry.
-  - Commit the fix **after** updating the plan and any supporting docs/logs.
+- All validation artifacts live under `docs/bugs/validation_<name>_YYYY_MM_DD`
+  (use `-01`, `-02` suffixes for multiple validations in the same day).
+- Never delete validation subdirectories in `docs/bugs`. Keep them for traceability.
+- Each validation folder must contain **exactly these — no other files**:
+  - `plan_validacion_rapida_fix.md` — living document (see required sections below)
+  - `quick_pass_checklist.md` — checkboxes only (see format below)
+  - `logs/` — `.log` files from device runs (named per convention below)
+  - `screenshots/` — device screenshots used as evidence
+- **Never create additional `.md` files** inside a validation folder
+  (no `repro_steps.md`, no `notes.md`, no `analysis.md`).
+  Any extra content belongs inside `plan_validacion_rapida_fix.md`.
+
+Required sections of `plan_validacion_rapida_fix.md` (all mandatory):
+  1. Header: date, branch, commit hash, bugs covered, target devices.
+  2. Objetivo: one-paragraph scope.
+  3. Síntoma original: what the user sees/feels without the fix (user perspective first).
+  4. Root cause: technical explanation at file + method level.
+  5. Protocolo de validación: labeled scenarios (A, B, C…) each with preconditions,
+     numbered steps, expected result with fix, reference result without fix.
+  6. Comandos de ejecución: full `flutter run … 2>&1 | tee <log-path>` commands,
+     copy-pasteable, no placeholders. Use `docs/bugs/README.md` templates.
+  7. Log analysis — quick scan: `grep` commands for the key signals of this bug.
+     One block for "bug present" signals; one block for "fix working" signals.
+  8. Verificación local: checklist of `flutter analyze` + targeted `flutter test` results.
+  9. Criterios de cierre: explicit list of what must be PASS to close.
+  10. Status line (updated in-place): `Open` / `In validation` / `Closed/OK`.
+
+`quick_pass_checklist.md` format — checkboxes only, no repro steps:
+  ## Exact repro / ## Regression smoke / ## Local gate / ## Closure rule
+
+Log naming convention (mandatory):
+  `YYYY-MM-DD_<fix-id>_<short-commit>_<device>_<mode>.log`
+  Example: `2026-03-18_f25d_07ac0cb_android_RMX3771_debug.log`
+  - `<fix-id>`: e.g. `f25d`, `ownership_cursor`
+  - `<device>`: `android_RMX3771`, `macos`, `ios_iPhone17Pro_9A6B6687`, `chrome`
+  - `<mode>`: `debug` or `release`
+
+Fix closure requires all three conditions:
+  1. Exact Repro PASS with log evidence.
+  2. Regression smoke PASS.
+  3. Evidence recorded in checklist + logs/screenshots.
+When all three are met: update `plan_validacion_rapida_fix.md`, `quick_pass_checklist.md`,
+`docs/bugs/bug_log.md`, `docs/validation/validation_ledger.md` to Closed/OK.
+Then merge fix branch → `develop` (never to `main` directly).
+Add a Block to `docs/dev_log.md` documenting the closure with commit hash.
+
+Always review screenshots in the validation folder before diagnosing or implementing fixes.
+Full bug lifecycle detail: `CLAUDE.md` sections 10–11.
 
 Feature planning workflow (required):
-- All feature implementation artifacts live under `docs/features/feature_YYYY_MM_DD_slug`
-  (use `feature_YYYY_MM_DD_slug-01`, `-02`, etc. for multiple feature tracks
-  in the same day).
-- Never delete feature subdirectories in `docs/features`. Keep them for
-  traceability and regression history.
-- Screenshots stay in the feature folder but are ignored by git.
-- Each feature folder must include:
-  - `feature_plan.md` (implementation plan)
-  - `feature_checklist.md` (validation checklist, created after implementation)
-  - `screenshots/` (when relevant)
-- Every feature must be linked to `docs/features/feature_backlog.md` (reference the item
-  or ID in the plan).
-- In `docs/features/feature_backlog.md`, move the item to **In progress** (or
-  **In implementation**) and add the link to the feature directory.
-- When the feature is complete, move the item to **Done** (or
-  `docs/features/feature_backlog_archive.md`) and record the final commit.
-- After each feature or subfeature:
-  - Update the plan to mark it completed.
-  - Record the commit hash and commit message in the plan tracking entry.
-  - Commit the change after updating the plan and supporting docs/logs.
-
-Bug validation workflow (required):
-
-- All validation artifacts live under `docs/bugs/validation_fix_YYYY_MM_DD`
-  (use `validation_fix_YYYY_MM_DD-01`, `-02`, etc. for multiple validations
-  in the same day).
-- Never delete validation subdirectories in `docs/bugs`. Keep them for traceability and regression history.
-- Screenshots stay in the validation folder but are ignored by git.
-- Each validation folder must include:
-  - `quick_pass_checklist.md`
-  - `plan_validacion_rapida_fix.md`
-  - `screenshots/`
-- Every fix must include an **Exact Repro** of the original bug scenario (steps,
-  mode, device(s), timing, logs/screenshots). This repro must be executed as
-  part of the rapid validation; otherwise the validation is incomplete.
-- Every fix must include a **Regression smoke check** that re-tests the most
-  recent critical fixes (3–5 items). If the regression list changes, update it
-  in both `plan_validacion_rapida_fix.md` and `quick_pass_checklist.md`.
-- Fix closure rule (mandatory): when a fix is implemented, validated with
-  evidence, and no regressions are detected, mark it immediately as
-  **Closed/OK** in the validation docs. Do this automatically; do not ask for
-  extra confirmation.
-- A fix can be closed only if these three conditions are true:
-  - Exact Repro passes.
-  - Regression smoke checks pass.
-  - Evidence is recorded (at minimum checklist result + logs/screenshots when
-    applicable).
-- Always review the screenshots in the relevant validation folder before diagnosing or implementing fixes.
-- `quick_pass_checklist.md` is created **after** implementation and must match
-  the actual changes. For a brand new validation folder, it starts empty until
-  the implementation is complete.
-- `plan_validacion_rapida_fix.md` is updated by the agent based on the latest
-  completed checklist and reported bugs.
-- Keep validations isolated per folder; never mix evidence or steps across
-  different validation dates.
-- After each fix:
-  - Update `plan_validacion_rapida_fix.md` to mark the fix as completed and note
-    any order changes or new findings.
-  - Run the appropriate tests (unit or integration) for the fix’s scope and
-    only proceed if they pass.
-  - Record the commit hash and commit message in the plan tracking entry.
-  - Commit the fix **after** updating the plan and any supporting docs/logs.
-
-Feature planning workflow (required):
-
 - All feature implementation artifacts live under `docs/features/feature_YYYY_MM_DD_slug`
   (use `feature_YYYY_MM_DD_slug-01`, `-02`, etc. for multiple feature tracks
   in the same day).

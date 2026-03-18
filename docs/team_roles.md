@@ -1,6 +1,6 @@
 # Team Roles & Handoff Contract
 
-Last update: 2026-03-16
+Last update: 2026-03-18
 
 This document defines the operational split between Claude, Codex, and Gemini in this repository.
 It is normative for day-to-day collaboration and must be applied together with:
@@ -68,6 +68,17 @@ Must avoid:
 - Silent architecture changes without explicit contract updates.
 - Partial patching when the declared strategy is full cutover.
 - Structural changes without Claude validation.
+- Implementing a spec that is technically incorrect. If a handoff contains
+  a wrong API choice, a false runtime assumption, or a logically insufficient
+  fix, Codex must stop and report the error before proceeding.
+
+Spec review rule:
+- Before writing any code, Codex reads the handoff spec and applies its own
+  technical knowledge to validate it. If something is wrong (e.g., wrong async
+  primitive, incorrect method signature, insufficient guard), Codex flags it
+  with a clear explanation and waits for Claude to correct the spec.
+- This is not a violation of the hierarchy — it is Codex fulfilling its role
+  as a competent programmer, not a blind executor.
 
 ---
 

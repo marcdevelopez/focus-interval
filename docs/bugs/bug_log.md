@@ -1304,23 +1304,24 @@ Evidence:
   after Resume was pressed.
 
 Fix applied:
-Implemented on 18/03/2026 (runtime patch, validation pending):
-- `lib/presentation/viewmodels/scheduled_group_coordinator.dart`
-  - Added scheduler-aware mutation helper for running-overlap provider writes.
-  - Deferred `runningOverlapDecisionProvider` set/clear via post-frame callback
-    only when scheduler is in build-phase callbacks.
-  - Added stale/dispose guards to avoid stale writes after deferred execution.
-  - Added safe fallback for test/runtime contexts where scheduler binding is not
-    initialized.
-- Validation packet prepared at:
-  `docs/bugs/validation_fix_2026_03_18-01/`
-  - `plan_validacion_rapida_fix.md`
-  - `quick_pass_checklist.md`
-  - `screenshots/`
+Three-commit fix on 18/03/2026:
+- `73d0f23` — coordinator: replace scheduler-phase check with `Future(() {})` in
+  `_runRunningOverlapMutation`. `Future.microtask` (prior attempt) is insufficient;
+  only a macrotask guarantees execution outside Riverpod's full propagation chain.
+- `79c534d` — widget: move `runningOverlapDecisionProvider` clear in
+  `GroupsHubScreen.build()` (line 283) and `TaskListScreen.build()` (line 561)
+  to `WidgetsBinding.instance.addPostFrameCallback` with `mounted` guard and
+  token guard to prevent clearing a newer decision.
+- Root cause had TWO sources: coordinator mutations (fixed by macrotask deferral)
+  and widget-level mutations inside `build()` (fixed by post-frame callback).
+
+Validation:
+- iOS (owner) + Chrome (mirror): Scenario A PASS — overlap modal appeared, no
+  red screen on mirror at conflict detection or after Postpone action.
+- Logs: `docs/bugs/validation_fix_2026_03_18-01/logs/`
 
 Status:
-In validation. P1 — runtime fix implemented; exact owner+mirror repro and
-regression smoke evidence still pending before closure.
+Closed/OK. closed_commit_hash: 79c534d
 
 ---
 

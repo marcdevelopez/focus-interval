@@ -11950,3 +11950,66 @@ Global suite status:
 - BUG-F25-D is not closed yet: exact owner+mirror repro still pending in
   `validation_fix_2026_03_18-01`.
 - Closure requires device evidence + regression smoke checks.
+
+---
+
+# 🔹 Block 598 — BUG-F25-D closed/OK (18/03/2026)
+
+## 📋 Context
+
+First fix (`07ac0cb`) failed: `SchedulerBinding.schedulerPhase` check insufficient —
+Riverpod's `_debugCurrentBuildingElement` is internal and not tied to Flutter's scheduler
+phase. Fix v2 (`f5b1d2c`) also failed: `Future.microtask` queues in the microtask queue,
+which can fire mid-Riverpod-propagation.
+
+Device logs revealed **two independent sources** of the same build-phase mutation error:
+
+1. **Coordinator** (`_runRunningOverlapMutation`): timer/Firestore callbacks mutating
+   `runningOverlapDecisionProvider` during Riverpod propagation.
+2. **Widgets** (`GroupsHubScreen.build():283`, `TaskListScreen.build():561`): direct
+   `ref.read(...).state = null` calls inside `build()` after discovering a stale overlap
+   decision (running group no longer in scope).
+
+## ✔ Work completed
+
+**Commit `73d0f23`** — Coordinator fix:
+- `_runRunningOverlapMutation` replaced with `Future(() { mutation(); })` (macrotask).
+  Macrotask runs after all pending microtasks, including Riverpod's full propagation chain.
+- Removed `SchedulerBinding` import (no longer used).
+- Tests updated: 4 tests in `'running overlap decision'` group now `await Future(() {})`
+  between coordinator call and provider read.
+
+**Commit `79c534d`** — Widget fix:
+- `GroupsHubScreen.build():283` and `TaskListScreen.build():561`: stale-decision clear
+  moved to `WidgetsBinding.instance.addPostFrameCallback` with `mounted` guard and token
+  guard. Token is captured before scheduling; callback checks `currentDecision.token !=
+  staleDecisionToken` to avoid clearing a newer decision written after the defer.
+
+**Protocol update** (same session):
+- `CLAUDE.md` section 8: Codex now reviews fix specs before implementing; reports
+  errors to Claude before writing code.
+- `AGENTS.md` + `docs/team_roles.md` updated with the same spec-review rule.
+
+## 🧪 Validation result
+
+Device: iOS iPhone 17 Pro (owner) + Chrome (mirror).
+- Overlap modal appeared correctly during pause.
+- No red screen on mirror at conflict detection.
+- No red screen on mirror after owner Postpone action.
+- Timer resumed normally after owner Resume.
+- Regression smoke (BUG-F25-C): owner did not see "Owner resolved" modal. PASS.
+- `flutter analyze` PASS.
+- All targeted tests PASS.
+
+## 📁 Updated files
+
+- `lib/presentation/viewmodels/scheduled_group_coordinator.dart`
+- `lib/presentation/screens/groups_hub_screen.dart`
+- `lib/presentation/screens/task_list_screen.dart`
+- `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+- `docs/bugs/bug_log.md` (BUG-F25-D → Closed/OK, `closed_commit_hash: 79c534d`)
+- `docs/validation/validation_ledger.md` (BUG-F25-D → [x] Closed/OK)
+- `docs/bugs/validation_fix_2026_03_18-01/plan_validacion_rapida_fix.md` (result in-place)
+- `docs/bugs/validation_fix_2026_03_18-01/quick_pass_checklist.md` (all boxes checked)
+- `CLAUDE.md`, `AGENTS.md`, `docs/team_roles.md` (Codex spec-review rule added)
+- `docs/dev_log.md` (this block)
