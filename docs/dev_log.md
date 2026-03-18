@@ -11928,6 +11928,7 @@ Documentation synchronization:
 - `docs/validation/validation_ledger.md` (BUG-F25-D status updated to `In validation`)
 - `docs/roadmap.md` (18/03 entry added under active status timeline)
 - `docs/dev_log.md` (this block + header status update)
+- Implementation commit: `07ac0cb` (`fix(f25-d): defer running-overlap provider mutation out of build phase`)
 
 ## 🧪 Verification run
 

@@ -48,4 +48,4 @@ In validation (device exact repro pending).
 
 ## Tracking
 - Branch: `fix-f25-d-overlap-build-phase`
-- Commit: pending
+- Implementation commit: `07ac0cb` — `fix(f25-d): defer running-overlap provider mutation out of build phase`
