@@ -1490,9 +1490,12 @@ Validation log paths (17/03/2026, commit `7ddc1e6`, Android RMX3771 + macOS):
   docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_macos_debug.log
 
 Status:
-In validation (blocked). P1 — re-validation on `7ddc1e6` failed due
-BUG-F26-003 write loop regression; follow-up one-shot guard patch implemented
-and pending device churn re-run.
+Closed/OK. Re-validation 18/03/2026 (Android RMX3771 owner + macOS mirror,
+commit `92731b3`): rejection banner confirmed clearing immediately on owner
+device without second press. Fix: `_clearOwnershipRequestLocallyForOwner()` +
+`_notifySessionMetaChanged()` called before Firestore round-trip in
+`rejectOwnershipRequest()`.
+Logs: `docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-18__guard_hot-swap_92731b3_android_RMX3771_debug.log`.
 
 ---
 
@@ -1612,8 +1615,7 @@ Evidence:
   `docs/bugs/validation_ownership_cursor_2026_03_17/quick_pass_checklist.md`
 
 Status:
-In validation. P1 — fix implemented in commit `92731b3`
-(`fix(f26): guard hot-swap publish path against snapshot write loop`).
-Local analyze + full test suite PASS. Device re-run pending to confirm
-no write loop and clean cancel behavior on Android RMX3771 + macOS.
-Blocks closure of BUG-002 residual / BUG-F26-001 / BUG-F26-002.
+Closed/OK. Re-validation 18/03/2026 (Android RMX3771 + macOS, commit `92731b3`):
+sessionRevision grows +1 per discrete event (5→6→7→9→10); lastUpdatedAt updates
+every ~30s (heartbeat only). No high-frequency churn observed.
+Logs: `docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-18__guard_hot-swap_92731b3_android_RMX3771_debug.log`.
