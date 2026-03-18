@@ -216,7 +216,50 @@ flutter test test/presentation/timer_screen_syncing_overlay_test.dart
 
 ---
 
-## 8. When this file should be updated
+## 8. Branching strategy — MANDATORY for all collaborators
+
+This project uses a three-tier branching model. **All collaborators (Claude, Codex,
+human devs) must follow this model without exception.**
+
+```
+fix/xxx  or  feature/xxx
+        ↓  (after device validation PASS)
+     develop
+        ↓  (only when zero known open P0/P1 bugs)
+       main  (production)
+```
+
+### Rules — non-negotiable
+
+**R-1 Never commit directly to `main` or `develop`.**
+All work happens on short-lived branches (`fix/xxx`, `feature/xxx`).
+
+**R-2 Fix/feature branches merge into `develop` only after device validation PASS.**
+- `flutter analyze` must pass.
+- All existing tests must pass.
+- Device validation (Android + macOS minimum) must be documented in the
+  corresponding validation folder with `quick_pass_checklist.md` marked PASS.
+
+**R-3 `develop` merges into `main` only when zero known open P0/P1 bugs exist.**
+- Check `docs/validation/validation_ledger.md` — no open `[ ]` P0/P1 entries.
+- RVP roadmap items and P2 bugs do not block a `develop → main` merge.
+
+**R-4 No known bug is ever silently skipped.**
+- If a bug is discovered during a merge, stop, open a `fix/xxx` branch, fix it,
+  validate it, then merge fix into `develop` before continuing.
+
+**R-5 Before checking out any branch to implement:**
+1. Run `git branch --show-current` to confirm you are NOT on `main` or `develop`.
+2. If on `main` or `develop`, ask the user which branch to use.
+
+**R-6 Branch naming:**
+- Bug fixes: `fix/<short-description>` (e.g. `fix-ownership-cursor-stamp`)
+- Features: `feature/<short-description>`
+- Never use generic names like `patch`, `temp`, `wip`.
+
+---
+
+## 9. When this file should be updated
 
 - After each confirmed bug closure: add the anti-pattern summary here.
 - After each spec incoherence is patched: update section 6.
