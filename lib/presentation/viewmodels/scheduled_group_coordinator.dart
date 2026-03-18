@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart'
     show debugPrint, kDebugMode, visibleForTesting;
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -1076,23 +1075,9 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
 
   void _runRunningOverlapMutation(void Function() mutation) {
     if (!_canUseRef) return;
-    SchedulerBinding binding;
-    try {
-      binding = SchedulerBinding.instance;
-    } catch (_) {
-      mutation();
-      return;
-    }
-    final phase = binding.schedulerPhase;
-    final shouldDefer =
-        phase == SchedulerPhase.transientCallbacks ||
-        phase == SchedulerPhase.midFrameMicrotasks ||
-        phase == SchedulerPhase.persistentCallbacks;
-    if (!shouldDefer) {
-      mutation();
-      return;
-    }
-    binding.addPostFrameCallback((_) {
+    // Riverpod's build-phase assertion is tied to its own provider propagation
+    // cycle, not strictly to Flutter scheduler phases. Always defer mutations.
+    Future.microtask(() {
       if (!_canUseRef) return;
       mutation();
     });
