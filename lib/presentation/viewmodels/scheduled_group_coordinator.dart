@@ -1075,9 +1075,9 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
 
   void _runRunningOverlapMutation(void Function() mutation) {
     if (!_canUseRef) return;
-    // Riverpod's build-phase assertion is tied to its own provider propagation
-    // cycle, not strictly to Flutter scheduler phases. Always defer mutations.
-    Future.microtask(() {
+    // Schedule on the event queue, after all pending microtasks
+    // (including Riverpod propagation chains) complete.
+    Future(() {
       if (!_canUseRef) return;
       mutation();
     });

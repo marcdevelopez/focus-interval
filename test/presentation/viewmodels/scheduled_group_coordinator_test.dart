@@ -1015,7 +1015,7 @@ void main() {
           session: null,
           now: DateTime.now(),
         );
-        await Future.microtask(() {});
+        await Future(() {});
 
         final decision = container.read(runningOverlapDecisionProvider);
         expect(decision, isNotNull);
@@ -1075,7 +1075,7 @@ void main() {
           session: session,
           now: DateTime.now(),
         );
-        await Future.microtask(() {});
+        await Future(() {});
 
         final decision = container.read(runningOverlapDecisionProvider);
         expect(decision, isNotNull);
@@ -1130,7 +1130,7 @@ void main() {
         session: session,
         now: now,
       );
-      await Future.microtask(() {});
+      await Future(() {});
 
       final decision = container.read(runningOverlapDecisionProvider);
       expect(decision, isNotNull);
@@ -1185,7 +1185,7 @@ void main() {
           ),
           now: now,
         );
-        await Future.microtask(() {});
+        await Future(() {});
 
         final decision = container.read(runningOverlapDecisionProvider);
         expect(decision, isNull);
