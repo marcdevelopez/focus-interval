@@ -1304,16 +1304,23 @@ Evidence:
   after Resume was pressed.
 
 Fix applied:
-None yet. Pending Codex implementation.
-Locate where `runningOverlapDecision` is written (likely in
-`ScheduledGroups`/`PomodoroViewModel`/`SessionSyncService` overlap detection path)
-and wrap the state mutation in `Future.microtask(() => ...)` or
-`WidgetsBinding.instance.addPostFrameCallback((_) => ...)` to defer it out of
-the build phase.
+Implemented on 18/03/2026 (runtime patch, validation pending):
+- `lib/presentation/viewmodels/scheduled_group_coordinator.dart`
+  - Added scheduler-aware mutation helper for running-overlap provider writes.
+  - Deferred `runningOverlapDecisionProvider` set/clear via post-frame callback
+    only when scheduler is in build-phase callbacks.
+  - Added stale/dispose guards to avoid stale writes after deferred execution.
+  - Added safe fallback for test/runtime contexts where scheduler binding is not
+    initialized.
+- Validation packet prepared at:
+  `docs/bugs/validation_fix_2026_03_18-01/`
+  - `plan_validacion_rapida_fix.md`
+  - `quick_pass_checklist.md`
+  - `screenshots/`
 
 Status:
-Open. P1 — UX regression (red error screen flash on mirror). Related to Phase 17
-running overlap work. Must be fixed before Phase 17 closure.
+In validation. P1 — runtime fix implemented; exact owner+mirror repro and
+regression smoke evidence still pending before closure.
 
 ---
 

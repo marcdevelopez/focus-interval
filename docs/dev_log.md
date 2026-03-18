@@ -25,9 +25,9 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **Ownership hot-swap one-shot guard patch implemented to stop Firestore write loop regression (BUG-F26-003)**
-Current focus: **Re-validate ownership churn on Android+macOS after one-shot guard patch; close BUG-F26-003 blocker before BUG-002/F26 closure**
-Last update: **17/03/2026**
+Last bug fix: **Running-overlap provider build-phase mutation guard implemented for mirror red-flash regression (BUG-F25-D)**
+Current focus: **Run exact owner+mirror repro packet for BUG-F25-D and close validation if no red flash/regressions are observed**
+Last update: **18/03/2026**
 
 ---
 
@@ -11894,3 +11894,58 @@ Regression test added:
 - `docs/validation/validation_ledger.md`
 - `docs/roadmap.md`
 - `docs/dev_log.md`
+
+---
+
+# 🔹 Block 597 — BUG-F25-D runtime patch implemented (18/03/2026)
+
+## 📋 Context
+
+Claude handoff requested Codex implementation for `BUG-F25-D`:
+mirror red error flash (`Tried to modify a provider while the widget tree was building`)
+when running overlap is detected on Resume.
+
+## ✔ Work completed
+
+Runtime fix implemented in:
+- `lib/presentation/viewmodels/scheduled_group_coordinator.dart`
+
+Changes:
+1. Added scheduler-aware overlap mutation helper.
+2. Deferred `runningOverlapDecisionProvider` set/clear to post-frame only when
+   scheduler is in build-phase callbacks.
+3. Added stale/dispose guards to prevent deferred stale writes.
+4. Added safe fallback for environments where scheduler binding is not initialized
+   (keeps provider-container tests stable).
+
+Validation artifacts created:
+- `docs/bugs/validation_fix_2026_03_18-01/plan_validacion_rapida_fix.md`
+- `docs/bugs/validation_fix_2026_03_18-01/quick_pass_checklist.md`
+- `docs/bugs/validation_fix_2026_03_18-01/screenshots/`
+
+Documentation synchronization:
+- `docs/bugs/bug_log.md` (BUG-F25-D moved to "In validation", runtime fix noted)
+- `docs/validation/validation_ledger.md` (BUG-F25-D status updated to `In validation`)
+- `docs/roadmap.md` (18/03 entry added under active status timeline)
+- `docs/dev_log.md` (this block + header status update)
+
+## 🧪 Verification run
+
+PASS:
+- `flutter analyze`
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart --plain-name "running overlap decision"`
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart`
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart`
+
+Global suite status:
+- `flutter test` → FAIL (`+90 -8`), with existing failures concentrated in
+  `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+  (missing `appModeServiceProvider` test override in multiple cases + one
+  `auto-claims late-start queue` timeout). Not introduced by BUG-F25-D patch.
+
+## ⚠️ Notes
+
+- BUG-F25-D is not closed yet: exact owner+mirror repro still pending in
+  `validation_fix_2026_03_18-01`.
+- Closure requires device evidence + regression smoke checks.
