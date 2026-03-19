@@ -25,9 +25,9 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **Running-overlap provider build-phase mutation guard implemented for mirror red-flash regression (BUG-F25-D)**
-Current focus: **Run exact owner+mirror repro packet for BUG-F25-D and close validation if no red flash/regressions are observed**
-Last update: **18/03/2026**
+Last bug fix: **BUG-F25-E closed/OK (Re-plan conflict modal now shows conflicting group name + time range)**
+Current focus: **BUG-F25-F — Postpone snackbar redundant "(pre-run at X)" clause when noticeMinutes=0**
+Last update: **19/03/2026**
 
 ---
 
@@ -12012,4 +12012,53 @@ Device: iOS iPhone 17 Pro (owner) + Chrome (mirror).
 - `docs/bugs/validation_fix_2026_03_18-01/plan_validacion_rapida_fix.md` (result in-place)
 - `docs/bugs/validation_fix_2026_03_18-01/quick_pass_checklist.md` (all boxes checked)
 - `CLAUDE.md`, `AGENTS.md`, `docs/team_roles.md` (Codex spec-review rule added)
+- `docs/dev_log.md` (this block)
+
+---
+
+# 🔹 Block 599 — BUG-F25-E closed/OK (19/03/2026)
+
+## 📋 Context
+
+Re-plan conflict modal showed a generic message ("A group is already scheduled in
+that time range. Delete it to continue?") with no identifying information about
+the conflicting group. User could not make an informed decision about whether to
+delete the conflicting group (no name, no time range shown).
+
+The modal already received `List<TaskRunGroup>` — the fix was purely UI: replace
+the static `const Text(...)` content with a dynamic `Column` listing each conflict.
+
+## ✔ Work completed
+
+**Commit: pending**
+
+- `groups_hub_screen.dart` `_resolveScheduledConflict` (line 1396): replaced
+  static content with `Column` listing each conflicting group as
+  `"• {name} — {start}–{end}"` using top-level `_formatGroupDateTime`.
+- `task_list_screen.dart` `_resolveScheduledConflict` (line 1850): same change,
+  using local `fmtTime()` helper (captures `_timeFormat` / `_dateFormat` instance fields).
+- Group name derived as `tasks.first.name ?? 'Task group'` (consistent with
+  `_showSummaryDialog` convention).
+- `docs/specs.md` line 2633: added explicit rule requiring name + time range in
+  Re-plan conflict modal.
+- `docs/roadmap.md` line 458: BUG-F25-E marked Closed/OK.
+- `docs/bugs/bug_log.md`: BUG-F25-E → Closed/OK.
+- `docs/validation/validation_ledger.md`: BUG-F25-E → [x] Closed/OK.
+
+## ✅ Validation result
+
+`flutter analyze` PASS. All targeted tests PASS.
+Chrome device validation PASS 19/03/2026:
+- Conflict modal shows bullet list with group name + HH:mm–HH:mm range.
+- Cancel action: no groups deleted, planning cancelled.
+- Delete scheduled group: conflicting group deleted, re-plan continues.
+
+## 📁 Updated files
+
+- `lib/presentation/screens/groups_hub_screen.dart`
+- `lib/presentation/screens/task_list_screen.dart`
+- `docs/specs.md`
+- `docs/roadmap.md`
+- `docs/bugs/bug_log.md` (BUG-F25-E → Closed/OK)
+- `docs/validation/validation_ledger.md` (BUG-F25-E → [x] Closed/OK)
 - `docs/dev_log.md` (this block)
