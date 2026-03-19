@@ -12030,7 +12030,7 @@ the static `const Text(...)` content with a dynamic `Column` listing each confli
 
 ## ✔ Work completed
 
-**Commit: pending**
+**Commit: `c248c91`**
 
 - `groups_hub_screen.dart` `_resolveScheduledConflict` (line 1396): replaced
   static content with `Column` listing each conflicting group as

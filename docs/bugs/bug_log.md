@@ -1367,7 +1367,7 @@ group as "• {name} — {start}–{end}" (HH:mm today, MMM d, HH:mm otherwise).
 Group name derived from tasks.first.name ?? 'Task group'. Validated on Chrome.
 
 Status:
-Closed/OK. closed_commit_hash: pending
+Closed/OK. closed_commit_hash: c248c91
 
 ---
 
