@@ -1620,8 +1620,17 @@ Targeted tests to add before closure:
 - Regression: pause/resume drift while anchor running still updates postponed start
   as intended.
 
+Fix applied:
+Two-commit fix on branch fix-f25-i-postponed-start-drifts-on-cancel:
+1. scheduled_group_coordinator.dart `_finalizePostponedGroupsIfNeeded` (commit 51dcd2d):
+   when anchor.status == canceled, sever link (postponedAfterGroupId=null) without
+   touching scheduledStartTime. Mirrors the "anchor not found" pattern.
+2. scheduled_group_timing.dart `resolvePostponedAnchorEnd` (commit 6c87009):
+   return null for canceled anchors so resolveEffectiveScheduledStart returns stored
+   scheduledStart. Prevents cascade in chained postpone scenarios (G3 linked to G2).
+
 Status:
-Open. P1 — schedule correctness regression with premature auto-start side effect.
+Closed/OK. 19/03/2026. closed_commit_hash: 6c87009
 
 ---
 

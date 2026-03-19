@@ -126,4 +126,8 @@ rg -n "postpone-finalized|schedule-start-timer|start-timer-fired" docs/bugs/vali
 6. Local gate PASS (`analyze` + tests objetivo).
 
 ## 10. Status
-Open — reproducido y documentado; pendiente implementación de fix y re-validación.
+**Closed/OK** — validación PASS 19/03/2026.
+
+Escenario A PASS: G1 cancelado a las 23:14 → G2 mantiene Scheduled: 23:29 en ambos dispositivos (iOS + Chrome). No auto-start prematuro. Screenshots en `docs/bugs/validation_f25i_2026_03_19/screenshots/`.
+
+flutter analyze PASS · 4 tests de regresión PASS (incluyendo 2 nuevos tests en scheduled_group_timing_test.dart).

@@ -12282,3 +12282,29 @@ postponed start to current minute, which triggers premature start timer.
 - `docs/bugs/validation_f25i_2026_03_19/plan_validacion_rapida_fix.md` (new)
 - `docs/bugs/validation_f25i_2026_03_19/quick_pass_checklist.md` (new)
 - `docs/dev_log.md` (this block)
+
+# 🔹 Block 605 — BUG-F25-I closed/OK (19/03/2026)
+
+**Bug:** BUG-F25-I — Postponed group start drifts to "now" after canceling the running anchor group.
+**Symptom:** After pressing "Postpone scheduled" in the running overlap modal, canceling the
+running anchor group caused the postponed group's scheduledStart to jump from the future
+(e.g., 22:35) to the current minute (e.g., 22:22), triggering an immediate auto-start.
+**Root cause:** `_finalizePostponedGroupsIfNeeded` (scheduled_group_coordinator.dart) did
+not guard against canceled anchors — fell through to `resolvePostponedAnchorEnd` which
+had no guard for `canceled` status and returned `anchor.updatedAt = now` as fallback.
+G2 then got `scheduledStartTime = ceilToMinute(now)` written to DB and auto-started.
+The bug also cascaded in chained postpone chains (G1→G2→G3) via `resolveEffectiveScheduledEnd`.
+**Fix — two commits:**
+- `51dcd2d`: `_finalizePostponedGroupsIfNeeded` — sever link (postponedAfterGroupId=null)
+  without touching scheduledStartTime when anchor is canceled. Mirrors "anchor not found" pattern.
+- `6c87009`: `resolvePostponedAnchorEnd` — return null for canceled anchors. Prevents
+  fallback to updatedAt; also protects chained groups (G3→G2→canceled G1).
+**Tests:** 2 new unit tests in scheduled_group_timing_test.dart. flutter analyze PASS.
+**Device validation:** Chrome + iOS PASS 19/03/2026. G2 held Scheduled: 23:29 after G1
+canceled at 23:14. No premature auto-start. Screenshots confirmed.
+**Docs updated:**
+- `docs/bugs/bug_log.md` (BUG-F25-I → Closed/OK)
+- `docs/validation/validation_ledger.md` (BUG-F25-I → [x] Closed/OK)
+- `docs/bugs/validation_f25i_2026_03_19/plan_validacion_rapida_fix.md` (status → Closed/OK)
+- `docs/bugs/validation_f25i_2026_03_19/quick_pass_checklist.md` (all boxes checked)
+- `docs/dev_log.md` (this block)

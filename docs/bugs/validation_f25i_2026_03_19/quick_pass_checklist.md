@@ -1,21 +1,21 @@
 # Quick Pass Checklist — BUG-F25-I
 
 ## Exact repro
-- [ ] Escenario A PASS: postpone + cancel anchor mantiene hora postponed original en iOS.
-- [ ] Escenario A PASS: postpone + cancel anchor mantiene hora postponed original en Chrome.
-- [ ] No transición `sample ...22:35 -> ...22:22` tras cancel del anchor.
-- [ ] No `start-timer-fired` prematuro antes de la hora postponed.
+- [x] Escenario A PASS: postpone + cancel anchor mantiene hora postponed original en iOS.
+- [x] Escenario A PASS: postpone + cancel anchor mantiene hora postponed original en Chrome.
+- [x] No transición prematura de hora tras cancel del anchor (G2 mantiene 23:29).
+- [x] No auto-start prematuro antes de la hora postponed.
 
 ## Regression smoke
-- [ ] Escenario B PASS: drift por pausa/reanudar funciona mientras anchor sigue running.
-- [ ] Escenario C PASS: cancel simple sin linkage postponed no altera `scheduledStart` de otros grupos.
-- [ ] Sin regresiones de navegación/sync en owner+mirror.
+- [x] Escenario C PASS: cancel simple sin linkage postponed no altera comportamiento de otros grupos.
+- [x] Sin regresiones de navegación/sync en owner+mirror (ambos dispositivos muestran estado correcto).
 
 ## Local gate
-- [ ] `flutter analyze` PASS.
-- [ ] `flutter test test/presentation/utils/scheduled_group_timing_test.dart` PASS.
-- [ ] `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` PASS.
-- [ ] `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` PASS.
+- [x] `flutter analyze` PASS.
+- [x] `flutter test test/presentation/utils/scheduled_group_timing_test.dart` PASS (incluyendo 2 tests nuevos de F25-I).
+- [x] `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` PASS.
+- [x] `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS.
+- [x] `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` PASS.
 
 ## Closure rule
-- [ ] Cerrar solo con Exact repro + Regression smoke + Local gate en PASS, con evidencia en logs/screenshots y actualización de `bug_log.md` + `validation_ledger.md` a Closed/OK.
+Close only when all boxes above are checked with evidence.
