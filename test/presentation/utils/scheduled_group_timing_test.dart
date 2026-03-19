@@ -77,6 +77,27 @@ TaskRunGroup _buildScheduledGroup({
 }
 
 void main() {
+  group('resolvePostponedAnchorEnd', () {
+    test('returns null when anchor is canceled', () {
+      final now = DateTime(2026, 3, 19, 22, 21, 0);
+      final anchor = _buildRunningGroup(
+        id: 'anchor-canceled',
+        start: DateTime(2026, 3, 19, 22, 0, 0),
+        theoreticalEnd: DateTime(2026, 3, 19, 22, 30, 0),
+      ).copyWith(status: TaskRunStatus.canceled, updatedAt: now);
+
+      final anchorEnd = resolvePostponedAnchorEnd(
+        anchor: anchor,
+        allGroups: [anchor],
+        activeSession: null,
+        now: now,
+        fallbackNoticeMinutes: null,
+      );
+
+      expect(anchorEnd, isNull);
+    });
+  });
+
   group('resolveEffectiveScheduledStart', () {
     test(
       'rounds effective postponed start up to the next minute when anchor end has seconds',
@@ -134,5 +155,31 @@ void main() {
         expect(effectiveStart, DateTime(2026, 3, 19, 20, 10, 0));
       },
     );
+
+    test('returns stored scheduledStart when anchor is canceled', () {
+      final now = DateTime(2026, 3, 19, 22, 21, 0);
+      final anchor = _buildRunningGroup(
+        id: 'running-canceled',
+        start: DateTime(2026, 3, 19, 22, 0, 0),
+        theoreticalEnd: DateTime(2026, 3, 19, 22, 30, 0),
+      ).copyWith(status: TaskRunStatus.canceled, updatedAt: now);
+      final storedStart = DateTime(2026, 3, 19, 22, 35, 0);
+      final postponed = _buildScheduledGroup(
+        id: 'scheduled-canceled-anchor',
+        scheduledStart: storedStart,
+        noticeMinutes: 0,
+        anchorId: anchor.id,
+      );
+
+      final effectiveStart = resolveEffectiveScheduledStart(
+        group: postponed,
+        allGroups: [anchor, postponed],
+        activeSession: null,
+        now: now,
+        fallbackNoticeMinutes: null,
+      );
+
+      expect(effectiveStart, storedStart);
+    });
   });
 }

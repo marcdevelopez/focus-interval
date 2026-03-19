@@ -1553,6 +1553,87 @@ Closed/OK. closed_commit_hash: ba8db6f
 
 ---
 
+## BUG-F25-I — Postponed group start drifts to "now" after canceling the running anchor group
+
+ID: BUG-F25-I
+Date: 19/03/2026 (UTC+1)
+Platforms: iOS + Chrome (Account Mode, owner + mirror confirmed)
+Context: Discovered during post-F25-H validation (19/03/2026). Flow validated with
+two devices and overlap resolution via "Postpone scheduled".
+
+Repro steps (confirmed):
+1. Start running group G1 on owner device.
+2. Trigger scheduling conflict with G2 and choose "Postpone scheduled".
+3. Verify G2 receives postponed start in the future (example observed: 22:35).
+4. Cancel G1 before the postponed time is reached.
+5. Observe G2 scheduled start mutates to current minute (~now + ceil), then auto-starts
+   on the next minute (example observed: changed to 22:22 and started at 22:22:00).
+
+Symptom (user-visible):
+- Canceling the running group should not move postponed group's planned time.
+- Instead, postponed group start is pulled forward to current time and starts almost
+  immediately, violating expected scheduling behavior and surprising the user.
+
+Expected behavior:
+- A postponed group should keep its stored scheduled start after canceling the
+  running anchor group.
+- Canceling anchor group must break dynamic linkage for postponed groups (or freeze
+  to stored schedule) so the postponed start does NOT jump to now.
+- Only pause/resume drift handling should adjust anchor-follow behavior while the
+  anchor is actually running.
+
+Observed evidence (logs):
+- iOS log (`docs/bugs/validation_f25i_2026_03_19/logs/2026-03-19_f25i_68429c5_ios_iPhone17Pro_9A6B6687_debug.log`):
+  - line 51210: postponed sample still future (`...22:35|22:36`).
+  - line 51216: running group cancel signal (`Cancel nav: group stream canceled`).
+  - line 51224: postponed sample collapses to `...22:22|22:22`.
+  - lines 51225/51228/51231+: start timer scheduled for 22:22:00.
+  - lines 51244/51246/51253: start timer fired at 22:22:00.
+- Chrome log (`docs/bugs/validation_f25i_2026_03_19/logs/2026-03-19_f25i_68429c5_chrome_debug.log`):
+  - lines 2623/2632/2658: postponed sample at `...22:35|22:35/22:36`.
+  - lines 2670-2686: after cancel, sample and finalized projection move to 22:22.
+  - line 2687: auto-start fired at 22:22:00.
+
+Probable root cause (pending code-level confirmation):
+- `resolvePostponedAnchorEnd` in `scheduled_group_timing.dart` uses fallback to
+  `anchor.updatedAt` when anchor is no longer running and no effective end can be
+  resolved.
+- After cancel, anchor `updatedAt` is effectively "now"; then
+  `_finalizePostponedGroupsIfNeeded` in `scheduled_group_coordinator.dart` recalculates
+  postponed start from that fallback and advances schedule to current minute.
+- This keeps postponed group dynamically re-anchored even when anchor is canceled,
+  which should not happen.
+
+Fix direction (minimal, before broader refactor):
+1. In postponed-start resolver path, treat anchor terminal states (`canceled`,
+   `completed`) as linkage break for postponement timing.
+2. Preserve stored postponed `scheduledStartTime` when anchor is terminal; do not
+   derive from `anchor.updatedAt`.
+3. Ensure `_finalizePostponedGroupsIfNeeded` only finalizes overdue if schedule is
+   truly overdue by stored value, not by terminal-anchor fallback.
+
+Targeted tests to add before closure:
+- Resolver unit test: postponed group linked to anchor; anchor canceled; effective
+  scheduled start remains stored postponed value (no jump to now).
+- Coordinator unit/integration test: postpone then cancel anchor before postponed
+  time; no auto-advance, no immediate start timer scheduling.
+- Regression: pause/resume drift while anchor running still updates postponed start
+  as intended.
+
+Fix applied:
+Two-commit fix on branch fix-f25-i-postponed-start-drifts-on-cancel:
+1. scheduled_group_coordinator.dart `_finalizePostponedGroupsIfNeeded` (commit 51dcd2d):
+   when anchor.status == canceled, sever link (postponedAfterGroupId=null) without
+   touching scheduledStartTime. Mirrors the "anchor not found" pattern.
+2. scheduled_group_timing.dart `resolvePostponedAnchorEnd` (commit 6c87009):
+   return null for canceled anchors so resolveEffectiveScheduledStart returns stored
+   scheduledStart. Prevents cascade in chained postpone scenarios (G3 linked to G2).
+
+Status:
+Closed/OK. 19/03/2026. closed_commit_hash: 6c87009
+
+---
+
 ## BUG-F26-001 — Session cursor stale in Firestore during active run with ownership churn
 
 ID: BUG-F26-001
