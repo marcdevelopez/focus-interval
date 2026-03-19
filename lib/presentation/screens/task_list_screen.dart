@@ -1852,12 +1852,40 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     List<TaskRunGroup> scheduledGroups,
     TaskRunGroupRepository repo,
   ) async {
+    final now = DateTime.now();
+    String fmtTime(DateTime? dt) {
+      if (dt == null) return '--:--';
+      final isToday =
+          dt.year == now.year && dt.month == now.month && dt.day == now.day;
+      return isToday
+          ? _timeFormat.format(dt)
+          : '${_dateFormat.format(dt)}, ${_timeFormat.format(dt)}';
+    }
+
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Conflict with scheduled group'),
-        content: const Text(
-          'A group is already scheduled in that time range. Delete it to continue?',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'The following scheduled groups conflict with the selected time. Delete them to continue?',
+            ),
+            const SizedBox(height: 8),
+            ...scheduledGroups.map((group) {
+              final name = group.tasks.isNotEmpty
+                  ? group.tasks.first.name
+                  : 'Task group';
+              final start = fmtTime(group.scheduledStartTime);
+              final end = fmtTime(group.theoreticalEndTime);
+              return Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text('• $name — $start–$end'),
+              );
+            }),
+          ],
         ),
         actions: [
           TextButton(

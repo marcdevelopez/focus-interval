@@ -2630,6 +2630,11 @@ Actions
   - Open Run Mode for running/paused groups
   - Run again (completed groups): duplicate the group snapshot into a new TaskRunGroup and open the pre-start planning flow
   - Re-plan group (canceled groups): duplicate the group snapshot into a new TaskRunGroup and open the pre-start planning flow
+    - If Re-plan detects one or more scheduled conflicts, the conflict modal
+      must list each conflicting group with:
+      - Group name
+      - Scheduled time range (HH:mm–HH:mm); if not today, include date + time.
+    - Modal actions remain `Cancel` and `Delete scheduled group`.
   - Go to Task List screen (Task Library) to create/edit tasks and build new groups
     - The "Go to Task List" CTA is a **sticky header** outside the scrollable
       list, so it is always visible while scrolling.

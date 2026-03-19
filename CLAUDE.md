@@ -319,10 +319,40 @@ under `docs/bugs/`. The structure is fixed. Do not invent extra files.
 ### Folder naming
 
 ```
-docs/bugs/validation_<short-name>_YYYY_MM_DD/
+docs/bugs/validation_<bug-id>_YYYY_MM_DD/
 ```
 
-Examples: `validation_ownership_cursor_2026_03_17/`, `validation_fix_2026_03_18-01/`
+Rules (non-negotiable):
+
+- **`<bug-id>`**: normalized bug log ID in lower-case with hyphens removed.
+  Derive from `docs/bugs/bug_log.md` ID field:
+  `BUG-F25-E` → `f25e` · `BUG-F25-H` → `f25h` · `BUG-001` → `bug001`
+- **Multiple bugs in one folder**: join with `_`.
+  `BUG-001` + `BUG-002` → `bug001_bug002`
+- **`YYYY_MM_DD`**: date the folder was created (underscores, not hyphens).
+- **No `fix_` prefix.** No descriptive free names (no `ownership_cursor`,
+  no `rounding`, no `phase6`). Bug ID is the only identifier.
+- **No `-01` or `_b` date suffixes.** If you need two folders on the same day
+  for different bugs, use their distinct bug IDs — they will already differ.
+- **Grandfathered folders**: existing folders created before this convention
+  (`validation_fix_2026_02_24`, `validation_ownership_cursor_2026_03_17`, etc.)
+  keep their original names. Do not rename them.
+
+Examples (correct):
+
+```
+validation_f25e_2026_03_19/
+validation_f25g_2026_03_19/
+validation_bug001_bug002_2026_03_17/
+```
+
+Examples (wrong — never use):
+
+```
+validation_fix_2026_03_19/         ← "fix_" prefix forbidden
+validation_rounding_2026_03_19/    ← descriptive free name forbidden
+validation_f25h_2026_03_19-01/     ← date suffix forbidden
+```
 
 ### Permitted contents — exactly these, nothing else
 

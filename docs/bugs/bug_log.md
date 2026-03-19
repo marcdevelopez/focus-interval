@@ -1360,12 +1360,14 @@ group approaches a scheduled group). This bug covers the RE-PLAN conflict modal 
 a distinct flow. Both must be addressed.
 
 Fix applied:
-None yet. Pending Codex implementation.
-In the re-plan conflict modal builder, pass the list of conflicting groups and
-render each group's name + scheduled time range inline in the dialog content.
+groups_hub_screen.dart `_resolveScheduledConflict` (line 1396) and
+task_list_screen.dart `_resolveScheduledConflict` (line 1850): replaced
+static generic dialog content with a dynamic Column listing each conflicting
+group as "• {name} — {start}–{end}" (HH:mm today, MMM d, HH:mm otherwise).
+Group name derived from tasks.first.name ?? 'Task group'. Validated on Chrome.
 
 Status:
-Open. P2 — UX clarity. Add to Phase 17 scope for implementation.
+Closed/OK. closed_commit_hash: c248c91
 
 ---
 
@@ -1413,6 +1415,58 @@ Specs line 1716 must be updated to reflect this rule.
 
 Status:
 Open. P2 — UX clarity. Add to Phase 17 scope alongside postpone snackbar work.
+
+---
+
+## BUG-F25-G — Groups Hub shows wrong scheduled time after postpone (ceilToMinute missing in resolver)
+
+ID: BUG-F25-G
+Date: 19/03/2026 (UTC+1)
+Platforms: All (Account Mode, running overlap postpone)
+Context: Identified during code review 19/03/2026. Originally observed in
+validation_fix_2026_02_24/quick_pass_checklist.md at ~20:10:08 but never
+formally registered. Not caused by rollback — git blame shows the write path
+got ceilToMinute on 23/02/2026 but the resolver never received it.
+
+Repro steps:
+- Schedule a group with noticeMinutes = 1 (or any value).
+- Start a running group that will overlap it.
+- In the running overlap modal, select "Postpone scheduled".
+- Note the time shown in the SnackBar (e.g. "Scheduled start moved to 20:24").
+- Go to Groups Hub and observe the "Scheduled" row on the postponed group card.
+
+Symptom:
+SnackBar shows the correct rounded time (e.g. 20:24) which matches the Firestore
+write. Groups Hub card shows a different time (e.g. 20:23) which is the
+unrounded computation. The difference is typically ~0–59 seconds, visible as a
+1-minute discrepancy at HH:mm granularity.
+
+Root cause:
+All write paths apply ceilToMinute before saving scheduledStartTime to Firestore:
+  timer_screen.dart:1165 — ceilToMinute(cursor + noticeMinutes)
+  scheduled_group_coordinator.dart:1146 — ceilToMinute(anchorEnd + noticeMinutes)
+But the display path does not:
+  scheduled_group_timing.dart:185 — anchorEnd.add(Duration(minutes: noticeMinutes))
+  (missing ceilToMinute wrapper)
+Groups Hub uses resolveEffectiveScheduledStart (scheduled_group_timing.dart:160)
+for scheduledStartOverride (groups_hub_screen.dart:478). This produces a value
+1 minute behind the stored Firestore value.
+
+Secondary risk: when noticeMinutes=0 and anchor end falls on an exact minute,
+the displayed effective start equals the running group end — violates specs rule
+requiring scheduled start > projectedEnd.
+
+Expected behavior:
+Groups Hub "Scheduled" time must match the SnackBar and the stored Firestore
+value at HH:mm granularity.
+
+Fix:
+In scheduled_group_timing.dart:185, wrap the return value with ceilToMinute:
+  return ceilToMinute(anchorEnd.add(Duration(minutes: noticeMinutes)));
+One line. No new helpers needed — ceilToMinute is already defined in the same file.
+
+Status:
+Closed/OK. closed_commit_hash: e16e389
 
 ---
 

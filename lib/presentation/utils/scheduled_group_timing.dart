@@ -182,7 +182,7 @@ DateTime? resolveEffectiveScheduledStart({
     group,
     fallback: fallbackNoticeMinutes,
   );
-  return anchorEnd.add(Duration(minutes: noticeMinutes));
+  return ceilToMinute(anchorEnd.add(Duration(minutes: noticeMinutes)));
 }
 
 DateTime? resolveEffectivePreRunStart({
