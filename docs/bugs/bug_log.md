@@ -1416,6 +1416,144 @@ Open. P2 — UX clarity. Add to Phase 17 scope alongside postpone snackbar work.
 
 ---
 
+## BUG-F25-G — Groups Hub shows wrong scheduled time after postpone (ceilToMinute missing in resolver)
+
+ID: BUG-F25-G
+Date: 19/03/2026 (UTC+1)
+Platforms: All (Account Mode, running overlap postpone)
+Context: Identified during code review 19/03/2026. Originally observed in
+validation_fix_2026_02_24/quick_pass_checklist.md at ~20:10:08 but never
+formally registered. Not caused by rollback — git blame shows the write path
+got ceilToMinute on 23/02/2026 but the resolver never received it.
+
+Repro steps:
+- Schedule a group with noticeMinutes = 1 (or any value).
+- Start a running group that will overlap it.
+- In the running overlap modal, select "Postpone scheduled".
+- Note the time shown in the SnackBar (e.g. "Scheduled start moved to 20:24").
+- Go to Groups Hub and observe the "Scheduled" row on the postponed group card.
+
+Symptom:
+SnackBar shows the correct rounded time (e.g. 20:24) which matches the Firestore
+write. Groups Hub card shows a different time (e.g. 20:23) which is the
+unrounded computation. The difference is typically ~0–59 seconds, visible as a
+1-minute discrepancy at HH:mm granularity.
+
+Root cause:
+All write paths apply ceilToMinute before saving scheduledStartTime to Firestore:
+  timer_screen.dart:1165 — ceilToMinute(cursor + noticeMinutes)
+  scheduled_group_coordinator.dart:1146 — ceilToMinute(anchorEnd + noticeMinutes)
+But the display path does not:
+  scheduled_group_timing.dart:185 — anchorEnd.add(Duration(minutes: noticeMinutes))
+  (missing ceilToMinute wrapper)
+Groups Hub uses resolveEffectiveScheduledStart (scheduled_group_timing.dart:160)
+for scheduledStartOverride (groups_hub_screen.dart:478). This produces a value
+1 minute behind the stored Firestore value.
+
+Secondary risk: when noticeMinutes=0 and anchor end falls on an exact minute,
+the displayed effective start equals the running group end — violates specs rule
+requiring scheduled start > projectedEnd.
+
+Expected behavior:
+Groups Hub "Scheduled" time must match the SnackBar and the stored Firestore
+value at HH:mm granularity.
+
+Fix:
+In scheduled_group_timing.dart:185, wrap the return value with ceilToMinute:
+  return ceilToMinute(anchorEnd.add(Duration(minutes: noticeMinutes)));
+One line. No new helpers needed — ceilToMinute is already defined in the same file.
+
+Status:
+Closed/OK. closed_commit_hash: e16e389
+
+---
+
+## BUG-F25-H — Indefinite "Syncing session..." hold after group cancel + re-plan flow
+
+ID: BUG-F25-H
+Date: 19/03/2026 (UTC+1)
+Platforms: All (Account Mode, multi-device — Chrome + iOS confirmed)
+Context: Discovered during BUG-F25-G validation run (19/03/2026). Repro sequence:
+G1 running → G1 canceled → re-plan → G2 starts → Chrome takes ownership of G2 →
+Chrome cancels G2 → neither device navigates back to Groups Hub; both stuck in
+indefinite "Syncing session..." with timer still running. Firestore activeSession/current
+document no longer exists. Devices never recover without manual app restart.
+Regression introduced 19/03/2026 (worked correctly in prior-day build).
+
+Repro steps:
+1. Two devices (e.g. Chrome + iOS) logged in to the same account.
+2. Start group G1 in Run Mode. Both devices show timer running.
+3. Cancel G1 from Chrome (menu → Cancel group → confirm).
+   Expected: both devices navigate to Groups Hub. ✓
+4. Immediately start G2 from the group list.
+   Expected: both devices navigate to G2's timer. ✓
+5. Chrome takes ownership of G2.
+6. Cancel G2 from Chrome (menu → Cancel group → confirm).
+   Expected: both devices navigate to Groups Hub.
+   Actual (sin fix): both devices remain stuck in timer screen showing "Syncing session..."
+   indefinitely with timer still counting.
+
+Symptom:
+After cancel of the second group in a G1→cancel→G2 flow, "Syncing session..."
+overlay appears permanently on both devices. Timer keeps counting even though the
+group is canceled and Firestore activeSession/current no longer exists. No navigation
+to Groups Hub occurs. App requires manual restart to recover.
+
+Root cause (three-component):
+
+Component 1 — _cancelNavigationHandled permanently blocked by stale ViewModel data
+(timer_screen.dart:680-682):
+pomodoroViewModelProvider is NotifierProvider.autoDispose and is NOT parameterized
+by group ID — it is a global singleton. When navigating from G1's timer to G2's
+timer, _currentGroup in the ViewModel still holds G1's data (status=canceled) during
+the first build frame of G2's TimerScreen. The build-phase cancel check at
+timer_screen.dart:680 fires immediately with stale G1 data (canceled), calls
+_navigateToGroupsHub('build canceled'), and throws a Flutter assertion exception
+(setState()/markNeedsBuild() called during build — confirmed at Chrome log line 2238).
+The navigation call fails due to the exception, but _cancelNavigationHandled is set
+to true permanently beforehand. All subsequent cancel signals for G2 (stream listener
+at line 512, ViewModel listener at line 541) are silently discarded via the guard.
+
+Component 2 — _recoverFromServer() has no exit condition for terminal group
+(session_sync_service.dart:_recoverFromServer):
+After G2 is canceled the Firestore session document is deleted. The 3-second debounce
+fires, sets holdActive=true, and _recoverFromServer() starts. On null server response
+it only checks "serverSession != null" and schedules a retry every 5 seconds. It does
+NOT check whether the attached group is itself in a terminal state (canceled/completed).
+Since the session will never return (group is terminal), the hold never clears.
+Confirmed in Chrome log: repeated "hold-extend reason=recovery-failed" every ~5s for
+40+ seconds with no exit (lines 2824–2875).
+
+Component 3 — stopTick() potentially missing in cancel acknowledgment path
+(pomodoro_view_model.dart cancel handler):
+If _timerService.stopTick() is not called when the group stream delivers status=canceled,
+isTickingCandidate remains true. When the first session null arrives after the cancel
+acknowledgment, _onSessionNull() enters the 3s debounce path instead of the quiet-clear
+path. This contributes to the latch firing unnecessarily on a legitimate cancel.
+
+Fix (three-component):
+
+Fix 0 (pomodoro_view_model.dart — cancel acknowledgment path):
+Added _timerService.stopTick() in cancel() and applyRemoteCancellation() immediately
+before _resetLocalSessionState(). Ensures isTickingCandidate is false when the first
+session null arrives, routing through quiet-clear path.
+
+Fix 1 (timer_screen.dart:680-682 — stale group guard + defer out of build):
+Added currentGroup?.id == widget.groupId guard and wrapped navigation in
+addPostFrameCallback with !mounted check. Prevents stale G1 data from triggering
+navigation during G2's first build frame and eliminates the Flutter assertion exception.
+
+Fix 2 (session_sync_service.dart:_recoverFromServer — terminal group exit):
+Added terminal-group check after serverSession == null: fetches attached group via
+taskRunGroupRepositoryProvider.getById(attachedGroupId). If canceled or completed,
+clears hold and returns — does not retry. Two corroborated signals (session null +
+group terminal) confirm legitimate cancellation per AP-3.
+
+Status:
+Closed/OK. closed_commit_hash: ba8db6f
+
+---
+
 ## BUG-F26-001 — Session cursor stale in Firestore during active run with ownership churn
 
 ID: BUG-F26-001

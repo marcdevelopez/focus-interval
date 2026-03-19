@@ -12013,3 +12013,190 @@ Device: iOS iPhone 17 Pro (owner) + Chrome (mirror).
 - `docs/bugs/validation_fix_2026_03_18-01/quick_pass_checklist.md` (all boxes checked)
 - `CLAUDE.md`, `AGENTS.md`, `docs/team_roles.md` (Codex spec-review rule added)
 - `docs/dev_log.md` (this block)
+
+---
+
+# 🔹 Block 600 — BUG-F25-G closed/OK (19/03/2026)
+
+## 📋 Context
+
+`resolveEffectiveScheduledStart` in `scheduled_group_timing.dart` returned
+`anchorEnd.add(Duration(minutes: noticeMinutes))` without `ceilToMinute`.
+All write paths (`timer_screen.dart:1165`, `scheduled_group_coordinator.dart:1146`)
+use `ceilToMinute`. Inconsistency introduced 23/02/2026 when write got `ceilToMinute`
+but the resolver was never updated. Produces ~1-min discrepancy between postpone
+snackbar and Groups Hub "Scheduled" display.
+
+## ✔ Work completed
+
+**Commit: `e16e389`**
+
+- `scheduled_group_timing.dart:185`: wrapped return with `ceilToMinute`.
+- `test/presentation/utils/scheduled_group_timing_test.dart` (new): two directed
+  unit tests — main case (anchor with sub-second residual rounds up) and documented
+  edge case (noticeMinutes=0 + exact minute = equality, tracked separately).
+
+## ✅ Validation result
+
+`flutter analyze` PASS. All targeted tests + new unit tests PASS.
+Chrome+iOS device validation PASS 19/03/2026:
+- Postpone snackbar: "Scheduled start moved to 18:32 (pre-run at 18:31)."
+- Groups Hub G2 Scheduled: 18:32 / Pre-Run: 1 min starts at 18:31.
+- Values match exactly.
+
+## 📁 Updated files
+
+- `lib/presentation/utils/scheduled_group_timing.dart`
+- `test/presentation/utils/scheduled_group_timing_test.dart` (new)
+- `docs/bugs/bug_log.md` (BUG-F25-G → Closed/OK)
+- `docs/validation/validation_ledger.md` (BUG-F25-G → [x] Closed/OK)
+- `docs/roadmap.md` (BUG-F25-G → tachado Closed/OK)
+- `docs/dev_log.md` (this block)
+
+---
+
+# 🔹 Block 599 — BUG-F25-E closed/OK (19/03/2026)
+
+## 📋 Context
+
+Re-plan conflict modal showed a generic message ("A group is already scheduled in
+that time range. Delete it to continue?") with no identifying information about
+the conflicting group. User could not make an informed decision about whether to
+delete the conflicting group (no name, no time range shown).
+
+The modal already received `List<TaskRunGroup>` — the fix was purely UI: replace
+the static `const Text(...)` content with a dynamic `Column` listing each conflict.
+
+## ✔ Work completed
+
+**Commit: `c248c91`**
+
+- `groups_hub_screen.dart` `_resolveScheduledConflict` (line 1396): replaced
+  static content with `Column` listing each conflicting group as
+  `"• {name} — {start}–{end}"` using top-level `_formatGroupDateTime`.
+- `task_list_screen.dart` `_resolveScheduledConflict` (line 1850): same change,
+  using local `fmtTime()` helper (captures `_timeFormat` / `_dateFormat` instance fields).
+- Group name derived as `tasks.first.name ?? 'Task group'` (consistent with
+  `_showSummaryDialog` convention).
+- `docs/specs.md` line 2633: added explicit rule requiring name + time range in
+  Re-plan conflict modal.
+- `docs/roadmap.md` line 458: BUG-F25-E marked Closed/OK.
+- `docs/bugs/bug_log.md`: BUG-F25-E → Closed/OK.
+- `docs/validation/validation_ledger.md`: BUG-F25-E → [x] Closed/OK.
+
+## ✅ Validation result
+
+`flutter analyze` PASS. All targeted tests PASS.
+Chrome device validation PASS 19/03/2026:
+- Conflict modal shows bullet list with group name + HH:mm–HH:mm range.
+- Cancel action: no groups deleted, planning cancelled.
+- Delete scheduled group: conflicting group deleted, re-plan continues.
+
+## 📁 Updated files
+
+- `lib/presentation/screens/groups_hub_screen.dart`
+- `lib/presentation/screens/task_list_screen.dart`
+- `docs/specs.md`
+- `docs/roadmap.md`
+- `docs/bugs/bug_log.md` (BUG-F25-E → Closed/OK)
+- `docs/validation/validation_ledger.md` (BUG-F25-E → [x] Closed/OK)
+- `docs/dev_log.md` (this block)
+
+---
+
+# 🔹 Block 601 — BUG-F25-H registered; fix plan defined (19/03/2026)
+
+## 📋 Context
+
+BUG-F25-H discovered during BUG-F25-G validation run (19/03/2026). Repro:
+G1 running → G1 canceled → re-plan → G2 starts → Chrome takes ownership →
+Chrome cancels G2 → both devices stuck in indefinite "Syncing session..." with timer
+running. Firestore `activeSession/current` deleted; no recovery; manual restart required.
+Regression introduced 19/03/2026 (confirmed working in prior-day build).
+
+Log evidence:
+- `docs/bugs/validation_f25h_2026_03_19/logs/2026-03-19_f25h_3cb2f6c_chrome_debug.log`
+- `docs/bugs/validation_f25h_2026_03_19/logs/2026-03-19_f25h_3cb2f6c_ios_iPhone17Pro_debug.log`
+
+## ✔ Work completed
+
+- Full root cause analysis from Chrome + iOS device logs (commit 3cb2f6c baseline).
+- Identified three-component root cause:
+  1. `_cancelNavigationHandled` permanently blocked by stale ViewModel data in `build()`
+     — `pomodoroViewModelProvider` is a global singleton (not parameterized by groupId);
+     G1's canceled status fires the build-phase check during G2's first frame;
+     Flutter assertion exception confirmed at Chrome log line 2238
+     (`timer_screen.dart:682`, `setState()/markNeedsBuild() called during build`).
+  2. `_recoverFromServer()` has no exit for terminal group state
+     — session_sync_service.dart retries every 5s forever; 40+ seconds of
+     `hold-extend reason=recovery-failed` confirmed in Chrome log lines 2824–2875.
+  3. `stopTick()` potentially missing in cancel handler — timer keeps
+     `isTickingCandidate = true` → latch fires on session null instead of quiet-clear.
+- Registered BUG-F25-H as P1 Open in all project docs.
+- Created validation folder and plan/checklist documents.
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md` (BUG-F25-H added — Open, P1)
+- `docs/validation/validation_ledger.md` (BUG-F25-H P1 Open added)
+- `docs/roadmap.md` (Phase 17 BUG-F25-H line added)
+- `docs/bugs/validation_f25h_2026_03_19/plan_validacion_rapida_fix.md` (new)
+- `docs/bugs/validation_f25h_2026_03_19/quick_pass_checklist.md` (new)
+- `docs/dev_log.md` (this block)
+
+---
+
+# 🔹 Block 602 — BUG-F25-H closed/OK (19/03/2026)
+
+## 📋 Context
+
+Regression introduced 19/03/2026 during F25-G/E development. Repro: G1 running →
+G1 canceled → re-plan → G2 starts → Chrome cancels G2 → both devices stuck in
+indefinite "Syncing session..." with timer running; manual restart required.
+
+Three-component root cause confirmed from Chrome + iOS logs (baseline 3cb2f6c):
+1. `_cancelNavigationHandled` permanently blocked by stale G1 data in first build frame
+   of G2's TimerScreen — Flutter assertion exception at timer_screen.dart:682.
+2. `_recoverFromServer()` infinite 5s retry on terminal group — no exit condition.
+3. `stopTick()` missing in `cancel()` and `applyRemoteCancellation()` — timer kept
+   ticking, routing session null through hold path instead of quiet-clear.
+
+## ✔ Work completed
+
+**Commit 9a52405** — `fix(f25-h): add stopTick() to cancel and applyRemoteCancellation paths`
+- `pomodoro_view_model.dart` `cancel()` and `applyRemoteCancellation()`: added
+  `_timerService.stopTick()` before `_resetLocalSessionState()`.
+
+**Commit e2a69b3** — `fix(f25-h): guard build-phase cancel check with groupId + defer to post-frame`
+- `timer_screen.dart:680`: added `currentGroup?.id == widget.groupId` guard; wrapped
+  `_navigateToGroupsHub()` in `addPostFrameCallback` with `!mounted` check.
+
+**Commit ba8db6f** — `fix(f25-h): add terminal-group exit to _recoverFromServer()`
+- `session_sync_service.dart` `_recoverFromServer()`: after `serverSession == null`,
+  fetches group via `taskRunGroupRepositoryProvider.getById(attachedGroupId)`. If
+  `canceled` or `completed`, clears hold (`holdActive: false`) and returns — no retry.
+
+## ✅ Validation result
+
+`flutter analyze` PASS. All 3 targeted tests PASS.
+Chrome + iOS device validation PASS 19/03/2026:
+- Escenario A: G1→cancel→G2→cancel → both devices navigate to Groups Hub in ≤5s.
+  No `hold-extend reason=recovery-failed` / no setState/build exception in any log.
+- Escenario B: simple G1 cancel → correct navigation (no regression).
+- Escenario C: Chrome offline ~5s → auto-recovery without permanent hold.
+
+Log evidence:
+- `docs/bugs/validation_f25h_2026_03_19/logs/2026-03-19_f25h_ba8db6f_chrome_debug.log`
+- `docs/bugs/validation_f25h_2026_03_19/logs/2026-03-19_f25h_ba8db6f_ios_iPhone17Pro_9A6B6687_debug.log`
+
+## 📁 Updated files
+
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`
+- `lib/presentation/screens/timer_screen.dart`
+- `lib/presentation/viewmodels/session_sync_service.dart`
+- `docs/bugs/bug_log.md` (BUG-F25-H → Closed/OK)
+- `docs/validation/validation_ledger.md` (BUG-F25-H → [x] Closed/OK)
+- `docs/roadmap.md` (BUG-F25-H → tachado Closed/OK)
+- `docs/bugs/validation_f25h_2026_03_19/plan_validacion_rapida_fix.md` (status → Closed/OK)
+- `docs/bugs/validation_f25h_2026_03_19/quick_pass_checklist.md` (all boxes checked)
+- `docs/dev_log.md` (this block)
