@@ -1406,13 +1406,12 @@ Evidence:
 - Snackbar text observed at ~13:06:55.
 
 Fix applied:
-None yet. Pending Codex implementation + spec clarification.
-In the postpone snackbar builder: if `noticeMinutes == 0`, render only the start
-time clause; otherwise include the pre-run clause.
-Specs line 1716 must be updated to reflect this rule.
+timer_screen.dart `_showPostponeConfirmation`: compute `hasPreRun = preRunStart.isBefore(scheduledStart)`;
+only include `(pre-run at $preRunLabel)` when `hasPreRun` is true.
+commit: 68429c5
 
 Status:
-Open. P2 — UX clarity. Add to Phase 17 scope alongside postpone snackbar work.
+Closed/OK. 19/03/2026. closed_commit_hash: 68429c5
 
 ---
 
