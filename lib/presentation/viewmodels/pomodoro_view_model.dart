@@ -880,12 +880,14 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   Future<void> cancel({String? reason}) async {
     if (!_controlsEnabled) return;
+    _timerService.stopTick();
     _resetLocalSessionState();
     await _markGroupCanceled(reason: reason ?? TaskRunCanceledReason.user);
     await _sessionRepo.clearSessionAsOwner();
   }
 
   void applyRemoteCancellation() {
+    _timerService.stopTick();
     _resetLocalSessionState();
   }
 

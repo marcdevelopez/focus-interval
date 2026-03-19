@@ -25,9 +25,9 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **BUG-F25-G closed/OK (resolveEffectiveScheduledStart missing ceilToMinute — Groups Hub scheduled time now matches postpone snackbar)**
-Current focus: **BUG-F25-F — Postpone snackbar redundant "(pre-run at X)" clause when noticeMinutes=0 + BUG-F25-H (pending registration with exact evidence)**
-Last update: **19/03/2026**
+Last bug fix: **Running-overlap provider build-phase mutation guard implemented for mirror red-flash regression (BUG-F25-D)**
+Current focus: **Run exact owner+mirror repro packet for BUG-F25-D and close validation if no red flash/regressions are observed**
+Last update: **18/03/2026**
 
 ---
 
@@ -12100,4 +12100,103 @@ Chrome device validation PASS 19/03/2026:
 - `docs/roadmap.md`
 - `docs/bugs/bug_log.md` (BUG-F25-E → Closed/OK)
 - `docs/validation/validation_ledger.md` (BUG-F25-E → [x] Closed/OK)
+- `docs/dev_log.md` (this block)
+
+---
+
+# 🔹 Block 601 — BUG-F25-H registered; fix plan defined (19/03/2026)
+
+## 📋 Context
+
+BUG-F25-H discovered during BUG-F25-G validation run (19/03/2026). Repro:
+G1 running → G1 canceled → re-plan → G2 starts → Chrome takes ownership →
+Chrome cancels G2 → both devices stuck in indefinite "Syncing session..." with timer
+running. Firestore `activeSession/current` deleted; no recovery; manual restart required.
+Regression introduced 19/03/2026 (confirmed working in prior-day build).
+
+Log evidence:
+- `docs/bugs/validation_f25h_2026_03_19/logs/2026-03-19_f25h_3cb2f6c_chrome_debug.log`
+- `docs/bugs/validation_f25h_2026_03_19/logs/2026-03-19_f25h_3cb2f6c_ios_iPhone17Pro_debug.log`
+
+## ✔ Work completed
+
+- Full root cause analysis from Chrome + iOS device logs (commit 3cb2f6c baseline).
+- Identified three-component root cause:
+  1. `_cancelNavigationHandled` permanently blocked by stale ViewModel data in `build()`
+     — `pomodoroViewModelProvider` is a global singleton (not parameterized by groupId);
+     G1's canceled status fires the build-phase check during G2's first frame;
+     Flutter assertion exception confirmed at Chrome log line 2238
+     (`timer_screen.dart:682`, `setState()/markNeedsBuild() called during build`).
+  2. `_recoverFromServer()` has no exit for terminal group state
+     — session_sync_service.dart retries every 5s forever; 40+ seconds of
+     `hold-extend reason=recovery-failed` confirmed in Chrome log lines 2824–2875.
+  3. `stopTick()` potentially missing in cancel handler — timer keeps
+     `isTickingCandidate = true` → latch fires on session null instead of quiet-clear.
+- Registered BUG-F25-H as P1 Open in all project docs.
+- Created validation folder and plan/checklist documents.
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md` (BUG-F25-H added — Open, P1)
+- `docs/validation/validation_ledger.md` (BUG-F25-H P1 Open added)
+- `docs/roadmap.md` (Phase 17 BUG-F25-H line added)
+- `docs/bugs/validation_f25h_2026_03_19/plan_validacion_rapida_fix.md` (new)
+- `docs/bugs/validation_f25h_2026_03_19/quick_pass_checklist.md` (new)
+- `docs/dev_log.md` (this block)
+
+---
+
+# 🔹 Block 602 — BUG-F25-H closed/OK (19/03/2026)
+
+## 📋 Context
+
+Regression introduced 19/03/2026 during F25-G/E development. Repro: G1 running →
+G1 canceled → re-plan → G2 starts → Chrome cancels G2 → both devices stuck in
+indefinite "Syncing session..." with timer running; manual restart required.
+
+Three-component root cause confirmed from Chrome + iOS logs (baseline 3cb2f6c):
+1. `_cancelNavigationHandled` permanently blocked by stale G1 data in first build frame
+   of G2's TimerScreen — Flutter assertion exception at timer_screen.dart:682.
+2. `_recoverFromServer()` infinite 5s retry on terminal group — no exit condition.
+3. `stopTick()` missing in `cancel()` and `applyRemoteCancellation()` — timer kept
+   ticking, routing session null through hold path instead of quiet-clear.
+
+## ✔ Work completed
+
+**Commit 9a52405** — `fix(f25-h): add stopTick() to cancel and applyRemoteCancellation paths`
+- `pomodoro_view_model.dart` `cancel()` and `applyRemoteCancellation()`: added
+  `_timerService.stopTick()` before `_resetLocalSessionState()`.
+
+**Commit e2a69b3** — `fix(f25-h): guard build-phase cancel check with groupId + defer to post-frame`
+- `timer_screen.dart:680`: added `currentGroup?.id == widget.groupId` guard; wrapped
+  `_navigateToGroupsHub()` in `addPostFrameCallback` with `!mounted` check.
+
+**Commit ba8db6f** — `fix(f25-h): add terminal-group exit to _recoverFromServer()`
+- `session_sync_service.dart` `_recoverFromServer()`: after `serverSession == null`,
+  fetches group via `taskRunGroupRepositoryProvider.getById(attachedGroupId)`. If
+  `canceled` or `completed`, clears hold (`holdActive: false`) and returns — no retry.
+
+## ✅ Validation result
+
+`flutter analyze` PASS. All 3 targeted tests PASS.
+Chrome + iOS device validation PASS 19/03/2026:
+- Escenario A: G1→cancel→G2→cancel → both devices navigate to Groups Hub in ≤5s.
+  No `hold-extend reason=recovery-failed` / no setState/build exception in any log.
+- Escenario B: simple G1 cancel → correct navigation (no regression).
+- Escenario C: Chrome offline ~5s → auto-recovery without permanent hold.
+
+Log evidence:
+- `docs/bugs/validation_f25h_2026_03_19/logs/2026-03-19_f25h_ba8db6f_chrome_debug.log`
+- `docs/bugs/validation_f25h_2026_03_19/logs/2026-03-19_f25h_ba8db6f_ios_iPhone17Pro_9A6B6687_debug.log`
+
+## 📁 Updated files
+
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`
+- `lib/presentation/screens/timer_screen.dart`
+- `lib/presentation/viewmodels/session_sync_service.dart`
+- `docs/bugs/bug_log.md` (BUG-F25-H → Closed/OK)
+- `docs/validation/validation_ledger.md` (BUG-F25-H → [x] Closed/OK)
+- `docs/roadmap.md` (BUG-F25-H → tachado Closed/OK)
+- `docs/bugs/validation_f25h_2026_03_19/plan_validacion_rapida_fix.md` (status → Closed/OK)
+- `docs/bugs/validation_f25h_2026_03_19/quick_pass_checklist.md` (all boxes checked)
 - `docs/dev_log.md` (this block)

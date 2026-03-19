@@ -678,8 +678,12 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final showOwnershipIndicator = currentGroup != null && isAccountMode;
 
     if (currentGroup?.status == TaskRunStatus.canceled &&
+        currentGroup?.id == widget.groupId &&
         !_cancelNavigationHandled) {
-      _navigateToGroupsHub(reason: 'build canceled');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _navigateToGroupsHub(reason: 'build canceled');
+      });
     }
 
     if (isPreRun) {

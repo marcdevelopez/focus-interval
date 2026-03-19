@@ -360,12 +360,14 @@ validation_f25h_2026_03_19-01/     ← date suffix forbidden
 validation_<name>_YYYY_MM_DD/
   plan_validacion_rapida_fix.md   ← living document (see below)
   quick_pass_checklist.md         ← checkboxes only
+  codex_handoff.md                ← optional; created by Claude, consumed by Codex (see below)
   logs/                           ← .log files captured during runs
   screenshots/                    ← device screenshots used as evidence
 ```
 
-**Never create additional `.md` files** (no `repro_steps.md`, no `notes.md`,
-no `analysis.md`). Any extra content goes inside `plan_validacion_rapida_fix.md`.
+**Never create additional `.md` files** beyond the three listed above (no `repro_steps.md`,
+no `notes.md`, no `analysis.md`). Any non-handoff extra content goes inside
+`plan_validacion_rapida_fix.md`.
 
 ### `plan_validacion_rapida_fix.md` — what it must contain
 
@@ -406,6 +408,28 @@ Checkboxes only. No explanations, no repro steps. Example format:
 ## Closure rule
 Close only when all boxes above are checked with evidence.
 ```
+
+### `codex_handoff.md` — what it must contain (optional file)
+
+Created only when the fix requires Codex implementation (i.e. non-trivial code changes).
+Written by Claude, consumed by Codex. Deleted or left as-is after implementation — it
+is not updated with validation results (that belongs to `plan_validacion_rapida_fix.md`).
+
+Required sections:
+
+1. **Branch**: branch name to create/use.
+2. **Reference commit**: baseline commit hash.
+3. **Regla obligatoria**: reminder to read `CLAUDE.md` sections 3 and 4 before coding.
+4. **Overview**: one paragraph — how many commits, which files, in what order.
+5. **Per-fix sections** (one per commit): file path, why the change is needed,
+   exact current code block (copy from source), exact replacement code block,
+   constraints (what NOT to touch, what invariants to maintain).
+6. **Commit order**: message template for each commit.
+7. **Tests to run**: exact `flutter analyze` + `flutter test` commands. Must pass
+   before handing back to Claude for QA review.
+
+If a fix has only one line change and no invariant risk, the handoff can be in a
+single section without per-fix subheadings.
 
 ### Log naming convention
 
