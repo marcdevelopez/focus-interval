@@ -127,10 +127,16 @@ anchor.updatedAt = now` y expone el tiempo incorrecto al scheduler y al UI.
 
 - Devolver `null` para `canceled` hace que `resolveEffectiveScheduledStart` (línea
   180) devuelva el `scheduledStart` almacenado — exactamente lo que queremos.
-- `_finalizePostponedGroupsIfNeeded` también llama a esta función y llega a
-  `if (anchorEnd == null) continue;` (línea 1141) — pero con Fix 1 ya habremos
-  salido antes vía el nuevo bloque `canceled`. El Fix 2 es redundante en esa ruta
-  pero correcto y no causa conflicto.
+- **Fix 2 es necesario para cadenas de postpone (G1→G2→G3).** Cuando G1 se cancela,
+  `_finalizePostponedGroupsIfNeeded` procesa G3 en el mismo pass, usando `groups`
+  original. Para G3, llama a `resolveEffectiveScheduledEnd(G2)` → que internamente
+  llama a `resolveEffectiveScheduledStart(G2)` → que llama a
+  `resolvePostponedAnchorEnd(G1)`. Sin Fix 2, ese call devuelve `G1.updatedAt = now`
+  y G3 también queda anclada a "ahora". Con Fix 2, devuelve null → G2 usa su stored
+  start (22:35) → G3 se ancla a `22:35 + duración_G2` (correcto).
+- `_finalizePostponedGroupsIfNeeded` también llama a esta función para la ruta G2
+  directa y llega a `if (anchorEnd == null) continue;` (línea 1141) — con Fix 1 ya
+  habremos salido antes, pero Fix 2 protege la ruta de G3 en el mismo pass.
 - NO aplicar para `completed` — mismo razonamiento que Fix 1.
 
 ---
