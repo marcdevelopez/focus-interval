@@ -1466,7 +1466,7 @@ In scheduled_group_timing.dart:185, wrap the return value with ceilToMinute:
 One line. No new helpers needed — ceilToMinute is already defined in the same file.
 
 Status:
-Open. P2 — display correctness. Priority: fix before BUG-F25-F (more impactful).
+Closed/OK. closed_commit_hash: e16e389
 
 ---
 
