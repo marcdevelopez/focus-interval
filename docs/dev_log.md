@@ -27,7 +27,7 @@ Formatting rules:
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Running-overlap provider build-phase mutation guard implemented for mirror red-flash regression (BUG-F25-D)**
 Current focus: **Run exact owner+mirror repro packet for BUG-F25-D and close validation if no red flash/regressions are observed**
-Last update: **18/03/2026**
+Last update: **19/03/2026**
 
 ---
 
@@ -12218,4 +12218,67 @@ only included when `hasPreRun` is true. Single-line change, no invariant risk.
 **Docs updated:**
 - `docs/bugs/bug_log.md` (BUG-F25-F → Closed/OK)
 - `docs/validation/validation_ledger.md` (BUG-F25-F → [x] Closed/OK)
+- `docs/dev_log.md` (this block)
+
+---
+
+# 🔹 Block 604 — BUG-F25-I registered with full evidence packet (19/03/2026)
+
+## 📋 Context
+
+During post-F25-H validation, a new regression was observed in postpone/cancel flow:
+after selecting **Postpone scheduled** for G2 while G1 is running, canceling G1
+re-anchors G2 to current time and starts it on the next minute.
+
+Expected product behavior: canceling running anchor must **not** rewrite postponed
+start time; postponed group should keep stored planned start.
+
+## ✔ Work completed
+
+- Created validation folder:
+  - `docs/bugs/validation_f25i_2026_03_19/`
+  - `logs/` + `screenshots/`
+- Preserved baseline evidence logs:
+  - `docs/bugs/validation_f25i_2026_03_19/logs/2026-03-19_f25i_68429c5_ios_iPhone17Pro_9A6B6687_debug.log`
+  - `docs/bugs/validation_f25i_2026_03_19/logs/2026-03-19_f25i_68429c5_chrome_debug.log`
+- Registered BUG-F25-I in `docs/bugs/bug_log.md` with:
+  - full repro steps
+  - user-facing symptom
+  - expected behavior
+  - probable root cause at file/method level
+  - targeted fix direction + tests
+- Added BUG-F25-I to `docs/validation/validation_ledger.md` as **Open / P1**.
+- Added Phase 17 roadmap line for BUG-F25-I in `docs/roadmap.md`.
+- Created:
+  - `docs/bugs/validation_f25i_2026_03_19/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_f25i_2026_03_19/quick_pass_checklist.md`
+
+## 🔎 Key evidence extracted for Claude review
+
+iOS log (`...ios_iPhone17Pro_9A6B6687_debug.log`):
+- line 51210: postponed sample still future (`...22:35|22:36`)
+- line 51216: cancel event (`Cancel nav: group stream canceled`)
+- line 51224: sample collapses to `...22:22|22:22`
+- lines 51225+ / 51228+ / 51231+: `schedule-start-timer` for `22:22:00`
+- lines 51244+ / 51246+ / 51253: `start-timer-fired` at `22:22:00`
+
+Chrome log (`...chrome_debug.log`):
+- lines 2623/2632/2658: postponed sample at `...22:35|22:35/22:36`
+- lines 2670+ and 2684-2686: sample/postpone-finalized changed to `22:22`
+- line 2687: auto-start fired at `22:22:00`
+
+## 🧠 Root-cause hypothesis recorded (pending fix confirmation)
+
+`resolvePostponedAnchorEnd` fallback to `anchor.updatedAt` on non-running anchor
+can leak terminal anchor timestamp (`now`) into postponed schedule resolution.
+Then `_finalizePostponedGroupsIfNeeded` consumes that derived value and advances
+postponed start to current minute, which triggers premature start timer.
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md` (BUG-F25-I added, Open/P1)
+- `docs/validation/validation_ledger.md` (BUG-F25-I Open entry added)
+- `docs/roadmap.md` (Phase 17 BUG-F25-I line added)
+- `docs/bugs/validation_f25i_2026_03_19/plan_validacion_rapida_fix.md` (new)
+- `docs/bugs/validation_f25i_2026_03_19/quick_pass_checklist.md` (new)
 - `docs/dev_log.md` (this block)
