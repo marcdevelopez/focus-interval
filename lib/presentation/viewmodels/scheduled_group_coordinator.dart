@@ -1131,6 +1131,12 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       if (anchor.status == TaskRunStatus.running) {
         continue;
       }
+      if (anchor.status == TaskRunStatus.canceled) {
+        updates.add(
+          latest.copyWith(postponedAfterGroupId: null, updatedAt: now),
+        );
+        continue;
+      }
       final anchorEnd = resolvePostponedAnchorEnd(
         anchor: anchor,
         allGroups: groups,
