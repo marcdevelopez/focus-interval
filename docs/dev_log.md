@@ -12200,3 +12200,22 @@ Log evidence:
 - `docs/bugs/validation_f25h_2026_03_19/plan_validacion_rapida_fix.md` (status → Closed/OK)
 - `docs/bugs/validation_f25h_2026_03_19/quick_pass_checklist.md` (all boxes checked)
 - `docs/dev_log.md` (this block)
+
+# 🔹 Block 603 — BUG-F25-F closed/OK (19/03/2026)
+
+**Bug:** BUG-F25-F — Postpone snackbar shows redundant "(pre-run at X)" when noticeMinutes=0.
+**Symptom:** After pressing Postpone in the running overlap modal, the snackbar showed
+"Scheduled start moved to 13:22 (pre-run at 13:22)." — pre-run time identical to start time,
+meaningless to the user.
+**Root cause:** `_showPostponeConfirmation` (timer_screen.dart) always appended the pre-run
+clause regardless of whether `preRunStart` differed from `scheduledStart`. The caller
+(line 1199) already computed `preRunStart = scheduledStartTime` when `noticeMinutes=0`,
+but the formatter had no guard.
+**Fix:** Added `hasPreRun = preRunStart.isBefore(scheduledStart)` check. Pre-run clause
+only included when `hasPreRun` is true. Single-line change, no invariant risk.
+**Commit:** 68429c5 — fix(f25-f): suppress pre-run clause in postpone snackbar when noticeMinutes=0
+**Tests:** flutter analyze PASS · regression suite PASS (33 tests).
+**Docs updated:**
+- `docs/bugs/bug_log.md` (BUG-F25-F → Closed/OK)
+- `docs/validation/validation_ledger.md` (BUG-F25-F → [x] Closed/OK)
+- `docs/dev_log.md` (this block)

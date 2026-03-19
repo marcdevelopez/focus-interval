@@ -1242,7 +1242,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   }) {
     final messenger = ScaffoldMessenger.of(context);
     final startLabel = _formatTimeOrDate(scheduledStart);
-    final preRunLabel = _formatTimeOrDate(preRunStart);
+    final hasPreRun = preRunStart.isBefore(scheduledStart);
+    final preRunClause =
+        hasPreRun ? ' (pre-run at ${_formatTimeOrDate(preRunStart)})' : '';
     final chainNote = chainedCount > 0
         ? ' Remaining queued groups will shift sequentially.'
         : '';
@@ -1250,7 +1252,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     messenger.showSnackBar(
       SnackBar(
         content: Text(
-          'Scheduled start moved to $startLabel (pre-run at $preRunLabel).$chainNote',
+          'Scheduled start moved to $startLabel$preRunClause.$chainNote',
         ),
         duration: const Duration(seconds: 4),
         action: SnackBarAction(
