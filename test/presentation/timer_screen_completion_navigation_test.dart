@@ -796,6 +796,70 @@ void main() {
     }
   });
 
+  testWidgets(
+    'Task List falls back to running group banner when active session is null in Local Mode',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'linux_sync_notice_seen': true,
+        'web_local_notice_seen': true,
+      });
+      final now = DateTime.now();
+      final running = _buildRunningGroup(
+        id: 'local-fallback-running',
+        now: now,
+      ).copyWith(updatedAt: now);
+      final groupRepo = FakeTaskRunGroupRepository()..seed(running);
+      final sessionRepo = FakePomodoroSessionRepository(null);
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setLocal();
+        await _pumpTaskListScreen(
+          tester: tester,
+          container: container,
+          timerBuilder: (groupId) =>
+              Scaffold(body: Text('timer-screen-$groupId')),
+        );
+        await _pumpUntilFound(tester, find.text('Group Running'));
+        expect(find.text('Group Running'), findsOneWidget);
+        expect(find.text(running.tasks.first.name), findsOneWidget);
+        expect(
+          find.widgetWithText(ElevatedButton, 'Open Run Mode'),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Open Run Mode'));
+        await _pumpUntilFound(tester, find.text('timer-screen-${running.id}'));
+        expect(find.text('timer-screen-${running.id}'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
+
   testWidgets('Task List pre-run banner opens Timer via Open Pre-Run', (
     tester,
   ) async {

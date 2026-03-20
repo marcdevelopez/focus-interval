@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue historical roadmap validation backlog (`RVP-011` onward)**
+Current focus: **Continue historical roadmap validation backlog (`RVP-012` onward)**
 Last update: **20/03/2026**
 
 ---
@@ -13147,3 +13147,50 @@ PASS:
 ## 🎯 Next steps
 
 1. Execute `RVP-011` validation (Task List running banner fallback to running groups when there is no active session in Local Mode).
+
+# 🔹 Block 625 — RVP-011 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-011` — in Local Mode, when `activeSession` is missing/null, Task List must
+still surface the running-group banner by falling back to `TaskRunGroup.status=running`.
+
+Concrete validated case to close:
+1. `activeSession = null` + one running group in repository -> Task List renders
+   `Group Running` banner and `Open Run Mode` opens `/timer/:groupId`.
+
+## ✔ Work completed
+
+- Added dedicated widget validation case in:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+  - `Task List falls back to running group banner when active session is null in Local Mode`
+- Scenario setup:
+  - Local Mode explicitly selected.
+  - `FakePomodoroSessionRepository(null)` (no active session).
+  - One seeded running group (`local-fallback-running`).
+- Assertions:
+  - `Group Running` banner is visible with running-group name.
+  - `Open Run Mode` action navigates to the expected timer route.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-011` -> `Closed/OK`
+    (implementation commit `2189e11`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-012 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+13`.
+- `flutter analyze` -> `No issues found!`.
+
+## 📁 Updated files
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-012` validation (Groups Hub hides notice/pre-run rows for start-now groups with `scheduledStartTime == null`).
