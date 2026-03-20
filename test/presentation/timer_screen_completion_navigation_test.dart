@@ -7,11 +7,13 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focus_interval/data/models/pomodoro_session.dart';
+import 'package:focus_interval/data/models/pomodoro_preset.dart';
 import 'package:focus_interval/data/models/pomodoro_task.dart';
 import 'package:focus_interval/data/models/schema_version.dart';
 import 'package:focus_interval/data/models/selected_sound.dart';
 import 'package:focus_interval/data/models/task_run_group.dart';
 import 'package:focus_interval/data/repositories/pomodoro_session_repository.dart';
+import 'package:focus_interval/data/repositories/pomodoro_preset_repository.dart';
 import 'package:focus_interval/data/repositories/task_repository.dart';
 import 'package:focus_interval/data/repositories/task_run_group_repository.dart';
 import 'package:focus_interval/data/services/app_mode_service.dart';
@@ -1114,6 +1116,116 @@ void main() {
         );
         expect(
           find.descendant(of: dialog, matching: find.text('Deep Work')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: dialog, matching: find.text('Email Batch')),
+          findsOneWidget,
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets(
+    'Integrity warning lists one visual option per structure and shows default preset badge',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'linux_sync_notice_seen': true,
+        'web_local_notice_seen': true,
+      });
+      final now = DateTime.now();
+      final taskRepo = InMemoryTaskRepository();
+      await taskRepo.save(
+        _buildTask(id: 'integrity-structure-a1', name: 'Deep Work', now: now),
+      );
+      await taskRepo.save(
+        _buildTask(
+          id: 'integrity-structure-a2',
+          name: 'Planning',
+          now: now,
+        ).copyWith(order: 1, updatedAt: now.add(const Duration(seconds: 1))),
+      );
+      await taskRepo.save(
+        _buildTask(
+          id: 'integrity-structure-b1',
+          name: 'Email Batch',
+          now: now,
+        ).copyWith(
+          pomodoroMinutes: 35,
+          shortBreakMinutes: 7,
+          longBreakMinutes: 20,
+          longBreakInterval: 2,
+          order: 2,
+          updatedAt: now.add(const Duration(seconds: 2)),
+        ),
+      );
+      final presetRepo = InMemoryPomodoroPresetRepository();
+      await presetRepo.save(
+        PomodoroPreset.classicDefault(
+          id: 'default-preset-rvp016',
+          now: now,
+          name: 'Focus Default',
+        ),
+      );
+      final groupRepo = FakeTaskRunGroupRepository();
+      final sessionRepo = FakePomodoroSessionRepository(null);
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRepositoryProvider.overrideWithValue(taskRepo),
+          presetRepositoryProvider.overrideWithValue(presetRepo),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      try {
+        await _pumpTaskListScreen(tester: tester, container: container);
+        await _pumpUntilFound(tester, find.text('Deep Work'));
+
+        final selection = container.read(taskSelectionProvider.notifier);
+        selection.toggle('integrity-structure-a1');
+        selection.toggle('integrity-structure-a2');
+        selection.toggle('integrity-structure-b1');
+        await tester.pump(const Duration(milliseconds: 120));
+
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Next'));
+        await _pumpUntilFound(tester, find.text('Pomodoro integrity warning'));
+
+        final dialog = find.byType(AlertDialog);
+        expect(
+          find.descendant(of: dialog, matching: find.text('Used by:')),
+          findsNWidgets(2),
+        );
+        expect(
+          find.descendant(of: dialog, matching: find.text('Default preset')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: dialog, matching: find.text('Deep Work')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: dialog, matching: find.text('Planning')),
           findsOneWidget,
         );
         expect(

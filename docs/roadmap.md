@@ -101,7 +101,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       03/02/2026: Auto-adjust short/long breaks on valid pomodoro changes and break edits (Task Editor + Edit Preset) (validated 20/03/2026; `RVP-063` + `RVP-013` Closed/OK).
       03/02/2026: Break auto-adjust on break edits now applies on focus loss (no per-keystroke adjustments) (validated 20/03/2026; `RVP-063` + `RVP-014` Closed/OK).
       03/02/2026: Pomodoro Integrity Warning actions now show exact configuration source names (validated 20/03/2026; `RVP-015` Closed/OK).
-      03/02/2026: Pomodoro Integrity Warning now lists visual options per distinct structure + Default Preset badge (validation pending).
+      03/02/2026: Pomodoro Integrity Warning now lists visual options per distinct structure + Default Preset badge (validated 20/03/2026; `RVP-016` Closed/OK).
       03/02/2026: Run Mode now auto-exits to Groups Hub when a group is canceled (validation pending).
       03/02/2026: Integrity Warning copy clarified with explicit instruction + default badge moved below cards (validation pending).
       03/02/2026: Groups Hub summary modal expanded with timing, totals, and task breakdown (validation pending).

@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue historical roadmap validation backlog (`RVP-016` onward)**
+Current focus: **Continue historical roadmap validation backlog (`RVP-017` onward)**
 Last update: **20/03/2026**
 
 ---
@@ -13376,3 +13376,53 @@ PASS:
 ## 🎯 Next steps
 
 1. Execute `RVP-016` validation (Integrity Warning shows one visual option per distinct structure + default preset badge).
+
+# 🔹 Block 630 — RVP-016 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-016` — Pomodoro Integrity Warning must present one visual option per
+distinct structure and include a `Default preset` badge option when a default
+preset exists.
+
+Concrete validated case to close:
+1. Mixed selection with two distinct structures + existing default preset must
+   render two structure option cards (`Used by:`) and one default-preset option.
+
+## ✔ Work completed
+
+- Added dedicated widget validation case in:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+  - `Integrity warning lists one visual option per structure and shows default preset badge`
+- Scenario setup:
+  - three selected tasks where two share one structure and one uses a different
+    structure (`Deep Work`, `Planning`, `Email Batch`),
+  - in-memory default preset seeded (`Focus Default`).
+- Assertions:
+  - Integrity Warning dialog appears,
+  - exactly two `Used by:` structure sections are rendered,
+  - `Default preset` badge option is shown,
+  - source task names are visible in structure chips.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-016` -> `Closed/OK`
+    (implementation commit `8e9b881`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-017 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+16`.
+- `flutter analyze` -> `No issues found!`.
+
+## 📁 Updated files
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-017` validation (Run Mode auto-exits to Groups Hub when group is canceled).
