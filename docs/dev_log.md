@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue reopened P1 roadmap validation queue (`RVP-066` to `RVP-069`) in order**
+Current focus: **Continue reopened P1 roadmap validation queue (`RVP-067` to `RVP-069`) in order**
 Last update: **20/03/2026**
 
 ---
@@ -12459,3 +12459,48 @@ equivalent agent in this workflow).
 ## 🎯 Next steps
 
 1. Continue validation queue with `RVP-066`.
+
+# 🔹 Block 610 — RVP-066 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P1 reopened validation item:
+`RVP-066` — Mode-specific breaks in Phase 18 (Mode A must use a global
+long-break counter across the group).
+
+Existing implementation was present (`45b522f`), but closure required explicit
+validation evidence for the cross-task long-break cadence behavior.
+
+## ✔ Work completed
+
+- Added dedicated unit coverage:
+  - `test/data/models/task_run_group_mode_a_breaks_test.dart`
+  - Verifies that in shared mode the long-break cadence is global and does not
+    reset at task boundaries.
+  - Verifies duration differences vs individual mode for the same task set.
+- Re-ran regression and gate checks:
+  - `flutter test test/data/models/task_run_group_mode_a_breaks_test.dart`
+  - `flutter test test/domain/task_group_planner_test.dart`
+  - `flutter analyze`
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-066` → `Closed/OK`.
+  - `docs/roadmap.md`: Phase 18 reopened item marked `Closed/OK`.
+  - `docs/dev_log.md`: status header focus moved to `RVP-067..069`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/data/models/task_run_group_mode_a_breaks_test.dart` → `+2`.
+- `flutter test test/domain/task_group_planner_test.dart` → `+11`.
+- `flutter analyze` → No issues found.
+
+## 📁 Updated files
+
+- `test/data/models/task_run_group_mode_a_breaks_test.dart` (new)
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-067` validation (Run Mode task transition catch-up after background/resume).

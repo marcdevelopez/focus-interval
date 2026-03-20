@@ -469,7 +469,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 6 — Account profile metadata (display name + avatar) in Firestore/Storage; Settings UI (Account Mode only); ownership UI uses Name (Platform) (new requirement).
 - Phase 6 — Logout while running/paused must never produce a black screen (return to Local Mode Task List) (bug).
 - Phase 19 — Groups Hub canceled reason details (tappable reason label) (new requirement).
-- Phase 18 — Mode-specific breaks (global long-break counter in Mode A) implemented; validation pending.
+- ~~Phase 18 — Mode-specific breaks (global long-break counter in Mode A) implemented; validation pending.~~ **Closed/OK on 20/03/2026 (`RVP-066`; implementation commit `45b522f` + dedicated Mode A global-break tests PASS).**
 - Phase 18 — Run Mode task transition catch-up after background/resume (validation pending).
 - Phase 18 — Run Mode lifecycle resync on resume (no transient Ready state; owner re-verify before controls) (bug).
 - Phase 18 — Run Mode task ranges must anchor to group actualStartTime + accumulated durations + pause offsets (no phaseStartedAt) (bug).
