@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue historical roadmap validation backlog (`RVP-013` onward)**
+Current focus: **Continue historical roadmap validation backlog (`RVP-014` onward)**
 Last update: **20/03/2026**
 
 ---
@@ -13243,3 +13243,45 @@ PASS:
 ## 🎯 Next steps
 
 1. Execute `RVP-013` validation (Phase 10 auto-adjust short/long breaks on valid pomodoro and break edits).
+
+# 🔹 Block 627 — RVP-013 closure by existing validation coverage (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-013` — auto-adjust short/long breaks on valid pomodoro changes and break
+edits (Task Editor + Edit Preset).
+
+This behavior had already been validated under the reopened P1 item `RVP-063`,
+which covers the same functional scope with explicit Task Editor + Edit Preset
+evidence.
+
+## ✔ Work completed
+
+- Closed `RVP-013` as covered by existing `RVP-063` validation evidence
+  (no additional app implementation changes).
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-013` -> `Closed/OK`
+    with explicit cross-reference to `RVP-063`.
+  - `docs/roadmap.md`: line updated to reflect both validation IDs
+    (`RVP-063` + `RVP-013`) as closed.
+  - `docs/dev_log.md`: focus moved to `RVP-014 onward`.
+
+## 🧪 Verification run
+
+Reused existing local gate evidence from `RVP-063` (20/03/2026):
+- `flutter analyze` -> `No issues found!`
+- `flutter test test/domain/validators_test.dart test/domain/task_weighting_test.dart test/presentation/viewmodels/task_editor_view_model_test.dart` -> PASS (`+28`)
+
+No new code path was introduced for `RVP-013`; therefore no additional runtime
+validation command was required in this closure step.
+
+## 📁 Updated files
+
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-014` validation (break auto-adjust applies on focus loss, not per-keystroke).
