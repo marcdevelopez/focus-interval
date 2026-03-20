@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue historical roadmap validation backlog (`RVP-006` onward)**
+Current focus: **Continue historical roadmap validation backlog (`RVP-007` onward)**
 Last update: **20/03/2026**
 
 ---
@@ -12862,3 +12862,52 @@ PASS:
 ## 🎯 Next steps
 
 1. Execute `RVP-006` validation (scheduled auto-start recheck after active session end + expired-running auto-complete unblock).
+
+# 🔹 Block 619 — RVP-006 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-006` — scheduled auto-start must re-evaluate when the active session ends,
+and expired `running` groups must auto-complete so overdue scheduled groups can
+start.
+
+Concrete validated cases to close:
+1. Overdue scheduled auto-start is rechecked on `activeSession` transition
+   `non-null -> null`.
+2. Expired running group is completed and no longer blocks overdue scheduled
+   auto-start.
+
+## ✔ Work completed
+
+- Extended coordinator test doubles in:
+  - `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+  - Added cleanup observability counters in `FakePomodoroSessionRepository`:
+    `clearSessionAsOwnerCount`, `clearSessionIfStaleCount`,
+    `clearSessionIfGroupNotRunningCount`.
+- Added dedicated `RVP-006` scenarios:
+  - `rechecks overdue scheduled auto-start when active session ends`
+  - `completes expired running group and unblocks overdue scheduled auto-start`
+- Added required `AppModeService` overrides in test containers so the current
+  coordinator diagnostics path (`mode=...`) is valid in unit tests.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-006` -> `Closed/OK`
+    (implementation commit `358c278`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-007 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` -> `+18`.
+
+## 📁 Updated files
+
+- `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-007` validation (running-group expiry clears stale active session / Task List banner state).

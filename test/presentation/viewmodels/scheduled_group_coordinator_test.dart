@@ -129,6 +129,12 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
   PomodoroSession? _lastSession;
   int publishCount = 0;
   PomodoroSession? lastPublishedSession;
+  int clearSessionAsOwnerCount = 0;
+  int clearSessionIfStaleCount = 0;
+  int clearSessionIfGroupNotRunningCount = 0;
+  bool clearSessionAsOwnerEmitsNull = false;
+  bool clearSessionIfStaleEmitsNull = false;
+  bool clearSessionIfGroupNotRunningEmitsNull = false;
 
   void emit(PomodoroSession? session) {
     _lastSession = session;
@@ -155,13 +161,28 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
   Future<bool> tryClaimSession(PomodoroSession session) async => true;
 
   @override
-  Future<void> clearSessionAsOwner() async {}
+  Future<void> clearSessionAsOwner() async {
+    clearSessionAsOwnerCount += 1;
+    if (clearSessionAsOwnerEmitsNull) {
+      emit(null);
+    }
+  }
 
   @override
-  Future<void> clearSessionIfStale({required DateTime now}) async {}
+  Future<void> clearSessionIfStale({required DateTime now}) async {
+    clearSessionIfStaleCount += 1;
+    if (clearSessionIfStaleEmitsNull) {
+      emit(null);
+    }
+  }
 
   @override
-  Future<void> clearSessionIfGroupNotRunning() async {}
+  Future<void> clearSessionIfGroupNotRunning() async {
+    clearSessionIfGroupNotRunningCount += 1;
+    if (clearSessionIfGroupNotRunningEmitsNull) {
+      emit(null);
+    }
+  }
 
   Future<void> clearSessionIfInactive({String? expectedGroupId}) async {}
 
@@ -317,6 +338,7 @@ PomodoroSession _buildRunningSession({
   required String groupId,
   required String ownerId,
   required DateTime now,
+  DateTime? lastUpdatedAt,
 }) {
   return PomodoroSession(
     taskId: 'task-1',
@@ -337,7 +359,7 @@ PomodoroSession _buildRunningSession({
     phaseStartedAt: now.subtract(const Duration(minutes: 10)),
     currentTaskStartedAt: now.subtract(const Duration(minutes: 10)),
     pausedAt: null,
-    lastUpdatedAt: now,
+    lastUpdatedAt: lastUpdatedAt ?? now,
     finishedAt: null,
     pauseReason: null,
   );
@@ -389,6 +411,7 @@ void main() {
         final sessionRepo = FakePomodoroSessionRepository();
         final container = ProviderContainer(
           overrides: [
+            appModeServiceProvider.overrideWithValue(AppModeService.memory()),
             taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
             pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
           ],
@@ -423,6 +446,7 @@ void main() {
         final sessionRepo = FakePomodoroSessionRepository();
         final container = ProviderContainer(
           overrides: [
+            appModeServiceProvider.overrideWithValue(AppModeService.memory()),
             taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
             pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
           ],
@@ -462,6 +486,7 @@ void main() {
       final sessionRepo = FakePomodoroSessionRepository();
       final container = ProviderContainer(
         overrides: [
+          appModeServiceProvider.overrideWithValue(AppModeService.memory()),
           taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
           pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
         ],
@@ -504,6 +529,7 @@ void main() {
         final sessionRepo = FakePomodoroSessionRepository();
         final container = ProviderContainer(
           overrides: [
+            appModeServiceProvider.overrideWithValue(AppModeService.memory()),
             taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
             pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
           ],
@@ -618,6 +644,7 @@ void main() {
       final actionCompleter = Completer<ScheduledGroupAction>();
       final container = ProviderContainer(
         overrides: [
+          appModeServiceProvider.overrideWithValue(AppModeService.memory()),
           taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
           pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
         ],
@@ -762,6 +789,7 @@ void main() {
       final actionCompleter = Completer<ScheduledGroupAction>();
       final container = ProviderContainer(
         overrides: [
+          appModeServiceProvider.overrideWithValue(AppModeService.memory()),
           taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
           pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
         ],
@@ -824,6 +852,7 @@ void main() {
         final sessionRepo = FakePomodoroSessionRepository();
         final container = ProviderContainer(
           overrides: [
+            appModeServiceProvider.overrideWithValue(AppModeService.memory()),
             taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
             pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
           ],
@@ -886,6 +915,7 @@ void main() {
         final actionCompleter = Completer<ScheduledGroupAction>();
         final container = ProviderContainer(
           overrides: [
+            appModeServiceProvider.overrideWithValue(AppModeService.memory()),
             taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
             pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
             deviceInfoServiceProvider.overrideWithValue(deviceInfo),
@@ -1125,6 +1155,168 @@ void main() {
         expect(
           sessionRepo.lastPublishedSession?.groupId,
           'group-resume-catch-up',
+        );
+      },
+    );
+
+    test(
+      'rechecks overdue scheduled auto-start when active session ends',
+      () async {
+        final now = DateTime.now();
+        final groupRepo = FakeTaskRunGroupRepository();
+        final sessionRepo = FakePomodoroSessionRepository();
+        final appModeService = AppModeService.memory();
+        final timeSync = FakeTimeSyncService(initialOffset: null);
+        final coordinatorAction = Completer<ScheduledGroupAction>();
+        final container = ProviderContainer(
+          overrides: [
+            appModeServiceProvider.overrideWithValue(appModeService),
+            taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+            pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+            timeSyncServiceProvider.overrideWithValue(timeSync),
+          ],
+        );
+        addTearDown(() {
+          groupRepo.dispose();
+          sessionRepo.dispose();
+          container.dispose();
+        });
+
+        final sub = container.listen<ScheduledGroupAction?>(
+          scheduledGroupCoordinatorProvider,
+          (_, next) {
+            if (next != null && !coordinatorAction.isCompleted) {
+              coordinatorAction.complete(next);
+            }
+          },
+        );
+        addTearDown(sub.close);
+
+        container.read(scheduledGroupCoordinatorProvider);
+        await container.read(appModeProvider.notifier).setAccount();
+        await _pumpQueue();
+
+        sessionRepo.emit(
+          _buildRunningSession(
+            groupId: 'legacy-session',
+            ownerId: 'device-legacy',
+            now: now,
+          ),
+        );
+        await _pumpQueue();
+
+        groupRepo.seed(
+          _buildScheduledGroup(
+            id: 'group-recheck-active-end',
+            scheduledStart: now.subtract(const Duration(minutes: 2)),
+            durationMinutes: 30,
+            noticeMinutes: 0,
+          ),
+        );
+        await _pumpQueue();
+
+        final beforeResume = await groupRepo.getById(
+          'group-recheck-active-end',
+        );
+        expect(beforeResume?.status, TaskRunStatus.scheduled);
+        expect(sessionRepo.publishCount, 0);
+
+        timeSync.setOffset(Duration.zero);
+        sessionRepo.emit(null);
+
+        final action = await coordinatorAction.future.timeout(
+          const Duration(seconds: 1),
+        );
+        expect(action.type, ScheduledGroupActionType.openTimer);
+        expect(action.groupId, 'group-recheck-active-end');
+
+        final afterResume = await groupRepo.getById('group-recheck-active-end');
+        expect(afterResume?.status, TaskRunStatus.running);
+        expect(afterResume?.actualStartTime, isNotNull);
+        expect(sessionRepo.publishCount, 1);
+        expect(
+          sessionRepo.lastPublishedSession?.groupId,
+          'group-recheck-active-end',
+        );
+      },
+    );
+  });
+
+  group('ScheduledGroupCoordinator running expiry auto-complete', () {
+    test(
+      'completes expired running group and unblocks overdue scheduled auto-start',
+      () async {
+        final now = DateTime.now();
+        final groupRepo = FakeTaskRunGroupRepository();
+        final sessionRepo = FakePomodoroSessionRepository();
+        final actionCompleter = Completer<ScheduledGroupAction>();
+        final container = ProviderContainer(
+          overrides: [
+            appModeServiceProvider.overrideWithValue(AppModeService.memory()),
+            taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+            pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          ],
+        );
+        addTearDown(() {
+          groupRepo.dispose();
+          sessionRepo.dispose();
+          container.dispose();
+        });
+
+        final sub = container.listen<ScheduledGroupAction?>(
+          scheduledGroupCoordinatorProvider,
+          (_, next) {
+            if (next != null && !actionCompleter.isCompleted) {
+              actionCompleter.complete(next);
+            }
+          },
+        );
+        addTearDown(sub.close);
+
+        container.read(scheduledGroupCoordinatorProvider);
+
+        final ownerId = container.read(deviceInfoServiceProvider).deviceId;
+        sessionRepo.emit(
+          _buildRunningSession(
+            groupId: 'group-expired-running',
+            ownerId: ownerId,
+            now: now,
+            lastUpdatedAt: now.subtract(const Duration(minutes: 2)),
+          ),
+        );
+        await _pumpQueue();
+
+        final expiredRunning = _buildRunningGroup(
+          id: 'group-expired-running',
+          start: now.subtract(const Duration(hours: 2)),
+          theoreticalEnd: now.subtract(const Duration(minutes: 30)),
+        );
+        final overdueScheduled = _buildScheduledGroup(
+          id: 'group-unblocked-scheduled',
+          scheduledStart: now.subtract(const Duration(minutes: 5)),
+          durationMinutes: 30,
+          noticeMinutes: 0,
+        );
+        await groupRepo.saveAll([expiredRunning, overdueScheduled]);
+        await _pumpQueue();
+
+        final action = await actionCompleter.future.timeout(
+          const Duration(seconds: 1),
+        );
+        expect(action.type, ScheduledGroupActionType.openTimer);
+        expect(action.groupId, 'group-unblocked-scheduled');
+
+        final expiredStored = await groupRepo.getById('group-expired-running');
+        final unblockedStored = await groupRepo.getById(
+          'group-unblocked-scheduled',
+        );
+        expect(expiredStored?.status, TaskRunStatus.completed);
+        expect(unblockedStored?.status, TaskRunStatus.running);
+        expect(sessionRepo.clearSessionAsOwnerCount, greaterThan(0));
+        expect(sessionRepo.publishCount, 1);
+        expect(
+          sessionRepo.lastPublishedSession?.groupId,
+          'group-unblocked-scheduled',
         );
       },
     );

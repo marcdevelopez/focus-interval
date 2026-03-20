@@ -91,7 +91,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       02/02/2026: Phase 18 completed (completion flow + cancel flow -> Groups Hub).
       02/02/2026: Phase 19 Groups Hub core UI implemented (sections + actions); Task List banner + Run Mode indicator now open Groups Hub (validated 20/03/2026; `RVP-004` Closed/OK).
       02/02/2026: Task List banner now clears stale sessions when group ends (validated 20/03/2026; `RVP-005` Closed/OK).
-      02/02/2026: Scheduled auto-start rechecks when active session ends; expired running groups auto-complete to unblock scheduled starts (validation pending).
+      02/02/2026: Scheduled auto-start rechecks when active session ends; expired running groups auto-complete to unblock scheduled starts (validated 20/03/2026; `RVP-006` Closed/OK).
       02/02/2026: Running group expiry now clears stale active sessions (Task List banner updates; validation pending).
       02/02/2026: Scheduling now reserves the full Pre-Run window (noticeMinutes) and blocks invalid times (validation pending).
       02/02/2026: Pre-Run entry points added for scheduled groups (Task List banner + Groups Hub action; no AppBar changes) (validation pending).
