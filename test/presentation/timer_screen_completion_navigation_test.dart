@@ -1054,6 +1054,129 @@ void main() {
   );
 
   testWidgets(
+    'Groups Hub summary modal shows timing totals and task breakdown',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final firstItem = _buildItem();
+      const secondItem = TaskRunItem(
+        sourceTaskId: 'task-2',
+        name: 'Email Batch',
+        presetId: null,
+        pomodoroMinutes: 35,
+        shortBreakMinutes: 7,
+        longBreakMinutes: 20,
+        totalPomodoros: 2,
+        longBreakInterval: 2,
+        startSound: SelectedSound.builtIn('default_chime'),
+        startBreakSound: SelectedSound.builtIn('default_chime_break'),
+        finishTaskSound: SelectedSound.builtIn('default_chime_finish'),
+      );
+      final detailedGroup = _buildScheduledGroup(
+        id: 'groups-hub-summary-details-group',
+        now: now,
+      ).copyWith(
+        tasks: [firstItem, secondItem],
+        totalTasks: 2,
+        totalPomodoros: 3,
+        totalDurationSeconds: 5400,
+        noticeMinutes: 10,
+        theoreticalEndTime: now.add(const Duration(minutes: 90)),
+      );
+      final groupRepo = FakeTaskRunGroupRepository()..seed(detailedGroup);
+      final sessionRepo = FakePomodoroSessionRepository(null);
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      try {
+        await _pumpGroupsHubScreen(tester: tester, container: container);
+        await _pumpUntilFound(tester, find.text('Test task'));
+
+        await tester.tap(find.text('Test task').first);
+        await _pumpUntilFound(tester, find.text('Group summary'));
+
+        final dialog = find.byType(AlertDialog);
+        expect(
+          find.descendant(of: dialog, matching: find.text('Timing')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: dialog, matching: find.text('Totals')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: dialog, matching: find.text('Tasks')),
+          findsNWidgets(2),
+        );
+        expect(
+          find.descendant(of: dialog, matching: find.text('Scheduled start')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: dialog, matching: find.text('Pre-Run')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: dialog, matching: find.text('Actual start')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: dialog, matching: find.text('End')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: dialog, matching: find.text('Total time')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: dialog, matching: find.text('Pomodoros')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: dialog, matching: find.text('Email Batch')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: dialog,
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is Text &&
+                  widget.data != null &&
+                  widget.data!.contains('min starts at'),
+            ),
+          ),
+          findsOneWidget,
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets(
     'Integrity warning options show exact source task names for each structure',
     (tester) async {
       SharedPreferences.setMockInitialValues({

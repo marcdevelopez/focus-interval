@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue historical roadmap validation backlog (`RVP-019` onward)**
+Current focus: **Continue historical roadmap validation backlog (`RVP-020` onward)**
 Last update: **20/03/2026**
 
 ---
@@ -13524,3 +13524,55 @@ PASS:
 ## 🎯 Next steps
 
 1. Execute `RVP-019` validation (Groups Hub summary modal expanded with timing, totals, and task breakdown).
+
+# 🔹 Block 633 — RVP-019 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-019` — tapping a group in Groups Hub must open an expanded summary modal
+with timing details, totals, and per-task breakdown.
+
+Concrete validated case to close:
+1. A scheduled group with notice/pre-run and multiple tasks opens `Group summary`
+   showing `Timing`, `Totals`, and `Tasks` sections with complete breakdown.
+
+## ✔ Work completed
+
+- Added dedicated widget validation case in:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+  - `Groups Hub summary modal shows timing totals and task breakdown`
+- Scenario setup:
+  - seeded scheduled group with two tasks (`Test task`, `Email Batch`),
+  - explicit totals (`totalTasks=2`, `totalPomodoros=3`,
+    `totalDurationSeconds=5400`) and `noticeMinutes=10`.
+- Assertions:
+  - summary modal title appears (`Group summary`),
+  - sections `Timing`, `Totals`, `Tasks` are visible,
+  - timing rows include `Scheduled start`, `Pre-Run`, `Actual start`, `End`,
+    `Total time`,
+  - totals include `Pomodoros`,
+  - task breakdown includes second task entry (`Email Batch`),
+  - pre-run descriptive copy (`min starts at`) is present.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-019` -> `Closed/OK`
+    (implementation commit `c2c1172`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-020 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Groups Hub summary modal shows timing totals and task breakdown"` -> `+1`.
+- `flutter analyze` -> `No issues found!`.
+
+## 📁 Updated files
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-020` validation (Groups Hub summary hides Scheduled start for non-planned runs).
