@@ -312,6 +312,16 @@ All work happens on short-lived branches (`fix/xxx`, `feature/xxx`).
 - Features: `feature/<short-description>`
 - Never use generic names like `patch`, `temp`, `wip`.
 
+**R-7 Branch scope lock (mandatory):**
+- A branch must keep one scope family only: bug fix, feature implementation,
+  roadmap/validation closure, or process-governance docs.
+- If the user asks for a different scope family, stop and create/switch to a
+  dedicated branch before editing.
+
+**R-8 Pre-commit branch check (mandatory):**
+- Before each commit, confirm commit scope matches branch intent.
+- If mismatch is detected, do not commit on the current branch; branch-split first.
+
 ---
 
 ## 10. Validation folder structure — MANDATORY

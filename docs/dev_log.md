@@ -13750,3 +13750,38 @@ Documentation/process update only (no runtime code changes).
 ## 🎯 Next steps
 
 1. Execute the active bug queue from `docs/validation/validation_ledger.md` in priority order.
+
+# 🔹 Block 639 — Branch-scope lock to prevent mixed-track commits (20/03/2026)
+
+## 📋 Context
+
+A workflow risk was identified: multiple commit tracks were accumulated on the
+same branch (`fix-roadmap-f25-closure-sync`), mixing roadmap/validation closures
+with process-governance documentation updates. Even when each commit is valid,
+this reduces branch intent clarity and makes review/merge riskier.
+
+## ✔ Work completed
+
+- Strengthened branch-scope guardrails in `AGENTS.md`:
+  - added mandatory branch-scope checkpoint before new commits.
+  - added explicit `branch scope lock` rule: one branch = one scope family.
+- Strengthened branch rules in `CLAUDE.md`:
+  - added `R-7 Branch scope lock`.
+  - added `R-8 Pre-commit branch check`.
+- Extended handoff contract in `docs/team_roles.md`:
+  - added mandatory `Branch-scope checkpoint` section before implementation/commit.
+
+## 🧪 Verification run
+
+Documentation/process update only (no runtime code changes).
+
+## 📁 Updated files
+
+- `AGENTS.md`
+- `CLAUDE.md`
+- `docs/team_roles.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. For the next non-validation/process task, create a dedicated branch that matches scope before editing.

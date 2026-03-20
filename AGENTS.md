@@ -50,6 +50,9 @@ the `CURRENT PHASE` label alone — pending validations and doc cleanup come fir
 6. Before any implementation, explain the high-level plan and review it for incoherence or likely failure modes; wait for confirmation.
 7. Ensure you are **not on `main`**; create a new branch before any code/doc changes.
 8. If already on a branch, ensure your changes match the branch purpose/name; if not, commit the current work on that branch, then create a new branch for the unrelated change.
+   - Branch-scope checkpoint (mandatory before any new commit):
+     - Write one line in the working notes/dev update: `Current branch intent: <scope>`.
+     - If the next change is a different scope family (bugfix vs roadmap validation vs process/docs governance vs feature), stop and switch to a dedicated branch first.
 9. Dev log hygiene:
    - Append new blocks to the end of `docs/dev_log.md` in chronological order.
    - Block numbers must be strictly increasing and continue from the last block.
@@ -416,6 +419,9 @@ Rules:
 - `develop` merges into `main` only when `validation_ledger.md` shows zero open P0/P1 bugs.
 - Before checking out any branch: run `git branch --show-current` to confirm you are NOT on `main` or `develop`. If you are, ask the user which branch to use.
 - Branch naming: `fix/<short-description>` or `feature/<short-description>`. Never generic names (`patch`, `temp`, `wip`).
+- Branch scope lock: one branch = one scope family. Do not mix unrelated tracks in one branch
+  (example of forbidden mix: roadmap validation closures + process-rule governance edits).
+  If a new request changes scope family, create/switch branch before editing.
 
 For every new feature or fix:
 

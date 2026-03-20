@@ -185,6 +185,12 @@ Every handoff between Claude, Codex, and Gemini must include:
 - Confirmation that each bug is represented in `validation_ledger.md`.
 - Which bug ID(s) are next by priority.
 
+8. Branch-scope checkpoint (mandatory before implementation/commit)
+- Current branch name.
+- Declared branch intent (one line).
+- Confirmation that the requested task belongs to that intent.
+- If not, required action: create/switch to a dedicated branch before edits.
+
 ---
 
 ## Refactor Mode (Full Cutover)
