@@ -20,6 +20,8 @@ import 'package:focus_interval/data/services/sound_service.dart';
 import 'package:focus_interval/data/services/time_sync_service.dart';
 import 'package:focus_interval/domain/pomodoro_machine.dart';
 import 'package:focus_interval/presentation/providers.dart';
+import 'package:focus_interval/presentation/screens/groups_hub_screen.dart';
+import 'package:focus_interval/presentation/screens/task_list_screen.dart';
 import 'package:focus_interval/presentation/screens/timer_screen.dart';
 
 class FakeTaskRunGroupRepository implements TaskRunGroupRepository {
@@ -227,6 +229,31 @@ TaskRunGroup _buildRunningGroup({required String id, required DateTime now}) {
   );
 }
 
+TaskRunGroup _buildScheduledGroup({required String id, required DateTime now}) {
+  final running = _buildRunningGroup(id: id, now: now);
+  return running.copyWith(
+    status: TaskRunStatus.scheduled,
+    scheduledStartTime: now.add(const Duration(minutes: 20)),
+    actualStartTime: null,
+    theoreticalEndTime: now.add(const Duration(minutes: 45)),
+    updatedAt: now,
+  );
+}
+
+TaskRunGroup _buildCompletedGroup({required String id, required DateTime now}) {
+  final running = _buildRunningGroup(id: id, now: now);
+  return running.copyWith(status: TaskRunStatus.completed, updatedAt: now);
+}
+
+TaskRunGroup _buildCanceledGroup({required String id, required DateTime now}) {
+  final running = _buildRunningGroup(id: id, now: now);
+  return running.copyWith(
+    status: TaskRunStatus.canceled,
+    canceledReason: TaskRunCanceledReason.user,
+    updatedAt: now,
+  );
+}
+
 PomodoroSession _buildRunningSession({
   required String groupId,
   required String ownerDeviceId,
@@ -291,6 +318,68 @@ Future<void> _pumpTimerScreen({
   await tester.pump(const Duration(milliseconds: 120));
 }
 
+Future<void> _pumpTaskListScreen({
+  required WidgetTester tester,
+  required ProviderContainer container,
+}) async {
+  final router = GoRouter(
+    initialLocation: '/tasks',
+    routes: [
+      GoRoute(path: '/tasks', builder: (_, __) => const TaskListScreen()),
+      GoRoute(
+        path: '/groups',
+        builder: (_, __) => const Scaffold(body: Text('groups-screen')),
+      ),
+      GoRoute(path: '/login', builder: (_, __) => const SizedBox.shrink()),
+      GoRoute(path: '/settings', builder: (_, __) => const SizedBox.shrink()),
+      GoRoute(
+        path: '/timer/:id',
+        builder: (context, state) {
+          return TimerScreen(groupId: state.pathParameters['id']!);
+        },
+      ),
+    ],
+  );
+
+  await tester.pumpWidget(
+    UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp.router(routerConfig: router),
+    ),
+  );
+  await tester.pump(const Duration(milliseconds: 200));
+}
+
+Future<void> _pumpGroupsHubScreen({
+  required WidgetTester tester,
+  required ProviderContainer container,
+}) async {
+  final router = GoRouter(
+    initialLocation: '/groups',
+    routes: [
+      GoRoute(path: '/groups', builder: (_, __) => const GroupsHubScreen()),
+      GoRoute(
+        path: '/tasks',
+        builder: (_, __) => const Scaffold(body: Text('tasks-screen')),
+      ),
+      GoRoute(
+        path: '/timer/:id',
+        builder: (context, state) {
+          return TimerScreen(groupId: state.pathParameters['id']!);
+        },
+      ),
+    ],
+  );
+
+  await tester.pumpWidget(
+    UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp.router(routerConfig: router),
+    ),
+  );
+  await tester.pump(const Duration(milliseconds: 200));
+}
+
 Future<void> _pumpUntilFound(
   WidgetTester tester,
   Finder finder, {
@@ -299,6 +388,19 @@ Future<void> _pumpUntilFound(
   for (var i = 0; i < maxTicks; i++) {
     if (finder.evaluate().isNotEmpty) return;
     await tester.pump(const Duration(milliseconds: 100));
+  }
+}
+
+Future<void> _dragUntilFound(
+  WidgetTester tester, {
+  required Finder scrollable,
+  required Finder target,
+  int maxDrags = 8,
+}) async {
+  for (var i = 0; i < maxDrags; i++) {
+    if (target.evaluate().isNotEmpty) return;
+    await tester.drag(scrollable, const Offset(0, -320));
+    await tester.pump(const Duration(milliseconds: 200));
   }
 }
 
@@ -514,4 +616,184 @@ void main() {
       }
     },
   );
+
+  testWidgets('Run Mode planned-groups indicator opens Groups Hub', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final now = DateTime.now();
+    final deviceInfo = DeviceInfoService.ephemeral();
+    final running = _buildRunningGroup(id: 'run-indicator-group', now: now);
+    final scheduled = _buildScheduledGroup(
+      id: 'run-indicator-scheduled',
+      now: now,
+    );
+
+    final groupRepo = FakeTaskRunGroupRepository()
+      ..seed(running)
+      ..seed(scheduled);
+    final sessionRepo = FakePomodoroSessionRepository(
+      _buildRunningSession(
+        groupId: running.id,
+        ownerDeviceId: deviceInfo.deviceId,
+        now: now,
+      ),
+    );
+    final appModeService = AppModeService.memory();
+    var disposed = false;
+
+    final container = ProviderContainer(
+      overrides: [
+        firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+        firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+        taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+        pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+        appModeServiceProvider.overrideWithValue(appModeService),
+        deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+        soundServiceProvider.overrideWithValue(FakeSoundService()),
+        timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+      ],
+    );
+    try {
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpTimerScreen(
+        tester: tester,
+        container: container,
+        groupId: running.id,
+      );
+
+      await tester.tap(find.byTooltip('Planned groups'));
+      await _pumpUntilFound(tester, find.text('groups-screen'));
+      expect(find.text('groups-screen'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 100));
+      container.dispose();
+      sessionRepo.dispose();
+      groupRepo.dispose();
+      disposed = true;
+    } finally {
+      if (!disposed) {
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+      }
+    }
+  });
+
+  testWidgets('Task List Groups Hub CTA opens Groups Hub', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'linux_sync_notice_seen': true,
+      'web_local_notice_seen': true,
+    });
+    final groupRepo = FakeTaskRunGroupRepository();
+    final sessionRepo = FakePomodoroSessionRepository(null);
+    final appModeService = AppModeService.memory();
+    var disposed = false;
+
+    final container = ProviderContainer(
+      overrides: [
+        firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+        firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+        taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+        pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+        appModeServiceProvider.overrideWithValue(appModeService),
+        soundServiceProvider.overrideWithValue(FakeSoundService()),
+        timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+      ],
+    );
+    try {
+      await _pumpTaskListScreen(tester: tester, container: container);
+      await _pumpUntilFound(tester, find.text('View Groups Hub'));
+      expect(find.text('View Groups Hub'), findsOneWidget);
+
+      await tester.tap(find.text('View Groups Hub'));
+      await _pumpUntilFound(tester, find.text('groups-screen'));
+      expect(find.text('groups-screen'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 100));
+      container.dispose();
+      sessionRepo.dispose();
+      groupRepo.dispose();
+      disposed = true;
+    } finally {
+      if (!disposed) {
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+      }
+    }
+  });
+
+  testWidgets('Groups Hub core sections and actions are visible', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final now = DateTime.now();
+    final groupRepo = FakeTaskRunGroupRepository()
+      ..seed(_buildRunningGroup(id: 'hub-running', now: now))
+      ..seed(_buildScheduledGroup(id: 'hub-scheduled', now: now))
+      ..seed(_buildCompletedGroup(id: 'hub-completed', now: now))
+      ..seed(_buildCanceledGroup(id: 'hub-canceled', now: now));
+    final sessionRepo = FakePomodoroSessionRepository(null);
+    final appModeService = AppModeService.memory();
+    var disposed = false;
+
+    final container = ProviderContainer(
+      overrides: [
+        firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+        firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+        taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+        pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+        appModeServiceProvider.overrideWithValue(appModeService),
+        soundServiceProvider.overrideWithValue(FakeSoundService()),
+        timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+      ],
+    );
+    try {
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpGroupsHubScreen(tester: tester, container: container);
+
+      expect(find.text('Groups Hub'), findsOneWidget);
+      expect(find.text('Go to Task List'), findsOneWidget);
+      expect(find.text('Running / Paused'), findsOneWidget);
+      expect(find.text('Scheduled'), findsOneWidget);
+      expect(find.text('Open Run Mode'), findsOneWidget);
+      expect(find.text('Start now'), findsOneWidget);
+      expect(find.text('Cancel schedule'), findsOneWidget);
+      final hubList = find.byType(ListView).first;
+      await _dragUntilFound(
+        tester,
+        scrollable: hubList,
+        target: find.text('Completed'),
+      );
+      expect(find.text('Completed'), findsOneWidget);
+      expect(find.text('Run again'), findsOneWidget);
+      await _dragUntilFound(
+        tester,
+        scrollable: hubList,
+        target: find.text('Canceled'),
+      );
+      expect(find.text('Canceled'), findsWidgets);
+      expect(find.text('Re-plan group'), findsOneWidget);
+
+      await tester.tap(find.text('Go to Task List'));
+      await _pumpUntilFound(tester, find.text('tasks-screen'));
+      expect(find.text('tasks-screen'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 100));
+      container.dispose();
+      sessionRepo.dispose();
+      groupRepo.dispose();
+      disposed = true;
+    } finally {
+      if (!disposed) {
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+      }
+    }
+  });
 }

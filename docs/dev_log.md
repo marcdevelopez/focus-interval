@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue historical roadmap validation backlog (`RVP-004` onward)**
+Current focus: **Continue historical roadmap validation backlog (`RVP-005` onward)**
 Last update: **20/03/2026**
 
 ---
@@ -12766,3 +12766,52 @@ PASS:
 ## 🎯 Next steps
 
 1. Execute `RVP-004` validation (Phase 19 Groups Hub core UI + Task List banner/Run Mode indicator entry points).
+
+# 🔹 Block 617 — RVP-004 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-004` — Phase 19 Groups Hub core UI (sections + actions), plus navigation
+entry points from Task List banner and Run Mode indicator.
+
+Concrete validated cases to close:
+1. Task List `View Groups Hub` CTA opens `/groups`.
+2. Run Mode `Planned groups` indicator opens `/groups`.
+3. Groups Hub renders core sections (`Running / Paused`, `Scheduled`,
+   `Completed`, `Canceled`) and core actions (`Open Run Mode`, `Start now`,
+   `Cancel schedule`, `Run again`, `Re-plan group`).
+
+## ✔ Work completed
+
+- Extended widget coverage in:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+- Added dedicated RVP-004 scenarios:
+  - `Run Mode planned-groups indicator opens Groups Hub`
+  - `Task List Groups Hub CTA opens Groups Hub`
+  - `Groups Hub core sections and actions are visible`
+- Added reusable test helpers for bounded waits and controlled list scrolling:
+  - `_pumpTaskListScreen`, `_pumpGroupsHubScreen`, `_dragUntilFound`
+- Reused/extended fake repositories to seed running/scheduled/completed/canceled
+  groups for full section/action rendering coverage.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-004` -> `Closed/OK`
+    (implementation commit `3b78667`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-005 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+6`.
+
+## 📁 Updated files
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-005` validation (Task List banner stale-session cleanup on group end).

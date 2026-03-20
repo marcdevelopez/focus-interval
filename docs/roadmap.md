@@ -89,7 +89,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       02/02/2026: Completion modal now navigates to Groups Hub; placeholder Groups Hub route added (validated 20/03/2026; `RVP-002` Closed/OK).
       02/02/2026: Cancel running group now confirms and navigates to Groups Hub (validated 20/03/2026; `RVP-003` Closed/OK).
       02/02/2026: Phase 18 completed (completion flow + cancel flow -> Groups Hub).
-      02/02/2026: Phase 19 Groups Hub core UI implemented (sections + actions); Task List banner + Run Mode indicator now open Groups Hub (validation pending).
+      02/02/2026: Phase 19 Groups Hub core UI implemented (sections + actions); Task List banner + Run Mode indicator now open Groups Hub (validated 20/03/2026; `RVP-004` Closed/OK).
       02/02/2026: Task List banner now clears stale sessions when group ends (validation pending).
       02/02/2026: Scheduled auto-start rechecks when active session ends; expired running groups auto-complete to unblock scheduled starts (validation pending).
       02/02/2026: Running group expiry now clears stale active sessions (Task List banner updates; validation pending).
