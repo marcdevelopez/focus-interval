@@ -13,6 +13,7 @@ import 'package:focus_interval/data/repositories/pomodoro_session_repository.dar
 import 'package:focus_interval/data/repositories/task_run_group_repository.dart';
 import 'package:focus_interval/data/services/app_mode_service.dart';
 import 'package:focus_interval/data/services/device_info_service.dart';
+import 'package:focus_interval/data/services/time_sync_service.dart';
 import 'package:focus_interval/domain/pomodoro_machine.dart';
 import 'package:focus_interval/presentation/providers.dart';
 import 'package:focus_interval/presentation/viewmodels/scheduled_group_coordinator.dart';
@@ -126,6 +127,8 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
   final StreamController<PomodoroSession?> _controller =
       StreamController<PomodoroSession?>.broadcast();
   PomodoroSession? _lastSession;
+  int publishCount = 0;
+  PomodoroSession? lastPublishedSession;
 
   void emit(PomodoroSession? session) {
     _lastSession = session;
@@ -141,7 +144,12 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
   }
 
   @override
-  Future<void> publishSession(PomodoroSession session) async {}
+  Future<void> publishSession(PomodoroSession session) async {
+    publishCount += 1;
+    lastPublishedSession = session;
+    _lastSession = session;
+    _controller.add(session);
+  }
 
   @override
   Future<bool> tryClaimSession(PomodoroSession session) async => true;
@@ -181,6 +189,24 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
   void dispose() {
     _controller.close();
   }
+}
+
+class FakeTimeSyncService extends TimeSyncService {
+  FakeTimeSyncService({Duration? initialOffset})
+    : _offset = initialOffset,
+      super(enabled: false);
+
+  Duration? _offset;
+
+  void setOffset(Duration? value) {
+    _offset = value;
+  }
+
+  @override
+  Duration? get offset => _offset;
+
+  @override
+  Future<Duration?> refresh({bool force = false}) async => _offset;
 }
 
 TaskRunItem _buildItem() {
@@ -962,6 +988,144 @@ void main() {
           ownerId: deviceInfo.deviceId,
         );
         expect(stored?.lateStartOwnerDeviceId, deviceInfo.deviceId);
+      },
+    );
+  });
+
+  group('ScheduledGroupCoordinator auto-start catch-up', () {
+    test(
+      'launch catch-up auto-starts overdue scheduled group and emits openTimer action',
+      () async {
+        final now = DateTime.now();
+        final groupRepo = FakeTaskRunGroupRepository();
+        final sessionRepo = FakePomodoroSessionRepository();
+        final appModeService = AppModeService.memory();
+        final actionCompleter = Completer<ScheduledGroupAction>();
+        final container = ProviderContainer(
+          overrides: [
+            appModeServiceProvider.overrideWithValue(appModeService),
+            taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+            pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          ],
+        );
+        addTearDown(() {
+          groupRepo.dispose();
+          sessionRepo.dispose();
+          container.dispose();
+        });
+
+        final sub = container.listen<ScheduledGroupAction?>(
+          scheduledGroupCoordinatorProvider,
+          (_, next) {
+            if (next != null && !actionCompleter.isCompleted) {
+              actionCompleter.complete(next);
+            }
+          },
+        );
+        addTearDown(sub.close);
+
+        container.read(scheduledGroupCoordinatorProvider);
+        sessionRepo.emit(null);
+        groupRepo.seed(
+          _buildScheduledGroup(
+            id: 'group-launch-catch-up',
+            scheduledStart: now.subtract(const Duration(minutes: 2)),
+            durationMinutes: 30,
+            noticeMinutes: 0,
+          ),
+        );
+
+        await _pumpQueue();
+
+        final action = await actionCompleter.future.timeout(
+          const Duration(seconds: 1),
+        );
+        expect(action.type, ScheduledGroupActionType.openTimer);
+        expect(action.groupId, 'group-launch-catch-up');
+
+        final stored = await groupRepo.getById('group-launch-catch-up');
+        expect(stored?.status, TaskRunStatus.running);
+        expect(stored?.actualStartTime, isNotNull);
+        expect(sessionRepo.publishCount, 1);
+        expect(
+          sessionRepo.lastPublishedSession?.groupId,
+          'group-launch-catch-up',
+        );
+      },
+    );
+
+    test(
+      'resume catch-up starts overdue scheduled group once timeSync becomes available in account mode',
+      () async {
+        final now = DateTime.now();
+        final groupRepo = FakeTaskRunGroupRepository();
+        final sessionRepo = FakePomodoroSessionRepository();
+        final appModeService = AppModeService.memory();
+        final timeSync = FakeTimeSyncService(initialOffset: null);
+        final coordinatorAction = Completer<ScheduledGroupAction>();
+        final container = ProviderContainer(
+          overrides: [
+            appModeServiceProvider.overrideWithValue(appModeService),
+            taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+            pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+            timeSyncServiceProvider.overrideWithValue(timeSync),
+          ],
+        );
+        addTearDown(() {
+          groupRepo.dispose();
+          sessionRepo.dispose();
+          container.dispose();
+        });
+
+        final sub = container.listen<ScheduledGroupAction?>(
+          scheduledGroupCoordinatorProvider,
+          (_, next) {
+            if (next != null && !coordinatorAction.isCompleted) {
+              coordinatorAction.complete(next);
+            }
+          },
+        );
+        addTearDown(sub.close);
+
+        final coordinator = container.read(
+          scheduledGroupCoordinatorProvider.notifier,
+        );
+        await container.read(appModeProvider.notifier).setAccount();
+        await _pumpQueue();
+
+        sessionRepo.emit(null);
+        groupRepo.seed(
+          _buildScheduledGroup(
+            id: 'group-resume-catch-up',
+            scheduledStart: now.subtract(const Duration(minutes: 3)),
+            durationMinutes: 30,
+            noticeMinutes: 0,
+          ),
+        );
+        await _pumpQueue();
+
+        final beforeResume = await groupRepo.getById('group-resume-catch-up');
+        expect(beforeResume?.status, TaskRunStatus.scheduled);
+        expect(sessionRepo.publishCount, 0);
+
+        timeSync.setOffset(Duration.zero);
+        coordinator.onAppResumed();
+        await _pumpQueue();
+
+        final action = await coordinatorAction.future.timeout(
+          const Duration(seconds: 1),
+        );
+        expect(action.type, ScheduledGroupActionType.openTimer);
+        expect(action.groupId, 'group-resume-catch-up');
+
+        final afterResume = await groupRepo.getById('group-resume-catch-up');
+        expect(afterResume?.status, TaskRunStatus.running);
+        expect(afterResume?.actualStartTime, isNotNull);
+        expect(sessionRepo.publishCount, 1);
+        expect(
+          sessionRepo.lastPublishedSession?.groupId,
+          'group-resume-catch-up',
+        );
       },
     );
   });

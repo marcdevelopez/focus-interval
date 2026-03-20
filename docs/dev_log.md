@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue historical roadmap validation backlog (`RVP-001` onward)**
+Current focus: **Continue historical roadmap validation backlog (`RVP-002` onward)**
 Last update: **20/03/2026**
 
 ---
@@ -12636,3 +12636,48 @@ PASS:
 ## 🎯 Next steps
 
 1. Continue historical pending validation backlog from `RVP-001` (P2 queue).
+
+# 🔹 Block 614 — RVP-001 validation closure (20/03/2026)
+
+## 📋 Context
+
+First pending P2 historical validation item:
+`RVP-001` — scheduled auto-start + resume/launch catch-up.
+
+Concrete validated case to close: if a scheduled group start time is already in
+the past (app launched late or resumed late), the coordinator must catch up and
+auto-start the group (including Account Mode resume when timeSync becomes
+available), then open Run Mode and publish the initial session snapshot.
+
+## ✔ Work completed
+
+- Extended coordinator tests in:
+  - `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+- Added dedicated launch catch-up validation:
+  - `launch catch-up auto-starts overdue scheduled group and emits openTimer action`
+  - Asserts `openTimer`, `running` status transition, and initial session publish.
+- Added dedicated resume catch-up validation (Account Mode + late timeSync):
+  - `resume catch-up starts overdue scheduled group once timeSync becomes available in account mode`
+  - Asserts no start while timeSync is unavailable, then start on `onAppResumed()`
+    after timeSync offset becomes available, with `openTimer` + publish path.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-001` -> `Closed/OK`.
+  - `docs/roadmap.md`: roadmap line updated to validated/closed state.
+  - `docs/dev_log.md`: current focus moved to `RVP-002 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart --plain-name "launch catch-up auto-starts overdue scheduled group and emits openTimer action"` -> `+1`.
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart --plain-name "resume catch-up starts overdue scheduled group once timeSync becomes available in account mode"` -> `+1`.
+
+## 📁 Updated files
+
+- `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-002` validation (completion modal -> Groups Hub navigation baseline backlog item).

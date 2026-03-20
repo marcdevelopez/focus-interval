@@ -52,7 +52,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       25/01/2026: Phase 13 reopen item completed (auto-open running session on launch/login).
       25/01/2026: Active-session auto-open listener moved to app root (covers Task Editor/macOS).
       25/01/2026: macOS auto-open stabilized with navigator-ready retry (release build edge case).
-      26/01/2026: Scheduled auto-start + resume/launch catch-up implemented (validation pending).
+      26/01/2026: Scheduled auto-start + resume/launch catch-up implemented (validated 20/03/2026; `RVP-001` Closed/OK).
       26/01/2026: Scheduled auto-start allows any device to claim immediately at scheduled time.
       26/01/2026: Release validation — scheduled by Android (app closed), macOS open claimed owner; Android opened later in mirror mode.
       29/01/2026: Desktop GitHub device flow validated on macOS/Windows.
