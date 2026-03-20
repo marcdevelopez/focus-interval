@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue reopened P1 roadmap validation queue (`RVP-065` to `RVP-069`) in order**
+Current focus: **Continue reopened P1 roadmap validation queue (`RVP-066` to `RVP-069`) in order**
 Last update: **20/03/2026**
 
 ---
@@ -12385,3 +12385,47 @@ PASS:
 
 1. Execute `RVP-065` validation (Phase 13 mirror session-gap stability).
 2. Then continue with `RVP-066` to `RVP-069` in order.
+
+# 🔹 Block 608 — RVP-065 validation closure (20/03/2026)
+
+## 📋 Context
+
+After closing `RVP-063/064`, the next P1 reopened validation item was:
+`RVP-065` — "Mirror session gaps must not drop Run Mode to Ready."
+
+This behavior was already functionally covered by the Fix 26 rewrite closure
+(`BUG-001` closed/OK), but the roadmap/ledger item remained pending.
+
+## ✔ Work completed
+
+- Executed focused local regression suites for session-gap behavior:
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+  - `flutter test test/presentation/timer_screen_syncing_overlay_test.dart`
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart`
+- Confirmed code-path guardrails remain in place:
+  - 3s debounce before hold entry on stream null while ticking.
+  - Hold/sync overlay path (`sessionMissingHold`, `runningWithoutSession`) instead
+    of fallback to Ready during transient session gaps.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-065` moved to `Closed/OK`
+    with Fix 26/BUG-001 evidence + local test gate.
+  - `docs/roadmap.md`: reopened Phase 13 item marked `Closed/OK`.
+  - `docs/dev_log.md`: status header focus advanced to `RVP-066..069`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` → `+25`.
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` → `+4`.
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → `+4`.
+
+## 📁 Updated files
+
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-066` validation (Phase 18 mode-specific breaks).
+2. Then continue with `RVP-067` to `RVP-069`.
