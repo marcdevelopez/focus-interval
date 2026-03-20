@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue reopened P1 roadmap validation queue (`RVP-069`)**
+Current focus: **Continue historical roadmap validation backlog (`RVP-001` onward)**
 Last update: **20/03/2026**
 
 ---
@@ -12592,3 +12592,47 @@ PASS:
 ## 🎯 Next steps
 
 1. Execute `RVP-069` validation (deterministic initial ownership with multiple devices open).
+
+# 🔹 Block 613 — RVP-069 validation closure (20/03/2026)
+
+## 📋 Context
+
+Final pending P1 reopened validation item:
+`RVP-069` — initial ownership assignment must be deterministic with multiple
+devices open.
+
+Implementation existed in commit `33a17b7` (start-now owner determinism),
+with single-owner claim protection from `tryClaimSession` path. Closure required
+explicit test evidence for both non-initiator blocking and claim-race fallback.
+
+## ✔ Work completed
+
+- Extended ownership viewmodel test coverage in:
+  - `test/presentation/viewmodels/pomodoro_view_model_ownership_request_test.dart`
+- Added two dedicated validation scenarios:
+  - `start blocks non-initiator when running group was started by another device`
+    (`scheduledByDeviceId` guard path).
+  - `start remains idle when claim fails (single-owner race protection)`
+    (`tryClaimSession` race-fail path).
+- Updated test repository double to record claim attempts and claimed session.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-069` → `Closed/OK`.
+  - `docs/roadmap.md`: deterministic ownership item marked `Closed/OK`.
+  - `docs/dev_log.md`: current focus moved to historical validation backlog.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_ownership_request_test.dart` → `+4`.
+- `flutter analyze` → No issues found.
+
+## 📁 Updated files
+
+- `test/presentation/viewmodels/pomodoro_view_model_ownership_request_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Continue historical pending validation backlog from `RVP-001` (P2 queue).
