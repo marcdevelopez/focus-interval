@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue historical roadmap validation backlog (`RVP-021` onward)**
+Current focus: **Prioritize active bug-log queue sync/triage before continuing RVP backlog**
 Last update: **20/03/2026**
 
 ---
@@ -13679,3 +13679,37 @@ Documentation audit only (no runtime code change).
 ## 🎯 Next steps
 
 1. Continue historical RVP validation order from `RVP-021`.
+
+# 🔹 Block 637 — Bug-log -> validation-ledger queue sync (20/03/2026)
+
+## 📋 Context
+
+Owner requested to prioritize bugs over historical RVP validations and asked for
+all non-closed entries in `docs/bugs/bug_log.md` to be explicitly represented in
+`docs/validation/validation_ledger.md`.
+
+## ✔ Work completed
+
+- Audited all bug-log `Status:` blocks and extracted non-closed entries.
+- Added a dedicated ledger section:
+  - `### Active bug-log queue (sync 2026-03-20)`
+- Registered all currently non-closed bug-log items (15 total) with stable
+  ledger IDs, priorities, and actionable statuses (`Pending` or `In validation`).
+- Included explicit source references to `bug_log.md` line numbers for each
+  queue item.
+- Captured reopened traceability for `BUG-F25-E` as `BUGLOG-F25-E-R1` so the
+  open bug-log state is visible in the active queue.
+
+## 🧪 Verification run
+
+Documentation sync only (no runtime code changes).
+
+## 📁 Updated files
+
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Start resolving the active bug-log queue in priority order (P1 first), then
+   resume historical RVP backlog.
