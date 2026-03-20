@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue reopened P1 roadmap validation queue (`RVP-068` to `RVP-069`) in order**
+Current focus: **Continue reopened P1 roadmap validation queue (`RVP-069`)**
 Last update: **20/03/2026**
 
 ---
@@ -12547,3 +12547,48 @@ PASS:
 ## 🎯 Next steps
 
 1. Execute `RVP-068` validation (completion modal + Groups Hub navigation on owner/mirror).
+
+# 🔹 Block 612 — RVP-068 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P1 reopened validation item:
+`RVP-068` — completion modal + Groups Hub navigation must work on owner and
+mirror devices.
+
+Implementation already existed in commit `323f6bf`, but closure required
+explicit owner/mirror validation evidence in the current ledger pass.
+
+## ✔ Work completed
+
+- Added dedicated widget coverage:
+  - `test/presentation/timer_screen_completion_navigation_test.dart` (new)
+  - Owner scenario: when running group transitions to `completed`, completion
+    modal appears and tapping `OK` lands on Groups Hub.
+  - Mirror scenario: same completion + navigation flow validated while
+    `ownerDeviceId != local device` (mirror mode).
+- Coverage targets the production completion-handling path in `TimerScreen`:
+  - `_maybeHandleGroupCompleted`
+  - `_showFinishedDialog`
+  - `_navigateToGroupsHubAfterCompletion`
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-068` → `Closed/OK`.
+  - `docs/roadmap.md`: completion-modal owner/mirror item marked `Closed/OK`.
+  - `docs/dev_log.md`: status header focus moved to `RVP-069`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` → `+2`.
+- `flutter analyze` → No issues found.
+
+## 📁 Updated files
+
+- `test/presentation/timer_screen_completion_navigation_test.dart` (new)
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-069` validation (deterministic initial ownership with multiple devices open).

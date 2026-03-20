@@ -498,7 +498,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
   timeSync offset measurements after offline/background reconnect and avoid
   transient wrong timer projection (validation pending).~~
   **Closed/OK 09/03/2026** (commit `418c75f`, quick packet rerun PASS).
-- Phase 18 — Completion modal + Groups Hub navigation must work on owner and mirror devices (validation pending).
+- ~~Phase 18 — Completion modal + Groups Hub navigation must work on owner and mirror devices (validation pending).~~ **Closed/OK on 20/03/2026 (`RVP-068`; implementation commit `323f6bf` + owner/mirror widget validation tests PASS).**
 - Phase 18 — Run Mode ownership visibility + take ownership UX (new requirement).
 - Phase 18 — Ownership transfer requires owner approval + rejection state (new requirement).
 - Phase 18 — Mirror auto-takeover when owner is inactive (stale heartbeat) (new requirement).
