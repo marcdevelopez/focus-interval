@@ -244,6 +244,7 @@ TaskRunGroup _buildScheduledGroup({required String id, required DateTime now}) {
     scheduledStartTime: now.add(const Duration(minutes: 20)),
     actualStartTime: null,
     theoreticalEndTime: now.add(const Duration(minutes: 45)),
+    noticeMinutes: 0,
     updatedAt: now,
   );
 }
@@ -378,6 +379,7 @@ Future<void> _pumpTaskListScreen({
   required WidgetTester tester,
   required ProviderContainer container,
   TaskGroupPlanningResult? planningResult,
+  Widget Function(String groupId)? timerBuilder,
 }) async {
   final router = GoRouter(
     initialLocation: '/tasks',
@@ -396,7 +398,10 @@ Future<void> _pumpTaskListScreen({
       GoRoute(
         path: '/timer/:id',
         builder: (context, state) {
-          return TimerScreen(groupId: state.pathParameters['id']!);
+          final groupId = state.pathParameters['id']!;
+          final builder = timerBuilder;
+          if (builder != null) return builder(groupId);
+          return TimerScreen(groupId: groupId);
         },
       ),
     ],
@@ -414,6 +419,7 @@ Future<void> _pumpTaskListScreen({
 Future<void> _pumpGroupsHubScreen({
   required WidgetTester tester,
   required ProviderContainer container,
+  Widget Function(String groupId)? timerBuilder,
 }) async {
   final router = GoRouter(
     initialLocation: '/groups',
@@ -426,7 +432,10 @@ Future<void> _pumpGroupsHubScreen({
       GoRoute(
         path: '/timer/:id',
         builder: (context, state) {
-          return TimerScreen(groupId: state.pathParameters['id']!);
+          final groupId = state.pathParameters['id']!;
+          final builder = timerBuilder;
+          if (builder != null) return builder(groupId);
+          return TimerScreen(groupId: groupId);
         },
       ),
     ],
@@ -786,6 +795,138 @@ void main() {
       }
     }
   });
+
+  testWidgets('Task List pre-run banner opens Timer via Open Pre-Run', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'linux_sync_notice_seen': true,
+      'web_local_notice_seen': true,
+    });
+    final now = DateTime.now();
+    final preRunGroup =
+        _buildScheduledGroup(id: 'task-list-pre-run-group', now: now).copyWith(
+          scheduledStartTime: now.add(const Duration(minutes: 5)),
+          theoreticalEndTime: now.add(const Duration(minutes: 30)),
+          noticeMinutes: 10,
+        );
+    final groupRepo = FakeTaskRunGroupRepository()..seed(preRunGroup);
+    final sessionRepo = FakePomodoroSessionRepository(null);
+    final appModeService = AppModeService.memory();
+    var disposed = false;
+
+    final container = ProviderContainer(
+      overrides: [
+        firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+        firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+        taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+        pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+        appModeServiceProvider.overrideWithValue(appModeService),
+        soundServiceProvider.overrideWithValue(FakeSoundService()),
+        timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+      ],
+    );
+    try {
+      await _pumpTaskListScreen(
+        tester: tester,
+        container: container,
+        timerBuilder: (groupId) =>
+            Scaffold(body: Text('timer-screen-$groupId')),
+      );
+      await _pumpUntilFound(
+        tester,
+        find.textContaining('Pre-Run active · Starts in'),
+      );
+      expect(
+        find.widgetWithText(ElevatedButton, 'Open Pre-Run'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Open Pre-Run'));
+      await _pumpUntilFound(
+        tester,
+        find.text('timer-screen-${preRunGroup.id}'),
+      );
+      expect(find.text('timer-screen-${preRunGroup.id}'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 100));
+      container.dispose();
+      sessionRepo.dispose();
+      groupRepo.dispose();
+      disposed = true;
+    } finally {
+      if (!disposed) {
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+      }
+    }
+  });
+
+  testWidgets(
+    'Groups Hub shows Open Pre-Run action for active pre-run scheduled group',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final preRunGroup =
+          _buildScheduledGroup(
+            id: 'groups-hub-pre-run-group',
+            now: now,
+          ).copyWith(
+            scheduledStartTime: now.add(const Duration(minutes: 5)),
+            theoreticalEndTime: now.add(const Duration(minutes: 30)),
+            noticeMinutes: 10,
+          );
+      final groupRepo = FakeTaskRunGroupRepository()..seed(preRunGroup);
+      final sessionRepo = FakePomodoroSessionRepository(null);
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      try {
+        await _pumpGroupsHubScreen(
+          tester: tester,
+          container: container,
+          timerBuilder: (groupId) =>
+              Scaffold(body: Text('timer-screen-$groupId')),
+        );
+        await _pumpUntilFound(tester, find.text('Open Pre-Run'));
+        expect(find.text('Open Pre-Run'), findsOneWidget);
+        expect(find.text('Start now'), findsNothing);
+
+        await tester.tap(find.text('Open Pre-Run'));
+        await _pumpUntilFound(
+          tester,
+          find.text('timer-screen-${preRunGroup.id}'),
+        );
+        expect(find.text('timer-screen-${preRunGroup.id}'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
 
   testWidgets('Groups Hub core sections and actions are visible', (
     tester,

@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue historical roadmap validation backlog (`RVP-009` onward)**
+Current focus: **Continue historical roadmap validation backlog (`RVP-010` onward)**
 Last update: **20/03/2026**
 
 ---
@@ -13060,3 +13060,50 @@ backlog is closed.
 1. Continue historical validation queue with `RVP-009`.
 2. Re-open `IDEA-039` implementation only after the `RVP-*` backlog priority
    gate is satisfied.
+
+# 🔹 Block 623 — RVP-009 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-009` — scheduled groups in active Pre-Run must expose direct Run Mode
+entry points from both surfaces:
+1. Task List active Pre-Run banner shows `Open Pre-Run`.
+2. Groups Hub scheduled card shows `Open Pre-Run` (instead of `Start now`)
+   while the Pre-Run window is active.
+
+## ✔ Work completed
+
+- Extended widget-test harness in:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+  - Added optional timer route stubbing to `_pumpTaskListScreen` and
+    `_pumpGroupsHubScreen` so route-navigation assertions are deterministic.
+- Added dedicated `RVP-009` validation scenarios:
+  - `Task List pre-run banner opens Timer via Open Pre-Run`
+  - `Groups Hub shows Open Pre-Run action for active pre-run scheduled group`
+- Both scenarios validate:
+  - `Open Pre-Run` CTA is visible in active Pre-Run context,
+  - Groups Hub does not show `Start now` for that active Pre-Run card,
+  - tapping the CTA navigates to `/timer/:groupId`.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-009` -> `Closed/OK`
+    (implementation commit `358c278`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-010 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+12`.
+- `flutter analyze` -> `No issues found!`.
+
+## 📁 Updated files
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-010` validation (Task List persistent Groups Hub CTA with no active group).
