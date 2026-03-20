@@ -102,6 +102,9 @@ DateTime? resolvePostponedAnchorEnd({
       now: now,
     );
   }
+  if (anchor.status == TaskRunStatus.canceled) {
+    return null;
+  }
   final effectiveEnd = resolveEffectiveScheduledEnd(
     group: anchor,
     allGroups: allGroups,
@@ -182,7 +185,7 @@ DateTime? resolveEffectiveScheduledStart({
     group,
     fallback: fallbackNoticeMinutes,
   );
-  return anchorEnd.add(Duration(minutes: noticeMinutes));
+  return ceilToMinute(anchorEnd.add(Duration(minutes: noticeMinutes)));
 }
 
 DateTime? resolveEffectivePreRunStart({
@@ -239,8 +242,8 @@ List<TaskRunGroup> resolveLateStartConflictSet({
   int? fallbackNoticeMinutes,
 }) {
   if (scheduled.isEmpty) return const [];
-  final overdue = scheduled
-      .where((group) {
+  final overdue =
+      scheduled.where((group) {
         final effectiveStart =
             resolveEffectiveScheduledStart(
               group: group,
@@ -251,29 +254,27 @@ List<TaskRunGroup> resolveLateStartConflictSet({
             ) ??
             group.scheduledStartTime!;
         return !effectiveStart.isAfter(now);
-      })
-      .toList()
-    ..sort((a, b) {
-      final aStart =
-          resolveEffectiveScheduledStart(
-            group: a,
-            allGroups: allGroups,
-            activeSession: activeSession,
-            now: now,
-            fallbackNoticeMinutes: fallbackNoticeMinutes,
-          ) ??
-          a.scheduledStartTime!;
-      final bStart =
-          resolveEffectiveScheduledStart(
-            group: b,
-            allGroups: allGroups,
-            activeSession: activeSession,
-            now: now,
-            fallbackNoticeMinutes: fallbackNoticeMinutes,
-          ) ??
-          b.scheduledStartTime!;
-      return aStart.compareTo(bStart);
-    });
+      }).toList()..sort((a, b) {
+        final aStart =
+            resolveEffectiveScheduledStart(
+              group: a,
+              allGroups: allGroups,
+              activeSession: activeSession,
+              now: now,
+              fallbackNoticeMinutes: fallbackNoticeMinutes,
+            ) ??
+            a.scheduledStartTime!;
+        final bStart =
+            resolveEffectiveScheduledStart(
+              group: b,
+              allGroups: allGroups,
+              activeSession: activeSession,
+              now: now,
+              fallbackNoticeMinutes: fallbackNoticeMinutes,
+            ) ??
+            b.scheduledStartTime!;
+        return aStart.compareTo(bStart);
+      });
   if (overdue.isEmpty) return const [];
 
   if (overdue.length == 1) {
@@ -491,12 +492,7 @@ DateTime _scheduledWindowEnd(
   return scheduledStart.add(Duration(seconds: duration));
 }
 
-bool _overlaps(
-  DateTime aStart,
-  DateTime aEnd,
-  DateTime bStart,
-  DateTime bEnd,
-) {
+bool _overlaps(DateTime aStart, DateTime aEnd, DateTime bStart, DateTime bEnd) {
   final safeAEnd = aEnd.isBefore(aStart) ? aStart : aEnd;
   final safeBEnd = bEnd.isBefore(bStart) ? bStart : bEnd;
   return aStart.isBefore(safeBEnd) && safeAEnd.isAfter(bStart);

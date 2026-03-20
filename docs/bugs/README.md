@@ -14,8 +14,12 @@ cd /Users/devcodex/development/focus_interval
 2. Crea el directorio de logs de la validacion actual:
 
 ```bash
-mkdir -p docs/bugs/validation_fix_YYYY_MM_DD/logs
+mkdir -p docs/bugs/validation_<bug-id>_YYYY_MM_DD/logs
 ```
+
+> **Naming rule**: `<bug-id>` es el ID normalizado del bug log en minúsculas sin guiones
+> (`BUG-F25-H` → `f25h`, `BUG-001` → `bug001`). Nunca usar `fix_` ni nombres descriptivos libres.
+> Regla completa en `CLAUDE.md` sección 10 — Folder naming.
 
 3. Ejecuta el comando segun plataforma:
 
@@ -25,7 +29,7 @@ Release (prod):
 
 ```bash
 flutter run -v --release -d RMX3771 --dart-define=APP_ENV=prod \
-  2>&1 | tee docs/bugs/validation_fix_YYYY_MM_DD/logs/YYYY-MM-DD_android_RMX3771_diag.log
+  2>&1 | tee docs/bugs/validation_<bug-id>_YYYY_MM_DD/logs/YYYY-MM-DD_android_RMX3771_diag.log
 ```
 
 Debug (prod + override temporal):
@@ -33,7 +37,7 @@ Debug (prod + override temporal):
 ```bash
 flutter run -v --debug -d RMX3771 --dart-define=APP_ENV=prod \
   --dart-define=ALLOW_PROD_IN_DEBUG=true \
-  2>&1 | tee docs/bugs/validation_fix_YYYY_MM_DD/logs/YYYY-MM-DD_android_RMX3771_debug.log
+  2>&1 | tee docs/bugs/validation_<bug-id>_YYYY_MM_DD/logs/YYYY-MM-DD_android_RMX3771_debug.log
 ```
 
 ### macOS
@@ -42,7 +46,7 @@ Release (prod):
 
 ```bash
 flutter run -v --release -d macos --dart-define=APP_ENV=prod \
-  2>&1 | tee docs/bugs/validation_fix_YYYY_MM_DD/logs/YYYY-MM-DD_macos_diag.log
+  2>&1 | tee docs/bugs/validation_<bug-id>_YYYY_MM_DD/logs/YYYY-MM-DD_macos_diag.log
 ```
 
 Debug (prod + override temporal):
@@ -50,7 +54,7 @@ Debug (prod + override temporal):
 ```bash
 flutter run -v --debug -d macos --dart-define=APP_ENV=prod \
   --dart-define=ALLOW_PROD_IN_DEBUG=true \
-  2>&1 | tee docs/bugs/validation_fix_YYYY_MM_DD/logs/YYYY-MM-DD_macos_debug.log
+  2>&1 | tee docs/bugs/validation_<bug-id>_YYYY_MM_DD/logs/YYYY-MM-DD_macos_debug.log
 ```
 
 ### Windows
@@ -59,7 +63,7 @@ Release (prod):
 
 ```bash
 flutter run -v --release -d windows --dart-define=APP_ENV=prod \
-  2>&1 | tee docs/bugs/validation_fix_YYYY_MM_DD/logs/YYYY-MM-DD_windows_diag.log
+  2>&1 | tee docs/bugs/validation_<bug-id>_YYYY_MM_DD/logs/YYYY-MM-DD_windows_diag.log
 ```
 
 Debug (prod + override temporal):
@@ -67,7 +71,7 @@ Debug (prod + override temporal):
 ```bash
 flutter run -v --debug -d windows --dart-define=APP_ENV=prod \
   --dart-define=ALLOW_PROD_IN_DEBUG=true \
-  2>&1 | tee docs/bugs/validation_fix_YYYY_MM_DD/logs/YYYY-MM-DD_windows_debug.log
+  2>&1 | tee docs/bugs/validation_<bug-id>_YYYY_MM_DD/logs/YYYY-MM-DD_windows_debug.log
 ```
 
 ### Linux
@@ -76,7 +80,7 @@ Release (prod):
 
 ```bash
 flutter run -v --release -d linux --dart-define=APP_ENV=prod \
-  2>&1 | tee docs/bugs/validation_fix_YYYY_MM_DD/logs/YYYY-MM-DD_linux_diag.log
+  2>&1 | tee docs/bugs/validation_<bug-id>_YYYY_MM_DD/logs/YYYY-MM-DD_linux_diag.log
 ```
 
 Debug (prod + override temporal):
@@ -84,7 +88,7 @@ Debug (prod + override temporal):
 ```bash
 flutter run -v --debug -d linux --dart-define=APP_ENV=prod \
   --dart-define=ALLOW_PROD_IN_DEBUG=true \
-  2>&1 | tee docs/bugs/validation_fix_YYYY_MM_DD/logs/YYYY-MM-DD_linux_debug.log
+  2>&1 | tee docs/bugs/validation_<bug-id>_YYYY_MM_DD/logs/YYYY-MM-DD_linux_debug.log
 ```
 
 ### iOS Simulator (ejemplo iPhone 17 Pro)
@@ -92,7 +96,7 @@ flutter run -v --debug -d linux --dart-define=APP_ENV=prod \
 ```bash
 flutter run -v --debug -d "iPhone 17 Pro" --dart-define=APP_ENV=prod \
   --dart-define=ALLOW_PROD_IN_DEBUG=true \
-  2>&1 | tee docs/bugs/validation_fix_YYYY_MM_DD/logs/YYYY-MM-DD_ios_simulator_iphone_17_pro_diag.log
+  2>&1 | tee docs/bugs/validation_<bug-id>_YYYY_MM_DD/logs/YYYY-MM-DD_ios_simulator_iphone_17_pro_diag.log
 ```
 
 ### Web (Chrome)
@@ -101,7 +105,7 @@ Release (prod):
 
 ```bash
 flutter run -v --release -d chrome --dart-define=APP_ENV=prod \
-  2>&1 | tee docs/bugs/validation_fix_YYYY_MM_DD/logs/YYYY-MM-DD_web_chrome_diag.log
+  2>&1 | tee docs/bugs/validation_<bug-id>_YYYY_MM_DD/logs/YYYY-MM-DD_web_chrome_diag.log
 ```
 
 Debug (prod + override temporal):
@@ -109,7 +113,7 @@ Debug (prod + override temporal):
 ```bash
 flutter run -v --debug -d chrome --dart-define=APP_ENV=prod \
   --dart-define=ALLOW_PROD_IN_DEBUG=true \
-  2>&1 | tee docs/bugs/validation_fix_YYYY_MM_DD/logs/YYYY-MM-DD_web_chrome_debug.log
+  2>&1 | tee docs/bugs/validation_<bug-id>_YYYY_MM_DD/logs/YYYY-MM-DD_web_chrome_debug.log
 ```
 
 ## Notas

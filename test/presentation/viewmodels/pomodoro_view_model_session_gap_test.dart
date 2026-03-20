@@ -163,6 +163,7 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
     required String ownerDeviceId,
     required String requesterDeviceId,
     required bool approved,
+    Map<String, dynamic>? cursorSnapshot,
   }) async {}
 
   void dispose() {
@@ -605,6 +606,109 @@ void main() {
       expect(vm.activeSessionForCurrentGroup?.ownerDeviceId, 'android-owner');
       expect(vm.isSessionMissingWhileRunning, isFalse);
       expect(state.status, PomodoroStatus.shortBreakRunning);
+    },
+  );
+
+  test(
+    'owner hot-swap fallback publish is one-shot for repeated snapshots',
+    () async {
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'group-owner-hot-swap-once',
+        start: now,
+      );
+      final taskId = group.tasks.first.sourceTaskId;
+      final mirrorSession = PomodoroSession(
+        taskId: taskId,
+        groupId: group.id,
+        currentTaskId: taskId,
+        currentTaskIndex: 0,
+        totalTasks: 1,
+        dataVersion: kCurrentDataVersion,
+        sessionRevision: 40,
+        ownerDeviceId: 'other-device',
+        status: PomodoroStatus.pomodoroRunning,
+        phase: PomodoroPhase.pomodoro,
+        currentPomodoro: 1,
+        totalPomodoros: 2,
+        phaseDurationSeconds: 25 * 60,
+        remainingSeconds: 1400,
+        accumulatedPausedSeconds: 0,
+        phaseStartedAt: now.subtract(const Duration(minutes: 2)),
+        currentTaskStartedAt: now.subtract(const Duration(minutes: 2)),
+        pausedAt: null,
+        lastUpdatedAt: now,
+        finishedAt: null,
+        pauseReason: null,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(mirrorSession);
+      final appModeService = AppModeService.memory();
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      addTearDown(() {
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      final baselinePublishes = sessionRepo.publishCount;
+
+      for (var i = 0; i < 5; i += 1) {
+        final ownerSnapshot = PomodoroSession(
+          taskId: taskId,
+          groupId: group.id,
+          currentTaskId: taskId,
+          currentTaskIndex: 0,
+          totalTasks: 1,
+          dataVersion: kCurrentDataVersion,
+          sessionRevision: 41,
+          ownerDeviceId: deviceInfo.deviceId,
+          status: PomodoroStatus.pomodoroRunning,
+          phase: PomodoroPhase.pomodoro,
+          currentPomodoro: 1,
+          totalPomodoros: 2,
+          phaseDurationSeconds: 25 * 60,
+          remainingSeconds: 1390 - i,
+          accumulatedPausedSeconds: 0,
+          phaseStartedAt: now.subtract(const Duration(minutes: 2)),
+          currentTaskStartedAt: now.subtract(const Duration(minutes: 2)),
+          pausedAt: null,
+          lastUpdatedAt: now.add(Duration(seconds: i + 1)),
+          finishedAt: null,
+          pauseReason: null,
+        );
+        sessionRepo.emit(ownerSnapshot);
+        await _pumpQueue();
+      }
+
+      expect(
+        sessionRepo.publishCount - baselinePublishes,
+        lessThanOrEqualTo(1),
+        reason:
+            'Hot-swap fallback publish must run at most once per ownership '
+            'acquisition; repeated same-revision snapshots must not trigger '
+            'a write loop.',
+      );
     },
   );
 

@@ -32,6 +32,40 @@ Gate:
      - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_04.png`
      - `docs/bugs/validation_fix_2026_03_05/screenshots/2026_03_06_fix24_validation_and_fix26_discovery/fix24_pass/fix24_pass_05.png`
 3. [ ] Local → Account sin overlaps falsos; request ownership llega (Fix 25).
+   Re-validation run (2026-03-16, post Fix-26 rewrite, main branch):
+   - iOS simulator iPhone 17 Pro (owner): `docs/bugs/validation_fix_2026_03_05/logs/2026-03-16_fix25_reval_ios_iPhone17Pro_debug.log`
+   - Chrome (mirror): `docs/bugs/validation_fix_2026_03_05/logs/2026-03-16_fix25_reval_chrome_debug.log`
+   - Protocol: 2 groups 1 min apart; one device switches to Local Mode during Grupo A; returns to Account after Grupo B start time.
+   - Review result: FAIL (three blockers found) — BUG-F25-A, BUG-F25-B, BUG-F25-C.
+   - Fix implementation (16/03/2026): applied on branch `fix-f25-transaction-order-and-owner-dialog`.
+   - Code verification:
+     - `flutter analyze` → PASS
+     - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` → PASS
+     - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
+     - `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` → PASS
+   - Validation status: pending exact repro re-run on devices (owner + mirror).
+   Re-validation run (2026-03-17, branch `fix-f25-transaction-order-and-owner-dialog`, commit `fd788e6`):
+   - iOS simulator iPhone 17 Pro (owner): `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval2_fd788e6_ios_iPhone17Pro_debug.log`
+   - Chrome (mirror): `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval2_fd788e6_chrome_debug.log`
+   - Result:
+     - BUG-F25-A: PASS (ownership request delivery/acceptance works).
+     - BUG-F25-B: PASS (no context-after-dispose exception on dialog close in this run).
+     - BUG-F25-C: FAIL (owner still sees `Owner resolved` modal on `Continue` path).
+   - Follow-up implementation (17/03/2026): moved `_resolved = true` before the
+     first `await` in `_applySelection` to remove owner-side race with Firestore
+     stream updates. Pending exact repro re-run for closure.
+   Re-validation run (2026-03-17, branch `fix-f25-transaction-order-and-owner-dialog`, commit `95494ab`):
+   - iOS simulator iPhone 17 Pro (owner): `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval3_95494ab_ios_iPhone17Pro_debug.log`
+   - Chrome (mirror): `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval3_95494ab_chrome_debug.log`
+   - Result:
+     - BUG-F25-C: PASS (owner saw no "Owner resolved" modal after confirming Continue).
+     - P0-F25-001: Closed/OK. All three blockers (A/B/C) validated across reval #2 and #3.
+   - New findings from this run (not Fix 25 scope):
+     - BUG-F25-D (P1): Riverpod StateController<RunningOverlapDecision?> modified
+       during build on mirror — red error screen <1s (open, Phase 17 scope).
+     - BUG-F25-E (P2): Re-plan conflict modal shows no group name/range (open, Phase 17 scope).
+     - BUG-F25-F (P2): Postpone snackbar shows "(pre-run at X)" when notice=0 (open, Phase 17 scope).
+3. [x] Local → Account sin overlaps falsos; request ownership llega (Fix 25) — **Closed/OK** (17/03/2026, commit `95494ab`).
 
 ## New finding (outside Fix 24 scope)
 - [x] Fix 26 — Mirror/owner no queda en `Syncing session...` tras cancel y en

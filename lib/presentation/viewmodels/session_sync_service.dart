@@ -372,6 +372,32 @@ class SessionSyncService extends Notifier<SessionSyncState> {
         _onSessionReceived(serverSession);
         return;
       }
+      final groupId = state.attachedGroupId;
+      if (groupId != null) {
+        final groupRepo = ref.read(taskRunGroupRepositoryProvider);
+        final group = await groupRepo.getById(groupId);
+        if (!state.holdActive) return;
+        if (group != null &&
+            (group.status == TaskRunStatus.canceled ||
+                group.status == TaskRunStatus.completed)) {
+          _latchTimer?.cancel();
+          _latchTimer = null;
+          _recoveryRetryTimer?.cancel();
+          _recoveryRetryTimer = null;
+          state = state.copyWith(
+            holdActive: false,
+            clearLatestSession: true,
+            recoveryStatus: RecoveryStatus.idle,
+          );
+          if (kDebugMode) {
+            debugPrint(
+              '[SessionSync] hold cleared — group terminal '
+              'groupId=$groupId status=${group.status.name}',
+            );
+          }
+          return;
+        }
+      }
       if (state.recoveryStatus != RecoveryStatus.failed) {
         state = state.copyWith(recoveryStatus: RecoveryStatus.failed);
       }

@@ -77,6 +77,24 @@ class PomodoroSession {
     if (ownershipRequest != null) 'ownershipRequest': ownershipRequest!.toMap(),
   };
 
+  Map<String, dynamic> toCursorMap() => {
+    'phase': phase?.name,
+    'currentPomodoro': currentPomodoro,
+    'totalPomodoros': totalPomodoros,
+    'phaseDurationSeconds': phaseDurationSeconds,
+    'remainingSeconds': remainingSeconds,
+    'accumulatedPausedSeconds': accumulatedPausedSeconds,
+    'phaseStartedAt': phaseStartedAt,
+    'currentTaskStartedAt': currentTaskStartedAt,
+    'pausedAt': pausedAt,
+    'pauseReason': pauseReason,
+    'finishedAt': finishedAt,
+    'status': status.name,
+    'currentTaskId': currentTaskId,
+    'currentTaskIndex': currentTaskIndex,
+    'totalTasks': totalTasks,
+  };
+
   factory PomodoroSession.fromMap(Map<String, dynamic> map) {
     final statusRaw = map['status'] as String?;
     final phaseRaw = map['phase'] as String?;

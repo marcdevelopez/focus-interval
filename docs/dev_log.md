@@ -25,9 +25,9 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **Fix 26 rewrite validated in Stage C pass2 soak and closed (`P0-F26-006`)**
-Current focus: **Sync closure docs + continue next pending validation items**
-Last update: **16/03/2026**
+Last bug fix: **Running-overlap provider build-phase mutation guard implemented for mirror red-flash regression (BUG-F25-D)**
+Current focus: **Run exact owner+mirror repro packet for BUG-F25-D and close validation if no red flash/regressions are observed**
+Last update: **19/03/2026**
 
 ---
 
@@ -11438,3 +11438,873 @@ Claude reviewed both pass2 logs and approved closure.
 
 - `P0-F26-006` is closed. Any future changes in sync/timer ownership behavior must
   be treated as a new validation item with fresh exact repro + soak evidence.
+
+---
+
+# 🔹 Block 590 — Fix 25 re-validation architectural review; BUG-F25-A/B/C documented (16/03/2026)
+
+## 📋 Context
+
+Fix 25 re-validation run completed (2026-03-16, main branch post Fix-26 rewrite).
+Devices: iOS simulator iPhone 17 Pro (owner) + Chrome (mirror).
+Protocol: 2 groups 1 min apart; Chrome switches to Local Mode during Grupo A;
+returns to Account after Grupo B start time.
+
+Logs:
+- `docs/bugs/validation_fix_2026_03_05/logs/2026-03-16_fix25_reval_ios_iPhone17Pro_debug.log`
+- `docs/bugs/validation_fix_2026_03_05/logs/2026-03-16_fix25_reval_chrome_debug.log`
+
+## ✔ Work completed
+
+Architectural review of re-validation logs identified three blocking bugs:
+
+**BUG-F25-A** — `requestLateStartOwnership` Firestore transaction order violation
+- File: `lib/data/repositories/firestore_task_run_group_repository.dart:292`
+- Root cause: per-group loop interleaves tx.get() and tx.set() across iterations.
+  When groups.length > 1, tx.get(group[1]) is issued AFTER tx.set(group[0]),
+  which violates the Firestore SDK invariant that all reads must precede all writes.
+  The SDK throws `_commands.isEmpty` assertion.
+- Evidence: 4 consecutive failures in iOS log (lines 50742/50775/50796/50819);
+  Chrome received zero ownership requests during the entire session.
+- Fix: split into Phase 1 (all reads, collect results) + Phase 2 (all writes).
+
+**BUG-F25-B** — `_showOwnerResolvedDialog` OK button context-after-dispose
+- File: `lib/presentation/screens/late_start_overlap_queue_screen.dart:563`
+- Root cause: OK button closure captures the outer `BuildContext`. If
+  `_LateStartOverlapQueueScreenState` is disposed before the user taps OK
+  (e.g., stream update navigates away), `Navigator.of(context)` throws.
+  The `if (!mounted) return` guard at line 570 protects only the post-await
+  `context.go('/groups')` call, not the button callback itself.
+- Evidence: Chrome re-validation log: exception cascade on dialog dismiss.
+- Fix: capture `final nav = Navigator.of(context, rootNavigator: true)` before
+  `await showDialog(...)` and use `nav.pop()` in the button `onPressed`.
+
+**BUG-F25-C** — "Owner resolved" modal incorrectly shown on owner device
+- File: `lib/presentation/screens/late_start_overlap_queue_screen.dart:176`
+- Root cause: `isOwner` is derived from `ownerDeviceId == deviceId`. After
+  the owner resolves the conflict, Firestore clears/nulls `ownerDeviceId`
+  in the next snapshot → `isOwner` evaluates false on the resolving device
+  → `!isOwner && allCanceled` fires → mirror-only dialog shown on owner.
+- Evidence: iOS re-validation log (dialog triggered on owner after successful
+  resolution); confirmed by user architectural review 2026-03-16.
+- Fix: add `bool _resolved = false` flag in `_LateStartOverlapQueueScreenState`;
+  set `_resolved = true` on successful completion of `_confirmSelection()` /
+  `_cancelAllQueue()`; add `&& !_resolved` to the condition at line 176.
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md` — BUG-F25-A, BUG-F25-B, BUG-F25-C entries added
+- `docs/validation/validation_ledger.md` — BUG-F25-A (P0), BUG-F25-B (P0),
+  BUG-F25-C (P1) entries added; P0-F25-001 evidence field updated
+- `docs/dev_log.md` — this block
+
+## ⚠️ Notes
+
+- P0-F25-001 remains open — re-validation confirmed bugs prevent Fix 25 closure.
+- BUG-F25-A and BUG-F25-B are P0: ownership delivery is broken and the
+  "Owner resolved" dialog is unresponsive when affected.
+- BUG-F25-C is P1: UX confusion for owner; dialog content is incorrect.
+- All three must be fixed and re-validated before Fix 25 can close.
+- Codex handoff: implementation spec is in bug_log.md entries BUG-F25-A/B/C.
+
+---
+
+# 🔹 Block 591 — Fix 25 implementation packet (BUG-F25-A/B/C) ready for re-validation (16/03/2026)
+
+## 📋 Context
+
+User approved implementation after Block 590 handoff. Work executed on branch
+`fix-f25-transaction-order-and-owner-dialog` (not on `main`).
+
+Scope:
+- BUG-F25-A: Firestore transaction order violation in
+  `requestLateStartOwnership`.
+- BUG-F25-B: `Owner resolved` dialog OK callback used disposed context.
+- BUG-F25-C: owner device incorrectly saw mirror-only `Owner resolved` dialog.
+
+## ✔ Work completed
+
+Code implementation:
+
+1. BUG-F25-A (`lib/data/repositories/firestore_task_run_group_repository.dart`)
+   - Refactored `requestLateStartOwnership` transaction to two explicit phases:
+     - Phase 1: read all group documents (`tx.get`) and cache payloads.
+     - Phase 2: write ownership claim fields (`tx.set`) after reads complete.
+   - This removes read-write interleaving across loop iterations and aligns with
+     Firestore transaction invariants.
+
+2. BUG-F25-B (`lib/presentation/screens/late_start_overlap_queue_screen.dart`)
+   - Hardened `_showOwnerResolvedDialog`:
+     - early mounted guard before opening dialog,
+     - captured root navigator before `await showDialog(...)`,
+     - OK button now calls captured `nav.pop()` instead of
+       `Navigator.of(context, ...)` inside callback closure.
+
+3. BUG-F25-C (`lib/presentation/screens/late_start_overlap_queue_screen.dart`)
+   - Added local resolver flag `bool _resolved = false`.
+   - Set `_resolved = true` after successful `_applySelection` completion.
+   - Updated mirror dialog gate to require `!isOwner && !_resolved` before
+     showing `Owner resolved`.
+
+Docs synchronization:
+- Updated `quick_pass_checklist.md` (Fix 25 row) with failed re-validation
+  review + implementation packet + local verification results.
+- Updated `plan_validacion_rapida_fix.md` with reopened Fix 25 status,
+  blocker list, implementation notes, and closure criteria.
+- Updated `validation_ledger.md`:
+  - `P0-F25-001` moved to `In validation`,
+  - `BUG-F25-A/B/C` moved to `In validation`.
+- Updated `bug_log.md` entries BUG-F25-A/B/C from "pending implementation"
+  to "implemented, pending device re-validation".
+- Updated `roadmap.md` timeline with Fix 25 reopen + implementation packet.
+
+## 🧪 Validation run (local)
+
+- `flutter analyze` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` → PASS
+
+## 📁 Updated files
+
+- `lib/data/repositories/firestore_task_run_group_repository.dart`
+- `lib/presentation/screens/late_start_overlap_queue_screen.dart`
+- `docs/bugs/bug_log.md`
+- `docs/bugs/validation_fix_2026_03_05/quick_pass_checklist.md`
+- `docs/bugs/validation_fix_2026_03_05/plan_validacion_rapida_fix.md`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## ⚠️ Notes
+
+- This packet is implementation-complete but not closure-complete.
+- Device exact repro re-validation is still required before marking
+  `P0-F25-001` and BUG-F25-A/B/C as `Closed/OK`.
+
+---
+
+# 🔹 Block 592 — Fix 25 re-validation #2 reviewed; BUG-F25-C race follow-up applied (17/03/2026)
+
+## 📋 Context
+
+User provided re-validation #2 logs for Fix 25 implementation commit `fd788e6`:
+
+- `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval2_fd788e6_chrome_debug.log`
+- `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval2_fd788e6_ios_iPhone17Pro_debug.log`
+
+Scenario validated:
+- Local -> Account overlap queue trigger after overdue schedule,
+- mirror ownership request delivery/acceptance flow,
+- resolve overlaps completion path.
+
+## ✔ Work completed
+
+Validation outcome recorded:
+
+1. BUG-F25-A: PASS in re-validation #2.
+   - Ownership request delivery/acceptance worked repeatedly.
+   - No Firestore transaction ordering assertion recurrence.
+
+2. BUG-F25-B: PASS in re-validation #2.
+   - No context-after-dispose / Navigator exception detected in run logs.
+
+3. BUG-F25-C: FAIL in re-validation #2 (commit `fd788e6`).
+   - Owner still saw mirror-only `Owner resolved` modal in `Continue` path.
+   - Root cause: race window; `_resolved` was set after awaited persistence,
+     but stream snapshots could flip `isOwner` before that set.
+
+Follow-up implementation applied (same branch):
+- `lib/presentation/screens/late_start_overlap_queue_screen.dart`
+  - moved `_resolved = true` into initial `setState` before first await in
+    `_applySelection` to close owner-side race window.
+  - removed delayed `_resolved` set after persistence.
+
+Docs synchronization:
+- `quick_pass_checklist.md`: re-validation #2 outcome updated (A/B PASS, C FAIL)
+  and follow-up patch noted.
+- `plan_validacion_rapida_fix.md`: re-validation #2 + race root cause + follow-up
+  patch added.
+- `validation_ledger.md`: BUG-F25-A/B moved to `Closed/OK`; BUG-F25-C remains
+  `In validation`; `P0-F25-001` remains `In validation`.
+- `bug_log.md`: BUG-F25-A/B statuses updated to closed; BUG-F25-C now includes
+  race diagnosis and follow-up patch details.
+
+## 🧪 Validation run (local)
+
+- `flutter analyze` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` → PASS
+
+## ⚠️ Notes
+
+- Remaining blocker for full Fix 25 closure is only BUG-F25-C device re-run
+  after this race patch.
+
+---
+
+# 🔹 Block 593 — Fix 25 fully closed; BUG-F25-D/E/F documented as Phase 17 scope (17/03/2026)
+
+## 📋 Context
+
+User provided re-validation #3 logs (commit `95494ab`, iOS iPhone17Pro owner + Chrome mirror):
+- `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval3_95494ab_ios_iPhone17Pro_debug.log`
+- `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval3_95494ab_chrome_debug.log`
+
+## ✔ Work completed
+
+Validation outcome:
+
+- BUG-F25-C: PASS. Chrome (owner) confirmed "Continue" in Resolve overlaps at 13:01:01;
+  no "Owner resolved" modal appeared on owner. Race condition fix (`_resolved=true`
+  pre-armed in initial setState) confirmed working.
+- P0-F25-001: Closed/OK. All three blockers (A/B/C) now validated across reval #2 and #3.
+
+Timing verification (user request):
+- First trigger (13:00:00): G1 overdue 60s; projected end 13:15:00; G2 starts 13:15:00
+  → exact overlap → Resolve overlaps correct ✅
+- Second trigger (13:05:12): G1 overdue 12s; projected end 13:20:12; G2 starts 13:21:00
+  → 48s gap → no overlap → auto-start without Resolve overlaps correct ✅
+
+New findings documented:
+
+1. BUG-F25-D (P1, open): Riverpod `StateController<RunningOverlapDecision?>` modified
+   during widget build on mirror when overlap fires on Resume. Red error screen <1s.
+   Added to Phase 17 scope in roadmap.
+
+2. BUG-F25-E (P2, open): Re-plan conflict modal shows no group name/time range.
+   Distinct from Phase 17 running overlap modal (line 440). Added to Phase 17 scope.
+
+3. BUG-F25-F (P2, open): Postpone snackbar shows "(pre-run at X)" when noticeMinutes=0
+   — redundant when pre-run equals start time. Requires spec clarification at specs.md:1716.
+   Added to Phase 17 scope.
+
+Additional findings (already documented in Phase 17 — no new entry needed):
+- Running overlap not detected during pause (paused overlap alerts, Phase 17 line 437).
+- Chrome Groups Hub stale after postpone (Phase 17 line 443).
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md` — BUG-F25-C closed; BUG-F25-D/E/F added
+- `docs/validation/validation_ledger.md` — P0-F25-001 + BUG-F25-C closed; BUG-F25-D/E/F added
+- `docs/bugs/validation_fix_2026_03_05/quick_pass_checklist.md` — reval #3 result + item 3 closed
+- `docs/roadmap.md` — BUG-F25-D/E/F added to Phase 17 scope
+
+---
+
+# 🔹 Block 594 — BUG-001/002 validation run analyzed; BUG-F26-001/002 documented (17/03/2026)
+
+## 📋 Context
+
+User provided BUG-001/002 validation run (Android RMX3771 + macOS, 17/03/2026).
+Group was already running from a previous session. Multiple consecutive ownership
+transfers were performed over ~4 minutes (20:04–20:08+). Log paths registered:
+- `docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_android_RMX3771_debug.log`
+- `docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_macos_debug.log`
+
+## ✔ Work completed
+
+**BUG-001 formally closed:**
+- No Ready state observed on either device at any point during the session.
+- Mirror showed Syncing state (SSS hold) during stream gaps and returned to the
+  running timer without navigation. BUG-001 Closed/OK with this run as final evidence.
+
+**BUG-002 residual confirmed and characterized:**
+- Primary symptoms (ownership revert, mirror Ready after rejection): ✅ not reproduced.
+- Residual confirmed: rejection banner on owner device does not clear immediately.
+  - Observed at all 4 rejection events during the run.
+  - First rejection: cleared at ~20:06:52 (next Firestore lastUpdatedAt heartbeat, ~1 cycle delay).
+  - Third rejection (~20:07:59): required second Reject press to clear.
+  - Fourth rejection (~20:08:27): same second-press pattern.
+  - Root cause: no optimistic banner clear on owner after `respondToOwnershipRequest`
+    returns; owner waits for Firestore snapshot round-trip.
+  - Code area: `rejectOwnershipRequest()` in `pomodoro_view_model.dart`.
+
+**New bugs documented:**
+
+1. BUG-F26-001 (P1, open): Session cursor stale in Firestore during active run.
+   - `phaseStartedAt: 7:31:07pm` (19:31:07) unchanged throughout entire run.
+   - `remainingSeconds: 0` persisted in Firestore despite devices counting down normally.
+   - TimerService drove the countdown correctly (Fix 26 decoupled architecture).
+   - Consequence: brief `00:00` flash on macOS at second rejection (stale snapshot
+     applied before TimerService re-projects); task shown as completed after app
+     restart (cold-start reads `remainingSeconds: 0`).
+   - Hypothesis: Fix 26 owner write path for phase transitions may no longer write
+     `phaseStartedAt`/`remainingSeconds` to Firestore on phase changes.
+
+2. BUG-F26-002 (P1, open): Pomodoro counter jumps on consecutive ownership transfers.
+   - Pomodoro 5→6 at 20:07:30 (android gets ownership); 6→7 at 20:07:48 (macOS gets
+     ownership). No phase completion events between transfers.
+   - Likely linked to BUG-F26-001: stale `remainingSeconds: 0` may be interpreted
+     as "phase complete" on each new owner claim, causing the phase index to advance.
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md` — BUG-001 closed (final evidence); BUG-002 residual expanded with
+  validation evidence; BUG-F26-001 + BUG-F26-002 added
+- `docs/validation/validation_ledger.md` — BUG-001 closed; BUG-002 partially open entry added;
+  BUG-F26-001/002 open entries added
+- `docs/roadmap.md` — BUG-F26-001/002 added to Phase 18 scope
+- `docs/dev_log.md` — header updated
+
+---
+
+# 🔹 Block 595 — Ownership sync hardening packet implemented (17/03/2026)
+
+## 📋 Context
+
+User requested Codex implementation of the architectural handoff for intermittent
+ownership churn issues:
+- BUG-002 residual (owner rejection banner delayed clear),
+- BUG-F26-001 (stale Firestore cursor on churn),
+- BUG-F26-002 (phase/pomodoro jumps on consecutive handoffs).
+
+Implementation done on branch `fix-ownership-cursor-stamp` (not `main`).
+
+## ✔ Work completed
+
+Code changes:
+
+1. **Fix 1 — publish retry after timeSync recovery**
+   - Added `_pendingPublishAfterSync` flag in `PomodoroViewModel`.
+   - `_publishCurrentSession()` now marks pending when `isTimeSyncReady=false`.
+   - `_refreshTimeSyncIfNeeded()` now replays pending publish immediately after
+     successful offset refresh.
+   - Pending flag is cleared on session reset / mode change.
+
+2. **Fix 2 — atomic cursor stamp in ownership approve path**
+   - Added `PomodoroSession.toCursorMap()` (cursor payload only).
+   - Extended `respondToOwnershipRequest(...)` signature with optional
+     `cursorSnapshot`.
+   - Firestore approve transaction now merges `cursorSnapshot` in the same
+     ownership transfer write (`ownerDeviceId` switch + revision/timestamp).
+   - `approveOwnershipRequest()` now builds current session snapshot and passes
+     `cursorSnapshot` to the repository call.
+
+3. **Fix 3 — fallback publish on owner hot-swap without hydration**
+   - In owner timeline projection branch, when `shouldHydrate == false` and
+     machine is already non-idle, VM now executes:
+     `_bumpSessionRevision()` + `_publishCurrentSession()`.
+   - This stamps live cursor immediately on mirror→owner hot-swap.
+
+4. **Fix 4 — optimistic clear for owner-side rejection banner**
+   - `rejectOwnershipRequest()` now clears pending ownership request locally
+     right after successful repository response (before Firestore round-trip).
+   - Added helper `_clearOwnershipRequestLocallyForOwner(...)` and immediate
+     `_notifySessionMetaChanged()` to remove banner without delay.
+
+Test scaffold updates:
+- Updated test fakes implementing `PomodoroSessionRepository` to include the new
+  optional `cursorSnapshot` parameter in `respondToOwnershipRequest(...)`.
+
+## 🧪 Validation run (local)
+
+- `flutter analyze` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_ownership_request_test.dart` → PASS
+
+## 📁 Updated files
+
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`
+- `lib/data/repositories/firestore_pomodoro_session_repository.dart`
+- `lib/data/repositories/pomodoro_session_repository.dart`
+- `lib/data/models/pomodoro_session.dart`
+- `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- `test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart`
+- `test/presentation/timer_screen_syncing_overlay_test.dart`
+- `test/presentation/viewmodels/pomodoro_view_model_ownership_request_test.dart`
+- `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+
+## ⚠️ Notes
+
+- This packet is **implementation complete** but not closure-complete.
+- Device re-validation is still required to close BUG-002 residual and
+  BUG-F26-001/002.
+
+---
+
+# 🔹 Block 596 — Re-validation FAIL on `7ddc1e6`; one-shot guard patch added (17/03/2026)
+
+## 📋 Context
+
+User executed ownership churn validation on Android RMX3771 + macOS using logs:
+- `docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_android_RMX3771_debug.log`
+- `docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_macos_debug.log`
+
+Run details:
+- Group started at ~22:27:30 (`Start now`, newly created group).
+- On UI, ownership looked mostly correct.
+- In Firestore, `sessionRevision` increased abnormally fast and `current` doc
+  oscillated after cancel.
+
+## ❌ Validation failure observed
+
+- `sessionRevision` jump: 88 → 121 between 22:27:44 and 22:27:51.
+- `lastUpdatedAt` + `remainingSeconds` rewritten continuously.
+- After cancel (~22:28:35), `activeSession/current` recreated/deleted in loop
+  until app close.
+
+Conclusion: commit `7ddc1e6` introduced regression (write feedback loop).
+
+## 🔍 Root cause (code-level)
+
+In `PomodoroViewModel._applySessionTimelineProjection`, fallback branch for
+non-idle owner hot-swap executed on repeated snapshots without one-shot guard:
+
+- `_bumpSessionRevision()`
+- `_publishCurrentSession()`
+
+This created Firestore feedback loop (snapshot → write → snapshot → write).
+
+## ✔ Follow-up patch implemented
+
+File:
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`
+
+Changes:
+- Added `int _hotSwapPublishedForRevision = -1`.
+- Reset guard on mode switch and `_resetLocalSessionState()`.
+- Guarded fallback publish to one-shot per ownership revision:
+  execute only when `session.sessionRevision` was not already published by this
+  hot-swap path.
+- Mark revision before publish to prevent re-entry loop.
+
+Regression test added:
+- `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+  - `owner hot-swap fallback publish is one-shot for repeated snapshots`
+
+## 🧪 Local verification
+
+- `flutter analyze` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → PASS
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` → PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_ownership_request_test.dart` → PASS
+
+## 📁 Updated files
+
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`
+- `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- `docs/bugs/validation_ownership_cursor_2026_03_17/quick_pass_checklist.md`
+- `docs/bugs/validation_ownership_cursor_2026_03_17/plan_validacion_rapida_fix.md`
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+---
+
+# 🔹 Block 597 — BUG-F25-D runtime patch implemented (18/03/2026)
+
+## 📋 Context
+
+Claude handoff requested Codex implementation for `BUG-F25-D`:
+mirror red error flash (`Tried to modify a provider while the widget tree was building`)
+when running overlap is detected on Resume.
+
+## ✔ Work completed
+
+Runtime fix implemented in:
+- `lib/presentation/viewmodels/scheduled_group_coordinator.dart`
+
+Changes:
+1. Added scheduler-aware overlap mutation helper.
+2. Deferred `runningOverlapDecisionProvider` set/clear to post-frame only when
+   scheduler is in build-phase callbacks.
+3. Added stale/dispose guards to prevent deferred stale writes.
+4. Added safe fallback for environments where scheduler binding is not initialized
+   (keeps provider-container tests stable).
+
+Validation artifacts created:
+- `docs/bugs/validation_fix_2026_03_18-01/plan_validacion_rapida_fix.md`
+- `docs/bugs/validation_fix_2026_03_18-01/quick_pass_checklist.md`
+- `docs/bugs/validation_fix_2026_03_18-01/screenshots/`
+
+Documentation synchronization:
+- `docs/bugs/bug_log.md` (BUG-F25-D moved to "In validation", runtime fix noted)
+- `docs/validation/validation_ledger.md` (BUG-F25-D status updated to `In validation`)
+- `docs/roadmap.md` (18/03 entry added under active status timeline)
+- `docs/dev_log.md` (this block + header status update)
+- Implementation commit: `07ac0cb` (`fix(f25-d): defer running-overlap provider mutation out of build phase`)
+
+## 🧪 Verification run
+
+PASS:
+- `flutter analyze`
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart --plain-name "running overlap decision"`
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart`
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart`
+
+Global suite status:
+- `flutter test` → FAIL (`+90 -8`), with existing failures concentrated in
+  `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+  (missing `appModeServiceProvider` test override in multiple cases + one
+  `auto-claims late-start queue` timeout). Not introduced by BUG-F25-D patch.
+
+## ⚠️ Notes
+
+- BUG-F25-D is not closed yet: exact owner+mirror repro still pending in
+  `validation_fix_2026_03_18-01`.
+- Closure requires device evidence + regression smoke checks.
+
+---
+
+# 🔹 Block 598 — BUG-F25-D closed/OK (18/03/2026)
+
+## 📋 Context
+
+First fix (`07ac0cb`) failed: `SchedulerBinding.schedulerPhase` check insufficient —
+Riverpod's `_debugCurrentBuildingElement` is internal and not tied to Flutter's scheduler
+phase. Fix v2 (`f5b1d2c`) also failed: `Future.microtask` queues in the microtask queue,
+which can fire mid-Riverpod-propagation.
+
+Device logs revealed **two independent sources** of the same build-phase mutation error:
+
+1. **Coordinator** (`_runRunningOverlapMutation`): timer/Firestore callbacks mutating
+   `runningOverlapDecisionProvider` during Riverpod propagation.
+2. **Widgets** (`GroupsHubScreen.build():283`, `TaskListScreen.build():561`): direct
+   `ref.read(...).state = null` calls inside `build()` after discovering a stale overlap
+   decision (running group no longer in scope).
+
+## ✔ Work completed
+
+**Commit `73d0f23`** — Coordinator fix:
+- `_runRunningOverlapMutation` replaced with `Future(() { mutation(); })` (macrotask).
+  Macrotask runs after all pending microtasks, including Riverpod's full propagation chain.
+- Removed `SchedulerBinding` import (no longer used).
+- Tests updated: 4 tests in `'running overlap decision'` group now `await Future(() {})`
+  between coordinator call and provider read.
+
+**Commit `79c534d`** — Widget fix:
+- `GroupsHubScreen.build():283` and `TaskListScreen.build():561`: stale-decision clear
+  moved to `WidgetsBinding.instance.addPostFrameCallback` with `mounted` guard and token
+  guard. Token is captured before scheduling; callback checks `currentDecision.token !=
+  staleDecisionToken` to avoid clearing a newer decision written after the defer.
+
+**Protocol update** (same session):
+- `CLAUDE.md` section 8: Codex now reviews fix specs before implementing; reports
+  errors to Claude before writing code.
+- `AGENTS.md` + `docs/team_roles.md` updated with the same spec-review rule.
+
+## 🧪 Validation result
+
+Device: iOS iPhone 17 Pro (owner) + Chrome (mirror).
+- Overlap modal appeared correctly during pause.
+- No red screen on mirror at conflict detection.
+- No red screen on mirror after owner Postpone action.
+- Timer resumed normally after owner Resume.
+- Regression smoke (BUG-F25-C): owner did not see "Owner resolved" modal. PASS.
+- `flutter analyze` PASS.
+- All targeted tests PASS.
+
+## 📁 Updated files
+
+- `lib/presentation/viewmodels/scheduled_group_coordinator.dart`
+- `lib/presentation/screens/groups_hub_screen.dart`
+- `lib/presentation/screens/task_list_screen.dart`
+- `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+- `docs/bugs/bug_log.md` (BUG-F25-D → Closed/OK, `closed_commit_hash: 79c534d`)
+- `docs/validation/validation_ledger.md` (BUG-F25-D → [x] Closed/OK)
+- `docs/bugs/validation_fix_2026_03_18-01/plan_validacion_rapida_fix.md` (result in-place)
+- `docs/bugs/validation_fix_2026_03_18-01/quick_pass_checklist.md` (all boxes checked)
+- `CLAUDE.md`, `AGENTS.md`, `docs/team_roles.md` (Codex spec-review rule added)
+- `docs/dev_log.md` (this block)
+
+---
+
+# 🔹 Block 600 — BUG-F25-G closed/OK (19/03/2026)
+
+## 📋 Context
+
+`resolveEffectiveScheduledStart` in `scheduled_group_timing.dart` returned
+`anchorEnd.add(Duration(minutes: noticeMinutes))` without `ceilToMinute`.
+All write paths (`timer_screen.dart:1165`, `scheduled_group_coordinator.dart:1146`)
+use `ceilToMinute`. Inconsistency introduced 23/02/2026 when write got `ceilToMinute`
+but the resolver was never updated. Produces ~1-min discrepancy between postpone
+snackbar and Groups Hub "Scheduled" display.
+
+## ✔ Work completed
+
+**Commit: `e16e389`**
+
+- `scheduled_group_timing.dart:185`: wrapped return with `ceilToMinute`.
+- `test/presentation/utils/scheduled_group_timing_test.dart` (new): two directed
+  unit tests — main case (anchor with sub-second residual rounds up) and documented
+  edge case (noticeMinutes=0 + exact minute = equality, tracked separately).
+
+## ✅ Validation result
+
+`flutter analyze` PASS. All targeted tests + new unit tests PASS.
+Chrome+iOS device validation PASS 19/03/2026:
+- Postpone snackbar: "Scheduled start moved to 18:32 (pre-run at 18:31)."
+- Groups Hub G2 Scheduled: 18:32 / Pre-Run: 1 min starts at 18:31.
+- Values match exactly.
+
+## 📁 Updated files
+
+- `lib/presentation/utils/scheduled_group_timing.dart`
+- `test/presentation/utils/scheduled_group_timing_test.dart` (new)
+- `docs/bugs/bug_log.md` (BUG-F25-G → Closed/OK)
+- `docs/validation/validation_ledger.md` (BUG-F25-G → [x] Closed/OK)
+- `docs/roadmap.md` (BUG-F25-G → tachado Closed/OK)
+- `docs/dev_log.md` (this block)
+
+---
+
+# 🔹 Block 599 — BUG-F25-E closed/OK (19/03/2026)
+
+## 📋 Context
+
+Re-plan conflict modal showed a generic message ("A group is already scheduled in
+that time range. Delete it to continue?") with no identifying information about
+the conflicting group. User could not make an informed decision about whether to
+delete the conflicting group (no name, no time range shown).
+
+The modal already received `List<TaskRunGroup>` — the fix was purely UI: replace
+the static `const Text(...)` content with a dynamic `Column` listing each conflict.
+
+## ✔ Work completed
+
+**Commit: `c248c91`**
+
+- `groups_hub_screen.dart` `_resolveScheduledConflict` (line 1396): replaced
+  static content with `Column` listing each conflicting group as
+  `"• {name} — {start}–{end}"` using top-level `_formatGroupDateTime`.
+- `task_list_screen.dart` `_resolveScheduledConflict` (line 1850): same change,
+  using local `fmtTime()` helper (captures `_timeFormat` / `_dateFormat` instance fields).
+- Group name derived as `tasks.first.name ?? 'Task group'` (consistent with
+  `_showSummaryDialog` convention).
+- `docs/specs.md` line 2633: added explicit rule requiring name + time range in
+  Re-plan conflict modal.
+- `docs/roadmap.md` line 458: BUG-F25-E marked Closed/OK.
+- `docs/bugs/bug_log.md`: BUG-F25-E → Closed/OK.
+- `docs/validation/validation_ledger.md`: BUG-F25-E → [x] Closed/OK.
+
+## ✅ Validation result
+
+`flutter analyze` PASS. All targeted tests PASS.
+Chrome device validation PASS 19/03/2026:
+- Conflict modal shows bullet list with group name + HH:mm–HH:mm range.
+- Cancel action: no groups deleted, planning cancelled.
+- Delete scheduled group: conflicting group deleted, re-plan continues.
+
+## 📁 Updated files
+
+- `lib/presentation/screens/groups_hub_screen.dart`
+- `lib/presentation/screens/task_list_screen.dart`
+- `docs/specs.md`
+- `docs/roadmap.md`
+- `docs/bugs/bug_log.md` (BUG-F25-E → Closed/OK)
+- `docs/validation/validation_ledger.md` (BUG-F25-E → [x] Closed/OK)
+- `docs/dev_log.md` (this block)
+
+---
+
+# 🔹 Block 601 — BUG-F25-H registered; fix plan defined (19/03/2026)
+
+## 📋 Context
+
+BUG-F25-H discovered during BUG-F25-G validation run (19/03/2026). Repro:
+G1 running → G1 canceled → re-plan → G2 starts → Chrome takes ownership →
+Chrome cancels G2 → both devices stuck in indefinite "Syncing session..." with timer
+running. Firestore `activeSession/current` deleted; no recovery; manual restart required.
+Regression introduced 19/03/2026 (confirmed working in prior-day build).
+
+Log evidence:
+- `docs/bugs/validation_f25h_2026_03_19/logs/2026-03-19_f25h_3cb2f6c_chrome_debug.log`
+- `docs/bugs/validation_f25h_2026_03_19/logs/2026-03-19_f25h_3cb2f6c_ios_iPhone17Pro_debug.log`
+
+## ✔ Work completed
+
+- Full root cause analysis from Chrome + iOS device logs (commit 3cb2f6c baseline).
+- Identified three-component root cause:
+  1. `_cancelNavigationHandled` permanently blocked by stale ViewModel data in `build()`
+     — `pomodoroViewModelProvider` is a global singleton (not parameterized by groupId);
+     G1's canceled status fires the build-phase check during G2's first frame;
+     Flutter assertion exception confirmed at Chrome log line 2238
+     (`timer_screen.dart:682`, `setState()/markNeedsBuild() called during build`).
+  2. `_recoverFromServer()` has no exit for terminal group state
+     — session_sync_service.dart retries every 5s forever; 40+ seconds of
+     `hold-extend reason=recovery-failed` confirmed in Chrome log lines 2824–2875.
+  3. `stopTick()` potentially missing in cancel handler — timer keeps
+     `isTickingCandidate = true` → latch fires on session null instead of quiet-clear.
+- Registered BUG-F25-H as P1 Open in all project docs.
+- Created validation folder and plan/checklist documents.
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md` (BUG-F25-H added — Open, P1)
+- `docs/validation/validation_ledger.md` (BUG-F25-H P1 Open added)
+- `docs/roadmap.md` (Phase 17 BUG-F25-H line added)
+- `docs/bugs/validation_f25h_2026_03_19/plan_validacion_rapida_fix.md` (new)
+- `docs/bugs/validation_f25h_2026_03_19/quick_pass_checklist.md` (new)
+- `docs/dev_log.md` (this block)
+
+---
+
+# 🔹 Block 602 — BUG-F25-H closed/OK (19/03/2026)
+
+## 📋 Context
+
+Regression introduced 19/03/2026 during F25-G/E development. Repro: G1 running →
+G1 canceled → re-plan → G2 starts → Chrome cancels G2 → both devices stuck in
+indefinite "Syncing session..." with timer running; manual restart required.
+
+Three-component root cause confirmed from Chrome + iOS logs (baseline 3cb2f6c):
+1. `_cancelNavigationHandled` permanently blocked by stale G1 data in first build frame
+   of G2's TimerScreen — Flutter assertion exception at timer_screen.dart:682.
+2. `_recoverFromServer()` infinite 5s retry on terminal group — no exit condition.
+3. `stopTick()` missing in `cancel()` and `applyRemoteCancellation()` — timer kept
+   ticking, routing session null through hold path instead of quiet-clear.
+
+## ✔ Work completed
+
+**Commit 9a52405** — `fix(f25-h): add stopTick() to cancel and applyRemoteCancellation paths`
+- `pomodoro_view_model.dart` `cancel()` and `applyRemoteCancellation()`: added
+  `_timerService.stopTick()` before `_resetLocalSessionState()`.
+
+**Commit e2a69b3** — `fix(f25-h): guard build-phase cancel check with groupId + defer to post-frame`
+- `timer_screen.dart:680`: added `currentGroup?.id == widget.groupId` guard; wrapped
+  `_navigateToGroupsHub()` in `addPostFrameCallback` with `!mounted` check.
+
+**Commit ba8db6f** — `fix(f25-h): add terminal-group exit to _recoverFromServer()`
+- `session_sync_service.dart` `_recoverFromServer()`: after `serverSession == null`,
+  fetches group via `taskRunGroupRepositoryProvider.getById(attachedGroupId)`. If
+  `canceled` or `completed`, clears hold (`holdActive: false`) and returns — no retry.
+
+## ✅ Validation result
+
+`flutter analyze` PASS. All 3 targeted tests PASS.
+Chrome + iOS device validation PASS 19/03/2026:
+- Escenario A: G1→cancel→G2→cancel → both devices navigate to Groups Hub in ≤5s.
+  No `hold-extend reason=recovery-failed` / no setState/build exception in any log.
+- Escenario B: simple G1 cancel → correct navigation (no regression).
+- Escenario C: Chrome offline ~5s → auto-recovery without permanent hold.
+
+Log evidence:
+- `docs/bugs/validation_f25h_2026_03_19/logs/2026-03-19_f25h_ba8db6f_chrome_debug.log`
+- `docs/bugs/validation_f25h_2026_03_19/logs/2026-03-19_f25h_ba8db6f_ios_iPhone17Pro_9A6B6687_debug.log`
+
+## 📁 Updated files
+
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`
+- `lib/presentation/screens/timer_screen.dart`
+- `lib/presentation/viewmodels/session_sync_service.dart`
+- `docs/bugs/bug_log.md` (BUG-F25-H → Closed/OK)
+- `docs/validation/validation_ledger.md` (BUG-F25-H → [x] Closed/OK)
+- `docs/roadmap.md` (BUG-F25-H → tachado Closed/OK)
+- `docs/bugs/validation_f25h_2026_03_19/plan_validacion_rapida_fix.md` (status → Closed/OK)
+- `docs/bugs/validation_f25h_2026_03_19/quick_pass_checklist.md` (all boxes checked)
+- `docs/dev_log.md` (this block)
+
+# 🔹 Block 603 — BUG-F25-F closed/OK (19/03/2026)
+
+**Bug:** BUG-F25-F — Postpone snackbar shows redundant "(pre-run at X)" when noticeMinutes=0.
+**Symptom:** After pressing Postpone in the running overlap modal, the snackbar showed
+"Scheduled start moved to 13:22 (pre-run at 13:22)." — pre-run time identical to start time,
+meaningless to the user.
+**Root cause:** `_showPostponeConfirmation` (timer_screen.dart) always appended the pre-run
+clause regardless of whether `preRunStart` differed from `scheduledStart`. The caller
+(line 1199) already computed `preRunStart = scheduledStartTime` when `noticeMinutes=0`,
+but the formatter had no guard.
+**Fix:** Added `hasPreRun = preRunStart.isBefore(scheduledStart)` check. Pre-run clause
+only included when `hasPreRun` is true. Single-line change, no invariant risk.
+**Commit:** 68429c5 — fix(f25-f): suppress pre-run clause in postpone snackbar when noticeMinutes=0
+**Tests:** flutter analyze PASS · regression suite PASS (33 tests).
+**Docs updated:**
+- `docs/bugs/bug_log.md` (BUG-F25-F → Closed/OK)
+- `docs/validation/validation_ledger.md` (BUG-F25-F → [x] Closed/OK)
+- `docs/dev_log.md` (this block)
+
+---
+
+# 🔹 Block 604 — BUG-F25-I registered with full evidence packet (19/03/2026)
+
+## 📋 Context
+
+During post-F25-H validation, a new regression was observed in postpone/cancel flow:
+after selecting **Postpone scheduled** for G2 while G1 is running, canceling G1
+re-anchors G2 to current time and starts it on the next minute.
+
+Expected product behavior: canceling running anchor must **not** rewrite postponed
+start time; postponed group should keep stored planned start.
+
+## ✔ Work completed
+
+- Created validation folder:
+  - `docs/bugs/validation_f25i_2026_03_19/`
+  - `logs/` + `screenshots/`
+- Preserved baseline evidence logs:
+  - `docs/bugs/validation_f25i_2026_03_19/logs/2026-03-19_f25i_68429c5_ios_iPhone17Pro_9A6B6687_debug.log`
+  - `docs/bugs/validation_f25i_2026_03_19/logs/2026-03-19_f25i_68429c5_chrome_debug.log`
+- Registered BUG-F25-I in `docs/bugs/bug_log.md` with:
+  - full repro steps
+  - user-facing symptom
+  - expected behavior
+  - probable root cause at file/method level
+  - targeted fix direction + tests
+- Added BUG-F25-I to `docs/validation/validation_ledger.md` as **Open / P1**.
+- Added Phase 17 roadmap line for BUG-F25-I in `docs/roadmap.md`.
+- Created:
+  - `docs/bugs/validation_f25i_2026_03_19/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_f25i_2026_03_19/quick_pass_checklist.md`
+
+## 🔎 Key evidence extracted for Claude review
+
+iOS log (`...ios_iPhone17Pro_9A6B6687_debug.log`):
+- line 51210: postponed sample still future (`...22:35|22:36`)
+- line 51216: cancel event (`Cancel nav: group stream canceled`)
+- line 51224: sample collapses to `...22:22|22:22`
+- lines 51225+ / 51228+ / 51231+: `schedule-start-timer` for `22:22:00`
+- lines 51244+ / 51246+ / 51253: `start-timer-fired` at `22:22:00`
+
+Chrome log (`...chrome_debug.log`):
+- lines 2623/2632/2658: postponed sample at `...22:35|22:35/22:36`
+- lines 2670+ and 2684-2686: sample/postpone-finalized changed to `22:22`
+- line 2687: auto-start fired at `22:22:00`
+
+## 🧠 Root-cause hypothesis recorded (pending fix confirmation)
+
+`resolvePostponedAnchorEnd` fallback to `anchor.updatedAt` on non-running anchor
+can leak terminal anchor timestamp (`now`) into postponed schedule resolution.
+Then `_finalizePostponedGroupsIfNeeded` consumes that derived value and advances
+postponed start to current minute, which triggers premature start timer.
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md` (BUG-F25-I added, Open/P1)
+- `docs/validation/validation_ledger.md` (BUG-F25-I Open entry added)
+- `docs/roadmap.md` (Phase 17 BUG-F25-I line added)
+- `docs/bugs/validation_f25i_2026_03_19/plan_validacion_rapida_fix.md` (new)
+- `docs/bugs/validation_f25i_2026_03_19/quick_pass_checklist.md` (new)
+- `docs/dev_log.md` (this block)
+
+# 🔹 Block 605 — BUG-F25-I closed/OK (19/03/2026)
+
+**Bug:** BUG-F25-I — Postponed group start drifts to "now" after canceling the running anchor group.
+**Symptom:** After pressing "Postpone scheduled" in the running overlap modal, canceling the
+running anchor group caused the postponed group's scheduledStart to jump from the future
+(e.g., 22:35) to the current minute (e.g., 22:22), triggering an immediate auto-start.
+**Root cause:** `_finalizePostponedGroupsIfNeeded` (scheduled_group_coordinator.dart) did
+not guard against canceled anchors — fell through to `resolvePostponedAnchorEnd` which
+had no guard for `canceled` status and returned `anchor.updatedAt = now` as fallback.
+G2 then got `scheduledStartTime = ceilToMinute(now)` written to DB and auto-started.
+The bug also cascaded in chained postpone chains (G1→G2→G3) via `resolveEffectiveScheduledEnd`.
+**Fix — two commits:**
+- `51dcd2d`: `_finalizePostponedGroupsIfNeeded` — sever link (postponedAfterGroupId=null)
+  without touching scheduledStartTime when anchor is canceled. Mirrors "anchor not found" pattern.
+- `6c87009`: `resolvePostponedAnchorEnd` — return null for canceled anchors. Prevents
+  fallback to updatedAt; also protects chained groups (G3→G2→canceled G1).
+**Tests:** 2 new unit tests in scheduled_group_timing_test.dart. flutter analyze PASS.
+**Device validation:** Chrome + iOS PASS 19/03/2026. G2 held Scheduled: 23:29 after G1
+canceled at 23:14. No premature auto-start. Screenshots confirmed.
+**Docs updated:**
+- `docs/bugs/bug_log.md` (BUG-F25-I → Closed/OK)
+- `docs/validation/validation_ledger.md` (BUG-F25-I → [x] Closed/OK)
+- `docs/bugs/validation_f25i_2026_03_19/plan_validacion_rapida_fix.md` (status → Closed/OK)
+- `docs/bugs/validation_f25i_2026_03_19/quick_pass_checklist.md` (all boxes checked)
+- `docs/dev_log.md` (this block)

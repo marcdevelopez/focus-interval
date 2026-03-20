@@ -280,7 +280,14 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
         fallbackNoticeMinutes: _noticeFallbackMinutes,
       );
       if (!stillValid) {
-        ref.read(runningOverlapDecisionProvider.notifier).state = null;
+        final staleDecisionToken = overlapDecision.token;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          final currentDecision = ref.read(runningOverlapDecisionProvider);
+          if (currentDecision == null) return;
+          if (currentDecision.token != staleDecisionToken) return;
+          ref.read(runningOverlapDecisionProvider.notifier).state = null;
+        });
       }
     }
 
@@ -1391,12 +1398,31 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     List<TaskRunGroup> scheduledGroups,
     TaskRunGroupRepository repo,
   ) async {
+    final now = DateTime.now();
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Conflict with scheduled group'),
-        content: const Text(
-          'A group is already scheduled in that time range. Delete it to continue?',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'The following scheduled groups conflict with the selected time. Delete them to continue?',
+            ),
+            const SizedBox(height: 8),
+            ...scheduledGroups.map((group) {
+              final name = group.tasks.isNotEmpty
+                  ? group.tasks.first.name
+                  : 'Task group';
+              final start = _formatGroupDateTime(group.scheduledStartTime, now);
+              final end = _formatGroupDateTime(group.theoreticalEndTime, now);
+              return Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text('• $name — $start–$end'),
+              );
+            }),
+          ],
         ),
         actions: [
           TextButton(
