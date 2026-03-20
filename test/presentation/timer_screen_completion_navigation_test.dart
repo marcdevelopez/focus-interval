@@ -992,6 +992,65 @@ void main() {
     },
   );
 
+  testWidgets(
+    'Groups Hub hides scheduled and pre-run metadata for start-now scheduled groups',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final startNowGroup =
+          _buildScheduledGroup(
+            id: 'groups-hub-start-now-group',
+            now: now,
+          ).copyWith(
+            scheduledStartTime: null,
+            theoreticalEndTime: now.add(const Duration(minutes: 30)),
+            noticeMinutes: 10,
+          );
+      final groupRepo = FakeTaskRunGroupRepository()..seed(startNowGroup);
+      final sessionRepo = FakePomodoroSessionRepository(null);
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      try {
+        await _pumpGroupsHubScreen(tester: tester, container: container);
+        await _pumpUntilFound(tester, find.text('Start now'));
+
+        expect(find.text('Start now'), findsOneWidget);
+        expect(find.text('Open Pre-Run'), findsNothing);
+        expect(find.text('Pre-Run'), findsNothing);
+
+        await tester.tap(find.text('Test task').first);
+        await _pumpUntilFound(tester, find.text('Group summary'));
+        expect(find.text('Scheduled start'), findsNothing);
+        expect(find.text('Pre-Run'), findsNothing);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
+
   testWidgets('Groups Hub core sections and actions are visible', (
     tester,
   ) async {

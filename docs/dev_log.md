@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue historical roadmap validation backlog (`RVP-012` onward)**
+Current focus: **Continue historical roadmap validation backlog (`RVP-013` onward)**
 Last update: **20/03/2026**
 
 ---
@@ -13194,3 +13194,52 @@ PASS:
 ## 🎯 Next steps
 
 1. Execute `RVP-012` validation (Groups Hub hides notice/pre-run rows for start-now groups with `scheduledStartTime == null`).
+
+# 🔹 Block 626 — RVP-012 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-012` — Groups Hub must hide scheduling notice metadata for start-now style
+groups (`status=scheduled` but `scheduledStartTime == null`), avoiding
+misleading `Scheduled` / `Pre-Run` details.
+
+Concrete validated case to close:
+1. Start-now scheduled group (`scheduledStartTime=null`) shows `Start now`
+   action but does not render `Open Pre-Run`, `Scheduled start`, or `Pre-Run`
+   metadata in card/summary.
+
+## ✔ Work completed
+
+- Added dedicated widget validation case in:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+  - `Groups Hub hides scheduled and pre-run metadata for start-now scheduled groups`
+- Scenario setup:
+  - one seeded scheduled group with `scheduledStartTime: null`,
+    `noticeMinutes: 10`, and valid end time.
+  - `activeSession = null`.
+- Assertions:
+  - card shows `Start now` and hides `Open Pre-Run` / `Pre-Run`,
+  - summary modal hides `Scheduled start` and `Pre-Run`.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-012` -> `Closed/OK`
+    (implementation commit `d193121`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-013 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+14`.
+- `flutter analyze` -> `No issues found!`.
+
+## 📁 Updated files
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-013` validation (Phase 10 auto-adjust short/long breaks on valid pomodoro and break edits).
