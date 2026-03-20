@@ -7,10 +7,12 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focus_interval/data/models/pomodoro_session.dart';
+import 'package:focus_interval/data/models/pomodoro_task.dart';
 import 'package:focus_interval/data/models/schema_version.dart';
 import 'package:focus_interval/data/models/selected_sound.dart';
 import 'package:focus_interval/data/models/task_run_group.dart';
 import 'package:focus_interval/data/repositories/pomodoro_session_repository.dart';
+import 'package:focus_interval/data/repositories/task_repository.dart';
 import 'package:focus_interval/data/repositories/task_run_group_repository.dart';
 import 'package:focus_interval/data/services/app_mode_service.dart';
 import 'package:focus_interval/data/services/device_info_service.dart';
@@ -21,6 +23,7 @@ import 'package:focus_interval/data/services/time_sync_service.dart';
 import 'package:focus_interval/domain/pomodoro_machine.dart';
 import 'package:focus_interval/presentation/providers.dart';
 import 'package:focus_interval/presentation/screens/groups_hub_screen.dart';
+import 'package:focus_interval/presentation/screens/task_group_planning_screen.dart';
 import 'package:focus_interval/presentation/screens/task_list_screen.dart';
 import 'package:focus_interval/presentation/screens/timer_screen.dart';
 
@@ -259,6 +262,54 @@ TaskRunGroup _buildCanceledGroup({required String id, required DateTime now}) {
   );
 }
 
+PomodoroTask _buildTask({
+  required String id,
+  required String name,
+  required DateTime now,
+}) {
+  return PomodoroTask(
+    id: id,
+    name: name,
+    dataVersion: kCurrentDataVersion,
+    pomodoroMinutes: 25,
+    shortBreakMinutes: 5,
+    longBreakMinutes: 15,
+    totalPomodoros: 1,
+    longBreakInterval: 1,
+    order: 0,
+    startSound: const SelectedSound.builtIn('default_chime'),
+    startBreakSound: const SelectedSound.builtIn('default_chime_break'),
+    finishTaskSound: const SelectedSound.builtIn('default_chime_finish'),
+    createdAt: now,
+    updatedAt: now,
+  );
+}
+
+class _PlanningResultRoute extends StatefulWidget {
+  const _PlanningResultRoute({required this.result});
+
+  final TaskGroupPlanningResult? result;
+
+  @override
+  State<_PlanningResultRoute> createState() => _PlanningResultRouteState();
+}
+
+class _PlanningResultRouteState extends State<_PlanningResultRoute> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.of(context).pop(widget.result);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox.shrink();
+  }
+}
+
 PomodoroSession _buildRunningSession({
   required String groupId,
   required String ownerDeviceId,
@@ -326,11 +377,16 @@ Future<void> _pumpTimerScreen({
 Future<void> _pumpTaskListScreen({
   required WidgetTester tester,
   required ProviderContainer container,
+  TaskGroupPlanningResult? planningResult,
 }) async {
   final router = GoRouter(
     initialLocation: '/tasks',
     routes: [
       GoRoute(path: '/tasks', builder: (_, __) => const TaskListScreen()),
+      GoRoute(
+        path: '/tasks/plan',
+        builder: (_, __) => _PlanningResultRoute(result: planningResult),
+      ),
       GoRoute(
         path: '/groups',
         builder: (_, __) => const Scaffold(body: Text('groups-screen')),
@@ -914,4 +970,178 @@ void main() {
       }
     }
   });
+
+  testWidgets(
+    'Task List blocks scheduling when pre-run window overlaps a running group',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'linux_sync_notice_seen': true,
+        'web_local_notice_seen': true,
+      });
+      final now = DateTime.now();
+      final taskRepo = InMemoryTaskRepository();
+      await taskRepo.save(
+        _buildTask(
+          id: 'schedule-task-running',
+          name: 'Schedule Task Running',
+          now: now,
+        ),
+      );
+      final blockingRunning = _buildRunningGroup(
+        id: 'blocking-running-group',
+        now: now,
+      ).copyWith(theoreticalEndTime: now.add(const Duration(minutes: 50)));
+      final groupRepo = FakeTaskRunGroupRepository()..seed(blockingRunning);
+      final sessionRepo = FakePomodoroSessionRepository(null);
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRepositoryProvider.overrideWithValue(taskRepo),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      final planningResult = TaskGroupPlanningResult(
+        option: TaskGroupPlanOption.scheduleStart,
+        items: [_buildItem()],
+        noticeMinutes: 15,
+        scheduledStart: now.add(const Duration(minutes: 60)),
+      );
+      try {
+        await _pumpTaskListScreen(
+          tester: tester,
+          container: container,
+          planningResult: planningResult,
+        );
+        await _pumpUntilFound(tester, find.text('Schedule Task Running'));
+        await tester.tap(find.text('Schedule Task Running'));
+        await tester.pump(const Duration(milliseconds: 150));
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Next'));
+        await tester.pump(const Duration(milliseconds: 250));
+
+        await _pumpUntilFound(
+          tester,
+          find.textContaining(
+            "doesn't leave enough pre-run space because another group is still running",
+          ),
+        );
+        expect(
+          find.textContaining(
+            "doesn't leave enough pre-run space because another group is still running",
+          ),
+          findsOneWidget,
+        );
+        expect(await groupRepo.getAll(), hasLength(1));
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets(
+    'Task List blocks scheduling when pre-run window overlaps an earlier scheduled group',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'linux_sync_notice_seen': true,
+        'web_local_notice_seen': true,
+      });
+      final now = DateTime.now();
+      final taskRepo = InMemoryTaskRepository();
+      await taskRepo.save(
+        _buildTask(
+          id: 'schedule-task-scheduled',
+          name: 'Schedule Task Scheduled',
+          now: now,
+        ),
+      );
+      final blockingScheduled =
+          _buildScheduledGroup(
+            id: 'blocking-scheduled-group',
+            now: now,
+          ).copyWith(
+            scheduledStartTime: now.add(const Duration(minutes: 21)),
+            theoreticalEndTime: now.add(const Duration(minutes: 46)),
+          );
+      final groupRepo = FakeTaskRunGroupRepository()..seed(blockingScheduled);
+      final sessionRepo = FakePomodoroSessionRepository(null);
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRepositoryProvider.overrideWithValue(taskRepo),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      final planningResult = TaskGroupPlanningResult(
+        option: TaskGroupPlanOption.scheduleStart,
+        items: [_buildItem()],
+        noticeMinutes: 15,
+        scheduledStart: now.add(const Duration(minutes: 60)),
+      );
+      try {
+        await _pumpTaskListScreen(
+          tester: tester,
+          container: container,
+          planningResult: planningResult,
+        );
+        await _pumpUntilFound(tester, find.text('Schedule Task Scheduled'));
+        await tester.tap(find.text('Schedule Task Scheduled'));
+        await tester.pump(const Duration(milliseconds: 150));
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Next'));
+        await tester.pump(const Duration(milliseconds: 250));
+
+        await _pumpUntilFound(
+          tester,
+          find.textContaining(
+            "doesn't leave enough pre-run space because another group is scheduled earlier",
+          ),
+        );
+        expect(
+          find.textContaining(
+            "doesn't leave enough pre-run space because another group is scheduled earlier",
+          ),
+          findsOneWidget,
+        );
+        expect(await groupRepo.getAll(), hasLength(1));
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
 }

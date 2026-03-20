@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue historical roadmap validation backlog (`RVP-008` onward)**
+Current focus: **Continue historical roadmap validation backlog (`RVP-009` onward)**
 Last update: **20/03/2026**
 
 ---
@@ -12960,3 +12960,53 @@ PASS:
 ## 🎯 Next steps
 
 1. Execute `RVP-008` validation (schedule must reserve full Pre-Run notice window and reject invalid overlaps/times).
+
+# 🔹 Block 621 — RVP-008 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-008` — scheduling must reserve the complete Pre-Run window
+(`scheduledStart - noticeMinutes` to `scheduledStart`) and block invalid starts
+when that window overlaps existing running/scheduled execution.
+
+Concrete validated cases to close:
+1. Scheduling is blocked when the requested Pre-Run window overlaps a running
+   group (even if the new execution window would not overlap).
+2. Scheduling is blocked when the requested Pre-Run window overlaps an earlier
+   scheduled group (even if the new execution window would not overlap).
+
+## ✔ Work completed
+
+- Extended Task List widget-test harness in:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+  - Added `/tasks/plan` test route stub (`_PlanningResultRoute`) to return a
+    deterministic `TaskGroupPlanningResult` without touching production code.
+- Added dedicated `RVP-008` scenarios:
+  - `Task List blocks scheduling when pre-run window overlaps a running group`
+  - `Task List blocks scheduling when pre-run window overlaps an earlier scheduled group`
+- Both scenarios assert:
+  - the specific Pre-Run blocking message appears (`running` vs `scheduled`),
+  - no additional TaskRunGroup is saved when scheduling is rejected.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-008` -> `Closed/OK`
+    (implementation commit `358c278`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-009 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+10`.
+- `flutter analyze` -> `No issues found!`.
+
+## 📁 Updated files
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-009` validation (Pre-Run entry points from Task List banner and Groups Hub action).

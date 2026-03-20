@@ -93,7 +93,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       02/02/2026: Task List banner now clears stale sessions when group ends (validated 20/03/2026; `RVP-005` Closed/OK).
       02/02/2026: Scheduled auto-start rechecks when active session ends; expired running groups auto-complete to unblock scheduled starts (validated 20/03/2026; `RVP-006` Closed/OK).
       02/02/2026: Running group expiry now clears stale active sessions (Task List banner updates; validated 20/03/2026; `RVP-007` Closed/OK).
-      02/02/2026: Scheduling now reserves the full Pre-Run window (noticeMinutes) and blocks invalid times (validation pending).
+      02/02/2026: Scheduling now reserves the full Pre-Run window (noticeMinutes) and blocks invalid times (validated 20/03/2026; `RVP-008` Closed/OK).
       02/02/2026: Pre-Run entry points added for scheduled groups (Task List banner + Groups Hub action; no AppBar changes) (validation pending).
       02/02/2026: Task List now exposes a persistent Groups Hub CTA even with no active group (validation pending).
       02/02/2026: Task List running banner now falls back to running groups when no active session exists (Local Mode) (validation pending).
