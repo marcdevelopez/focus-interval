@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue historical roadmap validation backlog (`RVP-003` onward)**
+Current focus: **Continue historical roadmap validation backlog (`RVP-004` onward)**
 Last update: **20/03/2026**
 
 ---
@@ -12721,3 +12721,48 @@ PASS:
 ## 🎯 Next steps
 
 1. Execute `RVP-003` validation (cancel-running confirmation -> Groups Hub navigation).
+
+# 🔹 Block 616 — RVP-003 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-003` — canceling a running group must require confirmation and then navigate
+to Groups Hub.
+
+Concrete validated case to close: user taps `Cancel` during active run, sees the
+confirmation dialog, `Keep running` keeps Run Mode unchanged, and only
+`Cancel group` completes cancellation and navigates to `/groups`.
+
+## ✔ Work completed
+
+- Extended TimerScreen navigation widget coverage in:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+- Added dedicated cancel validation scenario:
+  - `cancel requests confirmation and navigates to Groups Hub only after confirm`
+  - Asserts:
+    - Confirmation dialog appears with expected actions.
+    - `Keep running` does not navigate away.
+    - Confirming `Cancel group` navigates to Groups Hub.
+    - Group status is persisted as `TaskRunStatus.canceled`.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-003` -> `Closed/OK`
+    (implementation commit `98f86b2`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-004 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+3`.
+
+## 📁 Updated files
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-004` validation (Phase 19 Groups Hub core UI + Task List banner/Run Mode indicator entry points).

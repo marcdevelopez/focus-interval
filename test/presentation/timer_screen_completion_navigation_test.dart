@@ -291,6 +291,17 @@ Future<void> _pumpTimerScreen({
   await tester.pump(const Duration(milliseconds: 120));
 }
 
+Future<void> _pumpUntilFound(
+  WidgetTester tester,
+  Finder finder, {
+  int maxTicks = 40,
+}) async {
+  for (var i = 0; i < maxTicks; i++) {
+    if (finder.evaluate().isNotEmpty) return;
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+}
+
 void main() {
   testWidgets(
     'owner sees completion modal and navigates to Groups Hub after confirming',
@@ -415,6 +426,81 @@ void main() {
 
         expect(find.text('groups-screen'), findsOneWidget);
 
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets(
+    'cancel requests confirmation and navigates to Groups Hub only after confirm',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(id: 'owner-cancel-group', now: now);
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(
+        _buildRunningSession(
+          groupId: group.id,
+          ownerDeviceId: deviceInfo.deviceId,
+          now: now,
+        ),
+      );
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+        await _pumpTimerScreen(
+          tester: tester,
+          container: container,
+          groupId: group.id,
+        );
+
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Cancel'));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('Cancel group?'), findsOneWidget);
+        expect(find.text('Keep running'), findsOneWidget);
+        expect(find.text('Cancel group'), findsOneWidget);
+
+        await tester.tap(find.text('Keep running'));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('Cancel group?'), findsNothing);
+        expect(find.text('groups-screen'), findsNothing);
+
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Cancel'));
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Cancel group'));
+        await _pumpUntilFound(tester, find.text('groups-screen'));
+
+        expect(find.text('groups-screen'), findsOneWidget);
+        final canceled = await groupRepo.getById(group.id);
+        expect(canceled?.status, TaskRunStatus.canceled);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
         container.dispose();
         sessionRepo.dispose();
         groupRepo.dispose();
