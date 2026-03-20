@@ -24,13 +24,19 @@ At the start of **every session**:
    - `docs/specs.md`
    - `docs/roadmap.md`
    - `docs/dev_log.md`
+   - `docs/validation/validation_ledger.md` — open P0/P1 items take priority over new phases
 2. Confirm the **current real date** (e.g. `date` in terminal).
-3. Verify:
-   - CURRENT PHASE in `docs/roadmap.md`
-   - Any **Reopened phases**
+3. Verify in order:
+   - Open `[ ]` P0/P1 items in `docs/validation/validation_ledger.md` (bugs AND RVP items)
+   - Any **Reopened phases** in `docs/roadmap.md`
+   - CURRENT PHASE in `docs/roadmap.md` — only after the above are clear
 4. If a phase is reopened and not listed, **add it immediately** to:
    - 🔄 Reopened phases
 5. Do **not** start coding until context is fully aligned.
+
+**"What's next" rule:** When asked what to do next, always cross-reference
+`validation_ledger.md` + `roadmap.md` + tail of `dev_log.md`. Never answer from
+the `CURRENT PHASE` label alone — pending validations and doc cleanup come first.
 6. Before any implementation, explain the high-level plan and review it for incoherence or likely failure modes; wait for confirmation.
 7. Ensure you are **not on `main`**; create a new branch before any code/doc changes.
 8. If already on a branch, ensure your changes match the branch purpose/name; if not, commit the current work on that branch, then create a new branch for the unrelated change.
@@ -105,15 +111,21 @@ Additional requirement:
   documentation path forward.
 
 Bug validation workflow (required):
-- All validation artifacts live under `docs/bugs/validation_<name>_YYYY_MM_DD`
-  (use `-01`, `-02` suffixes for multiple validations in the same day).
+- All validation artifacts live under `docs/bugs/validation_<bug-id>_YYYY_MM_DD`.
+  - `<bug-id>`: normalized bug log ID in lower-case with hyphens removed.
+    `BUG-F25-E` → `f25e` · `BUG-F25-H` → `f25h` · `BUG-001` → `bug001`
+  - Multiple bugs in one folder: join IDs with `_`. `BUG-001` + `BUG-002` → `bug001_bug002`
+  - **No `-01`/`-02` date suffixes.** If two folders cover different bugs on the same day,
+    their distinct bug IDs already differentiate them.
+  - Grandfathered folders keep their original names — do not rename them.
 - Never delete validation subdirectories in `docs/bugs`. Keep them for traceability.
 - Each validation folder must contain **exactly these — no other files**:
   - `plan_validacion_rapida_fix.md` — living document (see required sections below)
   - `quick_pass_checklist.md` — checkboxes only (see format below)
+  - `codex_handoff.md` — **optional**; created by Claude, consumed by Codex; not updated with validation results
   - `logs/` — `.log` files from device runs (named per convention below)
   - `screenshots/` — device screenshots used as evidence
-- **Never create additional `.md` files** inside a validation folder
+- **Never create additional `.md` files** beyond the three listed above
   (no `repro_steps.md`, no `notes.md`, no `analysis.md`).
   Any extra content belongs inside `plan_validacion_rapida_fix.md`.
 
@@ -368,10 +380,26 @@ Minimal UI guards are permitted **only when no service-level alternative exists*
 
 ## 8️⃣ Feature development protocol
 
+**Three-tier branching model (mandatory):**
+
+```
+fix/xxx  or  feature/xxx
+        ↓  (after device validation PASS)
+     develop
+        ↓  (only when zero known open P0/P1 bugs)
+       main  (production)
+```
+
+Rules:
+- **Never commit directly to `main` or `develop`.** All work on short-lived branches.
+- Fix/feature branches merge into `develop` only after device validation PASS.
+- `develop` merges into `main` only when `validation_ledger.md` shows zero open P0/P1 bugs.
+- Before checking out any branch: run `git branch --show-current` to confirm you are NOT on `main` or `develop`. If you are, ask the user which branch to use.
+- Branch naming: `fix/<short-description>` or `feature/<short-description>`. Never generic names (`patch`, `temp`, `wip`).
+
 For every new feature or fix:
 
-1. Create a **new branch**
-   - Never work directly on `main` (release branch).
+1. Create a **new branch** from `develop` (never from `main`).
 2. Implement **only one logical change**
 3. Ensure:
    - App compiles
