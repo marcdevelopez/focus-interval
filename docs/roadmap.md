@@ -105,7 +105,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       03/02/2026: Run Mode now auto-exits to Groups Hub when a group is canceled (validated 20/03/2026; `RVP-017` Closed/OK).
       03/02/2026: Integrity Warning copy clarified with explicit instruction + default badge moved below cards (validated 20/03/2026; `RVP-018` Closed/OK).
       03/02/2026: Groups Hub summary modal expanded with timing, totals, and task breakdown (validated 20/03/2026; `RVP-019` Closed/OK).
-      03/02/2026: Groups Hub summary hides Scheduled start for non-planned runs (validation pending).
+      03/02/2026: Groups Hub summary hides Scheduled start for non-planned runs (validated 20/03/2026; `RVP-020` Closed/OK).
       03/02/2026: Groups Hub cards hide Scheduled row for non-planned runs (validation pending).
       03/02/2026: TimerScreen reloads on groupId changes; /timer routes now use page keys to prevent stale state (validation pending).
       03/02/2026: Cancel navigation uses root navigator and retries if still on /timer (validation pending).

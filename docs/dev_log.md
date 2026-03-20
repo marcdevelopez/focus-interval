@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue historical roadmap validation backlog (`RVP-020` onward)**
+Current focus: **Continue historical roadmap validation backlog (`RVP-021` onward)**
 Last update: **20/03/2026**
 
 ---
@@ -13609,3 +13609,47 @@ Not applicable (documentation-only capture, no app code changes).
 ## 🎯 Next steps
 
 1. Continue historical RVP validation order from `RVP-020`.
+
+# 🔹 Block 635 — RVP-020 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-020` — Groups Hub summary modal must hide `Scheduled start` for
+non-planned runs (`scheduledStartTime == null`).
+
+Concrete validated case to close:
+1. A Start-now group opened in Groups Hub summary must not render
+   `Scheduled start` (and no pre-run row for that non-planned flow).
+
+## ✔ Work completed
+
+- Reused existing dedicated widget coverage (no app logic change):
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+  - `Groups Hub hides scheduled and pre-run metadata for start-now scheduled groups`
+- Assertions validated:
+  - Start-now card shows `Start now`,
+  - card does not show `Open Pre-Run` / `Pre-Run`,
+  - summary modal does not show `Scheduled start`,
+  - summary modal does not show `Pre-Run`.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-020` -> `Closed/OK`
+    (implementation commit `7e75e6d`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-021 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Groups Hub hides scheduled and pre-run metadata for start-now scheduled groups"` -> `+1`.
+- `flutter analyze` -> `No issues found!`.
+
+## 📁 Updated files
+
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-021` validation (Groups Hub cards hide Scheduled row for non-planned runs).
