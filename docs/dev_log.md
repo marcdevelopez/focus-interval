@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue reopened P1 roadmap validation queue (`RVP-067` to `RVP-069`) in order**
+Current focus: **Continue reopened P1 roadmap validation queue (`RVP-068` to `RVP-069`) in order**
 Last update: **20/03/2026**
 
 ---
@@ -12504,3 +12504,46 @@ PASS:
 ## 🎯 Next steps
 
 1. Execute `RVP-067` validation (Run Mode task transition catch-up after background/resume).
+
+# 🔹 Block 611 — RVP-067 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P1 reopened validation item:
+`RVP-067` — Run Mode task transition catch-up after background/resume.
+
+Phase 18 implementation existed in commit `992de22`, but closure needed explicit
+evidence that `handleAppResumed()` catches up across task boundaries and
+republishes corrected session cursor state.
+
+## ✔ Work completed
+
+- Added dedicated resume catch-up scenario to existing viewmodel coverage:
+  - `test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart`
+  - New case verifies `handleAppResumed` advances from task 0 to task 2 after
+    simulated background elapsed time (cross-task boundary jump).
+  - New case verifies corrected cursor state is republished via
+    `publishSession` after resume catch-up.
+- Extended fake session repository test double with publish tracking
+  (`publishCalls`, `lastPublishedSession`) to assert republish behavior.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-067` → `Closed/OK`.
+  - `docs/roadmap.md`: Phase 18 catch-up item marked `Closed/OK`.
+  - `docs/dev_log.md`: status header focus moved to `RVP-068..069`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → `+5`.
+- `flutter analyze` → No issues found.
+
+## 📁 Updated files
+
+- `test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-068` validation (completion modal + Groups Hub navigation on owner/mirror).

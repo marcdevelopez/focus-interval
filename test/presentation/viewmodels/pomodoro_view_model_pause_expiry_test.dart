@@ -10,6 +10,7 @@ import 'package:focus_interval/data/models/task_run_group.dart';
 import 'package:focus_interval/data/repositories/pomodoro_session_repository.dart';
 import 'package:focus_interval/data/repositories/task_run_group_repository.dart';
 import 'package:focus_interval/data/services/app_mode_service.dart';
+import 'package:focus_interval/data/services/device_info_service.dart';
 import 'package:focus_interval/data/services/sound_service.dart';
 import 'package:focus_interval/data/services/time_sync_service.dart';
 import 'package:focus_interval/domain/pomodoro_machine.dart';
@@ -93,6 +94,8 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
   final PomodoroSession? _session;
   int tryClaimCalls = 0;
   int clearSessionIfStaleCalls = 0;
+  int publishCalls = 0;
+  PomodoroSession? lastPublishedSession;
 
   @override
   Stream<PomodoroSession?> watchSession() => Stream.value(_session);
@@ -103,7 +106,10 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
   }
 
   @override
-  Future<void> publishSession(PomodoroSession session) async {}
+  Future<void> publishSession(PomodoroSession session) async {
+    publishCalls += 1;
+    lastPublishedSession = session;
+  }
 
   @override
   Future<bool> tryClaimSession(PomodoroSession session) async {
@@ -456,6 +462,78 @@ void main() {
       );
       expect(state.totalPomodoros, 4);
       expect(state.currentPomodoro, inInclusiveRange(1, 4));
+    },
+  );
+
+  test(
+    'handleAppResumed catches up local task cursor across task boundaries',
+    () async {
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildTimelineRunningGroup(
+        id: 'group-resume-catch-up',
+        start: now,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(null);
+      final appModeService = AppModeService.memory();
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            TimeSyncService(enabled: false),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final vmSub = container.listen<PomodoroState>(
+        pomodoroViewModelProvider,
+        (_, __) {},
+      );
+      addTearDown(vmSub.close);
+
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      await _pumpQueue();
+
+      expect(result, PomodoroGroupLoadResult.loaded);
+      expect(vm.currentTaskIndex, 0);
+      expect(sessionRepo.publishCalls, 0);
+
+      final resumedStart = now.subtract(const Duration(minutes: 230));
+      final resumedTotalSeconds = groupDurationSecondsByMode(
+        group.tasks,
+        group.integrityMode,
+      );
+      vm.updateGroup(
+        group.copyWith(
+          actualStartTime: resumedStart,
+          theoreticalEndTime: resumedStart.add(
+            Duration(seconds: resumedTotalSeconds),
+          ),
+          updatedAt: now,
+        ),
+      );
+      vm.handleAppResumed();
+      await _pumpQueue();
+
+      expect(vm.currentTaskIndex, 2);
+      expect(
+        vm.currentItem?.sourceTaskId,
+        '802f7fe0-8294-4057-aa98-68e2e5efb8dd',
+      );
+      expect(sessionRepo.publishCalls, greaterThan(0));
+      expect(sessionRepo.lastPublishedSession?.currentTaskIndex, 2);
+      expect(
+        sessionRepo.lastPublishedSession?.currentTaskId,
+        '802f7fe0-8294-4057-aa98-68e2e5efb8dd',
+      );
     },
   );
 
