@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue historical roadmap validation backlog (`RVP-018` onward)**
+Current focus: **Continue historical roadmap validation backlog (`RVP-019` onward)**
 Last update: **20/03/2026**
 
 ---
@@ -13472,3 +13472,55 @@ PASS:
 ## 🎯 Next steps
 
 1. Execute `RVP-018` validation (Integrity Warning copy clarified + default badge below cards).
+
+# 🔹 Block 632 — RVP-018 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-018` — Pomodoro Integrity Warning text must explicitly explain why mixed
+structures are risky and present the `Default preset` option below the
+structure cards to keep the visual hierarchy clear.
+
+Concrete validated case to close:
+1. Mixed-structure selection with a default preset available must show the
+   clarified guidance copy and place `Default preset` below the structure
+   options (`Used by:` cards).
+
+## ✔ Work completed
+
+- Added dedicated widget validation case in:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+  - `Integrity warning shows clarified guidance copy and keeps default preset option below structure cards`
+- Scenario setup:
+  - three selected tasks with two distinct structures (`Deep Work`,
+    `Planning`, `Email Batch`),
+  - in-memory default preset seeded (`Focus Default`).
+- Assertions:
+  - warning copy includes explicit mixed-structure guidance and action intent
+    (`configuration to apply to this group`),
+  - two `Used by:` structure sections are rendered,
+  - `Default preset` is rendered below the structure cards (vertical-position
+    assertion against the last `Used by:` section).
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-018` -> `Closed/OK`
+    (implementation commit `8e9b881`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-019 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Integrity warning shows clarified guidance copy and keeps default preset option below structure cards"` -> `+1`.
+- `flutter analyze` -> `No issues found!`.
+
+## 📁 Updated files
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-019` validation (Groups Hub summary modal expanded with timing, totals, and task breakdown).

@@ -1249,6 +1249,137 @@ void main() {
     },
   );
 
+  testWidgets(
+    'Integrity warning shows clarified guidance copy and keeps default preset option below structure cards',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'linux_sync_notice_seen': true,
+        'web_local_notice_seen': true,
+      });
+      final now = DateTime.now();
+      final taskRepo = InMemoryTaskRepository();
+      await taskRepo.save(
+        _buildTask(id: 'integrity-copy-a1', name: 'Deep Work', now: now),
+      );
+      await taskRepo.save(
+        _buildTask(
+          id: 'integrity-copy-a2',
+          name: 'Planning',
+          now: now,
+        ).copyWith(order: 1, updatedAt: now.add(const Duration(seconds: 1))),
+      );
+      await taskRepo.save(
+        _buildTask(
+          id: 'integrity-copy-b1',
+          name: 'Email Batch',
+          now: now,
+        ).copyWith(
+          pomodoroMinutes: 35,
+          shortBreakMinutes: 7,
+          longBreakMinutes: 20,
+          longBreakInterval: 2,
+          order: 2,
+          updatedAt: now.add(const Duration(seconds: 2)),
+        ),
+      );
+      final presetRepo = InMemoryPomodoroPresetRepository();
+      await presetRepo.save(
+        PomodoroPreset.classicDefault(
+          id: 'default-preset-rvp018',
+          now: now,
+          name: 'Focus Default',
+        ),
+      );
+      final groupRepo = FakeTaskRunGroupRepository();
+      final sessionRepo = FakePomodoroSessionRepository(null);
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRepositoryProvider.overrideWithValue(taskRepo),
+          presetRepositoryProvider.overrideWithValue(presetRepo),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      try {
+        await _pumpTaskListScreen(tester: tester, container: container);
+        await _pumpUntilFound(tester, find.text('Deep Work'));
+
+        final selection = container.read(taskSelectionProvider.notifier);
+        selection.toggle('integrity-copy-a1');
+        selection.toggle('integrity-copy-a2');
+        selection.toggle('integrity-copy-b1');
+        await tester.pump(const Duration(milliseconds: 120));
+
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Next'));
+        await _pumpUntilFound(tester, find.text('Pomodoro integrity warning'));
+
+        final dialog = find.byType(AlertDialog);
+        expect(
+          find.descendant(
+            of: dialog,
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is Text &&
+                  widget.data != null &&
+                  widget.data!.contains('This group mixes Pomodoro structures.'),
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: dialog,
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is Text &&
+                  widget.data != null &&
+                  widget.data!
+                      .contains('configuration to apply to this group.'),
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: dialog, matching: find.text('Used by:')),
+          findsNWidgets(2),
+        );
+        final defaultPresetFinder = find.descendant(
+          of: dialog,
+          matching: find.text('Default preset'),
+        );
+        expect(defaultPresetFinder, findsOneWidget);
+        final secondUsedByFinder = find
+            .descendant(of: dialog, matching: find.text('Used by:'))
+            .at(1);
+        expect(
+          tester.getTopLeft(defaultPresetFinder).dy,
+          greaterThan(tester.getBottomLeft(secondUsedByFinder).dy),
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
+
   testWidgets('Groups Hub core sections and actions are visible', (
     tester,
   ) async {
