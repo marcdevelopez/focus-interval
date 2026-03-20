@@ -12429,3 +12429,33 @@ PASS:
 
 1. Execute `RVP-066` validation (Phase 18 mode-specific breaks).
 2. Then continue with `RVP-067` to `RVP-069`.
+
+# 🔹 Block 609 — Cross-agent rule: validation case recap + final confirmation (20/03/2026)
+
+## 📋 Context
+
+User request: when validation items are closed, always explain the concrete
+validated case(s) so they are easy to remember, and ask for final confirmation.
+The requirement must apply to any responding AI role (Claude, Codex, Gemini, or
+equivalent agent in this workflow).
+
+## ✔ Work completed
+
+- Added mandatory rule in `AGENTS.md`:
+  - handoff contract now requires user-facing validation recap per closed ID;
+  - closure communication now explicitly requires final user confirmation.
+- Added same requirement to `docs/team_roles.md` (mandatory handoff format),
+  making it role-agnostic and applicable across Claude/Codex/Gemini.
+- Added same requirement to `CLAUDE.md` bug lifecycle step 7 (closure), so the
+  recap + explicit final confirmation is part of the standard closure path.
+
+## 📁 Updated files
+
+- `AGENTS.md`
+- `docs/team_roles.md`
+- `CLAUDE.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Continue validation queue with `RVP-066`.

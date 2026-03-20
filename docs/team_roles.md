@@ -1,6 +1,6 @@
 # Team Roles & Handoff Contract
 
-Last update: 2026-03-18
+Last update: 2026-03-20
 
 This document defines the operational split between Claude, Codex, and Gemini in this repository.
 It is normative for day-to-day collaboration and must be applied together with:
@@ -169,6 +169,11 @@ Every handoff between Claude, Codex, and Gemini must include:
 
 5. Requested next action
 - One explicit action expected from the receiving role.
+
+6. User-facing validation recap (mandatory when closing validations)
+- For every ID moved to `Closed/OK`, include the concrete case validated:
+  repro trigger, expected behavior, and PASS evidence.
+- The responding agent must ask for explicit final user confirmation after the recap.
 
 ---
 

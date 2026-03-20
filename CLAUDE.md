@@ -491,6 +491,9 @@ Every bug follows this exact sequence. No step may be skipped.
    → Update validation_ledger.md: status = Closed/OK + closed_commit_hash
    → Merge fix branch → develop (never directly to main)
    → Add Block to dev_log.md documenting the closure
+   → Send user-facing closure recap per closed ID (concrete case validated:
+     trigger/repro, expected behavior, PASS evidence) and ask for explicit
+     final user confirmation
 
 8. DEVELOP → MAIN
    → Only when validation_ledger.md shows zero open [ ] P0/P1 entries

@@ -75,6 +75,10 @@ Mandatory handoff contract (all directions):
 - Tests executed (exact commands + results)
 - Known risks and open questions
 - Explicit next action expected from the receiving role
+- User-facing validation recap when closing items:
+  - For each closed ID, explain the concrete validation case in plain language
+    (trigger/repro, expected behavior, PASS evidence).
+  - Ask the user for explicit final confirmation after presenting the recap.
 
 Conflict rule:
 - If architecture intent and implementation details diverge, stop and resolve via
@@ -162,6 +166,11 @@ When all three are met: update `plan_validacion_rapida_fix.md`, `quick_pass_chec
 `docs/bugs/bug_log.md`, `docs/validation/validation_ledger.md` to Closed/OK.
 Then merge fix branch → `develop` (never to `main` directly).
 Add a Block to `docs/dev_log.md` documenting the closure with commit hash.
+
+Mandatory user-facing closure communication (all agents: Claude/Codex/Gemini/any AI):
+- Before considering the closure fully done, provide a concise recap of each closed
+  validation ID with the exact case validated (what was reproduced/checked and what PASS means).
+- End by requesting explicit final user confirmation.
 
 Always review screenshots in the validation folder before diagnosing or implementing fixes.
 Full bug lifecycle detail: `CLAUDE.md` sections 10–11.
