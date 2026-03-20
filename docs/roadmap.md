@@ -95,7 +95,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       02/02/2026: Running group expiry now clears stale active sessions (Task List banner updates; validated 20/03/2026; `RVP-007` Closed/OK).
       02/02/2026: Scheduling now reserves the full Pre-Run window (noticeMinutes) and blocks invalid times (validated 20/03/2026; `RVP-008` Closed/OK).
       02/02/2026: Pre-Run entry points added for scheduled groups (Task List banner + Groups Hub action; no AppBar changes) (validated 20/03/2026; `RVP-009` Closed/OK).
-      02/02/2026: Task List now exposes a persistent Groups Hub CTA even with no active group (validation pending).
+      02/02/2026: Task List now exposes a persistent Groups Hub CTA even with no active group (validated 20/03/2026; `RVP-010` Closed/OK).
       02/02/2026: Task List running banner now falls back to running groups when no active session exists (Local Mode) (validation pending).
       02/02/2026: Groups Hub hides notice/pre-run info for “Start now” groups (scheduledStartTime == null) (validation pending).
       03/02/2026: Auto-adjust short/long breaks on valid pomodoro changes and break edits (Task Editor + Edit Preset) (validated 20/03/2026; `RVP-063` Closed/OK).

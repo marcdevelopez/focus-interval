@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue historical roadmap validation backlog (`RVP-010` onward)**
+Current focus: **Continue historical roadmap validation backlog (`RVP-011` onward)**
 Last update: **20/03/2026**
 
 ---
@@ -13107,3 +13107,43 @@ PASS:
 ## 🎯 Next steps
 
 1. Execute `RVP-010` validation (Task List persistent Groups Hub CTA with no active group).
+
+# 🔹 Block 624 — RVP-010 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-010` — Task List must keep a persistent `View Groups Hub` CTA visible even
+when there is no active session and no running/pre-run group.
+
+Concrete validated case to close:
+1. With `activeSession = null` and no seeded groups, Task List still renders
+   `View Groups Hub` and the CTA navigates to `/groups`.
+
+## ✔ Work completed
+
+- Confirmed existing dedicated widget test already covers the exact scenario:
+  - `Task List Groups Hub CTA opens Groups Hub`
+  - fixture setup uses empty `FakeTaskRunGroupRepository` + null session.
+- No app code changes were required.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-010` -> `Closed/OK`
+    (implementation commit `3b78667`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-011 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+12`.
+- `flutter analyze` -> `No issues found!`.
+
+## 📁 Updated files
+
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-011` validation (Task List running banner fallback to running groups when there is no active session in Local Mode).
