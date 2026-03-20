@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue historical roadmap validation backlog (`RVP-017` onward)**
+Current focus: **Continue historical roadmap validation backlog (`RVP-018` onward)**
 Last update: **20/03/2026**
 
 ---
@@ -13426,3 +13426,49 @@ PASS:
 ## 🎯 Next steps
 
 1. Execute `RVP-017` validation (Run Mode auto-exits to Groups Hub when group is canceled).
+
+# 🔹 Block 631 — RVP-017 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-017` — when a running group becomes canceled while Run Mode is visible,
+the screen must auto-exit to Groups Hub (no idle/stale timer screen).
+
+Concrete validated case to close:
+1. In Run Mode, cancel requires confirmation; after `Cancel group`, status
+   becomes `canceled` and navigation must end in Groups Hub.
+
+## ✔ Work completed
+
+- Verified existing implementation/test coverage without changing app logic:
+  - `lib/presentation/screens/timer_screen.dart`
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+- Confirmed behavior from dedicated widget scenario:
+  - `cancel requests confirmation and navigates to Groups Hub only after confirm`
+- Assertions validated:
+  - confirmation dialog appears (`Cancel group?`, `Keep running`, `Cancel group`),
+  - `Keep running` keeps user in Run Mode,
+  - `Cancel group` navigates to Groups Hub,
+  - repository state persists `TaskRunStatus.canceled`.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-017` -> `Closed/OK`
+    (implementation commit `8e9b881`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-018 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "cancel requests confirmation and navigates to Groups Hub only after confirm"` -> `+1`.
+- `flutter analyze` -> `No issues found!`.
+
+## 📁 Updated files
+
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-018` validation (Integrity Warning copy clarified + default badge below cards).
