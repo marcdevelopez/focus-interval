@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue historical roadmap validation backlog (`RVP-005` onward)**
+Current focus: **Continue historical roadmap validation backlog (`RVP-006` onward)**
 Last update: **20/03/2026**
 
 ---
@@ -12815,3 +12815,50 @@ PASS:
 ## 🎯 Next steps
 
 1. Execute `RVP-005` validation (Task List banner stale-session cleanup on group end).
+
+# 🔹 Block 618 — RVP-005 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-005` — Task List banner must clear stale active session state when the
+linked group has already ended.
+
+Concrete validated cases to close:
+1. Active session points to a `completed` group -> stale session is cleared and
+   user gets `Group completed.` feedback.
+2. Active session points to a `canceled` group -> stale session is cleared and
+   user gets `Group ended.` feedback.
+
+## ✔ Work completed
+
+- Extended test repository double in:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+  - Added `clearSessionIfGroupNotRunningCalls` tracking and null-session emit
+    on cleanup call.
+- Added dedicated Task List stale-session validation scenarios:
+  - `Task List clears stale active session when group is completed`
+  - `Task List clears stale active session when group is canceled`
+- Validated cleanup path in `TaskListScreen` (`_maybeResolveStaleActiveSession`)
+  through widget flow with real banner/session wiring.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-005` -> `Closed/OK`
+    (implementation commit `6dc4d64`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-006 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+8`.
+
+## 📁 Updated files
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-006` validation (scheduled auto-start recheck after active session end + expired-running auto-complete unblock).

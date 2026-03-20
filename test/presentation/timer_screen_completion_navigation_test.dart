@@ -115,6 +115,7 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
       StreamController<PomodoroSession?>.broadcast();
   PomodoroSession? _lastSession;
   PomodoroSession? _initialSession;
+  int clearSessionIfGroupNotRunningCalls = 0;
 
   @override
   Stream<PomodoroSession?> watchSession() async* {
@@ -149,7 +150,11 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
   Future<void> clearSessionIfStale({required DateTime now}) async {}
 
   @override
-  Future<void> clearSessionIfGroupNotRunning() async {}
+  Future<void> clearSessionIfGroupNotRunning() async {
+    clearSessionIfGroupNotRunningCalls += 1;
+    _lastSession = null;
+    _controller.add(null);
+  }
 
   Future<void> clearSessionIfInactive({String? expectedGroupId}) async {}
 
@@ -781,6 +786,119 @@ void main() {
       await tester.tap(find.text('Go to Task List'));
       await _pumpUntilFound(tester, find.text('tasks-screen'));
       expect(find.text('tasks-screen'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 100));
+      container.dispose();
+      sessionRepo.dispose();
+      groupRepo.dispose();
+      disposed = true;
+    } finally {
+      if (!disposed) {
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+      }
+    }
+  });
+
+  testWidgets('Task List clears stale active session when group is completed', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'linux_sync_notice_seen': true,
+      'web_local_notice_seen': true,
+    });
+    final now = DateTime.now();
+    final deviceInfo = DeviceInfoService.ephemeral();
+    final completed = _buildCompletedGroup(
+      id: 'stale-completed-group',
+      now: now,
+    );
+    final groupRepo = FakeTaskRunGroupRepository()..seed(completed);
+    final sessionRepo = FakePomodoroSessionRepository(
+      _buildRunningSession(
+        groupId: completed.id,
+        ownerDeviceId: deviceInfo.deviceId,
+        now: now,
+      ),
+    );
+    final appModeService = AppModeService.memory();
+    var disposed = false;
+
+    final container = ProviderContainer(
+      overrides: [
+        firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+        firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+        taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+        pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+        appModeServiceProvider.overrideWithValue(appModeService),
+        deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+        soundServiceProvider.overrideWithValue(FakeSoundService()),
+        timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+      ],
+    );
+    try {
+      await _pumpTaskListScreen(tester: tester, container: container);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(sessionRepo.clearSessionIfGroupNotRunningCalls, 1);
+      expect(find.text('Group completed.'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 100));
+      container.dispose();
+      sessionRepo.dispose();
+      groupRepo.dispose();
+      disposed = true;
+    } finally {
+      if (!disposed) {
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+      }
+    }
+  });
+
+  testWidgets('Task List clears stale active session when group is canceled', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'linux_sync_notice_seen': true,
+      'web_local_notice_seen': true,
+    });
+    final now = DateTime.now();
+    final deviceInfo = DeviceInfoService.ephemeral();
+    final canceled = _buildCanceledGroup(id: 'stale-canceled-group', now: now);
+    final groupRepo = FakeTaskRunGroupRepository()..seed(canceled);
+    final sessionRepo = FakePomodoroSessionRepository(
+      _buildRunningSession(
+        groupId: canceled.id,
+        ownerDeviceId: deviceInfo.deviceId,
+        now: now,
+      ),
+    );
+    final appModeService = AppModeService.memory();
+    var disposed = false;
+
+    final container = ProviderContainer(
+      overrides: [
+        firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+        firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+        taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+        pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+        appModeServiceProvider.overrideWithValue(appModeService),
+        deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+        soundServiceProvider.overrideWithValue(FakeSoundService()),
+        timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+      ],
+    );
+    try {
+      await _pumpTaskListScreen(tester: tester, container: container);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(sessionRepo.clearSessionIfGroupNotRunningCalls, 1);
+      expect(find.text('Group ended.'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump(const Duration(milliseconds: 100));
