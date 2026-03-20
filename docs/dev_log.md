@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue historical roadmap validation backlog (`RVP-002` onward)**
+Current focus: **Continue historical roadmap validation backlog (`RVP-003` onward)**
 Last update: **20/03/2026**
 
 ---
@@ -12681,3 +12681,43 @@ PASS:
 ## 🎯 Next steps
 
 1. Execute `RVP-002` validation (completion modal -> Groups Hub navigation baseline backlog item).
+
+# 🔹 Block 615 — RVP-002 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-002` — completion modal must navigate to Groups Hub and the placeholder
+Groups Hub route must be available in the completion path.
+
+Concrete validated case to close: when a running group reaches `completed`,
+Run Mode must show the completion modal and, after confirming `OK`, navigate to
+`/groups` instead of staying in TimerScreen.
+
+## ✔ Work completed
+
+- Re-ran dedicated completion-navigation widget coverage:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+- Confirmed both baseline and hardened behavior paths remain valid:
+  - Owner completion path reaches Groups Hub after modal confirm.
+  - Mirror completion path reaches Groups Hub after modal confirm.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-002` -> `Closed/OK`
+    (implementation commit `85bec6a`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-003 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+2`.
+
+## 📁 Updated files
+
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-003` validation (cancel-running confirmation -> Groups Hub navigation).

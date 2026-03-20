@@ -86,7 +86,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       02/02/2026: Duplicate resolution now exits the New Preset screen after use/rename to avoid loops.
       02/02/2026: Duplicate rename in Edit Preset now exits to Manage Presets after completion.
       02/02/2026: Duplicate rename now exits the editor in all flows (new/edit).
-      02/02/2026: Completion modal now navigates to Groups Hub; placeholder Groups Hub route added (validation pending).
+      02/02/2026: Completion modal now navigates to Groups Hub; placeholder Groups Hub route added (validated 20/03/2026; `RVP-002` Closed/OK).
       02/02/2026: Cancel running group now confirms and navigates to Groups Hub (validation pending).
       02/02/2026: Phase 18 completed (completion flow + cancel flow -> Groups Hub).
       02/02/2026: Phase 19 Groups Hub core UI implemented (sections + actions); Task List banner + Run Mode indicator now open Groups Hub (validation pending).
