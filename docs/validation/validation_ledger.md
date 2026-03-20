@@ -17,10 +17,10 @@ Scope: bugs + features + refactors + roadmap/process validations
 
 Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
 
-## Snapshot (2026-03-13)
+## Snapshot (2026-03-20)
 
 - Roadmap `validation pending`: **57** items.
-- Active bug-checklist open items: **2**.
+- Active bug-log entries with non-closed status: **15** (`Open`: 11, `Partially open`: 1, `Pending validation`: 1, `Fixed; validation pending`: 1, `Not implemented`: 1).
 - Profiling checklist open items: **8**.
 - 2026-03-09 update: Fix 26 monitoring window reached target date but failed
   (persistent `Syncing session...` + black-screen resume scenario).

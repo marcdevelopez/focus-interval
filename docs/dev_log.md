@@ -13653,3 +13653,29 @@ PASS:
 ## 🎯 Next steps
 
 1. Execute `RVP-021` validation (Groups Hub cards hide Scheduled row for non-planned runs).
+
+# 🔹 Block 636 — Bug snapshot audit sync (20/03/2026)
+
+## 📋 Context
+
+During validation review, the ledger snapshot line
+`Active bug-checklist open items: 2` was reported as likely outdated.
+
+## ✔ Work completed
+
+- Audited `docs/bugs/bug_log.md` status entries.
+- Updated `docs/validation/validation_ledger.md` snapshot to reflect current
+  bug-log non-closed counts and explicit status breakdown.
+
+## 🧪 Verification run
+
+Documentation audit only (no runtime code change).
+
+## 📁 Updated files
+
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Continue historical RVP validation order from `RVP-021`.
