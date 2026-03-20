@@ -36,7 +36,10 @@ class FakeTaskRunGroupRepository implements TaskRunGroupRepository {
   }
 
   @override
-  Stream<List<TaskRunGroup>> watchAll() => _controller.stream;
+  Stream<List<TaskRunGroup>> watchAll() async* {
+    yield _store.values.toList();
+    yield* _controller.stream;
+  }
 
   @override
   Future<List<TaskRunGroup>> getAll() async => _store.values.toList();
@@ -142,7 +145,10 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
   }
 
   @override
-  Stream<PomodoroSession?> watchSession() => _controller.stream;
+  Stream<PomodoroSession?> watchSession() async* {
+    yield _lastSession;
+    yield* _controller.stream;
+  }
 
   @override
   Future<PomodoroSession?> fetchSession({bool preferServer = false}) async {
@@ -1317,6 +1323,86 @@ void main() {
         expect(
           sessionRepo.lastPublishedSession?.groupId,
           'group-unblocked-scheduled',
+        );
+      },
+    );
+
+    test(
+      'clears stale non-owner active session when expired running group unblocks overdue scheduled start',
+      () async {
+        final now = DateTime.now();
+        final groupRepo = FakeTaskRunGroupRepository();
+        final sessionRepo = FakePomodoroSessionRepository();
+        final actionCompleter = Completer<ScheduledGroupAction>();
+        final container = ProviderContainer(
+          overrides: [
+            appModeServiceProvider.overrideWithValue(AppModeService.memory()),
+            taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+            pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          ],
+        );
+        addTearDown(() {
+          groupRepo.dispose();
+          sessionRepo.dispose();
+          container.dispose();
+        });
+
+        final sub = container.listen<ScheduledGroupAction?>(
+          scheduledGroupCoordinatorProvider,
+          (_, next) {
+            if (next != null && !actionCompleter.isCompleted) {
+              actionCompleter.complete(next);
+            }
+          },
+        );
+        addTearDown(sub.close);
+
+        container.read(scheduledGroupCoordinatorProvider);
+
+        sessionRepo.emit(
+          _buildRunningSession(
+            groupId: 'group-expired-running-stale',
+            ownerId: 'device-other',
+            now: now,
+            lastUpdatedAt: now.subtract(const Duration(minutes: 2)),
+          ),
+        );
+        await _pumpQueue();
+
+        final expiredRunning = _buildRunningGroup(
+          id: 'group-expired-running-stale',
+          start: now.subtract(const Duration(hours: 2)),
+          theoreticalEnd: now.subtract(const Duration(minutes: 30)),
+        );
+        final overdueScheduled = _buildScheduledGroup(
+          id: 'group-unblocked-stale',
+          scheduledStart: now.subtract(const Duration(minutes: 5)),
+          durationMinutes: 30,
+          noticeMinutes: 0,
+        );
+        await groupRepo.saveAll([expiredRunning, overdueScheduled]);
+        await _pumpQueue();
+
+        final action = await actionCompleter.future.timeout(
+          const Duration(seconds: 1),
+        );
+        expect(action.type, ScheduledGroupActionType.openTimer);
+        expect(action.groupId, 'group-unblocked-stale');
+
+        final expiredStored = await groupRepo.getById(
+          'group-expired-running-stale',
+        );
+        final unblockedStored = await groupRepo.getById(
+          'group-unblocked-stale',
+        );
+        expect(expiredStored?.status, TaskRunStatus.completed);
+        expect(unblockedStored?.status, TaskRunStatus.running);
+        expect(sessionRepo.clearSessionIfStaleCount, greaterThan(0));
+        expect(sessionRepo.clearSessionAsOwnerCount, 0);
+        expect(sessionRepo.publishCount, 1);
+        expect(
+          sessionRepo.lastPublishedSession?.groupId,
+          'group-unblocked-stale',
         );
       },
     );

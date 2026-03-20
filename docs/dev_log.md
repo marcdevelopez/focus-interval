@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue historical roadmap validation backlog (`RVP-007` onward)**
+Current focus: **Continue historical roadmap validation backlog (`RVP-008` onward)**
 Last update: **20/03/2026**
 
 ---
@@ -12911,3 +12911,52 @@ PASS:
 ## 🎯 Next steps
 
 1. Execute `RVP-007` validation (running-group expiry clears stale active session / Task List banner state).
+
+# 🔹 Block 620 — RVP-007 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-007` — running-group expiry must clear stale `activeSession` state so
+terminal groups do not keep stale live-session ownership, and scheduled
+execution can continue.
+
+Concrete validated cases to close:
+1. Expired running group on owner path clears stale session authority
+   (`clearSessionAsOwner`) and allows overdue scheduled group progression.
+2. Expired running group on stale non-owner path clears stale session via
+   guarded cleanup (`clearSessionIfStale`) and allows overdue scheduled group
+   progression.
+
+## ✔ Work completed
+
+- Extended coordinator test doubles in:
+  - `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+  - Fake repositories now expose deterministic initial stream values
+    (`watchAll`/`watchSession` yield current snapshot before stream updates).
+- Added dedicated stale non-owner validation scenario:
+  - `clears stale non-owner active session when expired running group unblocks overdue scheduled start`
+- Reused and validated owner-path stale clear coverage from:
+  - `completes expired running group and unblocks overdue scheduled auto-start`
+  - This case asserts running expiry completion + owner stale-session cleanup.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-007` -> `Closed/OK`
+    (implementation commit `b33c13f`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-008 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` -> `+19`.
+
+## 📁 Updated files
+
+- `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-008` validation (schedule must reserve full Pre-Run notice window and reject invalid overlaps/times).
