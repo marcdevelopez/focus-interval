@@ -189,6 +189,7 @@ Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
 ### P2 deferred feature backlog items (after historical RVP closure)
 
 - [ ] ID: `IDEA-039` | Type: feature | Priority: P2 | Status: Pending | Source: `docs/features/feature_backlog.md:3169`, `docs/roadmap.md:458` | Item: Scheduling conflict UX upgrade (Task List planning): blocking explainer modal with exact conflicting groups/ranges, pre-run range visibility, pre-run-only auto-adjust coherence with existing clamp behavior, and up to two nearest valid start suggestions for execution conflicts while preserving current pre-run value. Deferred until historical RVP backlog (`RVP-009+`) is closed. | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: `-`.
+- [ ] ID: `IDEA-040` | Type: feature | Priority: P2 | Status: Pending | Source: `docs/features/feature_backlog.md:3273`, `docs/roadmap.md:512` | Item: Groups Hub Start-now timing clarity: show `Started` (actual start) for non-planned groups in cards/summary while keeping `Scheduled start` hidden for Start-now flows. Deferred until historical RVP backlog continues in order (`RVP-020+`). | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: `-`.
 
 ### P3 process/profiling validation items
 

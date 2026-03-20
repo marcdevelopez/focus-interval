@@ -81,6 +81,7 @@ execution slot.
 37. IDEA-025 — Workspace Break Chat (Text + Deferred DM)
 38. IDEA-035 — Global SnackBar Theme + Unified UI Messaging
 39. IDEA-039 — Scheduling Conflict Explainer + Guided Start Suggestions
+40. IDEA-040 — Groups Hub Started Time For Start-Now Groups
 
 Notes:
 
@@ -97,6 +98,8 @@ Notes:
   and either closed as redundant or repurposed as an in-tab CTA within Groups Hub.
 - IDEA-039 is intentionally deferred until the historical RVP validation backlog
   is closed. It requires a specs update before implementation.
+- IDEA-040 should be implemented together with the reopened Phase 19 timing-row
+  requirement to keep card/summary timing labels coherent.
 
 ## In progress
 
@@ -3262,3 +3265,82 @@ Acceptance criteria:
 
 Notes:
 This idea is deferred until the historical RVP validation backlog is closed.
+
+---
+
+## IDEA-040 — Groups Hub Started Time For Start-Now Groups
+
+ID: IDEA-040
+Title: Groups Hub Started Time For Start-Now Groups
+Type: UI/UX
+Scope: S
+Priority: P2
+Status: idea
+
+Problem / Goal:
+When a group is created as Start-now, Groups Hub hides Scheduled metadata as
+expected, but users lose the start context. The card can show end/tasks/total
+time without stating when the run actually started.
+
+Summary:
+Add a clear `Started` timing row (based on `actualStartTime`) for Start-now
+groups in Groups Hub so users can understand the timeline without implying a
+planned schedule.
+
+Design / UX:
+Layout / placement:
+- Groups Hub cards (running/paused/completed/canceled): when
+  `scheduledStartTime == null`, show `Started: <time>` in the timing meta area.
+- Group summary modal: when `scheduledStartTime == null`, keep
+  `Scheduled start` hidden and show `Started: <time>` in the Timing section.
+
+Visual states:
+- Start-now groups: show `Started`.
+- Scheduled groups: keep existing scheduled/pre-run timing presentation.
+
+Animation rules:
+None.
+
+Interaction:
+Read-only informational row. No new actions.
+
+Text / typography:
+Use label `Started` (not `Scheduled start`) for Start-now groups to avoid
+confusion with planning semantics.
+
+Data & Logic:
+Source of truth:
+Use `TaskRunGroup.actualStartTime` only.
+
+Calculations:
+Format with existing group date/time formatter; when the start is today, show
+time, otherwise include date + time per current formatting rules.
+
+Sync / multi-device:
+No authority changes. Mirrors render the same value from the shared group
+snapshot.
+
+Edge cases:
+- `actualStartTime == null` on a Start-now group: show fallback `Started: --:--`
+  and keep the UI stable.
+- Pre-run row remains hidden for Start-now groups.
+
+Accessibility:
+Expose `Started` row in semantics so screen readers announce start context.
+
+Dependencies:
+Groups Hub card metadata renderer and summary modal timing block.
+
+Risks:
+Low; purely presentational. Must avoid reintroducing `Scheduled start` label on
+Start-now groups.
+
+Acceptance criteria:
+- Start-now group cards show `Started` with actual start time.
+- Start-now summary modal shows `Started` and does not show `Scheduled start`.
+- Scheduled groups remain unchanged.
+- `flutter analyze` and targeted widget tests pass.
+
+Notes:
+This idea is intentionally deferred until historical RVP validation closure
+continues to avoid context switching.

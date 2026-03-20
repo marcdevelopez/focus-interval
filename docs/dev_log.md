@@ -13576,3 +13576,36 @@ PASS:
 ## 🎯 Next steps
 
 1. Execute `RVP-020` validation (Groups Hub summary hides Scheduled start for non-planned runs).
+
+# 🔹 Block 634 — Deferred feature capture: Start-now `Started` timing context (20/03/2026)
+
+## 📋 Context
+
+User feedback during validation review: for Start-now groups in Groups Hub,
+removing `Scheduled start` is correct, but the card still needs explicit
+`Started` timing context (actual start) to avoid ambiguity.
+
+## ✔ Work completed
+
+- Captured this as a deferred feature/new requirement (no runtime change yet):
+  - `docs/features/feature_backlog.md`: added `IDEA-040 — Groups Hub Started Time For Start-Now Groups`.
+  - `docs/roadmap.md`: clarified reopened Phase 19 timing-row requirement as
+    new requirement (explicit `Started` for Start-now groups + scheduled/pre-run
+    coherence for scheduled groups).
+  - `docs/validation/validation_ledger.md`: added deferred tracking entry
+    `IDEA-040` under P2 deferred feature backlog items.
+
+## 🧪 Verification run
+
+Not applicable (documentation-only capture, no app code changes).
+
+## 📁 Updated files
+
+- `docs/features/feature_backlog.md`
+- `docs/roadmap.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Continue historical RVP validation order from `RVP-020`.
