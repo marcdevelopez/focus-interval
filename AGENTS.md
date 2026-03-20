@@ -24,15 +24,25 @@ At the start of **every session**:
    - `docs/specs.md`
    - `docs/roadmap.md`
    - `docs/dev_log.md`
+   - `docs/bugs/bug_log.md` — canonical bug status source
    - `docs/validation/validation_ledger.md` — open P0/P1 items take priority over new phases
 2. Confirm the **current real date** (e.g. `date` in terminal).
 3. Verify in order:
    - Open `[ ]` P0/P1 items in `docs/validation/validation_ledger.md` (bugs AND RVP items)
+   - Non-closed bug-log entries are mirrored in `docs/validation/validation_ledger.md`
+     with stable IDs, priorities, statuses, and source references
    - Any **Reopened phases** in `docs/roadmap.md`
    - CURRENT PHASE in `docs/roadmap.md` — only after the above are clear
 4. If a phase is reopened and not listed, **add it immediately** to:
    - 🔄 Reopened phases
 5. Do **not** start coding until context is fully aligned.
+
+Bug-priority preflight gate (hard rule):
+- Before starting any validation, roadmap item, feature, refactor, or infra task:
+  1. Scan `docs/bugs/bug_log.md` for all non-closed bugs.
+  2. Ensure each one is present in `docs/validation/validation_ledger.md`.
+  3. If any mismatch exists, stop and synchronize ledger + `docs/dev_log.md` first.
+  4. Continue only after the bug queue is explicit and ordered by priority.
 
 **"What's next" rule:** When asked what to do next, always cross-reference
 `validation_ledger.md` + `roadmap.md` + tail of `dev_log.md`. Never answer from
@@ -221,9 +231,10 @@ Global validation ledger workflow (hard rule):
   - If one implementation closes multiple items, close each ID explicitly.
 - Priority execution order (mandatory):
   1. P0 blockers
-  2. Reopened-phase validation items
-  3. Remaining historical pending validations
-  - Do not start new feature work while P0 validation blockers remain open.
+  2. Active bug-log queue (all non-closed bug entries, ordered P1 then P2)
+  3. Reopened-phase validation items
+  4. Remaining historical pending validations
+  - Do not start new feature work while open P0/P1 bug items remain unresolved.
 
 ---
 

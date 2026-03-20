@@ -148,6 +148,11 @@ bleeding first. Document the skip and run the full standard path after the P0 is
    assess cross-module impact, or process data that exceeds practical context limits.
 5. **Specs first:** No role may implement behavior that is not yet defined in `docs/specs.md`.
    If a gap exists, Claude must update specs before implementation begins.
+6. **Bug-first preflight gate:** Before proposing any next task, all roles must
+   reconcile non-closed entries in `docs/bugs/bug_log.md` with
+   `docs/validation/validation_ledger.md`. If mismatch exists, sync docs first.
+   Bug queue resolution has priority over RVP validation and feature work unless
+   the user explicitly overrides.
 
 ---
 
@@ -174,6 +179,11 @@ Every handoff between Claude, Codex, and Gemini must include:
 - For every ID moved to `Closed/OK`, include the concrete case validated:
   repro trigger, expected behavior, and PASS evidence.
 - The responding agent must ask for explicit final user confirmation after the recap.
+
+7. Bug-queue status checkpoint (mandatory before non-bug work)
+- Current non-closed bug count from `bug_log.md`.
+- Confirmation that each bug is represented in `validation_ledger.md`.
+- Which bug ID(s) are next by priority.
 
 ---
 

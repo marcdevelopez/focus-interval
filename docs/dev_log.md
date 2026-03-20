@@ -13713,3 +13713,40 @@ Documentation sync only (no runtime code changes).
 
 1. Start resolving the active bug-log queue in priority order (P1 first), then
    resume historical RVP backlog.
+
+# 🔹 Block 638 — Bug-first preflight guardrail (20/03/2026)
+
+## 📋 Context
+
+A process gap was confirmed: priority rules existed, but there was no explicit
+mandatory step to reconcile all non-closed `bug_log.md` entries with
+`validation_ledger.md` before continuing with RVP validations or feature work.
+This allowed the ledger queue to drift from the real bug backlog.
+
+## ✔ Work completed
+
+- Added an explicit bug-priority preflight gate to `AGENTS.md`:
+  - startup read now includes `docs/bugs/bug_log.md`.
+  - mandatory reconciliation of non-closed bug-log entries against the ledger.
+  - priority order updated to execute active bug queue before reopened/historical RVP items.
+- Added the same mandatory preflight rule to `CLAUDE.md`:
+  - project orientation includes the reconciliation gate.
+  - bug lifecycle now starts with `0. PRE-FLIGHT SYNC`.
+- Added cross-role enforcement in `docs/team_roles.md`:
+  - new coordination golden rule for bug-first preflight.
+  - handoff format now requires a bug-queue status checkpoint before non-bug work.
+
+## 🧪 Verification run
+
+Documentation/process update only (no runtime code changes).
+
+## 📁 Updated files
+
+- `AGENTS.md`
+- `CLAUDE.md`
+- `docs/team_roles.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute the active bug queue from `docs/validation/validation_ledger.md` in priority order.
