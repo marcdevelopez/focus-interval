@@ -35,7 +35,7 @@ Notes:
 
 ---
 
-## Recommended execution order (updated 16/03/2026)
+## Recommended execution order (updated 20/03/2026)
 
 This section defines the recommended implementation order. The idea entries
 below remain in chronological order; new ideas must be appended at the end.
@@ -80,6 +80,7 @@ execution slot.
 36. IDEA-024 — Workspaces With Shared TaskRunGroups
 37. IDEA-025 — Workspace Break Chat (Text + Deferred DM)
 38. IDEA-035 — Global SnackBar Theme + Unified UI Messaging
+39. IDEA-039 — Scheduling Conflict Explainer + Guided Start Suggestions
 
 Notes:
 
@@ -94,6 +95,8 @@ Notes:
   models in Local Mode.
 - IDEA-038 supersedes IDEA-009. Once IDEA-038 is done, IDEA-009 must be reviewed
   and either closed as redundant or repurposed as an in-tab CTA within Groups Hub.
+- IDEA-039 is intentionally deferred until the historical RVP validation backlog
+  is closed. It requires a specs update before implementation.
 
 ## In progress
 
@@ -3158,3 +3161,104 @@ Notes:
   for this iteration. Default tab on launch is Task List.
 - The timer/run screen is intentionally excluded from the tab pager; it is a
   full-screen modal-style route launched on top of the main tab shell.
+
+---
+
+## IDEA-039 — Scheduling Conflict Explainer + Guided Start Suggestions
+
+ID: IDEA-039
+Title: Scheduling Conflict Explainer + Guided Start Suggestions
+Type: UX / Planning
+Scope: M
+Priority: P1
+Status: idea
+
+Problem / Goal:
+When scheduling is blocked by pre-run or execution conflicts, current feedback
+is a short generic snackbar. Users cannot understand which groups block the
+plan, why the overlap happens, or what exact next step is valid.
+
+Summary:
+Replace generic conflict snackbar feedback with a blocking conflict explainer
+modal that lists exact conflicting groups (running/scheduled), shows their
+time ranges (and pre-run ranges when applicable), and provides guided,
+context-specific fixes.
+
+Design / UX:
+Layout / placement:
+Blocking modal launched from Task List scheduling flow when conflict is
+detected. Modal body must be scrollable and show:
+- Planned group timeline (attempted start, pre-run window, execution window).
+- Conflicting groups list (1..N), each with type badge (Running/Scheduled),
+  group name, execution range, and pre-run range when notice > 0.
+
+Visual states:
+Conflict rows must remain readable on small screens. Type badges distinguish
+running vs scheduled blockers.
+
+Animation rules:
+No custom animation required.
+
+Interaction:
+Case A (pre-run-only conflict):
+- If execution window does not conflict and only pre-run conflicts, auto-adjust
+  effective notice for the current group using the same behavior already used
+  for "start too soon" clamp (group-only effect, optional global apply later).
+- Show adjusted result in modal and allow user to confirm.
+
+Case B (execution conflict, ignoring pre-run):
+- Keep the current notice/pre-run value unchanged.
+- Provide up to two suggested start options (nearest valid before and nearest
+  valid after) based on closest blockers.
+- Suggestions must respect 1-minute separation rules to avoid second-boundary
+  overlap artifacts.
+
+If both conditions appear, execution conflict rules (Case B) take precedence.
+
+Text / typography:
+Use clear, non-technical copy focused on "why blocked" and "what to do next".
+
+Data & Logic:
+Source of truth:
+TaskRunGroup + effective scheduled timing helpers + current planning payload.
+
+Calculations:
+- Pre-run-only conflict detection vs execution conflict detection.
+- Suggested start computation constrained to two options max:
+  - nearest valid before blockers
+  - nearest valid after blockers
+- Use minute-safe boundaries to prevent edge overlap by seconds.
+
+Sync / multi-device:
+No authority or ownership changes. Planning-side UX only.
+
+Edge cases:
+- Multiple conflicting groups: show all in modal, sorted by start time.
+- Missing names/times: fallback labels (`Task group`, `--:--`) without breaking
+  actions.
+- If only one suggestion side is valid, show one option.
+
+Accessibility:
+Modal content and actions must be screen-reader accessible with explicit
+announcement of group names and ranges.
+
+Dependencies:
+- Existing planning + conflict detection in Task List.
+- Shared timing helpers for effective scheduled/pre-run ranges.
+- Specs update required before implementation.
+
+Risks:
+- Overly dense modal copy; keep layout compact and scannable.
+- Suggestion calculation drift if duplicated outside shared helpers.
+
+Acceptance criteria:
+- Generic conflict snackbar is replaced by a blocking explainer modal for this
+  scheduling path.
+- Modal shows exact blockers (type, name, ranges, pre-run when applicable).
+- Case A auto-adjusts notice coherently with existing "start too soon" rules.
+- Case B preserves current notice/pre-run and offers up to two nearest valid
+  start suggestions.
+- Suggested starts avoid boundary overlap by enforcing minute-safe separation.
+
+Notes:
+This idea is deferred until the historical RVP validation backlog is closed.

@@ -13010,3 +13010,53 @@ PASS:
 ## 🎯 Next steps
 
 1. Execute `RVP-009` validation (Pre-Run entry points from Task List banner and Groups Hub action).
+
+# 🔹 Block 622 — Deferred feature definition for scheduling conflict UX (20/03/2026)
+
+## 📋 Context
+
+After validating `RVP-008`, user testing confirmed the current conflict feedback
+is technically correct but hard to understand in practice:
+- message is generic,
+- snackbar disappears too quickly,
+- no explicit blocker context (which groups/ranges cause the conflict).
+
+The requested change is a feature-level UX upgrade, not an immediate bugfix.
+Implementation is intentionally deferred until the historical `RVP-*` validation
+backlog is closed.
+
+## ✔ Work completed
+
+- Captured and formalized new feature definition as:
+  - `IDEA-039 — Scheduling Conflict Explainer + Guided Start Suggestions`
+  - `docs/features/feature_backlog.md`
+- Added roadmap traceability under reopened Phase 17 feature scope:
+  - blocking explainer modal (replacing ephemeral conflict snackbar),
+  - list all exact blockers (running/scheduled) with ranges,
+  - include pre-run ranges where applicable.
+- Added ledger tracking entry (deferred feature item) so closure remains
+  explicit and auditable before implementation.
+
+## 🧠 Confirmed product rules for future implementation
+
+1. Case A — pre-run-only conflict:
+   - auto-adjust effective notice with the same behavior already used for
+     "start too soon" clamp coherence.
+2. Case B — execution conflict (without pre-run):
+   - keep current notice/pre-run unchanged,
+   - provide up to two nearest valid start suggestions (before/after),
+   - enforce minute-safe separation to avoid second-boundary overlap.
+3. If both appear, execution-conflict handling takes precedence.
+
+## 📁 Updated files
+
+- `docs/features/feature_backlog.md`
+- `docs/roadmap.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Continue historical validation queue with `RVP-009`.
+2. Re-open `IDEA-039` implementation only after the `RVP-*` backlog priority
+   gate is satisfied.

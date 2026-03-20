@@ -186,6 +186,10 @@ Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
 - [ ] ID: `RVP-061` | Type: roadmap | Priority: P2 | Status: Pending | Source: `docs/roadmap.md:235` | Item: 19/02/2026: Phase 17 scope extended — postpone follows running group in real time (no repeat modal) + paused overlap alerts implemented (validation pending). | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: `-`.
 - [ ] ID: `RVP-062` | Type: roadmap | Priority: P2 | Status: Pending | Source: `docs/roadmap.md:239` | Item: 20/02/2026: Phase 17 scope extended — late-start queue owner-only flow (request/auto-claim), server-anchored projections with live updates, queue-confirm session bootstrap, and chained postpone for queued groups (validation pending). | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: `-`.
 
+### P2 deferred feature backlog items (after historical RVP closure)
+
+- [ ] ID: `IDEA-039` | Type: feature | Priority: P2 | Status: Pending | Source: `docs/features/feature_backlog.md:3169`, `docs/roadmap.md:458` | Item: Scheduling conflict UX upgrade (Task List planning): blocking explainer modal with exact conflicting groups/ranges, pre-run range visibility, pre-run-only auto-adjust coherence with existing clamp behavior, and up to two nearest valid start suggestions for execution conflicts while preserving current pre-run value. Deferred until historical RVP backlog (`RVP-009+`) is closed. | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: `-`.
+
 ### P3 process/profiling validation items
 
 - [ ] ID: `P3-MEM-94` | Type: process | Priority: P3 | Status: Pending | Source: `docs/devtools-memory-profiling.md:94` | Item: Launch app in profile mode | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: `-`.
