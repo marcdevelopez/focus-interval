@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue historical roadmap validation backlog (`RVP-014` onward)**
+Current focus: **Continue historical roadmap validation backlog (`RVP-015` onward)**
 Last update: **20/03/2026**
 
 ---
@@ -13285,3 +13285,44 @@ validation command was required in this closure step.
 ## 🎯 Next steps
 
 1. Execute `RVP-014` validation (break auto-adjust applies on focus loss, not per-keystroke).
+
+# 🔹 Block 628 — RVP-014 closure by existing validation coverage (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-014` — break auto-adjust on break edits applies on focus loss (not
+per-keystroke).
+
+This behavior was already validated under reopened P1 item `RVP-063`, which
+explicitly includes focus-loss adjustment behavior.
+
+## ✔ Work completed
+
+- Closed `RVP-014` as covered by existing `RVP-063` validation evidence
+  (no additional app implementation changes).
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-014` -> `Closed/OK`
+    with explicit cross-reference to `RVP-063`.
+  - `docs/roadmap.md`: line updated to reflect both validation IDs
+    (`RVP-063` + `RVP-014`) as closed.
+  - `docs/dev_log.md`: focus moved to `RVP-015 onward`.
+
+## 🧪 Verification run
+
+Reused existing local gate evidence from `RVP-063` (20/03/2026):
+- `flutter analyze` -> `No issues found!`
+- `flutter test test/domain/validators_test.dart test/domain/task_weighting_test.dart test/presentation/viewmodels/task_editor_view_model_test.dart` -> PASS (`+28`)
+
+No new code path was introduced for `RVP-014`; therefore no additional runtime
+validation command was required in this closure step.
+
+## 📁 Updated files
+
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-015` validation (Pomodoro Integrity Warning actions show exact configuration source names).

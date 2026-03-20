@@ -99,7 +99,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       02/02/2026: Task List running banner now falls back to running groups when no active session exists (Local Mode) (validated 20/03/2026; `RVP-011` Closed/OK).
       02/02/2026: Groups Hub hides notice/pre-run info for “Start now” groups (scheduledStartTime == null) (validated 20/03/2026; `RVP-012` Closed/OK).
       03/02/2026: Auto-adjust short/long breaks on valid pomodoro changes and break edits (Task Editor + Edit Preset) (validated 20/03/2026; `RVP-063` + `RVP-013` Closed/OK).
-      03/02/2026: Break auto-adjust on break edits now applies on focus loss (no per-keystroke adjustments) (validated 20/03/2026; `RVP-063` Closed/OK).
+      03/02/2026: Break auto-adjust on break edits now applies on focus loss (no per-keystroke adjustments) (validated 20/03/2026; `RVP-063` + `RVP-014` Closed/OK).
       03/02/2026: Pomodoro Integrity Warning actions now show exact configuration source names (validation pending).
       03/02/2026: Pomodoro Integrity Warning now lists visual options per distinct structure + Default Preset badge (validation pending).
       03/02/2026: Run Mode now auto-exits to Groups Hub when a group is canceled (validation pending).
