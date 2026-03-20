@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Continue historical roadmap validation backlog (`RVP-015` onward)**
+Current focus: **Continue historical roadmap validation backlog (`RVP-016` onward)**
 Last update: **20/03/2026**
 
 ---
@@ -13326,3 +13326,53 @@ validation command was required in this closure step.
 ## 🎯 Next steps
 
 1. Execute `RVP-015` validation (Pomodoro Integrity Warning actions show exact configuration source names).
+
+# 🔹 Block 629 — RVP-015 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-015` — Pomodoro Integrity Warning actions must show the exact source
+configuration names so users can identify which structure each option comes
+from before applying it.
+
+Concrete validated case to close:
+1. Mixed-structure selection (two tasks with distinct Pomodoro structures)
+   opens Integrity Warning with explicit source labeling (`Used by:`) and exact
+   task names for each structure option.
+
+## ✔ Work completed
+
+- Added dedicated widget validation case in:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+  - `Integrity warning options show exact source task names for each structure`
+- Scenario setup:
+  - two selected tasks with different structures (`Deep Work`, `Email Batch`),
+  - tap `Next` to trigger Integrity Warning dialog.
+- Assertions:
+  - dialog title `Pomodoro integrity warning` is shown,
+  - two `Used by:` source sections are rendered (one per distinct structure),
+  - exact source task names are visible in the dialog (`Deep Work`,
+    `Email Batch`).
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-015` -> `Closed/OK`
+    (implementation commit `12571b2`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-016 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+15`.
+- `flutter analyze` -> `No issues found!`.
+
+## 📁 Updated files
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-016` validation (Integrity Warning shows one visual option per distinct structure + default preset badge).
