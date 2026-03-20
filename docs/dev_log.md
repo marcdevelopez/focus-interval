@@ -25,9 +25,9 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **Running-overlap provider build-phase mutation guard implemented for mirror red-flash regression (BUG-F25-D)**
-Current focus: **Run exact owner+mirror repro packet for BUG-F25-D and close validation if no red flash/regressions are observed**
-Last update: **19/03/2026**
+Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
+Current focus: **Continue reopened P1 roadmap validation queue (`RVP-065` to `RVP-069`) in order**
+Last update: **20/03/2026**
 
 ---
 
@@ -12308,3 +12308,80 @@ canceled at 23:14. No premature auto-start. Screenshots confirmed.
 - `docs/bugs/validation_f25i_2026_03_19/plan_validacion_rapida_fix.md` (status → Closed/OK)
 - `docs/bugs/validation_f25i_2026_03_19/quick_pass_checklist.md` (all boxes checked)
 - `docs/dev_log.md` (this block)
+
+# 🔹 Block 606 — Roadmap/ledger closure sync for BUG-F25-E/F/I (20/03/2026)
+
+## 📋 Context
+
+Post-closure review found a documentation divergence:
+`docs/validation/validation_ledger.md` already marked `BUG-F25-E`, `BUG-F25-F`, and
+`BUG-F25-I` as `Closed/OK`, but `docs/roadmap.md` still listed those entries in
+the reopened-phases queue as open items.
+
+## ✔ Work completed
+
+- Updated reopened Phase 17 entries in `docs/roadmap.md`:
+  - `BUG-F25-E` → Closed/OK on 19/03/2026 (`c248c91`)
+  - `BUG-F25-F` → Closed/OK on 19/03/2026 (`68429c5`)
+  - `BUG-F25-I` → Closed/OK on 19/03/2026 (`6c87009`)
+- Updated dev-log header to reflect:
+  - current last bug fix (`BUG-F25-I`)
+  - current execution focus (P1 validation queue `RVP-063..069`)
+  - last update date `20/03/2026`
+
+## 📁 Updated files
+
+- `docs/roadmap.md` (reopened list synchronized with closure state)
+- `docs/dev_log.md` (status header + this block)
+
+## 🎯 Next steps
+
+1. Execute `RVP-063` and `RVP-064` validation packet first (Phase 10 reopen items).
+2. Continue with `RVP-065`, then `RVP-066` to `RVP-069` in ledger order.
+
+# 🔹 Block 607 — RVP-063/RVP-064 validation closure (20/03/2026)
+
+## 📋 Context
+
+The highest-priority reopened validation queue started with:
+- `RVP-063` (Phase 10 break auto-adjust + focus-loss behavior).
+- `RVP-064` (Phase 10 selection-scoped Task weight in Edit Task).
+
+Both were still marked pending in roadmap/ledger despite implementation history
+already present in code and prior dev-log blocks.
+
+## ✔ Work completed
+
+- Verified implementation traceability with `git blame`:
+  - `5c21dc9` (`Defer break auto-adjust to focus loss`) for blur-triggered
+    break adjustment hooks in Task Editor + Edit Preset.
+  - `466b4223` (`feat: auto-adjust break durations`) for pomodoro-change
+    auto-adjust baseline.
+  - `cca359f` (`Selection-scoped task weight`) for selection-scoped
+    Task weight visibility and percentage derivation flow.
+- Ran local validation commands:
+  - `flutter analyze`
+  - `flutter test test/domain/validators_test.dart test/domain/task_weighting_test.dart test/presentation/viewmodels/task_editor_view_model_test.dart`
+  - `flutter test test/domain/task_group_planner_test.dart`
+- Synchronized documentation state:
+  - `docs/validation/validation_ledger.md`: `RVP-063` and `RVP-064` moved to `Closed/OK` with evidence and commit traceability.
+  - `docs/roadmap.md`: timeline entries (03/02) updated to validated, and reopened Phase 10 items marked `Closed/OK`.
+  - `docs/dev_log.md`: status header focus moved to `RVP-065..069`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter analyze` → No issues found.
+- `flutter test test/domain/validators_test.dart test/domain/task_weighting_test.dart test/presentation/viewmodels/task_editor_view_model_test.dart` → `+28` all passed.
+- `flutter test test/domain/task_group_planner_test.dart` → `+11` all passed.
+
+## 📁 Updated files
+
+- `docs/roadmap.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-065` validation (Phase 13 mirror session-gap stability).
+2. Then continue with `RVP-066` to `RVP-069` in order.
