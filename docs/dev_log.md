@@ -13816,3 +13816,36 @@ Documentation/status sync only (no runtime code changes).
 
 1. Request explicit final owner confirmation to close `BUGLOG-002-R1` as `Closed/OK`.
 2. Continue bug queue priority order after closure (`BUGLOG-009A` / `BUGLOG-004` / `BUGLOG-011` / `BUGLOG-012` / `BUGLOG-008B` / `BUGLOG-005` / `BUGLOG-006` / `BUGLOG-007`).
+
+# 🔹 Block 641 — BUGLOG-002-R1 monitor note (no patch) (21/03/2026)
+
+## 📋 Context
+
+During owner validation follow-up, a brief (~1s) re-show of the Chrome owner
+request banner was visually observed around 13:37:11 after reject.
+
+## ✔ Work completed
+
+- Added traceability note to `docs/bugs/bug_log.md` under `BUG-002` re-validation
+  update (UI observation + correlated log pattern).
+- Updated `docs/validation/validation_ledger.md` evidence for `BUGLOG-002-R1`
+  to include this monitor-only anomaly.
+- Explicit decision recorded: no runtime patch now, to avoid masking a possible
+  underlying sync-order root cause while the behavior is self-recovering and
+  non-blocking.
+
+## 🧪 Verification run
+
+Documentation/status sync only (no runtime code changes).
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Keep `BUGLOG-002-R1` in `Validated` monitor state.
+2. Reopen implementation only if the banner re-show becomes persistent,
+   requires user action, or causes state desync.

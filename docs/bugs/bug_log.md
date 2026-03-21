@@ -319,6 +319,14 @@ Re-validation update (21/03/2026, user-run evidence):
 - Shared evidence in thread includes Android + Chrome diagnostic excerpts for
   group `15e6300b-0ab9-47a4-a5f8-7e220a7c31c3`, with stable Run Mode continuity
   and no stuck rejection banner after repeated retries.
+- Monitor-only note (same run, ~13:37:11): Chrome owner banner appeared to
+  re-show for ~1 second after reject, then cleared without user intervention.
+  Related logs show short-lived out-of-order `activeSession` snapshots
+  (`ownerDeviceId` / `lastUpdatedAt` oscillation between web and android values)
+  that self-corrected on the next snapshots.
+- Decision: no patch now (to avoid masking a potential underlying sync-order
+  issue). Keep traceability and monitor; reopen only if the symptom becomes
+  persistent or user-impacting.
 
 ---
 
