@@ -13979,3 +13979,33 @@ Owner validation confirmation (21/03/2026):
 ## 🎯 Next steps
 
 1. Continue active bug queue in priority order with `BUGLOG-012`.
+
+# 🔹 Block 646 — BUGLOG-012 closed under Fix 26 rewrite evidence (21/03/2026)
+
+## 📋 Context
+
+Owner reported that `BUGLOG-012` appears solved after the Fix 26 refactor
+(`TimerService` + `SessionSyncService` architecture).
+
+## ✔ Work completed
+
+- Marked `BUG-012` as `Closed/OK` in `docs/bugs/bug_log.md`.
+- Closed `BUGLOG-012` in `docs/validation/validation_ledger.md`.
+- Linked closure to Fix 26 closure commit `cbd800a` and Stage C validation
+  packet (`P0-F26-006`).
+
+## 🧪 Verification run
+
+- Existing Fix 26 Stage C pass2 soak evidence (16/03/2026) already confirms no
+  irrecoverable `Syncing session...` holds in long Android+macOS runs.
+- Owner confirmation (21/03/2026): no current trace of mirror-stuck behavior.
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Continue active bug queue in priority order with `BUGLOG-008B` (next P1 pending).

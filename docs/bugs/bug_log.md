@@ -651,10 +651,17 @@ Session stream subscriptions pause or debounce while the window is inactive,
 and the UI never rebinds until a user event triggers a resubscribe.
 
 Fix applied:
-None.
+- Covered by Fix 26 sync architecture rewrite (`P0-F26-006`): runtime timer
+  continuity decoupled from stream nulls via app-scope `TimerService` +
+  `SessionSyncService` recovery authority, including terminal-boundary hold
+  suppression and lifecycle hardening (`cbd800a`:
+  `fix(f26): suppress terminal-boundary hold and harden ref-after-dispose in recovery paths`).
 
 Status:
-Open. Medium priority (mirror usability).
+Closed/OK.
+Validated under Fix 26 closure packet and subsequent owner confirmation
+(21/03/2026): mirror no longer remains stuck in `Syncing session...` waiting
+for user interaction.
 
 ---
 
