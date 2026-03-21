@@ -13785,3 +13785,34 @@ Documentation/process update only (no runtime code changes).
 ## 🎯 Next steps
 
 1. For the next non-validation/process task, create a dedicated branch that matches scope before editing.
+
+# 🔹 Block 640 — BUGLOG-002-R1 user re-validation (21/03/2026)
+
+## 📋 Context
+
+Owner re-tested the residual `BUG-002` symptom (owner-side rejection banner
+persistence) with repeated pause/background + reject/accept cycles in Run Mode.
+
+## ✔ Work completed
+
+- Recorded user-provided evidence from Android + Chrome re-run (group
+  `15e6300b-0ab9-47a4-a5f8-7e220a7c31c3`) in `docs/bugs/bug_log.md`.
+- Updated `docs/validation/validation_ledger.md` item `BUGLOG-002-R1` from
+  `In validation` to `Validated`.
+- Residual symptom (`owner rejection banner persists / second press needed`) was
+  not reproduced in this validation run.
+
+## 🧪 Verification run
+
+Documentation/status sync only (no runtime code changes).
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Request explicit final owner confirmation to close `BUGLOG-002-R1` as `Closed/OK`.
+2. Continue bug queue priority order after closure (`BUGLOG-009A` / `BUGLOG-004` / `BUGLOG-011` / `BUGLOG-012` / `BUGLOG-008B` / `BUGLOG-005` / `BUGLOG-006` / `BUGLOG-007`).

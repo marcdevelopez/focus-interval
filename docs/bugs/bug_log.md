@@ -311,6 +311,15 @@ Implementation update (17/03/2026):
   round-trip.
 - Status moved to **In validation** pending device re-run evidence.
 
+Re-validation update (21/03/2026, user-run evidence):
+- User repeated pause/background + reject/accept ownership cycles on Android
+  and Chrome; owner-side rejection banner cleared immediately on reject.
+- Residual symptom ("banner persistence on owner", second reject press) was not
+  reproduced in this run.
+- Shared evidence in thread includes Android + Chrome diagnostic excerpts for
+  group `15e6300b-0ab9-47a4-a5f8-7e220a7c31c3`, with stable Run Mode continuity
+  and no stuck rejection banner after repeated retries.
+
 ---
 
 ## BUG-003 — Mirror pulse refresh (~15s) after Android pause/resume
