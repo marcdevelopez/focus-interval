@@ -507,12 +507,16 @@ Hypothesis:
 
 Fix applied:
 - Implemented server-time offset projection in `PomodoroViewModel` so mirrors
-  project from lastUpdatedAt-derived server time (pending validation).
+  project from lastUpdatedAt-derived server time (commit `25878cc`:
+  `Stabilize ownership sync and server-time projection`).
 - Added Run Mode keep-alive while active sessions exist to prevent offset reset
-  on navigation (pending validation).
+  on navigation (same fix packet `25878cc`).
 
 Status:
-Open. Medium priority (visible correctness issue).
+Closed/OK.
+Owner re-validation confirmation (21/03/2026): long multi-device soak runs
+(`>10h` Android + macOS simultaneously) did not reproduce drift growth or
+navigation-related timer jumps again.
 
 ---
 

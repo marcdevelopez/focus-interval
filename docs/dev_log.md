@@ -13915,3 +13915,36 @@ Owner manual validation confirmation (21/03/2026):
 ## 🎯 Next steps
 
 1. Continue active bug queue in priority order with `BUGLOG-004`.
+
+# 🔹 Block 644 — BUGLOG-004 closed after long soak non-repro (21/03/2026)
+
+## 📋 Context
+
+Owner reported extended re-validation for `BUGLOG-004` with Android + macOS
+running simultaneously for more than 10 hours without reproducing mirror drift
+growth during long breaks.
+
+## ✔ Work completed
+
+- Marked `BUG-004` as `Closed/OK` in `docs/bugs/bug_log.md`.
+- Updated `BUGLOG-004` in `docs/validation/validation_ledger.md` to
+  `Closed/OK` with closure metadata.
+- Linked closure to the implementation packet commit `25878cc`
+  (`Stabilize ownership sync and server-time projection`).
+
+## 🧪 Verification run
+
+Owner manual soak validation confirmation (21/03/2026):
+- Android + macOS simultaneously for >10h.
+- No accumulating mirror drift observed.
+- No timer jump recurrence after navigation was observed in the reported run.
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Continue active bug queue in priority order with `BUGLOG-011`.
