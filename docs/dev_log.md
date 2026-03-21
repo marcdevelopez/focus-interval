@@ -27,7 +27,7 @@ Formatting rules:
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
 Current focus: **Prioritize active bug-log queue sync/triage before continuing RVP backlog**
-Last update: **20/03/2026**
+Last update: **21/03/2026**
 
 ---
 
@@ -13849,3 +13849,37 @@ Documentation/status sync only (no runtime code changes).
 1. Keep `BUGLOG-002-R1` in `Validated` monitor state.
 2. Reopen implementation only if the banner re-show becomes persistent,
    requires user action, or causes state desync.
+
+# 🔹 Block 642 — BUGLOG-009A rollback-status sync before re-validation (21/03/2026)
+
+## 📋 Context
+
+While continuing the active bug queue in priority order, `BUGLOG-009A` still
+described the regression rollback as "pending" in both `bug_log` and
+`validation_ledger`.
+
+## ✔ Work completed
+
+- Updated `BUG-009` entry in `docs/bugs/bug_log.md` to reflect factual status:
+  rollback was already applied on 18/02/2026 (commit `0d2f7a4`).
+- Updated `BUGLOG-009A` item wording in
+  `docs/validation/validation_ledger.md`:
+  - rollback no longer marked pending.
+  - item remains pending because modern re-validation is still required.
+- Refreshed active bug-queue sync date in ledger header to `2026-03-21`.
+
+## 🧪 Verification run
+
+Documentation/status sync only (no runtime code changes).
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `BUGLOG-009A` exact repro validation case and classify result:
+   - `Closed/OK` if not reproducible with current architecture.
+   - keep `Open` with fresh evidence if reproducible.

@@ -421,10 +421,11 @@ Fix applied:
   mirror projects solely from activeSession snapshots (merge #122).
   Regression reported (18/02/2026): after ownership accept, the new owner
   freezes and ownership reverts to the previous owner within seconds. Rollback
-  pending.
+  was applied on 18/02/2026 (`0d2f7a4`: `Revert mirror timer suppression due to ownership freeze`).
 
 Status:
-Open. Fix attempt regressed ownership stability; rollback pending.
+Open. Regression rollback already applied (`0d2f7a4`); pending modern
+re-validation of the original swap symptom after subsequent sync changes.
 
 ---
 
