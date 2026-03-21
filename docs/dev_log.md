@@ -13883,3 +13883,35 @@ Documentation/status sync only (no runtime code changes).
 1. Execute `BUGLOG-009A` exact repro validation case and classify result:
    - `Closed/OK` if not reproducible with current architecture.
    - keep `Open` with fresh evidence if reproducible.
+
+# 🔹 Block 643 — BUGLOG-009A closed as non-repro after owner re-validation (21/03/2026)
+
+## 📋 Context
+
+Owner completed additional manual re-validation for `BUGLOG-009A` and confirmed
+the historical symptom (mirror per-second timer swap after ownership handoff)
+is no longer reproducible.
+
+## ✔ Work completed
+
+- Marked `BUG-009` as `Closed/OK` in `docs/bugs/bug_log.md`.
+- Closed `BUGLOG-009A` in `docs/validation/validation_ledger.md` with explicit
+  evidence from owner confirmation.
+- Linked closure implementation reference to rollback commit `0d2f7a4`
+  (`Revert mirror timer suppression due to ownership freeze`).
+
+## 🧪 Verification run
+
+Owner manual validation confirmation (21/03/2026):
+- Multiple test runs using different interaction paths.
+- Per-second mirror timer swap did not reappear.
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Continue active bug queue in priority order with `BUGLOG-004`.

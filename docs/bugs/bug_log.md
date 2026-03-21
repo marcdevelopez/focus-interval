@@ -424,8 +424,10 @@ Fix applied:
   was applied on 18/02/2026 (`0d2f7a4`: `Revert mirror timer suppression due to ownership freeze`).
 
 Status:
-Open. Regression rollback already applied (`0d2f7a4`); pending modern
-re-validation of the original swap symptom after subsequent sync changes.
+Closed/OK.
+Re-validated by owner on 21/03/2026: multiple manual runs across different
+flows did not reproduce the per-second swap behavior again.
+Implementation closure reference remains rollback commit `0d2f7a4`.
 
 ---
 
