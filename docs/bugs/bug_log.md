@@ -598,10 +598,16 @@ Resume path reuses stale pause anchors or misses pause offset recomputation
 after backgrounding.
 
 Fix applied:
-None.
+- Stabilized owner hydration after pause re-entry in
+  `PomodoroViewModel` by pinning phase-start from session snapshots and avoiding
+  Account Mode timeline overrides that could reintroduce stale anchors
+  (`abb053d`: `fix: stabilize owner hydration after pause re-entry`).
 
 Status:
-Open. Medium priority (time correctness).
+Closed/OK.
+Owner re-validation confirmation (21/03/2026): no trace of the bug in current
+builds; pause/resume + background/foreground no longer shows the previous offset
+drift symptom.
 
 ---
 

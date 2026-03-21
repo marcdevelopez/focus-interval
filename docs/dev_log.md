@@ -13948,3 +13948,34 @@ Owner manual soak validation confirmation (21/03/2026):
 ## 🎯 Next steps
 
 1. Continue active bug queue in priority order with `BUGLOG-011`.
+
+# 🔹 Block 645 — BUGLOG-011 closed as non-repro in current builds (21/03/2026)
+
+## 📋 Context
+
+Owner confirmed that `BUGLOG-011` (pause offset drift after
+background/foreground) is no longer reproducible.
+
+## ✔ Work completed
+
+- Marked `BUG-011` as `Closed/OK` in `docs/bugs/bug_log.md`.
+- Closed `BUGLOG-011` in `docs/validation/validation_ledger.md` with explicit
+  owner evidence.
+- Linked closure to fix commit `abb053d`
+  (`fix: stabilize owner hydration after pause re-entry`).
+
+## 🧪 Verification run
+
+Owner validation confirmation (21/03/2026):
+- Pause/resume + background/foreground behavior works correctly.
+- Previous pause-offset drift symptom no longer appears.
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Continue active bug queue in priority order with `BUGLOG-012`.
