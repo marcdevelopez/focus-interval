@@ -14206,3 +14206,33 @@ Implementation commit referenced for closure:
 
 1. Ask user for explicit final confirmation to lock closure.
 2. If confirmed, create docs-only closure commit and keep branch ready for merge to `develop`.
+
+# 🔹 Block 651 — Validation artifact hygiene after closure commit (23/03/2026)
+
+## 📋 Context
+
+After closing `BUGLOG-009B` / `BUGLOG-013` / `BUGLOG-014`, a malformed tracked
+log path with trailing newline was detected in the validation folder.
+
+## ✔ Work completed
+
+- Removed malformed tracked file path from git index/history-forward commit:
+  - `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_fix_v2_76ee374_ios_simulator_iphone_17_pro_debug.log\n`
+- Added stable placeholder for folder structure compliance:
+  - `docs/bugs/validation_bug009_2026_03_23/logs/.gitkeep`
+
+## 🧪 Verification run
+
+- `git status --short` -> clean working tree.
+- Validation folder now tracks expected markdown artifacts + `.gitkeep` entries,
+  while `.log` runtime files remain local artifacts (ignored by `*.log`).
+
+## 📁 Updated files
+
+- `docs/bugs/validation_bug009_2026_03_23/logs/.gitkeep`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Keep closure docs and ledger as source of truth for this packet.
+2. Push branch when user confirms final closure recap.
