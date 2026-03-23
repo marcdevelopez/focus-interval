@@ -14255,3 +14255,40 @@ Closure recap delivery for `BUGLOG-009B`, `BUGLOG-013`, and `BUGLOG-014`.
 ## 🎯 Next steps
 
 1. Keep branch ready for merge/push with closure packet finalized.
+
+# 🔹 Block 653 — BUGLOG-002-R1 final documentation closure (23/03/2026)
+
+## 📋 Context
+
+Current branch intent: `close P1 monitor-only bug item BUGLOG-002-R1 in bug queue docs`.
+
+`BUG-002` had already been fixed at implementation level (`7ddc1e6`), but the
+ledger kept `BUGLOG-002-R1` as `Validated` pending explicit final closure after
+user rerun confirmation.
+
+## ✔ Work completed
+
+- Synchronized closure state across queue docs:
+  - `docs/bugs/bug_log.md` keeps `BUG-002` as `Closed/OK (23/03/2026)` with
+    final monitor-only closure note.
+  - `docs/validation/validation_ledger.md` updated:
+    - `BUGLOG-002-R1` -> `[x]` `Closed/OK`
+    - `closed_commit_hash` / `closed_commit_message` filled from fix commit
+      `7ddc1e6`
+    - active non-closed bug snapshot count updated from `14` to `13`.
+
+## 🧪 Verification run
+
+- Documentation consistency checks:
+  - `rg -n "BUG-002|BUGLOG-002-R1" docs/bugs/bug_log.md docs/validation/validation_ledger.md`
+  - `git status --short`
+
+## 📁 Updated files
+
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Commit this docs-only closure update on `fix/buglog-002-r1-closure`.
+2. Continue queue execution with next open P1/P2 item in `validation_ledger.md`.

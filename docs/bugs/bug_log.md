@@ -293,11 +293,12 @@ Residual symptom confirmed (rejection banner on owner):
   before re-projecting from TimerService.
 
 Status:
-Partially open. Primary symptoms (revert, Ready state) resolved by Fix 26.
-Residual: rejection banner persistence on owner device (~1 Firestore cycle delay;
-occasionally requires second Reject press). Root cause is lack of optimistic
-banner clear on the owner side after respondToOwnershipRequest returns. See also
-BUG-F26-001 for the secondary 00:00 flash symptom.
+Closed/OK (23/03/2026).
+Primary symptoms (ownership revert, Ready fallback, rejection-banner persistence)
+are resolved in current builds. The owner-side optimistic clear path implemented
+in `rejectOwnershipRequest()` remains stable in re-validation evidence, and the
+residual brief banner re-show noted on 21/03/2026 was transient, self-correcting,
+and not user-impacting.
 
 Code area: likely `lib/presentation/viewmodels/pomodoro_view_model.dart`
 `rejectOwnershipRequest()` / `approveOwnershipRequest()` — add optimistic local
@@ -327,6 +328,9 @@ Re-validation update (21/03/2026, user-run evidence):
 - Decision: no patch now (to avoid masking a potential underlying sync-order
   issue). Keep traceability and monitor; reopen only if the symptom becomes
   persistent or user-impacting.
+- Final closure decision (23/03/2026): close monitor item as non-repro after
+  explicit validation confirmation. Reopen only if recurrence becomes
+  deterministic/user-impacting.
 
 ---
 
