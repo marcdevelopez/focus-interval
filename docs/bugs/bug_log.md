@@ -2089,3 +2089,108 @@ conflict modal in the validated flow; no `Scheduling conflict` signatures were
 observed in `fix_v4` logs after overlap confirmation.
 Closed under implementation commit `2fdd99b`
 (`fix(late-start, timer): BUGLOG-009B re-queue + BUG-013 modal + BUG-014 postpone`).
+
+---
+
+## BUG-008C — Android opens stale group in Ready/Completed at startup
+
+ID: BUG-008C
+Date: 23/03/2026 (UTC+1)
+Platforms: Android owner (Account Mode)
+Context: Startup after previous scheduled/late-start validation flows.
+
+Repro steps:
+Scenario A (primary, stale running residue):
+1. Run a late-open flow with queued groups on Android owner.
+2. Leave the app and reopen after a gap while a previous group/session may still
+   exist in remote state.
+3. Observe first timer screen shown on startup.
+
+Scenario B (alternative, explicit cancellation path):
+1. Run late-open queue flow (3 groups) and confirm overlaps.
+2. Cancel running and queued groups explicitly.
+3. Close app, reopen Android owner, and observe first timer screen.
+
+Symptom:
+On app open, Android can show an old group as `Ready/Completed` with `15:00`
+and `Start`, even though this group belongs to a prior run/cancel context and
+should not be restored as an active startup target.
+
+Observed behavior:
+- In `BUG008B` startup log, same group id is loaded first as completed:
+  `Timer load group=... result=... status=completed` (line 6763),
+  then remote active session snapshots arrive as running for that same group
+  seconds later (`ActiveSession][snapshot ... status=pomodoroRunning`,
+  lines 6794/6819).
+- User observed the ready/start flash at startup, pressed Start to inspect,
+  then canceled and created a new group for the actual validation run.
+- Firestore state later captured for this group includes:
+  `status=canceled`, `canceledReason=user`, `actualStartTime=2026-03-23T19:41:16`,
+  indicating startup restoration and subsequent manual cancel happened in the
+  same time window.
+
+Expected behavior:
+- On startup, app must not restore a stale/canceled/completed group as a
+  `Ready` run target.
+- If a stale active session exists, startup should deterministically reconcile
+  to valid running state or clear stale state before exposing run controls.
+- No transient `Ready 15:00 Start` flash should appear for historical groups.
+
+Evidence:
+- Android log:
+  `docs/bugs/validation_bug008_2026_03_23/logs/2026-03-23_bug008b_d400a99_android_RMX3771_debug.log`
+  (notable lines: 6763, 6794, 6819).
+- Prior related chain where this group was created/queued:
+  `docs/bugs/validation_bug008_2026_03_23/logs/2026-03-23_bug008a_4ef7f42_android_RMX3771_debug.log`
+  (group id `f58d0434-173e-4a7d-b508-de8e949fffa9` appears in queue set).
+- Firestore snapshot provided during analysis:
+  group id `f58d0434-173e-4a7d-b508-de8e949fffa9`,
+  `status=canceled`, `canceledReason=user`, `updatedAt=2026-03-23T19:41:25`.
+
+Workaround:
+Manual cancel and restart of a new group (temporary only).
+
+Hypothesis:
+Startup hydration race/inconsistency between local group load and remote
+`activeSession` snapshot application:
+- startup path can load stale terminal group state (`completed`) before remote
+  running snapshot settles;
+- auto-open/openTimer actions still target that group id during the transient.
+Alternative path to validate:
+- cancellation-cleanup may leave stale targeting metadata for the last queued
+  group, causing the same startup restore artifact even after explicit cancel.
+
+Fix applied:
+Implemented on branch `fix/buglog-008c-ready-flash-validation`:
+- `ScheduledGroupCoordinator` now expires running groups even when
+  `activeSession == null` if `theoreticalEndTime` is already passed.
+- When all running groups in that startup check are expired/completed, it emits
+  a dedicated action to open `Groups Hub` (instead of opening `Timer` in stale
+  ready/completed state).
+- `ScheduledGroupAutoStarter` now handles `openGroupsHub` coordinator action.
+- Regression test added:
+  `completes expired running group without active session and routes to Groups Hub`
+  in `scheduled_group_coordinator_test.dart`.
+- Local verification PASS:
+  - `flutter analyze`
+  - `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+
+Status:
+Closed/OK.
+closed_commit_hash: pending (fix/buglog-008c-ready-flash-validation, pre-merge)
+closed_date: 23/03/2026
+Evidence:
+- Android debug log: `docs/bugs/validation_bug008c_2026_03_23/logs/2026-03-23_bug008c_d400a99_android_RMX3771_debug.log`
+- Scenario A PASS: stale running group on reopen → coordinator marks completed,
+  routes to Groups Hub. No persistent "Ready 15:00 + Start" observed.
+- Key log signals: `[ExpiryCheck][expire-running-groups]` (line 6747),
+  `[ExpiryCheck][mark-running-group-completed]` (line 6751),
+  `Active session cleared route=/groups` (line 6764).
+- Screenshot sequence confirmed by user (6 frames: tasks open → running banner →
+  tasks loaded → timer loading flash → Groups Hub with completed group).
+- Residual observation (not a bug, noted for reference): brief timer-screen flash
+  (frame 5) before Groups Hub when activeSession arrives before expiry check
+  completes; app lands correctly on Groups Hub.
+- Residual observation (not a bug, noted for reference): `Cannot use Ref after disposed`
+  exception in log lines 6775–6787 during the same navigation transition;
+  no functional breakage. Context documented in dev_log Block 657.

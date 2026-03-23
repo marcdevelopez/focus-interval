@@ -1406,6 +1406,60 @@ void main() {
         );
       },
     );
+
+    test(
+      'completes expired running group without active session and routes to Groups Hub',
+      () async {
+        final now = DateTime.now();
+        final groupRepo = FakeTaskRunGroupRepository();
+        final sessionRepo = FakePomodoroSessionRepository();
+        final actionCompleter = Completer<ScheduledGroupAction>();
+        final container = ProviderContainer(
+          overrides: [
+            appModeServiceProvider.overrideWithValue(AppModeService.memory()),
+            taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+            pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          ],
+        );
+        addTearDown(() {
+          groupRepo.dispose();
+          sessionRepo.dispose();
+          container.dispose();
+        });
+
+        final sub = container.listen<ScheduledGroupAction?>(
+          scheduledGroupCoordinatorProvider,
+          (_, next) {
+            if (next != null && !actionCompleter.isCompleted) {
+              actionCompleter.complete(next);
+            }
+          },
+        );
+        addTearDown(sub.close);
+
+        container.read(scheduledGroupCoordinatorProvider);
+        sessionRepo.emit(null);
+        await _pumpQueue();
+
+        await groupRepo.save(
+          _buildRunningGroup(
+            id: 'group-expired-no-session',
+            start: now.subtract(const Duration(hours: 2)),
+            theoreticalEnd: now.subtract(const Duration(minutes: 30)),
+          ),
+        );
+        await _pumpQueue();
+
+        final action = await actionCompleter.future.timeout(
+          const Duration(seconds: 1),
+        );
+        expect(action.type, ScheduledGroupActionType.openGroupsHub);
+
+        final stored = await groupRepo.getById('group-expired-no-session');
+        expect(stored?.status, TaskRunStatus.completed);
+        expect(sessionRepo.publishCount, 0);
+      },
+    );
   });
 
   group('ScheduledGroupCoordinator running overlap decision', () {

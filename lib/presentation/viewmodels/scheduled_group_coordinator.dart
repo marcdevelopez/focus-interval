@@ -18,7 +18,7 @@ final scheduledGroupCoordinatorProvider =
       ScheduledGroupCoordinator.new,
     );
 
-enum ScheduledGroupActionType { openTimer, lateStartQueue }
+enum ScheduledGroupActionType { openTimer, openGroupsHub, lateStartQueue }
 
 class ScheduledGroupAction {
   final ScheduledGroupActionType type;
@@ -33,6 +33,12 @@ class ScheduledGroupAction {
   }) : type = ScheduledGroupActionType.openTimer,
        groupIds = null,
        anchor = null;
+
+  const ScheduledGroupAction.openGroupsHub({required this.token})
+    : type = ScheduledGroupActionType.openGroupsHub,
+      groupId = null,
+      groupIds = null,
+      anchor = null;
 
   const ScheduledGroupAction.lateStartQueue({
     required this.groupIds,
@@ -219,6 +225,18 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     );
   }
 
+  void _emitOpenGroupsHub() {
+    final actionToken = DateTime.now().microsecondsSinceEpoch;
+    _logScheduledActionDiag(
+      actionType: ScheduledGroupActionType.openGroupsHub.name,
+      actionToken: actionToken,
+      groupId: null,
+      groupIds: null,
+      anchor: null,
+    );
+    state = ScheduledGroupAction.openGroupsHub(token: actionToken);
+  }
+
   void _emitLateStartQueue(List<String> groupIds, DateTime anchor) {
     final actionToken = DateTime.now().microsecondsSinceEpoch;
     _logScheduledActionDiag(
@@ -384,6 +402,22 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       var expired = <TaskRunGroup>[];
       TaskRunGroup? activeGroup;
       if (activeSession == null) {
+        expired = _resolveExpiredRunningGroups(running, now);
+        if (expired.isNotEmpty) {
+          _debugLogExpiryDecision(
+            reason: 'expire-running-groups-no-active-session',
+            now: now,
+            session: null,
+            group: expired.first,
+            theoreticalEndTime: _resolveTheoreticalEndTime(expired.first),
+          );
+          await _markRunningGroupsCompleted(expired, now);
+          final allRunningExpired = running.length == expired.length;
+          if (allRunningExpired) {
+            _emitOpenGroupsHub();
+          }
+          return;
+        }
         _debugLogExpiryDecision(
           reason: 'skip-expiry-no-active-session',
           now: now,
