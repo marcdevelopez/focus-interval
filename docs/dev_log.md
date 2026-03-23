@@ -27,7 +27,7 @@ Formatting rules:
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
 Current focus: **Prioritize active bug-log queue sync/triage before continuing RVP backlog**
-Last update: **21/03/2026**
+Last update: **23/03/2026**
 
 ---
 
@@ -14009,3 +14009,200 @@ Owner reported that `BUGLOG-012` appears solved after the Fix 26 refactor
 ## 🎯 Next steps
 
 1. Continue active bug queue in priority order with `BUGLOG-008B` (next P1 pending).
+
+# 🔹 Block 647 — BUGLOG-009B/013/014 fix implementation packet (23/03/2026)
+
+## 📋 Context
+
+Current branch intent: `P1 bugfixes for late-start overlap queue + completion modal + postpone race`.
+
+User validation on 23/03/2026 confirmed three active issues:
+- `BUGLOG-009B`: overlap queue resolved only part of a 3-group chain.
+- `BUGLOG-013`: completion modal blocked next-group pre-run/run.
+- `BUGLOG-014`: `Postpone scheduled` could require a second press.
+
+## ✔ Work completed
+
+- Implemented `BUGLOG-009B` layer 1 in:
+  - `lib/presentation/utils/scheduled_group_timing.dart`
+  - `resolveLateStartConflictSet` now cascades conflicts iteratively.
+- Implemented `BUGLOG-009B` layer 2 in:
+  - `lib/presentation/screens/late_start_overlap_queue_screen.dart`
+  - post-confirm overlap revalidation against non-selected scheduled groups,
+    with queue reopen when conflicts remain.
+- Implemented `BUG-013` in:
+  - `lib/presentation/screens/timer_screen.dart`
+  - completion modal auto-dismiss on route group switch and next-group auto-open.
+- Implemented `BUG-014` in:
+  - `lib/presentation/screens/timer_screen.dart`
+  - deterministic postpone guard (`decision key + expected scheduled start`)
+    synchronized by repository snapshots.
+- Added/updated targeted regression tests:
+  - `test/presentation/utils/scheduled_group_timing_test.dart`
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+
+## 🧪 Verification run
+
+- `flutter analyze` → PASS
+- `flutter test test/presentation/utils/scheduled_group_timing_test.dart` → PASS
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` → PASS
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` → PASS
+
+## 📁 Updated files
+
+- `lib/presentation/utils/scheduled_group_timing.dart`
+- `lib/presentation/screens/late_start_overlap_queue_screen.dart`
+- `lib/presentation/screens/timer_screen.dart`
+- `test/presentation/utils/scheduled_group_timing_test.dart`
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/bugs/validation_bug009_2026_03_23/plan_validacion_rapida_fix.md`
+- `docs/bugs/validation_bug009_2026_03_23/quick_pass_checklist.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Run device validation protocol A/B/C on iOS Simulator + Chrome with current branch.
+2. If PASS, close `BUGLOG-009B`, `BUGLOG-013`, `BUGLOG-014` with commit hash/message in `bug_log.md` + `validation_ledger.md`.
+
+# 🔹 Block 648 — BUGLOG-009B validated + BUG-013 pre-run dismiss patch (23/03/2026)
+
+## 📋 Context
+
+Current branch intent: `P1 bugfixes for BUGLOG-009B / BUG-013 / BUG-014 validation packet`.
+
+`fix_v2` device logs confirmed `BUGLOG-009B` behavior is resolved (no second runtime queue),
+but `BUG-013` still dismissed completion modal at group switch (`14:04`) instead of pre-run
+boundary (`14:03`).
+
+## ✔ Work completed
+
+- Implemented `BUG-013` follow-up in `TimerScreen`:
+  - completion modal now auto-dismisses when `scheduledAutoStartGroupIdProvider`
+    announces a different next group (`next != widget.groupId`) during pre-run auto-open.
+- Kept existing auto-dismiss paths for group switch and active execution transitions.
+- Added regression coverage in
+  `test/presentation/timer_screen_completion_navigation_test.dart`:
+  - `auto-dismisses completion modal when next group pre-run auto-open is announced`.
+- Synced validation docs with current state:
+  - `docs/bugs/validation_bug009_2026_03_23/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug009_2026_03_23/quick_pass_checklist.md`
+  - `docs/bugs/bug_log.md`
+  - `docs/validation/validation_ledger.md`
+
+## 🧪 Verification run
+
+- `flutter analyze` → PASS (`No issues found!`)
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` → PASS (`+21`)
+- `flutter test test/presentation/utils/scheduled_group_timing_test.dart` → PASS (`+7`)
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` → PASS (`+19`)
+
+## 📁 Updated files
+
+- `lib/presentation/screens/timer_screen.dart`
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/bugs/validation_bug009_2026_03_23/plan_validacion_rapida_fix.md`
+- `docs/bugs/validation_bug009_2026_03_23/quick_pass_checklist.md`
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute device rerun (`fix_v3`) on iOS + Chrome using updated commands in plan.
+2. Confirm `BUG-013` dismissal at pre-run boundary (`14:03` equivalent) in iOS log.
+3. Re-run explicit one-tap postpone scenario for `BUG-014` and close packet if PASS.
+
+# 🔹 Block 649 — BUG-009B/013 follow-up after user rerun (23/03/2026)
+
+## 📋 Context
+
+Current branch intent: `P1 bugfix packet for BUGLOG-009B / BUGLOG-013 / BUGLOG-014 device validation closure`.
+
+User rerun at 15:07 (iOS owner) reported no behavioral change in two points:
+- completion modal still stayed visible during next-group pre-run,
+- chained timing in Groups Hub still showed `G3 pre-run` in the same minute as `G2 end`.
+
+## ✔ Work completed
+
+- Added anchored-start helper and reused it in all chain paths:
+  - `lib/presentation/utils/scheduled_group_timing.dart`
+  - `lib/presentation/screens/late_start_overlap_queue_screen.dart`
+  - `lib/presentation/viewmodels/scheduled_group_coordinator.dart`
+  - `lib/presentation/screens/timer_screen.dart`
+- Enforced strict rule for notice windows: when `noticeMinutes > 0`, pre-run must start strictly after anchor end (prevents same-minute pre-run/end overlap in chained groups).
+- Updated scheduled-action bridge so pre-run `openTimer` is not deferred by visible completion modal:
+  - `lib/widgets/scheduled_group_auto_starter.dart`
+- Synced validation docs to `fix_v4` rerun state:
+  - `docs/bugs/validation_bug009_2026_03_23/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug009_2026_03_23/quick_pass_checklist.md`
+  - `docs/bugs/bug_log.md`
+  - `docs/validation/validation_ledger.md`
+
+## 🧪 Verification run
+
+- `flutter analyze` → PASS (`No issues found!`)
+- `flutter test test/presentation/utils/scheduled_group_timing_test.dart` → PASS (`+7`)
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` → PASS (`+21`)
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` → PASS (`+19`)
+
+## 🎯 Next steps
+
+1. Run `fix_v4` iOS + Chrome device validation from updated plan commands.
+2. Confirm in logs:
+   - no modal persistence at pre-run boundary,
+   - chained pre-run minute no longer equals previous group end minute,
+   - no regression in single-queue late-start behavior.
+3. If PASS, close `BUGLOG-009B`, `BUGLOG-013`, `BUGLOG-014` together with commit hash and evidence links.
+
+# 🔹 Block 650 — BUGLOG-009B / BUGLOG-013 / BUGLOG-014 closure after fix_v4 rerun (23/03/2026)
+
+## 📋 Context
+
+Current branch intent: `P1 bugfix validation closure for BUGLOG-009B / BUGLOG-013 / BUGLOG-014`.
+
+User completed the fix_v4 rerun and confirmed:
+- chained timing is coherent (`G3` pre-run no longer matches `G2` end minute),
+- completion modal now dismisses during next-group pre-run,
+- validated flow remains stable after overlap confirmation.
+
+## ✔ Work completed
+
+- Closed validation packet in:
+  - `docs/bugs/validation_bug009_2026_03_23/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug009_2026_03_23/quick_pass_checklist.md`
+- Closed bug entries in:
+  - `docs/bugs/bug_log.md` (`BUGLOG-009B`, `BUG-013`, `BUG-014`)
+- Closed ledger entries in:
+  - `docs/validation/validation_ledger.md`
+  - updated active non-closed bug snapshot count from 17 to 14.
+
+## 🧪 Verification run
+
+Log evidence reviewed from fix_v4 packet:
+- `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_fix_v4_76ee374_ios_simulator_iphone_17_pro_debug.log`
+- `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_fix_v4_76ee374_web_chrome_debug.log`
+
+Key signatures:
+- `LateStartQueue overdue=3` present (single chain queue).
+- No `LateStartQueue overdue=2` in fix_v4 iOS/web logs.
+- iOS: `prealert-timer-fired` for G2 at `17:00:00`, then `Auto-dismiss completion dialog: group switch` at `17:00:00`, before start timer at `17:01:00`.
+- iOS: `postpone-finalized` sample keeps G3 at `17:18:00`, matching corrected chained timing behavior.
+- No `Scheduling conflict` signatures after overlap resolution in fix_v4 logs.
+
+Implementation commit referenced for closure:
+- `2fdd99b` — `fix(late-start, timer): BUGLOG-009B re-queue + BUG-013 modal + BUG-014 postpone`
+
+## 📁 Updated files
+
+- `docs/bugs/validation_bug009_2026_03_23/plan_validacion_rapida_fix.md`
+- `docs/bugs/validation_bug009_2026_03_23/quick_pass_checklist.md`
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Ask user for explicit final confirmation to lock closure.
+2. If confirmed, create docs-only closure commit and keep branch ready for merge to `develop`.

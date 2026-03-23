@@ -668,29 +668,85 @@ for user interaction.
 ## BUG-009 — Late-start queue desync + ownership gaps in Account Mode
 
 ID: BUG-009  
-Date: 20/02/2026 (UTC+1)  
-Platforms: macOS owner + Android mirror  
-Context: Account Mode late-open with multiple overdue scheduled groups.
+Date: 20/02/2026 (UTC+1), revalidated 23/03/2026 (UTC+1)  
+Platforms: macOS + iOS simulator + web Chrome (Account Mode)  
+Context: Late-open with consecutive planned groups and pre-run notice.
 
 Symptom:
-- Late-start projections differed across devices (minute drift).
-- Queue projections froze; confirm time did not match actual Run Mode start.
-- Ownership unclear; mirrors could act or got stuck.
-- Postpone did not drag remaining queued groups, causing repeated overlaps.
+- Resolve-overlaps queue applies only a partial chain in some sequences.
+- Third (or later) conflicting groups can remain outside the queue and conflict
+  later during runtime.
+- Queue confirmation does not reopen queue flow when new overlaps still exist
+  after the selected queue is projected.
+
+Repro (23/03/2026):
+- Plan 3 groups, all with 15m duration and 1m pre-run:
+  - G1 scheduled 08:51
+  - G2 scheduled 09:07
+  - G3 scheduled 09:23
+- Open late in Account Mode while G1 must start immediately.
+- Resolve-overlaps queue includes G1/G2 but leaves G3 outside queue.
+- G1 starts and G2 is postponed to 09:14-09:29, but G3 remains 09:23-09:38.
+- At 09:14 runtime overlap modal appears for G3, proving unresolved overlap.
+
+Observed behavior:
+- Runtime queueing resolved first two groups but not the full chain.
+- G3 was not assigned `lateStartQueueId`/`lateStartQueueOrder` while G1/G2 were.
+- Conflict reappeared later as `Scheduling conflict` modal in Run Mode.
 
 Expected behavior:
-Deterministic late-start queue with a single owner, consistent projections, and
-chained postpone for queued groups.
+- Queue formation must cascade until no overlaps remain in the projected chain.
+- After queue confirmation, overlaps against scheduled groups outside selection
+  must be revalidated and queue flow reopened if any conflict remains.
+- A single queue flow should resolve all currently implied conflicts, avoiding
+  a second runtime conflict modal for the same chain.
+
+Evidence:
+- Validation logs (23/03/2026):
+  - `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_76ee374_ios_simulator_iphone_17_pro_debug.log`
+  - `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_76ee374_web_chrome_debug.log`
+- Firestore snapshots captured in validation notes show:
+  - G1: `lateStartQueueOrder=0`
+  - G2: `lateStartQueueOrder=1`
+  - G3: `lateStartQueueId=null` (not included)
+- Runtime modal at 09:14 confirms unresolved G2↔G3 overlap.
+
+Hypothesis:
+- Layer 1: `resolveLateStartConflictSet` does not cascade conflict formation
+  when only one group is overdue initially.
+- Layer 2: post-confirm revalidation against scheduled groups outside current
+  selection is missing or incomplete (spec section 10.4.1.b).
 
 Fix applied:
-- Server-anchored queue timebase + owner heartbeat.
-- Owner-only queue with request/auto-claim.
-- Live projected ranges, confirm sets scheduledStartTime to queueNow.
-- ActiveSession bootstrap on confirm.
-- Chained postpone for queued groups.
+Implemented on branch `fix-bug009b-cascade-completion-overlap`:
+- cascading conflict-set formation in `resolveLateStartConflictSet`,
+- post-confirm overlap revalidation + queue reopen in late-start queue apply flow.
+- anchored-chain timing helper applied across queue/finalize/postpone paths to
+  keep pre-run strictly after previous group end when `noticeMinutes > 0`.
+- Local gates PASS:
+  - `flutter analyze`
+  - `flutter test test/presentation/utils/scheduled_group_timing_test.dart`
+  - `flutter test test/presentation/timer_screen_completion_navigation_test.dart`
+  - `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+- Device validation update (`fix_v2`, 23/03/2026):
+  - iOS log shows one queue opening with all 3 groups:
+    `LateStartQueue overdue=3` + `Opening late-start overlap queue`.
+  - No second runtime queue (`overdue=2`) appears after G1 completion.
+  - G2 pre-run/start fired normally (`14:03`/`14:04`) without re-queue chain.
+- User rerun update (23/03/2026 15:07, iOS owner):
+  - core re-queue remains fixed,
+  - but Groups Hub still showed `G3 pre-run` in the same minute as `G2 end`.
+  - follow-up timing patch added; `fix_v4` device rerun pending.
 
 Status:
-Pending validation on macOS/Android.
+Closed/OK (23/03/2026).
+fix_v4 device rerun PASS:
+- iOS + web logs show single late-start queue chain (`LateStartQueue overdue=3`)
+  with no runtime re-queue (`overdue=2` absent).
+- Timing coherence follow-up PASS: chained scheduling no longer reproduces the
+  problematic same-minute pre-run/end overlap in user rerun.
+Closed under implementation commit `2fdd99b`
+(`fix(late-start, timer): BUGLOG-009B re-queue + BUG-013 modal + BUG-014 postpone`).
 
 ---
 
@@ -1887,3 +1943,136 @@ Closed/OK. Re-validation 18/03/2026 (Android RMX3771 + macOS, commit `92731b3`):
 sessionRevision grows +1 per discrete event (5→6→7→9→10); lastUpdatedAt updates
 every ~30s (heartbeat only). No high-frequency churn observed.
 Logs: `docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-18__guard_hot-swap_92731b3_android_RMX3771_debug.log`.
+
+---
+
+## BUG-013 — Completion modal remains over next group auto-open
+
+ID: BUG-013
+Date: 23/03/2026 (UTC+1)
+Platforms: iOS simulator + web Chrome (Account Mode)
+Context: Consecutive planned groups in Run Mode with pre-run enabled.
+
+Repro steps:
+- Execute consecutive planned groups (e.g., G1 -> G2 -> G3, 1m pre-run).
+- Let G1 complete and keep `Tasks group completed` modal open.
+- Wait for G2 pre-run/start.
+
+Symptom:
+Completion modal from previous group remains visible and blocks the next
+group pre-run/run view until user presses `OK`.
+
+Observed behavior:
+- Next group starts in background, but completion modal overlays timer UI.
+- On iOS, pre-run/start of the next group is hidden until manual dismissal.
+- Same pattern repeats when G2 completes and G3 pre-run starts.
+
+Expected behavior:
+- If a next group auto-opens (pre-run or running), completion modal from the
+  previous group must auto-dismiss immediately and not force manual `OK`.
+
+Evidence:
+- Validation logs:
+  - `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_76ee374_ios_simulator_iphone_17_pro_debug.log`
+  - `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_76ee374_web_chrome_debug.log`
+- Screenshots captured in the same validation packet show completion modal
+  over active next-group timer/pre-run.
+
+Hypothesis:
+- Completion modal dismissal path was still tied to group switch/running-state
+  transitions.
+- Pre-run announcements for a different next group (`scheduledAutoStartGroupId`
+  changed to `next != widget.groupId`) did not dismiss the modal.
+- Additionally, the scheduled-action bridge deferred all actions while
+  `completionDialogVisibleProvider` was true, including `openTimer`; this
+  blocked pre-run auto-open execution until the next start transition.
+
+Fix applied:
+Implemented on branch `fix-bug009b-cascade-completion-overlap`:
+- Initial implementation covered group switch + active-state transitions.
+- Follow-up patch added explicit pre-run dismissal when next-group auto-open is
+  announced for a different group id.
+- Additional follow-up patch in `ScheduledGroupAutoStarter` allows
+  `ScheduledGroupActionType.openTimer` even when completion modal is visible,
+  so pre-run auto-open is not deferred.
+- Local gates PASS:
+  - `flutter analyze`
+  - `flutter test test/presentation/timer_screen_completion_navigation_test.dart`
+  - Includes dedicated regression:
+    `auto-dismisses completion modal when next group pre-run auto-open is announced`
+
+Validation update (`fix_v2`, 23/03/2026):
+- iOS log confirms partial fix:
+  - pre-run started at `14:03` (`prealert-timer-fired` for G2),
+  - modal auto-dismiss happened at `14:04` (`Auto-dismiss ... group switch`).
+- User rerun at `15:07` still reproduced the same pattern (no dismiss at pre-run).
+- Current packet adds the missing scheduled-action bridge fix; device rerun is pending.
+
+Validation update (`fix_v4`, 23/03/2026):
+- PASS on rerun:
+  - iOS pre-run fires for G2 at `17:00:00` (`prealert-timer-fired`).
+  - completion modal auto-dismiss is logged at `17:00:00`
+    (`Auto-dismiss completion dialog: group switch`), before G2 start timer at
+    `17:01:00`.
+- User confirmation on rerun: modal dismissal during next-group pre-run works
+  on owner/mirror flow.
+
+Status:
+Closed/OK (23/03/2026) under implementation commit `2fdd99b`
+(`fix(late-start, timer): BUGLOG-009B re-queue + BUG-013 modal + BUG-014 postpone`).
+
+---
+
+## BUG-014 — Postpone scheduled requires double press in overlap modal
+
+ID: BUG-014
+Date: 23/03/2026 (UTC+1)
+Platforms: web Chrome (Account Mode)
+Context: Running overlap modal with action `Postpone scheduled`.
+
+Repro steps:
+- Trigger runtime overlap modal (`Scheduling conflict`).
+- Press `Postpone scheduled`.
+
+Symptom:
+Modal may persist/reappear after first postpone action; user must press
+`Postpone scheduled` a second time for final dismissal.
+
+Observed behavior:
+- SnackBar confirms postpone after first click:
+  `Scheduled start moved to 09:31 (pre-run at 09:30).`
+- Conflict modal remains visible (or reopens) immediately after the first click.
+- Second click applies same action and finally dismisses modal.
+
+Expected behavior:
+- Single postpone action should both apply scheduling update and close modal
+  deterministically (no re-open race).
+
+Evidence:
+- Validation logs:
+  - `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_76ee374_web_chrome_debug.log`
+  - `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_76ee374_ios_simulator_iphone_17_pro_debug.log`
+- Timestamped user validation notes: first postpone at 09:14:43 showed success
+  SnackBar while modal remained; second postpone at 09:14:52 closed it.
+
+Hypothesis:
+- Race between modal dismissal and running-overlap re-evaluation from stream
+  snapshots before postponed `scheduledStartTime` is confirmed.
+
+Fix applied:
+Implemented on branch `fix-bug009b-cascade-completion-overlap`:
+- deterministic postpone guard using decision key + expected scheduled start
+  confirmed by repository snapshots (no time-based suppression).
+- Local gates PASS:
+  - `flutter analyze`
+  - `flutter test test/presentation/timer_screen_completion_navigation_test.dart`
+  - Includes dedicated regression:
+    `suppresses immediate duplicate running-overlap modal after postpone`
+
+Status:
+Closed/OK (23/03/2026).
+fix_v4 rerun/user validation confirms one-tap postpone behavior with no repeated
+conflict modal in the validated flow; no `Scheduling conflict` signatures were
+observed in `fix_v4` logs after overlap confirmation.
+Closed under implementation commit `2fdd99b`
+(`fix(late-start, timer): BUGLOG-009B re-queue + BUG-013 modal + BUG-014 postpone`).
