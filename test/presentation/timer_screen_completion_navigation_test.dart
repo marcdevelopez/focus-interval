@@ -30,9 +30,12 @@ import 'package:focus_interval/presentation/screens/task_list_screen.dart';
 import 'package:focus_interval/presentation/screens/timer_screen.dart';
 
 class FakeTaskRunGroupRepository implements TaskRunGroupRepository {
+  FakeTaskRunGroupRepository({this.emitOnSave = true});
+
   final Map<String, TaskRunGroup> _store = {};
   final StreamController<List<TaskRunGroup>> _controller =
       StreamController<List<TaskRunGroup>>.broadcast();
+  final bool emitOnSave;
 
   void seed(TaskRunGroup group) {
     _store[group.id] = group;
@@ -57,7 +60,10 @@ class FakeTaskRunGroupRepository implements TaskRunGroupRepository {
 
   @override
   Future<void> save(TaskRunGroup group) async {
-    emit(group);
+    _store[group.id] = group;
+    if (emitOnSave) {
+      _controller.add(_store.values.toList());
+    }
   }
 
   @override
@@ -65,7 +71,9 @@ class FakeTaskRunGroupRepository implements TaskRunGroupRepository {
     for (final group in groups) {
       _store[group.id] = group;
     }
-    _controller.add(_store.values.toList());
+    if (emitOnSave) {
+      _controller.add(_store.values.toList());
+    }
   }
 
   @override
@@ -317,6 +325,10 @@ PomodoroSession _buildRunningSession({
   required String groupId,
   required String ownerDeviceId,
   required DateTime now,
+  int remainingSeconds = 60,
+  int phaseDurationSeconds = 25 * 60,
+  DateTime? phaseStartedAt,
+  DateTime? currentTaskStartedAt,
 }) {
   return PomodoroSession(
     taskId: 'task-1',
@@ -331,11 +343,12 @@ PomodoroSession _buildRunningSession({
     phase: PomodoroPhase.pomodoro,
     currentPomodoro: 1,
     totalPomodoros: 1,
-    phaseDurationSeconds: 25 * 60,
-    remainingSeconds: 60,
+    phaseDurationSeconds: phaseDurationSeconds,
+    remainingSeconds: remainingSeconds,
     accumulatedPausedSeconds: 0,
-    phaseStartedAt: now.subtract(const Duration(minutes: 24)),
-    currentTaskStartedAt: now.subtract(const Duration(minutes: 24)),
+    phaseStartedAt: phaseStartedAt ?? now.subtract(const Duration(minutes: 24)),
+    currentTaskStartedAt:
+        currentTaskStartedAt ?? now.subtract(const Duration(minutes: 24)),
     pausedAt: null,
     lastUpdatedAt: now,
     finishedAt: null,
@@ -600,6 +613,312 @@ void main() {
 
         expect(find.text('groups-screen'), findsOneWidget);
 
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets(
+    'auto-dismisses completion modal when timer route switches to next group',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final firstGroup = _buildRunningGroup(id: 'g1-complete', now: now);
+      final secondGroup = _buildRunningGroup(
+        id: 'g2-next',
+        now: now.add(const Duration(minutes: 1)),
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()
+        ..seed(firstGroup)
+        ..seed(secondGroup);
+      final sessionRepo = FakePomodoroSessionRepository(
+        _buildRunningSession(
+          groupId: firstGroup.id,
+          ownerDeviceId: deviceInfo.deviceId,
+          now: now,
+        ),
+      );
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      final router = GoRouter(
+        initialLocation: '/timer/${firstGroup.id}',
+        routes: [
+          GoRoute(
+            path: '/timer/:id',
+            builder: (context, state) =>
+                TimerScreen(groupId: state.pathParameters['id']!),
+          ),
+          GoRoute(
+            path: '/groups',
+            builder: (_, __) => const Scaffold(body: Text('groups-screen')),
+          ),
+          GoRoute(
+            path: '/tasks',
+            builder: (_, __) => const Scaffold(body: Text('tasks-screen')),
+          ),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 180));
+
+        groupRepo.emit(
+          firstGroup.copyWith(
+            status: TaskRunStatus.completed,
+            updatedAt: now.add(const Duration(seconds: 1)),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 220));
+        expect(find.text('✅ Tasks group completed'), findsOneWidget);
+
+        router.go('/timer/${secondGroup.id}');
+        for (var i = 0; i < 10; i++) {
+          await tester.pump(const Duration(milliseconds: 120));
+          if (find.text('✅ Tasks group completed').evaluate().isEmpty) {
+            break;
+          }
+        }
+
+        expect(find.text('✅ Tasks group completed'), findsNothing);
+        expect(
+          router.routerDelegate.currentConfiguration.uri.path,
+          '/timer/${secondGroup.id}',
+        );
+        expect(find.text('groups-screen'), findsNothing);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets(
+    'auto-dismisses completion modal when next group pre-run auto-open is announced',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final firstGroup = _buildRunningGroup(id: 'g1-pre-run-complete', now: now);
+      final secondGroup =
+          _buildScheduledGroup(id: 'g2-pre-run-next', now: now).copyWith(
+            scheduledStartTime: now.add(const Duration(minutes: 2)),
+            theoreticalEndTime: now.add(const Duration(minutes: 17)),
+            noticeMinutes: 1,
+          );
+
+      final groupRepo = FakeTaskRunGroupRepository()
+        ..seed(firstGroup)
+        ..seed(secondGroup);
+      final sessionRepo = FakePomodoroSessionRepository(
+        _buildRunningSession(
+          groupId: firstGroup.id,
+          ownerDeviceId: deviceInfo.deviceId,
+          now: now,
+        ),
+      );
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      final router = GoRouter(
+        initialLocation: '/timer/${firstGroup.id}',
+        routes: [
+          GoRoute(
+            path: '/timer/:id',
+            builder: (context, state) =>
+                TimerScreen(groupId: state.pathParameters['id']!),
+          ),
+          GoRoute(
+            path: '/groups',
+            builder: (_, __) => const Scaffold(body: Text('groups-screen')),
+          ),
+          GoRoute(
+            path: '/tasks',
+            builder: (_, __) => const Scaffold(body: Text('tasks-screen')),
+          ),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 180));
+
+        groupRepo.emit(
+          firstGroup.copyWith(
+            status: TaskRunStatus.completed,
+            updatedAt: now.add(const Duration(seconds: 1)),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 220));
+        expect(find.text('✅ Tasks group completed'), findsOneWidget);
+
+        container.read(scheduledAutoStartGroupIdProvider.notifier).state =
+            secondGroup.id;
+
+        for (var i = 0; i < 10; i++) {
+          await tester.pump(const Duration(milliseconds: 120));
+          if (find.text('✅ Tasks group completed').evaluate().isEmpty) {
+            break;
+          }
+        }
+
+        expect(find.text('✅ Tasks group completed'), findsNothing);
+        expect(
+          router.routerDelegate.currentConfiguration.uri.path,
+          '/timer/${firstGroup.id}',
+        );
+        expect(find.text('groups-screen'), findsNothing);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets(
+    'suppresses immediate duplicate running-overlap modal after postpone',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final running = _buildRunningGroup(id: 'running-overlap', now: now);
+      final scheduled = _buildScheduledGroup(id: 'scheduled-overlap', now: now)
+          .copyWith(
+            scheduledStartTime: now.add(const Duration(minutes: 5)),
+            theoreticalEndTime: now.add(const Duration(minutes: 20)),
+            noticeMinutes: 1,
+            updatedAt: now,
+          );
+      final groupRepo = FakeTaskRunGroupRepository(emitOnSave: false)
+        ..seed(running)
+        ..seed(scheduled);
+      final sessionRepo = FakePomodoroSessionRepository(
+        _buildRunningSession(
+          groupId: running.id,
+          ownerDeviceId: deviceInfo.deviceId,
+          now: now,
+          remainingSeconds: 15 * 60,
+          phaseDurationSeconds: 25 * 60,
+          phaseStartedAt: now.subtract(const Duration(minutes: 10)),
+          currentTaskStartedAt: now.subtract(const Duration(minutes: 10)),
+        ),
+      );
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+        await _pumpTimerScreen(
+          tester: tester,
+          container: container,
+          groupId: running.id,
+        );
+
+        container
+            .read(runningOverlapDecisionProvider.notifier)
+            .state = RunningOverlapDecision(
+          runningGroupId: running.id,
+          scheduledGroupId: scheduled.id,
+          token: 1,
+        );
+        await _pumpUntilFound(tester, find.text('Scheduling conflict'));
+        expect(find.text('Scheduling conflict'), findsOneWidget);
+
+        await tester.tap(find.text('Postpone scheduled'));
+        await tester.pump(const Duration(milliseconds: 260));
+        expect(find.text('Scheduling conflict'), findsNothing);
+
+        container
+            .read(runningOverlapDecisionProvider.notifier)
+            .state = RunningOverlapDecision(
+          runningGroupId: running.id,
+          scheduledGroupId: scheduled.id,
+          token: 2,
+        );
+        await tester.pump(const Duration(milliseconds: 260));
+
+        expect(find.text('Scheduling conflict'), findsNothing);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
         container.dispose();
         sessionRepo.dispose();
         groupRepo.dispose();
@@ -1072,17 +1391,18 @@ void main() {
         startBreakSound: SelectedSound.builtIn('default_chime_break'),
         finishTaskSound: SelectedSound.builtIn('default_chime_finish'),
       );
-      final detailedGroup = _buildScheduledGroup(
-        id: 'groups-hub-summary-details-group',
-        now: now,
-      ).copyWith(
-        tasks: [firstItem, secondItem],
-        totalTasks: 2,
-        totalPomodoros: 3,
-        totalDurationSeconds: 5400,
-        noticeMinutes: 10,
-        theoreticalEndTime: now.add(const Duration(minutes: 90)),
-      );
+      final detailedGroup =
+          _buildScheduledGroup(
+            id: 'groups-hub-summary-details-group',
+            now: now,
+          ).copyWith(
+            tasks: [firstItem, secondItem],
+            totalTasks: 2,
+            totalPomodoros: 3,
+            totalDurationSeconds: 5400,
+            noticeMinutes: 10,
+            theoreticalEndTime: now.add(const Duration(minutes: 90)),
+          );
       final groupRepo = FakeTaskRunGroupRepository()..seed(detailedGroup);
       final sessionRepo = FakePomodoroSessionRepository(null);
       final appModeService = AppModeService.memory();
@@ -1452,7 +1772,9 @@ void main() {
               (widget) =>
                   widget is Text &&
                   widget.data != null &&
-                  widget.data!.contains('This group mixes Pomodoro structures.'),
+                  widget.data!.contains(
+                    'This group mixes Pomodoro structures.',
+                  ),
             ),
           ),
           findsOneWidget,
@@ -1464,8 +1786,9 @@ void main() {
               (widget) =>
                   widget is Text &&
                   widget.data != null &&
-                  widget.data!
-                      .contains('configuration to apply to this group.'),
+                  widget.data!.contains(
+                    'configuration to apply to this group.',
+                  ),
             ),
           ),
           findsOneWidget,

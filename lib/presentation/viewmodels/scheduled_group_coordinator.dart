@@ -1149,10 +1149,18 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
         latest,
         fallback: noticeFallbackMinutes,
       );
-      final scheduledStart = ceilToMinute(
-        anchorEnd.add(Duration(minutes: noticeMinutes)),
+      final scheduledStart = resolveAnchoredScheduledStart(
+        anchorEnd: anchorEnd,
+        noticeMinutes: noticeMinutes,
       );
       final durationSeconds = resolveGroupDurationSeconds(latest);
+      final currentScheduledStart = latest.scheduledStartTime;
+      if (currentScheduledStart != null &&
+          scheduledStart.isAtSameMomentAs(currentScheduledStart)) {
+        // Anchor finished exactly as pre-computed. Keep postponedAfterGroupId
+        // alive so the group does not re-enter late-start queue detection.
+        continue;
+      }
       updates.add(
         latest.copyWith(
           scheduledStartTime: scheduledStart,

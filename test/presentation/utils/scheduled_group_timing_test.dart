@@ -76,6 +76,46 @@ TaskRunGroup _buildScheduledGroup({
   );
 }
 
+TaskRunGroup _buildLateStartQueueGroup({
+  required String id,
+  required DateTime scheduledStart,
+  required int noticeMinutes,
+  required int durationMinutes,
+}) {
+  const item = TaskRunItem(
+    sourceTaskId: 'late-start-task',
+    name: 'Late start task',
+    presetId: null,
+    pomodoroMinutes: 15,
+    shortBreakMinutes: 5,
+    longBreakMinutes: 15,
+    totalPomodoros: 1,
+    longBreakInterval: 1,
+    startSound: SelectedSound.builtIn('default_chime'),
+    startBreakSound: SelectedSound.builtIn('default_chime_break'),
+    finishTaskSound: SelectedSound.builtIn('default_chime_finish'),
+  );
+  final createdAt = scheduledStart.subtract(const Duration(minutes: 1));
+  return TaskRunGroup(
+    id: id,
+    ownerUid: 'user-1',
+    dataVersion: kCurrentDataVersion,
+    integrityMode: TaskRunIntegrityMode.shared,
+    tasks: const [item],
+    createdAt: createdAt,
+    scheduledStartTime: scheduledStart,
+    scheduledByDeviceId: 'device-1',
+    actualStartTime: null,
+    theoreticalEndTime: scheduledStart.add(Duration(minutes: durationMinutes)),
+    status: TaskRunStatus.scheduled,
+    noticeMinutes: noticeMinutes,
+    totalTasks: 1,
+    totalPomodoros: 1,
+    totalDurationSeconds: durationMinutes * 60,
+    updatedAt: createdAt,
+  );
+}
+
 void main() {
   group('resolvePostponedAnchorEnd', () {
     test('returns null when anchor is canceled', () {
@@ -181,5 +221,108 @@ void main() {
 
       expect(effectiveStart, storedStart);
     });
+  });
+
+  group('resolveLateStartConflictSet', () {
+    test('cascades conflict set to later groups after horizon expansion', () {
+      final now = DateTime(2026, 3, 23, 8, 57, 0);
+      final first = _buildLateStartQueueGroup(
+        id: 'g1',
+        scheduledStart: DateTime(2026, 3, 23, 8, 51, 0),
+        noticeMinutes: 1,
+        durationMinutes: 15,
+      );
+      final second = _buildLateStartQueueGroup(
+        id: 'g2',
+        scheduledStart: DateTime(2026, 3, 23, 9, 7, 0),
+        noticeMinutes: 1,
+        durationMinutes: 15,
+      );
+      final third = _buildLateStartQueueGroup(
+        id: 'g3',
+        scheduledStart: DateTime(2026, 3, 23, 9, 23, 0),
+        noticeMinutes: 1,
+        durationMinutes: 15,
+      );
+
+      final conflicts = resolveLateStartConflictSet(
+        scheduled: [first, second, third],
+        allGroups: [first, second, third],
+        activeSession: null,
+        now: now,
+      );
+
+      expect(conflicts.map((group) => group.id).toList(), ['g1', 'g2', 'g3']);
+    });
+
+    test('keeps non-overlapping later groups outside the queue set', () {
+      final now = DateTime(2026, 3, 23, 8, 57, 0);
+      final first = _buildLateStartQueueGroup(
+        id: 'g1',
+        scheduledStart: DateTime(2026, 3, 23, 8, 51, 0),
+        noticeMinutes: 1,
+        durationMinutes: 15,
+      );
+      final second = _buildLateStartQueueGroup(
+        id: 'g2',
+        scheduledStart: DateTime(2026, 3, 23, 9, 7, 0),
+        noticeMinutes: 1,
+        durationMinutes: 15,
+      );
+      final third = _buildLateStartQueueGroup(
+        id: 'g3',
+        scheduledStart: DateTime(2026, 3, 23, 9, 31, 0),
+        noticeMinutes: 1,
+        durationMinutes: 15,
+      );
+
+      final conflicts = resolveLateStartConflictSet(
+        scheduled: [first, second, third],
+        allGroups: [first, second, third],
+        activeSession: null,
+        now: now,
+      );
+
+      expect(conflicts.map((group) => group.id).toList(), ['g1', 'g2']);
+    });
+
+    test(
+      'excludes queue-confirmed anchored groups from overdue detection',
+      () {
+        final now = DateTime(2026, 3, 23, 11, 57, 0, 70);
+        final running = _buildRunningGroup(
+          id: 'g1',
+          start: DateTime(2026, 3, 23, 11, 40, 0),
+          theoreticalEnd: DateTime(2026, 3, 23, 11, 55, 46),
+        );
+        final second = _buildLateStartQueueGroup(
+          id: 'g2',
+          scheduledStart: DateTime(2026, 3, 23, 11, 57, 0),
+          noticeMinutes: 1,
+          durationMinutes: 15,
+        ).copyWith(postponedAfterGroupId: running.id);
+        final third = _buildLateStartQueueGroup(
+          id: 'g3',
+          scheduledStart: DateTime(2026, 3, 23, 12, 13, 0),
+          noticeMinutes: 1,
+          durationMinutes: 15,
+        ).copyWith(postponedAfterGroupId: second.id);
+
+        final conflicts = resolveLateStartConflictSet(
+          scheduled: [second, third],
+          allGroups: [running, second, third],
+          activeSession: null,
+          now: now,
+        );
+
+        expect(
+          conflicts,
+          isEmpty,
+          reason:
+              'Groups anchored with postponedAfterGroupId are system-managed '
+              'and must not re-trigger the late-start queue.',
+        );
+      },
+    );
   });
 }

@@ -73,7 +73,8 @@ class _ScheduledGroupAutoStarterState
   }
 
   void _handleAction(ScheduledGroupAction action) {
-    if (ref.read(completionDialogVisibleProvider)) {
+    if (ref.read(completionDialogVisibleProvider) &&
+        action.type != ScheduledGroupActionType.openTimer) {
       _deferAction(action);
       return;
     }
