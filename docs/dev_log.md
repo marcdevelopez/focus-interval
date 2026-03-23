@@ -14337,3 +14337,142 @@ Android log PASS signatures:
 
 1. Commit docs-only closure for `BUGLOG-008A`.
 2. Continue with next open P1 bug-log item.
+
+# 🔹 Block 655 — BUG-008C registration + dual-path validation packet (23/03/2026)
+
+## 📋 Context
+
+Current branch intent: `register BUG-008C and prepare reproducible validation packet with logs`.
+
+During Android startup validation (`BUG008B` log), user observed an old group
+opening in ready/completed style (`15:00 + Start`) before normal flow.
+Need was to register this as a formal bug and prepare exact reproduction
+protocols for two plausible paths.
+
+## ✔ Work completed
+
+- Added new bug entry:
+  - `docs/bugs/bug_log.md` → `BUG-008C` (`Open`)
+  - includes evidence from startup log + Firestore fields + two repro variants.
+- Added queue item:
+  - `docs/validation/validation_ledger.md` → `BUGLOG-008C` (`P1`, `Pending`).
+- Created dedicated validation packet:
+  - `docs/bugs/validation_bug008c_2026_03_23/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug008c_2026_03_23/quick_pass_checklist.md`
+  - `docs/bugs/validation_bug008c_2026_03_23/logs/.gitkeep`
+  - `docs/bugs/validation_bug008c_2026_03_23/screenshots/.gitkeep`
+- Validation packet includes:
+  - exact repro A (stale running residue on reopen),
+  - exact repro B (explicit cancellation path on reopen),
+  - copy-paste run commands for Android debug/release and optional Chrome mirror,
+  - quick grep signatures for bug-present vs fix-working.
+
+## 🧪 Verification run
+
+- Documentation synchronization checks only (no runtime/code changes).
+- Branch and date verified before edits:
+  - branch: `fix/buglog-008c-ready-flash-validation`
+  - date: `Mon Mar 23 20:19:45 CET 2026`
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/bugs/validation_bug008c_2026_03_23/plan_validacion_rapida_fix.md`
+- `docs/bugs/validation_bug008c_2026_03_23/quick_pass_checklist.md`
+- `docs/bugs/validation_bug008c_2026_03_23/logs/.gitkeep`
+- `docs/bugs/validation_bug008c_2026_03_23/screenshots/.gitkeep`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute Scenario A and Scenario B from the new packet and capture Android logs.
+2. Mark checklist PASS/FAIL with evidence (screenshots + timestamps).
+3. If reproducible, implement fix on this branch and rerun same packet for closure.
+
+# 🔹 Block 656 — BUG-008C startup stale-ready fix implementation (23/03/2026)
+
+## 📋 Context
+
+Current branch intent: `implement BUG-008C startup reconciliation fix (expired running + no active session)`.
+
+User narrowed the bug to a deterministic path:
+- group remains `running` while app is closed,
+- app reopens after theoretical end,
+- first open shows stale `Ready` timer for historical group (`15:00 + Start`),
+  instead of reconciling completion and routing away from stale Run Mode.
+
+## ✔ Work completed
+
+- Runtime fix in coordinator:
+  - `lib/presentation/viewmodels/scheduled_group_coordinator.dart`
+  - Added `openGroupsHub` scheduled action type.
+  - In running-branch with `activeSession == null`, expired running groups are
+    now completed immediately (`expire-running-groups-no-active-session` path).
+  - If all running groups are expired in that pass, coordinator emits
+    `openGroupsHub` instead of stale `openTimer`.
+- Navigation handler update:
+  - `lib/widgets/scheduled_group_auto_starter.dart`
+  - Added handler for `openGroupsHub` action (`go('/groups')` with retry guard).
+- Regression test added:
+  - `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+  - New case:
+    `completes expired running group without active session and routes to Groups Hub`.
+
+## 🧪 Verification run
+
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` -> PASS (`+20`).
+- `flutter analyze` -> PASS (`No issues found!`).
+
+## 📁 Updated files
+
+- `lib/presentation/viewmodels/scheduled_group_coordinator.dart`
+- `lib/widgets/scheduled_group_auto_starter.dart`
+- `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+- `docs/bugs/bug_log.md` (`BUG-008C` status -> `In validation`)
+- `docs/validation/validation_ledger.md` (`BUGLOG-008C` -> `In validation`)
+- `docs/bugs/validation_bug008c_2026_03_23/plan_validacion_rapida_fix.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Run Android device validation packet (`Scenario A` + `Scenario B`) and capture `bug008c` logs.
+2. Confirm no stale startup `Ready 15:00 + Start` appears after reopen past theoretical end.
+3. If PASS, close `BUG-008C` in bug log + ledger with evidence paths and closure commit.
+
+# 🔹 Block 657 — BUG-008C closure after Android device validation (23/03/2026)
+
+## 📋 Context
+
+Android debug validation run for BUG-008C (`fix/buglog-008c-ready-flash-validation`, base `d400a99`).
+Scenario A executed: app reopened after scheduled group expired while running (app had been closed).
+
+## ✔ Validation result
+
+Fix confirmed PASS on Android owner (RMX3771, Account Mode).
+
+Key log signals in `2026-03-23_bug008c_d400a99_android_RMX3771_debug.log`:
+- `[ExpiryCheck][expire-running-groups]` (line 6747): coordinator detects expired running group.
+- `[ExpiryCheck][mark-running-group-completed]` (line 6751): group marked completed on startup.
+- `Active session cleared route=/groups` (line 6764): stale session cleared, navigation to Groups Hub.
+- No `Timer load group=... status=completed` leading to stale Ready screen.
+
+User screenshot sequence (6 frames) confirms final destination is Groups Hub with group completed.
+No persistent `Ready 15:00 + Start` flash for historical group.
+
+## 📝 Residual observation (not a bug — documented for tracking only)
+
+When `activeSession != null` arrives in stream before the expiry check resolves:
+1. Coordinator emits `openTimer` (session present) → brief timer screen shown (frame 5 in screenshots).
+2. Session staleness check fires → session cleared → coordinator re-evaluates → emits `openGroupsHub`.
+3. `Cannot use Ref after disposed` logged (lines 6775–6787) during timer screen disposal — no functional breakage.
+
+This is a transient navigation race in the `activeSession != null` path, not the BUG-008C root cause.
+Documented in `plan_validacion_rapida_fix.md` section 4 for future reference.
+
+## 📁 Updated files
+
+- `docs/bugs/validation_bug008c_2026_03_23/quick_pass_checklist.md` (all evidence boxes checked)
+- `docs/bugs/bug_log.md` (`BUG-008C` → `Closed/OK`, evidence paths recorded)
+- `docs/validation/validation_ledger.md` (`BUGLOG-008C` → `Closed/OK`)
+- `docs/dev_log.md`
