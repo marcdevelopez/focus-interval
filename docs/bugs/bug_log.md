@@ -811,7 +811,16 @@ Fix applied:
 - Added unit test for 3 overdue groups emitting late-start queue.
 
 Status:
-Fixed; validation pending on Android.
+Closed/OK (23/03/2026).
+Android validation PASS (`validation_bug008_2026_03_23`):
+- `LateStartQueue overdue=3` emitted on late open and queue opened immediately.
+- After confirmation, scheduler moved to `scheduled=2 overdue=0` and opened the
+  running timer cleanly (`running-open-timer`), confirming no overdue bypass.
+- Manual `Start now` on the following queued group was blocked by
+  `Conflict with running group` (no bypass path).
+- No `Tasks group completed` empty-summary symptom observed in this run.
+Validation log:
+  `docs/bugs/validation_bug008_2026_03_23/logs/2026-03-23_bug008a_4ef7f42_android_RMX3771_debug.log`
 
 ---
 

@@ -14292,3 +14292,48 @@ user rerun confirmation.
 
 1. Commit this docs-only closure update on `fix/buglog-002-r1-closure`.
 2. Continue queue execution with next open P1/P2 item in `validation_ledger.md`.
+
+# 🔹 Block 654 — BUGLOG-008A Android validation closure (23/03/2026)
+
+## 📋 Context
+
+Current branch intent: `close BUGLOG-008A with Android evidence`.
+
+`BUGLOG-008A` was marked fixed but still pending Android confirmation in the
+global queue.
+
+## ✔ Work completed
+
+- Created required validation packet for this bug:
+  - `docs/bugs/validation_bug008_2026_03_23/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug008_2026_03_23/quick_pass_checklist.md`
+- Recorded Android validation evidence:
+  - `docs/bugs/validation_bug008_2026_03_23/logs/2026-03-23_bug008a_4ef7f42_android_RMX3771_debug.log`
+- Closed bug entry in `docs/bugs/bug_log.md`:
+  - status changed from `Fixed; validation pending on Android` to `Closed/OK`.
+- Closed queue item in `docs/validation/validation_ledger.md`:
+  - `BUGLOG-008A` -> `Closed/OK`
+  - snapshot non-closed bug count updated `13 -> 12`.
+
+## 🧪 Verification run
+
+Android log PASS signatures:
+- `LateStartQueue overdue=3` and `Opening late-start overlap queue` on late open.
+- Post-confirm transition: `scheduled=2 overdue=0` and `running-open-timer`.
+- User UI verification: `Start now` on next queued group blocked by
+  `Conflict with running group` (no overdue bypass).
+- No `overdue=2` and no `Scheduling conflict` in this validation window.
+
+## 📁 Updated files
+
+- `docs/bugs/validation_bug008_2026_03_23/plan_validacion_rapida_fix.md`
+- `docs/bugs/validation_bug008_2026_03_23/quick_pass_checklist.md`
+- `docs/bugs/validation_bug008_2026_03_23/logs/.gitkeep`
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Commit docs-only closure for `BUGLOG-008A`.
+2. Continue with next open P1 bug-log item.
