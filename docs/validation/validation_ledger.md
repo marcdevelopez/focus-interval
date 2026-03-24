@@ -17,7 +17,13 @@ Scope: bugs + features + refactors + roadmap/process validations
 
 Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
 
-## Snapshot (2026-03-23)
+## Snapshot (2026-03-24)
+
+- Roadmap `validation pending`: **41** items (39 RVP + 2 IDEA).
+- Active bug-log entries with non-closed status: **4** (BUG-003, BUG-010, BUGLOG-008-MIT, BUG-F25-E — all P2; zero P0/P1 open).
+- Profiling checklist open items: **8** (P3-MEM-94 to P3-MEM-101).
+
+## Snapshot (2026-03-23, archived)
 
 - Roadmap `validation pending`: **57** items.
 - Active bug-log entries with non-closed status: **13** (`Open/Pending/In validation/Validated`; `BUGLOG-009B` / `BUGLOG-013` / `BUGLOG-014` / `BUGLOG-002-R1` / `BUGLOG-008A` closed after validation confirmations; `BUGLOG-008C` added as new startup-residual validation item).
