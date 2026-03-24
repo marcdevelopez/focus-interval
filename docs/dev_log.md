@@ -14516,3 +14516,39 @@ Updated:
 - `docs/bugs/bug_log.md`
 - `docs/validation/validation_ledger.md`
 - `docs/dev_log.md`
+
+# 🔹 Block 659 — BUG-006 + BUG-007 validation packet (24/03/2026)
+
+## 📋 Context
+
+Both bugs have fixes already in `develop`. This block opens the combined device
+validation to formally confirm and close them.
+
+**BUG-006 — Status box time ranges ignore pause anchoring:**
+Fix: commit `34d1938` ("Fix 5: align status box ranges") added
+`currentPhaseStartFromGroup` / `currentPhaseEndFromGroup` with
+`_pauseSecondsSincePhaseStart` to `pomodoro_view_model.dart`. Used by
+`timer_screen.dart` lines 2689–2690.
+
+**BUG-007 — Owner resumes behind mirror after background crash:**
+Fix: `handleAppResumed` (line 2871) in Account Mode calls
+`syncWithRemoteSession(preferServer: true, reason: 'resume')` +
+`_subscribeToRemoteSession(reason: 'resume-rebind')` +
+`_schedulePostResumeResync()` (2s delayed). Also covered by RVP-067 (Closed/OK).
+
+## ✔ Work completed
+
+- Created branch `fix/buglog-006-007-validation`.
+- Created `docs/bugs/validation_bug006_bug007_2026_03_24/`:
+  - `plan_validacion_rapida_fix.md`
+  - `quick_pass_checklist.md`
+  - `logs/`, `screenshots/`
+- Updated ledger: BUGLOG-006, BUGLOG-007 → `In validation`.
+
+## 🎯 Next steps
+
+1. Run Android (RMX3771) + macOS debug commands from the plan.
+2. Escenario A (BUG-006): pause 60s, resume, confirm status boxes.
+3. Escenario B (BUG-007): background Android 90s+, confirm timer aligns con macOS.
+4. Save logs with naming convention; update plan + checklist with results.
+5. If both PASS: close BUGLOG-006 + BUGLOG-007 and merge to `develop`.
