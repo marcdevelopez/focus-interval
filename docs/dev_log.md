@@ -14516,3 +14516,79 @@ Updated:
 - `docs/bugs/bug_log.md`
 - `docs/validation/validation_ledger.md`
 - `docs/dev_log.md`
+
+# 🔹 Block 659 — BUG-006 + BUG-007 validation packet (24/03/2026)
+
+## 📋 Context
+
+Both bugs have fixes already in `develop`. This block opens the combined device
+validation to formally confirm and close them.
+
+**BUG-006 — Status box time ranges ignore pause anchoring:**
+Fix: commit `34d1938` ("Fix 5: align status box ranges") added
+`currentPhaseStartFromGroup` / `currentPhaseEndFromGroup` with
+`_pauseSecondsSincePhaseStart` to `pomodoro_view_model.dart`. Used by
+`timer_screen.dart` lines 2689–2690.
+
+**BUG-007 — Owner resumes behind mirror after background crash:**
+Fix: `handleAppResumed` (line 2871) in Account Mode calls
+`syncWithRemoteSession(preferServer: true, reason: 'resume')` +
+`_subscribeToRemoteSession(reason: 'resume-rebind')` +
+`_schedulePostResumeResync()` (2s delayed). Also covered by RVP-067 (Closed/OK).
+
+## ✔ Work completed
+
+- Created branch `fix/buglog-006-007-validation`.
+- Created `docs/bugs/validation_bug006_bug007_2026_03_24/`:
+  - `plan_validacion_rapida_fix.md`
+  - `quick_pass_checklist.md`
+  - `logs/`, `screenshots/`
+- Updated ledger: BUGLOG-006, BUGLOG-007 → `In validation`.
+
+## 🎯 Next steps
+
+1. Run Android (RMX3771) + macOS debug commands from the plan.
+2. Escenario A (BUG-006): pause 60s, resume, confirm status boxes.
+3. Escenario B (BUG-007): background Android 90s+, confirm timer aligns con macOS.
+4. Save logs with naming convention; update plan + checklist with results.
+5. If both PASS: close BUGLOG-006 + BUGLOG-007 and merge to `develop`.
+
+# 🔹 Block 660 — BUG-006 + BUG-007 closure after Android device validation (24/03/2026)
+
+## 📋 Context
+
+Combined Android + macOS validation run for BUG-006 and BUG-007.
+Branch: `fix/buglog-006-007-validation`, base commit `97f6365`.
+
+## ✔ Validation result — both PASS
+
+### BUG-006 — Status box time ranges PASS
+
+- Paused at 11:02:01 (log line 6983): `status=paused remaining=861 phaseStartedAt=11:01:20.522`
+- Resumed at 11:03:04 (log line 7029): `status=pomodoroRunning remaining=861`
+- Status box: 11:01–11:16 → 11:01–11:17. Start fixed ✓, end extended by pause duration ✓.
+- Status box and task list both show 11:01–11:17 ✓.
+
+### BUG-007 — Owner resume re-anchor PASS
+
+- Background Android 11:09:00, foreground 11:11:02 (~2min background).
+- Timer: Android 6:21, macOS 6:20 → ±1s ✓. No Groups Hub navigation needed.
+- Log lines 10400–10414:
+  `[SessionSub] close reason=resume-rebind` →
+  `[SessionSub] open (→SSS) reason=resume-rebind` →
+  `[ActiveSession] Resync start (resume).` →
+  `[ActiveSession] Resync start (post-resume).`
+- No `Resync missing` after foreground return ✓.
+
+### Local gate PASS
+
+- `flutter analyze` → `No issues found!`
+- `flutter test pomodoro_view_model_pause_expiry_test.dart` → `+5: All tests passed!`
+
+## 📁 Updated files
+
+- `docs/bugs/validation_bug006_bug007_2026_03_24/plan_validacion_rapida_fix.md` (results added)
+- `docs/bugs/validation_bug006_bug007_2026_03_24/quick_pass_checklist.md` (all boxes checked)
+- `docs/bugs/bug_log.md` (BUG-006, BUG-007 → Closed/OK)
+- `docs/validation/validation_ledger.md` (BUGLOG-006, BUGLOG-007 → Closed/OK)
+- `docs/dev_log.md`
