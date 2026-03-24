@@ -386,7 +386,13 @@ Hypothesis:
   pause/resume snapshots, causing alternating projections (local vs remote).
 
 Status:
-Open. Low priority; cosmetic unless it escalates.
+Closed/OK (24/03/2026). Both root causes eliminated by Fix 26 architecture:
+(1) AP-1 elimination — no more periodic `_sessionSub` cancel/restart in `build()`;
+SSS persistent subscription removes the resubscribe cycle that caused ~15s rebuilds.
+(2) Timer drift variant (macOS alternating between correct and stale timer) covered
+by BUG-009 non-repro re-validation 21/03/2026. No recurrence observed in
+BUG-005/006/007 device runs 24/03/2026 where macOS acted as mirror for multiple
+minutes. User confirmed: "apenas se percibe en la UI ahora."
 
 ---
 
