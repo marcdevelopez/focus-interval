@@ -14724,3 +14724,25 @@ no spurious banner re-appearance across stream reconnects.
 ### Ledger status after this block
 Open P2 bugs: BUGLOG-003, BUGLOG-010, BUGLOG-008-MIT, BUGLOG-F25-E-R1
 Open RVP items: RVP-021–RVP-031, RVP-034–RVP-040, RVP-042, RVP-045–RVP-062 (37 items)
+
+## Block 664 — BUGLOG-008-MIT closed: superseded by Fix 26 SSS architecture (24/03/2026)
+
+**Branch:** `fix/buglog-008-mit-closure`
+**Item closed:** BUGLOG-008-MIT (P2 mitigation candidate)
+
+No new code. The Run Mode resync overlay mitigation candidate was designed as a manual
+fallback for sync failures (Syncing session... freezes) that required navigating to
+Groups Hub to recover. Fix 26's SSS persistent subscription (AP-1 eliminated) +
+`_startInactiveResync()` + `handleAppResumed()` re-anchor remove all the sync failure
+scenarios this fallback was meant to address.
+
+User confirmed 24/03/2026: "gracias al refacto originado por el fix 26 se hizo innecesario."
+
+### Documents updated
+- `docs/bugs/bug_log.md` → BUGLOG-008-MIT Status: `Not implemented...` → `Closed/OK (24/03/2026)`
+- `docs/validation/validation_ledger.md` → BUGLOG-008-MIT: `[ ]` → `[x]` Closed/OK (`cbd800a`)
+- Snapshot updated: non-closed bugs 4 → 3 (BUG-003, BUG-010, BUG-F25-E remain open)
+
+### Ledger status after this block
+Open P2 bugs: BUGLOG-003, BUGLOG-010, BUGLOG-F25-E-R1
+Open RVP items: RVP-021–RVP-031, RVP-034–RVP-040, RVP-042, RVP-045–RVP-062 (37 items)

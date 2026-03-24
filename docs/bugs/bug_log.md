@@ -871,8 +871,10 @@ Risks:
 - Can introduce visible jumps if the projection re-anchors.
 
 Status:
-Not implemented. Documented as a release mitigation if root cause is not fully
-resolved.
+Closed/OK (24/03/2026). Superseded by Fix 26 SSS architecture — persistent session
+subscription (AP-1 eliminated) + `_startInactiveResync()` + `handleAppResumed()`
+re-anchor eliminate the sync failure scenarios that motivated this fallback.
+No implementation needed. User-confirmed 24/03/2026.
 
 ---
 
