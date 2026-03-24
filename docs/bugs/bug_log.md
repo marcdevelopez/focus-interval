@@ -1521,12 +1521,16 @@ group approaches a scheduled group). This bug covers the RE-PLAN conflict modal 
 a distinct flow. Both must be addressed.
 
 Fix applied:
-None yet. Pending Codex implementation.
-In the re-plan conflict modal builder, pass the list of conflicting groups and
-render each group's name + scheduled time range inline in the dialog content.
+groups_hub_screen.dart `_resolveScheduledConflict` (line 1396) and
+task_list_screen.dart `_resolveScheduledConflict` (line 1850): replaced
+static generic dialog content with a dynamic Column listing each conflicting
+group as "• {name} — {start}–{end}" (HH:mm today, MMM d, HH:mm otherwise).
+Group name derived from tasks.first.name ?? 'Task group'. Validated on Chrome.
+Note: bug_log entry was stale (merge artifact from fix-f25-h branch); fix was
+already applied and roadmap line 459 confirms Closed/OK.
 
 Status:
-Open. P2 — UX clarity. Add to Phase 17 scope for implementation.
+Closed/OK (19/03/2026). closed_commit_hash: c248c91
 
 ---
 

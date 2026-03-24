@@ -14746,3 +14746,28 @@ User confirmed 24/03/2026: "gracias al refacto originado por el fix 26 se hizo i
 ### Ledger status after this block
 Open P2 bugs: BUGLOG-003, BUGLOG-010, BUGLOG-F25-E-R1
 Open RVP items: RVP-021–RVP-031, RVP-034–RVP-040, RVP-042, RVP-045–RVP-062 (37 items)
+
+## Block 665 — BUGLOG-F25-E-R1 closed: merge artifact, fix already in c248c91 (24/03/2026)
+
+**Branch:** `develop` (direct, doc-only correction)
+**Item closed:** BUGLOG-F25-E-R1 (P2 stale entry)
+
+BUG-F25-E was fixed in `c248c91` (19/03/2026) and confirmed in the roadmap (line 459,
+struck through Closed/OK, Chrome validation PASS). The `bug_log.md` entry at line 1489
+still said "Status: Open / Fix applied: None yet" — this was a merge artifact: when
+`fix-f25-h-cancel-syncing-hold` merged into develop (`fdd4cfa`), it added 144 lines
+including a re-instantiated copy of the BUG-F25-E section from before `c248c91` patched
+it. The fix in the code was unaffected (groups_hub_screen.dart:1414-1422 and
+task_list_screen.dart:1850+ both show the dynamic group list dialog). BUGLOG-F25-E-R1
+in the ledger was created to track this discrepancy.
+
+Corrected `bug_log.md` and ledger entry to reflect actual Closed/OK state.
+
+### Documents updated
+- `docs/bugs/bug_log.md` → BUG-F25-E Status: `Open` → `Closed/OK (19/03/2026). closed_commit_hash: c248c91`
+- `docs/validation/validation_ledger.md` → BUGLOG-F25-E-R1: `[ ]` → `[x]` Closed/OK (`c248c91`)
+- Snapshot updated: non-closed bugs 1 → 0 (zero P0/P1/P2 open)
+
+### Ledger status after this block
+**Zero open bugs.** All BUGLOG entries closed.
+Open RVP items: RVP-021–RVP-031, RVP-034–RVP-040, RVP-042, RVP-045–RVP-062 (37 items)
