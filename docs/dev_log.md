@@ -14592,3 +14592,42 @@ Branch: `fix/buglog-006-007-validation`, base commit `97f6365`.
 - `docs/bugs/bug_log.md` (BUG-006, BUG-007 → Closed/OK)
 - `docs/validation/validation_ledger.md` (BUGLOG-006, BUGLOG-007 → Closed/OK)
 - `docs/dev_log.md`
+
+# 🔹 Block 661 — BUG-005 validation packet (24/03/2026)
+
+## 📋 Context
+
+BUG-005: ownership requests not surfaced until focus/resubscribe.
+Two variants:
+- **Variant A** (macOS window inactive): request never showed until user clicked macOS window.
+- **Variant B/D/E** (Android foreground owner): request never showed until Groups Hub nav.
+
+Both have fixes already in `develop`.
+
+**Variant A fix:** `handleAppPaused()` triggers `_startInactiveResync()` on
+`AppLifecycleState.inactive` (macOS focus loss included). Timer fires
+`syncWithRemoteSession(preferServer: true, reason: 'inactive-resync')` every **15s**,
+fetching the session with `ownershipRequest` from Firestore.
+macOS: `_keepClockActiveOutOfFocus()` returns `true` (clock keeps running) but
+`handleAppPaused()` IS called → inactive-resync starts correctly.
+
+**Variant B fix:** Fix 26 architecture rewrite (`cbd800a`) — `SessionSyncService`
+maintains persistent session subscription, eliminating AP-1 subscription gaps.
+Any Firestore write to `ownershipRequest` arrives via stream in real time.
+
+## ✔ Work completed
+
+- Created branch `fix/buglog-005-validation`.
+- Created `docs/bugs/validation_bug005_2026_03_24/`:
+  - `plan_validacion_rapida_fix.md` (Escenarios A + B, commands, log scan, criteria)
+  - `quick_pass_checklist.md`
+  - `logs/`, `screenshots/`
+- Updated ledger: BUGLOG-005 → `In validation`.
+
+## 🎯 Next steps
+
+1. Run Android (RMX3771) + macOS debug commands from the plan simultaneously.
+2. Escenario A: macOS as owner, lose focus, Android requests → modal in ≤15s.
+3. Escenario B: Android as owner foreground, macOS requests → modal in <5s.
+4. Check log signals and update plan + checklist.
+5. If both PASS: close BUGLOG-005 and merge to `develop`.
