@@ -3253,12 +3253,11 @@ Case B (execution conflict — inline indicator + modal on Confirm):
   Delete action only enabled when at least one group is checked.
 
 Real-time conflict data:
-- Conflict detection must use live group data while Plan Group is open.
-  A preceding group may be paused at the time of planning — its theoretical end
-  time (including accumulated pause duration) must be used for conflict calculation.
-  If the preceding group resumes while Plan Group is open, the conflict check must
-  re-evaluate in real-time (stream-based or periodic refresh) so that a paused group
-  that resumes does not silently produce a new undetected conflict.
+- Conflict detection must always use the current theoretical end time of any
+  group (running, paused, or scheduled). While a group is paused its theoretical
+  end extends continuously — conflict calculation must reflect this live value
+  at all times while Plan Group is open. The live theoretical end is always the
+  source of truth regardless of group state.
 
 If both conditions appear, execution conflict rules (Case B) take precedence.
 
@@ -3284,9 +3283,11 @@ Edge cases:
   modal with checkboxes, sorted by start time. User can delete a subset; if
   conflicts remain after partial delete, Plan Group stays open with updated
   inline indicators — no successful exit while any conflict remains.
-- Paused preceding group: use theoretical end time (including accumulated pause
-  duration) for conflict calculation; re-evaluate in real-time if the group
-  resumes while Plan Group is open.
+- Paused preceding group: always use the current theoretical end time of any
+  group (running, paused, or scheduled) for conflict calculation. While a group
+  is paused its theoretical end extends; conflict detection must reflect this
+  continuously while Plan Group is open. No special trigger needed on resume —
+  the live theoretical end value is always the source of truth.
 - Missing names/times: fallback labels (`Task group`, `--:--`) without breaking
   actions.
 - If only one suggestion side is valid, show one option.
@@ -3318,7 +3319,8 @@ Acceptance criteria:
   Plan Group stays open until zero conflicts remain.
 - Case B modal: "Change time" opens restricted picker with up to two valid
   start suggestions (before/after all remaining blockers, minute-safe).
-- Paused preceding group: conflict recalculated in real-time on resume.
+- Paused preceding group: conflict uses live theoretical end time continuously;
+  no special trigger needed on resume — live value is always the source of truth.
 - Suggested starts avoid boundary overlap by enforcing minute-safe separation.
 - UI consistent with the rest of the app: same color tokens, same badge style,
   same modal pattern as other conflict flows.
