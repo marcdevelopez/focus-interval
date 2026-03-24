@@ -566,10 +566,15 @@ Mode switch triggers a brief local projection using stale anchors before the
 activeSession snapshot is re-applied.
 
 Fix applied:
-None.
+Fix 26 (`cbd800a`): `appModeProvider` listener calls `_timerService.stopTick()` +
+state clear on mode switch away from Account Mode, eliminating the stale local
+projection that caused the ~25s mismatch. On return to Account Mode, ViewModel
+is in a clean state and re-anchors immediately from the first SSS snapshot via
+`loadGroup()` → `_subscribeToRemoteSession`.
 
 Status:
-Open. Low priority (brief visual inconsistency).
+Closed/OK (24/03/2026). Root cause eliminated by Fix 26 mode-switch cleanup.
+User-confirmed: tested on device, bug no longer manifests.
 
 ---
 
