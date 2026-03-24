@@ -14631,3 +14631,54 @@ Any Firestore write to `ownershipRequest` arrives via stream in real time.
 3. Escenario B: Android as owner foreground, macOS requests → modal in <5s.
 4. Check log signals and update plan + checklist.
 5. If both PASS: close BUGLOG-005 and merge to `develop`.
+
+---
+
+## Block 662 — BUG-005 closed: ownership request surfaced without focus/resubscribe (24/03/2026)
+
+**Branch:** `fix/buglog-005-validation`
+**Closed bugs:** BUG-005 (BUGLOG-005)
+**Validation folder:** `docs/bugs/validation_bug005_2026_03_24/`
+**Devices:** Android RMX3771 + macOS (same session)
+
+### What was validated
+
+Two variants of BUG-005 confirmed PASS in a single combined run.
+
+**Escenario A — macOS owner loses window focus (Variant A)**
+
+macOS lost focus at 11:43:50. Log macOS line 5850:
+```
+[ActiveSession] Resync start (inactive-resync).  (11:43:54, ~4s after focus loss)
+```
+Subsequent `inactive-resync` calls confirmed at lines 5859, 5864 (~15s intervals).
+Android requested ownership at 11:46:07 — macOS showed the modal instantaneously
+without any click or focus. ≤15s threshold met ✓.
+
+**Escenario B — Android owner foreground, macOS mirror requests (Variant B)**
+
+Android as owner (foreground), macOS requested ownership at 11:49:29.
+Android log shows `[RunModeDiag] Active session change` via stream at ~11:49:28.5
+(no `inactive-resync` — pure stream delivery ✓). `D/ViewRootImplExtImpl` tap event
+at ~11:49:30.8 confirms user accepted the modal on Android. Ownership snapshot with
+`owner=macOS-828508db... lastUpdatedAt=2026-03-24 11:49:31.248` confirms transfer.
+Elapsed request-to-accept: ~3s (<5s threshold ✓). No Groups Hub navigation ✓.
+
+**Local gate**
+- `flutter analyze` → `No issues found!`
+- `flutter test pomodoro_view_model_session_gap_test.dart` → `+25: All tests passed!`
+
+### Fix commits
+- Variant A: `b093270` — `_startInactiveResync()` periodic 15s resync on macOS inactive
+- Variant B: `cbd800a` — Fix 26 SSS persistent subscription (AP-1 eliminated)
+
+### Documents updated
+- `docs/bugs/bug_log.md` → BUG-005 Status: Closed/OK
+- `docs/validation/validation_ledger.md` → BUGLOG-005: `[ ]` → `[x]` Closed/OK (`b093270`)
+- `docs/bugs/validation_bug005_2026_03_24/plan_validacion_rapida_fix.md` → results + Closed/OK
+- `docs/bugs/validation_bug005_2026_03_24/quick_pass_checklist.md` → all boxes checked
+
+### Ledger status after this block
+**All P1 bugs now Closed/OK.** Zero open P0/P1 entries in `validation_ledger.md`.
+Remaining open items: P2 bugs (BUGLOG-003, BUGLOG-010, BUGLOG-008-MIT, BUGLOG-F25-E-R1)
+and RVP validation items (RVP-021–RVP-062). Neither category blocks `develop → main`.

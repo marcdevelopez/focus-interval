@@ -194,9 +194,9 @@ flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.
 ## Criterios de cierre
 
 ### BUG-005 cerrado cuando:
-- [ ] Escenario A PASS: modal en macOS sin foco aparece en ≤15s.
+- [x] Escenario A PASS: modal en macOS sin foco aparece en ≤15s.
   Log macOS muestra `[ActiveSession] Resync start (inactive-resync).` durante ventana inactiva.
-- [ ] Escenario B PASS: banner/modal en Android owner aparece en <5s sin Groups Hub.
+- [x] Escenario B PASS: banner/modal en Android owner aparece en <5s sin Groups Hub.
   Log Android muestra `[RunModeDiag] Active session change` sin navegación previa.
 
 ### Regla de cierre
@@ -204,6 +204,31 @@ Ambos escenarios con PASS confirmado + log evidence.
 
 ---
 
+## Resultados (24/03/2026)
+
+### Escenario A — PASS
+
+- macOS pierde foco a las 11:43:50.
+- macOS log línea 5827: `[ActiveSession][snapshot] owner=macOS-828508db... status=pomodoroRunning groupId=5c44a6ed...` — macOS como owner en sesión activa.
+- macOS log línea 5850: `[ActiveSession] Resync start (inactive-resync).` a las 11:43:54 (~4s tras perder foco ✓ ≤15s).
+- macOS log líneas 5859, 5864: resync periódicos adicionales cada ~15s confirmando mecanismo activo.
+- Android solicitó ownership a las 11:46:07 — macOS mostró el modal instantáneamente ✓.
+- Sin click ni foco en macOS durante toda la ventana ✓.
+
+### Escenario B — PASS
+
+- Android como owner, macOS como mirror. macOS solicita ownership a las 11:49:29.
+- Android log: `[RunModeDiag] Active session change` vía stream a las ~11:49:28.5 (sin `inactive-resync` previo ✓).
+- `D/ViewRootImplExtImpl` tap event a las ~11:49:30.8 — usuario aceptó el modal en Android ✓.
+- Snapshot `owner=macOS-828508db... lastUpdatedAt=2026-03-24 11:49:31.248` confirma transferencia ✓.
+- Tiempo desde solicitud hasta aceptación: ~3s (<5s ✓).
+- Sin navegación a Groups Hub ni background ✓.
+
+### Local gate — PASS
+
+- `flutter analyze` → `No issues found!`
+- `flutter test pomodoro_view_model_session_gap_test.dart` → `+25: All tests passed!`
+
 ## Status
 
-Open — pendiente de ejecución de device run.
+Closed/OK — ambos escenarios PASS con evidencia de log (24/03/2026).

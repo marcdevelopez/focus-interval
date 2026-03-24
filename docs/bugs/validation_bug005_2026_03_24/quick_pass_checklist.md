@@ -2,19 +2,19 @@
 
 ## Escenario A — macOS owner sin foco
 
-- [ ] Modal de ownership request aparece en macOS en ≤15s sin clickar la ventana.
-- [ ] Log macOS contiene `[ActiveSession] Resync start (inactive-resync).` durante ventana sin foco.
+- [x] Modal de ownership request aparece en macOS en ≤15s sin clickar la ventana.
+- [x] Log macOS contiene `[ActiveSession] Resync start (inactive-resync).` durante ventana sin foco.
 
 ## Escenario B — Android owner en foreground
 
-- [ ] Banner/modal de ownership request aparece en Android en <5s.
-- [ ] Sin navegar a Groups Hub ni hacer background.
-- [ ] Log Android contiene `[RunModeDiag] Active session change` coincidiendo con la aparición del modal.
+- [x] Banner/modal de ownership request aparece en Android en <5s.
+- [x] Sin navegar a Groups Hub ni hacer background.
+- [x] Log Android contiene `[RunModeDiag] Active session change` coincidiendo con la aparición del modal.
 
 ## Local gate
 
-- [ ] `flutter analyze` PASS (`No issues found!`)
-- [ ] `flutter test pomodoro_view_model_session_gap_test.dart` PASS
+- [x] `flutter analyze` PASS (`No issues found!`)
+- [x] `flutter test pomodoro_view_model_session_gap_test.dart` PASS (`+25`)
 
 ## Closure rule
 

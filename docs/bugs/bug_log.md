@@ -1062,10 +1062,20 @@ Hypothesis:
   leaving pending requests invisible until a manual resubscribe.
 
 Fix applied:
-None.
+- Variant A (`b093270`): `_startInactiveResync()` in `pomodoro_view_model.dart:2863` — periodic
+  15s `syncWithRemoteSession(preferServer: true, reason: 'inactive-resync')` triggered by
+  `AppLifecycleState.inactive` (including macOS window focus loss) via `handleAppPaused()`.
+- Variant B (`cbd800a`): Fix 26 architecture rewrite — `SessionSyncService` maintains persistent
+  Firestore stream subscription independent of ViewModel lifecycle. AP-1 eliminated; stream
+  delivers `ownershipRequest` changes in real-time without navigation or resubscribe.
 
 Status:
-Open. Medium priority (blocks timely ownership handoff).
+Closed/OK. Validated 24/03/2026 — both scenarios PASS.
+Escenario A: macOS log line 5850 `[ActiveSession] Resync start (inactive-resync).` at 11:43:54
+(~4s after focus loss); modal appeared instantly on macOS. Escenario B: Android stream delivered
+ownership request at ~11:49:28.5 (`[RunModeDiag] Active session change`, no inactive-resync);
+user accepted modal at ~11:49:30.8 (~3s, <5s threshold).
+Evidence: `docs/bugs/validation_bug005_2026_03_24/`.
 
 ---
 
