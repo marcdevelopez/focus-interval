@@ -14476,3 +14476,43 @@ Documented in `plan_validacion_rapida_fix.md` section 4 for future reference.
 - `docs/bugs/bug_log.md` (`BUG-008C` → `Closed/OK`, evidence paths recorded)
 - `docs/validation/validation_ledger.md` (`BUGLOG-008C` → `Closed/OK`)
 - `docs/dev_log.md`
+
+# 🔹 Block 658 — BUGLOG-008B closure + BUGLOG-008C hash correction (24/03/2026)
+
+## 📋 Context
+
+Housekeeping pass on two outstanding ledger items after user confirmed BUGLOG-008B as
+validated and the BUGLOG-008C merge hash was still recorded as "pending".
+
+## ✔ Work completed
+
+### BUGLOG-008B — Owner becomes stale while foreground (unexpected auto-claim)
+
+User confirmed Closed/OK. Evidence traced to:
+- Commit `9916204` ("Allow owner heartbeats while awaiting session", 02/03/2026):
+  root-cause fix — `lastUpdatedAt` no longer freezes when session is temporarily
+  missing; owner heartbeat continues publishing independently of session stream state.
+- Validation: `docs/bugs/validation_fix_2026_03_02-02/quick_pass_checklist.md`
+  (all PASS, Chrome+macOS, 02/03/2026 — `lastUpdatedAt` advancing confirmed).
+- Architecture-level corroboration: P0-F26-006 Stage C pass2 soak (5h+, Android
+  RMX3771 + macOS, 2026-03-16) showed no unauthorized ownership flips during the
+  entire soak window.
+
+Updated:
+- `docs/bugs/bug_log.md` (BUG-008 `Fix applied` + `Status` → `Closed/OK`)
+- `docs/validation/validation_ledger.md` (BUGLOG-008B `[ ]` → `[x]` Closed/OK)
+
+### BUGLOG-008C hash correction
+
+`closed_commit_hash` was recorded as `pending (fix/buglog-008c-ready-flash-validation,
+pre-merge)` because the ledger was updated before the merge completed. Updated to
+actual merge commit `cfaba5e`.
+
+Updated:
+- `docs/validation/validation_ledger.md` (BUGLOG-008C `closed_commit_hash` → `cfaba5e`)
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`

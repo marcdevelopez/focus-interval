@@ -893,10 +893,20 @@ During session stream gaps, owner heartbeat is suppressed (controls disabled),
 so lastUpdatedAt becomes stale even while owner is active.
 
 Fix applied:
-Pending (allow owner heartbeats while session is missing).
+Commit `9916204` ("Allow owner heartbeats while awaiting session", 02/03/2026):
+allowed session publish and heartbeats when owner is active but activeSession is
+temporarily missing — prevents `lastUpdatedAt` freeze that caused stale ownership
+auto-claim by mirror.
+Architecture-level resolution: Fix 26 sync rewrite (P0-F26-006, `cbd800a`) decoupled
+owner heartbeat from the session stream entirely via `SessionSyncService`.
 
 Status:
-Open. High priority (ownership correctness).
+Closed/OK (user-confirmed, 24/03/2026).
+Evidence: `docs/bugs/validation_fix_2026_03_02-02/quick_pass_checklist.md` (all PASS,
+02/03/2026, Chrome+macOS: `lastUpdatedAt` advancing confirmed);
+P0-F26-006 Stage C pass2 soak (5h+, Android RMX3771 + macOS, 2026-03-16, no
+unauthorized ownership flips observed).
+closed_commit_hash: `9916204`
 
 ## BUG-002 — Ownership rejection desync after background/resume
 
