@@ -1115,10 +1115,20 @@ Hypothesis:
   without applying the same pause-offset anchoring used by the task list.
 
 Fix applied:
-None.
+Commit `34d1938` ("Fix 5: align status box ranges", 25/02/2026):
+`currentPhaseStartFromGroup` / `currentPhaseEndFromGroup` in
+`pomodoro_view_model.dart` apply `_pauseSecondsSincePhaseStart` to attribute
+only the pause accumulated after the estimated start of the current phase,
+extending the end time forward without retroactively shifting the start.
+Used by `timer_screen.dart` lines 2689–2690.
 
 Status:
-Open. Medium priority (UX consistency).
+Closed/OK (24/03/2026).
+Evidence: Android debug run — pause at 11:02:01 (remaining=861, log line 6983),
+resume at 11:03:04 (log line 7029): status box showed 11:01-11:16 → 11:01-11:17
+(start fixed, end extended ~1min by pause duration). Status box and task list agree.
+Log: `docs/bugs/validation_bug006_bug007_2026_03_24/logs/2026-03-24_bug006_bug007_97f6365_android_RMX3771_debug.log`
+closed_commit_hash: `34d1938`
 
 ---
 
@@ -1159,10 +1169,22 @@ re-anchoring from activeSession (server snapshot), causing a short owner lag
 until a manual resubscribe occurs.
 
 Fix applied:
-None.
+`handleAppResumed()` in `pomodoro_view_model.dart` (line 2871): in Account Mode
+calls `_subscribeToRemoteSession(reason: 'resume-rebind')` + `syncWithRemoteSession
+(preferServer: true, reason: 'resume')` + `_schedulePostResumeResync()` (2s delay).
+Owner re-anchors from server snapshot immediately on foreground return.
 
 Status:
-Open. Medium priority (visible correctness issue).
+Closed/OK (24/03/2026).
+Evidence: Android background at 11:09:00 (2min), foreground at 11:11:02 — Android
+showed 6:21, macOS mirror showed 6:20 (±1s). Log confirms full resume sequence:
+`[SessionSub] close reason=resume-rebind` (line 10400),
+`[SessionSub] open (→SSS) reason=resume-rebind` (line 10401),
+`[ActiveSession] Resync start (resume).` (line 10402),
+`[ActiveSession] Resync start (post-resume).` (line 10414).
+No `Resync missing` after resume.
+Log: `docs/bugs/validation_bug006_bug007_2026_03_24/logs/2026-03-24_bug006_bug007_97f6365_android_RMX3771_debug.log`
+closed_commit_hash: `handleAppResumed` (in develop via Fix 26 rewrite)
 
 ---
 

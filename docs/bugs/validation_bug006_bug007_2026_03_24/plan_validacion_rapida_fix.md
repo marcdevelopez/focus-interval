@@ -211,6 +211,34 @@ Cerrar ambos bugs solo si los dos escenarios tienen PASS con evidencia de log
 
 ---
 
+## Resultados (24/03/2026)
+
+### BUG-006 — PASS
+
+- Pause at 11:02:01 (log line 6983): `status=paused remaining=861 lastUpdatedAt=11:02:00.222`
+  `phaseStartedAt=11:01:20.522`
+- Resume at 11:03:04 (log line 7029): `status=pomodoroRunning remaining=861 lastUpdatedAt=11:03:02.716`
+- User observation: status box 11:01–11:16 → 11:01–11:17 (start fixed ✓, end +1min ✓).
+- Status box and task list agree on 11:01–11:17 ✓.
+
+### BUG-007 — PASS
+
+- Background Android at 11:09:00, foreground at 11:11:02 (~2min background).
+- Android: 6:21 remaining, macOS: 6:20 remaining → ±1s difference ✓.
+- Log lines 10400–10414:
+  ```
+  [SessionSub] close vmToken=a7c4bfbc... reason=resume-rebind        (line 10400)
+  [SessionSub] open (→SSS) vmToken=a7c4bfbc... reason=resume-rebind  (line 10401)
+  [ActiveSession] Resync start (resume).                              (line 10402)
+  [ActiveSession] Resync start (post-resume).                        (line 10414)
+  ```
+- No `Resync missing; no session snapshot.` after foreground return ✓.
+
+### Local gate — PASS
+
+- `flutter analyze` → `No issues found!`
+- `flutter test pomodoro_view_model_pause_expiry_test.dart` → `+5: All tests passed!`
+
 ## Status
 
-Open — pendiente de ejecución de device run.
+Closed/OK — ambos bugs PASS con evidencia de log (24/03/2026).
