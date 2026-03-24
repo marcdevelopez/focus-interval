@@ -14682,3 +14682,45 @@ Elapsed request-to-accept: ~3s (<5s threshold ✓). No Groups Hub navigation ✓
 **All P1 bugs now Closed/OK.** Zero open P0/P1 entries in `validation_ledger.md`.
 Remaining open items: P2 bugs (BUGLOG-003, BUGLOG-010, BUGLOG-008-MIT, BUGLOG-F25-E-R1)
 and RVP validation items (RVP-021–RVP-062). Neither category blocks `develop → main`.
+
+---
+
+## Block 663 — RVP-032/033/041/043/044 closed: batch closure using existing validation evidence (24/03/2026)
+
+**Branch:** `fix/rvp-batch-close-032-033-041-043-044`
+**Merge commit:** `5b94dca`
+**Items closed:** 5 RVP validation items (P2)
+
+No new code. All 5 items were implemented months ago; this block records their formal
+closure using evidence already captured in prior validation runs.
+
+### Items closed
+
+**RVP-032** — Ownership publish guard + no stale owner flips
+Evidence: BUG-F26-001 re-val 18/03/2026 (commit `92731b3`): `phaseStartedAt` updated on
+phase transitions, `sessionRevision` coherent. Fix 26 Stage C soak (5h+, 16/03/2026):
+no unauthorized owner flips. BUGLOG-008B Closed/OK (`9916204`): owner stable in foreground.
+
+**RVP-033** — Desktop inactive resync keepalive
+Evidence: BUG-005 Escenario A PASS (24/03/2026): macOS log line 5850
+`[ActiveSession] Resync start (inactive-resync).` at ~4s after focus loss; ownership
+request modal appeared on macOS without any click.
+
+**RVP-041** — Ownership requests re-sync on resume
+Evidence: BUG-007 PASS (24/03/2026): Android log lines 10400–10414 confirm
+`resume-rebind` + `Resync start (resume)` + `Resync start (post-resume)`.
+
+**RVP-043** — Ownership request banner dismisses immediately on reject
+Evidence: BUG-002 re-val 18/03/2026 (commit `92731b3`): banner cleared immediately
+on rejection without second press.
+
+**RVP-044** — Ownership reject dismiss stable vs transient stream gaps
+Evidence: Fix 26 SSS architecture (AP-2 debounce + 3s hold) + Stage C soak (5h+):
+no spurious banner re-appearance across stream reconnects.
+
+### Documents updated
+- `docs/validation/validation_ledger.md` → RVP-032/033/041/043/044: `[ ]` → `[x]` Closed/OK
+
+### Ledger status after this block
+Open P2 bugs: BUGLOG-003, BUGLOG-010, BUGLOG-008-MIT, BUGLOG-F25-E-R1
+Open RVP items: RVP-021–RVP-031, RVP-034–RVP-040, RVP-042, RVP-045–RVP-062 (37 items)
