@@ -20,7 +20,7 @@ Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
 ## Snapshot (2026-03-25)
 
 - Roadmap `validation pending`: **41** items (39 RVP + 2 IDEA); IDEA-039 promoted to P1 / In planning (first Phase 20 feature, deferral lifted 24/03/2026).
-- Active bug-log entries with non-closed status: **1** (`BUG-016` / `BUGLOG-016`, P2 Open).
+- Active bug-log entries with non-closed status: **2** (`BUG-016` / `BUGLOG-016`, `BUG-017` / `BUGLOG-017`; both P2 Open).
 - Profiling checklist open items: **8** (P3-MEM-94 to P3-MEM-101).
 
 ## Snapshot (2026-03-23, archived)

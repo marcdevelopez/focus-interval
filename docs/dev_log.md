@@ -14899,3 +14899,28 @@ indicator outside the picker.
 ### Ledger status after this block
 - Active non-closed bug-log entries: 2 (`BUG-016` P2 Pending, `BUG-017` P2 Pending).
 - Zero open P0/P1 bugs.
+
+---
+
+## Block 670 — Ledger snapshot count sync after BUG-017 registration (25/03/2026)
+
+**Current branch intent:** Documentation consistency fix (validation ledger snapshot alignment).
+**Branch:** `fix/ledger-snapshot-bug017-count`
+
+### Issue found
+
+After adding `BUG-017` and `BUGLOG-017`, the 25/03/2026 snapshot line in
+`docs/validation/validation_ledger.md` still reported only one active non-closed
+bug (`BUG-016`), which no longer matched the ledger queue.
+
+### Correction applied
+
+- `docs/validation/validation_ledger.md` snapshot updated:
+  - from: `**1** (BUG-016 / BUGLOG-016)`
+  - to: `**2** (BUG-016 / BUGLOG-016, BUG-017 / BUGLOG-017)`
+
+### Result
+
+- Snapshot summary now matches the active non-closed bug queue in the same file
+  (`BUGLOG-016`, `BUGLOG-017` both `Pending`).
+- Zero open P0/P1 bugs remains unchanged.
