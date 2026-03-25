@@ -2253,3 +2253,140 @@ Evidence:
 - Residual observation (not a bug, noted for reference): `Cannot use Ref after disposed`
   exception in log lines 6775–6787 during the same navigation transition;
   no functional breakage. Context documented in dev_log Block 657.
+
+---
+
+## BUG-015 — Running group falls into invalid Ready/finished mismatch after background
+
+ID: BUG-015
+Date: 25/03/2026 (UTC+1)
+Platforms: Android + macOS (Account Mode)
+Context: Cross-device running group; owner device powered off; remaining device later goes background and resumes.
+
+Repro summary:
+- Group remains in `running` lifecycle with future theoretical end.
+- Owner device (macOS) is fully powered off.
+- Remaining device (Android) later goes background and resumes.
+
+Symptom:
+- Run Mode can reopen in invalid terminal UI (`Ready`, amber/golden full ring,
+  `Start` button) while the same group should still be in-progress by timeline.
+
+Observed behavior:
+- During the inconsistent window, session data can appear terminal (`finished`)
+  while group lifecycle/context still indicates the run should continue.
+- Reopening another device can republish/reconcile and return the first device
+  to the correct running timeline.
+
+Expected behavior:
+- Group continuity must not depend on any device being in foreground.
+- If no device is open, progression remains timeline-authoritative and resumes
+  correctly on next foreground without passing through `Ready` for non-terminal groups.
+- While a group is non-terminal, terminal UI (`Ready` + `Start` + amber
+  complete ring) must never be rendered.
+- If the group has not truly ended, `activeSession/current.status` must not be
+  written as `finished` in Firestore.
+
+Evidence:
+- User-reported Android logs before owner power-off show active snapshots and
+  normal progression.
+- User-reported Firestore state showed temporary inconsistency (`current` with
+  terminal status while group context should still progress), then recovery after
+  macOS reopened and republished active timeline.
+
+Workaround:
+- Reopen a second device/session so active snapshot is republished and mirror
+  re-anchors.
+
+Hypothesis:
+- Transitional/non-active session snapshots can be accepted as render authority
+  during/after background resume without strict non-terminal group corroboration,
+  causing temporary terminal UI fallback (`Ready`) for an active group.
+
+Fix applied:
+None yet (implementation intentionally deferred pending architecture review and
+explicit green light from Claude).
+
+Status:
+Open.
+
+---
+
+## BUG-016 — Task weight (%) redistribution produces wrong result due to reactive baseline on per-keystroke update
+
+ID: BUG-016
+Date: 25/03/2026 (UTC+1)
+Platforms: All (Android, macOS, iOS — UI logic, platform-independent)
+Context: Task Editor — Task weight (%) field, group planning mode.
+
+Repro summary:
+- Open Task Editor for a task that is selected in a group (Task weight % field visible).
+- Task has 5 pomodoros (~53% of group total).
+- Type "80" in the weight field.
+- Observe: task ends up with 1 pomodoro (~19%) instead of the expected ~7 pomodoros (~78%).
+
+Symptom:
+- Editing Task weight (%) produces a result that is dramatically worse than the
+  starting value and far from the requested percentage.
+- The more the requested value differs from the current, the worse the result can be.
+- The notice "Closest possible is X%" may not fire correctly because the algorithm
+  produces a non-optimal intermediate result, not a genuine constraint limit.
+
+Root cause:
+`redistributeWeightPercent` (task_editor_view_model.dart:240) is called inside
+the `onChanged` handler of the weight field (task_editor_screen.dart:2077).
+`onChanged` fires per character — each keystroke triggers a full redistribution.
+
+The baseline passed to the algorithm (`weightScopeTasks`) is built in `build()`
+via `_selectedTasksForWeight` (task_editor_screen.dart:1220), which injects the
+current provider state of the edited task (`edited: selectedTask`).
+Each keystroke calls `_update(task.copyWith(totalPomodoros: newPomodoros))` at
+line 2106, which updates `taskEditorProvider`. On the next keystroke, the widget
+has rebuilt and `weightScopeTasks` now contains the task with the intermediate
+pomodoro count — not the original.
+
+Concrete trace (5 tasks x 25 min, A=5 pom, B=C=D=E=1 pom):
+1. User types "8" → target=8%, totalWork=225, desiredWork=18,
+   bounded=25 (floor), editedPom=1.
+   Provider updated: A → 1 pom. Widget rebuilds.
+2. User types "80" → weightScopeTasks now has A=1 pom.
+   totalWork=125, desiredWork=100, minOthersWork=100, maxEditedWork=25,
+   bounded=clamp(100,25,25)=25, editedPom=1.
+   Final result: 1 pomodoro (19%) instead of ~7 (78%).
+
+The algorithm in `task_editor_view_model.dart` is individually correct.
+The bug is in how the screen calls it: there is no stable baseline snapshot
+frozen at the moment the user begins editing the weight field.
+
+Expected behavior (per specs section 10.3.x):
+- Editing Task weight (%) adjusts the task's totalPomodoros to the closest
+  achievable result for the requested percentage.
+- The result must be coherent: if the starting value (53%) is already closer
+  to the target (80%) than the result (19%), the algorithm is wrong.
+- If no better allocation is achievable, the notice "Closest possible is X%"
+  must fire — not silently apply a worse result.
+
+Product decision required before fix:
+The specs define the redistribution logic but leave open the UX approach.
+Four options noted (any is valid — needs explicit user choice):
+  1. Fix the baseline bug only (keep text field UX, freeze snapshot on focus).
+  2. Replace field with a visual slider/picker showing only reachable percentages.
+  3. Incremental controls (+/- buttons) to step the weight progressively.
+  4. Two-mode selector: fix total group pomodoros vs allow total to change.
+
+Fix direction (option 1 — minimal, no UX change):
+Freeze the baseline `weightScopeTasks` at the moment the weight field gains focus
+(capture `_stableWeightScopeTasks` alongside `_weightPercentStartValue` in the
+focus listener, task_editor_screen.dart:97). Use this frozen snapshot for all
+`redistributeWeightPercent` calls until the field loses focus. Reset on blur.
+This eliminates per-keystroke baseline corruption without changing UX.
+
+Files involved (option 1):
+- lib/presentation/screens/task_editor_screen.dart — baseline capture + onChanged
+- lib/presentation/viewmodels/task_editor_view_model.dart — no change needed
+
+Fix applied:
+None yet — product direction pending.
+
+Status:
+Open.

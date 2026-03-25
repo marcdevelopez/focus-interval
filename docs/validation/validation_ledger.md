@@ -17,10 +17,10 @@ Scope: bugs + features + refactors + roadmap/process validations
 
 Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
 
-## Snapshot (2026-03-24)
+## Snapshot (2026-03-25)
 
 - Roadmap `validation pending`: **41** items (39 RVP + 2 IDEA); IDEA-039 promoted to P1 / In planning (first Phase 20 feature, deferral lifted 24/03/2026).
-- Active bug-log entries with non-closed status: **0** (zero P0/P1/P2 open; BUGLOG-F25-E-R1 closed 24/03/2026 — was merge artifact).
+- Active bug-log entries with non-closed status: **2** (`BUG-015` / `BUGLOG-015`, P1 Open; `BUG-016` / `BUGLOG-016`, P2 Open).
 - Profiling checklist open items: **8** (P3-MEM-94 to P3-MEM-101).
 
 ## Snapshot (2026-03-23, archived)
@@ -118,6 +118,9 @@ Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
 - [x] ID: `BUG-F25-I` | Type: bug | Priority: P1 | Status: Closed/OK | Source: `docs/bugs/bug_log.md` (BUG-F25-I) | Item: After "Postpone scheduled", canceling the running anchor group incorrectly re-anchors postponed start to current time (`now`) and auto-starts on next minute; postponed schedule should remain fixed after anchor cancel. Fix: sever postponed linkage on canceled anchor in `_finalizePostponedGroupsIfNeeded` (51dcd2d) + return null from `resolvePostponedAnchorEnd` for canceled anchors (6c87009). | closed_commit_hash: `6c87009` | closed_commit_message: `fix(f25-i): ignore canceled anchors in postponed timing resolution` | evidence: Chrome+iOS device validation PASS 19/03/2026 — G2 holds Scheduled: 23:29 after G1 canceled at 23:14; no premature auto-start. Screenshots: screenshots/2026-03-19_f25i_validation_pass.png.
 
 ### Active bug-log queue (sync 2026-03-23)
+
+- [ ] ID: `BUGLOG-015` | Type: bug | Priority: P1 | Status: Pending | Source: `docs/bugs/bug_log.md:2259` | Item: Running-group continuity mismatch after background/resume with no foreground owner: Run Mode can render invalid terminal UI (`Ready` + amber complete ring + `Start`) and temporary `activeSession=finished` while group timeline remains non-terminal. Must enforce strict non-terminal corroboration before accepting terminal snapshots for render authority. | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: User repro report 25/03/2026 (Android + macOS), pending implementation and validation logs.
+- [ ] ID: `BUGLOG-016` | Type: bug | Priority: P2 | Status: Pending | Source: `docs/bugs/bug_log.md` (BUG-016) | Item: Task weight (%) redistribution produces wrong result due to reactive baseline on per-keystroke update — typing "80" can leave the task at 1 pomodoro (19%) from a starting 5 pom (53%) because intermediate keystroke "8" shrinks the baseline before "80" is evaluated. Fix: freeze baseline snapshot at weight field focus; product decision required on UX direction (4 options documented). | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: `-`.
 
 - [x] ID: `BUGLOG-002-R1` | Type: bug | Priority: P1 | Status: Closed/OK | Source: `docs/bugs/bug_log.md:296` | Item: `BUG-002` monitor-only residual (`owner rejection banner brief re-show`) is closed after repeated non-repro validations and explicit closure confirmation. | closed_commit_hash: `7ddc1e6` | closed_commit_message: `fix(f26): harden ownership cursor stamp and publish retry` | evidence: User-provided Android + Chrome rerun logs (21/03/2026) in thread: repeated pause/background + reject/accept cycles; owner rejection banner cleared immediately; no second-press clear needed. Monitor-only ~1s Chrome re-show around 13:37:11 self-corrected and never became persistent/stuck. Final closure confirmed 23/03/2026 and mirrored in `docs/bugs/bug_log.md` (BUG-002 status set to `Closed/OK`).
 - [x] ID: `BUGLOG-003` | Type: bug | Priority: P2 | Status: Closed/OK | Source: `docs/bugs/bug_log.md:368` | Item: `BUG-003` mirror pulse refresh resolved by Fix 26 AP-1 elimination (no more periodic subscription cancel/restart in `build()`); timer drift variant covered by BUG-009 non-repro 21/03/2026. No recurrence in BUG-005/006/007 device runs 24/03/2026. User confirmed: cosmetic improvement, "apenas se percibe." | closed_commit_hash: `cbd800a` | closed_commit_message: `fix(f26): suppress terminal-boundary hold and harden ref-after-dispose in recovery paths` | evidence: Fix 26 Stage C soak; BUG-009 Closed/OK 21/03/2026; BUG-005/006/007 device runs 24/03/2026 (macOS in mirror role, no flicker reported).
