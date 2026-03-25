@@ -1368,9 +1368,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
     if (newSession != null && !identical(newSession, prevSession)) {
       final wasMissing = prev?.holdActive ?? false;
-      _latestSession = newSession;
+      final resolvedSession = _repairStreamSessionForCurrentGroup(newSession);
+      _latestSession = resolvedSession;
       _ingestResolvedSession(
-        newSession,
+        resolvedSession,
         previousSession: prevSession,
         wasMissing: wasMissing,
       );
@@ -1395,6 +1396,29 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
     _notifySessionMetaChanged();
     _syncKeepAliveState();
+  }
+
+  PomodoroSession _repairStreamSessionForCurrentGroup(PomodoroSession session) {
+    final group = _currentGroup;
+    if (group == null) return session;
+    if (session.groupId != group.id) return session;
+    if (group.status != TaskRunStatus.running) return session;
+    if (!session.status.isActiveExecution) return session;
+    final repaired = _repairInconsistentSessionCursor(
+      session,
+      group,
+      DateTime.now(),
+    );
+    if (!identical(repaired, session) && kDebugMode) {
+      debugPrint(
+        '[ActiveSession] Repaired stream snapshot before ingest '
+        'group=${group.id} '
+        'taskIndex=${session.currentTaskIndex ?? -1}->${repaired.currentTaskIndex ?? -1} '
+        'pomodoro=${session.currentPomodoro}/${session.totalPomodoros}'
+        '->${repaired.currentPomodoro}/${repaired.totalPomodoros}',
+      );
+    }
+    return repaired;
   }
 
   void _onHoldStarted() {
@@ -1626,6 +1650,13 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
       } else if (_machine.state.status != PomodoroStatus.idle &&
           !_pendingPublishAfterSync &&
           _hotSwapPublishedForRevision != session.sessionRevision) {
+        // Do not publish a finished state unless the group is truly completed.
+        // During task-to-task transition the machine is transiently finished;
+        // a concurrent sync must not race-write that to Firestore.
+        if (_machine.state.status == PomodoroStatus.finished &&
+            !_groupCompleted) {
+          return;
+        }
         _bumpSessionRevision();
         _hotSwapPublishedForRevision = _sessionRevision;
         _publishCurrentSession();
@@ -2117,9 +2148,18 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _pinOwnerPhaseStartFromSession(session);
     final allowTimelineProjection =
         ref.read(appModeProvider) != AppMode.account;
-    if (allowTimelineProjection &&
+    // In Account mode: if the session-based projection overshot the current
+    // task boundary (returned finished for a non-completed group), fall back
+    // to group timeline projection. This path runs during resync where
+    // _resyncInProgress=true and controls are intentionally disabled.
+    final overshotTaskBoundary =
+        projected.status == PomodoroStatus.finished && !_groupCompleted;
+    if ((allowTimelineProjection || overshotTaskBoundary) &&
         session.status != PomodoroStatus.paused &&
-        _applyGroupTimelineProjection(now)) {
+        _applyGroupTimelineProjection(
+          now,
+          skipControlsCheck: overshotTaskBoundary,
+        )) {
       _bumpSessionRevision();
       _publishCurrentSession();
       return;
@@ -2824,11 +2864,14 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     }
   }
 
-  bool _applyGroupTimelineProjection(DateTime now) {
+  bool _applyGroupTimelineProjection(
+    DateTime now, {
+    bool skipControlsCheck = false,
+  }) {
     final group = _currentGroup;
     if (group == null) return false;
     if (group.status != TaskRunStatus.running) return false;
-    if (!_controlsEnabled) return false;
+    if (!skipControlsCheck && !_controlsEnabled) return false;
     if (state.status == PomodoroStatus.paused) return false;
 
     final pauseOffsetSeconds = _totalPausedSecondsSoFar();

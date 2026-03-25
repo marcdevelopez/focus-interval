@@ -2304,11 +2304,26 @@ Hypothesis:
   causing temporary terminal UI fallback (`Ready`) for an active group.
 
 Fix applied:
-None yet (implementation intentionally deferred pending architecture review and
-explicit green light from Claude).
+Implemented in ViewModel stream-ingestion path:
+- Repair inconsistent active-session cursor synchronously before ingest on
+  stream updates (`_repairStreamSessionForCurrentGroup` →
+  `_repairInconsistentSessionCursor`) so mirror projection never captures
+  invalid snapshots (`currentPomodoro > totalPomodoros`, stale task index).
+- Keep owner-hydration and owner-publish guards from BUG-015 patch set:
+  prevent transient non-terminal `finished` publication during resync/task
+  boundary windows.
+
+Validation update (25/03/2026):
+- Exact repro PASS on Android + macOS (owner handoff + background + late resume).
+- Android resumed directly in active timer state (no amber `Ready 00:00` flip).
+- Firestore stayed non-terminal (`status: pomodoroRunning`) during resumed run.
+- Evidence log:
+  `docs/bugs/validation_bug015_2026_03_25/logs/2026-03-25_bug015_f929117_android_RMX3771_debug_2.log`
 
 Status:
-Open.
+Closed/OK (25/03/2026). Validated on branch
+`fix/buglog-running-without-foreground-ready-invalid` (workspace state after
+BUG-015 stream-cursor repair patch; commit hash pending final commit).
 
 ---
 

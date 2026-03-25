@@ -27,7 +27,7 @@ Formatting rules:
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
 Current focus: **Prioritize active bug-log queue sync/triage before continuing RVP backlog**
-Last update: **23/03/2026**
+Last update: **25/03/2026**
 
 ---
 
@@ -14771,3 +14771,87 @@ Corrected `bug_log.md` and ledger entry to reflect actual Closed/OK state.
 ### Ledger status after this block
 **Zero open bugs.** All BUGLOG entries closed.
 Open RVP items: RVP-021–RVP-031, RVP-034–RVP-040, RVP-042, RVP-045–RVP-062 (37 items)
+
+## Block 667 — BUG-015 Claude QA review + handoff preparado (25/03/2026)
+
+**Branch:** `fix/buglog-running-without-foreground-ready-invalid`
+**Ref commit:** `f929117`
+**Context:** Codex abrió el bug y hizo docs-first. Claude revisó el código para validar
+la causa raíz y dar luz verde al fix.
+
+### Análisis de causa raíz confirmado
+
+**Vector A (primario):** `_hydrateOwnerSession` (~línea 2091 pomodoro_view_model.dart).
+- Cuando Android toma ownership de sesión stale (macOS apagado), máquina en `idle` (mirror mode).
+- `_projectStateFromSession` proyecta SOLO dentro de la tarea actual.
+- Si elapsed > duración total de la tarea, devuelve `PomodoroStatus.finished`.
+- Se aplica y publica → Firestore `current.status = finished` → UI "Ready" + ámbar.
+- `_applyGroupTimelineProjection` (que sí conoce todas las tareas) estaba bloqueada en Account mode.
+
+**Vector B (secundario):** `_applySessionTimelineProjection` owner branch (~línea 1626).
+- Un sync concurrente durante `await _resolveServerNow()` en `_handleTaskFinishedInternal`
+  puede publicar el estado `finished` transitorio de la máquina (entre tareas).
+
+### Fix design (2 commits)
+
+**Fix A:** En `_hydrateOwnerSession`, ampliar `allowTimelineProjection`:
+```dart
+// antes:
+final allowTimelineProjection = ref.read(appModeProvider) != AppMode.account;
+// después:
+final allowTimelineProjection =
+    ref.read(appModeProvider) != AppMode.account ||
+    (projected.status == PomodoroStatus.finished && !_groupCompleted);
+```
+
+**Fix B:** En `_applySessionTimelineProjection`, guard antes del publish:
+```dart
+if (_machine.state.status == PomodoroStatus.finished && !_groupCompleted) {
+  return;
+}
+```
+
+### ✔ Documentación creada en este bloque
+- `docs/bugs/validation_bug015_2026_03_25/codex_handoff.md`
+- `docs/bugs/validation_bug015_2026_03_25/plan_validacion_rapida_fix.md`
+- `docs/bugs/validation_bug015_2026_03_25/quick_pass_checklist.md`
+- `docs/bugs/validation_bug015_2026_03_25/logs/` (vacío, pendiente device run)
+- `docs/bugs/validation_bug015_2026_03_25/screenshots/` (vacío)
+
+### ⚠️ Siguiente paso
+Entregar `codex_handoff.md` a Codex para implementación. Codex entrega diff.
+Claude hace QA review del código modificado. Luego device validation.
+
+## Block 668 — BUG-015 closure synced after device validation PASS (25/03/2026)
+
+**Current branch intent:** BUG-015 bugfix validation closure + evidence synchronization.
+**Branch:** `fix/buglog-running-without-foreground-ready-invalid`
+**Scope:** docs closure + ledger synchronization after successful device run
+
+### Validation recap (BUGLOG-015)
+- Device validation PASS on Android RMX3771 + macOS.
+- Exact repro passed with owner handoff + background + late foreground resume.
+- No invalid terminal fallback (`Ready 00:00`, amber complete ring) during resumed run.
+- Firestore session remained non-terminal (`status=pomodoroRunning`) during active timeline.
+
+Evidence:
+- `docs/bugs/validation_bug015_2026_03_25/logs/2026-03-25_bug015_f929117_android_RMX3771_debug_2.log`
+- Key signals in log:
+  - `Auto-open confirmed in timer` (resume path).
+  - `status=pomodoroRunning ... remaining=460`, then `429`, then `399` (continuous active progression).
+
+### Local gate (post-fix)
+- `flutter analyze` — PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` — PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` — PASS
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` — PASS
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` — PASS
+
+### Documents synchronized
+- `docs/bugs/bug_log.md` — BUG-015 status updated to `Closed/OK` with validation evidence.
+- `docs/validation/validation_ledger.md` — `BUGLOG-015` moved to `Closed/OK` with closure evidence.
+- `docs/bugs/validation_bug015_2026_03_25/plan_validacion_rapida_fix.md` — status updated to `Closed/OK`, root cause/fix path aligned with final implementation.
+- `docs/bugs/validation_bug015_2026_03_25/quick_pass_checklist.md` — closure checklist completed.
+
+### Ledger status after this block
+- Active non-closed bug-log entries: 1 (`BUG-016` / `BUGLOG-016`, P2 Pending).

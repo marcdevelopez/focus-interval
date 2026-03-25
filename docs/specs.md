@@ -2065,6 +2065,14 @@ foreground owner must **not** freeze progression.
   styling (see Groups Hub UI styling rules).
 - When the user opens the app **before** the group should complete, reopen Run
   Mode at the correct projected phase/time.
+- While a group remains non-terminal (`running` with theoretical end not
+  reached, or `paused`), Run Mode must never render terminal `Ready + Start`
+  UI for that group. Showing the amber/golden completed ring or enabling
+  `Start` in this state is invalid and must be treated as a reconciliation bug.
+- While a group remains non-terminal, the owner must not publish terminal
+  `activeSession.status` values (`finished`/`idle`) to Firestore. Terminal
+  status writes are valid only when terminality is corroborated (natural end
+  reached by authoritative timeline, explicit cancel, or explicit completion).
 - If the group was **paused** when all devices closed, time **does not**
   advance. On reopen, the session remains paused until the owner resumes.
 - If a scheduled group’s start time passes while no device is open, follow the
@@ -2197,6 +2205,10 @@ foreground owner must **not** freeze progression.
 - Transitional observations must not clear hold directly. They must be treated
   as hold-extend events until a valid active snapshot is ingested, or terminal
   corroboration is confirmed.
+- Outside hold as well, terminal `activeSession` snapshots (`finished`/`idle`)
+  must not be accepted as render authority while the linked group remains
+  non-terminal. In that mismatch, keep/recover active projection and continue
+  corroboration; do not render terminal `Ready`.
 
 **Mandatory diagnostics contract (required for validation):**
 - Hold lifecycle logs are mandatory in debug and validation builds:
