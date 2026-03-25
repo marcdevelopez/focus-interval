@@ -14855,3 +14855,47 @@ Evidence:
 
 ### Ledger status after this block
 - Active non-closed bug-log entries: 1 (`BUG-016` / `BUGLOG-016`, P2 Pending).
+
+---
+
+## Block 669 — BUG-015 commit hash corrected + BUG-017 registered (25/03/2026)
+
+**Branch:** `fix/buglog-running-without-foreground-ready-invalid`
+
+### BUG-015 commit hash correction
+
+Codex's closure commit `e10a5028` was written to bug_log.md and validation_ledger.md
+with placeholder text (`not-committed-yet`) because the docs were authored before the
+commit was executed. Corrected in-place:
+
+- `docs/bugs/bug_log.md` — BUG-015 Status line now references `e10a5028`
+  (`fix(bug-015): repair stream cursor ingest and close validation`).
+- `docs/validation/validation_ledger.md` — BUGLOG-015 `closed_commit_hash` and
+  `closed_commit_message` updated from `not-committed-yet` to the actual values.
+
+### BUG-017 registered — Edit Task preset "Custom" UX bug
+
+New bug discovered during a UX review of the Edit Task screen (25/03/2026).
+
+**Symptom (user perspective):** Opening the preset dropdown in Edit Task shows "Custom"
+as a selectable option alongside real saved presets. Tapping it selects it — but "Custom"
+is not a real preset; it is a derived label representing the unlinked state.
+
+**Root cause (hypothesis):** The dropdown widget includes a synthetic "Custom" entry to
+represent the unlinked state visually, rather than expressing that state via a separate
+indicator outside the picker.
+
+**Expected behavior:**
+- Dropdown contains ONLY real presets from Settings.
+- "Custom" is removed from the list entirely.
+- Linked/unlinked state communicated by a visual indicator next to the "Preset" field
+  label: active (bright/colored) when config matches selected preset; inactive (dim/grey)
+  when config has diverged or no preset is selected.
+
+**Documents updated:**
+- `docs/bugs/bug_log.md` — BUG-017 entry added (Status: Open, P2).
+- `docs/validation/validation_ledger.md` — BUGLOG-017 added (P2, Status: Pending).
+
+### Ledger status after this block
+- Active non-closed bug-log entries: 2 (`BUG-016` P2 Pending, `BUG-017` P2 Pending).
+- Zero open P0/P1 bugs.

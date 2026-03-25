@@ -2322,8 +2322,8 @@ Validation update (25/03/2026):
 
 Status:
 Closed/OK (25/03/2026). Validated on branch
-`fix/buglog-running-without-foreground-ready-invalid` (workspace state after
-BUG-015 stream-cursor repair patch; commit hash pending final commit).
+`fix/buglog-running-without-foreground-ready-invalid`.
+Closed commit: `e10a5028` (`fix(bug-015): repair stream cursor ingest and close validation`).
 
 ---
 
@@ -2402,6 +2402,65 @@ Files involved (option 1):
 
 Fix applied:
 None yet — product direction pending.
+
+Status:
+Open.
+
+---
+
+## BUG-017 — "Custom" appears as selectable item in Edit Task preset dropdown
+
+ID: BUG-017
+Date: 25/03/2026 (UTC+1)
+Platforms: All (Android, macOS, iOS — UI logic, platform-independent)
+Context: Edit Task screen — Preset selector dropdown field.
+
+Repro summary:
+- Open Edit Task for any existing task.
+- Tap or open the Preset dropdown selector.
+- Observe "Custom" listed alongside real user-defined presets (e.g., "Classic Pomodoro").
+
+Symptom:
+- "Custom" is presented as a selectable preset option in the dropdown, as if it
+  were a real saved preset from Settings.
+
+Observed behavior:
+- The dropdown renders "Custom" as an option users can actively choose, mixed in
+  with real presets.
+- "Custom" is not a saved preset — it is a derived UI label indicating the task's
+  current configuration does not match any stored preset.
+- Selecting "Custom" from the dropdown creates ambiguous state (not linked to any
+  real preset configuration).
+- If a user has saved a real preset named "Custom", this creates a naming collision
+  with the derived UI label.
+
+Expected behavior:
+- The preset dropdown must show ONLY real presets stored in Settings (including
+  the default "Classic Pomodoro" if present).
+- "Custom" must never appear as a selectable option inside the dropdown.
+- If the task has no linked preset (config does not match any stored preset),
+  the selector shows nothing selected — no placeholder text, no "Custom" entry.
+- The linked/unlinked state is communicated by the visual state of the preset name
+  and a small indicator (dot or check icon) displayed inline next to the preset
+  selector field:
+    · Active (config matches selected preset): preset name shown in green,
+      green dot or green check icon visible next to the field label.
+    · Inactive / unlinked (config diverged, or no preset selected):
+      no preset name shown in the selector; indicator dot/check shown in grey
+      (or hidden entirely) to signal the unlinked state.
+- This removes any need for a "Custom" label — the absence of a selected preset
+  plus the grey/hidden indicator is sufficient communication of the unlinked state.
+
+Root cause:
+Not yet analyzed — requires reading the preset selector widget and its data source.
+
+Hypothesis:
+- The widget that builds the dropdown items includes a synthetic "Custom" entry
+  alongside the real preset list, likely to represent the unlinked state as a
+  visible option rather than as a separate indicator.
+
+Fix applied:
+None yet — pending analysis and implementation scheduling.
 
 Status:
 Open.
