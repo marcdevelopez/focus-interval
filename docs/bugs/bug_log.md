@@ -2699,7 +2699,24 @@ Root cause (confirmed, 27/03/2026):
    Function que avance la sesión server-side).
 
 Fix applied:
-Pending — ver fix branch fix/bug018-running-zero-resume.
+Yes.
+
+Final fix (validated):
+- `b10fa02`: introdujo reconciliación de resume + hardening de mirror/repair,
+  pero generó regresión de amplificación de publish en owner echo.
+- `547c6f7` (`fix(bug-018): stop owner echo publish amplification in account mode`):
+  elimina reconciliación del publish normal y conserva reconciliación explícita en resume,
+  cortando el loop de publish/revisión y estabilizando transiciones.
+
+Validation evidence (27/03/2026):
+- Log PASS:
+  `docs/bugs/validation_bug018_2026_03_27/logs/2026-03-27_bug018_547c6f7_android_RMX3771_debug.log`
+- Señales clave:
+  - `Reconciled owner timeline before publish reason=resume` (1 vez).
+  - `TimeSync refreshed (break-start)` (1 vez) y `TimeSync refreshed (pomodoro-start)` (2 veces:
+    inicio + siguiente pomodoro), sin ráfagas de transiciones.
+  - `running + remaining=0`: 0 coincidencias.
+  - Resume coherente en G2: snapshot `remaining=663` a `20:00:55`, alineado con UI (~11:25).
 
 Status:
-Open.
+Closed/OK (27/03/2026). closed_commit_hash: `547c6f7`.
