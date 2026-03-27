@@ -27,7 +27,7 @@ Formatting rules:
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
 Current focus: **Prioritize active bug-log queue sync/triage before continuing RVP backlog**
-Last update: **25/03/2026**
+Last update: **27/03/2026**
 
 ---
 
@@ -14924,3 +14924,45 @@ bug (`BUG-016`), which no longer matched the ledger queue.
 - Snapshot summary now matches the active non-closed bug queue in the same file
   (`BUGLOG-016`, `BUGLOG-017` both `Pending`).
 - Zero open P0/P1 bugs remains unchanged.
+
+---
+
+## Block 671 — BUG-018 closed after Android long-background revalidation (27/03/2026)
+
+**Current branch intent:** BUG-018 closure sync (docs + evidence) after validated fix.
+**Branch:** `fix/bug018-running-zero-resume`
+**Fix commit validated:** `547c6f7` (`fix(bug-018): stop owner echo publish amplification in account mode`)
+
+### Validation recap (BUG-018)
+
+- Exact repro re-run on Android owner (RMX3771):
+  - background at ~19:37:55,
+  - foreground at ~20:00.
+- Timer resumed on coherent timeline in G2 (no invalid `Ready` state).
+- Firestore/session snapshots remained coherent after resume.
+
+Primary evidence:
+- `docs/bugs/validation_bug018_2026_03_27/logs/2026-03-27_bug018_547c6f7_android_RMX3771_debug.log`
+- Key log confirmations:
+  - `Reconciled owner timeline before publish reason=resume` emitted once.
+  - Clean phase boundaries: `break-start` x1, `pomodoro-start` x2 (initial + next pomodoro).
+  - Zero signatures of `running + remaining=0`.
+  - Resume window coherent: `20:00:55 status=pomodoroRunning remaining=663`.
+
+### Local gate
+
+- `flutter analyze` — PASS (27/03/2026).
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` — PASS (27/03/2026).
+
+### Documentation synchronized
+
+- `docs/bugs/validation_bug018_2026_03_27/plan_validacion_rapida_fix.md` — created and set `Closed/OK`.
+- `docs/bugs/validation_bug018_2026_03_27/quick_pass_checklist.md` — created with all checks PASS.
+- `docs/bugs/bug_log.md` — BUG-018 status set to `Closed/OK` with final fix/evidence.
+- `docs/validation/validation_ledger.md` — BUGLOG-018 moved to `Closed/OK`.
+- Ledger snapshot updated (active non-closed bug-log entries: 3 → 2).
+
+### Ledger status after this block
+
+- Active non-closed bug-log entries: 2 (`BUG-016`, `BUG-017`; both P2 Pending).
+- Open P1 bug-log entries: 0.
