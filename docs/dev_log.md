@@ -27,7 +27,7 @@ Formatting rules:
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
 Current focus: **Prioritize active bug-log queue sync/triage before continuing RVP backlog**
-Last update: **25/03/2026**
+Last update: **27/03/2026**
 
 ---
 
@@ -14923,4 +14923,91 @@ bug (`BUG-016`), which no longer matched the ledger queue.
 
 - Snapshot summary now matches the active non-closed bug queue in the same file
   (`BUGLOG-016`, `BUGLOG-017` both `Pending`).
+- Zero open P0/P1 bugs remains unchanged.
+
+---
+
+## Block 671 — BUG-016 docs-first plan locked: preview flow + explicit fixed/flexible modes (27/03/2026)
+
+**Current branch intent:** BUG-016 documentation planning with explicit two-mode task-weight editing.
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Docs-first only (no runtime code changes in this block).
+
+### Decision locked
+
+- BUG-016 now has an explicit product direction approved on 27/03/2026:
+  preview-first editing with two calculation modes.
+- Mode 1: **Fixed total** (default) — keeps selected-group total work constant
+  and redistributes other selected tasks proportionally.
+- Mode 2: **Flexible total** — keeps other selected tasks unchanged and allows
+  selected-group total work to change.
+- The same preview logic is required for both **Task weight (%)** and
+  **Total pomodoros** edits, with explicit **Apply** and **Cancel**.
+
+### Documents synchronized
+
+- `docs/specs.md`
+  - Added explicit preview-first editing contract.
+  - Added explicit two-mode behavior (`Fixed total` / `Flexible total`).
+  - Clarified that Total pomodoros edits reuse the same preview and mode selector.
+- `docs/bugs/bug_log.md`
+  - Updated BUG-016 from “product decision pending” to “product decision approved”.
+  - Replaced option list with approved implementation direction and planned file scope.
+- `docs/validation/validation_ledger.md`
+  - Updated BUGLOG-016 item text to reflect locked two-mode direction and baseline-freeze requirement.
+  - Synced active bug-log queue header date to 27/03/2026.
+- `docs/roadmap.md`
+  - Added Phase 10 reopened item for BUG-016 follow-up (preview-first editor + explicit two modes).
+
+### Ledger status after this block
+
+- Active non-closed bug-log entries remain: 2 (`BUG-016`, `BUG-017`; both P2 Pending).
+- Zero open P0/P1 bugs remains unchanged.
+
+---
+
+## Block 672 — BUG-016 baseline validation packet documented (FAIL) with full evidence set (27/03/2026)
+
+**Current branch intent:** BUG-016 docs-first validation evidence and root-cause tracing.
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Validation documentation only (no runtime fix in this block).
+
+### What was added
+
+- Created mandatory validation artifacts for BUG-016:
+  - `docs/bugs/validation_bug016_2026_03_27/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug016_2026_03_27/quick_pass_checklist.md`
+- Preserved run log evidence:
+  - `docs/bugs/validation_bug016_2026_03_27/logs/2026-03-27_bug016_fa907c9_macos_debug.log`
+- Imported and normalized screenshot evidence names:
+  - `docs/bugs/validation_bug016_2026_03_27/screenshots/2026-03-27_bug016_01_macos.png`
+  - …
+  - `docs/bugs/validation_bug016_2026_03_27/screenshots/2026-03-27_bug016_13_macos.png`
+
+### Validation findings recorded
+
+- Repeatable blur overwrite in editor:
+  - `69 -> 43`, `50 -> 36`, `45 -> 35`.
+- Save-time inconsistency between editor blur-state and Task List outcome.
+- Selected-group total pomodoros collapse captured in evidence sequence:
+  - initial selected total: `11` (`5+4+1+1`)
+  - final selected total: `6` (`3+1+1+1`)
+
+### Root-cause trace documented
+
+- Per-keystroke baseline mutation in weight `onChanged` path.
+- Blur-time percent resync recomputes from partial state before full redistribution apply.
+- Pending redistribution map is applied on Save after intermediate-state contamination.
+
+### Document synchronization
+
+- `docs/bugs/bug_log.md` (BUG-016): added 27/03 validation FAIL update with evidence refs.
+- `docs/validation/validation_ledger.md`:
+  - BUGLOG-016 moved `Pending -> In validation`.
+  - Item text extended with FAIL summary and evidence references.
+  - 27/03 snapshot wording updated (`BUG-016` now In validation P2).
+
+### Ledger status after this block
+
+- Active non-closed bug-log entries: 2 (`BUG-016` In validation P2, `BUG-017` Open P2).
 - Zero open P0/P1 bugs remains unchanged.

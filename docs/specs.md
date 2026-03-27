@@ -1077,8 +1077,13 @@ Behavior:
 - The Task weight (%) field appears **only** when the task is selected for the current group preparation.
 - Directly below **Total pomodoros**, show a **non-editable total time chip** with
   the task's full duration (work + breaks). This chip is always visible and updates live.
-- Editing the percentage updates totalPomodoros to the closest integer (pomodoros are never fractional),
-  and redistributes the remaining tasks to preserve their relative proportions.
+- Editing **Task weight (%)** or **Total pomodoros** must open a preview-first flow before applying any change.
+- Preview must show: requested value, closest achievable result, resulting per-task weights for selected tasks,
+  and selected-group total pomodoros/work before vs after.
+- Preview must expose two explicit calculation modes:
+  - **Fixed total** (default): keep selected-group total work constant and redistribute other selected tasks proportionally.
+  - **Flexible total**: keep other selected tasks unchanged and allow selected-group total work to change.
+- Preview must provide explicit **Apply** and **Cancel** actions; **Cancel** leaves the task unchanged.
 - Display Total pomodoros and Task weight (%) on the same row directly below the task name to emphasize task weight.
 - Visually separate **Task weight** from **Pomodoro configuration** with section headers.
   Pomodoro configuration sits below Task weight and above Sounds.
@@ -1128,20 +1133,29 @@ Task weight rules:
   - Task List: sum of work time for the **selected** tasks only; if none are selected, do not show percentages.
   - Task Editor: sum of work time for the **selected** tasks only (including the task being edited).
   - If the task is **not selected**, the Task weight (%) field is hidden.
+- Weight edits and total-pomodoros edits are **preview-first** (no per-keystroke authoritative write).
 - When a user edits the percentage of a task:
-  - The edited task is adjusted so its work time matches the requested percentage
-    of the group's total work time (closest possible).
-  - Other **selected** tasks are automatically redistributed to fill the remaining percentage,
-    preserving their **relative proportions** to each other.
+  - The editor evaluates integer-only outcomes and shows the closest achievable result before apply.
+  - The user must explicitly select one mode in preview:
+    - **Fixed total**:
+      - The edited task is adjusted toward the requested percentage of the current selected-group total work.
+      - Other **selected** tasks are redistributed to fill the remaining percentage,
+        preserving their **relative proportions** to each other.
+    - **Flexible total**:
+      - The edited task is adjusted toward the requested percentage while other selected tasks remain unchanged.
+      - Selected-group total work is allowed to change to improve approximation fidelity.
   - Unselected tasks are never affected by weight edits.
-  - Redistribution adjusts `totalPomodoros` only (integer), never splitting pomodoros.
+  - Redistribution/adjustment changes `totalPomodoros` only (integer), never fractional pomodoros.
+  - All selected tasks keep a minimum of 1 pomodoro.
   - `roundHalfUp` means .5 ties always round up.
   - Exact percentages are not guaranteed due to integer constraints.
   - If the closest achievable result deviates by **≥ 10 percentage points**, or if
-    no redistribution change is possible, show a lightweight (non-modal) notice:
+    no change is possible under the selected mode, show a lightweight (non-modal) notice:
     - Pomodoros are indivisible.
     - Few total pomodoros limits precision.
-    - Suggest adding pomodoros, selecting more tasks, or trying another percentage.
+    - Suggest adding pomodoros, selecting more tasks, switching mode, or trying another percentage.
+- When a user edits **Total pomodoros**, reuse the same preview flow and mode selector,
+  and show resulting task weight (%) changes before apply.
 
 UI implications (documentation only):
 
@@ -1149,6 +1163,9 @@ UI implications (documentation only):
 - Percentages are shown only when tasks are selected; unselected tasks do not show percentages.
 - Task Editor should display totalPomodoros and derived percentage **only** when the task is selected.
   If the task is not selected, hide the Task weight (%) field entirely.
+- Tapping Task weight (%) or Total pomodoros opens a dedicated preview sheet/dialog.
+  The selected mode is explicit inside that preview and defaults to **Fixed total** for each new edit session.
+  Applying commits the computed result; canceling exits without changes.
 - On first exposure, show an informational modal explaining that task weight is
   relative to the selected group only, with a “Don’t show again” checkbox.
   Provide an info icon next to Task weight (%) to reopen the explanation later.

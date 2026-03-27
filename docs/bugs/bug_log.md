@@ -2381,30 +2381,97 @@ Expected behavior (per specs section 10.3.x):
 - If no better allocation is achievable, the notice "Closest possible is X%"
   must fire — not silently apply a worse result.
 
-Product decision required before fix:
-The specs define the redistribution logic but leave open the UX approach.
-Four options noted (any is valid — needs explicit user choice):
-  1. Fix the baseline bug only (keep text field UX, freeze snapshot on focus).
-  2. Replace field with a visual slider/picker showing only reachable percentages.
-  3. Incremental controls (+/- buttons) to step the weight progressively.
-  4. Two-mode selector: fix total group pomodoros vs allow total to change.
+Product decision (approved 27/03/2026):
+The UX direction is now explicitly defined: **preview-first editing with two modes**.
 
-Fix direction (option 1 — minimal, no UX change):
-Freeze the baseline `weightScopeTasks` at the moment the weight field gains focus
-(capture `_stableWeightScopeTasks` alongside `_weightPercentStartValue` in the
-focus listener, task_editor_screen.dart:97). Use this frozen snapshot for all
-`redistributeWeightPercent` calls until the field loses focus. Reset on blur.
-This eliminates per-keystroke baseline corruption without changing UX.
+- Mode 1 — **Fixed total** (default): preserve selected-group total work and
+  redistribute other selected tasks proportionally.
+- Mode 2 — **Flexible total**: keep other selected tasks unchanged and allow
+  selected-group total work to change to improve approximation.
+- This same preview logic must apply when editing **Task weight (%)** and when
+  editing **Total pomodoros**.
+- The flow must support explicit **Apply** and **Cancel** (cancel = no changes).
 
-Files involved (option 1):
-- lib/presentation/screens/task_editor_screen.dart — baseline capture + onChanged
-- lib/presentation/viewmodels/task_editor_view_model.dart — no change needed
+Fix direction (approved):
+1. **Correctness patch — Patch 1 (independent, ready for Codex):**
+   freeze baseline `weightScopeTasks` when weight editing starts and keep that
+   snapshot stable for the entire interaction to eliminate per-keystroke
+   baseline corruption. Fix blur-time overwrite by using the actual redistribution
+   result instead of recomputing from mixed provider state.
+   - Only file modified: `lib/presentation/screens/task_editor_screen.dart`.
+   - No UI structure changes, no new widgets, no mode selector.
+   - Handoff written: `docs/bugs/validation_bug016_2026_03_27/codex_handoff.md`.
+   - Can be implemented and validated in device BEFORE any UX decision is made.
+
+2. **UX complement — Patch 2 (blocked on UX decisions, listed below):**
+   replace blind per-keystroke updates with a preview flow that shows requested
+   vs achievable result, resulting task weights, and mode-specific outcome
+   before apply.
+
+Files involved (Patch 1 only):
+- `lib/presentation/screens/task_editor_screen.dart` — baseline freeze, blur fix.
+
+Files involved (Patch 2, pending UX decisions):
+- `lib/presentation/screens/task_editor_screen.dart` — preview entry points,
+  mode selector widget, apply/cancel flow.
+- `lib/presentation/viewmodels/task_editor_view_model.dart` — mode-aware
+  calculation helpers (fixed/flexible) and deterministic preview outputs.
+- `test/presentation/viewmodels/task_editor_view_model_test.dart` — mode-specific
+  cases and baseline-stability regression coverage.
+- `test/domain/task_weighting_test.dart` — rounding/constraints coverage where
+  shared weighting helpers are reused.
+
+Pending UX decisions (required before Patch 2 can be implemented):
+These 5 questions must be answered by the user and documented here before any
+Patch 2 implementation begins. Codex must not make these decisions.
+
+  a. **Mode selector widget:** what control (toggle, dropdown, radio buttons,
+     chips) and where does it appear in the editor (above the weight row,
+     inline with the fields, in a separate section)?
+  b. **Preview content:** what exactly is shown before Apply — only the edited
+     task's resulting weight, or a full list of all selected tasks with their
+     new weights and pomodoros?
+  c. **Apply / Cancel placement:** are they buttons inline below the weight row,
+     a floating confirmation row at the bottom of the screen, or something else?
+  d. **Preview trigger:** is the preview computed live while the user types, or
+     triggered on field blur / a dedicated "preview" button?
+  e. **Mode switch with value already entered:** if the user typed a value and
+     then switches mode, does the preview recalculate for the new mode
+     immediately, or does the entered value reset?
+  f. **Snackbar fate:** the current precision notice ("Closest possible is X%")
+     fires on blur. In preview mode, does this snackbar disappear entirely
+     (replaced by the preview), integrate as text inside the preview panel,
+     or continue to coexist as a separate toast?
+  g. **Preview visual form:** for each mode, does the preview show only the
+     edited task's outcome ("Result: X% — Y pomodoros") as a single line, or
+     a mini-table listing every selected task with its new weight and pomodoros?
+  h. **Cancel semantics:** does Cancel restore the task to the value shown in the
+     editor when the user first focused the weight field (pre-edit snapshot), or
+     to the last saved state in the database?
+  i. **Mode selector scope:** does the Fixed/Flexible mode selector apply only
+     when editing Task weight (%), or also when the user edits Total pomodoros
+     directly?
 
 Fix applied:
-None yet — product direction pending.
+Patch 1 — handoff ready, implementation pending (Codex).
+Patch 2 — blocked on UX decisions (a–i above).
+
+Validation update (27/03/2026, macOS) — FAIL:
+- Scenario packet executed with evidence in:
+  - `docs/bugs/validation_bug016_2026_03_27/logs/2026-03-27_bug016_fa907c9_macos_debug.log`
+  - `docs/bugs/validation_bug016_2026_03_27/screenshots/2026-03-27_bug016_01_macos.png` … `2026-03-27_bug016_13_macos.png`
+- Reconfirmed field overwrite on blur:
+  - G3: `80%` (requested) + snackbar suggests `69%`, but blur moves field to `43%`.
+  - Re-entering `69%` still blurs to `43%`.
+  - G1: `50%` blurs to `36%`; `80%` / suggested `45%` blurs to `35%`.
+- Save-time inconsistency confirmed:
+  - Editor blur-state and Task List post-save are not deterministic matches.
+  - Selected-group total pomodoros dropped from `11` (`5+4+1+1`) to `6` (`3+1+1+1`) in the captured sequence.
+- Additional diagnosis:
+  - Current runtime log has no dedicated Task-weight instrumentation; evidence is primarily UI screenshots + reproducible steps.
 
 Status:
-Open.
+In validation.
 
 ---
 
