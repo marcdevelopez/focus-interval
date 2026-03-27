@@ -1076,6 +1076,117 @@ void main() {
   );
 
   test(
+    'owner echo snapshot does not amplify publish loop on matching revision',
+    () async {
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'group-bug018-owner-echo-no-amplify',
+        start: now,
+      );
+      final taskId = group.tasks.first.sourceTaskId;
+      final ownerSession = PomodoroSession(
+        taskId: taskId,
+        groupId: group.id,
+        currentTaskId: taskId,
+        currentTaskIndex: 0,
+        totalTasks: 1,
+        dataVersion: kCurrentDataVersion,
+        sessionRevision: 50,
+        ownerDeviceId: deviceInfo.deviceId,
+        status: PomodoroStatus.pomodoroRunning,
+        phase: PomodoroPhase.pomodoro,
+        currentPomodoro: 1,
+        totalPomodoros: 2,
+        phaseDurationSeconds: 25 * 60,
+        remainingSeconds: 1400,
+        accumulatedPausedSeconds: 0,
+        phaseStartedAt: now.subtract(const Duration(minutes: 2)),
+        currentTaskStartedAt: now.subtract(const Duration(minutes: 2)),
+        pausedAt: null,
+        lastUpdatedAt: now,
+        finishedAt: null,
+        pauseReason: null,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(ownerSession);
+      final appModeService = AppModeService.memory();
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      addTearDown(() {
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      sessionRepo.publishCount = 0;
+      sessionRepo.lastPublished = null;
+
+      final incoming = PomodoroSession(
+        taskId: ownerSession.taskId,
+        groupId: ownerSession.groupId,
+        currentTaskId: ownerSession.currentTaskId,
+        currentTaskIndex: ownerSession.currentTaskIndex,
+        totalTasks: ownerSession.totalTasks,
+        dataVersion: ownerSession.dataVersion,
+        sessionRevision: 51,
+        ownerDeviceId: ownerSession.ownerDeviceId,
+        status: ownerSession.status,
+        phase: ownerSession.phase,
+        currentPomodoro: ownerSession.currentPomodoro,
+        totalPomodoros: ownerSession.totalPomodoros,
+        phaseDurationSeconds: ownerSession.phaseDurationSeconds,
+        remainingSeconds: 1390,
+        accumulatedPausedSeconds: ownerSession.accumulatedPausedSeconds,
+        phaseStartedAt: ownerSession.phaseStartedAt,
+        currentTaskStartedAt: ownerSession.currentTaskStartedAt,
+        pausedAt: ownerSession.pausedAt,
+        lastUpdatedAt: now.add(const Duration(seconds: 1)),
+        finishedAt: ownerSession.finishedAt,
+        pauseReason: ownerSession.pauseReason,
+      );
+      sessionRepo.emit(incoming);
+      await _pumpQueue();
+
+      final echoed = sessionRepo.lastPublished ?? incoming;
+
+      sessionRepo.emit(echoed);
+      await _pumpQueue();
+      final afterFirstEcho = sessionRepo.publishCount;
+
+      // Replaying the exact same owner echo again must not keep publishing.
+      sessionRepo.emit(echoed);
+      await _pumpQueue();
+
+      expect(
+        sessionRepo.publishCount,
+        afterFirstEcho,
+        reason:
+            'Owner echo snapshots must not trigger repeated publish '
+            'amplification on identical replay (BUG-018 regression guard).',
+      );
+    },
+  );
+
+  test(
     'handleAppResumed reconciles owner timeline in account mode before remote resync',
     () async {
       final now = DateTime.now();
