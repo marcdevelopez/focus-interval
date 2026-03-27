@@ -1315,7 +1315,6 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     }
     _pendingPublishAfterSync = false;
     final resolvedNow = now ?? _serverNowFromOffset() ?? DateTime.now();
-    _reconcileOwnerTimelineBeforePublish(resolvedNow, reason: reason);
     final session = _buildCurrentSessionSnapshot(resolvedNow);
     if (session == null) return;
     if (_isRunning(session.status) &&
