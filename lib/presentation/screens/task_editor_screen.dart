@@ -393,6 +393,10 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         selectedIds: selectedIds,
         edited: selectedTask,
       );
+      selectedWeightTasks = _overlayPendingRedistribution(
+        scope: selectedWeightTasks,
+        redistribution: _pendingRedistribution,
+      );
       selectedWeightPercents = normalizeTaskWeightPercents(selectedWeightTasks);
       weightPercent = selectedWeightPercents[selectedTask.id];
     }
@@ -1221,6 +1225,28 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       selected.add(edited);
     }
     return selected;
+  }
+
+  List<PomodoroTask> _overlayPendingRedistribution({
+    required List<PomodoroTask> scope,
+    required Map<String, int>? redistribution,
+  }) {
+    if (scope.isEmpty || redistribution == null || redistribution.isEmpty) {
+      return scope;
+    }
+    var changed = false;
+    final patched = <PomodoroTask>[];
+    for (final task in scope) {
+      final updatedPomodoros = redistribution[task.id];
+      if (updatedPomodoros == null || updatedPomodoros == task.totalPomodoros) {
+        patched.add(task);
+        continue;
+      }
+      patched.add(task.copyWith(totalPomodoros: updatedPomodoros));
+      changed = true;
+    }
+    if (!changed) return scope;
+    return List<PomodoroTask>.unmodifiable(patched);
   }
 
   bool _sameSelection(Set<String> a, Set<String> b) {

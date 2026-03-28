@@ -15450,3 +15450,40 @@ the app (`Edit task` style), creating a subtle but visible style break.
 
 - Preview navigation affordance now follows the same visual convention as
   adjacent app screens.
+
+---
+
+## Block 683 — BUG-016 Patch 2 consistency fix: Edit Task weight percent after Apply now matches preview map (28/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 runtime correctness fix (Edit Task interim percent coherence).
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Task Editor local scope calculation only.
+
+### Context
+
+Validation found a deterministic mismatch after `Apply` in preview sheets:
+`Edit task` could show an interim `%` inconsistent with sheet preview and final
+post-save Task List values (examples: `86% -> 49%`, `72% -> 84%`).
+
+Root cause was local-only: after `Apply`, the editor recalculated `%` with only
+the edited task updated, while other selected tasks still came from the old
+list snapshot until save.
+
+### Changes applied
+
+- `task_editor_screen.dart` now overlays `_pendingRedistribution` onto the
+  selected-weight scope used for `%` rendering in `Edit task`.
+- Added helper `_overlayPendingRedistribution(...)` and applied it before
+  `normalizeTaskWeightPercents(...)` in `build()`.
+- This keeps interim `%` in `Edit task` aligned with the exact map already
+  produced by preview and later persisted on `Save`.
+
+### Runtime evidence
+
+- Local gate PASS:
+  - `flutter analyze`
+
+### Status after this block
+
+- Interim `%` rendering in `Edit task` is now coherent with preview/apply/save
+  for pending redistribution scenarios.
