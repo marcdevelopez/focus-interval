@@ -1213,9 +1213,13 @@ Preview sheet specification (locked 28/03/2026):
        - `>= 72h`: “Machine-level schedule. Proceed only if this is really intended.”
        - In multi-task selection, evaluate the selected-group continuous total.
          In single-task scope, evaluate that task's own continuous total.
-       - In preview, render this caution inline below `Group work`.
+     - In preview, render this caution inline below `Group work`.
        - After save, show a persistent reminder chip with level label
          (`Unusual` / `Superhuman` / `Machine-level`) in Task List and Groups Hub.
+         Placement:
+         - Task List selected cards: on the `Time range` row, after the new
+           `Total time` chip (`start → end`, includes breaks).
+         - Groups Hub card + summary modal: inline to the right of `Total time`.
   2. Group impact block: “Group total: N → N pomodoros · M → M min” (before/after).
   3. Mini-table: one row per selected task — name | pomodoros before→after | weight% before→after.
      The edited task row is visually highlighted.

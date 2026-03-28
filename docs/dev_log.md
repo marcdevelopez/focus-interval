@@ -15299,3 +15299,85 @@ inside the preview flow.
 
 - Patch 2 keeps local gate PASS.
 - Device validation packet still pending before final Patch 2 closure.
+
+---
+
+## Block 679 — BUG-016 Patch 2 algorithm refinement: Flexible % search without hard cap (28/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 runtime algorithm correctness refinement.
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** ViewModel redistribution logic + tests.
+
+### Context
+
+User validation exposed a correctness gap in Flexible `%`: high requested percentages
+could collapse to low outcomes because the historical candidate cap prevented
+mathematically reachable results.
+
+### Changes applied
+
+- Removed the artificial Flexible `%` candidate cap from `TaskEditorViewModel`.
+- Reworked flexible search to evaluate achievable displayed percentages with
+  deterministic selection (same tiebreak policy).
+- Updated/extended redistribution tests:
+  - preserved fixed-mode parity check,
+  - added regression for growth beyond historical cap,
+  - updated exact-reachable flexible expectation.
+
+### Runtime evidence
+
+- Commit: `e51de5f` — `fix(bug016): remove flexible percent cap and update redistribution tests`
+- Local gate PASS:
+  - `flutter test test/presentation/viewmodels/task_editor_view_model_test.dart`
+
+### Status after this block
+
+- Flexible `%` closest-achievable behavior is now mathematically consistent with
+  unlimited candidate search.
+- Device validation packet remains pending.
+
+---
+
+## Block 680 — BUG-016 Patch 2 UX refinement: continuous-time caution + reminder chips (28/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 runtime UX clarity and persistence refinement.
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Preview sheet + Task List + Groups Hub + shared utility + tests.
+
+### Context
+
+Approved UX direction:
+- warn users inline (non-blocking) when edited plans become unusually long in
+  continuous `start → end` time (focus + breaks),
+- keep a persistent reminder label after save,
+- expose `Total time` chip clearly in Task List selected cards.
+
+### Changes applied
+
+- Added shared domain helper:
+  - `ContinuousPlanLoadLevel` (`none`, `unusual`, `superhuman`, `machineLevel`)
+  - thresholds: `>=11h`, `>=24h`, `>=72h`
+  - label/message helpers and continuous-duration calculators.
+- Added shared presentation visual helper for level icon+color chips.
+- Preview sheet:
+  - renders inline caution (icon + text) below `Group work`,
+  - caution appears only after interaction and only when net preview differs from opening snapshot.
+- Task List selected cards:
+  - `Time range` row now includes `Total <duration>` chip (`start → end`, includes breaks),
+  - adds persistent level reminder chip (`Unusual` / `Superhuman` / `Machine-level`).
+- Groups Hub:
+  - adds level reminder chip to `Total time` in cards and summary modal.
+
+### Runtime evidence
+
+- Commit: `7736f7b` — `feat(bug016): add continuous-time cautions and reminder chips across preview/list/hub`
+- Local gate PASS:
+  - `flutter analyze`
+  - `flutter test test/domain/continuous_plan_load_test.dart`
+  - `flutter test test/presentation/viewmodels/task_editor_view_model_test.dart`
+  - `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Groups Hub summary modal shows timing totals and task breakdown"`
+
+### Status after this block
+
+- Continuous-time caution/reminder UX is implemented with non-blocking behavior.
+- Device validation packet remains pending before final Patch 2 closure.
