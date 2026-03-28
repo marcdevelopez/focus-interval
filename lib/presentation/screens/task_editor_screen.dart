@@ -71,6 +71,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   bool _lastRedistributionChanged = false;
   String? _lastWeightNoticeKey;
   bool _weightPercentEdited = false;
+  List<PomodoroTask>? _weightScopeBaseline;
   bool _weightInfoDialogVisible = false;
   bool _weightInfoPrompted = false;
   Map<String, int>? _pendingRedistribution;
@@ -96,6 +97,20 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     _longBreakFocus = FocusNode();
     _weightPercentFocus.addListener(() {
       if (_weightPercentFocus.hasFocus) {
+        // Freeze selected weight scope at focus-gain to avoid per-keystroke
+        // baseline mutation caused by provider-driven rebuilds.
+        final focusTask = ref.read(taskEditorProvider);
+        if (focusTask != null) {
+          final selectedIds = ref.read(taskSelectionProvider);
+          final tasks =
+              ref.read(taskListProvider).asData?.value ?? const <PomodoroTask>[];
+          _weightScopeBaseline = _selectedTasksForWeight(
+            orderedTasks: _orderTasks(tasks),
+            selectedIds: selectedIds,
+            edited: focusTask,
+          );
+        }
+        _lastResultWeightPercent = null;
         _weightPercentStartValue =
             int.tryParse(_weightPercentCtrl.text.trim());
         _weightPercentEdited = false;
@@ -314,6 +329,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         }
       }
       _pendingRedistribution = null;
+      _weightScopeBaseline = null;
+      _lastResultWeightPercent = null;
     }
     return true;
   }
@@ -354,6 +371,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       baseline: _initialBreakOverride,
     );
     _pendingRedistribution = null;
+    _weightScopeBaseline = null;
+    _lastResultWeightPercent = null;
     ref.read(taskEditorProvider.notifier).update(baseline);
   }
 
@@ -630,7 +649,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               const SizedBox(height: 6),
               _weightRow(
                 task: task,
-                weightScopeTasks: selectedWeightTasks,
+                weightScopeTasks: _weightScopeBaseline ?? selectedWeightTasks,
                 showWeightPercent: showWeightField,
                 onInfoTap: () =>
                     _showWeightInfoDialog(includeDontShowAgain: false),
@@ -647,6 +666,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               controller: _pomodoroCtrl,
               onChanged: (v) {
                 _pendingRedistribution = null;
+                _weightScopeBaseline = null;
+                _lastResultWeightPercent = null;
                 final pomodoroGuidance = buildPomodoroDurationGuidance(
                   minutes: v,
                 );
@@ -1032,6 +1053,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
 
   void _syncControllers(PomodoroTask task) {
     _pendingRedistribution = null;
+    _weightScopeBaseline = null;
+    _lastResultWeightPercent = null;
     _loadedTaskId = task.id;
     _nameCtrl.text = task.name;
     _pomodoroCtrl.text = task.pomodoroMinutes.toString();
@@ -1357,6 +1380,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   void _maybeSyncWeightPercent(int percent) {
     if (_syncingWeight) return;
     if (_weightPercentFocus.hasFocus) return;
+    if (_pendingRedistribution != null) return;
+    if (_lastResultWeightPercent != null) return;
     final current = _weightPercentCtrl.text.trim();
     final target = percent.toString();
     if (current == target) return;
@@ -1366,6 +1391,30 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   void _syncWeightPercentFromTask() {
     final task = ref.read(taskEditorProvider);
     if (task == null) return;
+    final pending = _pendingRedistribution;
+    if (pending != null) {
+      final pendingScope = _weightScopeBaseline ??
+          _selectedTasksForWeight(
+            orderedTasks: _orderTasks(
+              ref.read(taskListProvider).asData?.value ?? const <PomodoroTask>[],
+            ),
+            selectedIds: ref.read(taskSelectionProvider),
+            edited: task,
+          );
+      final pendingPercent = _computeWeightPercentFromRedistribution(
+        task,
+        pendingScope,
+        pending,
+      );
+      if (pendingPercent != null) {
+        _weightPercentCtrl.text = pendingPercent.toString();
+        return;
+      }
+    }
+    if (_lastResultWeightPercent != null) {
+      _weightPercentCtrl.text = _lastResultWeightPercent.toString();
+      return;
+    }
     final percent = _currentWeightPercent(task);
     if (percent == null) return;
     _weightPercentCtrl.text = percent.toString();
@@ -2027,6 +2076,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         controller: _totalPomodorosCtrl,
         onChanged: (v) {
           _pendingRedistribution = null;
+          _weightScopeBaseline = null;
+          _lastResultWeightPercent = null;
           _update(task.copyWith(totalPomodoros: v));
         },
         suffix: _totalPomodorosSuffix(),
