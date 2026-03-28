@@ -1190,15 +1190,20 @@ Preview sheet specification (locked 28/03/2026):
   Switching mode recalculates the preview immediately using the current entered value.
   The sheet must show an inline mode explanation directly below the selector so users
   understand the business rule before applying:
-  - **Fixed total:** keep selected-group total pomodoros/work unchanged; redistribute
-    other selected tasks proportionally (integer-constrained).
+  - **Fixed total:** apply the closest achievable result while keeping selected-group
+    total unchanged (pomodoros + work minutes); to preserve that total, other selected
+    tasks are redistributed proportionally (integer-constrained).
   - **Flexible total:** keep other selected tasks unchanged; only the edited task changes,
     so selected-group total pomodoros/work may change.
 - **Preview content (three tiers):**
-  1. Result line for the edited task: requested value, closest achievable result, active mode.
-     If closest ≠ requested, show inline note: “Exact result not possible (pomodoros are
-     indivisible). Closest achievable: X%.” If deviation ≥ 10 pp or no improvement possible,
-     add a visual warning indicator.
+  1. Compact status line for the edited task (no redundant requested/result blocks):
+     - Exact match: show green success text (e.g., “Exact result: X%” / “Exact result: N pomodoros”).
+     - Non-exact or no-change possible: show orange explanatory text inline.
+     - Do not show both gray “Closest achievable …” and a second orange duplicate message.
+     - Orange warning must be interaction-aware:
+       - never on first open before user edits,
+       - never when user returns to the original opening value (no net change vs sheet baseline),
+       - shown only after user interaction when exactness is not possible or no change can be applied.
   2. Group impact block: “Group total: N → N pomodoros · M → M min” (before/after).
   3. Mini-table: one row per selected task — name | pomodoros before→after | weight% before→after.
      The edited task row is visually highlighted.
