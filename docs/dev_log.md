@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **BUG-016 Patch 1 — task-weight baseline freeze + blur/save sync fix (`8bad479`)**
-Current focus: **BUG-017 + Phase 10 BUG-016 Patch 2 UX decision lock (a–i)**
+Current focus: **Phase 10 BUG-016 Patch 2 implementation (preview sheet flow) + BUG-017 follow-up**
 Last update: **28/03/2026**
 
 ---
@@ -15115,3 +15115,52 @@ All 9 original UX questions (a–i) plus 7 additional micro-clarifications (j–
 
 - Active non-closed bug-log entries: 1 (`BUG-017` Open P2) — unchanged.
 - BUG-016 Patch 2 is a roadmap follow-up, not an open bug.
+
+---
+
+## Block 675 — BUG-016 Patch 2 implementation landed (preview sheet + fixed/flexible modes) (28/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 runtime implementation (preview-first editing UX).
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Runtime implementation + local gate (no device packet yet).
+
+### Implemented scope
+
+- Added `WeightEditMode` (`fixed` / `flexible`) in Task Editor ViewModel.
+- Extended `redistributeWeightPercent(...)` with mode-aware behavior.
+- Added `redistributeTotalPomodoros(...)` for the total-pomodoros preview path.
+- Added flexible-mode search with deterministic tiebreaking and algorithmic cap rule
+  `min(99, max(currentPom * 3, currentPom + 12))`.
+- Added new preview sheet UI (`task_weight_preview_sheet.dart`) with:
+  - input + live recalculation (inside sheet),
+  - segmented selector Fixed/Flexible for multi-task scope,
+  - requested/closest/result summary,
+  - before/after group impact,
+  - affected-tasks mini-list,
+  - fixed footer `Cancel` / `Apply`.
+- Refactored Task Editor weight row:
+  - `Task weight (%)` and `Total pomodoros` are now read-only tap targets.
+  - `Total pomodoros` stays enabled regardless of weight-field visibility.
+  - single-task scope rule applied: weight field disabled at `100%`, no sheet.
+- Added selection-change invalidation while sheet is open:
+  - close sheet without apply,
+  - show non-modal notice: `Group selection changed. Reopen to recalculate.`
+
+### Files changed
+
+- `lib/presentation/viewmodels/task_editor_view_model.dart`
+- `lib/presentation/screens/task_editor_screen.dart`
+- `lib/presentation/screens/task_weight_preview_sheet.dart` (new)
+- `test/presentation/viewmodels/task_editor_view_model_test.dart`
+- `docs/roadmap.md`
+
+### Local gate
+
+- PASS — `flutter analyze`
+- PASS — `flutter test test/presentation/viewmodels/task_editor_view_model_test.dart`
+- PASS — `flutter test test/domain/task_weighting_test.dart`
+
+### Status after this block
+
+- Patch 2 implementation is in branch and locally validated.
+- Device validation packet for Patch 2 remains pending before closure.

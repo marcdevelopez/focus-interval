@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart'
@@ -13,6 +14,7 @@ import '../../data/models/pomodoro_preset.dart';
 import '../../data/models/pomodoro_session.dart';
 import '../../data/models/selected_sound.dart';
 import '../../domain/pomodoro_machine.dart';
+import '../../domain/task_weighting.dart';
 import '../../domain/validators.dart';
 import '../providers.dart';
 import '../../data/services/local_sound_overrides.dart';
@@ -20,6 +22,8 @@ import '../../data/services/local_sound_overrides.dart';
 enum TaskEditorLoadResult { loaded, notFound, blockedByActiveSession }
 
 enum SoundPickTarget { pomodoroStart, breakStart }
+
+enum WeightEditMode { fixed, flexible }
 
 class SoundPickResult {
   final SelectedSound? sound;
@@ -158,10 +162,14 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
 
     final now = DateTime.now();
     final repo = ref.read(taskRepositoryProvider);
-    final startOverride =
-        await _soundOverrides.getOverride(source.id, SoundSlot.pomodoroStart);
-    final breakOverride =
-        await _soundOverrides.getOverride(source.id, SoundSlot.breakStart);
+    final startOverride = await _soundOverrides.getOverride(
+      source.id,
+      SoundSlot.pomodoroStart,
+    );
+    final breakOverride = await _soundOverrides.getOverride(
+      source.id,
+      SoundSlot.breakStart,
+    );
 
     for (final target in remaining) {
       final updated = target.copyWith(
@@ -241,18 +249,32 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
     required PomodoroTask edited,
     required int targetPercent,
     required List<PomodoroTask> tasks,
+    WeightEditMode mode = WeightEditMode.fixed,
   }) {
     if (tasks.isEmpty) {
       return {edited.id: edited.totalPomodoros};
     }
-    final baselineEdited =
-        tasks.where((task) => task.id == edited.id).toList();
+    final baselineEdited = tasks.where((task) => task.id == edited.id).toList();
     if (baselineEdited.isEmpty) {
       final merged = _mergeEditedTask(edited, tasks);
+      if (mode == WeightEditMode.flexible) {
+        return _redistributeFlexible(
+          edited: edited,
+          targetPercent: targetPercent,
+          baselineTasks: merged,
+        );
+      }
       return _redistributeFromBaseline(
         edited: edited,
         targetPercent: targetPercent,
         baselineTasks: merged,
+      );
+    }
+    if (mode == WeightEditMode.flexible) {
+      return _redistributeFlexible(
+        edited: edited,
+        targetPercent: targetPercent,
+        baselineTasks: tasks,
       );
     }
     return _redistributeFromBaseline(
@@ -262,13 +284,116 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
     );
   }
 
+  Map<String, int> redistributeTotalPomodoros({
+    required PomodoroTask edited,
+    required int targetPomodoros,
+    required List<PomodoroTask> tasks,
+    WeightEditMode mode = WeightEditMode.fixed,
+  }) {
+    final clamped = targetPomodoros < 1 ? 1 : targetPomodoros;
+    if (tasks.isEmpty) {
+      return {edited.id: clamped};
+    }
+
+    final merged = tasks.any((task) => task.id == edited.id)
+        ? tasks
+        : _mergeEditedTask(edited, tasks);
+    final baselineEdited = merged.firstWhere((task) => task.id == edited.id);
+
+    if (mode == WeightEditMode.flexible) {
+      final result = <String, int>{};
+      for (final task in merged) {
+        result[task.id] = task.id == edited.id ? clamped : task.totalPomodoros;
+      }
+      return result;
+    }
+
+    final others = merged.where((task) => task.id != edited.id).toList();
+    if (others.isEmpty) {
+      return {edited.id: clamped};
+    }
+
+    final totalWork = _totalWorkMinutes(merged);
+    final minOthersWork = others.fold<int>(
+      0,
+      (sum, task) => sum + task.pomodoroMinutes,
+    );
+    final maxEditedWork = totalWork - minOthersWork;
+
+    var editedPomodoros = clamped;
+    var editedWork = editedPomodoros * baselineEdited.pomodoroMinutes;
+    if (editedWork > maxEditedWork) {
+      editedPomodoros = _roundHalfUp(
+        maxEditedWork / baselineEdited.pomodoroMinutes,
+      );
+      if (editedPomodoros < 1) editedPomodoros = 1;
+      editedWork = editedPomodoros * baselineEdited.pomodoroMinutes;
+      while (editedPomodoros > 1 && editedWork > maxEditedWork) {
+        editedPomodoros -= 1;
+        editedWork = editedPomodoros * baselineEdited.pomodoroMinutes;
+      }
+    }
+
+    final remainingWork = totalWork - editedWork;
+    final othersWork = _totalWorkMinutes(others);
+    final targets = <String, _TargetAllocation>{};
+    var sumWork = 0;
+    for (final task in others) {
+      final share = othersWork <= 0
+          ? (1 / others.length)
+          : (_workMinutes(task) / othersWork);
+      final targetWork = remainingWork * share;
+      final targetPomodoros = targetWork / task.pomodoroMinutes;
+      var rounded = _roundHalfUp(targetPomodoros);
+      if (rounded < 1) rounded = 1;
+      final actualWork = rounded * task.pomodoroMinutes;
+      sumWork += actualWork;
+      targets[task.id] = _TargetAllocation(
+        task: task,
+        targetPomodoros: targetPomodoros,
+        pomodoros: rounded,
+      );
+    }
+
+    var diff = totalWork - (editedWork + sumWork);
+    if (diff != 0) {
+      final allocations = targets.values.toList();
+      allocations.sort((a, b) => a.fraction.compareTo(b.fraction));
+      var guard = 0;
+      while (diff != 0 && guard < 10000) {
+        guard += 1;
+        if (diff > 0) {
+          final candidate = allocations.reversed.first;
+          candidate.pomodoros += 1;
+          diff -= candidate.task.pomodoroMinutes;
+          allocations.sort((a, b) => a.fraction.compareTo(b.fraction));
+          continue;
+        }
+        final removable = allocations
+            .where((entry) => entry.pomodoros > 1)
+            .toList();
+        if (removable.isEmpty) break;
+        removable.sort((a, b) => a.fraction.compareTo(b.fraction));
+        final candidate = removable.first;
+        candidate.pomodoros -= 1;
+        diff += candidate.task.pomodoroMinutes;
+        allocations.sort((a, b) => a.fraction.compareTo(b.fraction));
+      }
+    }
+
+    final result = <String, int>{edited.id: editedPomodoros};
+    for (final entry in targets.entries) {
+      result[entry.key] = entry.value.pomodoros;
+    }
+    return result;
+  }
+
   Map<String, int> _redistributeFromBaseline({
     required PomodoroTask edited,
     required int targetPercent,
     required List<PomodoroTask> baselineTasks,
   }) {
-    final others =
-        baselineTasks.where((task) => task.id != edited.id).toList();
+    final others = baselineTasks.where((task) => task.id != edited.id).toList();
     final totalWork = _totalWorkMinutes(baselineTasks);
     if (totalWork <= 0 || others.isEmpty) {
       return {
@@ -293,8 +418,7 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
       minEditedWork.toDouble(),
       maxEditedWork.toDouble(),
     );
-    var editedPomodoros =
-        _roundHalfUp(boundedWork / edited.pomodoroMinutes);
+    var editedPomodoros = _roundHalfUp(boundedWork / edited.pomodoroMinutes);
     if (editedPomodoros < 1) editedPomodoros = 1;
     var editedWork = editedPomodoros * edited.pomodoroMinutes;
     while (editedPomodoros > 1 && editedWork > maxEditedWork) {
@@ -352,6 +476,85 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
     final result = <String, int>{edited.id: editedPomodoros};
     for (final entry in targets.entries) {
       result[entry.key] = entry.value.pomodoros;
+    }
+    return result;
+  }
+
+  Map<String, int> _redistributeFlexible({
+    required PomodoroTask edited,
+    required int targetPercent,
+    required List<PomodoroTask> baselineTasks,
+  }) {
+    if (baselineTasks.isEmpty) {
+      return {edited.id: edited.totalPomodoros};
+    }
+
+    final merged = baselineTasks.any((task) => task.id == edited.id)
+        ? baselineTasks
+        : _mergeEditedTask(edited, baselineTasks);
+    final baselineEdited = merged.firstWhere((task) => task.id == edited.id);
+    final others = merged.where((task) => task.id != edited.id).toList();
+    if (others.isEmpty) {
+      return {edited.id: baselineEdited.totalPomodoros};
+    }
+
+    final clamped = targetPercent < 1
+        ? 1
+        : (targetPercent > 100 ? 100 : targetPercent);
+    final currentPom = baselineEdited.totalPomodoros;
+    final baselineGroupTotal = merged.fold<int>(
+      0,
+      (sum, task) => sum + task.totalPomodoros,
+    );
+    final cap = math.min(99, math.max(currentPom * 3, currentPom + 12));
+
+    int? bestCandidate;
+    var bestDeviation = 999;
+    var bestGroupDiff = 999999;
+    var bestEditedDiff = 999999;
+    var bestGroupTotal = 999999;
+
+    for (var candidate = 1; candidate <= cap; candidate += 1) {
+      final projected = <PomodoroTask>[
+        for (final task in merged)
+          task.id == edited.id
+              ? task.copyWith(totalPomodoros: candidate)
+              : task,
+      ];
+      final percents = normalizeTaskWeightPercents(projected);
+      final resultPct = percents[edited.id] ?? 0;
+      final deviation = (resultPct - clamped).abs();
+      final groupTotal = projected.fold<int>(
+        0,
+        (sum, task) => sum + task.totalPomodoros,
+      );
+      final groupDiff = (groupTotal - baselineGroupTotal).abs();
+      final editedDiff = (candidate - currentPom).abs();
+
+      final better =
+          bestCandidate == null ||
+          deviation < bestDeviation ||
+          (deviation == bestDeviation && groupDiff < bestGroupDiff) ||
+          (deviation == bestDeviation &&
+              groupDiff == bestGroupDiff &&
+              editedDiff < bestEditedDiff) ||
+          (deviation == bestDeviation &&
+              groupDiff == bestGroupDiff &&
+              editedDiff == bestEditedDiff &&
+              groupTotal < bestGroupTotal);
+      if (!better) continue;
+      bestCandidate = candidate;
+      bestDeviation = deviation;
+      bestGroupDiff = groupDiff;
+      bestEditedDiff = editedDiff;
+      bestGroupTotal = groupTotal;
+    }
+
+    final result = <String, int>{};
+    for (final task in merged) {
+      result[task.id] = task.id == edited.id
+          ? (bestCandidate ?? currentPom)
+          : task.totalPomodoros;
     }
     return result;
   }

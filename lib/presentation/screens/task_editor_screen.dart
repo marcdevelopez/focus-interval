@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../providers.dart';
+import 'task_weight_preview_sheet.dart';
 import '../viewmodels/task_editor_view_model.dart';
 import '../../data/models/pomodoro_task.dart';
 import '../../data/models/pomodoro_preset.dart';
@@ -49,10 +50,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   late final TextEditingController _pomodoroCtrl;
   late final TextEditingController _shortBreakCtrl;
   late final TextEditingController _longBreakCtrl;
-  late final TextEditingController _totalPomodorosCtrl;
-  late final TextEditingController _weightPercentCtrl;
   late final TextEditingController _longBreakIntervalCtrl;
-  late final FocusNode _weightPercentFocus;
   late final FocusNode _shortBreakFocus;
   late final FocusNode _longBreakFocus;
   String? _loadedTaskId;
@@ -62,18 +60,10 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   bool _longBreakAutoAdjusted = false;
   bool _applyingBreakAutoAdjust = false;
   bool _syncingPreset = false;
-  bool _syncingWeight = false;
-  static const int _weightPercentWarningThreshold = 10;
   static const String _weightInfoSeenKey = 'task_weight_info_seen_v1';
-  int? _weightPercentStartValue;
-  int? _lastRequestedWeightPercent;
-  int? _lastResultWeightPercent;
-  bool _lastRedistributionChanged = false;
-  String? _lastWeightNoticeKey;
-  bool _weightPercentEdited = false;
-  List<PomodoroTask>? _weightScopeBaseline;
   bool _weightInfoDialogVisible = false;
   bool _weightInfoPrompted = false;
+  bool _weightSheetOpen = false;
   Map<String, int>? _pendingRedistribution;
   PomodoroTask? _initialTaskSnapshot;
   LocalSoundOverride? _initialStartOverride;
@@ -89,37 +79,9 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     _pomodoroCtrl = TextEditingController();
     _shortBreakCtrl = TextEditingController();
     _longBreakCtrl = TextEditingController();
-    _totalPomodorosCtrl = TextEditingController();
-    _weightPercentCtrl = TextEditingController();
     _longBreakIntervalCtrl = TextEditingController();
-    _weightPercentFocus = FocusNode();
     _shortBreakFocus = FocusNode();
     _longBreakFocus = FocusNode();
-    _weightPercentFocus.addListener(() {
-      if (_weightPercentFocus.hasFocus) {
-        // Freeze selected weight scope at focus-gain to avoid per-keystroke
-        // baseline mutation caused by provider-driven rebuilds.
-        final focusTask = ref.read(taskEditorProvider);
-        if (focusTask != null) {
-          final selectedIds = ref.read(taskSelectionProvider);
-          final tasks =
-              ref.read(taskListProvider).asData?.value ?? const <PomodoroTask>[];
-          _weightScopeBaseline = _selectedTasksForWeight(
-            orderedTasks: _orderTasks(tasks),
-            selectedIds: selectedIds,
-            edited: focusTask,
-          );
-        }
-        _lastResultWeightPercent = null;
-        _weightPercentStartValue =
-            int.tryParse(_weightPercentCtrl.text.trim());
-        _weightPercentEdited = false;
-        _lastWeightNoticeKey = null;
-        return;
-      }
-      _maybeShowWeightPrecisionNotice();
-      _syncWeightPercentFromTask();
-    });
     _shortBreakFocus.addListener(() {
       if (_shortBreakFocus.hasFocus) return;
       _applyBreakAutoAdjust(BreakOrderField.shortBreak);
@@ -147,10 +109,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     _pomodoroCtrl.dispose();
     _shortBreakCtrl.dispose();
     _longBreakCtrl.dispose();
-    _totalPomodorosCtrl.dispose();
-    _weightPercentCtrl.dispose();
     _longBreakIntervalCtrl.dispose();
-    _weightPercentFocus.dispose();
     _shortBreakFocus.dispose();
     _longBreakFocus.dispose();
     super.dispose();
@@ -228,8 +187,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     final baseline = _initialTaskSnapshot;
     if (baseline == null || baseline.id != task.id) return false;
     if (_nameCtrl.text.trim() != baseline.name.trim()) return true;
-    if (_normalizeNumberText(_totalPomodorosCtrl.text) !=
-        baseline.totalPomodoros.toString()) {
+    if (task.totalPomodoros != baseline.totalPomodoros) {
       return true;
     }
     if (_normalizeNumberText(_pomodoroCtrl.text) !=
@@ -280,8 +238,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               child: const Text('Discard'),
             ),
             ElevatedButton(
-              onPressed: () =>
-                  Navigator.of(context).pop(_UnsavedDecision.save),
+              onPressed: () => Navigator.of(context).pop(_UnsavedDecision.save),
               child: const Text('Save'),
             ),
           ],
@@ -300,9 +257,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     if (!saved) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            "Stop the running task before saving changes.",
-          ),
+          content: Text("Stop the running task before saving changes."),
         ),
       );
       return false;
@@ -329,8 +284,6 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         }
       }
       _pendingRedistribution = null;
-      _weightScopeBaseline = null;
-      _lastResultWeightPercent = null;
     }
     return true;
   }
@@ -371,8 +324,6 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       baseline: _initialBreakOverride,
     );
     _pendingRedistribution = null;
-    _weightScopeBaseline = null;
-    _lastResultWeightPercent = null;
     ref.read(taskEditorProvider.notifier).update(baseline);
   }
 
@@ -413,13 +364,25 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     final tasksAsync = ref.watch(taskListProvider);
     final tasks = tasksAsync.asData?.value ?? const <PomodoroTask>[];
     final selectedIds = ref.watch(taskSelectionProvider);
+    ref.listen<Set<String>>(taskSelectionProvider, (prev, next) {
+      if (!_weightSheetOpen) return;
+      if (prev == null || _sameSelection(prev, next)) return;
+      Navigator.of(context).maybePop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Group selection changed. Reopen to recalculate.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    });
     final presetsAsync = ref.watch(presetListProvider);
     final presets = presetsAsync.asData?.value ?? const <PomodoroPreset>[];
     final orderedTasks = _orderTasks(tasks);
     final remainingCount = _remainingCount(task, orderedTasks);
     final canApplySettings = widget.isEditing && remainingCount > 0;
-    final selectedTask =
-        task != null && selectedIds.contains(task.id) ? task : null;
+    final selectedTask = task != null && selectedIds.contains(task.id)
+        ? task
+        : null;
     final showWeightField = selectedTask != null;
     List<PomodoroTask> selectedWeightTasks = const <PomodoroTask>[];
     Map<String, int> selectedWeightPercents = const <String, int>{};
@@ -433,12 +396,10 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       selectedWeightPercents = normalizeTaskWeightPercents(selectedWeightTasks);
       weightPercent = selectedWeightPercents[selectedTask.id];
     }
-    if (weightPercent != null) {
-      _maybeSyncWeightPercent(weightPercent);
-    }
     _maybePromptWeightInfoDialog(showWeightField: showWeightField);
-    final selectedPreset =
-        task == null ? null : _findPreset(presets, task.presetId);
+    final selectedPreset = task == null
+        ? null
+        : _findPreset(presets, task.presetId);
     if (task != null && task.presetId != null && selectedPreset == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -447,12 +408,15 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     } else if (task != null && selectedPreset != null) {
       _maybeSyncTaskWithPreset(task, selectedPreset);
     }
-    final pomodoroDisplayName =
-        editor.customDisplayName(SoundPickTarget.pomodoroStart);
-    final breakDisplayName =
-        editor.customDisplayName(SoundPickTarget.breakStart);
+    final pomodoroDisplayName = editor.customDisplayName(
+      SoundPickTarget.pomodoroStart,
+    );
+    final breakDisplayName = editor.customDisplayName(
+      SoundPickTarget.breakStart,
+    );
     final guidance = editor.breakGuidanceFor(task);
-    final breakOrderInvalid = task != null &&
+    final breakOrderInvalid =
+        task != null &&
         !isBreakOrderValid(
           shortBreakMinutes: task.shortBreakMinutes,
           longBreakMinutes: task.longBreakMinutes,
@@ -469,8 +433,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         : (guidance?.longStatus ?? BreakDurationStatus.optimal);
     final breakAutovalidateMode =
         (_breaksTouched || shortBlocking || longBlocking)
-            ? AutovalidateMode.always
-            : AutovalidateMode.onUserInteraction;
+        ? AutovalidateMode.always
+        : AutovalidateMode.onUserInteraction;
     final pomodoroGuidance = task == null
         ? null
         : buildPomodoroDurationGuidance(minutes: task.pomodoroMinutes);
@@ -484,7 +448,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
             interval: intervalValue,
             totalPomodoros: task.totalPomodoros,
           );
-    final intervalInvalid = _intervalTouched &&
+    final intervalInvalid =
+        _intervalTouched &&
         (intervalInput == null ||
             intervalInput < 1 ||
             intervalInput > maxLongBreakInterval);
@@ -507,8 +472,9 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     final pomodoroHelper = pomodoroGuidance?.helperText;
     final pomodoroStatus =
         pomodoroGuidance?.status ?? PomodoroDurationStatus.optimal;
-    final intervalHelper =
-        intervalInvalid ? null : intervalGuidance?.helperText;
+    final intervalHelper = intervalInvalid
+        ? null
+        : intervalGuidance?.helperText;
     final intervalStatus =
         intervalGuidance?.status ?? LongBreakIntervalStatus.optimal;
     _maybeSyncControllers(task);
@@ -573,11 +539,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                 label: "Task name",
                 controller: _nameCtrl,
                 onChanged: (v) => _update(task.copyWith(name: v)),
-                validator: (v) => _nameValidator(
-                  v,
-                  tasks: tasks,
-                  currentId: task.id,
-                ),
+                validator: (v) =>
+                    _nameValidator(v, tasks: tasks, currentId: task.id),
               ),
               const SizedBox(height: 12),
               _presetSelectorRow(
@@ -601,8 +564,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                 onEditPreset: selectedPreset == null
                     ? null
                     : () => context.push(
-                          '/settings/presets/edit/${selectedPreset.id}',
-                        ),
+                        '/settings/presets/edit/${selectedPreset.id}',
+                      ),
                 onDeletePreset: selectedPreset == null
                     ? null
                     : () async {
@@ -621,8 +584,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                 onToggleDefault: selectedPreset == null
                     ? null
                     : () => ref
-                        .read(presetEditorProvider.notifier)
-                        .setDefault(selectedPreset.id),
+                          .read(presetEditorProvider.notifier)
+                          .setDefault(selectedPreset.id),
               ),
               if (task.presetId == null) ...[
                 const SizedBox(height: 6),
@@ -649,10 +612,13 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               const SizedBox(height: 6),
               _weightRow(
                 task: task,
-                weightScopeTasks: _weightScopeBaseline ?? selectedWeightTasks,
+                weightScopeTasks: selectedWeightTasks.isEmpty
+                    ? [task]
+                    : selectedWeightTasks,
                 showWeightPercent: showWeightField,
                 onInfoTap: () =>
                     _showWeightInfoDialog(includeDontShowAgain: false),
+                weightPercent: weightPercent,
               ),
               const SizedBox(height: 16),
               const Text(
@@ -661,289 +627,288 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               ),
               const SizedBox(height: 6),
               _numberField(
-              label: "Pomodoro duration (min)",
-              fieldKey: const ValueKey('pomodoro_duration'),
-              controller: _pomodoroCtrl,
-              onChanged: (v) {
-                _pendingRedistribution = null;
-                _weightScopeBaseline = null;
-                _lastResultWeightPercent = null;
-                final pomodoroGuidance = buildPomodoroDurationGuidance(
-                  minutes: v,
-                );
-                if (pomodoroGuidance.isValid) {
-                  final adjustment = adjustBreakDurations(
-                    pomodoroMinutes: v,
-                    shortBreakMinutes: task.shortBreakMinutes,
-                    longBreakMinutes: task.longBreakMinutes,
+                label: "Pomodoro duration (min)",
+                fieldKey: const ValueKey('pomodoro_duration'),
+                controller: _pomodoroCtrl,
+                onChanged: (v) {
+                  _pendingRedistribution = null;
+                  final pomodoroGuidance = buildPomodoroDurationGuidance(
+                    minutes: v,
                   );
-                  final updated = task.copyWith(
-                    pomodoroMinutes: v,
-                    shortBreakMinutes: adjustment.shortBreakMinutes,
-                    longBreakMinutes: adjustment.longBreakMinutes,
-                  );
-                  _updateWithPresetCheck(updated);
-                  if (adjustment.anyAdjusted) {
-                    _applyingBreakAutoAdjust = true;
-                    try {
-                      _shortBreakCtrl.text =
-                          adjustment.shortBreakMinutes.toString();
-                      _longBreakCtrl.text =
-                          adjustment.longBreakMinutes.toString();
-                      _setBreakAutoAdjustFlags(adjustment);
-                    } finally {
-                      _applyingBreakAutoAdjust = false;
+                  if (pomodoroGuidance.isValid) {
+                    final adjustment = adjustBreakDurations(
+                      pomodoroMinutes: v,
+                      shortBreakMinutes: task.shortBreakMinutes,
+                      longBreakMinutes: task.longBreakMinutes,
+                    );
+                    final updated = task.copyWith(
+                      pomodoroMinutes: v,
+                      shortBreakMinutes: adjustment.shortBreakMinutes,
+                      longBreakMinutes: adjustment.longBreakMinutes,
+                    );
+                    _updateWithPresetCheck(updated);
+                    if (adjustment.anyAdjusted) {
+                      _applyingBreakAutoAdjust = true;
+                      try {
+                        _shortBreakCtrl.text = adjustment.shortBreakMinutes
+                            .toString();
+                        _longBreakCtrl.text = adjustment.longBreakMinutes
+                            .toString();
+                        _setBreakAutoAdjustFlags(adjustment);
+                      } finally {
+                        _applyingBreakAutoAdjust = false;
+                      }
+                    } else {
+                      _clearBreakAutoAdjustFlags();
                     }
                   } else {
                     _clearBreakAutoAdjustFlags();
+                    _updateWithPresetCheck(task.copyWith(pomodoroMinutes: v));
                   }
-                } else {
+                  _revalidateBreakFields();
+                },
+                suffix: _pomodoroSuffix(task.pomodoroMinutes),
+                suffixMaxWidth: 140,
+                helperText: pomodoroHelper,
+                helperColor: _pomodoroHelperColor(pomodoroStatus),
+                borderColor: _pomodoroBorderColor(
+                  pomodoroStatus,
+                  focused: false,
+                ),
+                focusedBorderColor: _pomodoroBorderColor(
+                  pomodoroStatus,
+                  focused: true,
+                ),
+                helperMaxLines: 2,
+                additionalValidator: (value) => _pomodoroRangeValidator(value),
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+              ),
+              _numberField(
+                label: "Short break (min)",
+                fieldKey: _shortBreakFieldKey,
+                controller: _shortBreakCtrl,
+                focusNode: _shortBreakFocus,
+                onChanged: (v) {
+                  if (_applyingBreakAutoAdjust) return;
+                  if (!_breaksTouched) {
+                    setState(() {
+                      _breaksTouched = true;
+                    });
+                  }
                   _clearBreakAutoAdjustFlags();
-                  _updateWithPresetCheck(
-                    task.copyWith(pomodoroMinutes: v),
-                  );
-                }
-                _revalidateBreakFields();
-              },
-              suffix: _pomodoroSuffix(task.pomodoroMinutes),
-              suffixMaxWidth: 140,
-              helperText: pomodoroHelper,
-              helperColor: _pomodoroHelperColor(pomodoroStatus),
-              borderColor: _pomodoroBorderColor(
-                pomodoroStatus,
-                focused: false,
+                  _updateWithPresetCheck(task.copyWith(shortBreakMinutes: v));
+                  _revalidateBreakFields();
+                },
+                suffix: _shortBreakSuffix(task.shortBreakMinutes),
+                helperText: shortHelper,
+                helperColor: _statusHelperColor(shortStatus),
+                borderColor: _statusBorderColor(shortStatus, focused: false),
+                focusedBorderColor: _statusBorderColor(
+                  shortStatus,
+                  focused: true,
+                ),
+                additionalValidator: (value) => _breakFieldValidator(
+                  value: value,
+                  label: 'Short break',
+                  orderField: BreakOrderField.shortBreak,
+                  otherController: _longBreakCtrl,
+                ),
+                autovalidateMode: breakAutovalidateMode,
               ),
-              focusedBorderColor: _pomodoroBorderColor(
-                pomodoroStatus,
-                focused: true,
+              _numberField(
+                label: "Long break (min)",
+                fieldKey: _longBreakFieldKey,
+                controller: _longBreakCtrl,
+                focusNode: _longBreakFocus,
+                onChanged: (v) {
+                  if (_applyingBreakAutoAdjust) return;
+                  if (!_breaksTouched) {
+                    setState(() {
+                      _breaksTouched = true;
+                    });
+                  }
+                  _clearBreakAutoAdjustFlags();
+                  _updateWithPresetCheck(task.copyWith(longBreakMinutes: v));
+                  _revalidateBreakFields();
+                },
+                suffix: _longBreakSuffix(task.longBreakMinutes),
+                helperText: longHelper,
+                helperColor: _statusHelperColor(longStatus),
+                borderColor: _statusBorderColor(longStatus, focused: false),
+                focusedBorderColor: _statusBorderColor(
+                  longStatus,
+                  focused: true,
+                ),
+                additionalValidator: (value) => _breakFieldValidator(
+                  value: value,
+                  label: 'Long break',
+                  orderField: BreakOrderField.longBreak,
+                  otherController: _shortBreakCtrl,
+                ),
+                autovalidateMode: breakAutovalidateMode,
               ),
-              helperMaxLines: 2,
-              additionalValidator: (value) =>
-                  _pomodoroRangeValidator(value),
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-            ),
-            _numberField(
-              label: "Short break (min)",
-              fieldKey: _shortBreakFieldKey,
-              controller: _shortBreakCtrl,
-              focusNode: _shortBreakFocus,
-              onChanged: (v) {
-                if (_applyingBreakAutoAdjust) return;
-                if (!_breaksTouched) {
-                  setState(() {
-                    _breaksTouched = true;
-                  });
-                }
-                _clearBreakAutoAdjustFlags();
-                _updateWithPresetCheck(
-                  task.copyWith(shortBreakMinutes: v),
-                );
-                _revalidateBreakFields();
-              },
-              suffix: _shortBreakSuffix(task.shortBreakMinutes),
-              helperText: shortHelper,
-              helperColor: _statusHelperColor(shortStatus),
-              borderColor: _statusBorderColor(shortStatus, focused: false),
-              focusedBorderColor: _statusBorderColor(shortStatus, focused: true),
-              additionalValidator: (value) => _breakFieldValidator(
-                value: value,
-                label: 'Short break',
-                orderField: BreakOrderField.shortBreak,
-                otherController: _longBreakCtrl,
+              const SizedBox(height: 12),
+              _numberField(
+                label: "Pomodoros per long break",
+                controller: _longBreakIntervalCtrl,
+                onChanged: (v) =>
+                    _updateWithPresetCheck(task.copyWith(longBreakInterval: v)),
+                onTextChanged: (raw) {
+                  if (!_intervalTouched) {
+                    _intervalTouched = true;
+                  }
+                  if (int.tryParse(raw.trim()) == null) {
+                    setState(() {});
+                  }
+                },
+                suffix: _intervalSuffix(
+                  intervalValue ?? task.longBreakInterval,
+                ),
+                suffixMaxWidth: 140,
+                helperText: intervalHelper,
+                helperColor: _intervalHelperColor(
+                  intervalStatus,
+                  isInvalid: intervalInvalid,
+                ),
+                borderColor: _intervalBorderColor(
+                  intervalStatus,
+                  focused: false,
+                  isInvalid: intervalInvalid,
+                ),
+                focusedBorderColor: _intervalBorderColor(
+                  intervalStatus,
+                  focused: true,
+                  isInvalid: intervalInvalid,
+                ),
+                helperMaxLines: 2,
+                additionalValidator: _longBreakIntervalValidator,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
               ),
-              autovalidateMode: breakAutovalidateMode,
-            ),
-            _numberField(
-              label: "Long break (min)",
-              fieldKey: _longBreakFieldKey,
-              controller: _longBreakCtrl,
-              focusNode: _longBreakFocus,
-              onChanged: (v) {
-                if (_applyingBreakAutoAdjust) return;
-                if (!_breaksTouched) {
-                  setState(() {
-                    _breaksTouched = true;
-                  });
-                }
-                _clearBreakAutoAdjustFlags();
-                _updateWithPresetCheck(
-                  task.copyWith(longBreakMinutes: v),
-                );
-                _revalidateBreakFields();
-              },
-              suffix: _longBreakSuffix(task.longBreakMinutes),
-              helperText: longHelper,
-              helperColor: _statusHelperColor(longStatus),
-              borderColor: _statusBorderColor(longStatus, focused: false),
-              focusedBorderColor: _statusBorderColor(longStatus, focused: true),
-              additionalValidator: (value) => _breakFieldValidator(
-                value: value,
-                label: 'Long break',
-                orderField: BreakOrderField.longBreak,
-                otherController: _shortBreakCtrl,
-              ),
-              autovalidateMode: breakAutovalidateMode,
-            ),
-            const SizedBox(height: 12),
-            _numberField(
-              label: "Pomodoros per long break",
-              controller: _longBreakIntervalCtrl,
-              onChanged: (v) =>
-                  _updateWithPresetCheck(task.copyWith(longBreakInterval: v)),
-              onTextChanged: (raw) {
-                if (!_intervalTouched) {
-                  _intervalTouched = true;
-                }
-                if (int.tryParse(raw.trim()) == null) {
-                  setState(() {});
-                }
-              },
-              suffix: _intervalSuffix(intervalValue ?? task.longBreakInterval),
-              suffixMaxWidth: 140,
-              helperText: intervalHelper,
-              helperColor: _intervalHelperColor(
-                intervalStatus,
-                isInvalid: intervalInvalid,
-              ),
-              borderColor: _intervalBorderColor(
-                intervalStatus,
-                focused: false,
-                isInvalid: intervalInvalid,
-              ),
-              focusedBorderColor: _intervalBorderColor(
-                intervalStatus,
-                focused: true,
-                isInvalid: intervalInvalid,
-              ),
-              helperMaxLines: 2,
-              additionalValidator: _longBreakIntervalValidator,
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              "Sounds",
-              style: TextStyle(color: Colors.white70, fontSize: 16),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              "Custom sounds are stored on this device only.",
-              style: TextStyle(color: Colors.white54, fontSize: 12),
-            ),
-            const SizedBox(height: 8),
-            SoundSelector(
-              label: "Pomodoro start",
-              value: task.startSound,
-              options: pomodoroSounds,
-              customDisplayName: pomodoroDisplayName,
-              leading: const Icon(
-                Icons.volume_up_rounded,
-                color: Colors.redAccent,
-                size: 16,
-              ),
-              onPickLocal: () async {
-                final result = await ref
-                    .read(taskEditorProvider.notifier)
-                    .pickLocalSound(SoundPickTarget.pomodoroStart);
-                if (!context.mounted) return;
-                if (result.error != null) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text(result.error!)));
-                  return;
-                }
-                if (result.sound != null) {
-                  _updateWithPresetCheck(
-                    task.copyWith(startSound: result.sound),
-                  );
-                }
-              },
-              onChanged: (v) async {
-                await ref
-                    .read(taskEditorProvider.notifier)
-                    .clearLocalSoundOverride(SoundPickTarget.pomodoroStart);
-                _updateWithPresetCheck(task.copyWith(startSound: v));
-              },
-            ),
-            const SizedBox(height: 12),
-            SoundSelector(
-              label: "Break start",
-              value: task.startBreakSound,
-              options: breakSounds,
-              customDisplayName: breakDisplayName,
-              leading: const Icon(
-                Icons.volume_up_rounded,
-                color: Colors.blueAccent,
-                size: 16,
-              ),
-              onPickLocal: () async {
-                final result = await ref
-                    .read(taskEditorProvider.notifier)
-                    .pickLocalSound(SoundPickTarget.breakStart);
-                if (!context.mounted) return;
-                if (result.error != null) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text(result.error!)));
-                  return;
-                }
-                if (result.sound != null) {
-                  _updateWithPresetCheck(
-                    task.copyWith(startBreakSound: result.sound),
-                  );
-                }
-              },
-              onChanged: (v) async {
-                await ref
-                    .read(taskEditorProvider.notifier)
-                    .clearLocalSoundOverride(SoundPickTarget.breakStart);
-                _updateWithPresetCheck(task.copyWith(startBreakSound: v));
-              },
-            ),
-            const SizedBox(height: 12),
-            SoundSelector(
-              label: "Task finish",
-              value: task.finishTaskSound,
-              options: finishSounds,
-              onChanged: (v) =>
-                  _updateWithPresetCheck(task.copyWith(finishTaskSound: v)),
-              leading: const Icon(
-                Icons.volume_up_rounded,
-                color: Colors.white70,
-                size: 16,
-              ),
-            ),
-            if (canApplySettings) ...[
               const SizedBox(height: 24),
-              OutlinedButton.icon(
-                onPressed: () async {
-                  if (!_formKey.currentState!.validate()) return;
-                  if (!await _validateBusinessRules(
-                    actionVerb: 'apply',
-                    primaryLabel: 'Apply anyway',
-                  )) {
+              const Text(
+                "Sounds",
+                style: TextStyle(color: Colors.white70, fontSize: 16),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                "Custom sounds are stored on this device only.",
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+              const SizedBox(height: 8),
+              SoundSelector(
+                label: "Pomodoro start",
+                value: task.startSound,
+                options: pomodoroSounds,
+                customDisplayName: pomodoroDisplayName,
+                leading: const Icon(
+                  Icons.volume_up_rounded,
+                  color: Colors.redAccent,
+                  size: 16,
+                ),
+                onPickLocal: () async {
+                  final result = await ref
+                      .read(taskEditorProvider.notifier)
+                      .pickLocalSound(SoundPickTarget.pomodoroStart);
+                  if (!context.mounted) return;
+                  if (result.error != null) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(result.error!)));
                     return;
                   }
-                  final updated = await editor.applySettingsToRemainingTasks(
-                    orderedTasks: orderedTasks,
-                  );
-                  if (!context.mounted) return;
-                  final message = updated == 0
-                      ? 'No remaining tasks to update.'
-                      : 'Applied settings to $updated remaining tasks.';
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(message)),
-                  );
+                  if (result.sound != null) {
+                    _updateWithPresetCheck(
+                      task.copyWith(startSound: result.sound),
+                    );
+                  }
                 },
-                icon: const Icon(Icons.copy),
-                label: const Text('Apply settings to remaining tasks'),
+                onChanged: (v) async {
+                  await ref
+                      .read(taskEditorProvider.notifier)
+                      .clearLocalSoundOverride(SoundPickTarget.pomodoroStart);
+                  _updateWithPresetCheck(task.copyWith(startSound: v));
+                },
               ),
-              const SizedBox(height: 6),
-              Text(
-                'Applies to $remainingCount remaining tasks.',
-                style: const TextStyle(color: Colors.white38, fontSize: 12),
+              const SizedBox(height: 12),
+              SoundSelector(
+                label: "Break start",
+                value: task.startBreakSound,
+                options: breakSounds,
+                customDisplayName: breakDisplayName,
+                leading: const Icon(
+                  Icons.volume_up_rounded,
+                  color: Colors.blueAccent,
+                  size: 16,
+                ),
+                onPickLocal: () async {
+                  final result = await ref
+                      .read(taskEditorProvider.notifier)
+                      .pickLocalSound(SoundPickTarget.breakStart);
+                  if (!context.mounted) return;
+                  if (result.error != null) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(result.error!)));
+                    return;
+                  }
+                  if (result.sound != null) {
+                    _updateWithPresetCheck(
+                      task.copyWith(startBreakSound: result.sound),
+                    );
+                  }
+                },
+                onChanged: (v) async {
+                  await ref
+                      .read(taskEditorProvider.notifier)
+                      .clearLocalSoundOverride(SoundPickTarget.breakStart);
+                  _updateWithPresetCheck(task.copyWith(startBreakSound: v));
+                },
               ),
+              const SizedBox(height: 12),
+              SoundSelector(
+                label: "Task finish",
+                value: task.finishTaskSound,
+                options: finishSounds,
+                onChanged: (v) =>
+                    _updateWithPresetCheck(task.copyWith(finishTaskSound: v)),
+                leading: const Icon(
+                  Icons.volume_up_rounded,
+                  color: Colors.white70,
+                  size: 16,
+                ),
+              ),
+              if (canApplySettings) ...[
+                const SizedBox(height: 24),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    if (!_formKey.currentState!.validate()) return;
+                    if (!await _validateBusinessRules(
+                      actionVerb: 'apply',
+                      primaryLabel: 'Apply anyway',
+                    )) {
+                      return;
+                    }
+                    final updated = await editor.applySettingsToRemainingTasks(
+                      orderedTasks: orderedTasks,
+                    );
+                    if (!context.mounted) return;
+                    final message = updated == 0
+                        ? 'No remaining tasks to update.'
+                        : 'Applied settings to $updated remaining tasks.';
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(message)));
+                  },
+                  icon: const Icon(Icons.copy),
+                  label: const Text('Apply settings to remaining tasks'),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Applies to $remainingCount remaining tasks.',
+                  style: const TextStyle(color: Colors.white38, fontSize: 12),
+                ),
+              ],
             ],
-          ],
           ),
         ),
       ),
@@ -1053,18 +1018,11 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
 
   void _syncControllers(PomodoroTask task) {
     _pendingRedistribution = null;
-    _weightScopeBaseline = null;
-    _lastResultWeightPercent = null;
     _loadedTaskId = task.id;
     _nameCtrl.text = task.name;
     _pomodoroCtrl.text = task.pomodoroMinutes.toString();
     _shortBreakCtrl.text = task.shortBreakMinutes.toString();
     _longBreakCtrl.text = task.longBreakMinutes.toString();
-    _totalPomodorosCtrl.text = task.totalPomodoros.toString();
-    final percent = _currentWeightPercent(task);
-    if (percent != null) {
-      _weightPercentCtrl.text = percent.toString();
-    }
     _longBreakIntervalCtrl.text = task.longBreakInterval.toString();
     _intervalTouched = false;
     _breaksTouched = false;
@@ -1130,8 +1088,9 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   }) async {
     final task = ref.read(taskEditorProvider);
     if (task == null) return false;
-    final guidance =
-        ref.read(taskEditorProvider.notifier).breakGuidanceFor(task);
+    final guidance = ref
+        .read(taskEditorProvider.notifier)
+        .breakGuidanceFor(task);
     if (guidance == null) return true;
     if (guidance.hasHardViolation) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1156,9 +1115,10 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
 
   Future<bool> _showBreakWarningDialog(
     PomodoroTask task,
-    BreakDurationGuidance guidance,
-    {required String actionVerb, required String primaryLabel}
-  ) async {
+    BreakDurationGuidance guidance, {
+    required String actionVerb,
+    required String primaryLabel,
+  }) async {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) {
@@ -1263,90 +1223,16 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     return selected;
   }
 
-  int? _currentWeightPercent(PomodoroTask task) {
-    final selectedIds = ref.read(taskSelectionProvider);
-    if (!selectedIds.contains(task.id)) return null;
-    final tasks = ref.read(taskListProvider).asData?.value ?? const [];
-    final orderedTasks = _orderTasks(tasks);
-    final selectedTasks = _selectedTasksForWeight(
-      orderedTasks: orderedTasks,
-      selectedIds: selectedIds,
-      edited: task,
-    );
-    final percents = normalizeTaskWeightPercents(selectedTasks);
-    return percents[task.id];
-  }
-
-  int? _computeWeightPercentFromRedistribution(
-    PomodoroTask edited,
-    List<PomodoroTask> tasks,
-    Map<String, int> redistributed,
-  ) {
-    if (tasks.isEmpty) return null;
-    var totalWork = 0;
-    for (final task in tasks) {
-      final pomodoros = redistributed[task.id] ?? task.totalPomodoros;
-      totalWork += pomodoros * task.pomodoroMinutes;
+  bool _sameSelection(Set<String> a, Set<String> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (final value in a) {
+      if (!b.contains(value)) return false;
     }
-    if (totalWork <= 0) return null;
-    final editedPomodoros =
-        redistributed[edited.id] ?? edited.totalPomodoros;
-    final editedWork = editedPomodoros * edited.pomodoroMinutes;
-    return ((editedWork / totalWork) * 100).round();
+    return true;
   }
 
-  bool _hasRedistributionChanges(
-    List<PomodoroTask> tasks,
-    Map<String, int> redistributed,
-  ) {
-    for (final task in tasks) {
-      final target = redistributed[task.id];
-      if (target != null && target != task.totalPomodoros) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  void _maybeShowWeightPrecisionNotice() {
-    if (!_weightPercentEdited) return;
-    final requested = _lastRequestedWeightPercent;
-    final result = _lastResultWeightPercent;
-    if (requested == null || result == null) return;
-    if (_weightPercentStartValue != null &&
-        requested == _weightPercentStartValue &&
-        !_lastRedistributionChanged) {
-      return;
-    }
-    final diff = (requested - result).abs();
-    String? message;
-    if (!_lastRedistributionChanged) {
-      message =
-          'No change possible with current total pomodoros. Pomodoros are '
-          'indivisible—add more pomodoros or tasks for finer weights.';
-    } else if (diff >= _weightPercentWarningThreshold) {
-      message =
-          'Closest possible is $result% (requested $requested%). Pomodoros are '
-          'indivisible—add more pomodoros or tasks for finer weights.';
-    }
-    if (message == null) return;
-    final key = '$requested|$result|$_lastRedistributionChanged';
-    if (key == _lastWeightNoticeKey) return;
-    _lastWeightNoticeKey = key;
-    _showWeightNotice(message);
-    _weightPercentEdited = false;
-  }
-
-  void _showWeightNotice(String message) {
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.clearSnackBars();
-    messenger.showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  PomodoroPreset? _findPreset(
-    List<PomodoroPreset> presets,
-    String? presetId,
-  ) {
+  PomodoroPreset? _findPreset(List<PomodoroPreset> presets, String? presetId) {
     if (presetId == null || presetId.trim().isEmpty) return null;
     for (final preset in presets) {
       if (preset.id == presetId) return preset;
@@ -1360,7 +1246,9 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       builder: (context) {
         return AlertDialog(
           title: const Text('Delete preset'),
-          content: Text('Delete "${preset.name}"? Tasks will keep their values.'),
+          content: Text(
+            'Delete "${preset.name}"? Tasks will keep their values.',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -1375,49 +1263,6 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       },
     );
     return result ?? false;
-  }
-
-  void _maybeSyncWeightPercent(int percent) {
-    if (_syncingWeight) return;
-    if (_weightPercentFocus.hasFocus) return;
-    if (_pendingRedistribution != null) return;
-    if (_lastResultWeightPercent != null) return;
-    final current = _weightPercentCtrl.text.trim();
-    final target = percent.toString();
-    if (current == target) return;
-    _weightPercentCtrl.text = target;
-  }
-
-  void _syncWeightPercentFromTask() {
-    final task = ref.read(taskEditorProvider);
-    if (task == null) return;
-    final pending = _pendingRedistribution;
-    if (pending != null) {
-      final pendingScope = _weightScopeBaseline ??
-          _selectedTasksForWeight(
-            orderedTasks: _orderTasks(
-              ref.read(taskListProvider).asData?.value ?? const <PomodoroTask>[],
-            ),
-            selectedIds: ref.read(taskSelectionProvider),
-            edited: task,
-          );
-      final pendingPercent = _computeWeightPercentFromRedistribution(
-        task,
-        pendingScope,
-        pending,
-      );
-      if (pendingPercent != null) {
-        _weightPercentCtrl.text = pendingPercent.toString();
-        return;
-      }
-    }
-    if (_lastResultWeightPercent != null) {
-      _weightPercentCtrl.text = _lastResultWeightPercent.toString();
-      return;
-    }
-    final percent = _currentWeightPercent(task);
-    if (percent == null) return;
-    _weightPercentCtrl.text = percent.toString();
   }
 
   void _updateWithPresetCheck(PomodoroTask updated) {
@@ -1812,10 +1657,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                 padding: const EdgeInsets.only(right: 8),
                 child: ConstrainedBox(
                   constraints: BoxConstraints(maxWidth: suffixMaxWidth),
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: suffix,
-                  ),
+                  child: Align(alignment: Alignment.centerRight, child: suffix),
                 ),
               ),
         suffixIconConstraints: const BoxConstraints(
@@ -1896,13 +1738,6 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     );
   }
 
-  Widget _totalPomodorosSuffix() {
-    return _infoButton(
-      tooltip: 'Total pomodoros info',
-      onPressed: _showTotalPomodorosInfoDialog,
-    );
-  }
-
   Widget _shortBreakSuffix(int minutes) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -1973,10 +1808,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       ),
     ];
     final items = <DropdownMenuItem<String>>[
-      const DropdownMenuItem(
-        value: customValue,
-        child: Text('Custom'),
-      ),
+      const DropdownMenuItem(value: customValue, child: Text('Custom')),
       ...presets.map(
         (preset) => DropdownMenuItem(
           value: preset.id,
@@ -2013,10 +1845,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                 .map(
                   (label) => Align(
                     alignment: Alignment.centerLeft,
-                    child: Text(
-                      label,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    child: Text(label, overflow: TextOverflow.ellipsis),
                   ),
                 )
                 .toList(),
@@ -2069,19 +1898,37 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     required List<PomodoroTask> weightScopeTasks,
     required bool showWeightPercent,
     required VoidCallback onInfoTap,
+    required int? weightPercent,
   }) {
+    final singleTask = weightScopeTasks.length <= 1;
     final totalField = Expanded(
-      child: _numberField(
-        label: "Total pomodoros",
-        controller: _totalPomodorosCtrl,
-        onChanged: (v) {
-          _pendingRedistribution = null;
-          _weightScopeBaseline = null;
-          _lastResultWeightPercent = null;
-          _update(task.copyWith(totalPomodoros: v));
-        },
-        suffix: _totalPomodorosSuffix(),
-        suffixMaxWidth: 32,
+      child: InkWell(
+        onTap: () => _openPomodorosPreviewSheet(task, weightScopeTasks),
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: 'Total pomodoros',
+            labelStyle: const TextStyle(color: Colors.white54),
+            filled: true,
+            fillColor: Colors.white10,
+            enabledBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.white24),
+            ),
+            focusedBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.white54),
+            ),
+            suffixIcon: _infoButton(
+              tooltip: 'Total pomodoros info',
+              onPressed: _showTotalPomodorosInfoDialog,
+            ),
+          ),
+          child: Text(
+            task.totalPomodoros.toString(),
+            style: const TextStyle(
+              color: Colors.white,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
+          ),
+        ),
       ),
     );
     if (!showWeightPercent) {
@@ -2092,75 +1939,124 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         totalField,
         const SizedBox(width: 12),
         Expanded(
-          child: TextFormField(
-            controller: _weightPercentCtrl,
-            focusNode: _weightPercentFocus,
-            keyboardType: TextInputType.number,
-            style: const TextStyle(
-              color: Colors.white,
-              fontFeatures: [FontFeature.tabularFigures()],
+          child: InkWell(
+            onTap: singleTask
+                ? null
+                : () => _openWeightPreviewSheet(task, weightScopeTasks),
+            child: InputDecorator(
+              decoration: InputDecoration(
+                labelText: 'Task weight (%)',
+                labelStyle: const TextStyle(color: Colors.white54),
+                filled: true,
+                fillColor: Colors.white10,
+                enabled: !singleTask,
+                enabledBorder: const UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white24),
+                ),
+                focusedBorder: const UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white54),
+                ),
+                suffixIcon: _infoButton(
+                  tooltip: 'How task weight works',
+                  onPressed: onInfoTap,
+                ),
+              ),
+              child: Text(
+                singleTask
+                    ? '100%'
+                    : (weightPercent != null ? '$weightPercent%' : '—'),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
+              ),
             ),
-            cursorColor: Colors.white,
-            decoration: InputDecoration(
-              labelText: "Task weight (%)",
-              labelStyle: const TextStyle(color: Colors.white54),
-              filled: true,
-              fillColor: Colors.white10,
-              enabledBorder: const UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.white24),
-              ),
-              focusedBorder: const UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.white54),
-              ),
-              suffixIcon: _infoButton(
-                tooltip: 'How task weight works',
-                onPressed: onInfoTap,
-              ),
-            ),
-            validator: (v) {
-              final value = int.tryParse(v ?? '');
-              if (value == null || value <= 0) {
-                return "Enter a valid percent";
-              }
-              if (value > 100) return "Max 100%";
-              return null;
-            },
-            onChanged: (raw) {
-              if (_syncingWeight) return;
-              final percent = int.tryParse(raw.trim());
-              if (percent == null) return;
-              _syncingWeight = true;
-              final clamped = percent < 1
-                  ? 1
-                  : (percent > 100 ? 100 : percent);
-              final editor = ref.read(taskEditorProvider.notifier);
-              final redistributed = editor.redistributeWeightPercent(
-                edited: task,
-                targetPercent: clamped,
-                tasks: weightScopeTasks,
-              );
-              _lastRequestedWeightPercent = clamped;
-              _lastResultWeightPercent = _computeWeightPercentFromRedistribution(
-                task,
-                weightScopeTasks,
-                redistributed,
-              );
-              _lastRedistributionChanged = _hasRedistributionChanges(
-                weightScopeTasks,
-                redistributed,
-              );
-              _weightPercentEdited = true;
-              _pendingRedistribution = redistributed;
-              final newPomodoros =
-                  redistributed[task.id] ?? task.totalPomodoros;
-              _totalPomodorosCtrl.text = newPomodoros.toString();
-              _update(task.copyWith(totalPomodoros: newPomodoros));
-              _syncingWeight = false;
-            },
           ),
         ),
       ],
     );
+  }
+
+  List<PomodoroTask> _freezeWeightScope(
+    PomodoroTask edited,
+    List<PomodoroTask> scope,
+  ) {
+    if (scope.isEmpty) {
+      return List<PomodoroTask>.unmodifiable([edited]);
+    }
+    final frozen = <PomodoroTask>[];
+    var replaced = false;
+    for (final task in scope) {
+      if (task.id == edited.id) {
+        frozen.add(edited);
+        replaced = true;
+      } else {
+        frozen.add(task);
+      }
+    }
+    if (!replaced) {
+      frozen.insert(0, edited);
+    }
+    return List<PomodoroTask>.unmodifiable(frozen);
+  }
+
+  void _openWeightPreviewSheet(PomodoroTask task, List<PomodoroTask> scope) {
+    if (scope.length <= 1) return;
+    final frozenScope = _freezeWeightScope(task, scope);
+    final editor = ref.read(taskEditorProvider.notifier);
+    setState(() => _weightSheetOpen = true);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => TaskWeightPreviewSheet(
+        editedTask: task,
+        baselineTasks: frozenScope,
+        field: TaskWeightField.percent,
+        computePreview: (value, mode) => editor.redistributeWeightPercent(
+          edited: task,
+          targetPercent: value,
+          tasks: frozenScope,
+          mode: mode,
+        ),
+        onApply: (result) {
+          _pendingRedistribution = result;
+          final pomodoros = result[task.id] ?? task.totalPomodoros;
+          _update(task.copyWith(totalPomodoros: pomodoros));
+        },
+      ),
+    ).then((_) {
+      if (!mounted) return;
+      setState(() => _weightSheetOpen = false);
+    });
+  }
+
+  void _openPomodorosPreviewSheet(PomodoroTask task, List<PomodoroTask> scope) {
+    final frozenScope = _freezeWeightScope(task, scope);
+    final editor = ref.read(taskEditorProvider.notifier);
+    setState(() => _weightSheetOpen = true);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => TaskWeightPreviewSheet(
+        editedTask: task,
+        baselineTasks: frozenScope,
+        field: TaskWeightField.pomodoros,
+        computePreview: (value, mode) => editor.redistributeTotalPomodoros(
+          edited: task,
+          targetPomodoros: value,
+          tasks: frozenScope,
+          mode: mode,
+        ),
+        onApply: (result) {
+          _pendingRedistribution = result;
+          final pomodoros = result[task.id] ?? task.totalPomodoros;
+          _update(task.copyWith(totalPomodoros: pomodoros));
+        },
+      ),
+    ).then((_) {
+      if (!mounted) return;
+      setState(() => _weightSheetOpen = false);
+    });
   }
 
   Widget _iconButton({
@@ -2294,8 +2190,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     double spacing,
     int totalDots, {
     int? maxRows,
-  }
-  ) {
+  }) {
     final rows = ((maxHeight + spacing) / (dotSize + spacing)).floor();
     if (rows < 1) return 1;
     final clampedRows = maxRows != null && rows > maxRows ? maxRows : rows;
