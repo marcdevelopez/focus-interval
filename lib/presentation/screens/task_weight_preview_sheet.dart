@@ -33,17 +33,21 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
   static const int _warningThreshold = 10;
 
   late final TextEditingController _inputCtrl;
+  late final int _openingInputValue;
   WeightEditMode _mode = WeightEditMode.fixed;
   Map<String, int>? _result;
-  String? _precisionMessage;
+  String? _warningMessage;
   int? _requestedValue;
+  bool _hasUserInteracted = false;
 
   bool get _singleTask => widget.baselineTasks.length <= 1;
 
   String get _modeExplanation {
     if (_mode == WeightEditMode.fixed) {
-      return 'Fixed total: keeps selected-group total unchanged and '
-          'redistributes other selected tasks proportionally.';
+      return 'Fixed total: keeps selected-group total unchanged '
+          '(pomodoros and work minutes). If you apply, the closest '
+          'achievable result is used and other selected tasks are '
+          'redistributed proportionally.';
     }
     return 'Flexible total: keeps other selected tasks unchanged and updates '
         'only this task, so selected-group total may change.';
@@ -52,8 +56,8 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
   @override
   void initState() {
     super.initState();
-    final initialValue = _initialInputValue();
-    _inputCtrl = TextEditingController(text: initialValue.toString());
+    _openingInputValue = _initialInputValue();
+    _inputCtrl = TextEditingController(text: _openingInputValue.toString());
     _inputCtrl.addListener(_recalculate);
     _recalculate();
   }
@@ -142,16 +146,41 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
     return null;
   }
 
+  bool _isExactResult({
+    required int requested,
+    required int resultPercent,
+    required int resultPomodoros,
+  }) {
+    if (widget.field == TaskWeightField.percent) {
+      return resultPercent == requested;
+    }
+    return resultPomodoros == requested;
+  }
+
+  bool _isAtOpeningSnapshot(int requested) {
+    return requested == _openingInputValue && _mode == WeightEditMode.fixed;
+  }
+
+  String _exactMessage({
+    required int resultPercent,
+    required int resultPomodoros,
+  }) {
+    if (widget.field == TaskWeightField.percent) {
+      return 'Exact result: $resultPercent%';
+    }
+    return 'Exact result: $resultPomodoros pomodoros';
+  }
+
   void _recalculate() {
     final parsed = int.tryParse(_inputCtrl.text.trim());
     if (parsed == null || parsed <= 0) {
       if (_requestedValue != null ||
           _result != null ||
-          _precisionMessage != null) {
+          _warningMessage != null) {
         setState(() {
           _requestedValue = null;
           _result = null;
-          _precisionMessage = null;
+          _warningMessage = null;
         });
       }
       return;
@@ -159,11 +188,11 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
     if (widget.field == TaskWeightField.percent && parsed > 100) {
       if (_requestedValue != parsed ||
           _result != null ||
-          _precisionMessage != null) {
+          _warningMessage != null) {
         setState(() {
           _requestedValue = parsed;
           _result = null;
-          _precisionMessage = null;
+          _warningMessage = null;
         });
       }
       return;
@@ -173,21 +202,32 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
     try {
       final computed = widget.computePreview(parsed, mode);
       final resultTasks = _resultTasks(computed);
-      final precision = _buildPrecisionMessage(
+      final resultPercents = normalizeTaskWeightPercents(resultTasks);
+      final resultPercent = resultPercents[widget.editedTask.id] ?? 0;
+      final resultPomodoros =
+          computed[widget.editedTask.id] ?? widget.editedTask.totalPomodoros;
+      final exact = _isExactResult(
         requested: parsed,
-        result: computed,
-        resultTasks: resultTasks,
+        resultPercent: resultPercent,
+        resultPomodoros: resultPomodoros,
       );
+      final warning = (_hasUserInteracted && !_isAtOpeningSnapshot(parsed))
+          ? _buildPrecisionMessage(
+              requested: parsed,
+              result: computed,
+              resultTasks: resultTasks,
+            )
+          : null;
       setState(() {
         _requestedValue = parsed;
         _result = computed;
-        _precisionMessage = precision;
+        _warningMessage = exact ? null : warning;
       });
     } catch (_) {
       setState(() {
         _requestedValue = parsed;
         _result = null;
-        _precisionMessage = null;
+        _warningMessage = null;
       });
     }
   }
@@ -207,6 +247,14 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
     final editedResultPom =
         result?[widget.editedTask.id] ?? widget.editedTask.totalPomodoros;
     final editedResultPercent = resultPercents[widget.editedTask.id] ?? 0;
+    final hasValidResult = result != null && _requestedValue != null;
+    final isExact = hasValidResult
+        ? _isExactResult(
+            requested: _requestedValue!,
+            resultPercent: editedResultPercent,
+            resultPomodoros: editedResultPom,
+          )
+        : false;
 
     final title = widget.field == TaskWeightField.percent
         ? 'Edit Task weight'
@@ -260,6 +308,12 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
                         const SizedBox(height: 12),
                         TextField(
                           controller: _inputCtrl,
+                          onChanged: (_) {
+                            if (_hasUserInteracted) return;
+                            setState(() {
+                              _hasUserInteracted = true;
+                            });
+                          },
                           keyboardType: TextInputType.number,
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
@@ -304,6 +358,7 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
                               if (selection.isEmpty) return;
                               setState(() {
                                 _mode = selection.first;
+                                _hasUserInteracted = true;
                               });
                               _recalculate();
                             },
@@ -324,26 +379,22 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
                           ),
                         ],
                         const SizedBox(height: 16),
-                        Text(
-                          'Requested: ${_requestedValue ?? '—'}${widget.field == TaskWeightField.percent ? '%' : ''}',
-                          style: const TextStyle(color: Colors.white70),
-                        ),
-                        Text(
-                          'Closest achievable: '
-                          '${widget.field == TaskWeightField.percent ? '$editedResultPercent%' : '$editedResultPom pomodoros'}',
-                          style: const TextStyle(color: Colors.white70),
-                        ),
-                        Text(
-                          'Result: $editedResultPom pomodoros · $editedResultPercent%',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
+                        if (hasValidResult && isExact) ...[
+                          Text(
+                            _exactMessage(
+                              resultPercent: editedResultPercent,
+                              resultPomodoros: editedResultPom,
+                            ),
+                            style: const TextStyle(
+                              color: Colors.lightGreenAccent,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ),
-                        if (_precisionMessage != null) ...[
+                        ],
+                        if (_warningMessage != null) ...[
                           const SizedBox(height: 8),
                           Text(
-                            _precisionMessage!,
+                            _warningMessage!,
                             style: const TextStyle(color: Colors.orangeAccent),
                           ),
                         ],
