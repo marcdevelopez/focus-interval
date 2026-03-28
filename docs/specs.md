@@ -1188,6 +1188,12 @@ Preview sheet specification (locked 28/03/2026):
 - **Mode selector:** segmented control with two options — “Fixed total” (default) and
   “Flexible total” — placed immediately below the input, above the results panel.
   Switching mode recalculates the preview immediately using the current entered value.
+  The sheet must show an inline mode explanation directly below the selector so users
+  understand the business rule before applying:
+  - **Fixed total:** keep selected-group total pomodoros/work unchanged; redistribute
+    other selected tasks proportionally (integer-constrained).
+  - **Flexible total:** keep other selected tasks unchanged; only the edited task changes,
+    so selected-group total pomodoros/work may change.
 - **Preview content (three tiers):**
   1. Result line for the edited task: requested value, closest achievable result, active mode.
      If closest ≠ requested, show inline note: “Exact result not possible (pomodoros are
