@@ -40,6 +40,15 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
 
   bool get _singleTask => widget.baselineTasks.length <= 1;
 
+  String get _modeExplanation {
+    if (_mode == WeightEditMode.fixed) {
+      return 'Fixed total: keeps selected-group total unchanged and '
+          'redistributes other selected tasks proportionally.';
+    }
+    return 'Flexible total: keeps other selected tasks unchanged and updates '
+        'only this task, so selected-group total may change.';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -298,6 +307,20 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
                               });
                               _recalculate();
                             },
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white10,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.white24),
+                            ),
+                            child: Text(
+                              _modeExplanation,
+                              style: const TextStyle(color: Colors.white70),
+                            ),
                           ),
                         ],
                         const SizedBox(height: 16),
