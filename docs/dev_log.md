@@ -15421,3 +15421,32 @@ User feedback highlighted two coherence issues:
 
 - BUG-016 Patch 2 UI polish applied and documented.
 - Device validation packet remains pending before final Patch 2 closure.
+
+---
+
+## Block 682 — BUG-016 Patch 2 visual consistency: chevron-style back affordance in preview sheets (28/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 runtime/UI polish (navigation visual coherence).
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Preview sheet visual consistency only.
+
+### Context
+
+User feedback: preview header back icon still looked different from the rest of
+the app (`Edit task` style), creating a subtle but visible style break.
+
+### Changes applied
+
+- Replaced the preview header back icon from arrow-with-shaft to chevron-style
+  icon to align with app navigation visual language.
+- Behavior remains unchanged (`Back` semantics still equal to `Cancel`).
+
+### Runtime evidence
+
+- Local gate PASS:
+  - `flutter analyze`
+
+### Status after this block
+
+- Preview navigation affordance now follows the same visual convention as
+  adjacent app screens.

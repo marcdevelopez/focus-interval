@@ -318,7 +318,7 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
                           children: [
                             IconButton(
                               onPressed: () => Navigator.of(context).pop(),
-                              icon: const Icon(Icons.arrow_back),
+                              icon: const Icon(Icons.chevron_left, size: 30),
                               color: Colors.white,
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints.tightFor(
