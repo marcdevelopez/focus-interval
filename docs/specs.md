@@ -1163,14 +1163,57 @@ UI implications (documentation only):
 - Percentages are shown only when tasks are selected; unselected tasks do not show percentages.
 - Task Editor should display totalPomodoros and derived percentage **only** when the task is selected.
   If the task is not selected, hide the Task weight (%) field entirely.
-- Tapping Task weight (%) or Total pomodoros opens a dedicated preview sheet/dialog.
-  The selected mode is explicit inside that preview and defaults to **Fixed total** for each new edit session.
-  Applying commits the computed result; canceling exits without changes.
+- **Task weight (%) and Total pomodoros are tap targets in the editor, not editable inline.**
+  Tapping either field opens the preview sheet. The fields display the current value as read-only.
+  All editing happens inside the sheet. Per-keystroke onChanged handlers for these two fields
+  do not exist in Patch 2 — they are replaced by a tap-to-open-sheet gesture.
 - On first exposure, show an informational modal explaining that task weight is
   relative to the selected group only, with a “Don’t show again” checkbox.
   Provide an info icon next to Task weight (%) to reopen the explanation later.
 - Task Editor should place Total pomodoros + Task weight (%) together, above Pomodoro structural configuration and sounds.
 - If a TaskRunGroup mixes structural configurations, show a clear integrity warning (education-only).
+
+Preview sheet specification (locked 28/03/2026):
+
+- **Trigger:** tapping Task weight (%) or Total pomodoros in the editor.
+- **Baseline:** frozen at sheet open from current editor draft state. Immune to widget rebuilds
+  during the sheet session. If the selected-task scope changes while the sheet is open,
+  close the sheet without applying and show a non-modal notice:
+  “Group selection changed. Reopen to recalculate.”
+- **Input field:** numeric, displayed at the top of the sheet. Type adapts to context:
+  integer 1–100 for Task weight (%), integer ≥ 1 for Total pomodoros.
+- **Mode selector:** segmented control with two options — “Fixed total” (default) and
+  “Flexible total” — placed immediately below the input, above the results panel.
+  Switching mode recalculates the preview immediately using the current entered value.
+- **Preview content (three tiers):**
+  1. Result line for the edited task: requested value, closest achievable result, active mode.
+     If closest ≠ requested, show inline note: “Exact result not possible (pomodoros are
+     indivisible). Closest achievable: X%.” If deviation ≥ 10 pp or no improvement possible,
+     add a visual warning indicator.
+  2. Group impact block: “Group total: N → N pomodoros · M → M min” (before/after).
+  3. Mini-table: one row per selected task — name | pomodoros before→after | weight% before→after.
+     The edited task row is visually highlighted.
+- **Snackbar:** the existing “Closest possible is X%” toast is removed. All precision
+  information is shown inline within the sheet only.
+- **Footer (fixed, non-scrolling):** Cancel (left) and Apply (right).
+  — Cancel: closes sheet, restores pre-open snapshot, no state change.
+  — Apply: writes result to local editor draft, marks editor dirty, closes sheet.
+    Next sheet open uses the post-Apply draft as its baseline.
+- **1 task selected:** Task weight (%) is shown disabled at 100%, optional helper text
+  “Only one task selected”. Sheet does not open. No redistribution runs.
+- **Apply / Save / Discard lifecycle:**
+  — Apply writes to local draft only (no DB write, no network call).
+  — Save (Edit Task) persists the full local draft including all applied sheet changes.
+  — Discard (Edit Task exit) reverts the entire local draft, including applied sheet changes.
+
+ViewModel requirements for Patch 2:
+
+- `redistributeWeightPercent` (existing): used for the Task weight (%) path (target = percentage).
+- `redistributeTotalPomodoros` (new): used for the Total pomodoros path (target = integer pomodoro count).
+  Must return the same redistribution map structure as `redistributeWeightPercent`.
+  Fixed-total variant redistributes others proportionally; Flexible-total variant leaves others unchanged.
+- Both methods must accept an explicit `mode` parameter (fixed / flexible).
+- Both methods must use the frozen baseline passed in as argument, never read mutable provider state.
 
 ### **10.3.z. Task colors (visual accent, documentation-first)**
 

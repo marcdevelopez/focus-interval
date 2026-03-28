@@ -15061,3 +15061,57 @@ bug (`BUG-016`), which no longer matched the ledger queue.
 - Active non-closed bug-log entries: 1 (`BUG-017` Open P2).
 - `BUGLOG-016` is now `Closed/OK` (Patch 1).
 - Phase 10 Patch 2 (preview UX) remains pending as roadmap follow-up, not a reopened correctness defect.
+
+---
+
+## Block 674 — BUG-016 Patch 2 UX decisions closed (28/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 UX design lock — documentation only.
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Design decisions only (no runtime changes in this block).
+
+### Context
+
+Following Patch 1 closure (Block 673), a design session between the user and Codex
+produced a complete and unambiguous specification for the Patch 2 preview sheet UX.
+Claude reviewed the full design, confirmed it is implementable without further ambiguity,
+and flagged one architectural detail not previously explicit: the editor fields
+become read-only tap targets in Patch 2 (not inline-editable), which supersedes
+the per-keystroke handlers introduced in Patch 1.
+
+### Decisions locked (a–p)
+
+All 9 original UX questions (a–i) plus 7 additional micro-clarifications (j–p):
+
+- a. Mode selector: segmented control (Fixed total | Flexible total) inside sheet.
+- b. Preview content: three-tier (result line + group impact + mini-table of all selected tasks).
+- c. Apply/Cancel: fixed footer, Cancel left / Apply right.
+- d. Preview trigger: tapping field opens sheet; live recalculation inside sheet.
+     Fields in editor are read-only tap targets — per-keystroke onChanged removed in Patch 2.
+- e. Mode switch: recalculates immediately, does not reset entered value.
+- f. Snackbar: eliminated; replaced by inline content inside sheet.
+- g. Visual form: three-tier layout (result + group impact + mini-table).
+- h. Cancel: restores pre-open snapshot; no DB write.
+- i. Scope: same sheet and selector for both Task weight (%) and Total pomodoros.
+- j. Flexible total: only edited task changes; all other selected tasks unchanged.
+- k. Search range (Flexible, % path): candidates 1..max(pom×3, pom+12), cap 99 (algorithmic only).
+- l. Tiebreaker: (1) smallest % deviation, (2) smallest group total change,
+     (3) smallest edited task change, (4) smaller resulting group total.
+- m. Apply/Save/Discard: Apply = local draft + dirty; Save = persist; Discard = reverts all draft.
+- n. 1 task selected: field disabled at 100%, no sheet, optional helper text.
+- o. Selection change with sheet open: close without apply + non-modal notice.
+- p. New ViewModel method: `redistributeTotalPomodoros` required for Total pomodoros path.
+
+### Documents synchronized
+
+- `docs/bugs/bug_log.md`: pending questions (a–i) replaced with closed decisions (a–p).
+  Patch 2 status updated from "blocked" to "implementation ready."
+- `docs/specs.md`: "UI implications" section expanded with full preview sheet specification
+  and ViewModel requirements for Patch 2.
+- `docs/roadmap.md`: Phase 10 BUG-016 Patch 2 line updated from "blocked 9 decisions" to
+  "all decisions closed, implementation ready."
+
+### Ledger status after this block
+
+- Active non-closed bug-log entries: 1 (`BUG-017` Open P2) — unchanged.
+- BUG-016 Patch 2 is a roadmap follow-up, not an open bug.

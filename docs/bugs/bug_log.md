@@ -2421,36 +2421,93 @@ Files involved (Patch 2, pending UX decisions):
 - `test/domain/task_weighting_test.dart` — rounding/constraints coverage where
   shared weighting helpers are reused.
 
-Pending UX decisions (required before Patch 2 can be implemented):
-These 5 questions must be answered by the user and documented here before any
-Patch 2 implementation begins. Codex must not make these decisions.
+UX decisions locked (28/03/2026) — Patch 2 unblocked:
 
-  a. **Mode selector widget:** what control (toggle, dropdown, radio buttons,
-     chips) and where does it appear in the editor (above the weight row,
-     inline with the fields, in a separate section)?
-  b. **Preview content:** what exactly is shown before Apply — only the edited
-     task's resulting weight, or a full list of all selected tasks with their
-     new weights and pomodoros?
-  c. **Apply / Cancel placement:** are they buttons inline below the weight row,
-     a floating confirmation row at the bottom of the screen, or something else?
-  d. **Preview trigger:** is the preview computed live while the user types, or
-     triggered on field blur / a dedicated "preview" button?
-  e. **Mode switch with value already entered:** if the user typed a value and
-     then switches mode, does the preview recalculate for the new mode
-     immediately, or does the entered value reset?
-  f. **Snackbar fate:** the current precision notice ("Closest possible is X%")
-     fires on blur. In preview mode, does this snackbar disappear entirely
-     (replaced by the preview), integrate as text inside the preview panel,
-     or continue to coexist as a separate toast?
-  g. **Preview visual form:** for each mode, does the preview show only the
-     edited task's outcome ("Result: X% — Y pomodoros") as a single line, or
-     a mini-table listing every selected task with its new weight and pomodoros?
-  h. **Cancel semantics:** does Cancel restore the task to the value shown in the
-     editor when the user first focused the weight field (pre-edit snapshot), or
-     to the last saved state in the database?
-  i. **Mode selector scope:** does the Fixed/Flexible mode selector apply only
-     when editing Task weight (%), or also when the user edits Total pomodoros
-     directly?
+  a. **Mode selector widget:** Segmented control with two mutually-exclusive options
+     (Fixed total | Flexible total), placed inside the preview sheet above the
+     results panel. Default: Fixed total on every new sheet session.
+
+  b. **Preview content:** Full list of all selected tasks. Sheet shows:
+     — header: field being edited + requested value + closest achievable result + active mode.
+     — before/after summary: selected-group total pomodoros and work time.
+     — mini-table: every selected task with name, pomodoros before→after, weight before→after.
+     — inline warning if deviation ≥ 10 pp or no improvement possible.
+
+  c. **Apply / Cancel placement:** Fixed footer bar at the bottom of the sheet.
+     Cancel on the left, Apply on the right. Not inline — prevents buttons from
+     scrolling out of view when the task list grows.
+
+  d. **Preview trigger:** Tapping Task weight (%) or Total pomodoros in the editor
+     opens the sheet. Preview recalculates live while the user types inside the
+     sheet. No blur trigger, no separate "Preview" button. Importantly: both fields
+     in the editor become tap targets (read-only display); all editing happens inside
+     the sheet. The existing per-keystroke onChanged handlers are removed in Patch 2.
+
+  e. **Mode switch with value already entered:** Switching mode immediately
+     recalculates the preview for the new mode using the same entered value and the
+     frozen baseline. The entered value is not reset.
+
+  f. **Snackbar fate:** The existing "Closest possible is X%" snackbar is removed
+     entirely. Precision information is shown inline inside the sheet only
+     (text under the header + optional warning badge if deviation ≥ 10 pp).
+
+  g. **Preview visual form:** Three-tier layout inside the sheet:
+     (1) Result line for the edited task: "Result: Y pomodoros · X%".
+     (2) Group impact block: "Group total: 11 → 11 pom · 225 → 225 min".
+     (3) Mini-table: one row per selected task (name | pom before→after | % before→after).
+
+  h. **Cancel semantics:** Cancel restores the pre-edit snapshot — the state the task
+     had when the sheet was opened, not the last DB value. Cancel does not trigger any
+     write or rollback to DB. It simply closes the sheet without applying.
+     Apply updates the local editor draft (marks dirty). Save persists. Discard from
+     the editor reverts all local draft including applied sheet changes.
+
+  i. **Mode selector scope:** The same sheet and the same Fixed/Flexible selector
+     apply to both Task weight (%) and Total pomodoros.
+
+Additional micro-clarifications locked (28/03/2026):
+
+  j. **Flexible total — exact definition:** Only the edited task's totalPomodoros
+     changes. All other selected tasks remain at their exact current totalPomodoros.
+     No redistribution of others in Flexible mode. The selected-group total may
+     increase or decrease to improve approximation fidelity.
+
+  k. **Search range in Flexible total (% path):** Evaluate integer candidates from
+     1 to max(currentPomodoros × 3, currentPomodoros + 12), absolute cap 99.
+     Cap applies only to the internal algorithmic search when editing Task weight (%)
+     in Flexible mode. It is not a data-model limit; existing tasks with
+     totalPomodoros > 99 are unaffected.
+
+  l. **Closest achievable tiebreaker (deterministic, both modes):**
+     (1) Smallest absolute percentage-point deviation, measured against the
+         shown percentage (same normalization rule as the UI display).
+     (2) Smallest absolute change in selected-group total pomodoros.
+     (3) Smallest absolute change in edited task totalPomodoros.
+     (4) Smaller resulting group total if still tied.
+
+  m. **Apply / Save / Discard lifecycle:**
+     — Apply (sheet): writes to local editor draft only, marks dirty. Does not persist.
+       After Apply, the sheet closes. If the user reopens the sheet, the frozen baseline
+       is the post-Apply draft state (not the original pre-session value).
+     — Save (Edit Task): persists the full local draft (including all Apply'd changes).
+     — Discard (Edit Task exit): reverts the entire local draft, including Apply'd
+       changes not yet saved. Contract is unchanged from current Save/Discard semantics.
+
+  n. **1 task selected edge case:** Task weight (%) field is visible but disabled,
+     displays 100%, shows optional helper "Only one task selected". No sheet opens.
+     No redistribution logic runs.
+
+  o. **Selection change while sheet is open:** If the selected-task scope changes while
+     the sheet is open, the sheet closes immediately without applying and shows a
+     lightweight non-modal notice: "Group selection changed. Reopen to recalculate."
+     No live recomputation on changing selection — this would violate the frozen
+     baseline guarantee.
+
+  p. **VM method for Total pomodoros path:** The existing ViewModel method
+     `redistributeWeightPercent` takes a target percentage. For the Total pomodoros
+     path, a new method `redistributeTotalPomodoros` (or equivalent) is required,
+     taking the target integer and returning the same redistribution map. Codex must
+     implement this new method in `task_editor_view_model.dart` as part of Patch 2.
 
 Fix applied:
 Patch 1 — implemented on 28/03/2026 (commit `8bad479`):
@@ -2458,7 +2515,8 @@ Patch 1 — implemented on 28/03/2026 (commit `8bad479`):
 - blur/save sync now prioritizes pending redistribution/last computed result and
   avoids mixed-state overwrite while save confirmation modals are open.
 - runtime file touched: `lib/presentation/screens/task_editor_screen.dart`.
-Patch 2 — blocked on UX decisions (a–i above).
+Patch 2 — UX decisions closed (28/03/2026); implementation ready (see decisions a–p above
+and updated specs.md task weight section).
 
 Validation update (27/03/2026, macOS) — FAIL:
 - Scenario packet executed with evidence in:
