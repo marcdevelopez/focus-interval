@@ -2403,23 +2403,22 @@ Fix direction (approved):
    - Handoff written: `docs/bugs/validation_bug016_2026_03_27/codex_handoff.md`.
    - Can be implemented and validated in device BEFORE any UX decision is made.
 
-2. **UX complement — Patch 2 (blocked on UX decisions, listed below):**
-   replace blind per-keystroke updates with a preview flow that shows requested
-   vs achievable result, resulting task weights, and mode-specific outcome
-   before apply.
+2. **UX complement — Patch 2 (UX decisions closed 28/03/2026 — implementation ready):**
+   replace blind per-keystroke updates with a preview sheet: live preview inside sheet,
+   segmented control Fixed/Flexible, three-tier results display, Apply/Cancel footer.
+   Fields in editor become read-only tap targets.
 
-Files involved (Patch 1 only):
+Files involved (Patch 1):
 - `lib/presentation/screens/task_editor_screen.dart` — baseline freeze, blur fix.
 
-Files involved (Patch 2, pending UX decisions):
-- `lib/presentation/screens/task_editor_screen.dart` — preview entry points,
-  mode selector widget, apply/cancel flow.
-- `lib/presentation/viewmodels/task_editor_view_model.dart` — mode-aware
-  calculation helpers (fixed/flexible) and deterministic preview outputs.
+Files involved (Patch 2):
+- `lib/presentation/screens/task_editor_screen.dart` — fields converted to tap targets,
+  sheet integration, apply/cancel flow, per-keystroke handlers removed.
+- `lib/presentation/viewmodels/task_editor_view_model.dart` — mode-aware helpers
+  (fixed/flexible), new `redistributeTotalPomodoros` method.
 - `test/presentation/viewmodels/task_editor_view_model_test.dart` — mode-specific
   cases and baseline-stability regression coverage.
-- `test/domain/task_weighting_test.dart` — rounding/constraints coverage where
-  shared weighting helpers are reused.
+- `test/domain/task_weighting_test.dart` — rounding/constraints coverage.
 
 UX decisions locked (28/03/2026) — Patch 2 unblocked:
 
