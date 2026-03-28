@@ -25,9 +25,9 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Prioritize active bug-log queue sync/triage before continuing RVP backlog**
-Last update: **27/03/2026**
+Last bug fix: **BUG-016 Patch 1 — task-weight baseline freeze + blur/save sync fix (`8bad479`)**
+Current focus: **BUG-017 + Phase 10 BUG-016 Patch 2 UX decision lock (a–i)**
+Last update: **28/03/2026**
 
 ---
 
@@ -15011,3 +15011,53 @@ bug (`BUG-016`), which no longer matched the ledger queue.
 
 - Active non-closed bug-log entries: 2 (`BUG-016` In validation P2, `BUG-017` Open P2).
 - Zero open P0/P1 bugs remains unchanged.
+
+---
+
+## Block 673 — BUG-016 Patch 1 implementation + validation closure (28/03/2026)
+
+**Current branch intent:** BUG-016 correctness fix closure (baseline freeze + blur/save sync) and documentation synchronization.
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Runtime patch + closure docs (Patch 1 only; Patch 2 UX remains pending).
+
+### Runtime fix delivered
+
+- Implemented Patch 1 on `lib/presentation/screens/task_editor_screen.dart`.
+- Commit: `8bad479` — `fix(bug016): stabilize task-weight baseline and save-flow percent sync`.
+- Core changes:
+  - Freeze selected weight baseline at weight-field focus gain.
+  - Prevent mixed-state overwrite in blur/save sync by prioritizing pending redistribution/last computed result.
+  - Keep save-confirmation modal flow deterministic (no `%` snap-back during modal).
+
+### Validation closure (owner-run + local gate)
+
+- Owner manual validation packet (28/03/2026) PASS:
+  - `80% -> 69%` closest result stays stable through blur/save/list/reopen.
+  - `50%` path remains coherent through blur + save-warning modal + list + reopen (no `36%` regression).
+  - `1%` path shows `No change possible` and persists coherent values.
+  - Task list values match editor values after save (deterministic persistence).
+- Local gate PASS:
+  - `flutter analyze`
+  - `flutter test test/domain/task_weighting_test.dart`
+  - `flutter test test/presentation/viewmodels/task_editor_view_model_test.dart`
+
+### Documents synchronized
+
+- `docs/bugs/bug_log.md`:
+  - BUG-016 status moved to `Closed/OK` for Patch 1.
+  - Added 28/03 PASS validation update and closure evidence.
+- `docs/bugs/validation_bug016_2026_03_27/plan_validacion_rapida_fix.md`:
+  - Local verification marked PASS; status moved to `Closed/OK (Patch 1)`.
+- `docs/bugs/validation_bug016_2026_03_27/quick_pass_checklist.md`:
+  - Closure checklist completed (all required boxes checked).
+- `docs/validation/validation_ledger.md`:
+  - `BUGLOG-016` moved to `Closed/OK` with commit + evidence.
+  - Active non-closed bug count snapshot updated.
+- `docs/roadmap.md`:
+  - Phase 10 BUG-016 line updated: Patch 1 Closed/OK; Patch 2 remains blocked on UX decisions (a–i).
+
+### Ledger status after this block
+
+- Active non-closed bug-log entries: 1 (`BUG-017` Open P2).
+- `BUGLOG-016` is now `Closed/OK` (Patch 1).
+- Phase 10 Patch 2 (preview UX) remains pending as roadmap follow-up, not a reopened correctness defect.

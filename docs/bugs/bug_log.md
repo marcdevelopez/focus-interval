@@ -2453,7 +2453,11 @@ Patch 2 implementation begins. Codex must not make these decisions.
      directly?
 
 Fix applied:
-Patch 1 — handoff ready, implementation pending (Codex).
+Patch 1 — implemented on 28/03/2026 (commit `8bad479`):
+- frozen weight baseline at focus-gain to avoid per-keystroke baseline contamination.
+- blur/save sync now prioritizes pending redistribution/last computed result and
+  avoids mixed-state overwrite while save confirmation modals are open.
+- runtime file touched: `lib/presentation/screens/task_editor_screen.dart`.
 Patch 2 — blocked on UX decisions (a–i above).
 
 Validation update (27/03/2026, macOS) — FAIL:
@@ -2470,8 +2474,23 @@ Validation update (27/03/2026, macOS) — FAIL:
 - Additional diagnosis:
   - Current runtime log has no dedicated Task-weight instrumentation; evidence is primarily UI screenshots + reproducible steps.
 
+Validation update (28/03/2026, owner-run packet) — PASS for Patch 1:
+- Exact repro rerun from the same group baseline after Patch 1:
+  - `80% -> 69%` closest result stable through blur, save, Task List, and reopen.
+  - `50%` case stable and deterministic through blur, save warning modal, Task List, and reopen
+    (no return to `36%`).
+  - `1%` edge case correctly reports `No change possible` and keeps coherent persisted values.
+- Local gate PASS on code commit `8bad479`:
+  - `flutter analyze`
+  - `flutter test test/domain/task_weighting_test.dart`
+  - `flutter test test/presentation/viewmodels/task_editor_view_model_test.dart`
+- Validation packet synchronized:
+  - `docs/bugs/validation_bug016_2026_03_27/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug016_2026_03_27/quick_pass_checklist.md`
+
 Status:
-In validation.
+Closed/OK (Patch 1 fixed and validated on 28/03/2026; Patch 2 remains tracked as
+Phase 10 roadmap follow-up for preview UX).
 
 ---
 

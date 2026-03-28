@@ -146,8 +146,10 @@ grep -n "\\[TaskWeightApply\\]" docs/bugs/validation_bug016_2026_03_27/logs/<new
 
 ## 7. Local verification
 
-- [ ] `flutter analyze` — not executed in this validation packet.
-- [ ] targeted tests — not executed in this validation packet.
+- [x] `flutter analyze` — PASS (28/03/2026).
+- [x] targeted tests — PASS (28/03/2026):
+  - `flutter test test/domain/task_weighting_test.dart`
+  - `flutter test test/presentation/viewmodels/task_editor_view_model_test.dart`
 
 ---
 
@@ -179,9 +181,15 @@ grep -n "\\[TaskWeightApply\\]" docs/bugs/validation_bug016_2026_03_27/logs/<new
   - `docs/bugs/validation_bug016_2026_03_27/screenshots/2026-03-27_bug016_11_macos.png`
   - `docs/bugs/validation_bug016_2026_03_27/screenshots/2026-03-27_bug016_12_macos.png`
   - `docs/bugs/validation_bug016_2026_03_27/screenshots/2026-03-27_bug016_13_macos.png`
+- User-driven post-fix validation packet (28/03/2026):
+  - Exact repro rerun from the same baseline distribution using the Patch 1 runtime (`commit 8bad479`):
+    - `80% -> 69%` closest result remains stable through blur/save/list/reopen.
+    - `50%` case remains coherent through blur/save/list/reopen (no `36%` regression).
+    - `1%` case reports `No change possible` and keeps deterministic values.
+  - Manual visual evidence captured in the 28/03/2026 owner validation thread.
 
 ---
 
 ## 10. Status
 
-In validation (FAIL observed on 2026-03-27; implementation pending).
+Closed/OK (Patch 1 validated on 2026-03-28; Patch 2 preview UX remains a roadmap follow-up).
