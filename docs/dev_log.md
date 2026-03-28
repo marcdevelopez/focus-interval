@@ -15381,3 +15381,43 @@ Approved UX direction:
 
 - Continuous-time caution/reminder UX is implemented with non-blocking behavior.
 - Device validation packet remains pending before final Patch 2 closure.
+
+---
+
+## Block 681 — BUG-016 Patch 2 UX polish: work-duration readability + header consistency in preview sheets (28/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 runtime/UI polish (preview clarity).
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Preview sheet UI consistency + docs alignment.
+
+### Context
+
+User feedback highlighted two coherence issues:
+- `Group work` values in preview were hard to read when large (`N min` only),
+- preview top bar used `Back` text style inconsistent with other app screens
+  (`< Edit ...` pattern).
+
+### Changes applied
+
+- Preview `Group work` now formats durations as:
+  - `N min` for values `< 60`,
+  - `Hh Mm` for values `>= 60`.
+- Updated preview header to app-consistent style:
+  - chevron back icon + sheet title row,
+  - removed standalone `Back` text button presentation.
+
+### Runtime evidence
+
+- Local gate PASS:
+  - `flutter analyze`
+
+### Docs synchronized
+
+- `docs/specs.md`:
+  - Group impact block now specifies readable duration formatting (`min` vs `Hh Mm`).
+  - Preview top-left back affordance wording aligned with app header style expectation.
+
+### Status after this block
+
+- BUG-016 Patch 2 UI polish applied and documented.
+- Device validation packet remains pending before final Patch 2 closure.

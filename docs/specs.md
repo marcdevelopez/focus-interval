@@ -1220,13 +1220,18 @@ Preview sheet specification (locked 28/03/2026):
          - Task List selected cards: on the `Time range` row, after the new
            `Total time` chip (`start → end`, includes breaks).
          - Groups Hub card + summary modal: inline to the right of `Total time`.
-  2. Group impact block: “Group total: N → N pomodoros · M → M min” (before/after).
+  2. Group impact block:
+     - “Group total: N → N pomodoros” (before/after)
+     - “Group work: <duration> → <duration>” where duration is:
+       - `N min` when `< 60 min`
+       - `Hh Mm` when `>= 60 min` (for readability in long plans)
   3. Mini-table: one row per selected task — name | pomodoros before→after | weight% before→after.
      The edited task row is visually highlighted.
 - **Snackbar:** the existing “Closest possible is X%” toast is removed. All precision
   information is shown inline within the sheet only.
 - **Footer (fixed, non-scrolling):** Cancel (left) and Apply (right).
-  The sheet also provides a top-left Back action with the same semantics as Cancel.
+  The sheet also provides a top-left back affordance with the same semantics as Cancel,
+  visually aligned with app page headers (chevron + title style, no standalone "Back" label).
   — Cancel: closes sheet, restores pre-open snapshot, no state change.
   — Back: closes sheet, restores pre-open snapshot, no state change.
   — Apply: writes result to local editor draft, marks editor dirty, closes sheet.

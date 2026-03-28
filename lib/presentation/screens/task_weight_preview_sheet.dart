@@ -177,6 +177,15 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
     return 'Exact result: $resultPomodoros pomodoros';
   }
 
+  String _formatWorkMinutes(int minutes) {
+    if (minutes <= 59) {
+      return '$minutes min';
+    }
+    final hours = minutes ~/ 60;
+    final remainingMinutes = minutes % 60;
+    return '${hours}h ${remainingMinutes}m';
+  }
+
   void _recalculate() {
     final parsed = int.tryParse(_inputCtrl.text.trim());
     if (parsed == null || parsed <= 0) {
@@ -305,28 +314,34 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        TextButton.icon(
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(Icons.arrow_back, size: 18),
-                          label: const Text('Back'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            padding: EdgeInsets.zero,
-                            minimumSize: const Size(0, 32),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            alignment: Alignment.centerLeft,
-                          ),
+                        Row(
+                          children: [
+                            IconButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: const Icon(Icons.arrow_back),
+                              color: Colors.white,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints.tightFor(
+                                width: 28,
+                                height: 28,
+                              ),
+                              splashRadius: 18,
+                              tooltip: 'Back',
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                title,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          title,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
                         Text(
                           widget.editedTask.name,
                           style: const TextStyle(color: Colors.white54),
@@ -430,7 +445,7 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
                           style: const TextStyle(color: Colors.white70),
                         ),
                         Text(
-                          'Group work: $baselineGroupMin min → $resultGroupMin min',
+                          'Group work: ${_formatWorkMinutes(baselineGroupMin)} → ${_formatWorkMinutes(resultGroupMin)}',
                           style: const TextStyle(color: Colors.white70),
                         ),
                         if (showContinuousCaution) ...[
