@@ -15532,3 +15532,40 @@ more consistently:
 
 - Task List timing row is now more compact and consistent for long plans without
   changing business logic.
+
+---
+
+## Block 685 — BUG-016 Patch 2 desktop input fix: macOS mouse-wheel horizontal chip scrolling (28/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 runtime UX/input compatibility fix.
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Task List selected-card timing row interaction on desktop pointer devices.
+
+### Context
+
+After compact-chip rollout, Android behaved correctly but macOS users could not
+scroll the horizontal chip row with a mouse wheel. This blocked access to hidden
+chips when content overflowed.
+
+### Changes applied
+
+- Added desktop-friendly horizontal scroller wrapper in `TaskCard` timing row:
+  - maps pointer wheel delta (vertical or horizontal) to horizontal scroll while hovered,
+  - enables drag scrolling with mouse/trackpad devices.
+- Kept visual layout unchanged (single-line compact chips).
+
+### Runtime evidence
+
+- Local gate PASS:
+  - `flutter analyze`
+
+### Docs synchronized
+
+- `docs/specs.md`:
+  - selected `Time range` row now explicitly requires desktop pointer input support
+    (drag + wheel/scroll horizontal navigation while hovered).
+
+### Status after this block
+
+- Horizontal chip overflow is now reachable on macOS pointer input without
+  requiring touch gestures.

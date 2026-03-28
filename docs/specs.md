@@ -880,6 +880,8 @@ Item layout (top → bottom):
      - Chips on a single horizontal line: start time + end time (theoretical schedule preview),
        plus the per-task total-duration chip value only (no `Total` prefix, e.g. `2h 11m`),
        visually emphasized vs regular time chips.
+     - Desktop input support: on pointer devices (mouse/trackpad), this row must be
+       horizontally navigable without touch (drag and wheel/scroll panning while hovered).
    - **When not selected**:
      - Label: **Total time**
      - One chip: total task duration

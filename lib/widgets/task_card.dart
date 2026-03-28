@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import '../data/models/pomodoro_task.dart';
 import '../data/models/selected_sound.dart';
 import '../data/services/local_sound_overrides.dart';
@@ -533,10 +534,7 @@ class TaskCard extends StatelessWidget {
     if (loadLevelChip != null) {
       chips.add(loadLevelChip);
     }
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(children: _withChipSpacing(chips)),
-    );
+    return _HorizontalWheelScroller(children: _withChipSpacing(chips));
   }
 
   List<String> _splitTimeRange(String timeRange) {
@@ -686,6 +684,70 @@ class _Dot extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
+  }
+}
+
+class _HorizontalWheelScroller extends StatefulWidget {
+  const _HorizontalWheelScroller({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  State<_HorizontalWheelScroller> createState() =>
+      _HorizontalWheelScrollerState();
+}
+
+class _HorizontalWheelScrollerState extends State<_HorizontalWheelScroller> {
+  late final ScrollController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onPointerSignal(PointerSignalEvent event) {
+    if (event is! PointerScrollEvent || !_controller.hasClients) return;
+    final maxExtent = _controller.position.maxScrollExtent;
+    if (maxExtent <= 0) return;
+    final delta = event.scrollDelta.dx != 0
+        ? event.scrollDelta.dx
+        : event.scrollDelta.dy;
+    if (delta == 0) return;
+    final nextOffset = (_controller.offset + delta).clamp(0.0, maxExtent);
+    if (nextOffset == _controller.offset) return;
+    _controller.jumpTo(nextOffset);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dragDevices = <PointerDeviceKind>{
+      PointerDeviceKind.touch,
+      PointerDeviceKind.mouse,
+      PointerDeviceKind.trackpad,
+      PointerDeviceKind.stylus,
+      PointerDeviceKind.invertedStylus,
+      PointerDeviceKind.unknown,
+    };
+    return Listener(
+      onPointerSignal: _onPointerSignal,
+      child: ScrollConfiguration(
+        behavior: const MaterialScrollBehavior().copyWith(
+          dragDevices: dragDevices,
+        ),
+        child: SingleChildScrollView(
+          controller: _controller,
+          scrollDirection: Axis.horizontal,
+          child: Row(children: widget.children),
+        ),
+      ),
     );
   }
 }
