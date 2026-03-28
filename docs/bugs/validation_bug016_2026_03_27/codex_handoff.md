@@ -329,3 +329,750 @@ de continuar — NO ajustar los tests para que pasen.
 La verificación de comportamiento en device es responsabilidad de Claude QA + validación
 del usuario (los unit tests no cubren el blur-time behavior del State, que está en la
 capa de Screen).
+
+---
+
+# Codex Handoff — BUG-016 Patch 2: Preview sheet UX
+
+## Branch
+`fix/bug016-weight-edit-preview-modes`
+
+## Reference commit
+`3f534e8` (last docs-only commit; Patch 1 code is at `8bad479`)
+
+## Regla obligatoria
+Leer `CLAUDE.md` secciones 3 y 4 antes de escribir cualquier línea de código.
+Todas las decisiones de diseño UX están cerradas en `docs/bugs/bug_log.md` BUG-016
+(decisiones a–p) y `docs/specs.md` (preview sheet specification). No tomar ninguna
+decisión arquitectural o de UX sin aprobación de Claude.
+
+---
+
+## Overview
+
+Cuatro archivos, cuatro commits en orden. Patch 2 reemplaza el flujo de edición
+inline per-keystroke por una preview sheet dedicada. Los campos `Task weight (%)` y
+`Total pomodoros` en el editor dejan de ser campos editables y pasan a ser tap targets
+de solo lectura que abren la sheet.
+
+Archivos en orden de commits:
+1. `lib/presentation/viewmodels/task_editor_view_model.dart` — enum + nuevos métodos
+2. `lib/presentation/screens/task_weight_preview_sheet.dart` — nuevo widget (archivo nuevo)
+3. `lib/presentation/screens/task_editor_screen.dart` — eliminar maquinaria Patch 1, convertir campos a tap targets, integrar sheet
+4. Tests — `task_editor_view_model_test.dart` + `task_weighting_test.dart`
+
+---
+
+## Commit 1 — ViewModel: WeightEditMode + modos en redistributeWeightPercent + redistributeTotalPomodoros
+
+**Archivo:** `lib/presentation/viewmodels/task_editor_view_model.dart`
+
+### Cambio 1A — Agregar enum `WeightEditMode`
+
+Agregar después de los enums existentes (después de línea 28, antes de `class SoundPickResult`):
+
+```dart
+enum WeightEditMode { fixed, flexible }
+```
+
+### Cambio 1B — Agregar parámetro `mode` a `redistributeWeightPercent`
+
+Firma actual (línea 240):
+```dart
+Map<String, int> redistributeWeightPercent({
+  required PomodoroTask edited,
+  required int targetPercent,
+  required List<PomodoroTask> tasks,
+})
+```
+
+Nueva firma (agregar `mode` con default `fixed` para backwards compat con Patch 1):
+```dart
+Map<String, int> redistributeWeightPercent({
+  required PomodoroTask edited,
+  required int targetPercent,
+  required List<PomodoroTask> tasks,
+  WeightEditMode mode = WeightEditMode.fixed,
+})
+```
+
+Cuerpo actualizado — añadir despacho por modo al final de la validación de baseline,
+antes de llamar `_redistributeFromBaseline`:
+
+```dart
+// CÓDIGO ACTUAL (líneas 258–263):
+    return _redistributeFromBaseline(
+      edited: edited,
+      targetPercent: targetPercent,
+      baselineTasks: tasks,
+    );
+  }
+
+// REEMPLAZAR CON:
+    if (mode == WeightEditMode.flexible) {
+      return _redistributeFlexible(
+        edited: edited,
+        targetPercent: targetPercent,
+        baselineTasks: tasks,
+      );
+    }
+    return _redistributeFromBaseline(
+      edited: edited,
+      targetPercent: targetPercent,
+      baselineTasks: tasks,
+    );
+  }
+```
+
+Y hacer lo mismo con el bloque `if (baselineEdited.isEmpty)` para el camino merged
+(líneas 250–256):
+```dart
+// CÓDIGO ACTUAL:
+      return _redistributeFromBaseline(
+        edited: edited,
+        targetPercent: targetPercent,
+        baselineTasks: merged,
+      );
+
+// REEMPLAZAR CON:
+      if (mode == WeightEditMode.flexible) {
+        return _redistributeFlexible(
+          edited: edited,
+          targetPercent: targetPercent,
+          baselineTasks: merged,
+        );
+      }
+      return _redistributeFromBaseline(
+        edited: edited,
+        targetPercent: targetPercent,
+        baselineTasks: merged,
+      );
+```
+
+### Cambio 1C — Agregar `_redistributeFlexible` (método privado)
+
+Agregar después del cierre de `_redistributeFromBaseline` (después de línea 357):
+
+```dart
+  Map<String, int> _redistributeFlexible({
+    required PomodoroTask edited,
+    required int targetPercent,
+    required List<PomodoroTask> baselineTasks,
+  }) {
+    final others =
+        baselineTasks.where((t) => t.id != edited.id).toList();
+    final othersTotal = others.fold<int>(0, (s, t) => s + t.totalPomodoros);
+    final currentPom = edited.totalPomodoros;
+    final cap = [99, currentPom * 3, currentPom + 12]
+        .reduce((a, b) => a > b ? a : b)
+        .clamp(1, 99);
+
+    int? bestCandidate;
+    int bestDeviation = 999;
+    int bestGroupDiff = 999999;
+    int bestEditedDiff = 999999;
+    int bestGroupTotal = 999999;
+
+    for (var candidate = 1; candidate <= cap; candidate++) {
+      // Build projection with others unchanged.
+      final projected = [
+        ...others,
+        edited.copyWith(totalPomodoros: candidate),
+      ];
+      final percents = normalizeTaskWeightPercents(projected);
+      final resultPct = percents[edited.id] ?? 0;
+      final deviation = (resultPct - targetPercent).abs();
+      final groupTotal = othersTotal + candidate;
+      final groupDiff = (groupTotal - (othersTotal + currentPom)).abs();
+      final editedDiff = (candidate - currentPom).abs();
+
+      final better = bestCandidate == null ||
+          deviation < bestDeviation ||
+          (deviation == bestDeviation && groupDiff < bestGroupDiff) ||
+          (deviation == bestDeviation && groupDiff == bestGroupDiff &&
+              editedDiff < bestEditedDiff) ||
+          (deviation == bestDeviation && groupDiff == bestGroupDiff &&
+              editedDiff == bestEditedDiff && groupTotal < bestGroupTotal);
+
+      if (better) {
+        bestCandidate = candidate;
+        bestDeviation = deviation;
+        bestGroupDiff = groupDiff;
+        bestEditedDiff = editedDiff;
+        bestGroupTotal = groupTotal;
+      }
+    }
+
+    final result = <String, int>{
+      edited.id: bestCandidate ?? currentPom,
+    };
+    for (final t in others) {
+      result[t.id] = t.totalPomodoros;
+    }
+    return result;
+  }
+```
+
+**Import requerido:** `normalizeTaskWeightPercents` ya está en `task_weighting.dart`.
+Agregar el import si no está ya presente:
+```dart
+import '../../domain/task_weighting.dart';
+```
+(verificar antes — puede que ya exista)
+
+### Cambio 1D — Agregar `redistributeTotalPomodoros` (método público)
+
+Agregar después del cierre de `redistributeWeightPercent` (después de línea 263):
+
+```dart
+  Map<String, int> redistributeTotalPomodoros({
+    required PomodoroTask edited,
+    required int targetPomodoros,
+    required List<PomodoroTask> tasks,
+    WeightEditMode mode = WeightEditMode.fixed,
+  }) {
+    final clamped = targetPomodoros < 1 ? 1 : targetPomodoros;
+    if (mode == WeightEditMode.flexible) {
+      // Flexible: only edited task changes, others stay put.
+      final result = <String, int>{edited.id: clamped};
+      for (final t in tasks) {
+        if (t.id != edited.id) result[t.id] = t.totalPomodoros;
+      }
+      return result;
+    }
+    // Fixed: set edited task to target, redistribute others to preserve group total.
+    final merged = tasks.any((t) => t.id == edited.id)
+        ? tasks
+        : _mergeEditedTask(edited, tasks);
+    final others = merged.where((t) => t.id != edited.id).toList();
+    final totalWork = _totalWorkMinutes(merged);
+    final editedWork = clamped * edited.pomodoroMinutes;
+    final minOthersWork =
+        others.fold<int>(0, (s, t) => s + t.pomodoroMinutes);
+
+    // If editedWork leaves less than min for others, clamp edited down.
+    var editedPomodoros = clamped;
+    var actualEditedWork = editedWork;
+    if (totalWork - actualEditedWork < minOthersWork) {
+      actualEditedWork = totalWork - minOthersWork;
+      editedPomodoros =
+          _roundHalfUp(actualEditedWork / edited.pomodoroMinutes);
+      if (editedPomodoros < 1) editedPomodoros = 1;
+      actualEditedWork = editedPomodoros * edited.pomodoroMinutes;
+    }
+
+    // Redistribute others for the remaining work.
+    final remainingWork = totalWork - actualEditedWork;
+    final othersWork = _totalWorkMinutes(others);
+    final targets = <String, _TargetAllocation>{};
+    var sumWork = 0;
+    for (final task in others) {
+      final share = othersWork <= 0
+          ? (1 / others.length)
+          : (_workMinutes(task) / othersWork);
+      final targetWork = remainingWork * share;
+      final targetPom = targetWork / task.pomodoroMinutes;
+      var rounded = _roundHalfUp(targetPom);
+      if (rounded < 1) rounded = 1;
+      sumWork += rounded * task.pomodoroMinutes;
+      targets[task.id] = _TargetAllocation(
+        task: task,
+        targetPomodoros: targetPom,
+        pomodoros: rounded,
+      );
+    }
+
+    // Apply rounding correction (same as _redistributeFromBaseline).
+    var diff = totalWork - (actualEditedWork + sumWork);
+    if (diff != 0) {
+      final allocations = targets.values.toList();
+      allocations.sort((a, b) => a.fraction.compareTo(b.fraction));
+      var guard = 0;
+      while (diff != 0 && guard < 10000) {
+        guard += 1;
+        if (diff > 0) {
+          final candidate = allocations.reversed.first;
+          candidate.pomodoros += 1;
+          diff -= candidate.task.pomodoroMinutes;
+          allocations.sort((a, b) => a.fraction.compareTo(b.fraction));
+          continue;
+        }
+        final removable =
+            allocations.where((e) => e.pomodoros > 1).toList();
+        if (removable.isEmpty) break;
+        removable.sort((a, b) => a.fraction.compareTo(b.fraction));
+        final candidate = removable.first;
+        candidate.pomodoros -= 1;
+        diff += candidate.task.pomodoroMinutes;
+        allocations.sort((a, b) => a.fraction.compareTo(b.fraction));
+      }
+    }
+
+    final result = <String, int>{edited.id: editedPomodoros};
+    for (final e in targets.entries) {
+      result[e.key] = e.value.pomodoros;
+    }
+    return result;
+  }
+```
+
+**Constraints:**
+- No tocar `_redistributeFromBaseline` ni `applyRedistributedPomodoros`.
+- No tocar `_TargetAllocation` ni los helpers privados existentes.
+- `normalizeTaskWeightPercents` en `_redistributeFlexible` usa la misma normalización
+  que la UI (`.round()`), que es la función de `task_weighting.dart`. NO usar
+  `_roundHalfUp` para comparación de porcentajes mostrados.
+
+---
+
+## Commit 2 — Nuevo widget: TaskWeightPreviewSheet
+
+**Archivo (nuevo):** `lib/presentation/screens/task_weight_preview_sheet.dart`
+
+### Interfaz pública del widget
+
+```dart
+/// Which field triggered the sheet.
+enum TaskWeightField { percent, pomodoros }
+
+/// Callback signature for preview computation.
+/// [value]: the integer the user typed (percent 1-100 or pomodoros ≥1).
+/// [mode]: Fixed or Flexible.
+/// Returns the redistribution map (taskId → newPomodoros).
+typedef WeightPreviewComputer = Map<String, int> Function(
+    int value, WeightEditMode mode);
+
+class TaskWeightPreviewSheet extends StatefulWidget {
+  const TaskWeightPreviewSheet({
+    super.key,
+    required this.editedTask,
+    required this.baselineTasks,   // frozen snapshot, never mutated
+    required this.field,
+    required this.computePreview,  // pure fn, no provider access
+    required this.onApply,         // called with redistribution map
+  });
+
+  final PomodoroTask editedTask;
+  final List<PomodoroTask> baselineTasks;
+  final TaskWeightField field;
+  final WeightPreviewComputer computePreview;
+  final void Function(Map<String, int> result) onApply;
+
+  @override
+  State<TaskWeightPreviewSheet> createState() => _TaskWeightPreviewSheetState();
+}
+```
+
+### Estado interno
+
+```dart
+class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
+  late TextEditingController _inputCtrl;
+  WeightEditMode _mode = WeightEditMode.fixed;
+  Map<String, int>? _result;         // last valid redistribution
+  String? _precisionMessage;         // inline notice if deviation ≥ 10pp or no change
+}
+```
+
+### Ciclo de vida
+
+- `initState`: inicializar `_inputCtrl` con el valor actual de la tarea.
+  Para `TaskWeightField.percent`: valor inicial = porcentaje actual del task
+  (calculado con `normalizeTaskWeightPercents(widget.baselineTasks)[widget.editedTask.id]`).
+  Para `TaskWeightField.pomodoros`: valor inicial = `widget.editedTask.totalPomodoros.toString()`.
+  Agregar listener al controller → `_recalculate`.
+
+- `_recalculate`: parsear `_inputCtrl.text`, llamar `widget.computePreview(value, _mode)`,
+  actualizar `_result` y `_precisionMessage` con `setState`.
+  Si el input no es válido (null, ≤0, >100 para %): `_result = null`.
+
+- Al cambiar `_mode` en el segmented control: llamar `_recalculate`.
+
+### Layout (tres niveles)
+
+```
+Column(
+  children: [
+    // Input + segmented control
+    NumericInputField(controller: _inputCtrl, suffix: field == percent ? '%' : null),
+    SegmentedButton<WeightEditMode>(
+      segments: [Fixed total, Flexible total],
+      selected: {_mode},
+      onSelectionChanged: (s) { _mode = s.first; _recalculate(); },
+    ),
+
+    // Tier 1: result line
+    Text('Result: ${resultPomodoros} pom · ${resultPercent}%'),
+    if (_precisionMessage != null) Text(_precisionMessage!, style: warningStyle),
+
+    // Tier 2: group impact
+    Text('Group total: ${baselineGroupPom} → ${resultGroupPom} pom'),
+    Text('Group work: ${baselineGroupMin} → ${resultGroupMin} min'),
+
+    // Tier 3: mini-table — one row per selected task
+    for (final task in widget.baselineTasks)
+      _TaskRow(
+        task: task,
+        baseline: task.totalPomodoros,
+        result: _result?[task.id] ?? task.totalPomodoros,
+        isEdited: task.id == widget.editedTask.id,
+        baselinePercent: baselinePercents[task.id] ?? 0,
+        resultPercent: resultPercents[task.id] ?? 0,
+      ),
+
+    // Fixed footer
+    Row(
+      children: [
+        TextButton('Cancel', onPressed: () => Navigator.pop(context)),
+        ElevatedButton(
+          'Apply',
+          onPressed: _result == null ? null : () {
+            widget.onApply(_result!);
+            Navigator.pop(context);
+          },
+        ),
+      ],
+    ),
+  ],
+)
+```
+
+### Lógica de `_precisionMessage`
+
+Calcular resultPercent = `normalizeTaskWeightPercents(resultTasks)[editedTask.id]`.
+Para `field == percent`:
+- Si resultPercent == inputValue: sin mensaje.
+- Si `(resultPercent - inputValue).abs() >= 10`: mensaje "Exact result not possible.
+  Closest achievable: ${resultPercent}%."
+- Si resultado == baseline (sin cambio): mensaje "No change possible with current
+  pomodoros. Add more pomodoros or tasks for finer weights."
+
+Para `field == pomodoros`: mensajes equivalentes con pomodoros en lugar de %.
+
+### Constraints del widget
+
+- `baselineTasks` debe usarse como snapshot de lectura únicamente. No mutar.
+- `computePreview` no tiene acceso a providers — es una función pura pasada desde
+  el screen. No llamar a ref dentro del widget.
+- Apply está deshabilitado (`onPressed: null`) mientras `_result == null`.
+- El widget NO importa `task_editor_view_model.dart` directamente. Solo usa los tipos
+  públicos `WeightEditMode`, `TaskWeightField`, `PomodoroTask`.
+- Si `widget.baselineTasks` está vacío o contiene solo la tarea editada (1 tarea), el
+  mode selector puede ocultarse (solo un task → 100%, sin redistribución posible).
+
+---
+
+## Commit 3 — Editor screen: remover maquinaria Patch 1, convertir campos a tap targets
+
+**Archivo:** `lib/presentation/screens/task_editor_screen.dart`
+
+### Cambio 3A — Remover campos de estado de Patch 1
+
+Eliminar estas declaraciones de campos del State (área líneas 65–75):
+
+```dart
+// ELIMINAR ESTOS CAMPOS:
+  int? _weightPercentStartValue;
+  int? _lastRequestedWeightPercent;
+  int? _lastResultWeightPercent;
+  bool _lastRedistributionChanged = false;
+  String? _lastWeightNoticeKey;
+  bool _weightPercentEdited = false;
+  List<PomodoroTask>? _weightScopeBaseline;
+  bool _syncingWeight = false;
+```
+
+Mantener (son usados por el Save flow y otros):
+```dart
+  Map<String, int>? _pendingRedistribution;  // MANTENER — usado en _handleSave
+```
+
+### Cambio 3B — Remover `_weightPercentCtrl` y `_totalPomodorosCtrl`
+
+En la declaración de controllers (área líneas 88–93):
+```dart
+// ELIMINAR:
+  late TextEditingController _totalPomodorosCtrl;
+  late TextEditingController _weightPercentCtrl;
+```
+
+En `initState`: eliminar las líneas que crean y asignan esos controllers.
+En `dispose`: eliminar sus `.dispose()` calls.
+
+También:
+```dart
+// ELIMINAR en initState:
+  late FocusNode _weightPercentFocus;
+  // y su addListener block completo (líneas 97–107)
+// ELIMINAR en dispose:
+  _weightPercentFocus.dispose();
+```
+
+### Cambio 3C — Limpiar `_syncControllers`
+
+En `_syncControllers` (línea 1054), eliminar:
+```dart
+// ELIMINAR:
+    _totalPomodorosCtrl.text = task.totalPomodoros.toString();
+    final percent = _currentWeightPercent(task);
+    if (percent != null) {
+      _weightPercentCtrl.text = percent.toString();
+    }
+// También eliminar las líneas que limpian campos de Patch 1:
+    _weightScopeBaseline = null;
+    _lastResultWeightPercent = null;
+```
+
+Mantener solo `_pendingRedistribution = null;` en `_syncControllers`.
+
+### Cambio 3D — Remover métodos de Patch 1 del State
+
+Eliminar estos métodos completos:
+- `_maybeSyncWeightPercent` (líneas 1357–1364)
+- `_syncWeightPercentFromTask` (líneas 1366–1372)
+- `_currentWeightPercent` (líneas 1243–1255)
+- `_computeWeightPercentFromRedistribution` (líneas 1257–1273)
+- `_hasRedistributionChanges` (líneas 1275–1286)
+- `_maybeShowWeightPrecisionNotice` (líneas 1288–1315)
+- `_showWeightNotice` (línea 1317 y su cuerpo)
+
+### Cambio 3E — Remover `_maybeSyncWeightPercent` de `build()`
+
+En `build()`, eliminar el bloque (líneas 417–419):
+```dart
+// ELIMINAR:
+    if (weightPercent != null) {
+      _maybeSyncWeightPercent(weightPercent);
+    }
+```
+
+También eliminar `_maybePromptWeightInfoDialog` call si depende de estado eliminado
+(verificar antes). Si `_maybePromptWeightInfoDialog` es independiente, mantenerla.
+
+### Cambio 3F — Remover `_weightScopeBaseline` del call site de `_weightRow`
+
+En la llamada a `_weightRow` (línea 631):
+```dart
+// CÓDIGO ACTUAL:
+              _weightRow(
+                task: task,
+                weightScopeTasks: _weightScopeBaseline ?? selectedWeightTasks,
+
+// REEMPLAZAR CON:
+              _weightRow(
+                task: task,
+                weightScopeTasks: selectedWeightTasks,
+```
+
+(La congelación de baseline ahora ocurre al abrir la sheet, no en el editor.)
+
+### Cambio 3G — Reescribir `_weightRow`
+
+El método `_weightRow` (líneas 2019–2112) se reescribe completamente.
+Reemplazar TODO el cuerpo con tap-target displays:
+
+```dart
+  Widget _weightRow({
+    required PomodoroTask task,
+    required List<PomodoroTask> weightScopeTasks,
+    required bool showWeightPercent,
+    required VoidCallback onInfoTap,
+    required int? weightPercent,
+  }) {
+    final totalField = Expanded(
+      child: InkWell(
+        onTap: showWeightPercent
+            ? () => _openPomodorosPreviewSheet(task, weightScopeTasks)
+            : null,
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: 'Total pomodoros',
+            enabled: showWeightPercent,
+          ),
+          child: Text(task.totalPomodoros.toString()),
+        ),
+      ),
+    );
+    if (!showWeightPercent) {
+      return Row(children: [totalField]);
+    }
+    return Row(
+      children: [
+        totalField,
+        const SizedBox(width: 8),
+        Expanded(
+          child: InkWell(
+            onTap: () => _openWeightPreviewSheet(task, weightScopeTasks),
+            child: InputDecorator(
+              decoration: InputDecoration(
+                labelText: 'Task weight (%)',
+                suffixIcon: _infoButton(
+                  tooltip: 'How task weight works',
+                  onPressed: onInfoTap,
+                ),
+              ),
+              child: Text(weightPercent != null ? '$weightPercent%' : '—'),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+```
+
+**Nota:** agregar `required int? weightPercent` al parámetro del método y actualizar
+el call site en `build()` para pasar `weightPercent: weightPercent` (ya computado
+en `build()` como `selectedWeightPercents[selectedTask.id]`).
+
+También, en `build()`, eliminar la referencia a `selectedWeightTasks` como `_weightScopeBaseline ?? ...`
+(ya eliminado en 3F); y eliminar `_maybeSyncWeightPercent` (eliminado en 3E).
+
+### Cambio 3H — Agregar `_openWeightPreviewSheet` y `_openPomodorosPreviewSheet`
+
+Agregar dos métodos al State (en cualquier lugar después de `_update`):
+
+```dart
+  void _openWeightPreviewSheet(
+      PomodoroTask task, List<PomodoroTask> scope) {
+    final frozenScope = List<PomodoroTask>.unmodifiable(scope);
+    final editor = ref.read(taskEditorProvider.notifier);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => TaskWeightPreviewSheet(
+        editedTask: task,
+        baselineTasks: frozenScope,
+        field: TaskWeightField.percent,
+        computePreview: (value, mode) => editor.redistributeWeightPercent(
+          edited: task,
+          targetPercent: value,
+          tasks: frozenScope,
+          mode: mode,
+        ),
+        onApply: (result) {
+          _pendingRedistribution = result;
+          _update(task.copyWith(totalPomodoros: result[task.id]!));
+        },
+      ),
+    );
+  }
+
+  void _openPomodorosPreviewSheet(
+      PomodoroTask task, List<PomodoroTask> scope) {
+    final frozenScope = List<PomodoroTask>.unmodifiable(scope);
+    final editor = ref.read(taskEditorProvider.notifier);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => TaskWeightPreviewSheet(
+        editedTask: task,
+        baselineTasks: frozenScope,
+        field: TaskWeightField.pomodoros,
+        computePreview: (value, mode) => editor.redistributeTotalPomodoros(
+          edited: task,
+          targetPomodoros: value,
+          tasks: frozenScope,
+          mode: mode,
+        ),
+        onApply: (result) {
+          _pendingRedistribution = result;
+          _update(task.copyWith(totalPomodoros: result[task.id]!));
+        },
+      ),
+    );
+  }
+```
+
+**Import requerido en el screen:**
+```dart
+import 'task_weight_preview_sheet.dart';
+```
+
+### Cambio 3I — Limpiar `_handleSave` y otros reset points
+
+En `_handleSave` (línea 295), ya NO hay `_weightScopeBaseline` ni `_lastResultWeightPercent`.
+Eliminar esas dos líneas de null-assignment que quedaron del Patch 1.
+Mantener `_pendingRedistribution = null;` (sigue siendo necesario).
+
+Hacer lo mismo en `_handleDiscard` (línea 356), `_syncControllers` (línea 1034),
+y pomodoro duration `onChanged` (línea 649):
+- Eliminar `_weightScopeBaseline = null;` y `_lastResultWeightPercent = null;`
+- Mantener `_pendingRedistribution = null;`
+
+En el Total pomodoros `onChanged` en `_weightRow` — este handler desaparece completamente
+porque el campo ahora es InkWell con `_openPomodorosPreviewSheet`. Ya no hay `onChanged`.
+
+### Constraints — NO tocar
+
+- No modificar `_handleSave` más allá de eliminar las líneas de Patch 1 ya indicadas.
+- No modificar `applyRedistributedPomodoros`.
+- No modificar el flujo de Save/Discard excepto para remover las líneas indicadas.
+- No cambiar el comportamiento de los demás campos del editor (nombre, duración pomodoro,
+  breaks, etc.).
+- No remover `_maybePromptWeightInfoDialog` (modal de info de primera exposición).
+- No remover el info icon button ni el diálogo de info (`_showWeightInfoDialog`).
+
+---
+
+## Commit 4 — Tests
+
+**Archivos:**
+- `test/presentation/viewmodels/task_editor_view_model_test.dart`
+- `test/domain/task_weighting_test.dart`
+
+### Tests para Commit 4
+
+Agregar en `task_editor_view_model_test.dart`:
+
+1. **redistributeWeightPercent Fixed mode (existing behavior preserved):**
+   verificar que el modo fixed produce el mismo resultado que el método antes de Patch 2.
+
+2. **redistributeWeightPercent Flexible mode:**
+   - caso base: 4 tareas seleccionadas, editar A de 5 a 80% → solo A cambia, B/C/D intactos.
+   - verificar que el total de A está dentro del rango buscado y la aproximación es la
+     más cercana posible.
+
+3. **redistributeTotalPomodoros Fixed mode:**
+   - editar A de 5 a 8 pomodoros con grupo de 11 total → otros se redistribuyen para
+     mantener 11 total.
+
+4. **redistributeTotalPomodoros Flexible mode:**
+   - editar A de 5 a 8 pomodoros → solo A cambia a 8, B/C/D intactos.
+
+5. **Tiebreaker determinista en Flexible:**
+   - caso donde dos candidatos tienen igual desviación % → verificar que el de menor
+     cambio en grupo gana.
+
+Agregar en `task_weighting_test.dart`:
+
+6. **normalizeTaskWeightPercents con lista post-flexible:**
+   verificar que la normalización es coherente con el % mostrado al usuario cuando
+   el grupo total cambia en modo flexible.
+
+---
+
+## Orden de commits
+
+```
+Commit 1: feat(bug016-p2): add WeightEditMode enum and mode-aware redistribution methods to ViewModel
+Commit 2: feat(bug016-p2): implement TaskWeightPreviewSheet widget
+Commit 3: feat(bug016-p2): convert weight/pomodoros fields to tap targets and integrate preview sheet
+Commit 4: test(bug016-p2): add mode-aware redistribution tests
+```
+
+---
+
+## Tests a ejecutar antes de entregar a Claude para QA
+
+```bash
+flutter analyze
+flutter test test/presentation/viewmodels/task_editor_view_model_test.dart
+flutter test test/domain/task_weighting_test.dart
+```
+
+Todos deben pasar. Si alguno falla, reportar a Claude antes de continuar.
+No ajustar tests para que pasen — si un test falla, hay un bug en la implementación.
+
+La verificación de comportamiento en device (sheet abre correctamente, Apply funciona,
+Cancel restaura, modo selector recalcula en vivo, 1-task muestra disabled) es
+responsabilidad de Claude QA + validación del usuario.
