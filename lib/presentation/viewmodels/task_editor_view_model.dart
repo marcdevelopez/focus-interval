@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart'
@@ -14,7 +13,6 @@ import '../../data/models/pomodoro_preset.dart';
 import '../../data/models/pomodoro_session.dart';
 import '../../data/models/selected_sound.dart';
 import '../../domain/pomodoro_machine.dart';
-import '../../domain/task_weighting.dart';
 import '../../domain/validators.dart';
 import '../providers.dart';
 import '../../data/services/local_sound_overrides.dart';
@@ -502,37 +500,99 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
         ? 1
         : (targetPercent > 100 ? 100 : targetPercent);
     final currentPom = baselineEdited.totalPomodoros;
+    final editedMinutes = baselineEdited.pomodoroMinutes;
+    final othersWork = others.fold<int>(
+      0,
+      (sum, task) => sum + (task.totalPomodoros * task.pomodoroMinutes),
+    );
     final baselineGroupTotal = merged.fold<int>(
       0,
       (sum, task) => sum + task.totalPomodoros,
     );
-    final cap = math.min(99, math.max(currentPom * 3, currentPom + 12));
 
-    int? bestCandidate;
+    int displayedPercentForCandidate(int candidate) {
+      final editedWork = candidate * editedMinutes;
+      final totalWork = othersWork + editedWork;
+      if (totalWork <= 0) return 0;
+      return ((editedWork / totalWork) * 100).round();
+    }
+
+    // Candidate where rounded percent can first reach 100% (>= 99.5% real ratio).
+    var maxCandidate = 1;
+    if (othersWork > 0 && editedMinutes > 0) {
+      maxCandidate = ((199.0 * othersWork) / editedMinutes).ceil();
+      if (maxCandidate < 1) maxCandidate = 1;
+    }
+
+    int lowerBoundForPercent(int percent) {
+      var low = 1;
+      var high = maxCandidate;
+      while (low < high) {
+        final mid = low + ((high - low) ~/ 2);
+        final value = displayedPercentForCandidate(mid);
+        if (value >= percent) {
+          high = mid;
+        } else {
+          low = mid + 1;
+        }
+      }
+      return low;
+    }
+
+    int upperBoundForPercent(int percent) {
+      var low = 1;
+      var high = maxCandidate;
+      while (low < high) {
+        final mid = low + ((high - low + 1) ~/ 2);
+        final value = displayedPercentForCandidate(mid);
+        if (value <= percent) {
+          low = mid;
+        } else {
+          high = mid - 1;
+        }
+      }
+      return low;
+    }
+
+    final achievablePercents = <int>[];
+    for (var p = 0; p <= 100; p += 1) {
+      final lower = lowerBoundForPercent(p);
+      if (displayedPercentForCandidate(lower) == p) {
+        achievablePercents.add(p);
+      }
+    }
+    if (achievablePercents.isEmpty) {
+      return {for (final task in merged) task.id: task.totalPomodoros};
+    }
+
+    var minDeviation = 999;
+    for (final p in achievablePercents) {
+      final deviation = (p - clamped).abs();
+      if (deviation < minDeviation) {
+        minDeviation = deviation;
+      }
+    }
+
+    var bestCandidate = currentPom;
     var bestDeviation = 999;
     var bestGroupDiff = 999999;
     var bestEditedDiff = 999999;
     var bestGroupTotal = 999999;
 
-    for (var candidate = 1; candidate <= cap; candidate += 1) {
-      final projected = <PomodoroTask>[
-        for (final task in merged)
-          task.id == edited.id
-              ? task.copyWith(totalPomodoros: candidate)
-              : task,
-      ];
-      final percents = normalizeTaskWeightPercents(projected);
-      final resultPct = percents[edited.id] ?? 0;
-      final deviation = (resultPct - clamped).abs();
-      final groupTotal = projected.fold<int>(
-        0,
-        (sum, task) => sum + task.totalPomodoros,
-      );
+    for (final p in achievablePercents) {
+      final deviation = (p - clamped).abs();
+      if (deviation != minDeviation) continue;
+
+      final lower = lowerBoundForPercent(p);
+      final upper = upperBoundForPercent(p);
+      final candidate = currentPom < lower
+          ? lower
+          : (currentPom > upper ? upper : currentPom);
+      final groupTotal = baselineGroupTotal - currentPom + candidate;
       final groupDiff = (groupTotal - baselineGroupTotal).abs();
       final editedDiff = (candidate - currentPom).abs();
 
       final better =
-          bestCandidate == null ||
           deviation < bestDeviation ||
           (deviation == bestDeviation && groupDiff < bestGroupDiff) ||
           (deviation == bestDeviation &&
@@ -553,7 +613,7 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
     final result = <String, int>{};
     for (final task in merged) {
       result[task.id] = task.id == edited.id
-          ? (bestCandidate ?? currentPom)
+          ? bestCandidate
           : task.totalPomodoros;
     }
     return result;

@@ -176,7 +176,27 @@ void main() {
       expect(result['B'], 4);
       expect(result['C'], 1);
       expect(result['D'], 1);
-      expect(result['A'], inInclusiveRange(1, 27));
+      expect(result['A'], 24);
+    });
+
+    test('redistributeWeightPercent flexible can grow beyond historical cap', () {
+      final viewModel = container.read(taskEditorProvider.notifier);
+      final edited = buildTask(id: 'G1', totalPomodoros: 3, pomodoroMinutes: 15);
+      final tasks = [
+        edited,
+        buildTask(id: 'G2', totalPomodoros: 3, pomodoroMinutes: 15),
+        buildTask(id: 'G3', totalPomodoros: 3, pomodoroMinutes: 15),
+        buildTask(id: 'G4', totalPomodoros: 10, pomodoroMinutes: 25),
+      ];
+
+      final result = viewModel.redistributeWeightPercent(
+        edited: edited,
+        targetPercent: 80,
+        tasks: tasks,
+        mode: WeightEditMode.flexible,
+      );
+
+      expect(result['G1'], greaterThan(27));
     });
 
     test('redistributeTotalPomodoros fixed preserves group total', () {
@@ -227,7 +247,7 @@ void main() {
       expect(result['D'], 1);
     });
 
-    test('flexible tiebreak favors smallest group-total change', () {
+    test('flexible picks exact percentage when reachable', () {
       final viewModel = container.read(taskEditorProvider.notifier);
       final edited = buildTask(id: 'A', totalPomodoros: 90);
       final tasks = [
@@ -244,7 +264,7 @@ void main() {
         mode: WeightEditMode.flexible,
       );
 
-      expect(result['A'], 90);
+      expect(result['A'], 117);
       expect(result['B'], 1);
       expect(result['C'], 1);
       expect(result['D'], 1);
