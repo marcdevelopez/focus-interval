@@ -203,19 +203,17 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
         ? 'Edit Task weight'
         : 'Edit Total pomodoros';
 
-    return SafeArea(
-      top: false,
-      child: AnimatedPadding(
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOut,
-        padding: EdgeInsets.only(bottom: bottomInset),
-        child: FractionallySizedBox(
-          heightFactor: 0.92,
-          child: Container(
-            decoration: const BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: FractionallySizedBox(
+        heightFactor: 1.0,
+        child: Material(
+          color: Colors.black,
+          child: SafeArea(
+            top: true,
+            bottom: false,
             child: Column(
               children: [
                 Expanded(
@@ -224,6 +222,19 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        TextButton.icon(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.arrow_back, size: 18),
+                          label: const Text('Back'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.zero,
+                            minimumSize: const Size(0, 32),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            alignment: Alignment.centerLeft,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
                         Text(
                           title,
                           style: const TextStyle(
