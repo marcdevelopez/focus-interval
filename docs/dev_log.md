@@ -15203,3 +15203,44 @@ This could lead to accidental mixed-context interactions and unclear navigation 
 
 - Patch 2 keeps local gate PASS.
 - Device validation packet still pending before final Patch 2 closure.
+
+---
+
+## Block 677 — BUG-016 Patch 2 UX clarity refinement: inline business-rule explanation per mode (28/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 runtime/UI refinement (mode comprehension).
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Runtime UX adjustment + docs alignment.
+
+### Context
+
+User feedback: with only `Fixed total` / `Flexible total` labels, users have to
+guess expected behavior by trial-and-error because business rules are not explicit
+inside the preview flow.
+
+### Changes applied
+
+- Added inline explanation block directly below the segmented selector in preview.
+- Explanation updates dynamically with the selected mode:
+  - **Fixed total:** selected-group total stays constant; other selected tasks are
+    redistributed proportionally.
+  - **Flexible total:** other selected tasks stay unchanged; only edited task changes,
+    so selected-group total may change.
+
+### Runtime evidence
+
+- Commit: `7699ba4` — `fix(bug016): explain fixed vs flexible business rules in preview`
+- Local gate PASS after change:
+  - `flutter analyze`
+
+### Docs synchronized
+
+- `docs/specs.md`:
+  - Added mandatory inline mode explanation requirement under preview-sheet spec.
+- `docs/roadmap.md`:
+  - Updated Phase 10 BUG-016 Patch 2 key decisions with inline mode explanation.
+
+### Status after this block
+
+- Patch 2 keeps local gate PASS.
+- Device validation packet still pending before final Patch 2 closure.
