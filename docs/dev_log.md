@@ -15164,3 +15164,42 @@ All 9 original UX questions (a–i) plus 7 additional micro-clarifications (j–
 
 - Patch 2 implementation is in branch and locally validated.
 - Device validation packet for Patch 2 remains pending before closure.
+
+---
+
+## Block 676 — BUG-016 Patch 2 UX clarity refinement: fullscreen preview + Back=Cancel (28/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 runtime/UI refinement (context clarity).
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Runtime UX adjustment + docs alignment.
+
+### Context
+
+User validation feedback confirmed contextual confusion because preview was rendered
+as a partial-height sheet, leaving `Edit task` AppBar content (`Save`) visible behind.
+This could lead to accidental mixed-context interactions and unclear navigation outcomes.
+
+### Changes applied
+
+- Preview surface updated to full-screen opaque rendering (no underlying editor
+  elements visible during preview).
+- Added top-left `Back` action inside preview with the exact same semantics as
+  `Cancel` (close without apply).
+- Existing footer actions remain unchanged (`Cancel` / `Apply`).
+
+### Runtime evidence
+
+- Commit: `bfcfa14` — `fix(bug016): make preview sheet fullscreen and add back action`
+- Local gate PASS after change:
+  - `flutter analyze`
+
+### Docs synchronized
+
+- `docs/specs.md`:
+  - Added explicit full-screen opaque preview-surface requirement.
+  - Added explicit `Back` action semantics equal to `Cancel`.
+
+### Status after this block
+
+- Patch 2 keeps local gate PASS.
+- Device validation packet still pending before final Patch 2 closure.

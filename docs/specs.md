@@ -1176,6 +1176,9 @@ UI implications (documentation only):
 Preview sheet specification (locked 28/03/2026):
 
 - **Trigger:** tapping Task weight (%) or Total pomodoros in the editor.
+- **Surface:** preview opens as a full-screen opaque sheet/surface. Underlying
+  Edit Task UI (including AppBar actions) must not remain visible to avoid
+  mixed-context interaction.
 - **Baseline:** frozen at sheet open from current editor draft state. Immune to widget rebuilds
   during the sheet session. If the selected-task scope changes while the sheet is open,
   close the sheet without applying and show a non-modal notice:
@@ -1196,7 +1199,9 @@ Preview sheet specification (locked 28/03/2026):
 - **Snackbar:** the existing “Closest possible is X%” toast is removed. All precision
   information is shown inline within the sheet only.
 - **Footer (fixed, non-scrolling):** Cancel (left) and Apply (right).
+  The sheet also provides a top-left Back action with the same semantics as Cancel.
   — Cancel: closes sheet, restores pre-open snapshot, no state change.
+  — Back: closes sheet, restores pre-open snapshot, no state change.
   — Apply: writes result to local editor draft, marks editor dirty, closes sheet.
     Next sheet open uses the post-Apply draft as its baseline.
 - **1 task selected:** Task weight (%) is shown disabled at 100%, optional helper text
