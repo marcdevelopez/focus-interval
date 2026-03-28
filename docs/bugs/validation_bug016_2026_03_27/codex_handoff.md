@@ -463,9 +463,9 @@ Agregar después del cierre de `_redistributeFromBaseline` (después de línea 3
         baselineTasks.where((t) => t.id != edited.id).toList();
     final othersTotal = others.fold<int>(0, (s, t) => s + t.totalPomodoros);
     final currentPom = edited.totalPomodoros;
-    final cap = [99, currentPom * 3, currentPom + 12]
-        .reduce((a, b) => a > b ? a : b)
-        .clamp(1, 99);
+    // min(99, max(current*3, current+12)) — take the larger of the two growth
+    // heuristics, then cap at 99. dart:math import required.
+    final cap = min(99, max(currentPom * 3, currentPom + 12));
 
     int? bestCandidate;
     int bestDeviation = 999;
@@ -757,8 +757,10 @@ Para `field == pomodoros`: mensajes equivalentes con pomodoros en lugar de %.
 - Apply está deshabilitado (`onPressed: null`) mientras `_result == null`.
 - El widget NO importa `task_editor_view_model.dart` directamente. Solo usa los tipos
   públicos `WeightEditMode`, `TaskWeightField`, `PomodoroTask`.
-- Si `widget.baselineTasks` está vacío o contiene solo la tarea editada (1 tarea), el
-  mode selector puede ocultarse (solo un task → 100%, sin redistribución posible).
+- Si `widget.baselineTasks.length <= 1` (solo la tarea editada, sin otras seleccionadas),
+  ocultar el mode selector y la mini-tabla. La sheet sigue abriendo para Total pomodoros
+  (el usuario puede cambiar su valor con Apply/Cancel) pero no hay redistribución posible.
+  Para Task weight (%), la apertura está bloqueada en el screen antes de llegar aquí.
 
 ---
 
@@ -785,6 +787,7 @@ Eliminar estas declaraciones de campos del State (área líneas 65–75):
 Mantener (son usados por el Save flow y otros):
 ```dart
   Map<String, int>? _pendingRedistribution;  // MANTENER — usado en _handleSave
+  bool _weightSheetOpen = false;             // AGREGAR — true mientras la preview sheet esté abierta
 ```
 
 ### Cambio 3B — Remover `_weightPercentCtrl` y `_totalPomodorosCtrl`
@@ -879,15 +882,15 @@ Reemplazar TODO el cuerpo con tap-target displays:
     required VoidCallback onInfoTap,
     required int? weightPercent,
   }) {
+    // Total pomodoros: ALWAYS tappable and enabled regardless of weight context.
+    // The sheet handles the no-redistribution case (scope.length <= 1) internally.
     final totalField = Expanded(
       child: InkWell(
-        onTap: showWeightPercent
-            ? () => _openPomodorosPreviewSheet(task, weightScopeTasks)
-            : null,
+        onTap: () => _openPomodorosPreviewSheet(task, weightScopeTasks),
         child: InputDecorator(
-          decoration: InputDecoration(
+          decoration: const InputDecoration(
             labelText: 'Total pomodoros',
-            enabled: showWeightPercent,
+            enabled: true,
           ),
           child: Text(task.totalPomodoros.toString()),
         ),
@@ -896,22 +899,32 @@ Reemplazar TODO el cuerpo con tap-target displays:
     if (!showWeightPercent) {
       return Row(children: [totalField]);
     }
+    // Task weight (%): only tappable when 2+ tasks are selected.
+    // With 1 task selected: field is visible but disabled, shows 100%.
+    final singleTask = weightScopeTasks.length <= 1;
     return Row(
       children: [
         totalField,
         const SizedBox(width: 8),
         Expanded(
           child: InkWell(
-            onTap: () => _openWeightPreviewSheet(task, weightScopeTasks),
+            onTap: singleTask
+                ? null
+                : () => _openWeightPreviewSheet(task, weightScopeTasks),
             child: InputDecorator(
               decoration: InputDecoration(
                 labelText: 'Task weight (%)',
+                enabled: !singleTask,
                 suffixIcon: _infoButton(
                   tooltip: 'How task weight works',
                   onPressed: onInfoTap,
                 ),
               ),
-              child: Text(weightPercent != null ? '$weightPercent%' : '—'),
+              child: Text(
+                singleTask
+                    ? '100%'
+                    : (weightPercent != null ? '$weightPercent%' : '—'),
+              ),
             ),
           ),
         ),
@@ -934,8 +947,12 @@ Agregar dos métodos al State (en cualquier lugar después de `_update`):
 ```dart
   void _openWeightPreviewSheet(
       PomodoroTask task, List<PomodoroTask> scope) {
+    // Guard: sheet is meaningless with only one task (no redistribution possible).
+    // The InkWell onTap is already null for singleTask, but guard defensively here too.
+    if (scope.length <= 1) return;
     final frozenScope = List<PomodoroTask>.unmodifiable(scope);
     final editor = ref.read(taskEditorProvider.notifier);
+    setState(() => _weightSheetOpen = true);
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -954,13 +971,16 @@ Agregar dos métodos al State (en cualquier lugar después de `_update`):
           _update(task.copyWith(totalPomodoros: result[task.id]!));
         },
       ),
-    );
+    ).then((_) {
+      if (mounted) setState(() => _weightSheetOpen = false);
+    });
   }
 
   void _openPomodorosPreviewSheet(
       PomodoroTask task, List<PomodoroTask> scope) {
     final frozenScope = List<PomodoroTask>.unmodifiable(scope);
     final editor = ref.read(taskEditorProvider.notifier);
+    setState(() => _weightSheetOpen = true);
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -979,7 +999,9 @@ Agregar dos métodos al State (en cualquier lugar después de `_update`):
           _update(task.copyWith(totalPomodoros: result[task.id]!));
         },
       ),
-    );
+    ).then((_) {
+      if (mounted) setState(() => _weightSheetOpen = false);
+    });
   }
 ```
 
@@ -1001,6 +1023,37 @@ y pomodoro duration `onChanged` (línea 649):
 
 En el Total pomodoros `onChanged` en `_weightRow` — este handler desaparece completamente
 porque el campo ahora es InkWell con `_openPomodorosPreviewSheet`. Ya no hay `onChanged`.
+
+### Cambio 3J — Detectar cambio de selección con sheet abierta (en `build()`)
+
+Agregar este `ref.listen` en `build()`, junto a los otros `ref.listen` existentes
+(área líneas 410–430, después de los `ref.watch` iniciales):
+
+```dart
+    // Close weight preview sheet if selection changes while it is open.
+    ref.listen<Set<String>>(taskSelectionProvider, (prev, next) {
+      if (!_weightSheetOpen) return;
+      if (prev == null || prev == next) return;
+      // Selection changed while sheet is open: dismiss without applying.
+      Navigator.of(context).maybePop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selection changed — weight edit discarded.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    });
+```
+
+**Por qué `maybePop` y no `pop`:** el sheet puede ya haber sido cerrada por el usuario
+(Cancel/Apply) antes de que llegue el evento de selección. `maybePop` es seguro si no
+hay nada que cerrar; `pop` lanzaría una excepción. El `.then()` en los métodos de apertura
+ya borra `_weightSheetOpen` cuando la sheet se cierra normalmente, por lo que el guard
+`if (!_weightSheetOpen) return;` previene falsos disparos.
+
+**Constraint:** no extraer este bloque a un método separado. Debe vivir en `build()`
+como `ref.listen`, no como `ref.watch` ni como listener imperativo, para que Riverpod
+gestione el ciclo de vida del listener correctamente.
 
 ### Constraints — NO tocar
 
