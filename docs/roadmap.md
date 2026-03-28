@@ -510,6 +510,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 19 — Groups Hub: sticky “Go to Task List” CTA (regression).
 - Phase 19 — Task List / Groups Hub countdowns update in real time (bug).
 - Phase 19 — Groups Hub timing rows/cards must show actual `Started` time for Start-now groups (no planned start), and run-start timing for scheduled groups; when notice applies, show “Pre-Run X min starts at …” (no +1 min gap) (new requirement).
+- Deferred — Task edit presence advisory (`IDEA-041`): informational non-blocking advisory when another device is editing the same task (heartbeat ~15-30s, TTL ~45-60s, no hard lock). Design decisions locked 28/03/2026. Implementation guards in ledger entry. Separate from BUG-016 Patch 2.
 - Phase 6 — Web auth session persistence (Chrome dev profile + Firebase Auth LOCAL persistence) (new requirement).
 - Outstanding items from specs sections 10.4.2 / 10.4.6 / 12 / 10.5 are tracked in Phases 18, 19, and 25 (not reopened).
 - Rule: if any previously completed phase is missing required behavior, list it here and resolve it before continuing in normal phase order.
