@@ -15206,6 +15206,61 @@ This could lead to accidental mixed-context interactions and unclear navigation 
 
 ---
 
+## Block 678 — BUG-016 Patch 2 UX clarity refinement: compact status semantics + interaction-aware warning gating (28/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 runtime/UI refinement (status clarity and redundancy reduction).
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Runtime UX adjustment + docs alignment.
+
+### Context
+
+User feedback identified two clarity issues in preview:
+- `Fixed total` explanation remained ambiguous about what total is preserved.
+- Orange warning text appeared immediately on open (and could feel incorrect) even
+  before a meaningful user change.
+Additionally, the top summary repeated data already visible elsewhere.
+
+### Changes applied
+
+- Reworded `Fixed total` explanation to explicitly state:
+  - selected-group total (pomodoros + work minutes) is preserved,
+  - closest achievable outcome is applied,
+  - other selected tasks are redistributed proportionally.
+- Removed redundant top summary lines:
+  - removed `Requested`,
+  - removed gray `Closest achievable`,
+  - removed `Result`.
+- Added compact status semantics:
+  - **green** success line for exact result,
+  - **orange** warning line only when needed.
+- Warning gating is now interaction-aware:
+  - no orange warning on first open,
+  - no orange warning when user returns to opening snapshot
+    (initial value in default mode),
+  - orange warning shown only after interaction when exactness is not possible or
+    when no change can be applied.
+
+### Runtime evidence
+
+- Commit: `37af472` — `fix(bug016): simplify preview status and suppress non-actionable warnings`
+- Local gate PASS after change:
+  - `flutter analyze`
+
+### Docs synchronized
+
+- `docs/specs.md`:
+  - clarified Fixed-mode explanation with preserved totals + closest-achievable semantics.
+  - defined compact status behavior and interaction-aware warning gating.
+- `docs/roadmap.md`:
+  - updated Phase 10 BUG-016 Patch 2 key decisions with compact status semantics.
+
+### Status after this block
+
+- Patch 2 keeps local gate PASS.
+- Device validation packet still pending before final Patch 2 closure.
+
+---
+
 ## Block 677 — BUG-016 Patch 2 UX clarity refinement: inline business-rule explanation per mode (28/03/2026)
 
 **Current branch intent:** BUG-016 Patch 2 runtime/UI refinement (mode comprehension).
