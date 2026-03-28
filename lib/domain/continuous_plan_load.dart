@@ -27,7 +27,7 @@ String continuousPlanLoadLabel(ContinuousPlanLoadLevel level) {
     case ContinuousPlanLoadLevel.superhuman:
       return 'Superhuman';
     case ContinuousPlanLoadLevel.machineLevel:
-      return 'Machine-level';
+      return 'Machine';
     case ContinuousPlanLoadLevel.none:
       return '';
   }

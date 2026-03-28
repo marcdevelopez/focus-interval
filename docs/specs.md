@@ -877,8 +877,9 @@ Item layout (top → bottom):
 3. **Context row (time)**
    - **When selected**:
      - Label: **Time range**
-     - Two chips: start time and end time (theoretical schedule preview)
-     - Per-task total time is hidden (the group summary already shows totals)
+     - Chips on a single horizontal line: start time + end time (theoretical schedule preview),
+       plus the per-task total-duration chip value only (no `Total` prefix, e.g. `2h 11m`),
+       visually emphasized vs regular time chips.
    - **When not selected**:
      - Label: **Total time**
      - One chip: total task duration
@@ -1215,10 +1216,11 @@ Preview sheet specification (locked 28/03/2026):
          In single-task scope, evaluate that task's own continuous total.
      - In preview, render this caution inline below `Group work`.
        - After save, show a persistent reminder chip with level label
-         (`Unusual` / `Superhuman` / `Machine-level`) in Task List and Groups Hub.
+         (`Unusual` / `Superhuman` / `Machine`) in Task List and Groups Hub.
          Placement:
          - Task List selected cards: on the `Time range` row, after the new
-           `Total time` chip (`start → end`, includes breaks).
+           total-duration chip (`start → end`, includes breaks), displayed as
+           value-only (example: `2h 11m`).
          - Groups Hub card + summary modal: inline to the right of `Total time`.
   2. Group impact block:
      - “Group total: N → N pomodoros” (before/after)

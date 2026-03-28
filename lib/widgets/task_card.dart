@@ -528,12 +528,15 @@ class TaskCard extends StatelessWidget {
     final parts = _splitTimeRange(timeRange);
     final chips = <Widget>[...parts.map(_timeChip)];
     if (totalTime != null && totalTime.trim().isNotEmpty) {
-      chips.add(_timeChip('Total $totalTime'));
+      chips.add(_timeChip(totalTime, emphasized: true));
     }
     if (loadLevelChip != null) {
       chips.add(loadLevelChip);
     }
-    return Wrap(spacing: 6, runSpacing: 6, children: chips);
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(children: _withChipSpacing(chips)),
+    );
   }
 
   List<String> _splitTimeRange(String timeRange) {
@@ -553,20 +556,36 @@ class TaskCard extends StatelessWidget {
     return [trimmed];
   }
 
-  Widget _timeChip(String value) {
+  List<Widget> _withChipSpacing(List<Widget> chips) {
+    final children = <Widget>[];
+    for (var i = 0; i < chips.length; i += 1) {
+      children.add(chips[i]);
+      if (i < chips.length - 1) {
+        children.add(const SizedBox(width: 6));
+      }
+    }
+    return children;
+  }
+
+  Widget _timeChip(String value, {bool emphasized = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white10,
+        color: emphasized
+            ? Colors.white.withValues(alpha: 0.14)
+            : Colors.white10,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white24, width: 1),
+        border: Border.all(
+          color: emphasized ? Colors.white38 : Colors.white24,
+          width: 1,
+        ),
       ),
       child: Text(
         value,
-        style: const TextStyle(
-          color: Colors.white70,
+        style: TextStyle(
+          color: emphasized ? Colors.white : Colors.white70,
           fontSize: 11,
-          fontWeight: FontWeight.w600,
+          fontWeight: emphasized ? FontWeight.w700 : FontWeight.w600,
         ),
       ),
     );

@@ -15487,3 +15487,48 @@ list snapshot until save.
 
 - Interim `%` rendering in `Edit task` is now coherent with preview/apply/save
   for pending redistribution scenarios.
+
+---
+
+## Block 684 — BUG-016 Patch 2 UI compactness: value-only total-time chip + single-line timing row + machine label shortening (28/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 runtime/UI compactness refinement.
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Task List chip presentation + continuous-load label normalization.
+
+### Context
+
+User feedback requested tighter task-card timing rows so chips stay in one line
+more consistently:
+- remove redundant `Total` prefix in selected-card total duration chips,
+- visually distinguish total duration chip,
+- shorten extreme-load label to `Machine`.
+
+### Changes applied
+
+- `TaskCard` timing chips:
+  - switched from wrapping layout to one-line horizontal flow with manual scroll.
+  - total-duration chip now shows value only (example: `2h 11m`).
+  - total-duration chip receives emphasized style (stronger tone and weight).
+- Continuous-load label:
+  - renamed `Machine-level` chip label to `Machine`.
+  - load chip now has a max width with ellipsis-safe text behavior.
+
+### Runtime evidence
+
+- Local gate PASS:
+  - `flutter analyze`
+
+### Docs synchronized
+
+- `docs/specs.md`:
+  - Task List selected `Time range` row now specifies value-only total-duration chip
+    and single-line horizontal chip behavior.
+  - continuous-load reminder label list updated to `Unusual / Superhuman / Machine`.
+- `docs/roadmap.md`:
+  - Phase 10 BUG-016 Patch 2 decision line updated from `Machine-level` to `Machine`.
+
+### Status after this block
+
+- Task List timing row is now more compact and consistent for long plans without
+  changing business logic.
