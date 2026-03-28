@@ -28,6 +28,8 @@ class TaskCard extends StatelessWidget {
   final VoidCallback onDelete;
   final Widget? reorderHandle;
   final String? timeRange;
+  final String? totalTime;
+  final Widget? loadLevelChip;
   final LocalSoundOverrides? soundOverrides;
   final int? weightPercent;
   final bool enableInteraction;
@@ -41,6 +43,8 @@ class TaskCard extends StatelessWidget {
     required this.onDelete,
     this.reorderHandle,
     this.timeRange,
+    this.totalTime,
+    this.loadLevelChip,
     this.soundOverrides,
     this.weightPercent,
     this.enableInteraction = true,
@@ -87,8 +91,7 @@ class TaskCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (weightPercent != null)
-                          _weightBadge(weightPercent!),
+                        if (weightPercent != null) _weightBadge(weightPercent!),
                       ],
                     ),
                     const SizedBox(height: 10),
@@ -175,7 +178,13 @@ class TaskCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Expanded(child: _timeRangeChips(timeRange!)),
+                          Expanded(
+                            child: _timeRangeChips(
+                              timeRange!,
+                              totalTime: totalTime,
+                              loadLevelChip: loadLevelChip,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -220,11 +229,7 @@ class TaskCard extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        Container(
-          width: 1,
-          height: 18,
-          color: Colors.white24,
-        ),
+        Container(width: 1, height: 18, color: Colors.white24),
         const SizedBox(width: 10),
         Expanded(
           child: _soundEntry(
@@ -237,7 +242,9 @@ class TaskCard extends StatelessWidget {
     );
   }
 
-  Future<_SoundLabels> _resolveSoundLabels(LocalSoundOverrides overrides) async {
+  Future<_SoundLabels> _resolveSoundLabels(
+    LocalSoundOverrides overrides,
+  ) async {
     final startOverride = await overrides.getOverride(
       task.id,
       SoundSlot.pomodoroStart,
@@ -247,9 +254,11 @@ class TaskCard extends StatelessWidget {
       SoundSlot.breakStart,
     );
     return _SoundLabels(
-      start: _overrideLabel(startOverride) ??
+      start:
+          _overrideLabel(startOverride) ??
           _soundLabel(task.startSound, slot: SoundSlot.pomodoroStart),
-      breakStart: _overrideLabel(breakOverride) ??
+      breakStart:
+          _overrideLabel(breakOverride) ??
           _soundLabel(task.startBreakSound, slot: SoundSlot.breakStart),
     );
   }
@@ -438,8 +447,7 @@ class TaskCard extends StatelessWidget {
     double spacing,
     int totalDots, {
     int? maxRows,
-  }
-  ) {
+  }) {
     final rows = ((maxHeight + spacing) / (dotSize + spacing)).floor();
     if (rows < 1) return 1;
     final clampedRows = maxRows != null && rows > maxRows ? maxRows : rows;
@@ -512,13 +520,20 @@ class TaskCard extends StatelessWidget {
     );
   }
 
-  Widget _timeRangeChips(String timeRange) {
+  Widget _timeRangeChips(
+    String timeRange, {
+    String? totalTime,
+    Widget? loadLevelChip,
+  }) {
     final parts = _splitTimeRange(timeRange);
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: parts.map(_timeChip).toList(),
-    );
+    final chips = <Widget>[...parts.map(_timeChip)];
+    if (totalTime != null && totalTime.trim().isNotEmpty) {
+      chips.add(_timeChip('Total $totalTime'));
+    }
+    if (loadLevelChip != null) {
+      chips.add(loadLevelChip);
+    }
+    return Wrap(spacing: 6, runSpacing: 6, children: chips);
   }
 
   List<String> _splitTimeRange(String timeRange) {
@@ -557,10 +572,7 @@ class TaskCard extends StatelessWidget {
     );
   }
 
-  _SoundLabel _soundLabel(
-    SelectedSound sound, {
-    required SoundSlot slot,
-  }) {
+  _SoundLabel _soundLabel(SelectedSound sound, {required SoundSlot slot}) {
     if (sound.type == SoundType.custom) {
       final name = _basename(sound.value);
       return _SoundLabel(

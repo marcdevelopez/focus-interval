@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../data/models/pomodoro_task.dart';
+import '../../domain/continuous_plan_load.dart';
 import '../../domain/task_weighting.dart';
+import '../utils/continuous_plan_load_ui.dart';
 import '../viewmodels/task_editor_view_model.dart';
 
 enum TaskWeightField { percent, pomodoros }
@@ -157,8 +159,12 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
     return resultPomodoros == requested;
   }
 
-  bool _isAtOpeningSnapshot(int requested) {
-    return requested == _openingInputValue && _mode == WeightEditMode.fixed;
+  bool _isAtOpeningSnapshot({
+    required int requested,
+    required Map<String, int> result,
+  }) {
+    if (requested != _openingInputValue) return false;
+    return !_hasChange(result);
   }
 
   String _exactMessage({
@@ -211,7 +217,9 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
         resultPercent: resultPercent,
         resultPomodoros: resultPomodoros,
       );
-      final warning = (_hasUserInteracted && !_isAtOpeningSnapshot(parsed))
+      final warning =
+          (_hasUserInteracted &&
+              !_isAtOpeningSnapshot(requested: parsed, result: computed))
           ? _buildPrecisionMessage(
               requested: parsed,
               result: computed,
@@ -247,6 +255,24 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
     final editedResultPom =
         result?[widget.editedTask.id] ?? widget.editedTask.totalPomodoros;
     final editedResultPercent = resultPercents[widget.editedTask.id] ?? 0;
+    final singleTaskDurations = resultTasks.length <= 1
+        ? continuousTaskDurationsSecondsForTasks(resultTasks)
+        : const <int>[];
+    final continuousSeconds = resultTasks.length <= 1
+        ? (singleTaskDurations.isEmpty ? 0 : singleTaskDurations.first)
+        : continuousGroupDurationSecondsForTasks(resultTasks);
+    final continuousLevel = continuousPlanLoadLevelForSeconds(
+      continuousSeconds,
+    );
+    final continuousVisual = continuousPlanLoadVisualForLevel(continuousLevel);
+    final continuousMessage = continuousPlanLoadMessage(continuousLevel);
+    final showContinuousCaution =
+        _hasUserInteracted &&
+        result != null &&
+        _hasChange(result) &&
+        continuousLevel != ContinuousPlanLoadLevel.none &&
+        continuousVisual != null &&
+        continuousMessage != null;
     final hasValidResult = result != null && _requestedValue != null;
     final isExact = hasValidResult
         ? _isExactResult(
@@ -407,6 +433,29 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
                           'Group work: $baselineGroupMin min → $resultGroupMin min',
                           style: const TextStyle(color: Colors.white70),
                         ),
+                        if (showContinuousCaution) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                continuousVisual.icon,
+                                size: 18,
+                                color: continuousVisual.color,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  continuousMessage,
+                                  style: TextStyle(
+                                    color: continuousVisual.color,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                         if (!_singleTask) ...[
                           const SizedBox(height: 14),
                           const Text(
