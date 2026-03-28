@@ -1144,6 +1144,8 @@ Task weight rules:
     - **Flexible total**:
       - The edited task is adjusted toward the requested percentage while other selected tasks remain unchanged.
       - Selected-group total work is allowed to change to improve approximation fidelity.
+      - For `%` input, Flexible search must not use a hard cap that blocks reachable outcomes;
+        evaluate candidates without artificial upper limit so closest-achievable is mathematically consistent.
   - Unselected tasks are never affected by weight edits.
   - Redistribution/adjustment changes `totalPomodoros` only (integer), never fractional pomodoros.
   - All selected tasks keep a minimum of 1 pomodoro.
@@ -1204,6 +1206,16 @@ Preview sheet specification (locked 28/03/2026):
        - never on first open before user edits,
        - never when user returns to the original opening value (no net change vs sheet baseline),
        - shown only after user interaction when exactness is not possible or no change can be applied.
+     - Show a non-blocking playful caution based on **continuous planned time**
+       (`start → end`, including breaks):
+       - `>= 11h`: “Unusually high total focus time. Are you sure?”
+       - `>= 24h`: “Superhuman plan detected. Double-check this is intentional.”
+       - `>= 72h`: “Machine-level schedule. Proceed only if this is really intended.”
+       - In multi-task selection, evaluate the selected-group continuous total.
+         In single-task scope, evaluate that task's own continuous total.
+       - In preview, render this caution inline below `Group work`.
+       - After save, show a persistent reminder chip with level label
+         (`Unusual` / `Superhuman` / `Machine-level`) in Task List and Groups Hub.
   2. Group impact block: “Group total: N → N pomodoros · M → M min” (before/after).
   3. Mini-table: one row per selected task — name | pomodoros before→after | weight% before→after.
      The edited task row is visually highlighted.

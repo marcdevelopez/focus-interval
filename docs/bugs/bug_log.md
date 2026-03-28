@@ -2471,11 +2471,11 @@ Additional micro-clarifications locked (28/03/2026):
      No redistribution of others in Flexible mode. The selected-group total may
      increase or decrease to improve approximation fidelity.
 
-  k. **Search range in Flexible total (% path):** Evaluate integer candidates from
-     1 to max(currentPomodoros × 3, currentPomodoros + 12), absolute cap 99.
-     Cap applies only to the internal algorithmic search when editing Task weight (%)
-     in Flexible mode. It is not a data-model limit; existing tasks with
-     totalPomodoros > 99 are unaffected.
+  k. **Search range in Flexible total (% path):** Flexible `%` search must not use
+     a hard cap that can block mathematically reachable outcomes. Candidate evaluation
+     is unbounded (no artificial max cap), with deterministic tie-break preserved.
+     Resulting extreme plans are allowed and surfaced to users with a non-blocking
+     caution based on continuous planned time (start→end, breaks included).
 
   l. **Closest achievable tiebreaker (deterministic, both modes):**
      (1) Smallest absolute percentage-point deviation, measured against the
