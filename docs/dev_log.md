@@ -25,8 +25,8 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **BUG-016 Patch 1 — task-weight baseline freeze + blur/save sync fix (`8bad479`)**
-Current focus: **Phase 10 BUG-016 Patch 2 implementation (preview sheet flow) + BUG-017 follow-up**
+Last bug fix: **BUG-016 Patch 2 — preview-first Task weight/Total pomodoros flow finalized (`1edb63f` + follow-up polish through `231b468`)**
+Current focus: **BUG-017 follow-up + roadmap validation backlog**
 Last update: **29/03/2026**
 
 ---
@@ -15746,3 +15746,53 @@ Two independent paths were showing the same hint for the same close action:
 ### Status after this block
 
 - Exit feedback is now consistent and non-duplicated across close paths.
+
+---
+
+## Block 690 — BUG-016 Patch 2 closure (29/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 closure and docs synchronization.  
+**Branch:** `fix/bug016-weight-edit-preview-modes`  
+**Scope:** Formal closure of Phase 10 BUG-016 follow-up (preview UX track).
+
+### Context
+
+After the final UI/UX polish cycle and user-driven validation matrix, Patch 2
+behavior is stable and coherent with the latest approved semantics:
+- preview-first editing for Task weight (%) and Total pomodoros,
+- Fixed/Flexible mode behavior and messaging alignment,
+- Back/Apply semantics clarity,
+- deterministic preview -> apply -> save pipeline,
+- continuous-time caution/reminder rendering consistency.
+
+### Validation closure packet synchronized
+
+Created and synchronized:
+- `docs/bugs/validation_bug016_2026_03_28/plan_validacion_rapida_fix.md`
+- `docs/bugs/validation_bug016_2026_03_28/quick_pass_checklist.md`
+- Existing runtime evidence log retained:
+  - `docs/bugs/validation_bug016_2026_03_28/logs/2026-03-28_bug016p2_7736f7b_macos_debug.log`
+
+### Local gate (final closure run)
+
+- `flutter analyze` — PASS
+- `flutter test test/domain/task_weighting_test.dart` — PASS
+- `flutter test test/presentation/viewmodels/task_editor_view_model_test.dart` — PASS
+- `flutter test test/domain/continuous_plan_load_test.dart` — PASS
+
+### Cross-doc synchronization
+
+- `docs/roadmap.md`
+  - Reopened Phase 10 BUG-016 Patch 2 line moved to **Closed/OK**
+    (`RVP-070`, validation complete 29/03/2026).
+- `docs/validation/validation_ledger.md`
+  - Added `RVP-070` as **Closed/OK** with evidence references.
+  - Updated `BUGLOG-016` note to reflect Patch 2 closure tracked via `RVP-070`.
+- `docs/bugs/bug_log.md`
+  - BUG-016 section updated: Patch 2 implementation + validation packet + final
+    status now fully closed (Patch 1 + Patch 2).
+
+### Status after this block
+
+- BUG-016 is fully closed end-to-end (Patch 1 correctness + Patch 2 preview UX).
+- Phase 10 BUG-016 follow-up no longer pending device validation.

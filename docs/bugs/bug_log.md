@@ -2514,8 +2514,21 @@ Patch 1 — implemented on 28/03/2026 (commit `8bad479`):
 - blur/save sync now prioritizes pending redistribution/last computed result and
   avoids mixed-state overwrite while save confirmation modals are open.
 - runtime file touched: `lib/presentation/screens/task_editor_screen.dart`.
-Patch 2 — UX decisions closed (28/03/2026); implementation ready (see decisions a–p above
-and updated specs.md task weight section).
+Patch 2 — implemented on 28–29/03/2026 (preview-first UX + follow-up polish):
+- preview sub-screen for both Task weight (%) and Total pomodoros with
+  Fixed/Flexible segmented mode selector.
+- fields in editor converted to tap targets; Apply updates local draft, Save persists.
+- full-screen opaque preview surface; `Back = Cancel` semantics with non-duplicated
+  unapplied-change hint.
+- compact non-redundant status messaging (exact/closest, warning gating after interaction).
+- Flexible `%` path without hard cap; continuous-time caution/reminder levels
+  (`Unusual`/`Superhuman`/`Machine`) surfaced in preview + Task List + Groups Hub.
+- runtime files touched:
+  - `lib/presentation/screens/task_editor_screen.dart`
+  - `lib/presentation/screens/task_weight_preview_sheet.dart`
+  - `lib/presentation/viewmodels/task_editor_view_model.dart`
+  - `lib/domain/continuous_plan_load.dart`
+  - `lib/widgets/task_card.dart`
 
 Validation update (27/03/2026, macOS) — FAIL:
 - Scenario packet executed with evidence in:
@@ -2545,9 +2558,21 @@ Validation update (28/03/2026, owner-run packet) — PASS for Patch 1:
   - `docs/bugs/validation_bug016_2026_03_27/plan_validacion_rapida_fix.md`
   - `docs/bugs/validation_bug016_2026_03_27/quick_pass_checklist.md`
 
+Validation update (28/03/2026 + 29/03/2026, Patch 2 packet) — PASS:
+- Device packet and runtime log:
+  - `docs/bugs/validation_bug016_2026_03_28/logs/2026-03-28_bug016p2_7736f7b_macos_debug.log`
+- Validation docs synchronized:
+  - `docs/bugs/validation_bug016_2026_03_28/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug016_2026_03_28/quick_pass_checklist.md`
+- Local gate PASS on final branch state:
+  - `flutter analyze`
+  - `flutter test test/domain/task_weighting_test.dart`
+  - `flutter test test/presentation/viewmodels/task_editor_view_model_test.dart`
+  - `flutter test test/domain/continuous_plan_load_test.dart`
+
 Status:
-Closed/OK (Patch 1 fixed and validated on 28/03/2026; Patch 2 remains tracked as
-Phase 10 roadmap follow-up for preview UX).
+Closed/OK (Patch 1 + Patch 2 implemented and validated; Phase 10 follow-up closure
+completed on 29/03/2026).
 
 ---
 
