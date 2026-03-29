@@ -33,6 +33,9 @@ class TaskWeightPreviewSheet extends StatefulWidget {
 
 class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
   static const int _warningThreshold = 10;
+  static const double _titleTextLeftInset = 38;
+  static const double _metricLabelWidth = 92;
+  static const double _metricChipWidth = 84;
 
   late final TextEditingController _inputCtrl;
   late final int _openingInputValue;
@@ -46,10 +49,9 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
 
   String get _modeExplanation {
     if (_mode == WeightEditMode.fixed) {
-      return 'Fixed total: keeps selected-group total unchanged '
-          '(pomodoros and work minutes). If you apply, the closest '
-          'achievable result is used and other selected tasks are '
-          'redistributed proportionally.';
+      return 'Fixed total: if you apply, the closest achievable result is '
+          'used. To keep selected-group totals as close as possible, other '
+          'selected tasks are redistributed proportionally.';
     }
     return 'Flexible total: keeps other selected tasks unchanged and updates '
         'only this task, so selected-group total may change.';
@@ -186,6 +188,75 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
     return '${hours}h ${remainingMinutes}m';
   }
 
+  Widget _buildValueChip({
+    required String value,
+    required Color borderColor,
+    required Color textColor,
+    Color? backgroundColor,
+  }) {
+    return SizedBox(
+      width: _metricChipWidth,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: backgroundColor ?? Colors.transparent,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: borderColor, width: 1.2),
+        ),
+        child: Text(
+          value,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(color: textColor, fontWeight: FontWeight.w600),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetricRow({
+    required String label,
+    required String beforeValue,
+    required String afterValue,
+    required bool highlightAfter,
+    required Color resultAccent,
+  }) {
+    const baseBorder = Colors.white38;
+    const baseText = Colors.white70;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Row(
+        children: [
+          SizedBox(
+            width: _metricLabelWidth,
+            child: Text(
+              label,
+              style: const TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+          ),
+          _buildValueChip(
+            value: beforeValue,
+            borderColor: baseBorder,
+            textColor: baseText,
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 6),
+            child: Icon(Icons.arrow_forward, size: 15, color: Colors.white54),
+          ),
+          _buildValueChip(
+            value: afterValue,
+            borderColor: highlightAfter ? resultAccent : baseBorder,
+            textColor: highlightAfter ? resultAccent : baseText,
+            backgroundColor: highlightAfter
+                ? resultAccent.withValues(alpha: 0.08)
+                : null,
+          ),
+        ],
+      ),
+    );
+  }
+
   void _recalculate() {
     final parsed = int.tryParse(_inputCtrl.text.trim());
     if (parsed == null || parsed <= 0) {
@@ -290,6 +361,11 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
             resultPomodoros: editedResultPom,
           )
         : false;
+    final resultAccent = isExact
+        ? Colors.lightGreenAccent
+        : Colors.orangeAccent;
+    final highlightPomodoros = widget.field == TaskWeightField.pomodoros;
+    final highlightWeight = widget.field == TaskWeightField.percent;
 
     final title = widget.field == TaskWeightField.percent
         ? 'Edit Task weight'
@@ -342,9 +418,18 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          widget.editedTask.name,
-                          style: const TextStyle(color: Colors.white54),
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            left: _titleTextLeftInset,
+                          ),
+                          child: Text(
+                            widget.editedTask.name,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 12),
                         TextField(
@@ -483,8 +568,14 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
                           const SizedBox(height: 8),
                           for (final task in baselineTasks)
                             Container(
+                              width: double.infinity,
                               margin: const EdgeInsets.only(bottom: 8),
-                              padding: const EdgeInsets.all(10),
+                              padding: const EdgeInsets.fromLTRB(
+                                12,
+                                10,
+                                12,
+                                10,
+                              ),
                               decoration: BoxDecoration(
                                 color: task.id == widget.editedTask.id
                                     ? Colors.white12
@@ -492,7 +583,7 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
                                   color: task.id == widget.editedTask.id
-                                      ? Colors.white38
+                                      ? Colors.white54
                                       : Colors.white24,
                                 ),
                               ),
@@ -501,22 +592,29 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
                                 children: [
                                   Text(
                                     task.name,
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Pomodoros: ${task.totalPomodoros} → '
-                                    '${result?[task.id] ?? task.totalPomodoros}',
                                     style: const TextStyle(
-                                      color: Colors.white70,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  Text(
-                                    'Weight: ${baselinePercents[task.id] ?? 0}% → '
-                                    '${resultPercents[task.id] ?? 0}%',
-                                    style: const TextStyle(
-                                      color: Colors.white70,
-                                    ),
+                                  _buildMetricRow(
+                                    label: 'Pomodoros',
+                                    beforeValue: '${task.totalPomodoros}',
+                                    afterValue:
+                                        '${result?[task.id] ?? task.totalPomodoros}',
+                                    highlightAfter:
+                                        highlightPomodoros && hasValidResult,
+                                    resultAccent: resultAccent,
+                                  ),
+                                  _buildMetricRow(
+                                    label: 'Weight',
+                                    beforeValue:
+                                        '${baselinePercents[task.id] ?? 0}%',
+                                    afterValue:
+                                        '${resultPercents[task.id] ?? 0}%',
+                                    highlightAfter:
+                                        highlightWeight && hasValidResult,
+                                    resultAccent: resultAccent,
                                   ),
                                 ],
                               ),

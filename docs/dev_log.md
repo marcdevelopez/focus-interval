@@ -27,7 +27,7 @@ Formatting rules:
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **BUG-016 Patch 1 — task-weight baseline freeze + blur/save sync fix (`8bad479`)**
 Current focus: **Phase 10 BUG-016 Patch 2 implementation (preview sheet flow) + BUG-017 follow-up**
-Last update: **28/03/2026**
+Last update: **29/03/2026**
 
 ---
 
@@ -15569,3 +15569,54 @@ chips when content overflowed.
 
 - Horizontal chip overflow is now reachable on macOS pointer input without
   requiring touch gestures.
+
+---
+
+## Block 686 — BUG-016 Patch 2 preview-sheet clarity: stronger task identity + full-width selected-task chips (29/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 preview-sheet readability/consistency refinement.
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** `TaskWeightPreviewSheet` UI hierarchy and selected-task result emphasis.
+
+### Context
+
+User validation highlighted two clarity issues in the preview sheet:
+- the edited task/group identifier under the title was visually weak,
+- `Selected tasks` cards had inconsistent widths and text-heavy rows, making
+  before/after comparison harder to scan.
+
+### Changes applied
+
+- Header identity line (task/group name under the sheet title):
+  - increased contrast (`white70`), semibold weight, and stable left alignment
+    with the title text start.
+- `Selected tasks` redesign:
+  - cards are now full-width with uniform layout across all devices.
+  - each card uses two metric rows with chips:
+    - `Pomodoros`: initial chip -> result chip
+    - `Weight`: initial chip -> result chip
+  - initial chips remain neutral gray.
+  - result-chip emphasis is field-focused:
+    - editing `Total pomodoros`: only pomodoros result chip uses success/warning color.
+    - editing `Task weight (%)`: only weight result chip uses success/warning color.
+    - non-edited dimension result chip stays neutral gray.
+  - edited task keeps a stronger neutral border highlight (no severity red).
+- Fixed-mode explanation text updated to avoid promising strict invariance and
+  reflect integer-constrained closest-achievable behavior.
+
+### Runtime evidence
+
+- Local gate PASS:
+  - `flutter analyze`
+
+### Docs synchronized
+
+- `docs/specs.md`:
+  - Fixed mode wording aligned with closest-achievable + integer constraints.
+  - `Selected tasks` section updated to single-column full-width chip rows and
+    field-focused result-chip coloring rules.
+
+### Status after this block
+
+- Preview-sheet comparisons are more legible and less ambiguous, especially for
+  large numbers and dense selected-task sets.

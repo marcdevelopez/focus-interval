@@ -1195,9 +1195,9 @@ Preview sheet specification (locked 28/03/2026):
   Switching mode recalculates the preview immediately using the current entered value.
   The sheet must show an inline mode explanation directly below the selector so users
   understand the business rule before applying:
-  - **Fixed total:** apply the closest achievable result while keeping selected-group
-    total unchanged (pomodoros + work minutes); to preserve that total, other selected
-    tasks are redistributed proportionally (integer-constrained).
+  - **Fixed total:** apply the closest achievable result and redistribute other selected
+    tasks proportionally, keeping selected-group totals as close as possible under
+    integer pomodoro constraints.
   - **Flexible total:** keep other selected tasks unchanged; only the edited task changes,
     so selected-group total pomodoros/work may change.
 - **Preview content (three tiers):**
@@ -1229,8 +1229,18 @@ Preview sheet specification (locked 28/03/2026):
      - “Group work: <duration> → <duration>” where duration is:
        - `N min` when `< 60 min`
        - `Hh Mm` when `>= 60 min` (for readability in long plans)
-  3. Mini-table: one row per selected task — name | pomodoros before→after | weight% before→after.
-     The edited task row is visually highlighted.
+  3. Selected tasks list (single-column, all form factors):
+     - Full-width row cards, one per selected task, with consistent width.
+     - Row content:
+       - task name
+       - Pomodoros row: initial chip (gray) → result chip
+       - Weight row: initial chip (gray) → result chip
+     - Result-chip color focus depends on edited field:
+       - Editing **Total pomodoros**: color only the pomodoros result chip; keep weight result chip gray.
+       - Editing **Task weight (%)**: color only the weight result chip; keep pomodoros result chip gray.
+     - Use success/warning color coding only on the edited dimension's result chip.
+       No additional red severity styling is used in this selected-tasks list.
+     - The edited task row is visually highlighted with a stronger neutral border (not severity color).
 - **Snackbar:** the existing “Closest possible is X%” toast is removed. All precision
   information is shown inline within the sheet only.
 - **Footer (fixed, non-scrolling):** Cancel (left) and Apply (right).
