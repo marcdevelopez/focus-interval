@@ -221,6 +221,7 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
     required String afterValue,
     required bool highlightBefore,
     required bool highlightAfter,
+    required bool emphasizeAfter,
     required Color resultAccent,
   }) {
     const baseBorder = Colors.white38;
@@ -231,6 +232,14 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
         ? Colors.white.withValues(alpha: 0.06)
         : Colors.transparent;
     final beforeBorderWidth = highlightBefore ? 1.6 : 1.2;
+    final afterBorder = highlightAfter ? resultAccent : baseBorder;
+    final afterText = highlightAfter ? resultAccent : baseText;
+    final afterFill = highlightAfter
+        ? resultAccent.withValues(alpha: emphasizeAfter ? 0.16 : 0.08)
+        : null;
+    final afterBorderWidth = highlightAfter
+        ? (emphasizeAfter ? 2.0 : 1.2)
+        : 1.2;
 
     return Padding(
       padding: const EdgeInsets.only(top: 6),
@@ -256,11 +265,10 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
           ),
           _buildValueChip(
             value: afterValue,
-            borderColor: highlightAfter ? resultAccent : baseBorder,
-            textColor: highlightAfter ? resultAccent : baseText,
-            backgroundColor: highlightAfter
-                ? resultAccent.withValues(alpha: 0.08)
-                : null,
+            borderColor: afterBorder,
+            textColor: afterText,
+            backgroundColor: afterFill,
+            borderWidth: afterBorderWidth,
           ),
         ],
       ),
@@ -676,6 +684,10 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
                                           highlightPomodoros,
                                       highlightAfter:
                                           highlightPomodoros && hasValidResult,
+                                      emphasizeAfter:
+                                          task.id == widget.editedTask.id &&
+                                          highlightPomodoros &&
+                                          hasValidResult,
                                       resultAccent: resultAccent,
                                     ),
                                     _buildMetricRow(
@@ -689,6 +701,10 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
                                           highlightWeight,
                                       highlightAfter:
                                           highlightWeight && hasValidResult,
+                                      emphasizeAfter:
+                                          task.id == widget.editedTask.id &&
+                                          highlightWeight &&
+                                          hasValidResult,
                                       resultAccent: resultAccent,
                                     ),
                                   ],

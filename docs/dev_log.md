@@ -15669,3 +15669,43 @@ Follow-up user review requested:
 
 - Preview sheet is now faster and less redundant (single visible apply action),
   while preserving safe exit semantics and clearer focus on the edited baseline.
+
+---
+
+## Block 688 — BUG-016 Patch 2 edited-task focus reinforcement in selected-task list (29/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 visual focus refinement.
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** selected-task chips — stronger differentiation for edited task/dimension.
+
+### Context
+
+User review detected that edited-dimension result chips still looked too similar
+between the edited task and other tasks, reducing clarity about "which task is
+currently being edited."
+
+### Changes applied
+
+- In selected-task cards, for the edited dimension:
+  - edited task result chip now uses stronger emphasis than the rest
+    (thicker border + stronger fill intensity),
+  - other task result chips keep standard emphasis.
+- Existing behavior preserved:
+  - only the edited dimension is color-accented,
+  - non-edited dimension remains neutral,
+  - edited task row keeps neutral border highlight.
+
+### Runtime evidence
+
+- Local gate PASS:
+  - `flutter analyze`
+
+### Docs synchronized
+
+- `docs/specs.md`:
+  - selected-task list rules now explicitly require stronger edited-task chip emphasis
+    within the edited dimension.
+
+### Status after this block
+
+- Edited task intent is visually clearer with minimal UI noise increase.

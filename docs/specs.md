@@ -1236,10 +1236,13 @@ Preview sheet specification (locked 28/03/2026):
        - Pomodoros row: initial chip (gray) → result chip
        - Weight row: initial chip (gray) → result chip
      - Result-chip color focus depends on edited field:
-       - Editing **Total pomodoros**: color only the pomodoros result chip; keep weight result chip gray.
-       - Editing **Task weight (%)**: color only the weight result chip; keep pomodoros result chip gray.
+     - Editing **Total pomodoros**: color only the pomodoros result chip; keep weight result chip gray.
+     - Editing **Task weight (%)**: color only the weight result chip; keep pomodoros result chip gray.
      - Use success/warning color coding only on the edited dimension's result chip.
        No additional red severity styling is used in this selected-tasks list.
+     - Within the edited dimension, the edited task result chip must have
+       stronger emphasis than other rows (thicker border and stronger fill)
+       so users can immediately identify which task is being edited.
      - The edited task row is visually highlighted with a stronger neutral border (not severity color).
 - **Snackbar:** the existing “Closest possible is X%” toast is removed. All precision
   information is shown inline within the sheet only.
