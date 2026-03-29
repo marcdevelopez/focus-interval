@@ -15620,3 +15620,52 @@ User validation highlighted two clarity issues in the preview sheet:
 
 - Preview-sheet comparisons are more legible and less ambiguous, especially for
   large numbers and dense selected-task sets.
+
+---
+
+## Block 687 — BUG-016 Patch 2 sheet actions simplification + edited-row baseline emphasis (29/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 preview-sheet interaction simplification.
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** sheet exit/apply UX and edited-dimension baseline chip emphasis.
+
+### Context
+
+Follow-up user review requested:
+- remove duplicate bottom actions (`Cancel` + `Apply`) and keep a faster
+  sub-screen interaction model,
+- keep `Back` as the cancel-equivalent,
+- provide a subtle confirmation when exiting with unapplied changes,
+- improve initial-state chip distinction on the edited row/dimension.
+
+### Changes applied
+
+- Sheet action model:
+  - removed bottom footer buttons (`Cancel` / `Apply`).
+  - added top-right `Apply` button on the same row as the sheet title.
+  - top-left back chevron now closes without applying (cancel semantics).
+- Exit feedback:
+  - if the user exits with pending unapplied changes, a lightweight hint is shown:
+    `No changes applied.`
+  - if there are no pending changes, close remains silent.
+  - system back uses the same hint policy via `PopScope`.
+- Edited-row baseline focus:
+  - initial (left) chip now receives a brighter/stronger neutral style only for
+    the edited dimension on the edited task row.
+  - non-edited dimensions and other task rows keep neutral baseline style.
+
+### Runtime evidence
+
+- Local gate PASS:
+  - `flutter analyze`
+
+### Docs synchronized
+
+- `docs/specs.md`:
+  - preview-sheet actions updated from footer Cancel/Apply to header Back + Apply.
+  - added Back-exit hint rule for unapplied changes.
+
+### Status after this block
+
+- Preview sheet is now faster and less redundant (single visible apply action),
+  while preserving safe exit semantics and clearer focus on the edited baseline.

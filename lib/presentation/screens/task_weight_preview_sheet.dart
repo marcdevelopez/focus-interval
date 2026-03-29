@@ -193,6 +193,7 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
     required Color borderColor,
     required Color textColor,
     Color? backgroundColor,
+    double borderWidth = 1.2,
   }) {
     return SizedBox(
       width: _metricChipWidth,
@@ -201,7 +202,7 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
         decoration: BoxDecoration(
           color: backgroundColor ?? Colors.transparent,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: borderColor, width: 1.2),
+          border: Border.all(color: borderColor, width: borderWidth),
         ),
         child: Text(
           value,
@@ -218,11 +219,18 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
     required String label,
     required String beforeValue,
     required String afterValue,
+    required bool highlightBefore,
     required bool highlightAfter,
     required Color resultAccent,
   }) {
     const baseBorder = Colors.white38;
     const baseText = Colors.white70;
+    final beforeBorder = highlightBefore ? Colors.white60 : baseBorder;
+    final beforeText = highlightBefore ? Colors.white : baseText;
+    final beforeFill = highlightBefore
+        ? Colors.white.withValues(alpha: 0.06)
+        : Colors.transparent;
+    final beforeBorderWidth = highlightBefore ? 1.6 : 1.2;
 
     return Padding(
       padding: const EdgeInsets.only(top: 6),
@@ -237,8 +245,10 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
           ),
           _buildValueChip(
             value: beforeValue,
-            borderColor: baseBorder,
-            textColor: baseText,
+            borderColor: beforeBorder,
+            textColor: beforeText,
+            backgroundColor: beforeFill,
+            borderWidth: beforeBorderWidth,
           ),
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 6),
@@ -320,6 +330,44 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
     }
   }
 
+  bool get _hasUnappliedChanges {
+    final raw = _inputCtrl.text.trim();
+    final parsed = int.tryParse(raw);
+    final invalid =
+        parsed == null ||
+        parsed <= 0 ||
+        (widget.field == TaskWeightField.percent && parsed > 100);
+    if (invalid) {
+      return _hasUserInteracted && raw != _openingInputValue.toString();
+    }
+    final result = _result;
+    if (result == null) return false;
+    return !_isAtOpeningSnapshot(requested: parsed, result: result);
+  }
+
+  void _showNoChangesAppliedHint() {
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      const SnackBar(
+        content: Text('No changes applied.'),
+        duration: Duration(milliseconds: 1300),
+      ),
+    );
+  }
+
+  void _closeWithoutApply() {
+    if (_hasUnappliedChanges) {
+      _showNoChangesAppliedHint();
+    }
+    Navigator.of(context).pop();
+  }
+
+  void _applyAndClose() {
+    final result = _result;
+    if (result == null) return;
+    widget.onApply(result);
+    Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
@@ -377,280 +425,282 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
       padding: EdgeInsets.only(bottom: bottomInset),
       child: FractionallySizedBox(
         heightFactor: 1.0,
-        child: Material(
-          color: Colors.black,
-          child: SafeArea(
-            top: true,
-            bottom: false,
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            IconButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              icon: const Icon(Icons.chevron_left, size: 30),
-                              color: Colors.white,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints.tightFor(
-                                width: 28,
-                                height: 28,
-                              ),
-                              splashRadius: 18,
-                              tooltip: 'Back',
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                title,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            left: _titleTextLeftInset,
-                          ),
-                          child: Text(
-                            widget.editedTask.name,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _inputCtrl,
-                          onChanged: (_) {
-                            if (_hasUserInteracted) return;
-                            setState(() {
-                              _hasUserInteracted = true;
-                            });
-                          },
-                          keyboardType: TextInputType.number,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            labelText: widget.field == TaskWeightField.percent
-                                ? 'Task weight (%)'
-                                : 'Total pomodoros',
-                            suffixText: widget.field == TaskWeightField.percent
-                                ? '%'
-                                : null,
-                            labelStyle: const TextStyle(color: Colors.white54),
-                            filled: true,
-                            fillColor: Colors.white10,
-                            enabledBorder: const UnderlineInputBorder(
-                              borderSide: BorderSide(color: Colors.white24),
-                            ),
-                            focusedBorder: const UnderlineInputBorder(
-                              borderSide: BorderSide(color: Colors.white54),
-                            ),
-                            errorText: _requestedValue == null
-                                ? 'Enter a valid number'
-                                : (widget.field == TaskWeightField.percent &&
-                                      _requestedValue! > 100)
-                                ? 'Max 100%'
-                                : null,
-                          ),
-                        ),
-                        if (!_singleTask) ...[
-                          const SizedBox(height: 12),
-                          SegmentedButton<WeightEditMode>(
-                            segments: const [
-                              ButtonSegment<WeightEditMode>(
-                                value: WeightEditMode.fixed,
-                                label: Text('Fixed total'),
-                              ),
-                              ButtonSegment<WeightEditMode>(
-                                value: WeightEditMode.flexible,
-                                label: Text('Flexible total'),
-                              ),
-                            ],
-                            selected: {_mode},
-                            onSelectionChanged: (selection) {
-                              if (selection.isEmpty) return;
-                              setState(() {
-                                _mode = selection.first;
-                                _hasUserInteracted = true;
-                              });
-                              _recalculate();
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.white10,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: Colors.white24),
-                            ),
-                            child: Text(
-                              _modeExplanation,
-                              style: const TextStyle(color: Colors.white70),
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 16),
-                        if (hasValidResult && isExact) ...[
-                          Text(
-                            _exactMessage(
-                              resultPercent: editedResultPercent,
-                              resultPomodoros: editedResultPom,
-                            ),
-                            style: const TextStyle(
-                              color: Colors.lightGreenAccent,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                        if (_warningMessage != null) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            _warningMessage!,
-                            style: const TextStyle(color: Colors.orangeAccent),
-                          ),
-                        ],
-                        const SizedBox(height: 14),
-                        Text(
-                          'Group total pomodoros: $baselineGroupPom → $resultGroupPom',
-                          style: const TextStyle(color: Colors.white70),
-                        ),
-                        Text(
-                          'Group work: ${_formatWorkMinutes(baselineGroupMin)} → ${_formatWorkMinutes(resultGroupMin)}',
-                          style: const TextStyle(color: Colors.white70),
-                        ),
-                        if (showContinuousCaution) ...[
-                          const SizedBox(height: 8),
+        child: PopScope(
+          canPop: true,
+          onPopInvokedWithResult: (didPop, _) {
+            if (didPop && _hasUnappliedChanges) {
+              _showNoChangesAppliedHint();
+            }
+          },
+          child: Material(
+            color: Colors.black,
+            child: SafeArea(
+              top: true,
+              bottom: false,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(
-                                continuousVisual.icon,
-                                size: 18,
-                                color: continuousVisual.color,
+                              IconButton(
+                                onPressed: _closeWithoutApply,
+                                icon: const Icon(Icons.chevron_left, size: 30),
+                                color: Colors.white,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints.tightFor(
+                                  width: 28,
+                                  height: 28,
+                                ),
+                                splashRadius: 18,
+                                tooltip: 'Back',
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
-                                  continuousMessage,
-                                  style: TextStyle(
-                                    color: continuousVisual.color,
+                                  title,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
-                        ],
-                        if (!_singleTask) ...[
-                          const SizedBox(height: 14),
-                          const Text(
-                            'Selected tasks',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          for (final task in baselineTasks)
-                            Container(
-                              width: double.infinity,
-                              margin: const EdgeInsets.only(bottom: 8),
-                              padding: const EdgeInsets.fromLTRB(
-                                12,
-                                10,
-                                12,
-                                10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: task.id == widget.editedTask.id
-                                    ? Colors.white12
-                                    : Colors.white10,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: task.id == widget.editedTask.id
-                                      ? Colors.white54
-                                      : Colors.white24,
+                              TextButton(
+                                onPressed: result == null
+                                    ? null
+                                    : _applyAndClose,
+                                child: const Text(
+                                  'Apply',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
                                 ),
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    task.name,
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              left: _titleTextLeftInset,
+                            ),
+                            child: Text(
+                              widget.editedTask.name,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _inputCtrl,
+                            onChanged: (_) {
+                              if (_hasUserInteracted) return;
+                              setState(() {
+                                _hasUserInteracted = true;
+                              });
+                            },
+                            keyboardType: TextInputType.number,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              labelText: widget.field == TaskWeightField.percent
+                                  ? 'Task weight (%)'
+                                  : 'Total pomodoros',
+                              suffixText:
+                                  widget.field == TaskWeightField.percent
+                                  ? '%'
+                                  : null,
+                              labelStyle: const TextStyle(
+                                color: Colors.white54,
+                              ),
+                              filled: true,
+                              fillColor: Colors.white10,
+                              enabledBorder: const UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.white24),
+                              ),
+                              focusedBorder: const UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.white54),
+                              ),
+                              errorText: _requestedValue == null
+                                  ? 'Enter a valid number'
+                                  : (widget.field == TaskWeightField.percent &&
+                                        _requestedValue! > 100)
+                                  ? 'Max 100%'
+                                  : null,
+                            ),
+                          ),
+                          if (!_singleTask) ...[
+                            const SizedBox(height: 12),
+                            SegmentedButton<WeightEditMode>(
+                              segments: const [
+                                ButtonSegment<WeightEditMode>(
+                                  value: WeightEditMode.fixed,
+                                  label: Text('Fixed total'),
+                                ),
+                                ButtonSegment<WeightEditMode>(
+                                  value: WeightEditMode.flexible,
+                                  label: Text('Flexible total'),
+                                ),
+                              ],
+                              selected: {_mode},
+                              onSelectionChanged: (selection) {
+                                if (selection.isEmpty) return;
+                                setState(() {
+                                  _mode = selection.first;
+                                  _hasUserInteracted = true;
+                                });
+                                _recalculate();
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.white10,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.white24),
+                              ),
+                              child: Text(
+                                _modeExplanation,
+                                style: const TextStyle(color: Colors.white70),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 16),
+                          if (hasValidResult && isExact) ...[
+                            Text(
+                              _exactMessage(
+                                resultPercent: editedResultPercent,
+                                resultPomodoros: editedResultPom,
+                              ),
+                              style: const TextStyle(
+                                color: Colors.lightGreenAccent,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                          if (_warningMessage != null) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              _warningMessage!,
+                              style: const TextStyle(
+                                color: Colors.orangeAccent,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 14),
+                          Text(
+                            'Group total pomodoros: $baselineGroupPom → $resultGroupPom',
+                            style: const TextStyle(color: Colors.white70),
+                          ),
+                          Text(
+                            'Group work: ${_formatWorkMinutes(baselineGroupMin)} → ${_formatWorkMinutes(resultGroupMin)}',
+                            style: const TextStyle(color: Colors.white70),
+                          ),
+                          if (showContinuousCaution) ...[
+                            const SizedBox(height: 8),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  continuousVisual.icon,
+                                  size: 18,
+                                  color: continuousVisual.color,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    continuousMessage,
+                                    style: TextStyle(
+                                      color: continuousVisual.color,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  _buildMetricRow(
-                                    label: 'Pomodoros',
-                                    beforeValue: '${task.totalPomodoros}',
-                                    afterValue:
-                                        '${result?[task.id] ?? task.totalPomodoros}',
-                                    highlightAfter:
-                                        highlightPomodoros && hasValidResult,
-                                    resultAccent: resultAccent,
-                                  ),
-                                  _buildMetricRow(
-                                    label: 'Weight',
-                                    beforeValue:
-                                        '${baselinePercents[task.id] ?? 0}%',
-                                    afterValue:
-                                        '${resultPercents[task.id] ?? 0}%',
-                                    highlightAfter:
-                                        highlightWeight && hasValidResult,
-                                    resultAccent: resultAccent,
-                                  ),
-                                ],
+                                ),
+                              ],
+                            ),
+                          ],
+                          if (!_singleTask) ...[
+                            const SizedBox(height: 14),
+                            const Text(
+                              'Selected tasks',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
+                            const SizedBox(height: 8),
+                            for (final task in baselineTasks)
+                              Container(
+                                width: double.infinity,
+                                margin: const EdgeInsets.only(bottom: 8),
+                                padding: const EdgeInsets.fromLTRB(
+                                  12,
+                                  10,
+                                  12,
+                                  10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: task.id == widget.editedTask.id
+                                      ? Colors.white12
+                                      : Colors.white10,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: task.id == widget.editedTask.id
+                                        ? Colors.white54
+                                        : Colors.white24,
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      task.name,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    _buildMetricRow(
+                                      label: 'Pomodoros',
+                                      beforeValue: '${task.totalPomodoros}',
+                                      afterValue:
+                                          '${result?[task.id] ?? task.totalPomodoros}',
+                                      highlightBefore:
+                                          task.id == widget.editedTask.id &&
+                                          highlightPomodoros,
+                                      highlightAfter:
+                                          highlightPomodoros && hasValidResult,
+                                      resultAccent: resultAccent,
+                                    ),
+                                    _buildMetricRow(
+                                      label: 'Weight',
+                                      beforeValue:
+                                          '${baselinePercents[task.id] ?? 0}%',
+                                      afterValue:
+                                          '${resultPercents[task.id] ?? 0}%',
+                                      highlightBefore:
+                                          task.id == widget.editedTask.id &&
+                                          highlightWeight,
+                                      highlightAfter:
+                                          highlightWeight && hasValidResult,
+                                      resultAccent: resultAccent,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   ),
-                ),
-                const Divider(color: Colors.white24, height: 1),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('Cancel'),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: result == null
-                              ? null
-                              : () {
-                                  widget.onApply(result);
-                                  Navigator.of(context).pop();
-                                },
-                          child: const Text('Apply'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

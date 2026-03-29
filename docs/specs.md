@@ -1086,7 +1086,7 @@ Behavior:
 - Preview must expose two explicit calculation modes:
   - **Fixed total** (default): keep selected-group total work constant and redistribute other selected tasks proportionally.
   - **Flexible total**: keep other selected tasks unchanged and allow selected-group total work to change.
-- Preview must provide explicit **Apply** and **Cancel** actions; **Cancel** leaves the task unchanged.
+- Preview must provide explicit **Apply** and **Back** actions; **Back** leaves the task unchanged.
 - Display Total pomodoros and Task weight (%) on the same row directly below the task name to emphasize task weight.
 - Visually separate **Task weight** from **Pomodoro configuration** with section headers.
   Pomodoro configuration sits below Task weight and above Sounds.
@@ -1243,13 +1243,14 @@ Preview sheet specification (locked 28/03/2026):
      - The edited task row is visually highlighted with a stronger neutral border (not severity color).
 - **Snackbar:** the existing “Closest possible is X%” toast is removed. All precision
   information is shown inline within the sheet only.
-- **Footer (fixed, non-scrolling):** Cancel (left) and Apply (right).
-  The sheet also provides a top-left back affordance with the same semantics as Cancel,
-  visually aligned with app page headers (chevron + title style, no standalone "Back" label).
-  — Cancel: closes sheet, restores pre-open snapshot, no state change.
-  — Back: closes sheet, restores pre-open snapshot, no state change.
-  — Apply: writes result to local editor draft, marks editor dirty, closes sheet.
-    Next sheet open uses the post-Apply draft as its baseline.
+- **Header actions (single action row):**
+  - top-left **Back** (chevron only, aligned to app header style) closes sheet
+    without applying and restores pre-open snapshot.
+  - top-right **Apply** writes result to local editor draft, marks editor dirty,
+    then closes sheet. Next sheet open uses post-Apply draft as baseline.
+  - No bottom Cancel/Apply footer buttons are shown.
+  - If user exits with Back and there are unapplied changes, show a lightweight
+    hint (`No changes applied.`). If there are no pending changes, close silently.
 - **1 task selected:** Task weight (%) is shown disabled at 100%, optional helper text
   “Only one task selected”. Sheet does not open. No redistribution runs.
 - **Apply / Save / Discard lifecycle:**
