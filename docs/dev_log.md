@@ -25,8 +25,8 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **BUG-016 Patch 2 — preview-first Task weight/Total pomodoros flow finalized (`1edb63f` + follow-up polish through `231b468`)**
-Current focus: **BUG-017 follow-up + roadmap validation backlog**
+Last bug fix: **BUG-018 — owner background running+zero recovery stabilized (`547c6f7`, merged to `develop` on 29/03/2026 via PR #164)**
+Current focus: **BUG-019 docs-first registration + Claude architectural review before runtime changes**
 Last update: **29/03/2026**
 
 ---
@@ -15796,3 +15796,62 @@ Created and synchronized:
 
 - BUG-016 is fully closed end-to-end (Patch 1 correctness + Patch 2 preview UX).
 - Phase 10 BUG-016 follow-up no longer pending device validation.
+
+---
+
+## Block 691 — BUG-019 docs-first registration + validation packet bootstrap (29/03/2026)
+
+**Current branch intent:** BUG-019 navigation-regression documentation and pre-implementation handoff.  
+**Branch:** `fix/bug019-android-back-navigation-exit`  
+**Scope:** Documentation only (no runtime code changes in this block).
+
+### Context
+
+User-reported regression: Android system back can intermittently terminate the app
+from Run Mode / Groups Hub flows instead of returning to root navigation.
+
+### Changes applied
+
+- Registered new bug entry:
+  - `docs/bugs/bug_log.md` -> `BUG-019` (Open), with repro, expected behavior,
+    hypothesis, and scope.
+- Synchronized global validation queue:
+  - `docs/validation/validation_ledger.md`
+    - snapshot updated to 29/03/2026,
+    - active non-closed bug count updated to 2 (`BUG-019` P1 + `BUG-017` P2),
+    - new pending queue item `BUGLOG-019` added.
+- Reopened roadmap scope for regression tracking:
+  - `docs/roadmap.md`
+    - added reopened Phase 19 bug item for deterministic Android back behavior.
+- Created mandatory validation packet:
+  - `docs/bugs/validation_bug019_2026_03_29/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug019_2026_03_29/quick_pass_checklist.md`
+  - `docs/bugs/validation_bug019_2026_03_29/logs/`
+  - `docs/bugs/validation_bug019_2026_03_29/screenshots/`
+
+### Codex -> Claude handoff (required)
+
+- Context and scope:
+  - BUG-019 is now registered as docs-first P1 navigation regression.
+  - No runtime patch has been applied yet.
+- Files changed:
+  - `docs/bugs/bug_log.md`
+  - `docs/validation/validation_ledger.md`
+  - `docs/roadmap.md`
+  - `docs/bugs/validation_bug019_2026_03_29/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug019_2026_03_29/quick_pass_checklist.md`
+- Tests executed:
+  - None in this docs-only block.
+- Known risks and open questions:
+  - Runtime root cause still hypothesis-level (`go` route replacement + root PopScope fallback gaps).
+  - Must decide final UX contract for system back at root routes before implementation.
+- Explicit next action expected from Claude:
+  - Confirm architecture-level navigation contract for Android system back
+    (Run Mode active/non-active + Groups Hub root),
+  - approve runtime implementation plan and test targets before coding starts.
+
+### Status after this block
+
+- BUG-019 is formally queued and traceable across bug log, ledger, roadmap, and
+  validation packet.
+- Project is ready for Claude review and runtime fix planning.
