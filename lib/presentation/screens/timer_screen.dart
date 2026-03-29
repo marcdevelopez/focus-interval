@@ -63,6 +63,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   bool _inactiveRepaintEnabled = false;
   bool _runningOverlapDialogVisible = false;
   RunningOverlapDecision? _pendingRunningOverlapDecision;
+  String? _pendingPostponeDecisionKey;
+  String? _pendingPostponeScheduledGroupId;
+  DateTime? _pendingPostponeExpectedStart;
+  int _pendingPostponeSnapshotChecks = 0;
 
   @override
   void initState() {
@@ -77,15 +81,17 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   }
 
   @override
-  void deactivate() {
-    _setCompletionDialogVisible(false);
-    super.deactivate();
-  }
-
-  @override
   void didUpdateWidget(TimerScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.groupId != widget.groupId) {
+      final hadCompletionDialog = _finishedDialogVisible;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _dismissCompletionDialogForAutoOpen(
+          reason: 'group switch',
+          force: hadCompletionDialog,
+        );
+      });
       _resetForGroupSwitch();
       _loadGroup(widget.groupId);
     }
@@ -108,13 +114,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _clockTimer = Timer(Duration(seconds: secondsUntilNextMinute), () {
       if (!mounted || _isDisposing) return;
       _updateClock();
-      _clockTimer = Timer.periodic(
-        const Duration(minutes: 1),
-        (_) {
-          if (!mounted || _isDisposing) return;
-          _updateClock();
-        },
-      );
+      _clockTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+        if (!mounted || _isDisposing) return;
+        _updateClock();
+      });
     });
   }
 
@@ -179,10 +182,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     return session.ownerDeviceId != deviceId;
   }
 
-  void _syncInactiveRepaint({
-    PomodoroState? state,
-    bool? isMirror,
-  }) {
+  void _syncInactiveRepaint({PomodoroState? state, bool? isMirror}) {
     if (!mounted) return;
     final PomodoroState resolvedState =
         state ?? ref.read(pomodoroViewModelProvider);
@@ -217,6 +217,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _cancelNavigationHandled = false;
     _cancelNavRetryAttempts = 0;
     _pendingRunningOverlapDecision = null;
+    _clearPendingPostponeGuard();
     _stopCancelNavRetry();
     _setInactiveRepaintEnabled(false);
     _preRunInfo = null;
@@ -250,8 +251,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       switch (result) {
         case PomodoroGroupLoadResult.loaded:
           setState(() => _taskLoaded = true);
-          final group =
-              ref.read(pomodoroViewModelProvider.notifier).currentGroup;
+          final group = ref
+              .read(pomodoroViewModelProvider.notifier)
+              .currentGroup;
           _syncPreRunInfo(group);
           if (group != null) {
             _maybeAutoStartRunningGroup(group);
@@ -359,7 +361,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       if (group.status == TaskRunStatus.scheduled &&
           scheduledStart != null &&
           !scheduledStart.isAfter(now)) {
-        final totalSeconds = group.totalDurationSeconds ??
+        final totalSeconds =
+            group.totalDurationSeconds ??
             groupDurationSecondsByMode(group.tasks, group.integrityMode);
         final updated = group.copyWith(
           status: TaskRunStatus.running,
@@ -491,6 +494,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       next,
     ) {
       final groups = next.value ?? const [];
+      _syncPendingPostponeGuardFromGroups(groups);
       final updated = groups.where((g) => g.id == widget.groupId).toList();
       if (updated.isEmpty) return;
       final group = updated.first;
@@ -509,8 +513,18 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         _maybeHandleGroupCompleted(vm, group);
       }
 
-      if (group.status == TaskRunStatus.canceled &&
-          !_cancelNavigationHandled) {
+      final shouldDismissCompletionForAutoOpen =
+          _finishedDialogVisible &&
+          group.status != TaskRunStatus.completed &&
+          (group.status == TaskRunStatus.running || _preRunInfo != null);
+      if (shouldDismissCompletionForAutoOpen) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _dismissCompletionDialogForAutoOpen(reason: 'next group auto-open');
+        });
+      }
+
+      if (group.status == TaskRunStatus.canceled && !_cancelNavigationHandled) {
         _navigateToGroupsHub(reason: 'group stream canceled');
       }
     });
@@ -530,12 +544,14 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         return;
       }
       if (_finishedDialogVisible &&
-          vm.isMirrorMode &&
           !nowFinished &&
-          group?.status != TaskRunStatus.completed) {
+          group?.status != TaskRunStatus.completed &&
+          (next.status.isActiveExecution ||
+              group?.status == TaskRunStatus.running ||
+              _preRunInfo != null)) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
-          _dismissFinishedDialog();
+          _dismissCompletionDialogForAutoOpen(reason: 'state became active');
         });
       }
       if (group?.status == TaskRunStatus.canceled &&
@@ -553,6 +569,16 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         'prev=$previous next=$next screen=${widget.groupId} '
         'route=${_currentRoute()}',
       );
+      final shouldDismissForNextGroupPreRun =
+          _finishedDialogVisible && next != null && next != widget.groupId;
+      if (shouldDismissForNextGroupPreRun) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _dismissCompletionDialogForAutoOpen(
+            reason: 'next group pre-run auto-open',
+          );
+        });
+      }
       if (next == widget.groupId) {
         _maybeAutoStartScheduled();
       }
@@ -583,6 +609,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       );
       if (!stillValid) {
         ref.read(runningOverlapDecisionProvider.notifier).state = null;
+        return;
+      }
+      if (_isPostponeDecisionSuppressed(next)) {
         return;
       }
       if (_runningOverlapDialogVisible) return;
@@ -652,8 +681,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         state.status.isActiveExecution ||
         state.status == PomodoroStatus.finished;
     final showBlockingLoader =
-        !_taskLoaded ||
-        (shouldShowResyncLoader && !hasSessionSnapshot);
+        !_taskLoaded || (shouldShowResyncLoader && !hasSessionSnapshot);
     final showSyncOverlay =
         _taskLoaded && shouldShowResyncLoader && hasSessionSnapshot;
     final pendingIntentLabel = vm.pendingIntentLabel;
@@ -664,7 +692,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final hasLocalPendingOwnershipRequest = vm.hasLocalPendingOwnershipRequest;
     final isPendingForSelf =
         vm.isOwnershipRequestPendingForThisDevice ||
-        (hasLocalPendingOwnershipRequest && !vm.isOwnershipRequestPendingForOther);
+        (hasLocalPendingOwnershipRequest &&
+            !vm.isOwnershipRequestPendingForOther);
     final isDismissedRequest = _isDismissedOwnershipRequest(ownershipRequest);
     final showOwnerRequestBanner =
         isSessionForGroup &&
@@ -810,11 +839,11 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                             setState(() {
                               _dismissedOwnershipRequestKey =
                                   ownershipRequest.requestId ??
-                                      ownershipRequest.requesterDeviceId;
+                                  ownershipRequest.requesterDeviceId;
                               _dismissedOwnershipRequesterId =
                                   ownershipRequest.requestId == null
-                                      ? ownershipRequest.requesterDeviceId
-                                      : null;
+                                  ? ownershipRequest.requesterDeviceId
+                                  : null;
                             });
                             unawaited(vm.rejectOwnershipRequest());
                           },
@@ -887,10 +916,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           children: const [
             Icon(Icons.info_outline, color: Color(0xFFFFC107), size: 18),
             SizedBox(width: 8),
-            Text(
-              "Local Mode pause",
-              style: TextStyle(color: Colors.white),
-            ),
+            Text("Local Mode pause", style: TextStyle(color: Colors.white)),
           ],
         ),
         content: const Text(
@@ -1001,8 +1027,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
             child: const Text('Postpone scheduled'),
           ),
           ElevatedButton(
-            onPressed: () =>
-                Navigator.of(context).pop(_RunningOverlapChoice.cancelScheduled),
+            onPressed: () => Navigator.of(
+              context,
+            ).pop(_RunningOverlapChoice.cancelScheduled),
             child: const Text('Cancel scheduled'),
           ),
         ],
@@ -1073,10 +1100,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     return vm.nextItem == null;
   }
 
-  bool _shouldShowRunningOverlapNow(
-    PomodoroState state,
-    PomodoroViewModel vm,
-  ) {
+  bool _shouldShowRunningOverlapNow(PomodoroState state, PomodoroViewModel vm) {
     if (state.status == PomodoroStatus.paused) return true;
     if (_isBreakPhase(state)) return true;
     if (_isLastPomodoroInGroup(state, vm)) return true;
@@ -1141,15 +1165,16 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final allGroups = queueId == null
         ? const <TaskRunGroup>[]
         : await repo.getAll();
-    final queued = queueId == null
-        ? <TaskRunGroup>[]
-        : allGroups
-            .where(
-              (group) =>
-                  group.status == TaskRunStatus.scheduled &&
-                  group.lateStartQueueId == queueId,
-            )
-            .toList()
+    final queued =
+        queueId == null
+              ? <TaskRunGroup>[]
+              : allGroups
+                    .where(
+                      (group) =>
+                          group.status == TaskRunStatus.scheduled &&
+                          group.lateStartQueueId == queueId,
+                    )
+                    .toList()
           ..sort((a, b) {
             final aOrder = a.lateStartQueueOrder ?? 0;
             final bOrder = b.lateStartQueueOrder ?? 0;
@@ -1159,15 +1184,15 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         ? 0
         : queued.indexWhere((group) => group.id == scheduled.id);
     final applyChain = queueId != null && queueOrder != null && startIndex >= 0;
-    final chainGroups =
-        applyChain ? queued.sublist(startIndex) : [scheduled];
+    final chainGroups = applyChain ? queued.sublist(startIndex) : [scheduled];
     final updates = <TaskRunGroup>[];
     var cursor = endTime;
     for (var index = 0; index < chainGroups.length; index += 1) {
       final group = chainGroups[index];
       final noticeMinutes = _resolveNoticeMinutes(group);
-      final scheduledStart = ceilToMinute(
-        cursor.add(Duration(minutes: noticeMinutes)),
+      final scheduledStart = resolveAnchoredScheduledStart(
+        anchorEnd: cursor,
+        noticeMinutes: noticeMinutes,
       );
       final durationSeconds = resolveGroupDurationSeconds(group);
       final anchorId = index == 0 ? running.id : chainGroups[index - 1].id;
@@ -1176,8 +1201,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         scheduledStartTime: scheduledStart,
         scheduledByDeviceId: deviceId,
         actualStartTime: null,
-        theoreticalEndTime:
-            scheduledStart.add(Duration(seconds: durationSeconds)),
+        theoreticalEndTime: scheduledStart.add(
+          Duration(seconds: durationSeconds),
+        ),
         noticeSentAt: null,
         noticeSentByDeviceId: null,
         postponedAfterGroupId: anchorId,
@@ -1186,10 +1212,21 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       updates.add(updated);
       cursor = scheduledStart.add(Duration(seconds: durationSeconds));
     }
-    if (updates.length == 1) {
-      await repo.save(updates.first);
-    } else {
-      await repo.saveAll(updates);
+    if (updates.isEmpty) return;
+    _setPendingPostponeGuard(
+      decision: decision,
+      scheduledGroupId: updates.first.id,
+      expectedStart: updates.first.scheduledStartTime!,
+    );
+    try {
+      if (updates.length == 1) {
+        await repo.save(updates.first);
+      } else {
+        await repo.saveAll(updates);
+      }
+    } catch (_) {
+      _clearPendingPostponeGuard();
+      rethrow;
     }
     for (final group in updates) {
       await notifier.cancelGroupPreAlert(group.id);
@@ -1229,7 +1266,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     if (group.theoreticalEndTime.isAfter(start)) {
       return group.theoreticalEndTime;
     }
-    final durationSeconds = group.totalDurationSeconds ??
+    final durationSeconds =
+        group.totalDurationSeconds ??
         groupDurationSecondsByMode(group.tasks, group.integrityMode);
     if (durationSeconds <= 0) return start;
     return start.add(Duration(seconds: durationSeconds));
@@ -1243,8 +1281,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final messenger = ScaffoldMessenger.of(context);
     final startLabel = _formatTimeOrDate(scheduledStart);
     final hasPreRun = preRunStart.isBefore(scheduledStart);
-    final preRunClause =
-        hasPreRun ? ' (pre-run at ${_formatTimeOrDate(preRunStart)})' : '';
+    final preRunClause = hasPreRun
+        ? ' (pre-run at ${_formatTimeOrDate(preRunStart)})'
+        : '';
     final chainNote = chainedCount > 0
         ? ' Remaining queued groups will shift sequentially.'
         : '';
@@ -1267,6 +1306,61 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     return '${decision.runningGroupId}_${decision.scheduledGroupId}';
   }
 
+  void _setPendingPostponeGuard({
+    required RunningOverlapDecision decision,
+    required String scheduledGroupId,
+    required DateTime expectedStart,
+  }) {
+    _pendingPostponeDecisionKey = _overlapDecisionKey(decision);
+    _pendingPostponeScheduledGroupId = scheduledGroupId;
+    _pendingPostponeExpectedStart = expectedStart;
+    _pendingPostponeSnapshotChecks = 0;
+  }
+
+  void _clearPendingPostponeGuard() {
+    _pendingPostponeDecisionKey = null;
+    _pendingPostponeScheduledGroupId = null;
+    _pendingPostponeExpectedStart = null;
+    _pendingPostponeSnapshotChecks = 0;
+  }
+
+  bool _isPostponeDecisionSuppressed(RunningOverlapDecision decision) {
+    final guardKey = _pendingPostponeDecisionKey;
+    if (guardKey == null) return false;
+    return guardKey == _overlapDecisionKey(decision);
+  }
+
+  void _syncPendingPostponeGuardFromGroups(List<TaskRunGroup> groups) {
+    final scheduledGroupId = _pendingPostponeScheduledGroupId;
+    final expectedStart = _pendingPostponeExpectedStart;
+    if (scheduledGroupId == null || expectedStart == null) return;
+    _pendingPostponeSnapshotChecks += 1;
+    final scheduled = findGroupById(groups, scheduledGroupId);
+    if (scheduled == null || scheduled.status != TaskRunStatus.scheduled) {
+      _clearPendingPostponeGuard();
+      return;
+    }
+    final activeSession = ref.read(activePomodoroSessionProvider);
+    final effectiveStart =
+        resolveEffectiveScheduledStart(
+          group: scheduled,
+          allGroups: groups,
+          activeSession: activeSession,
+          now: DateTime.now(),
+          fallbackNoticeMinutes: _noticeFallbackMinutes,
+        ) ??
+        scheduled.scheduledStartTime;
+    if (effectiveStart != null && !effectiveStart.isBefore(expectedStart)) {
+      _clearPendingPostponeGuard();
+      return;
+    }
+    // Fallback on repeated snapshots to avoid stale suppression if repository
+    // write fails silently or snapshot propagation never confirms.
+    if (_pendingPostponeSnapshotChecks >= 25) {
+      _clearPendingPostponeGuard();
+    }
+  }
+
   bool _isOwnerStale(PomodoroSession? session, DateTime now) {
     if (session == null) return false;
     final updatedAt = session.lastUpdatedAt;
@@ -1274,10 +1368,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     return now.difference(updatedAt) >= const Duration(seconds: 45);
   }
 
-  void _maybeShowMirrorConflictSnack(
-    String key, {
-    required bool ownerStale,
-  }) {
+  void _maybeShowMirrorConflictSnack(String key, {required bool ownerStale}) {
     if (_mirrorConflictSnackVisible ||
         _dismissedMirrorConflictSnackKeys.contains(key)) {
       return;
@@ -1289,29 +1380,32 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         : 'Owner is resolving this conflict. Request ownership if needed.';
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: const Duration(minutes: 10),
-          dismissDirection: DismissDirection.none,
-          action: SnackBarAction(
-            label: 'OK',
-            onPressed: () {
-              _dismissedMirrorConflictSnackKeys.add(key);
-              messenger.hideCurrentSnackBar();
-              if (!mounted) return;
-              setState(() {
-                _mirrorConflictSnackVisible = false;
-              });
-            },
-          ),
-        ),
-      ).closed.then((_) {
-        if (!mounted) return;
-        setState(() {
-          _mirrorConflictSnackVisible = false;
-        });
-      });
+      messenger
+          .showSnackBar(
+            SnackBar(
+              content: Text(message),
+              duration: const Duration(minutes: 10),
+              dismissDirection: DismissDirection.none,
+              action: SnackBarAction(
+                label: 'OK',
+                onPressed: () {
+                  _dismissedMirrorConflictSnackKeys.add(key);
+                  messenger.hideCurrentSnackBar();
+                  if (!mounted) return;
+                  setState(() {
+                    _mirrorConflictSnackVisible = false;
+                  });
+                },
+              ),
+            ),
+          )
+          .closed
+          .then((_) {
+            if (!mounted) return;
+            setState(() {
+              _mirrorConflictSnackVisible = false;
+            });
+          });
     });
   }
 
@@ -1469,7 +1563,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     });
   }
 
-
   Future<void> _maybeShowOwnerEducation() async {
     if (_ownerEducationInFlight) return;
     _ownerEducationInFlight = true;
@@ -1479,7 +1572,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       final vm = ref.read(pomodoroViewModelProvider.notifier);
       final session = vm.activeSessionForCurrentGroup;
       final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
-      final isOwner = session != null &&
+      final isOwner =
+          session != null &&
           session.ownerDeviceId == deviceId &&
           session.status.isActiveExecution;
       if (!isOwner) return;
@@ -1493,10 +1587,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           content: const Text(
             'This device controls the execution. Other devices will connect in view-only mode.',
           ),
-          action: SnackBarAction(
-            label: "Don't show again",
-            onPressed: () {},
-          ),
+          action: SnackBarAction(label: "Don't show again", onPressed: () {}),
           duration: const Duration(seconds: 4),
         ),
       );
@@ -1522,7 +1613,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       return request.requestId == _dismissedOwnershipRequestKey;
     }
     final requestKey = _ownershipRequestKey(request);
-    return (requestKey != null && requestKey == _dismissedOwnershipRequestKey) ||
+    return (requestKey != null &&
+            requestKey == _dismissedOwnershipRequestKey) ||
         (_dismissedOwnershipRequesterId != null &&
             request.requesterDeviceId == _dismissedOwnershipRequesterId);
   }
@@ -1545,7 +1637,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   }) {
     final session = vm.activeSessionForCurrentGroup;
     final request = vm.ownershipRequest;
-    final hasDismissedRequest = _dismissedOwnershipRequestKey != null ||
+    final hasDismissedRequest =
+        _dismissedOwnershipRequestKey != null ||
         _dismissedOwnershipRequesterId != null;
 
     if (_ownershipRejectionSnackVisible &&
@@ -1556,8 +1649,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     }
 
     if (session != null && hasDismissedRequest) {
-      final requestResolved = request == null ||
-          request.status != OwnershipRequestStatus.pending;
+      final requestResolved =
+          request == null || request.status != OwnershipRequestStatus.pending;
       final matchesDismissed =
           request == null || _isDismissedOwnershipRequest(request);
       if (requestResolved && matchesDismissed) {
@@ -1569,7 +1662,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     if (request.status != OwnershipRequestStatus.rejected) return;
     if (request.requesterDeviceId != deviceId) return;
     final respondedAt = request.respondedAt;
-    final key = request.requestId ??
+    final key =
+        request.requestId ??
         '${request.requesterDeviceId}-${respondedAt?.millisecondsSinceEpoch ?? 0}';
     if (_lastOwnershipRejectionKey == key) return;
     _lastOwnershipRejectionKey = key;
@@ -1582,15 +1676,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       SnackBar(
         content: Row(
           children: [
-            Icon(
-              Icons.cancel_outlined,
-              color: rejectionColor,
-              size: 18,
-            ),
+            Icon(Icons.cancel_outlined, color: rejectionColor, size: 18),
             const SizedBox(width: 8),
-            Expanded(
-              child: Text('Ownership request rejected at $time'),
-            ),
+            Expanded(child: Text('Ownership request rejected at $time')),
           ],
         ),
         duration: const Duration(days: 1),
@@ -1648,10 +1736,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         final allowed = isSyncing
             ? 'Waiting for sync.'
             : !hasSession
-                ? 'Waiting to start.'
-                : isMirror
-                    ? 'View progress only.'
-                    : 'Pause, resume, and cancel.';
+            ? 'Waiting to start.'
+            : isMirror
+            ? 'View progress only.'
+            : 'Pause, resume, and cancel.';
         return SafeArea(
           top: false,
           child: Padding(
@@ -1673,10 +1761,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                   isSyncing
                       ? 'Syncing session ownership...'
                       : !hasSession
-                          ? 'No active session yet.'
-                          : isMirror
-                              ? 'This device is in view-only mode.'
-                              : 'This device controls the execution.',
+                      ? 'No active session yet.'
+                      : isMirror
+                      ? 'This device is in view-only mode.'
+                      : 'This device controls the execution.',
                   style: const TextStyle(color: Colors.white70),
                 ),
                 const SizedBox(height: 12),
@@ -1693,10 +1781,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  allowed,
-                  style: const TextStyle(color: Colors.white70),
-                ),
+                Text(allowed, style: const TextStyle(color: Colors.white70)),
                 if (isMirror && isPendingForSelf) ...[
                   const SizedBox(height: 12),
                   const Text(
@@ -1704,7 +1789,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                     style: TextStyle(color: Colors.white70),
                   ),
                 ],
-                if (!isSyncing && hasSession && isMirror && isPendingForOther) ...[
+                if (!isSyncing &&
+                    hasSession &&
+                    isMirror &&
+                    isPendingForOther) ...[
                   const SizedBox(height: 12),
                   const Text(
                     'Another device is requesting ownership.',
@@ -1736,13 +1824,13 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                       child: Text(
                         isPendingForSelf
                             ? isPendingStaleForSelf && canRequestOwnership
-                                ? 'Retry'
-                                : 'Request sent'
+                                  ? 'Retry'
+                                  : 'Request sent'
                             : isPendingForOther
-                                ? 'Pending'
-                                : isSyncing || !hasSession
-                                    ? 'Syncing...'
-                                    : 'Request ownership',
+                            ? 'Pending'
+                            : isSyncing || !hasSession
+                            ? 'Syncing...'
+                            : 'Request ownership',
                       ),
                     ),
                   ),
@@ -1803,9 +1891,12 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
   void _attemptNavigateToGroupsHub(String reason) {
     if (!mounted) return;
-    final rootContext =
-        GoRouter.of(context).routerDelegate.navigatorKey.currentContext;
-    final router = rootContext != null ? GoRouter.of(rootContext) : GoRouter.of(context);
+    final rootContext = GoRouter.of(
+      context,
+    ).routerDelegate.navigatorKey.currentContext;
+    final router = rootContext != null
+        ? GoRouter.of(rootContext)
+        : GoRouter.of(context);
     if (kDebugMode) {
       debugPrint(
         'Cancel nav: $reason (attempt $_cancelNavRetryAttempts, root=${rootContext != null})',
@@ -1825,15 +1916,16 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       if (!currentPath.startsWith('/timer/')) {
         return;
       }
-      final activeId =
-          currentPath.substring('/timer/'.length).split('?').first;
+      final activeId = currentPath.substring('/timer/'.length).split('?').first;
       if (_cancelNavTargetGroupId != null &&
           activeId != _cancelNavTargetGroupId) {
         return;
       }
       if (currentPath.startsWith('/timer/')) {
         if (kDebugMode) {
-          debugPrint('Cancel nav retry $_cancelNavRetryAttempts (still in timer)');
+          debugPrint(
+            'Cancel nav retry $_cancelNavRetryAttempts (still in timer)',
+          );
         }
         router.go('/groups');
         _scheduleCancelNavRetry(router);
@@ -1841,11 +1933,27 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     });
   }
 
-  void _dismissFinishedDialog() {
-    if (!_finishedDialogVisible) return;
+  void _dismissFinishedDialog({bool force = false}) {
+    if (!_finishedDialogVisible && !force) return;
     _finishedDialogVisible = false;
     _setCompletionDialogVisible(false);
-    Navigator.of(context, rootNavigator: true).pop();
+    final navigator = Navigator.of(context, rootNavigator: true);
+    if (navigator.canPop()) {
+      navigator.pop();
+    }
+  }
+
+  void _dismissCompletionDialogForAutoOpen({
+    required String reason,
+    bool force = false,
+  }) {
+    if (!_finishedDialogVisible && !force) return;
+    if (kDebugMode) {
+      debugPrint('[RunModeDiag] Auto-dismiss completion dialog: $reason');
+    }
+    _completionDialogHandled = true;
+    _completionNavigationHandled = true;
+    _dismissFinishedDialog(force: force);
   }
 
   void _setCompletionDialogVisible(bool value) {
@@ -1930,8 +2038,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
             pendingForSelf
                 ? "Ownership request pending. Wait for approval to stop it here."
                 : pendingForOther
-                    ? "Another device is requesting ownership. End it there to stop it."
-                    : "This group is controlled by another device. Use the ownership icon to request control.",
+                ? "Another device is requesting ownership. End it there to stop it."
+                : "This group is controlled by another device. Use the ownership icon to request control.",
           ),
           actions: [
             TextButton(
@@ -1961,7 +2069,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   String _formatTimeOrDate(DateTime value) {
     final now = DateTime.now();
     final isToday =
-        value.year == now.year && value.month == now.month && value.day == now.day;
+        value.year == now.year &&
+        value.month == now.month &&
+        value.day == now.day;
     if (isToday) {
       return DateFormat('HH:mm').format(value);
     }
@@ -1971,7 +2081,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   String _formatConflictRange(DateTime start, DateTime end) {
     final now = DateTime.now();
     final isToday =
-        start.year == now.year && start.month == now.month && start.day == now.day;
+        start.year == now.year &&
+        start.month == now.month &&
+        start.day == now.day;
     if (isToday) {
       return '${DateFormat('HH:mm').format(start)}-${DateFormat('HH:mm').format(end)}';
     }
@@ -1986,8 +2098,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final groups = ref.read(taskRunGroupStreamProvider).value ?? const [];
     final scheduled = findGroupById(groups, decision.scheduledGroupId);
     if (scheduled == null) return null;
-    final name =
-        scheduled.tasks.isNotEmpty ? scheduled.tasks.first.name : 'Task group';
+    final name = scheduled.tasks.isNotEmpty
+        ? scheduled.tasks.first.name
+        : 'Task group';
     final activeSession = ref.read(activePomodoroSessionProvider);
     final scheduledStart =
         resolveEffectiveScheduledStart(
@@ -2002,16 +2115,18 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     String? preRunLabel;
     if (scheduledStart != null) {
       final durationSeconds = resolveGroupDurationSeconds(scheduled);
-      final scheduledEnd =
-          scheduledStart.add(Duration(seconds: durationSeconds));
+      final scheduledEnd = scheduledStart.add(
+        Duration(seconds: durationSeconds),
+      );
       rangeLabel = _formatConflictRange(scheduledStart, scheduledEnd);
       final noticeMinutes = resolveNoticeMinutes(
         scheduled,
         fallback: _noticeFallbackMinutes,
       );
       if (noticeMinutes > 0) {
-        final preRunStart =
-            scheduledStart.subtract(Duration(minutes: noticeMinutes));
+        final preRunStart = scheduledStart.subtract(
+          Duration(minutes: noticeMinutes),
+        );
         if (!preRunStart.isAtSameMomentAs(scheduledStart)) {
           preRunLabel = _formatTimeOrDate(preRunStart);
         }
@@ -2053,10 +2168,7 @@ class _ConflictDialogContent extends StatelessWidget {
         ),
         if (info != null) ...[
           const SizedBox(height: 12),
-          Text(
-            info!.name,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
+          Text(info!.name, style: const TextStyle(fontWeight: FontWeight.w600)),
           if (info!.scheduledRange != null) ...[
             const SizedBox(height: 6),
             Text('Scheduled: ${info!.scheduledRange}'),
@@ -2075,8 +2187,10 @@ class _ControlsBar extends StatelessWidget {
   static const _runModeButtonTextStyle = TextStyle(fontSize: 14);
   static const _runModeButtonIconSize = 16.0;
   static const _runModeButtonIconSpacing = 6.0;
-  static const _runModeButtonPadding =
-      EdgeInsets.symmetric(horizontal: 22, vertical: 14);
+  static const _runModeButtonPadding = EdgeInsets.symmetric(
+    horizontal: 22,
+    vertical: 14,
+  );
   static const _runModeButtonMinHeight = 44.0;
   static final _runModeButtonStyle = ElevatedButton.styleFrom(
     backgroundColor: Colors.white12,
@@ -2127,10 +2241,7 @@ class _ControlsBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           _btn("Pause", null),
-          _btn(
-            "Cancel",
-            controlsEnabled ? onCancelRequested : null,
-          ),
+          _btn("Cancel", controlsEnabled ? onCancelRequested : null),
         ],
       );
     }
@@ -2148,21 +2259,14 @@ class _ControlsBar extends StatelessWidget {
             "Start again",
             taskLoaded && controlsEnabled ? onStartRequested : null,
           ),
-        if (isRunning)
-          _btn(
-            "Pause",
-            controlsEnabled ? onPauseRequested : null,
-          ),
+        if (isRunning) _btn("Pause", controlsEnabled ? onPauseRequested : null),
         if (isPaused)
           _buildResumeControl(
             controlsEnabled,
             showLocalPauseInfo: showLocalPauseInfo,
           ),
         if (!isIdle && !isFinished)
-          _btn(
-            "Cancel",
-            controlsEnabled ? onCancelRequested : null,
-          ),
+          _btn("Cancel", controlsEnabled ? onCancelRequested : null),
       ],
     );
   }
@@ -2171,10 +2275,7 @@ class _ControlsBar extends StatelessWidget {
     bool controlsEnabled, {
     required bool showLocalPauseInfo,
   }) {
-    final resumeButton = _btn(
-      "Resume",
-      controlsEnabled ? vm.resume : null,
-    );
+    final resumeButton = _btn("Resume", controlsEnabled ? vm.resume : null);
     if (!showLocalPauseInfo) return resumeButton;
 
     return Row(
@@ -2194,29 +2295,15 @@ class _ControlsBar extends StatelessWidget {
     );
   }
 
-  Widget _btn(
-    String text,
-    VoidCallback? onTap, {
-    IconData? icon,
-  }) {
+  Widget _btn(String text, VoidCallback? onTap, {IconData? icon}) {
     final child = icon == null
-        ? Text(
-            text,
-            style: _runModeButtonTextStyle,
-          )
+        ? Text(text, style: _runModeButtonTextStyle)
         : Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                size: _runModeButtonIconSize,
-                color: Colors.white70,
-              ),
+              Icon(icon, size: _runModeButtonIconSize, color: Colors.white70),
               const SizedBox(width: _runModeButtonIconSpacing),
-              Text(
-                text,
-                style: _runModeButtonTextStyle,
-              ),
+              Text(text, style: _runModeButtonTextStyle),
             ],
           );
     return ElevatedButton(
@@ -2255,10 +2342,7 @@ class _SyncingOverlay extends StatelessWidget {
           ),
           if (showRetry) ...[
             const SizedBox(height: 8),
-            TextButton(
-              onPressed: onRetry,
-              child: const Text('Retry sync'),
-            ),
+            TextButton(onPressed: onRetry, child: const Text('Retry sync')),
           ],
         ],
       ),
@@ -2291,10 +2375,7 @@ class _OwnershipRequestBanner extends StatelessWidget {
         children: [
           const Text(
             'Ownership request',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
           Text(
@@ -2349,30 +2430,30 @@ class _OwnershipIndicatorAction extends StatelessWidget {
     final icon = isPendingRequest
         ? Icons.verified
         : isSyncing
-            ? Icons.sync
-            : !hasSession
-                ? Icons.hourglass_empty
-                : isMirror
-                    ? Icons.remove_red_eye
-                    : Icons.verified;
+        ? Icons.sync
+        : !hasSession
+        ? Icons.hourglass_empty
+        : isMirror
+        ? Icons.remove_red_eye
+        : Icons.verified;
     final color = isPendingRequest
         ? Colors.orangeAccent
         : isSyncing
-            ? Colors.white38
-            : !hasSession
-                ? Colors.white54
-                : isMirror
-                    ? Colors.white70
-                    : Colors.greenAccent;
+        ? Colors.white38
+        : !hasSession
+        ? Colors.white54
+        : isMirror
+        ? Colors.white70
+        : Colors.greenAccent;
     final tooltip = isPendingRequest
         ? 'Ownership request pending'
         : isSyncing
-            ? 'Syncing session'
-            : !hasSession
-                ? 'No active session yet'
-                : isMirror
-                    ? 'Mirror device'
-                    : 'Owner device';
+        ? 'Syncing session'
+        : !hasSession
+        ? 'No active session yet'
+        : isMirror
+        ? 'Mirror device'
+        : 'Owner device';
 
     return Padding(
       padding: const EdgeInsets.only(right: 4),
@@ -2875,11 +2956,7 @@ class _ContextualTaskList extends StatelessWidget {
     );
     var cursor = plannedStart;
     for (var i = 0; i < index; i += 1) {
-      cursor = cursor.add(
-        Duration(
-          seconds: durations[i],
-        ),
-      );
+      cursor = cursor.add(Duration(seconds: durations[i]));
     }
     final duration = durations[index];
     return TaskTimeRange(cursor, cursor.add(Duration(seconds: duration)));
@@ -2904,11 +2981,7 @@ class _PreRunInfo {
   });
 }
 
-enum _RunningOverlapChoice {
-  endCurrent,
-  postponeNext,
-  cancelScheduled,
-}
+enum _RunningOverlapChoice { endCurrent, postponeNext, cancelScheduled }
 
 class _ContextItemData {
   final String label;

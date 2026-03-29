@@ -24,16 +24,35 @@ At the start of **every session**:
    - `docs/specs.md`
    - `docs/roadmap.md`
    - `docs/dev_log.md`
+   - `docs/bugs/bug_log.md` — canonical bug status source
+   - `docs/validation/validation_ledger.md` — open P0/P1 items take priority over new phases
 2. Confirm the **current real date** (e.g. `date` in terminal).
-3. Verify:
-   - CURRENT PHASE in `docs/roadmap.md`
-   - Any **Reopened phases**
+3. Verify in order:
+   - Open `[ ]` P0/P1 items in `docs/validation/validation_ledger.md` (bugs AND RVP items)
+   - Non-closed bug-log entries are mirrored in `docs/validation/validation_ledger.md`
+     with stable IDs, priorities, statuses, and source references
+   - Any **Reopened phases** in `docs/roadmap.md`
+   - CURRENT PHASE in `docs/roadmap.md` — only after the above are clear
 4. If a phase is reopened and not listed, **add it immediately** to:
    - 🔄 Reopened phases
 5. Do **not** start coding until context is fully aligned.
+
+Bug-priority preflight gate (hard rule):
+- Before starting any validation, roadmap item, feature, refactor, or infra task:
+  1. Scan `docs/bugs/bug_log.md` for all non-closed bugs.
+  2. Ensure each one is present in `docs/validation/validation_ledger.md`.
+  3. If any mismatch exists, stop and synchronize ledger + `docs/dev_log.md` first.
+  4. Continue only after the bug queue is explicit and ordered by priority.
+
+**"What's next" rule:** When asked what to do next, always cross-reference
+`validation_ledger.md` + `roadmap.md` + tail of `dev_log.md`. Never answer from
+the `CURRENT PHASE` label alone — pending validations and doc cleanup come first.
 6. Before any implementation, explain the high-level plan and review it for incoherence or likely failure modes; wait for confirmation.
 7. Ensure you are **not on `main`**; create a new branch before any code/doc changes.
 8. If already on a branch, ensure your changes match the branch purpose/name; if not, commit the current work on that branch, then create a new branch for the unrelated change.
+   - Branch-scope checkpoint (mandatory before any new commit):
+     - Write one line in the working notes/dev update: `Current branch intent: <scope>`.
+     - If the next change is a different scope family (bugfix vs roadmap validation vs process/docs governance vs feature), stop and switch to a dedicated branch first.
 9. Dev log hygiene:
    - Append new blocks to the end of `docs/dev_log.md` in chronological order.
    - Block numbers must be strictly increasing and continue from the last block.
@@ -69,6 +88,10 @@ Mandatory handoff contract (all directions):
 - Tests executed (exact commands + results)
 - Known risks and open questions
 - Explicit next action expected from the receiving role
+- User-facing validation recap when closing items:
+  - For each closed ID, explain the concrete validation case in plain language
+    (trigger/repro, expected behavior, PASS evidence).
+  - Ask the user for explicit final confirmation after presenting the recap.
 
 Conflict rule:
 - If architecture intent and implementation details diverge, stop and resolve via
@@ -105,15 +128,21 @@ Additional requirement:
   documentation path forward.
 
 Bug validation workflow (required):
-- All validation artifacts live under `docs/bugs/validation_<name>_YYYY_MM_DD`
-  (use `-01`, `-02` suffixes for multiple validations in the same day).
+- All validation artifacts live under `docs/bugs/validation_<bug-id>_YYYY_MM_DD`.
+  - `<bug-id>`: normalized bug log ID in lower-case with hyphens removed.
+    `BUG-F25-E` → `f25e` · `BUG-F25-H` → `f25h` · `BUG-001` → `bug001`
+  - Multiple bugs in one folder: join IDs with `_`. `BUG-001` + `BUG-002` → `bug001_bug002`
+  - **No `-01`/`-02` date suffixes.** If two folders cover different bugs on the same day,
+    their distinct bug IDs already differentiate them.
+  - Grandfathered folders keep their original names — do not rename them.
 - Never delete validation subdirectories in `docs/bugs`. Keep them for traceability.
 - Each validation folder must contain **exactly these — no other files**:
   - `plan_validacion_rapida_fix.md` — living document (see required sections below)
   - `quick_pass_checklist.md` — checkboxes only (see format below)
+  - `codex_handoff.md` — **optional**; created by Claude, consumed by Codex; not updated with validation results
   - `logs/` — `.log` files from device runs (named per convention below)
   - `screenshots/` — device screenshots used as evidence
-- **Never create additional `.md` files** inside a validation folder
+- **Never create additional `.md` files** beyond the three listed above
   (no `repro_steps.md`, no `notes.md`, no `analysis.md`).
   Any extra content belongs inside `plan_validacion_rapida_fix.md`.
 
@@ -150,6 +179,11 @@ When all three are met: update `plan_validacion_rapida_fix.md`, `quick_pass_chec
 `docs/bugs/bug_log.md`, `docs/validation/validation_ledger.md` to Closed/OK.
 Then merge fix branch → `develop` (never to `main` directly).
 Add a Block to `docs/dev_log.md` documenting the closure with commit hash.
+
+Mandatory user-facing closure communication (all agents: Claude/Codex/Gemini/any AI):
+- Before considering the closure fully done, provide a concise recap of each closed
+  validation ID with the exact case validated (what was reproduced/checked and what PASS means).
+- End by requesting explicit final user confirmation.
 
 Always review screenshots in the validation folder before diagnosing or implementing fixes.
 Full bug lifecycle detail: `CLAUDE.md` sections 10–11.
@@ -200,9 +234,10 @@ Global validation ledger workflow (hard rule):
   - If one implementation closes multiple items, close each ID explicitly.
 - Priority execution order (mandatory):
   1. P0 blockers
-  2. Reopened-phase validation items
-  3. Remaining historical pending validations
-  - Do not start new feature work while P0 validation blockers remain open.
+  2. Active bug-log queue (all non-closed bug entries, ordered P1 then P2)
+  3. Reopened-phase validation items
+  4. Remaining historical pending validations
+  - Do not start new feature work while open P0/P1 bug items remain unresolved.
 
 ---
 
@@ -368,10 +403,29 @@ Minimal UI guards are permitted **only when no service-level alternative exists*
 
 ## 8️⃣ Feature development protocol
 
+**Three-tier branching model (mandatory):**
+
+```
+fix/xxx  or  feature/xxx
+        ↓  (after device validation PASS)
+     develop
+        ↓  (only when zero known open P0/P1 bugs)
+       main  (production)
+```
+
+Rules:
+- **Never commit directly to `main` or `develop`.** All work on short-lived branches.
+- Fix/feature branches merge into `develop` only after device validation PASS.
+- `develop` merges into `main` only when `validation_ledger.md` shows zero open P0/P1 bugs.
+- Before checking out any branch: run `git branch --show-current` to confirm you are NOT on `main` or `develop`. If you are, ask the user which branch to use.
+- Branch naming: `fix/<short-description>` or `feature/<short-description>`. Never generic names (`patch`, `temp`, `wip`).
+- Branch scope lock: one branch = one scope family. Do not mix unrelated tracks in one branch
+  (example of forbidden mix: roadmap validation closures + process-rule governance edits).
+  If a new request changes scope family, create/switch branch before editing.
+
 For every new feature or fix:
 
-1. Create a **new branch**
-   - Never work directly on `main` (release branch).
+1. Create a **new branch** from `develop` (never from `main`).
 2. Implement **only one logical change**
 3. Ensure:
    - App compiles

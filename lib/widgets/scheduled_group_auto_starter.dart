@@ -61,19 +61,20 @@ class _ScheduledGroupAutoStarterState
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<ScheduledGroupAction?>(
-      scheduledGroupCoordinatorProvider,
-      (previous, next) {
-        if (next == null) return;
-        _handleAction(next);
-        ref.read(scheduledGroupCoordinatorProvider.notifier).clearAction();
-      },
-    );
+    ref.listen<ScheduledGroupAction?>(scheduledGroupCoordinatorProvider, (
+      previous,
+      next,
+    ) {
+      if (next == null) return;
+      _handleAction(next);
+      ref.read(scheduledGroupCoordinatorProvider.notifier).clearAction();
+    });
     return widget.child;
   }
 
   void _handleAction(ScheduledGroupAction action) {
-    if (ref.read(completionDialogVisibleProvider)) {
+    if (ref.read(completionDialogVisibleProvider) &&
+        action.type != ScheduledGroupActionType.openTimer) {
       _deferAction(action);
       return;
     }
@@ -83,17 +84,30 @@ class _ScheduledGroupAutoStarterState
         if (groupId == null) return;
         unawaited(_openTimerForGroup(groupId));
         break;
+      case ScheduledGroupActionType.openGroupsHub:
+        _openGroupsHub();
+        break;
       case ScheduledGroupActionType.lateStartQueue:
         final groupIds = action.groupIds;
         if (groupIds == null || groupIds.isEmpty) return;
         final anchor = action.anchor;
         if (anchor == null) return;
-        _navigateToLateStartQueue(
-          groupIds,
-          anchor,
-        );
+        _navigateToLateStartQueue(groupIds, anchor);
         break;
     }
+  }
+
+  void _openGroupsHub() {
+    final navigatorContext = widget.navigatorKey.currentContext;
+    if (navigatorContext == null) {
+      _scheduleRetry(_openGroupsHub);
+      return;
+    }
+    _retryAttempts = 0;
+    final current = _currentLocation(navigatorContext);
+    debugPrint('[RunModeDiag] Auto-start navigate groups hub route=$current');
+    if (current == '/groups') return;
+    navigatorContext.go('/groups');
   }
 
   void _deferAction(ScheduledGroupAction action) {
@@ -120,8 +134,9 @@ class _ScheduledGroupAutoStarterState
   Future<void> _openTimerForGroup(String groupId) async {
     final appMode = ref.read(appModeProvider);
     if (appMode == AppMode.local) {
-      final group =
-          await ref.read(taskRunGroupRepositoryProvider).getById(groupId);
+      final group = await ref
+          .read(taskRunGroupRepositoryProvider)
+          .getById(groupId);
       if (!mounted) return;
       if (group == null) {
         debugPrint(
@@ -173,8 +188,10 @@ class _ScheduledGroupAutoStarterState
         _scheduleRetry(() => unawaited(_openTimerForGroup(groupId)));
         return;
       }
-      final activeId =
-          currentRoute.substring('/timer/'.length).split('?').first;
+      final activeId = currentRoute
+          .substring('/timer/'.length)
+          .split('?')
+          .first;
       if (activeId != groupId) {
         debugPrint(
           '[RunModeDiag] Auto-start navigation mismatch '
@@ -184,8 +201,9 @@ class _ScheduledGroupAutoStarterState
       }
     });
     if (appMode != AppMode.local) {
-      final group =
-          await ref.read(taskRunGroupRepositoryProvider).getById(groupId);
+      final group = await ref
+          .read(taskRunGroupRepositoryProvider)
+          .getById(groupId);
       if (!mounted) return;
       if (group != null) {
         ref.read(pomodoroViewModelProvider.notifier).primeGroupForLoad(group);

@@ -25,9 +25,9 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **Running-overlap provider build-phase mutation guard implemented for mirror red-flash regression (BUG-F25-D)**
-Current focus: **Run exact owner+mirror repro packet for BUG-F25-D and close validation if no red flash/regressions are observed**
-Last update: **19/03/2026**
+Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
+Current focus: **Prioritize active bug-log queue sync/triage before continuing RVP backlog**
+Last update: **27/03/2026**
 
 ---
 
@@ -12308,3 +12308,2661 @@ canceled at 23:14. No premature auto-start. Screenshots confirmed.
 - `docs/bugs/validation_f25i_2026_03_19/plan_validacion_rapida_fix.md` (status → Closed/OK)
 - `docs/bugs/validation_f25i_2026_03_19/quick_pass_checklist.md` (all boxes checked)
 - `docs/dev_log.md` (this block)
+
+# 🔹 Block 606 — Roadmap/ledger closure sync for BUG-F25-E/F/I (20/03/2026)
+
+## 📋 Context
+
+Post-closure review found a documentation divergence:
+`docs/validation/validation_ledger.md` already marked `BUG-F25-E`, `BUG-F25-F`, and
+`BUG-F25-I` as `Closed/OK`, but `docs/roadmap.md` still listed those entries in
+the reopened-phases queue as open items.
+
+## ✔ Work completed
+
+- Updated reopened Phase 17 entries in `docs/roadmap.md`:
+  - `BUG-F25-E` → Closed/OK on 19/03/2026 (`c248c91`)
+  - `BUG-F25-F` → Closed/OK on 19/03/2026 (`68429c5`)
+  - `BUG-F25-I` → Closed/OK on 19/03/2026 (`6c87009`)
+- Updated dev-log header to reflect:
+  - current last bug fix (`BUG-F25-I`)
+  - current execution focus (P1 validation queue `RVP-063..069`)
+  - last update date `20/03/2026`
+
+## 📁 Updated files
+
+- `docs/roadmap.md` (reopened list synchronized with closure state)
+- `docs/dev_log.md` (status header + this block)
+
+## 🎯 Next steps
+
+1. Execute `RVP-063` and `RVP-064` validation packet first (Phase 10 reopen items).
+2. Continue with `RVP-065`, then `RVP-066` to `RVP-069` in ledger order.
+
+# 🔹 Block 607 — RVP-063/RVP-064 validation closure (20/03/2026)
+
+## 📋 Context
+
+The highest-priority reopened validation queue started with:
+- `RVP-063` (Phase 10 break auto-adjust + focus-loss behavior).
+- `RVP-064` (Phase 10 selection-scoped Task weight in Edit Task).
+
+Both were still marked pending in roadmap/ledger despite implementation history
+already present in code and prior dev-log blocks.
+
+## ✔ Work completed
+
+- Verified implementation traceability with `git blame`:
+  - `5c21dc9` (`Defer break auto-adjust to focus loss`) for blur-triggered
+    break adjustment hooks in Task Editor + Edit Preset.
+  - `466b4223` (`feat: auto-adjust break durations`) for pomodoro-change
+    auto-adjust baseline.
+  - `cca359f` (`Selection-scoped task weight`) for selection-scoped
+    Task weight visibility and percentage derivation flow.
+- Ran local validation commands:
+  - `flutter analyze`
+  - `flutter test test/domain/validators_test.dart test/domain/task_weighting_test.dart test/presentation/viewmodels/task_editor_view_model_test.dart`
+  - `flutter test test/domain/task_group_planner_test.dart`
+- Synchronized documentation state:
+  - `docs/validation/validation_ledger.md`: `RVP-063` and `RVP-064` moved to `Closed/OK` with evidence and commit traceability.
+  - `docs/roadmap.md`: timeline entries (03/02) updated to validated, and reopened Phase 10 items marked `Closed/OK`.
+  - `docs/dev_log.md`: status header focus moved to `RVP-065..069`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter analyze` → No issues found.
+- `flutter test test/domain/validators_test.dart test/domain/task_weighting_test.dart test/presentation/viewmodels/task_editor_view_model_test.dart` → `+28` all passed.
+- `flutter test test/domain/task_group_planner_test.dart` → `+11` all passed.
+
+## 📁 Updated files
+
+- `docs/roadmap.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-065` validation (Phase 13 mirror session-gap stability).
+2. Then continue with `RVP-066` to `RVP-069` in order.
+
+# 🔹 Block 608 — RVP-065 validation closure (20/03/2026)
+
+## 📋 Context
+
+After closing `RVP-063/064`, the next P1 reopened validation item was:
+`RVP-065` — "Mirror session gaps must not drop Run Mode to Ready."
+
+This behavior was already functionally covered by the Fix 26 rewrite closure
+(`BUG-001` closed/OK), but the roadmap/ledger item remained pending.
+
+## ✔ Work completed
+
+- Executed focused local regression suites for session-gap behavior:
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
+  - `flutter test test/presentation/timer_screen_syncing_overlay_test.dart`
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart`
+- Confirmed code-path guardrails remain in place:
+  - 3s debounce before hold entry on stream null while ticking.
+  - Hold/sync overlay path (`sessionMissingHold`, `runningWithoutSession`) instead
+    of fallback to Ready during transient session gaps.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-065` moved to `Closed/OK`
+    with Fix 26/BUG-001 evidence + local test gate.
+  - `docs/roadmap.md`: reopened Phase 13 item marked `Closed/OK`.
+  - `docs/dev_log.md`: status header focus advanced to `RVP-066..069`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` → `+25`.
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` → `+4`.
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → `+4`.
+
+## 📁 Updated files
+
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-066` validation (Phase 18 mode-specific breaks).
+2. Then continue with `RVP-067` to `RVP-069`.
+
+# 🔹 Block 609 — Cross-agent rule: validation case recap + final confirmation (20/03/2026)
+
+## 📋 Context
+
+User request: when validation items are closed, always explain the concrete
+validated case(s) so they are easy to remember, and ask for final confirmation.
+The requirement must apply to any responding AI role (Claude, Codex, Gemini, or
+equivalent agent in this workflow).
+
+## ✔ Work completed
+
+- Added mandatory rule in `AGENTS.md`:
+  - handoff contract now requires user-facing validation recap per closed ID;
+  - closure communication now explicitly requires final user confirmation.
+- Added same requirement to `docs/team_roles.md` (mandatory handoff format),
+  making it role-agnostic and applicable across Claude/Codex/Gemini.
+- Added same requirement to `CLAUDE.md` bug lifecycle step 7 (closure), so the
+  recap + explicit final confirmation is part of the standard closure path.
+
+## 📁 Updated files
+
+- `AGENTS.md`
+- `docs/team_roles.md`
+- `CLAUDE.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Continue validation queue with `RVP-066`.
+
+# 🔹 Block 610 — RVP-066 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P1 reopened validation item:
+`RVP-066` — Mode-specific breaks in Phase 18 (Mode A must use a global
+long-break counter across the group).
+
+Existing implementation was present (`45b522f`), but closure required explicit
+validation evidence for the cross-task long-break cadence behavior.
+
+## ✔ Work completed
+
+- Added dedicated unit coverage:
+  - `test/data/models/task_run_group_mode_a_breaks_test.dart`
+  - Verifies that in shared mode the long-break cadence is global and does not
+    reset at task boundaries.
+  - Verifies duration differences vs individual mode for the same task set.
+- Re-ran regression and gate checks:
+  - `flutter test test/data/models/task_run_group_mode_a_breaks_test.dart`
+  - `flutter test test/domain/task_group_planner_test.dart`
+  - `flutter analyze`
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-066` → `Closed/OK`.
+  - `docs/roadmap.md`: Phase 18 reopened item marked `Closed/OK`.
+  - `docs/dev_log.md`: status header focus moved to `RVP-067..069`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/data/models/task_run_group_mode_a_breaks_test.dart` → `+2`.
+- `flutter test test/domain/task_group_planner_test.dart` → `+11`.
+- `flutter analyze` → No issues found.
+
+## 📁 Updated files
+
+- `test/data/models/task_run_group_mode_a_breaks_test.dart` (new)
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-067` validation (Run Mode task transition catch-up after background/resume).
+
+# 🔹 Block 611 — RVP-067 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P1 reopened validation item:
+`RVP-067` — Run Mode task transition catch-up after background/resume.
+
+Phase 18 implementation existed in commit `992de22`, but closure needed explicit
+evidence that `handleAppResumed()` catches up across task boundaries and
+republishes corrected session cursor state.
+
+## ✔ Work completed
+
+- Added dedicated resume catch-up scenario to existing viewmodel coverage:
+  - `test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart`
+  - New case verifies `handleAppResumed` advances from task 0 to task 2 after
+    simulated background elapsed time (cross-task boundary jump).
+  - New case verifies corrected cursor state is republished via
+    `publishSession` after resume catch-up.
+- Extended fake session repository test double with publish tracking
+  (`publishCalls`, `lastPublishedSession`) to assert republish behavior.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-067` → `Closed/OK`.
+  - `docs/roadmap.md`: Phase 18 catch-up item marked `Closed/OK`.
+  - `docs/dev_log.md`: status header focus moved to `RVP-068..069`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → `+5`.
+- `flutter analyze` → No issues found.
+
+## 📁 Updated files
+
+- `test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-068` validation (completion modal + Groups Hub navigation on owner/mirror).
+
+# 🔹 Block 612 — RVP-068 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P1 reopened validation item:
+`RVP-068` — completion modal + Groups Hub navigation must work on owner and
+mirror devices.
+
+Implementation already existed in commit `323f6bf`, but closure required
+explicit owner/mirror validation evidence in the current ledger pass.
+
+## ✔ Work completed
+
+- Added dedicated widget coverage:
+  - `test/presentation/timer_screen_completion_navigation_test.dart` (new)
+  - Owner scenario: when running group transitions to `completed`, completion
+    modal appears and tapping `OK` lands on Groups Hub.
+  - Mirror scenario: same completion + navigation flow validated while
+    `ownerDeviceId != local device` (mirror mode).
+- Coverage targets the production completion-handling path in `TimerScreen`:
+  - `_maybeHandleGroupCompleted`
+  - `_showFinishedDialog`
+  - `_navigateToGroupsHubAfterCompletion`
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-068` → `Closed/OK`.
+  - `docs/roadmap.md`: completion-modal owner/mirror item marked `Closed/OK`.
+  - `docs/dev_log.md`: status header focus moved to `RVP-069`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` → `+2`.
+- `flutter analyze` → No issues found.
+
+## 📁 Updated files
+
+- `test/presentation/timer_screen_completion_navigation_test.dart` (new)
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-069` validation (deterministic initial ownership with multiple devices open).
+
+# 🔹 Block 613 — RVP-069 validation closure (20/03/2026)
+
+## 📋 Context
+
+Final pending P1 reopened validation item:
+`RVP-069` — initial ownership assignment must be deterministic with multiple
+devices open.
+
+Implementation existed in commit `33a17b7` (start-now owner determinism),
+with single-owner claim protection from `tryClaimSession` path. Closure required
+explicit test evidence for both non-initiator blocking and claim-race fallback.
+
+## ✔ Work completed
+
+- Extended ownership viewmodel test coverage in:
+  - `test/presentation/viewmodels/pomodoro_view_model_ownership_request_test.dart`
+- Added two dedicated validation scenarios:
+  - `start blocks non-initiator when running group was started by another device`
+    (`scheduledByDeviceId` guard path).
+  - `start remains idle when claim fails (single-owner race protection)`
+    (`tryClaimSession` race-fail path).
+- Updated test repository double to record claim attempts and claimed session.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-069` → `Closed/OK`.
+  - `docs/roadmap.md`: deterministic ownership item marked `Closed/OK`.
+  - `docs/dev_log.md`: current focus moved to historical validation backlog.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_ownership_request_test.dart` → `+4`.
+- `flutter analyze` → No issues found.
+
+## 📁 Updated files
+
+- `test/presentation/viewmodels/pomodoro_view_model_ownership_request_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Continue historical pending validation backlog from `RVP-001` (P2 queue).
+
+# 🔹 Block 614 — RVP-001 validation closure (20/03/2026)
+
+## 📋 Context
+
+First pending P2 historical validation item:
+`RVP-001` — scheduled auto-start + resume/launch catch-up.
+
+Concrete validated case to close: if a scheduled group start time is already in
+the past (app launched late or resumed late), the coordinator must catch up and
+auto-start the group (including Account Mode resume when timeSync becomes
+available), then open Run Mode and publish the initial session snapshot.
+
+## ✔ Work completed
+
+- Extended coordinator tests in:
+  - `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+- Added dedicated launch catch-up validation:
+  - `launch catch-up auto-starts overdue scheduled group and emits openTimer action`
+  - Asserts `openTimer`, `running` status transition, and initial session publish.
+- Added dedicated resume catch-up validation (Account Mode + late timeSync):
+  - `resume catch-up starts overdue scheduled group once timeSync becomes available in account mode`
+  - Asserts no start while timeSync is unavailable, then start on `onAppResumed()`
+    after timeSync offset becomes available, with `openTimer` + publish path.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-001` -> `Closed/OK`.
+  - `docs/roadmap.md`: roadmap line updated to validated/closed state.
+  - `docs/dev_log.md`: current focus moved to `RVP-002 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart --plain-name "launch catch-up auto-starts overdue scheduled group and emits openTimer action"` -> `+1`.
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart --plain-name "resume catch-up starts overdue scheduled group once timeSync becomes available in account mode"` -> `+1`.
+
+## 📁 Updated files
+
+- `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-002` validation (completion modal -> Groups Hub navigation baseline backlog item).
+
+# 🔹 Block 615 — RVP-002 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-002` — completion modal must navigate to Groups Hub and the placeholder
+Groups Hub route must be available in the completion path.
+
+Concrete validated case to close: when a running group reaches `completed`,
+Run Mode must show the completion modal and, after confirming `OK`, navigate to
+`/groups` instead of staying in TimerScreen.
+
+## ✔ Work completed
+
+- Re-ran dedicated completion-navigation widget coverage:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+- Confirmed both baseline and hardened behavior paths remain valid:
+  - Owner completion path reaches Groups Hub after modal confirm.
+  - Mirror completion path reaches Groups Hub after modal confirm.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-002` -> `Closed/OK`
+    (implementation commit `85bec6a`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-003 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+2`.
+
+## 📁 Updated files
+
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-003` validation (cancel-running confirmation -> Groups Hub navigation).
+
+# 🔹 Block 616 — RVP-003 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-003` — canceling a running group must require confirmation and then navigate
+to Groups Hub.
+
+Concrete validated case to close: user taps `Cancel` during active run, sees the
+confirmation dialog, `Keep running` keeps Run Mode unchanged, and only
+`Cancel group` completes cancellation and navigates to `/groups`.
+
+## ✔ Work completed
+
+- Extended TimerScreen navigation widget coverage in:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+- Added dedicated cancel validation scenario:
+  - `cancel requests confirmation and navigates to Groups Hub only after confirm`
+  - Asserts:
+    - Confirmation dialog appears with expected actions.
+    - `Keep running` does not navigate away.
+    - Confirming `Cancel group` navigates to Groups Hub.
+    - Group status is persisted as `TaskRunStatus.canceled`.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-003` -> `Closed/OK`
+    (implementation commit `98f86b2`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-004 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+3`.
+
+## 📁 Updated files
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-004` validation (Phase 19 Groups Hub core UI + Task List banner/Run Mode indicator entry points).
+
+# 🔹 Block 617 — RVP-004 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-004` — Phase 19 Groups Hub core UI (sections + actions), plus navigation
+entry points from Task List banner and Run Mode indicator.
+
+Concrete validated cases to close:
+1. Task List `View Groups Hub` CTA opens `/groups`.
+2. Run Mode `Planned groups` indicator opens `/groups`.
+3. Groups Hub renders core sections (`Running / Paused`, `Scheduled`,
+   `Completed`, `Canceled`) and core actions (`Open Run Mode`, `Start now`,
+   `Cancel schedule`, `Run again`, `Re-plan group`).
+
+## ✔ Work completed
+
+- Extended widget coverage in:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+- Added dedicated RVP-004 scenarios:
+  - `Run Mode planned-groups indicator opens Groups Hub`
+  - `Task List Groups Hub CTA opens Groups Hub`
+  - `Groups Hub core sections and actions are visible`
+- Added reusable test helpers for bounded waits and controlled list scrolling:
+  - `_pumpTaskListScreen`, `_pumpGroupsHubScreen`, `_dragUntilFound`
+- Reused/extended fake repositories to seed running/scheduled/completed/canceled
+  groups for full section/action rendering coverage.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-004` -> `Closed/OK`
+    (implementation commit `3b78667`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-005 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+6`.
+
+## 📁 Updated files
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-005` validation (Task List banner stale-session cleanup on group end).
+
+# 🔹 Block 618 — RVP-005 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-005` — Task List banner must clear stale active session state when the
+linked group has already ended.
+
+Concrete validated cases to close:
+1. Active session points to a `completed` group -> stale session is cleared and
+   user gets `Group completed.` feedback.
+2. Active session points to a `canceled` group -> stale session is cleared and
+   user gets `Group ended.` feedback.
+
+## ✔ Work completed
+
+- Extended test repository double in:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+  - Added `clearSessionIfGroupNotRunningCalls` tracking and null-session emit
+    on cleanup call.
+- Added dedicated Task List stale-session validation scenarios:
+  - `Task List clears stale active session when group is completed`
+  - `Task List clears stale active session when group is canceled`
+- Validated cleanup path in `TaskListScreen` (`_maybeResolveStaleActiveSession`)
+  through widget flow with real banner/session wiring.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-005` -> `Closed/OK`
+    (implementation commit `6dc4d64`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-006 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+8`.
+
+## 📁 Updated files
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-006` validation (scheduled auto-start recheck after active session end + expired-running auto-complete unblock).
+
+# 🔹 Block 619 — RVP-006 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-006` — scheduled auto-start must re-evaluate when the active session ends,
+and expired `running` groups must auto-complete so overdue scheduled groups can
+start.
+
+Concrete validated cases to close:
+1. Overdue scheduled auto-start is rechecked on `activeSession` transition
+   `non-null -> null`.
+2. Expired running group is completed and no longer blocks overdue scheduled
+   auto-start.
+
+## ✔ Work completed
+
+- Extended coordinator test doubles in:
+  - `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+  - Added cleanup observability counters in `FakePomodoroSessionRepository`:
+    `clearSessionAsOwnerCount`, `clearSessionIfStaleCount`,
+    `clearSessionIfGroupNotRunningCount`.
+- Added dedicated `RVP-006` scenarios:
+  - `rechecks overdue scheduled auto-start when active session ends`
+  - `completes expired running group and unblocks overdue scheduled auto-start`
+- Added required `AppModeService` overrides in test containers so the current
+  coordinator diagnostics path (`mode=...`) is valid in unit tests.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-006` -> `Closed/OK`
+    (implementation commit `358c278`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-007 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` -> `+18`.
+
+## 📁 Updated files
+
+- `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-007` validation (running-group expiry clears stale active session / Task List banner state).
+
+# 🔹 Block 620 — RVP-007 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-007` — running-group expiry must clear stale `activeSession` state so
+terminal groups do not keep stale live-session ownership, and scheduled
+execution can continue.
+
+Concrete validated cases to close:
+1. Expired running group on owner path clears stale session authority
+   (`clearSessionAsOwner`) and allows overdue scheduled group progression.
+2. Expired running group on stale non-owner path clears stale session via
+   guarded cleanup (`clearSessionIfStale`) and allows overdue scheduled group
+   progression.
+
+## ✔ Work completed
+
+- Extended coordinator test doubles in:
+  - `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+  - Fake repositories now expose deterministic initial stream values
+    (`watchAll`/`watchSession` yield current snapshot before stream updates).
+- Added dedicated stale non-owner validation scenario:
+  - `clears stale non-owner active session when expired running group unblocks overdue scheduled start`
+- Reused and validated owner-path stale clear coverage from:
+  - `completes expired running group and unblocks overdue scheduled auto-start`
+  - This case asserts running expiry completion + owner stale-session cleanup.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-007` -> `Closed/OK`
+    (implementation commit `b33c13f`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-008 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` -> `+19`.
+
+## 📁 Updated files
+
+- `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-008` validation (schedule must reserve full Pre-Run notice window and reject invalid overlaps/times).
+
+# 🔹 Block 621 — RVP-008 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-008` — scheduling must reserve the complete Pre-Run window
+(`scheduledStart - noticeMinutes` to `scheduledStart`) and block invalid starts
+when that window overlaps existing running/scheduled execution.
+
+Concrete validated cases to close:
+1. Scheduling is blocked when the requested Pre-Run window overlaps a running
+   group (even if the new execution window would not overlap).
+2. Scheduling is blocked when the requested Pre-Run window overlaps an earlier
+   scheduled group (even if the new execution window would not overlap).
+
+## ✔ Work completed
+
+- Extended Task List widget-test harness in:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+  - Added `/tasks/plan` test route stub (`_PlanningResultRoute`) to return a
+    deterministic `TaskGroupPlanningResult` without touching production code.
+- Added dedicated `RVP-008` scenarios:
+  - `Task List blocks scheduling when pre-run window overlaps a running group`
+  - `Task List blocks scheduling when pre-run window overlaps an earlier scheduled group`
+- Both scenarios assert:
+  - the specific Pre-Run blocking message appears (`running` vs `scheduled`),
+  - no additional TaskRunGroup is saved when scheduling is rejected.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-008` -> `Closed/OK`
+    (implementation commit `358c278`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-009 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+10`.
+- `flutter analyze` -> `No issues found!`.
+
+## 📁 Updated files
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-009` validation (Pre-Run entry points from Task List banner and Groups Hub action).
+
+# 🔹 Block 622 — Deferred feature definition for scheduling conflict UX (20/03/2026)
+
+## 📋 Context
+
+After validating `RVP-008`, user testing confirmed the current conflict feedback
+is technically correct but hard to understand in practice:
+- message is generic,
+- snackbar disappears too quickly,
+- no explicit blocker context (which groups/ranges cause the conflict).
+
+The requested change is a feature-level UX upgrade, not an immediate bugfix.
+Implementation is intentionally deferred until the historical `RVP-*` validation
+backlog is closed.
+
+## ✔ Work completed
+
+- Captured and formalized new feature definition as:
+  - `IDEA-039 — Scheduling Conflict Explainer + Guided Start Suggestions`
+  - `docs/features/feature_backlog.md`
+- Added roadmap traceability under reopened Phase 17 feature scope:
+  - blocking explainer modal (replacing ephemeral conflict snackbar),
+  - list all exact blockers (running/scheduled) with ranges,
+  - include pre-run ranges where applicable.
+- Added ledger tracking entry (deferred feature item) so closure remains
+  explicit and auditable before implementation.
+
+## 🧠 Confirmed product rules for future implementation
+
+1. Case A — pre-run-only conflict:
+   - auto-adjust effective notice with the same behavior already used for
+     "start too soon" clamp coherence.
+2. Case B — execution conflict (without pre-run):
+   - keep current notice/pre-run unchanged,
+   - provide up to two nearest valid start suggestions (before/after),
+   - enforce minute-safe separation to avoid second-boundary overlap.
+3. If both appear, execution-conflict handling takes precedence.
+
+## 📁 Updated files
+
+- `docs/features/feature_backlog.md`
+- `docs/roadmap.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Continue historical validation queue with `RVP-009`.
+2. Re-open `IDEA-039` implementation only after the `RVP-*` backlog priority
+   gate is satisfied.
+
+# 🔹 Block 623 — RVP-009 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-009` — scheduled groups in active Pre-Run must expose direct Run Mode
+entry points from both surfaces:
+1. Task List active Pre-Run banner shows `Open Pre-Run`.
+2. Groups Hub scheduled card shows `Open Pre-Run` (instead of `Start now`)
+   while the Pre-Run window is active.
+
+## ✔ Work completed
+
+- Extended widget-test harness in:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+  - Added optional timer route stubbing to `_pumpTaskListScreen` and
+    `_pumpGroupsHubScreen` so route-navigation assertions are deterministic.
+- Added dedicated `RVP-009` validation scenarios:
+  - `Task List pre-run banner opens Timer via Open Pre-Run`
+  - `Groups Hub shows Open Pre-Run action for active pre-run scheduled group`
+- Both scenarios validate:
+  - `Open Pre-Run` CTA is visible in active Pre-Run context,
+  - Groups Hub does not show `Start now` for that active Pre-Run card,
+  - tapping the CTA navigates to `/timer/:groupId`.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-009` -> `Closed/OK`
+    (implementation commit `358c278`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-010 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+12`.
+- `flutter analyze` -> `No issues found!`.
+
+## 📁 Updated files
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-010` validation (Task List persistent Groups Hub CTA with no active group).
+
+# 🔹 Block 624 — RVP-010 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-010` — Task List must keep a persistent `View Groups Hub` CTA visible even
+when there is no active session and no running/pre-run group.
+
+Concrete validated case to close:
+1. With `activeSession = null` and no seeded groups, Task List still renders
+   `View Groups Hub` and the CTA navigates to `/groups`.
+
+## ✔ Work completed
+
+- Confirmed existing dedicated widget test already covers the exact scenario:
+  - `Task List Groups Hub CTA opens Groups Hub`
+  - fixture setup uses empty `FakeTaskRunGroupRepository` + null session.
+- No app code changes were required.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-010` -> `Closed/OK`
+    (implementation commit `3b78667`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-011 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+12`.
+- `flutter analyze` -> `No issues found!`.
+
+## 📁 Updated files
+
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-011` validation (Task List running banner fallback to running groups when there is no active session in Local Mode).
+
+# 🔹 Block 625 — RVP-011 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-011` — in Local Mode, when `activeSession` is missing/null, Task List must
+still surface the running-group banner by falling back to `TaskRunGroup.status=running`.
+
+Concrete validated case to close:
+1. `activeSession = null` + one running group in repository -> Task List renders
+   `Group Running` banner and `Open Run Mode` opens `/timer/:groupId`.
+
+## ✔ Work completed
+
+- Added dedicated widget validation case in:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+  - `Task List falls back to running group banner when active session is null in Local Mode`
+- Scenario setup:
+  - Local Mode explicitly selected.
+  - `FakePomodoroSessionRepository(null)` (no active session).
+  - One seeded running group (`local-fallback-running`).
+- Assertions:
+  - `Group Running` banner is visible with running-group name.
+  - `Open Run Mode` action navigates to the expected timer route.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-011` -> `Closed/OK`
+    (implementation commit `2189e11`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-012 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+13`.
+- `flutter analyze` -> `No issues found!`.
+
+## 📁 Updated files
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-012` validation (Groups Hub hides notice/pre-run rows for start-now groups with `scheduledStartTime == null`).
+
+# 🔹 Block 626 — RVP-012 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-012` — Groups Hub must hide scheduling notice metadata for start-now style
+groups (`status=scheduled` but `scheduledStartTime == null`), avoiding
+misleading `Scheduled` / `Pre-Run` details.
+
+Concrete validated case to close:
+1. Start-now scheduled group (`scheduledStartTime=null`) shows `Start now`
+   action but does not render `Open Pre-Run`, `Scheduled start`, or `Pre-Run`
+   metadata in card/summary.
+
+## ✔ Work completed
+
+- Added dedicated widget validation case in:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+  - `Groups Hub hides scheduled and pre-run metadata for start-now scheduled groups`
+- Scenario setup:
+  - one seeded scheduled group with `scheduledStartTime: null`,
+    `noticeMinutes: 10`, and valid end time.
+  - `activeSession = null`.
+- Assertions:
+  - card shows `Start now` and hides `Open Pre-Run` / `Pre-Run`,
+  - summary modal hides `Scheduled start` and `Pre-Run`.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-012` -> `Closed/OK`
+    (implementation commit `d193121`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-013 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+14`.
+- `flutter analyze` -> `No issues found!`.
+
+## 📁 Updated files
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-013` validation (Phase 10 auto-adjust short/long breaks on valid pomodoro and break edits).
+
+# 🔹 Block 627 — RVP-013 closure by existing validation coverage (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-013` — auto-adjust short/long breaks on valid pomodoro changes and break
+edits (Task Editor + Edit Preset).
+
+This behavior had already been validated under the reopened P1 item `RVP-063`,
+which covers the same functional scope with explicit Task Editor + Edit Preset
+evidence.
+
+## ✔ Work completed
+
+- Closed `RVP-013` as covered by existing `RVP-063` validation evidence
+  (no additional app implementation changes).
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-013` -> `Closed/OK`
+    with explicit cross-reference to `RVP-063`.
+  - `docs/roadmap.md`: line updated to reflect both validation IDs
+    (`RVP-063` + `RVP-013`) as closed.
+  - `docs/dev_log.md`: focus moved to `RVP-014 onward`.
+
+## 🧪 Verification run
+
+Reused existing local gate evidence from `RVP-063` (20/03/2026):
+- `flutter analyze` -> `No issues found!`
+- `flutter test test/domain/validators_test.dart test/domain/task_weighting_test.dart test/presentation/viewmodels/task_editor_view_model_test.dart` -> PASS (`+28`)
+
+No new code path was introduced for `RVP-013`; therefore no additional runtime
+validation command was required in this closure step.
+
+## 📁 Updated files
+
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-014` validation (break auto-adjust applies on focus loss, not per-keystroke).
+
+# 🔹 Block 628 — RVP-014 closure by existing validation coverage (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-014` — break auto-adjust on break edits applies on focus loss (not
+per-keystroke).
+
+This behavior was already validated under reopened P1 item `RVP-063`, which
+explicitly includes focus-loss adjustment behavior.
+
+## ✔ Work completed
+
+- Closed `RVP-014` as covered by existing `RVP-063` validation evidence
+  (no additional app implementation changes).
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-014` -> `Closed/OK`
+    with explicit cross-reference to `RVP-063`.
+  - `docs/roadmap.md`: line updated to reflect both validation IDs
+    (`RVP-063` + `RVP-014`) as closed.
+  - `docs/dev_log.md`: focus moved to `RVP-015 onward`.
+
+## 🧪 Verification run
+
+Reused existing local gate evidence from `RVP-063` (20/03/2026):
+- `flutter analyze` -> `No issues found!`
+- `flutter test test/domain/validators_test.dart test/domain/task_weighting_test.dart test/presentation/viewmodels/task_editor_view_model_test.dart` -> PASS (`+28`)
+
+No new code path was introduced for `RVP-014`; therefore no additional runtime
+validation command was required in this closure step.
+
+## 📁 Updated files
+
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-015` validation (Pomodoro Integrity Warning actions show exact configuration source names).
+
+# 🔹 Block 629 — RVP-015 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-015` — Pomodoro Integrity Warning actions must show the exact source
+configuration names so users can identify which structure each option comes
+from before applying it.
+
+Concrete validated case to close:
+1. Mixed-structure selection (two tasks with distinct Pomodoro structures)
+   opens Integrity Warning with explicit source labeling (`Used by:`) and exact
+   task names for each structure option.
+
+## ✔ Work completed
+
+- Added dedicated widget validation case in:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+  - `Integrity warning options show exact source task names for each structure`
+- Scenario setup:
+  - two selected tasks with different structures (`Deep Work`, `Email Batch`),
+  - tap `Next` to trigger Integrity Warning dialog.
+- Assertions:
+  - dialog title `Pomodoro integrity warning` is shown,
+  - two `Used by:` source sections are rendered (one per distinct structure),
+  - exact source task names are visible in the dialog (`Deep Work`,
+    `Email Batch`).
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-015` -> `Closed/OK`
+    (implementation commit `12571b2`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-016 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+15`.
+- `flutter analyze` -> `No issues found!`.
+
+## 📁 Updated files
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-016` validation (Integrity Warning shows one visual option per distinct structure + default preset badge).
+
+# 🔹 Block 630 — RVP-016 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-016` — Pomodoro Integrity Warning must present one visual option per
+distinct structure and include a `Default preset` badge option when a default
+preset exists.
+
+Concrete validated case to close:
+1. Mixed selection with two distinct structures + existing default preset must
+   render two structure option cards (`Used by:`) and one default-preset option.
+
+## ✔ Work completed
+
+- Added dedicated widget validation case in:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+  - `Integrity warning lists one visual option per structure and shows default preset badge`
+- Scenario setup:
+  - three selected tasks where two share one structure and one uses a different
+    structure (`Deep Work`, `Planning`, `Email Batch`),
+  - in-memory default preset seeded (`Focus Default`).
+- Assertions:
+  - Integrity Warning dialog appears,
+  - exactly two `Used by:` structure sections are rendered,
+  - `Default preset` badge option is shown,
+  - source task names are visible in structure chips.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-016` -> `Closed/OK`
+    (implementation commit `8e9b881`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-017 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+16`.
+- `flutter analyze` -> `No issues found!`.
+
+## 📁 Updated files
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-017` validation (Run Mode auto-exits to Groups Hub when group is canceled).
+
+# 🔹 Block 631 — RVP-017 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-017` — when a running group becomes canceled while Run Mode is visible,
+the screen must auto-exit to Groups Hub (no idle/stale timer screen).
+
+Concrete validated case to close:
+1. In Run Mode, cancel requires confirmation; after `Cancel group`, status
+   becomes `canceled` and navigation must end in Groups Hub.
+
+## ✔ Work completed
+
+- Verified existing implementation/test coverage without changing app logic:
+  - `lib/presentation/screens/timer_screen.dart`
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+- Confirmed behavior from dedicated widget scenario:
+  - `cancel requests confirmation and navigates to Groups Hub only after confirm`
+- Assertions validated:
+  - confirmation dialog appears (`Cancel group?`, `Keep running`, `Cancel group`),
+  - `Keep running` keeps user in Run Mode,
+  - `Cancel group` navigates to Groups Hub,
+  - repository state persists `TaskRunStatus.canceled`.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-017` -> `Closed/OK`
+    (implementation commit `8e9b881`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-018 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "cancel requests confirmation and navigates to Groups Hub only after confirm"` -> `+1`.
+- `flutter analyze` -> `No issues found!`.
+
+## 📁 Updated files
+
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-018` validation (Integrity Warning copy clarified + default badge below cards).
+
+# 🔹 Block 632 — RVP-018 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-018` — Pomodoro Integrity Warning text must explicitly explain why mixed
+structures are risky and present the `Default preset` option below the
+structure cards to keep the visual hierarchy clear.
+
+Concrete validated case to close:
+1. Mixed-structure selection with a default preset available must show the
+   clarified guidance copy and place `Default preset` below the structure
+   options (`Used by:` cards).
+
+## ✔ Work completed
+
+- Added dedicated widget validation case in:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+  - `Integrity warning shows clarified guidance copy and keeps default preset option below structure cards`
+- Scenario setup:
+  - three selected tasks with two distinct structures (`Deep Work`,
+    `Planning`, `Email Batch`),
+  - in-memory default preset seeded (`Focus Default`).
+- Assertions:
+  - warning copy includes explicit mixed-structure guidance and action intent
+    (`configuration to apply to this group`),
+  - two `Used by:` structure sections are rendered,
+  - `Default preset` is rendered below the structure cards (vertical-position
+    assertion against the last `Used by:` section).
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-018` -> `Closed/OK`
+    (implementation commit `8e9b881`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-019 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Integrity warning shows clarified guidance copy and keeps default preset option below structure cards"` -> `+1`.
+- `flutter analyze` -> `No issues found!`.
+
+## 📁 Updated files
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-019` validation (Groups Hub summary modal expanded with timing, totals, and task breakdown).
+
+# 🔹 Block 633 — RVP-019 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-019` — tapping a group in Groups Hub must open an expanded summary modal
+with timing details, totals, and per-task breakdown.
+
+Concrete validated case to close:
+1. A scheduled group with notice/pre-run and multiple tasks opens `Group summary`
+   showing `Timing`, `Totals`, and `Tasks` sections with complete breakdown.
+
+## ✔ Work completed
+
+- Added dedicated widget validation case in:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+  - `Groups Hub summary modal shows timing totals and task breakdown`
+- Scenario setup:
+  - seeded scheduled group with two tasks (`Test task`, `Email Batch`),
+  - explicit totals (`totalTasks=2`, `totalPomodoros=3`,
+    `totalDurationSeconds=5400`) and `noticeMinutes=10`.
+- Assertions:
+  - summary modal title appears (`Group summary`),
+  - sections `Timing`, `Totals`, `Tasks` are visible,
+  - timing rows include `Scheduled start`, `Pre-Run`, `Actual start`, `End`,
+    `Total time`,
+  - totals include `Pomodoros`,
+  - task breakdown includes second task entry (`Email Batch`),
+  - pre-run descriptive copy (`min starts at`) is present.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-019` -> `Closed/OK`
+    (implementation commit `c2c1172`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-020 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Groups Hub summary modal shows timing totals and task breakdown"` -> `+1`.
+- `flutter analyze` -> `No issues found!`.
+
+## 📁 Updated files
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-020` validation (Groups Hub summary hides Scheduled start for non-planned runs).
+
+# 🔹 Block 634 — Deferred feature capture: Start-now `Started` timing context (20/03/2026)
+
+## 📋 Context
+
+User feedback during validation review: for Start-now groups in Groups Hub,
+removing `Scheduled start` is correct, but the card still needs explicit
+`Started` timing context (actual start) to avoid ambiguity.
+
+## ✔ Work completed
+
+- Captured this as a deferred feature/new requirement (no runtime change yet):
+  - `docs/features/feature_backlog.md`: added `IDEA-040 — Groups Hub Started Time For Start-Now Groups`.
+  - `docs/roadmap.md`: clarified reopened Phase 19 timing-row requirement as
+    new requirement (explicit `Started` for Start-now groups + scheduled/pre-run
+    coherence for scheduled groups).
+  - `docs/validation/validation_ledger.md`: added deferred tracking entry
+    `IDEA-040` under P2 deferred feature backlog items.
+
+## 🧪 Verification run
+
+Not applicable (documentation-only capture, no app code changes).
+
+## 📁 Updated files
+
+- `docs/features/feature_backlog.md`
+- `docs/roadmap.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Continue historical RVP validation order from `RVP-020`.
+
+# 🔹 Block 635 — RVP-020 validation closure (20/03/2026)
+
+## 📋 Context
+
+Next pending P2 historical validation item:
+`RVP-020` — Groups Hub summary modal must hide `Scheduled start` for
+non-planned runs (`scheduledStartTime == null`).
+
+Concrete validated case to close:
+1. A Start-now group opened in Groups Hub summary must not render
+   `Scheduled start` (and no pre-run row for that non-planned flow).
+
+## ✔ Work completed
+
+- Reused existing dedicated widget coverage (no app logic change):
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+  - `Groups Hub hides scheduled and pre-run metadata for start-now scheduled groups`
+- Assertions validated:
+  - Start-now card shows `Start now`,
+  - card does not show `Open Pre-Run` / `Pre-Run`,
+  - summary modal does not show `Scheduled start`,
+  - summary modal does not show `Pre-Run`.
+- Synchronized docs:
+  - `docs/validation/validation_ledger.md`: `RVP-020` -> `Closed/OK`
+    (implementation commit `7e75e6d`).
+  - `docs/roadmap.md`: item now marked validated/closed.
+  - `docs/dev_log.md`: focus moved to `RVP-021 onward`.
+
+## 🧪 Verification run
+
+PASS:
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Groups Hub hides scheduled and pre-run metadata for start-now scheduled groups"` -> `+1`.
+- `flutter analyze` -> `No issues found!`.
+
+## 📁 Updated files
+
+- `docs/validation/validation_ledger.md`
+- `docs/roadmap.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `RVP-021` validation (Groups Hub cards hide Scheduled row for non-planned runs).
+
+# 🔹 Block 636 — Bug snapshot audit sync (20/03/2026)
+
+## 📋 Context
+
+During validation review, the ledger snapshot line
+`Active bug-checklist open items: 2` was reported as likely outdated.
+
+## ✔ Work completed
+
+- Audited `docs/bugs/bug_log.md` status entries.
+- Updated `docs/validation/validation_ledger.md` snapshot to reflect current
+  bug-log non-closed counts and explicit status breakdown.
+
+## 🧪 Verification run
+
+Documentation audit only (no runtime code change).
+
+## 📁 Updated files
+
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Continue historical RVP validation order from `RVP-021`.
+
+# 🔹 Block 637 — Bug-log -> validation-ledger queue sync (20/03/2026)
+
+## 📋 Context
+
+Owner requested to prioritize bugs over historical RVP validations and asked for
+all non-closed entries in `docs/bugs/bug_log.md` to be explicitly represented in
+`docs/validation/validation_ledger.md`.
+
+## ✔ Work completed
+
+- Audited all bug-log `Status:` blocks and extracted non-closed entries.
+- Added a dedicated ledger section:
+  - `### Active bug-log queue (sync 2026-03-20)`
+- Registered all currently non-closed bug-log items (15 total) with stable
+  ledger IDs, priorities, and actionable statuses (`Pending` or `In validation`).
+- Included explicit source references to `bug_log.md` line numbers for each
+  queue item.
+- Captured reopened traceability for `BUG-F25-E` as `BUGLOG-F25-E-R1` so the
+  open bug-log state is visible in the active queue.
+
+## 🧪 Verification run
+
+Documentation sync only (no runtime code changes).
+
+## 📁 Updated files
+
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Start resolving the active bug-log queue in priority order (P1 first), then
+   resume historical RVP backlog.
+
+# 🔹 Block 638 — Bug-first preflight guardrail (20/03/2026)
+
+## 📋 Context
+
+A process gap was confirmed: priority rules existed, but there was no explicit
+mandatory step to reconcile all non-closed `bug_log.md` entries with
+`validation_ledger.md` before continuing with RVP validations or feature work.
+This allowed the ledger queue to drift from the real bug backlog.
+
+## ✔ Work completed
+
+- Added an explicit bug-priority preflight gate to `AGENTS.md`:
+  - startup read now includes `docs/bugs/bug_log.md`.
+  - mandatory reconciliation of non-closed bug-log entries against the ledger.
+  - priority order updated to execute active bug queue before reopened/historical RVP items.
+- Added the same mandatory preflight rule to `CLAUDE.md`:
+  - project orientation includes the reconciliation gate.
+  - bug lifecycle now starts with `0. PRE-FLIGHT SYNC`.
+- Added cross-role enforcement in `docs/team_roles.md`:
+  - new coordination golden rule for bug-first preflight.
+  - handoff format now requires a bug-queue status checkpoint before non-bug work.
+
+## 🧪 Verification run
+
+Documentation/process update only (no runtime code changes).
+
+## 📁 Updated files
+
+- `AGENTS.md`
+- `CLAUDE.md`
+- `docs/team_roles.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute the active bug queue from `docs/validation/validation_ledger.md` in priority order.
+
+# 🔹 Block 639 — Branch-scope lock to prevent mixed-track commits (20/03/2026)
+
+## 📋 Context
+
+A workflow risk was identified: multiple commit tracks were accumulated on the
+same branch (`fix-roadmap-f25-closure-sync`), mixing roadmap/validation closures
+with process-governance documentation updates. Even when each commit is valid,
+this reduces branch intent clarity and makes review/merge riskier.
+
+## ✔ Work completed
+
+- Strengthened branch-scope guardrails in `AGENTS.md`:
+  - added mandatory branch-scope checkpoint before new commits.
+  - added explicit `branch scope lock` rule: one branch = one scope family.
+- Strengthened branch rules in `CLAUDE.md`:
+  - added `R-7 Branch scope lock`.
+  - added `R-8 Pre-commit branch check`.
+- Extended handoff contract in `docs/team_roles.md`:
+  - added mandatory `Branch-scope checkpoint` section before implementation/commit.
+
+## 🧪 Verification run
+
+Documentation/process update only (no runtime code changes).
+
+## 📁 Updated files
+
+- `AGENTS.md`
+- `CLAUDE.md`
+- `docs/team_roles.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. For the next non-validation/process task, create a dedicated branch that matches scope before editing.
+
+# 🔹 Block 640 — BUGLOG-002-R1 user re-validation (21/03/2026)
+
+## 📋 Context
+
+Owner re-tested the residual `BUG-002` symptom (owner-side rejection banner
+persistence) with repeated pause/background + reject/accept cycles in Run Mode.
+
+## ✔ Work completed
+
+- Recorded user-provided evidence from Android + Chrome re-run (group
+  `15e6300b-0ab9-47a4-a5f8-7e220a7c31c3`) in `docs/bugs/bug_log.md`.
+- Updated `docs/validation/validation_ledger.md` item `BUGLOG-002-R1` from
+  `In validation` to `Validated`.
+- Residual symptom (`owner rejection banner persists / second press needed`) was
+  not reproduced in this validation run.
+
+## 🧪 Verification run
+
+Documentation/status sync only (no runtime code changes).
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Request explicit final owner confirmation to close `BUGLOG-002-R1` as `Closed/OK`.
+2. Continue bug queue priority order after closure (`BUGLOG-009A` / `BUGLOG-004` / `BUGLOG-011` / `BUGLOG-012` / `BUGLOG-008B` / `BUGLOG-005` / `BUGLOG-006` / `BUGLOG-007`).
+
+# 🔹 Block 641 — BUGLOG-002-R1 monitor note (no patch) (21/03/2026)
+
+## 📋 Context
+
+During owner validation follow-up, a brief (~1s) re-show of the Chrome owner
+request banner was visually observed around 13:37:11 after reject.
+
+## ✔ Work completed
+
+- Added traceability note to `docs/bugs/bug_log.md` under `BUG-002` re-validation
+  update (UI observation + correlated log pattern).
+- Updated `docs/validation/validation_ledger.md` evidence for `BUGLOG-002-R1`
+  to include this monitor-only anomaly.
+- Explicit decision recorded: no runtime patch now, to avoid masking a possible
+  underlying sync-order root cause while the behavior is self-recovering and
+  non-blocking.
+
+## 🧪 Verification run
+
+Documentation/status sync only (no runtime code changes).
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Keep `BUGLOG-002-R1` in `Validated` monitor state.
+2. Reopen implementation only if the banner re-show becomes persistent,
+   requires user action, or causes state desync.
+
+# 🔹 Block 642 — BUGLOG-009A rollback-status sync before re-validation (21/03/2026)
+
+## 📋 Context
+
+While continuing the active bug queue in priority order, `BUGLOG-009A` still
+described the regression rollback as "pending" in both `bug_log` and
+`validation_ledger`.
+
+## ✔ Work completed
+
+- Updated `BUG-009` entry in `docs/bugs/bug_log.md` to reflect factual status:
+  rollback was already applied on 18/02/2026 (commit `0d2f7a4`).
+- Updated `BUGLOG-009A` item wording in
+  `docs/validation/validation_ledger.md`:
+  - rollback no longer marked pending.
+  - item remains pending because modern re-validation is still required.
+- Refreshed active bug-queue sync date in ledger header to `2026-03-21`.
+
+## 🧪 Verification run
+
+Documentation/status sync only (no runtime code changes).
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute `BUGLOG-009A` exact repro validation case and classify result:
+   - `Closed/OK` if not reproducible with current architecture.
+   - keep `Open` with fresh evidence if reproducible.
+
+# 🔹 Block 643 — BUGLOG-009A closed as non-repro after owner re-validation (21/03/2026)
+
+## 📋 Context
+
+Owner completed additional manual re-validation for `BUGLOG-009A` and confirmed
+the historical symptom (mirror per-second timer swap after ownership handoff)
+is no longer reproducible.
+
+## ✔ Work completed
+
+- Marked `BUG-009` as `Closed/OK` in `docs/bugs/bug_log.md`.
+- Closed `BUGLOG-009A` in `docs/validation/validation_ledger.md` with explicit
+  evidence from owner confirmation.
+- Linked closure implementation reference to rollback commit `0d2f7a4`
+  (`Revert mirror timer suppression due to ownership freeze`).
+
+## 🧪 Verification run
+
+Owner manual validation confirmation (21/03/2026):
+- Multiple test runs using different interaction paths.
+- Per-second mirror timer swap did not reappear.
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Continue active bug queue in priority order with `BUGLOG-004`.
+
+# 🔹 Block 644 — BUGLOG-004 closed after long soak non-repro (21/03/2026)
+
+## 📋 Context
+
+Owner reported extended re-validation for `BUGLOG-004` with Android + macOS
+running simultaneously for more than 10 hours without reproducing mirror drift
+growth during long breaks.
+
+## ✔ Work completed
+
+- Marked `BUG-004` as `Closed/OK` in `docs/bugs/bug_log.md`.
+- Updated `BUGLOG-004` in `docs/validation/validation_ledger.md` to
+  `Closed/OK` with closure metadata.
+- Linked closure to the implementation packet commit `25878cc`
+  (`Stabilize ownership sync and server-time projection`).
+
+## 🧪 Verification run
+
+Owner manual soak validation confirmation (21/03/2026):
+- Android + macOS simultaneously for >10h.
+- No accumulating mirror drift observed.
+- No timer jump recurrence after navigation was observed in the reported run.
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Continue active bug queue in priority order with `BUGLOG-011`.
+
+# 🔹 Block 645 — BUGLOG-011 closed as non-repro in current builds (21/03/2026)
+
+## 📋 Context
+
+Owner confirmed that `BUGLOG-011` (pause offset drift after
+background/foreground) is no longer reproducible.
+
+## ✔ Work completed
+
+- Marked `BUG-011` as `Closed/OK` in `docs/bugs/bug_log.md`.
+- Closed `BUGLOG-011` in `docs/validation/validation_ledger.md` with explicit
+  owner evidence.
+- Linked closure to fix commit `abb053d`
+  (`fix: stabilize owner hydration after pause re-entry`).
+
+## 🧪 Verification run
+
+Owner validation confirmation (21/03/2026):
+- Pause/resume + background/foreground behavior works correctly.
+- Previous pause-offset drift symptom no longer appears.
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Continue active bug queue in priority order with `BUGLOG-012`.
+
+# 🔹 Block 646 — BUGLOG-012 closed under Fix 26 rewrite evidence (21/03/2026)
+
+## 📋 Context
+
+Owner reported that `BUGLOG-012` appears solved after the Fix 26 refactor
+(`TimerService` + `SessionSyncService` architecture).
+
+## ✔ Work completed
+
+- Marked `BUG-012` as `Closed/OK` in `docs/bugs/bug_log.md`.
+- Closed `BUGLOG-012` in `docs/validation/validation_ledger.md`.
+- Linked closure to Fix 26 closure commit `cbd800a` and Stage C validation
+  packet (`P0-F26-006`).
+
+## 🧪 Verification run
+
+- Existing Fix 26 Stage C pass2 soak evidence (16/03/2026) already confirms no
+  irrecoverable `Syncing session...` holds in long Android+macOS runs.
+- Owner confirmation (21/03/2026): no current trace of mirror-stuck behavior.
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Continue active bug queue in priority order with `BUGLOG-008B` (next P1 pending).
+
+# 🔹 Block 647 — BUGLOG-009B/013/014 fix implementation packet (23/03/2026)
+
+## 📋 Context
+
+Current branch intent: `P1 bugfixes for late-start overlap queue + completion modal + postpone race`.
+
+User validation on 23/03/2026 confirmed three active issues:
+- `BUGLOG-009B`: overlap queue resolved only part of a 3-group chain.
+- `BUGLOG-013`: completion modal blocked next-group pre-run/run.
+- `BUGLOG-014`: `Postpone scheduled` could require a second press.
+
+## ✔ Work completed
+
+- Implemented `BUGLOG-009B` layer 1 in:
+  - `lib/presentation/utils/scheduled_group_timing.dart`
+  - `resolveLateStartConflictSet` now cascades conflicts iteratively.
+- Implemented `BUGLOG-009B` layer 2 in:
+  - `lib/presentation/screens/late_start_overlap_queue_screen.dart`
+  - post-confirm overlap revalidation against non-selected scheduled groups,
+    with queue reopen when conflicts remain.
+- Implemented `BUG-013` in:
+  - `lib/presentation/screens/timer_screen.dart`
+  - completion modal auto-dismiss on route group switch and next-group auto-open.
+- Implemented `BUG-014` in:
+  - `lib/presentation/screens/timer_screen.dart`
+  - deterministic postpone guard (`decision key + expected scheduled start`)
+    synchronized by repository snapshots.
+- Added/updated targeted regression tests:
+  - `test/presentation/utils/scheduled_group_timing_test.dart`
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+
+## 🧪 Verification run
+
+- `flutter analyze` → PASS
+- `flutter test test/presentation/utils/scheduled_group_timing_test.dart` → PASS
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` → PASS
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` → PASS
+
+## 📁 Updated files
+
+- `lib/presentation/utils/scheduled_group_timing.dart`
+- `lib/presentation/screens/late_start_overlap_queue_screen.dart`
+- `lib/presentation/screens/timer_screen.dart`
+- `test/presentation/utils/scheduled_group_timing_test.dart`
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/bugs/validation_bug009_2026_03_23/plan_validacion_rapida_fix.md`
+- `docs/bugs/validation_bug009_2026_03_23/quick_pass_checklist.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Run device validation protocol A/B/C on iOS Simulator + Chrome with current branch.
+2. If PASS, close `BUGLOG-009B`, `BUGLOG-013`, `BUGLOG-014` with commit hash/message in `bug_log.md` + `validation_ledger.md`.
+
+# 🔹 Block 648 — BUGLOG-009B validated + BUG-013 pre-run dismiss patch (23/03/2026)
+
+## 📋 Context
+
+Current branch intent: `P1 bugfixes for BUGLOG-009B / BUG-013 / BUG-014 validation packet`.
+
+`fix_v2` device logs confirmed `BUGLOG-009B` behavior is resolved (no second runtime queue),
+but `BUG-013` still dismissed completion modal at group switch (`14:04`) instead of pre-run
+boundary (`14:03`).
+
+## ✔ Work completed
+
+- Implemented `BUG-013` follow-up in `TimerScreen`:
+  - completion modal now auto-dismisses when `scheduledAutoStartGroupIdProvider`
+    announces a different next group (`next != widget.groupId`) during pre-run auto-open.
+- Kept existing auto-dismiss paths for group switch and active execution transitions.
+- Added regression coverage in
+  `test/presentation/timer_screen_completion_navigation_test.dart`:
+  - `auto-dismisses completion modal when next group pre-run auto-open is announced`.
+- Synced validation docs with current state:
+  - `docs/bugs/validation_bug009_2026_03_23/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug009_2026_03_23/quick_pass_checklist.md`
+  - `docs/bugs/bug_log.md`
+  - `docs/validation/validation_ledger.md`
+
+## 🧪 Verification run
+
+- `flutter analyze` → PASS (`No issues found!`)
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` → PASS (`+21`)
+- `flutter test test/presentation/utils/scheduled_group_timing_test.dart` → PASS (`+7`)
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` → PASS (`+19`)
+
+## 📁 Updated files
+
+- `lib/presentation/screens/timer_screen.dart`
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+- `docs/bugs/validation_bug009_2026_03_23/plan_validacion_rapida_fix.md`
+- `docs/bugs/validation_bug009_2026_03_23/quick_pass_checklist.md`
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute device rerun (`fix_v3`) on iOS + Chrome using updated commands in plan.
+2. Confirm `BUG-013` dismissal at pre-run boundary (`14:03` equivalent) in iOS log.
+3. Re-run explicit one-tap postpone scenario for `BUG-014` and close packet if PASS.
+
+# 🔹 Block 649 — BUG-009B/013 follow-up after user rerun (23/03/2026)
+
+## 📋 Context
+
+Current branch intent: `P1 bugfix packet for BUGLOG-009B / BUGLOG-013 / BUGLOG-014 device validation closure`.
+
+User rerun at 15:07 (iOS owner) reported no behavioral change in two points:
+- completion modal still stayed visible during next-group pre-run,
+- chained timing in Groups Hub still showed `G3 pre-run` in the same minute as `G2 end`.
+
+## ✔ Work completed
+
+- Added anchored-start helper and reused it in all chain paths:
+  - `lib/presentation/utils/scheduled_group_timing.dart`
+  - `lib/presentation/screens/late_start_overlap_queue_screen.dart`
+  - `lib/presentation/viewmodels/scheduled_group_coordinator.dart`
+  - `lib/presentation/screens/timer_screen.dart`
+- Enforced strict rule for notice windows: when `noticeMinutes > 0`, pre-run must start strictly after anchor end (prevents same-minute pre-run/end overlap in chained groups).
+- Updated scheduled-action bridge so pre-run `openTimer` is not deferred by visible completion modal:
+  - `lib/widgets/scheduled_group_auto_starter.dart`
+- Synced validation docs to `fix_v4` rerun state:
+  - `docs/bugs/validation_bug009_2026_03_23/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug009_2026_03_23/quick_pass_checklist.md`
+  - `docs/bugs/bug_log.md`
+  - `docs/validation/validation_ledger.md`
+
+## 🧪 Verification run
+
+- `flutter analyze` → PASS (`No issues found!`)
+- `flutter test test/presentation/utils/scheduled_group_timing_test.dart` → PASS (`+7`)
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` → PASS (`+21`)
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` → PASS (`+19`)
+
+## 🎯 Next steps
+
+1. Run `fix_v4` iOS + Chrome device validation from updated plan commands.
+2. Confirm in logs:
+   - no modal persistence at pre-run boundary,
+   - chained pre-run minute no longer equals previous group end minute,
+   - no regression in single-queue late-start behavior.
+3. If PASS, close `BUGLOG-009B`, `BUGLOG-013`, `BUGLOG-014` together with commit hash and evidence links.
+
+# 🔹 Block 650 — BUGLOG-009B / BUGLOG-013 / BUGLOG-014 closure after fix_v4 rerun (23/03/2026)
+
+## 📋 Context
+
+Current branch intent: `P1 bugfix validation closure for BUGLOG-009B / BUGLOG-013 / BUGLOG-014`.
+
+User completed the fix_v4 rerun and confirmed:
+- chained timing is coherent (`G3` pre-run no longer matches `G2` end minute),
+- completion modal now dismisses during next-group pre-run,
+- validated flow remains stable after overlap confirmation.
+
+## ✔ Work completed
+
+- Closed validation packet in:
+  - `docs/bugs/validation_bug009_2026_03_23/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug009_2026_03_23/quick_pass_checklist.md`
+- Closed bug entries in:
+  - `docs/bugs/bug_log.md` (`BUGLOG-009B`, `BUG-013`, `BUG-014`)
+- Closed ledger entries in:
+  - `docs/validation/validation_ledger.md`
+  - updated active non-closed bug snapshot count from 17 to 14.
+
+## 🧪 Verification run
+
+Log evidence reviewed from fix_v4 packet:
+- `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_fix_v4_76ee374_ios_simulator_iphone_17_pro_debug.log`
+- `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_fix_v4_76ee374_web_chrome_debug.log`
+
+Key signatures:
+- `LateStartQueue overdue=3` present (single chain queue).
+- No `LateStartQueue overdue=2` in fix_v4 iOS/web logs.
+- iOS: `prealert-timer-fired` for G2 at `17:00:00`, then `Auto-dismiss completion dialog: group switch` at `17:00:00`, before start timer at `17:01:00`.
+- iOS: `postpone-finalized` sample keeps G3 at `17:18:00`, matching corrected chained timing behavior.
+- No `Scheduling conflict` signatures after overlap resolution in fix_v4 logs.
+
+Implementation commit referenced for closure:
+- `2fdd99b` — `fix(late-start, timer): BUGLOG-009B re-queue + BUG-013 modal + BUG-014 postpone`
+
+## 📁 Updated files
+
+- `docs/bugs/validation_bug009_2026_03_23/plan_validacion_rapida_fix.md`
+- `docs/bugs/validation_bug009_2026_03_23/quick_pass_checklist.md`
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Ask user for explicit final confirmation to lock closure.
+2. If confirmed, create docs-only closure commit and keep branch ready for merge to `develop`.
+
+# 🔹 Block 651 — Validation artifact hygiene after closure commit (23/03/2026)
+
+## 📋 Context
+
+After closing `BUGLOG-009B` / `BUGLOG-013` / `BUGLOG-014`, a malformed tracked
+log path with trailing newline was detected in the validation folder.
+
+## ✔ Work completed
+
+- Removed malformed tracked file path from git index/history-forward commit:
+  - `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_fix_v2_76ee374_ios_simulator_iphone_17_pro_debug.log\n`
+- Added stable placeholder for folder structure compliance:
+  - `docs/bugs/validation_bug009_2026_03_23/logs/.gitkeep`
+
+## 🧪 Verification run
+
+- `git status --short` -> clean working tree.
+- Validation folder now tracks expected markdown artifacts + `.gitkeep` entries,
+  while `.log` runtime files remain local artifacts (ignored by `*.log`).
+
+## 📁 Updated files
+
+- `docs/bugs/validation_bug009_2026_03_23/logs/.gitkeep`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Keep closure docs and ledger as source of truth for this packet.
+2. Push branch when user confirms final closure recap.
+
+# 🔹 Block 652 — Final closure confirmation (23/03/2026)
+
+## 📋 Context
+
+Closure recap delivery for `BUGLOG-009B`, `BUGLOG-013`, and `BUGLOG-014`.
+
+## ✔ Work completed
+
+- Marked closure confirmation as final in project history.
+- No behavioral/code changes performed.
+
+## 📁 Updated files
+
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Keep branch ready for merge/push with closure packet finalized.
+
+# 🔹 Block 653 — BUGLOG-002-R1 final documentation closure (23/03/2026)
+
+## 📋 Context
+
+Current branch intent: `close P1 monitor-only bug item BUGLOG-002-R1 in bug queue docs`.
+
+`BUG-002` had already been fixed at implementation level (`7ddc1e6`), but the
+ledger kept `BUGLOG-002-R1` as `Validated` pending explicit final closure after
+user rerun confirmation.
+
+## ✔ Work completed
+
+- Synchronized closure state across queue docs:
+  - `docs/bugs/bug_log.md` keeps `BUG-002` as `Closed/OK (23/03/2026)` with
+    final monitor-only closure note.
+  - `docs/validation/validation_ledger.md` updated:
+    - `BUGLOG-002-R1` -> `[x]` `Closed/OK`
+    - `closed_commit_hash` / `closed_commit_message` filled from fix commit
+      `7ddc1e6`
+    - active non-closed bug snapshot count updated from `14` to `13`.
+
+## 🧪 Verification run
+
+- Documentation consistency checks:
+  - `rg -n "BUG-002|BUGLOG-002-R1" docs/bugs/bug_log.md docs/validation/validation_ledger.md`
+  - `git status --short`
+
+## 📁 Updated files
+
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Commit this docs-only closure update on `fix/buglog-002-r1-closure`.
+2. Continue queue execution with next open P1/P2 item in `validation_ledger.md`.
+
+# 🔹 Block 654 — BUGLOG-008A Android validation closure (23/03/2026)
+
+## 📋 Context
+
+Current branch intent: `close BUGLOG-008A with Android evidence`.
+
+`BUGLOG-008A` was marked fixed but still pending Android confirmation in the
+global queue.
+
+## ✔ Work completed
+
+- Created required validation packet for this bug:
+  - `docs/bugs/validation_bug008_2026_03_23/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug008_2026_03_23/quick_pass_checklist.md`
+- Recorded Android validation evidence:
+  - `docs/bugs/validation_bug008_2026_03_23/logs/2026-03-23_bug008a_4ef7f42_android_RMX3771_debug.log`
+- Closed bug entry in `docs/bugs/bug_log.md`:
+  - status changed from `Fixed; validation pending on Android` to `Closed/OK`.
+- Closed queue item in `docs/validation/validation_ledger.md`:
+  - `BUGLOG-008A` -> `Closed/OK`
+  - snapshot non-closed bug count updated `13 -> 12`.
+
+## 🧪 Verification run
+
+Android log PASS signatures:
+- `LateStartQueue overdue=3` and `Opening late-start overlap queue` on late open.
+- Post-confirm transition: `scheduled=2 overdue=0` and `running-open-timer`.
+- User UI verification: `Start now` on next queued group blocked by
+  `Conflict with running group` (no overdue bypass).
+- No `overdue=2` and no `Scheduling conflict` in this validation window.
+
+## 📁 Updated files
+
+- `docs/bugs/validation_bug008_2026_03_23/plan_validacion_rapida_fix.md`
+- `docs/bugs/validation_bug008_2026_03_23/quick_pass_checklist.md`
+- `docs/bugs/validation_bug008_2026_03_23/logs/.gitkeep`
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Commit docs-only closure for `BUGLOG-008A`.
+2. Continue with next open P1 bug-log item.
+
+# 🔹 Block 655 — BUG-008C registration + dual-path validation packet (23/03/2026)
+
+## 📋 Context
+
+Current branch intent: `register BUG-008C and prepare reproducible validation packet with logs`.
+
+During Android startup validation (`BUG008B` log), user observed an old group
+opening in ready/completed style (`15:00 + Start`) before normal flow.
+Need was to register this as a formal bug and prepare exact reproduction
+protocols for two plausible paths.
+
+## ✔ Work completed
+
+- Added new bug entry:
+  - `docs/bugs/bug_log.md` → `BUG-008C` (`Open`)
+  - includes evidence from startup log + Firestore fields + two repro variants.
+- Added queue item:
+  - `docs/validation/validation_ledger.md` → `BUGLOG-008C` (`P1`, `Pending`).
+- Created dedicated validation packet:
+  - `docs/bugs/validation_bug008c_2026_03_23/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug008c_2026_03_23/quick_pass_checklist.md`
+  - `docs/bugs/validation_bug008c_2026_03_23/logs/.gitkeep`
+  - `docs/bugs/validation_bug008c_2026_03_23/screenshots/.gitkeep`
+- Validation packet includes:
+  - exact repro A (stale running residue on reopen),
+  - exact repro B (explicit cancellation path on reopen),
+  - copy-paste run commands for Android debug/release and optional Chrome mirror,
+  - quick grep signatures for bug-present vs fix-working.
+
+## 🧪 Verification run
+
+- Documentation synchronization checks only (no runtime/code changes).
+- Branch and date verified before edits:
+  - branch: `fix/buglog-008c-ready-flash-validation`
+  - date: `Mon Mar 23 20:19:45 CET 2026`
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/bugs/validation_bug008c_2026_03_23/plan_validacion_rapida_fix.md`
+- `docs/bugs/validation_bug008c_2026_03_23/quick_pass_checklist.md`
+- `docs/bugs/validation_bug008c_2026_03_23/logs/.gitkeep`
+- `docs/bugs/validation_bug008c_2026_03_23/screenshots/.gitkeep`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Execute Scenario A and Scenario B from the new packet and capture Android logs.
+2. Mark checklist PASS/FAIL with evidence (screenshots + timestamps).
+3. If reproducible, implement fix on this branch and rerun same packet for closure.
+
+# 🔹 Block 656 — BUG-008C startup stale-ready fix implementation (23/03/2026)
+
+## 📋 Context
+
+Current branch intent: `implement BUG-008C startup reconciliation fix (expired running + no active session)`.
+
+User narrowed the bug to a deterministic path:
+- group remains `running` while app is closed,
+- app reopens after theoretical end,
+- first open shows stale `Ready` timer for historical group (`15:00 + Start`),
+  instead of reconciling completion and routing away from stale Run Mode.
+
+## ✔ Work completed
+
+- Runtime fix in coordinator:
+  - `lib/presentation/viewmodels/scheduled_group_coordinator.dart`
+  - Added `openGroupsHub` scheduled action type.
+  - In running-branch with `activeSession == null`, expired running groups are
+    now completed immediately (`expire-running-groups-no-active-session` path).
+  - If all running groups are expired in that pass, coordinator emits
+    `openGroupsHub` instead of stale `openTimer`.
+- Navigation handler update:
+  - `lib/widgets/scheduled_group_auto_starter.dart`
+  - Added handler for `openGroupsHub` action (`go('/groups')` with retry guard).
+- Regression test added:
+  - `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+  - New case:
+    `completes expired running group without active session and routes to Groups Hub`.
+
+## 🧪 Verification run
+
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` -> PASS (`+20`).
+- `flutter analyze` -> PASS (`No issues found!`).
+
+## 📁 Updated files
+
+- `lib/presentation/viewmodels/scheduled_group_coordinator.dart`
+- `lib/widgets/scheduled_group_auto_starter.dart`
+- `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+- `docs/bugs/bug_log.md` (`BUG-008C` status -> `In validation`)
+- `docs/validation/validation_ledger.md` (`BUGLOG-008C` -> `In validation`)
+- `docs/bugs/validation_bug008c_2026_03_23/plan_validacion_rapida_fix.md`
+- `docs/dev_log.md`
+
+## 🎯 Next steps
+
+1. Run Android device validation packet (`Scenario A` + `Scenario B`) and capture `bug008c` logs.
+2. Confirm no stale startup `Ready 15:00 + Start` appears after reopen past theoretical end.
+3. If PASS, close `BUG-008C` in bug log + ledger with evidence paths and closure commit.
+
+# 🔹 Block 657 — BUG-008C closure after Android device validation (23/03/2026)
+
+## 📋 Context
+
+Android debug validation run for BUG-008C (`fix/buglog-008c-ready-flash-validation`, base `d400a99`).
+Scenario A executed: app reopened after scheduled group expired while running (app had been closed).
+
+## ✔ Validation result
+
+Fix confirmed PASS on Android owner (RMX3771, Account Mode).
+
+Key log signals in `2026-03-23_bug008c_d400a99_android_RMX3771_debug.log`:
+- `[ExpiryCheck][expire-running-groups]` (line 6747): coordinator detects expired running group.
+- `[ExpiryCheck][mark-running-group-completed]` (line 6751): group marked completed on startup.
+- `Active session cleared route=/groups` (line 6764): stale session cleared, navigation to Groups Hub.
+- No `Timer load group=... status=completed` leading to stale Ready screen.
+
+User screenshot sequence (6 frames) confirms final destination is Groups Hub with group completed.
+No persistent `Ready 15:00 + Start` flash for historical group.
+
+## 📝 Residual observation (not a bug — documented for tracking only)
+
+When `activeSession != null` arrives in stream before the expiry check resolves:
+1. Coordinator emits `openTimer` (session present) → brief timer screen shown (frame 5 in screenshots).
+2. Session staleness check fires → session cleared → coordinator re-evaluates → emits `openGroupsHub`.
+3. `Cannot use Ref after disposed` logged (lines 6775–6787) during timer screen disposal — no functional breakage.
+
+This is a transient navigation race in the `activeSession != null` path, not the BUG-008C root cause.
+Documented in `plan_validacion_rapida_fix.md` section 4 for future reference.
+
+## 📁 Updated files
+
+- `docs/bugs/validation_bug008c_2026_03_23/quick_pass_checklist.md` (all evidence boxes checked)
+- `docs/bugs/bug_log.md` (`BUG-008C` → `Closed/OK`, evidence paths recorded)
+- `docs/validation/validation_ledger.md` (`BUGLOG-008C` → `Closed/OK`)
+- `docs/dev_log.md`
+
+# 🔹 Block 658 — BUGLOG-008B closure + BUGLOG-008C hash correction (24/03/2026)
+
+## 📋 Context
+
+Housekeeping pass on two outstanding ledger items after user confirmed BUGLOG-008B as
+validated and the BUGLOG-008C merge hash was still recorded as "pending".
+
+## ✔ Work completed
+
+### BUGLOG-008B — Owner becomes stale while foreground (unexpected auto-claim)
+
+User confirmed Closed/OK. Evidence traced to:
+- Commit `9916204` ("Allow owner heartbeats while awaiting session", 02/03/2026):
+  root-cause fix — `lastUpdatedAt` no longer freezes when session is temporarily
+  missing; owner heartbeat continues publishing independently of session stream state.
+- Validation: `docs/bugs/validation_fix_2026_03_02-02/quick_pass_checklist.md`
+  (all PASS, Chrome+macOS, 02/03/2026 — `lastUpdatedAt` advancing confirmed).
+- Architecture-level corroboration: P0-F26-006 Stage C pass2 soak (5h+, Android
+  RMX3771 + macOS, 2026-03-16) showed no unauthorized ownership flips during the
+  entire soak window.
+
+Updated:
+- `docs/bugs/bug_log.md` (BUG-008 `Fix applied` + `Status` → `Closed/OK`)
+- `docs/validation/validation_ledger.md` (BUGLOG-008B `[ ]` → `[x]` Closed/OK)
+
+### BUGLOG-008C hash correction
+
+`closed_commit_hash` was recorded as `pending (fix/buglog-008c-ready-flash-validation,
+pre-merge)` because the ledger was updated before the merge completed. Updated to
+actual merge commit `cfaba5e`.
+
+Updated:
+- `docs/validation/validation_ledger.md` (BUGLOG-008C `closed_commit_hash` → `cfaba5e`)
+
+## 📁 Updated files
+
+- `docs/bugs/bug_log.md`
+- `docs/validation/validation_ledger.md`
+- `docs/dev_log.md`
+
+# 🔹 Block 659 — BUG-006 + BUG-007 validation packet (24/03/2026)
+
+## 📋 Context
+
+Both bugs have fixes already in `develop`. This block opens the combined device
+validation to formally confirm and close them.
+
+**BUG-006 — Status box time ranges ignore pause anchoring:**
+Fix: commit `34d1938` ("Fix 5: align status box ranges") added
+`currentPhaseStartFromGroup` / `currentPhaseEndFromGroup` with
+`_pauseSecondsSincePhaseStart` to `pomodoro_view_model.dart`. Used by
+`timer_screen.dart` lines 2689–2690.
+
+**BUG-007 — Owner resumes behind mirror after background crash:**
+Fix: `handleAppResumed` (line 2871) in Account Mode calls
+`syncWithRemoteSession(preferServer: true, reason: 'resume')` +
+`_subscribeToRemoteSession(reason: 'resume-rebind')` +
+`_schedulePostResumeResync()` (2s delayed). Also covered by RVP-067 (Closed/OK).
+
+## ✔ Work completed
+
+- Created branch `fix/buglog-006-007-validation`.
+- Created `docs/bugs/validation_bug006_bug007_2026_03_24/`:
+  - `plan_validacion_rapida_fix.md`
+  - `quick_pass_checklist.md`
+  - `logs/`, `screenshots/`
+- Updated ledger: BUGLOG-006, BUGLOG-007 → `In validation`.
+
+## 🎯 Next steps
+
+1. Run Android (RMX3771) + macOS debug commands from the plan.
+2. Escenario A (BUG-006): pause 60s, resume, confirm status boxes.
+3. Escenario B (BUG-007): background Android 90s+, confirm timer aligns con macOS.
+4. Save logs with naming convention; update plan + checklist with results.
+5. If both PASS: close BUGLOG-006 + BUGLOG-007 and merge to `develop`.
+
+# 🔹 Block 660 — BUG-006 + BUG-007 closure after Android device validation (24/03/2026)
+
+## 📋 Context
+
+Combined Android + macOS validation run for BUG-006 and BUG-007.
+Branch: `fix/buglog-006-007-validation`, base commit `97f6365`.
+
+## ✔ Validation result — both PASS
+
+### BUG-006 — Status box time ranges PASS
+
+- Paused at 11:02:01 (log line 6983): `status=paused remaining=861 phaseStartedAt=11:01:20.522`
+- Resumed at 11:03:04 (log line 7029): `status=pomodoroRunning remaining=861`
+- Status box: 11:01–11:16 → 11:01–11:17. Start fixed ✓, end extended by pause duration ✓.
+- Status box and task list both show 11:01–11:17 ✓.
+
+### BUG-007 — Owner resume re-anchor PASS
+
+- Background Android 11:09:00, foreground 11:11:02 (~2min background).
+- Timer: Android 6:21, macOS 6:20 → ±1s ✓. No Groups Hub navigation needed.
+- Log lines 10400–10414:
+  `[SessionSub] close reason=resume-rebind` →
+  `[SessionSub] open (→SSS) reason=resume-rebind` →
+  `[ActiveSession] Resync start (resume).` →
+  `[ActiveSession] Resync start (post-resume).`
+- No `Resync missing` after foreground return ✓.
+
+### Local gate PASS
+
+- `flutter analyze` → `No issues found!`
+- `flutter test pomodoro_view_model_pause_expiry_test.dart` → `+5: All tests passed!`
+
+## 📁 Updated files
+
+- `docs/bugs/validation_bug006_bug007_2026_03_24/plan_validacion_rapida_fix.md` (results added)
+- `docs/bugs/validation_bug006_bug007_2026_03_24/quick_pass_checklist.md` (all boxes checked)
+- `docs/bugs/bug_log.md` (BUG-006, BUG-007 → Closed/OK)
+- `docs/validation/validation_ledger.md` (BUGLOG-006, BUGLOG-007 → Closed/OK)
+- `docs/dev_log.md`
+
+# 🔹 Block 661 — BUG-005 validation packet (24/03/2026)
+
+## 📋 Context
+
+BUG-005: ownership requests not surfaced until focus/resubscribe.
+Two variants:
+- **Variant A** (macOS window inactive): request never showed until user clicked macOS window.
+- **Variant B/D/E** (Android foreground owner): request never showed until Groups Hub nav.
+
+Both have fixes already in `develop`.
+
+**Variant A fix:** `handleAppPaused()` triggers `_startInactiveResync()` on
+`AppLifecycleState.inactive` (macOS focus loss included). Timer fires
+`syncWithRemoteSession(preferServer: true, reason: 'inactive-resync')` every **15s**,
+fetching the session with `ownershipRequest` from Firestore.
+macOS: `_keepClockActiveOutOfFocus()` returns `true` (clock keeps running) but
+`handleAppPaused()` IS called → inactive-resync starts correctly.
+
+**Variant B fix:** Fix 26 architecture rewrite (`cbd800a`) — `SessionSyncService`
+maintains persistent session subscription, eliminating AP-1 subscription gaps.
+Any Firestore write to `ownershipRequest` arrives via stream in real time.
+
+## ✔ Work completed
+
+- Created branch `fix/buglog-005-validation`.
+- Created `docs/bugs/validation_bug005_2026_03_24/`:
+  - `plan_validacion_rapida_fix.md` (Escenarios A + B, commands, log scan, criteria)
+  - `quick_pass_checklist.md`
+  - `logs/`, `screenshots/`
+- Updated ledger: BUGLOG-005 → `In validation`.
+
+## 🎯 Next steps
+
+1. Run Android (RMX3771) + macOS debug commands from the plan simultaneously.
+2. Escenario A: macOS as owner, lose focus, Android requests → modal in ≤15s.
+3. Escenario B: Android as owner foreground, macOS requests → modal in <5s.
+4. Check log signals and update plan + checklist.
+5. If both PASS: close BUGLOG-005 and merge to `develop`.
+
+---
+
+## Block 662 — BUG-005 closed: ownership request surfaced without focus/resubscribe (24/03/2026)
+
+**Branch:** `fix/buglog-005-validation`
+**Closed bugs:** BUG-005 (BUGLOG-005)
+**Validation folder:** `docs/bugs/validation_bug005_2026_03_24/`
+**Devices:** Android RMX3771 + macOS (same session)
+
+### What was validated
+
+Two variants of BUG-005 confirmed PASS in a single combined run.
+
+**Escenario A — macOS owner loses window focus (Variant A)**
+
+macOS lost focus at 11:43:50. Log macOS line 5850:
+```
+[ActiveSession] Resync start (inactive-resync).  (11:43:54, ~4s after focus loss)
+```
+Subsequent `inactive-resync` calls confirmed at lines 5859, 5864 (~15s intervals).
+Android requested ownership at 11:46:07 — macOS showed the modal instantaneously
+without any click or focus. ≤15s threshold met ✓.
+
+**Escenario B — Android owner foreground, macOS mirror requests (Variant B)**
+
+Android as owner (foreground), macOS requested ownership at 11:49:29.
+Android log shows `[RunModeDiag] Active session change` via stream at ~11:49:28.5
+(no `inactive-resync` — pure stream delivery ✓). `D/ViewRootImplExtImpl` tap event
+at ~11:49:30.8 confirms user accepted the modal on Android. Ownership snapshot with
+`owner=macOS-828508db... lastUpdatedAt=2026-03-24 11:49:31.248` confirms transfer.
+Elapsed request-to-accept: ~3s (<5s threshold ✓). No Groups Hub navigation ✓.
+
+**Local gate**
+- `flutter analyze` → `No issues found!`
+- `flutter test pomodoro_view_model_session_gap_test.dart` → `+25: All tests passed!`
+
+### Fix commits
+- Variant A: `b093270` — `_startInactiveResync()` periodic 15s resync on macOS inactive
+- Variant B: `cbd800a` — Fix 26 SSS persistent subscription (AP-1 eliminated)
+
+### Documents updated
+- `docs/bugs/bug_log.md` → BUG-005 Status: Closed/OK
+- `docs/validation/validation_ledger.md` → BUGLOG-005: `[ ]` → `[x]` Closed/OK (`b093270`)
+- `docs/bugs/validation_bug005_2026_03_24/plan_validacion_rapida_fix.md` → results + Closed/OK
+- `docs/bugs/validation_bug005_2026_03_24/quick_pass_checklist.md` → all boxes checked
+
+### Ledger status after this block
+**All P1 bugs now Closed/OK.** Zero open P0/P1 entries in `validation_ledger.md`.
+Remaining open items: P2 bugs (BUGLOG-003, BUGLOG-010, BUGLOG-008-MIT, BUGLOG-F25-E-R1)
+and RVP validation items (RVP-021–RVP-062). Neither category blocks `develop → main`.
+
+---
+
+## Block 663 — RVP-032/033/041/043/044 closed: batch closure using existing validation evidence (24/03/2026)
+
+**Branch:** `fix/rvp-batch-close-032-033-041-043-044`
+**Merge commit:** `5b94dca`
+**Items closed:** 5 RVP validation items (P2)
+
+No new code. All 5 items were implemented months ago; this block records their formal
+closure using evidence already captured in prior validation runs.
+
+### Items closed
+
+**RVP-032** — Ownership publish guard + no stale owner flips
+Evidence: BUG-F26-001 re-val 18/03/2026 (commit `92731b3`): `phaseStartedAt` updated on
+phase transitions, `sessionRevision` coherent. Fix 26 Stage C soak (5h+, 16/03/2026):
+no unauthorized owner flips. BUGLOG-008B Closed/OK (`9916204`): owner stable in foreground.
+
+**RVP-033** — Desktop inactive resync keepalive
+Evidence: BUG-005 Escenario A PASS (24/03/2026): macOS log line 5850
+`[ActiveSession] Resync start (inactive-resync).` at ~4s after focus loss; ownership
+request modal appeared on macOS without any click.
+
+**RVP-041** — Ownership requests re-sync on resume
+Evidence: BUG-007 PASS (24/03/2026): Android log lines 10400–10414 confirm
+`resume-rebind` + `Resync start (resume)` + `Resync start (post-resume)`.
+
+**RVP-043** — Ownership request banner dismisses immediately on reject
+Evidence: BUG-002 re-val 18/03/2026 (commit `92731b3`): banner cleared immediately
+on rejection without second press.
+
+**RVP-044** — Ownership reject dismiss stable vs transient stream gaps
+Evidence: Fix 26 SSS architecture (AP-2 debounce + 3s hold) + Stage C soak (5h+):
+no spurious banner re-appearance across stream reconnects.
+
+### Documents updated
+- `docs/validation/validation_ledger.md` → RVP-032/033/041/043/044: `[ ]` → `[x]` Closed/OK
+
+### Ledger status after this block
+Open P2 bugs: BUGLOG-003, BUGLOG-010, BUGLOG-008-MIT, BUGLOG-F25-E-R1
+Open RVP items: RVP-021–RVP-031, RVP-034–RVP-040, RVP-042, RVP-045–RVP-062 (37 items)
+
+## Block 664 — BUGLOG-008-MIT closed: superseded by Fix 26 SSS architecture (24/03/2026)
+
+**Branch:** `fix/buglog-008-mit-closure`
+**Item closed:** BUGLOG-008-MIT (P2 mitigation candidate)
+
+No new code. The Run Mode resync overlay mitigation candidate was designed as a manual
+fallback for sync failures (Syncing session... freezes) that required navigating to
+Groups Hub to recover. Fix 26's SSS persistent subscription (AP-1 eliminated) +
+`_startInactiveResync()` + `handleAppResumed()` re-anchor remove all the sync failure
+scenarios this fallback was meant to address.
+
+User confirmed 24/03/2026: "gracias al refacto originado por el fix 26 se hizo innecesario."
+
+### Documents updated
+- `docs/bugs/bug_log.md` → BUGLOG-008-MIT Status: `Not implemented...` → `Closed/OK (24/03/2026)`
+- `docs/validation/validation_ledger.md` → BUGLOG-008-MIT: `[ ]` → `[x]` Closed/OK (`cbd800a`)
+- Snapshot updated: non-closed bugs 4 → 3 (BUG-003, BUG-010, BUG-F25-E remain open)
+
+### Ledger status after this block
+Open P2 bugs: BUGLOG-003, BUGLOG-010, BUGLOG-F25-E-R1
+Open RVP items: RVP-021–RVP-031, RVP-034–RVP-040, RVP-042, RVP-045–RVP-062 (37 items)
+
+## Block 665 — BUGLOG-F25-E-R1 closed: merge artifact, fix already in c248c91 (24/03/2026)
+
+**Branch:** `develop` (direct, doc-only correction)
+**Item closed:** BUGLOG-F25-E-R1 (P2 stale entry)
+
+BUG-F25-E was fixed in `c248c91` (19/03/2026) and confirmed in the roadmap (line 459,
+struck through Closed/OK, Chrome validation PASS). The `bug_log.md` entry at line 1489
+still said "Status: Open / Fix applied: None yet" — this was a merge artifact: when
+`fix-f25-h-cancel-syncing-hold` merged into develop (`fdd4cfa`), it added 144 lines
+including a re-instantiated copy of the BUG-F25-E section from before `c248c91` patched
+it. The fix in the code was unaffected (groups_hub_screen.dart:1414-1422 and
+task_list_screen.dart:1850+ both show the dynamic group list dialog). BUGLOG-F25-E-R1
+in the ledger was created to track this discrepancy.
+
+Corrected `bug_log.md` and ledger entry to reflect actual Closed/OK state.
+
+### Documents updated
+- `docs/bugs/bug_log.md` → BUG-F25-E Status: `Open` → `Closed/OK (19/03/2026). closed_commit_hash: c248c91`
+- `docs/validation/validation_ledger.md` → BUGLOG-F25-E-R1: `[ ]` → `[x]` Closed/OK (`c248c91`)
+- Snapshot updated: non-closed bugs 1 → 0 (zero P0/P1/P2 open)
+
+### Ledger status after this block
+**Zero open bugs.** All BUGLOG entries closed.
+Open RVP items: RVP-021–RVP-031, RVP-034–RVP-040, RVP-042, RVP-045–RVP-062 (37 items)
+
+## Block 667 — BUG-015 Claude QA review + handoff preparado (25/03/2026)
+
+**Branch:** `fix/buglog-running-without-foreground-ready-invalid`
+**Ref commit:** `f929117`
+**Context:** Codex abrió el bug y hizo docs-first. Claude revisó el código para validar
+la causa raíz y dar luz verde al fix.
+
+### Análisis de causa raíz confirmado
+
+**Vector A (primario):** `_hydrateOwnerSession` (~línea 2091 pomodoro_view_model.dart).
+- Cuando Android toma ownership de sesión stale (macOS apagado), máquina en `idle` (mirror mode).
+- `_projectStateFromSession` proyecta SOLO dentro de la tarea actual.
+- Si elapsed > duración total de la tarea, devuelve `PomodoroStatus.finished`.
+- Se aplica y publica → Firestore `current.status = finished` → UI "Ready" + ámbar.
+- `_applyGroupTimelineProjection` (que sí conoce todas las tareas) estaba bloqueada en Account mode.
+
+**Vector B (secundario):** `_applySessionTimelineProjection` owner branch (~línea 1626).
+- Un sync concurrente durante `await _resolveServerNow()` en `_handleTaskFinishedInternal`
+  puede publicar el estado `finished` transitorio de la máquina (entre tareas).
+
+### Fix design (2 commits)
+
+**Fix A:** En `_hydrateOwnerSession`, ampliar `allowTimelineProjection`:
+```dart
+// antes:
+final allowTimelineProjection = ref.read(appModeProvider) != AppMode.account;
+// después:
+final allowTimelineProjection =
+    ref.read(appModeProvider) != AppMode.account ||
+    (projected.status == PomodoroStatus.finished && !_groupCompleted);
+```
+
+**Fix B:** En `_applySessionTimelineProjection`, guard antes del publish:
+```dart
+if (_machine.state.status == PomodoroStatus.finished && !_groupCompleted) {
+  return;
+}
+```
+
+### ✔ Documentación creada en este bloque
+- `docs/bugs/validation_bug015_2026_03_25/codex_handoff.md`
+- `docs/bugs/validation_bug015_2026_03_25/plan_validacion_rapida_fix.md`
+- `docs/bugs/validation_bug015_2026_03_25/quick_pass_checklist.md`
+- `docs/bugs/validation_bug015_2026_03_25/logs/` (vacío, pendiente device run)
+- `docs/bugs/validation_bug015_2026_03_25/screenshots/` (vacío)
+
+### ⚠️ Siguiente paso
+Entregar `codex_handoff.md` a Codex para implementación. Codex entrega diff.
+Claude hace QA review del código modificado. Luego device validation.
+
+## Block 668 — BUG-015 closure synced after device validation PASS (25/03/2026)
+
+**Current branch intent:** BUG-015 bugfix validation closure + evidence synchronization.
+**Branch:** `fix/buglog-running-without-foreground-ready-invalid`
+**Scope:** docs closure + ledger synchronization after successful device run
+
+### Validation recap (BUGLOG-015)
+- Device validation PASS on Android RMX3771 + macOS.
+- Exact repro passed with owner handoff + background + late foreground resume.
+- No invalid terminal fallback (`Ready 00:00`, amber complete ring) during resumed run.
+- Firestore session remained non-terminal (`status=pomodoroRunning`) during active timeline.
+
+Evidence:
+- `docs/bugs/validation_bug015_2026_03_25/logs/2026-03-25_bug015_f929117_android_RMX3771_debug_2.log`
+- Key signals in log:
+  - `Auto-open confirmed in timer` (resume path).
+  - `status=pomodoroRunning ... remaining=460`, then `429`, then `399` (continuous active progression).
+
+### Local gate (post-fix)
+- `flutter analyze` — PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` — PASS
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` — PASS
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` — PASS
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` — PASS
+
+### Documents synchronized
+- `docs/bugs/bug_log.md` — BUG-015 status updated to `Closed/OK` with validation evidence.
+- `docs/validation/validation_ledger.md` — `BUGLOG-015` moved to `Closed/OK` with closure evidence.
+- `docs/bugs/validation_bug015_2026_03_25/plan_validacion_rapida_fix.md` — status updated to `Closed/OK`, root cause/fix path aligned with final implementation.
+- `docs/bugs/validation_bug015_2026_03_25/quick_pass_checklist.md` — closure checklist completed.
+
+### Ledger status after this block
+- Active non-closed bug-log entries: 1 (`BUG-016` / `BUGLOG-016`, P2 Pending).
+
+---
+
+## Block 669 — BUG-015 commit hash corrected + BUG-017 registered (25/03/2026)
+
+**Branch:** `fix/buglog-running-without-foreground-ready-invalid`
+
+### BUG-015 commit hash correction
+
+Codex's closure commit `e10a5028` was written to bug_log.md and validation_ledger.md
+with placeholder text (`not-committed-yet`) because the docs were authored before the
+commit was executed. Corrected in-place:
+
+- `docs/bugs/bug_log.md` — BUG-015 Status line now references `e10a5028`
+  (`fix(bug-015): repair stream cursor ingest and close validation`).
+- `docs/validation/validation_ledger.md` — BUGLOG-015 `closed_commit_hash` and
+  `closed_commit_message` updated from `not-committed-yet` to the actual values.
+
+### BUG-017 registered — Edit Task preset "Custom" UX bug
+
+New bug discovered during a UX review of the Edit Task screen (25/03/2026).
+
+**Symptom (user perspective):** Opening the preset dropdown in Edit Task shows "Custom"
+as a selectable option alongside real saved presets. Tapping it selects it — but "Custom"
+is not a real preset; it is a derived label representing the unlinked state.
+
+**Root cause (hypothesis):** The dropdown widget includes a synthetic "Custom" entry to
+represent the unlinked state visually, rather than expressing that state via a separate
+indicator outside the picker.
+
+**Expected behavior:**
+- Dropdown contains ONLY real presets from Settings.
+- "Custom" is removed from the list entirely.
+- Linked/unlinked state communicated by a visual indicator next to the "Preset" field
+  label: active (bright/colored) when config matches selected preset; inactive (dim/grey)
+  when config has diverged or no preset is selected.
+
+**Documents updated:**
+- `docs/bugs/bug_log.md` — BUG-017 entry added (Status: Open, P2).
+- `docs/validation/validation_ledger.md` — BUGLOG-017 added (P2, Status: Pending).
+
+### Ledger status after this block
+- Active non-closed bug-log entries: 2 (`BUG-016` P2 Pending, `BUG-017` P2 Pending).
+- Zero open P0/P1 bugs.
+
+---
+
+## Block 670 — Ledger snapshot count sync after BUG-017 registration (25/03/2026)
+
+**Current branch intent:** Documentation consistency fix (validation ledger snapshot alignment).
+**Branch:** `fix/ledger-snapshot-bug017-count`
+
+### Issue found
+
+After adding `BUG-017` and `BUGLOG-017`, the 25/03/2026 snapshot line in
+`docs/validation/validation_ledger.md` still reported only one active non-closed
+bug (`BUG-016`), which no longer matched the ledger queue.
+
+### Correction applied
+
+- `docs/validation/validation_ledger.md` snapshot updated:
+  - from: `**1** (BUG-016 / BUGLOG-016)`
+  - to: `**2** (BUG-016 / BUGLOG-016, BUG-017 / BUGLOG-017)`
+
+### Result
+
+- Snapshot summary now matches the active non-closed bug queue in the same file
+  (`BUGLOG-016`, `BUGLOG-017` both `Pending`).
+- Zero open P0/P1 bugs remains unchanged.
+
+---
+
+## Block 671 — BUG-018 closed after Android long-background revalidation (27/03/2026)
+
+**Current branch intent:** BUG-018 closure sync (docs + evidence) after validated fix.
+**Branch:** `fix/bug018-running-zero-resume`
+**Fix commit validated:** `547c6f7` (`fix(bug-018): stop owner echo publish amplification in account mode`)
+
+### Validation recap (BUG-018)
+
+- Exact repro re-run on Android owner (RMX3771):
+  - background at ~19:37:55,
+  - foreground at ~20:00.
+- Timer resumed on coherent timeline in G2 (no invalid `Ready` state).
+- Firestore/session snapshots remained coherent after resume.
+
+Primary evidence:
+- `docs/bugs/validation_bug018_2026_03_27/logs/2026-03-27_bug018_547c6f7_android_RMX3771_debug.log`
+- Key log confirmations:
+  - `Reconciled owner timeline before publish reason=resume` emitted once.
+  - Clean phase boundaries: `break-start` x1, `pomodoro-start` x2 (initial + next pomodoro).
+  - Zero signatures of `running + remaining=0`.
+  - Resume window coherent: `20:00:55 status=pomodoroRunning remaining=663`.
+
+### Local gate
+
+- `flutter analyze` — PASS (27/03/2026).
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` — PASS (27/03/2026).
+
+### Documentation synchronized
+
+- `docs/bugs/validation_bug018_2026_03_27/plan_validacion_rapida_fix.md` — created and set `Closed/OK`.
+- `docs/bugs/validation_bug018_2026_03_27/quick_pass_checklist.md` — created with all checks PASS.
+- `docs/bugs/bug_log.md` — BUG-018 status set to `Closed/OK` with final fix/evidence.
+- `docs/validation/validation_ledger.md` — BUGLOG-018 moved to `Closed/OK`.
+- Ledger snapshot updated (active non-closed bug-log entries: 3 → 2).
+
+### Ledger status after this block
+
+- Active non-closed bug-log entries: 2 (`BUG-016`, `BUG-017`; both P2 Pending).
+- Open P1 bug-log entries: 0.

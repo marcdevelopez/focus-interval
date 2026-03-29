@@ -66,6 +66,7 @@ class _LateStartOverlapQueueScreenState
   bool _showPreview = false;
   bool _showAll = false;
   bool _busy = false;
+  List<String> _queueGroupIds = [];
   List<String> _selectedIds = [];
   List<String> _latestConflictIds = const [];
   int? _noticeFallbackMinutes;
@@ -83,7 +84,8 @@ class _LateStartOverlapQueueScreenState
         _now = DateTime.now();
       });
     });
-    _selectedIds = List<String>.from(widget.args.groupIds);
+    _queueGroupIds = List<String>.from(widget.args.groupIds);
+    _selectedIds = List<String>.from(_queueGroupIds);
   }
 
   @override
@@ -115,9 +117,7 @@ class _LateStartOverlapQueueScreenState
 
     final groups = groupsAsync.value ?? const [];
     final conflictGroups =
-        groups
-            .where((group) => widget.args.groupIds.contains(group.id))
-            .toList()
+        groups.where((group) => _queueGroupIds.contains(group.id)).toList()
           ..sort(
             (a, b) => a.scheduledStartTime!.compareTo(b.scheduledStartTime!),
           );
@@ -652,6 +652,43 @@ class _LateStartOverlapQueueScreenState
       final now = await _resolveServerNow(force: true);
       final queueNow = _queueNow(now);
       final isCancelAll = selectedGroups.isEmpty;
+      if (selectedGroups.isNotEmpty) {
+        final allGroupsSnapshot =
+            ref.read(taskRunGroupStreamProvider).value ??
+            const <TaskRunGroup>[];
+        final additionalConflictIds = _resolvePostConfirmAdditionalConflicts(
+          selectedGroups: selectedGroups,
+          currentQueueGroups: conflictGroups,
+          allGroups: allGroupsSnapshot,
+          queueNow: queueNow,
+          now: now,
+        );
+        if (additionalConflictIds.isNotEmpty) {
+          final nextQueueIds = _buildReopenedQueueIds(
+            selectedGroups: selectedGroups,
+            additionalConflictIds: additionalConflictIds,
+            allGroups: allGroupsSnapshot,
+            activeSession: ref.read(activePomodoroSessionProvider),
+            now: now,
+          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Additional overlaps detected. Queue reopened with conflicting groups.',
+                ),
+                duration: Duration(seconds: 4),
+              ),
+            );
+            setState(() {
+              _showPreview = false;
+              _queueGroupIds = nextQueueIds;
+              _selectedIds = List<String>.from(nextQueueIds);
+            });
+          }
+          return;
+        }
+      }
 
       final updates = <TaskRunGroup>[];
       if (selectedGroups.isNotEmpty) {
@@ -684,9 +721,11 @@ class _LateStartOverlapQueueScreenState
             cursor = queueNow.add(Duration(seconds: durationSeconds));
           } else {
             final noticeMinutes = _noticeMinutesOrDefault(group);
-            final scheduledStart = ceilToMinute(
-              cursor.add(Duration(minutes: noticeMinutes)),
+            final scheduledStart = resolveAnchoredScheduledStart(
+              anchorEnd: cursor,
+              noticeMinutes: noticeMinutes,
             );
+            final anchorGroupId = selectedGroups[index - 1].id;
             updates.add(
               group.copyWith(
                 status: TaskRunStatus.scheduled,
@@ -698,6 +737,7 @@ class _LateStartOverlapQueueScreenState
                 ),
                 noticeSentAt: null,
                 noticeSentByDeviceId: null,
+                postponedAfterGroupId: anchorGroupId,
                 lateStartQueueOrder: index,
                 lateStartAnchorAt: null,
                 lateStartOwnerDeviceId: null,
@@ -802,6 +842,179 @@ class _LateStartOverlapQueueScreenState
       cursor = end;
     }
     return ranges;
+  }
+
+  Set<String> _resolvePostConfirmAdditionalConflicts({
+    required List<TaskRunGroup> selectedGroups,
+    required List<TaskRunGroup> currentQueueGroups,
+    required List<TaskRunGroup> allGroups,
+    required DateTime queueNow,
+    required DateTime now,
+  }) {
+    if (selectedGroups.isEmpty) return const <String>{};
+    final selectedRanges = _buildSelectedExecutionRanges(
+      selectedGroups,
+      queueNow,
+    );
+    if (selectedRanges.isEmpty) return const <String>{};
+    final selectedIds = selectedGroups.map((group) => group.id).toSet();
+    final currentQueueIds = currentQueueGroups.map((group) => group.id).toSet();
+    final activeSession = ref.read(activePomodoroSessionProvider);
+    final additional = <String>{};
+    for (final group in allGroups) {
+      if (group.status != TaskRunStatus.scheduled) continue;
+      if (group.scheduledStartTime == null) continue;
+      if (selectedIds.contains(group.id)) continue;
+      if (currentQueueIds.contains(group.id)) continue;
+      final windowStart = _scheduledWindowStartForQueueCheck(
+        group,
+        allGroups: allGroups,
+        activeSession: activeSession,
+        now: now,
+      );
+      final windowEnd = _scheduledWindowEndForQueueCheck(
+        group,
+        allGroups: allGroups,
+        activeSession: activeSession,
+        now: now,
+      );
+      final overlapsSelected = selectedRanges.values.any(
+        (selectedRange) => _rangesOverlap(
+          selectedRange.start,
+          selectedRange.end,
+          windowStart,
+          windowEnd,
+        ),
+      );
+      if (overlapsSelected) {
+        additional.add(group.id);
+      }
+    }
+    return additional;
+  }
+
+  List<String> _buildReopenedQueueIds({
+    required List<TaskRunGroup> selectedGroups,
+    required Set<String> additionalConflictIds,
+    required List<TaskRunGroup> allGroups,
+    required PomodoroSession? activeSession,
+    required DateTime now,
+  }) {
+    final ordered = <String>[for (final group in selectedGroups) group.id];
+    final additionalGroups =
+        allGroups
+            .where((group) => additionalConflictIds.contains(group.id))
+            .toList()
+          ..sort((a, b) {
+            final aStart =
+                resolveEffectiveScheduledStart(
+                  group: a,
+                  allGroups: allGroups,
+                  activeSession: activeSession,
+                  now: now,
+                  fallbackNoticeMinutes: _noticeFallbackMinutes,
+                ) ??
+                a.scheduledStartTime!;
+            final bStart =
+                resolveEffectiveScheduledStart(
+                  group: b,
+                  allGroups: allGroups,
+                  activeSession: activeSession,
+                  now: now,
+                  fallbackNoticeMinutes: _noticeFallbackMinutes,
+                ) ??
+                b.scheduledStartTime!;
+            return aStart.compareTo(bStart);
+          });
+    for (final group in additionalGroups) {
+      if (ordered.contains(group.id)) continue;
+      ordered.add(group.id);
+    }
+    return ordered;
+  }
+
+  Map<String, _ProjectedRange> _buildSelectedExecutionRanges(
+    List<TaskRunGroup> groups,
+    DateTime queueNow,
+  ) {
+    final ranges = <String, _ProjectedRange>{};
+    if (groups.isEmpty) return ranges;
+    var previousEnd = queueNow;
+    for (var index = 0; index < groups.length; index += 1) {
+      final group = groups[index];
+      final start = index == 0
+          ? queueNow
+          : (() {
+              final notice = _noticeMinutesOrDefault(group);
+              return resolveAnchoredScheduledStart(
+                anchorEnd: previousEnd,
+                noticeMinutes: notice,
+              );
+            })();
+      final end = start.add(Duration(seconds: _groupDurationSeconds(group)));
+      ranges[group.id] = _ProjectedRange(start: start, end: end);
+      previousEnd = end;
+    }
+    return ranges;
+  }
+
+  DateTime _scheduledWindowStartForQueueCheck(
+    TaskRunGroup group, {
+    required List<TaskRunGroup> allGroups,
+    required PomodoroSession? activeSession,
+    required DateTime now,
+  }) {
+    final effectiveStart =
+        resolveEffectiveScheduledStart(
+          group: group,
+          allGroups: allGroups,
+          activeSession: activeSession,
+          now: now,
+          fallbackNoticeMinutes: _noticeFallbackMinutes,
+        ) ??
+        group.scheduledStartTime!;
+    final preRunStart = resolveEffectivePreRunStart(
+      group: group,
+      allGroups: allGroups,
+      activeSession: activeSession,
+      now: now,
+      fallbackNoticeMinutes: _noticeFallbackMinutes,
+    );
+    return preRunStart ?? effectiveStart;
+  }
+
+  DateTime _scheduledWindowEndForQueueCheck(
+    TaskRunGroup group, {
+    required List<TaskRunGroup> allGroups,
+    required PomodoroSession? activeSession,
+    required DateTime now,
+  }) {
+    final effectiveStart =
+        resolveEffectiveScheduledStart(
+          group: group,
+          allGroups: allGroups,
+          activeSession: activeSession,
+          now: now,
+          fallbackNoticeMinutes: _noticeFallbackMinutes,
+        ) ??
+        group.scheduledStartTime!;
+    return resolveEffectiveScheduledEnd(
+          group: group,
+          allGroups: allGroups,
+          activeSession: activeSession,
+          now: now,
+          fallbackNoticeMinutes: _noticeFallbackMinutes,
+        ) ??
+        effectiveStart.add(Duration(seconds: _groupDurationSeconds(group)));
+  }
+
+  bool _rangesOverlap(
+    DateTime aStart,
+    DateTime aEnd,
+    DateTime bStart,
+    DateTime bEnd,
+  ) {
+    return aStart.isBefore(bEnd) && bStart.isBefore(aEnd);
   }
 
   int _totalQueueSeconds(List<TaskRunGroup> groups) {
@@ -1011,7 +1224,7 @@ class _LateStartOverlapQueueScreenState
     if (_requestInFlight) return;
     final groups = ref.read(taskRunGroupStreamProvider).value ?? const [];
     final conflictGroups = groups
-        .where((group) => widget.args.groupIds.contains(group.id))
+        .where((group) => _queueGroupIds.contains(group.id))
         .toList();
     if (conflictGroups.isEmpty) return;
     final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
@@ -1040,7 +1253,7 @@ class _LateStartOverlapQueueScreenState
     if (_requestInFlight) return;
     final groups = ref.read(taskRunGroupStreamProvider).value ?? const [];
     final conflictGroups = groups
-        .where((group) => widget.args.groupIds.contains(group.id))
+        .where((group) => _queueGroupIds.contains(group.id))
         .toList();
     if (conflictGroups.isEmpty) return;
     final ownerId = resolveLateStartOwnerDeviceId(conflictGroups);

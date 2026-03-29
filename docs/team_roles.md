@@ -1,6 +1,6 @@
 # Team Roles & Handoff Contract
 
-Last update: 2026-03-18
+Last update: 2026-03-20
 
 This document defines the operational split between Claude, Codex, and Gemini in this repository.
 It is normative for day-to-day collaboration and must be applied together with:
@@ -148,6 +148,11 @@ bleeding first. Document the skip and run the full standard path after the P0 is
    assess cross-module impact, or process data that exceeds practical context limits.
 5. **Specs first:** No role may implement behavior that is not yet defined in `docs/specs.md`.
    If a gap exists, Claude must update specs before implementation begins.
+6. **Bug-first preflight gate:** Before proposing any next task, all roles must
+   reconcile non-closed entries in `docs/bugs/bug_log.md` with
+   `docs/validation/validation_ledger.md`. If mismatch exists, sync docs first.
+   Bug queue resolution has priority over RVP validation and feature work unless
+   the user explicitly overrides.
 
 ---
 
@@ -169,6 +174,22 @@ Every handoff between Claude, Codex, and Gemini must include:
 
 5. Requested next action
 - One explicit action expected from the receiving role.
+
+6. User-facing validation recap (mandatory when closing validations)
+- For every ID moved to `Closed/OK`, include the concrete case validated:
+  repro trigger, expected behavior, and PASS evidence.
+- The responding agent must ask for explicit final user confirmation after the recap.
+
+7. Bug-queue status checkpoint (mandatory before non-bug work)
+- Current non-closed bug count from `bug_log.md`.
+- Confirmation that each bug is represented in `validation_ledger.md`.
+- Which bug ID(s) are next by priority.
+
+8. Branch-scope checkpoint (mandatory before implementation/commit)
+- Current branch name.
+- Declared branch intent (one line).
+- Confirmation that the requested task belongs to that intent.
+- If not, required action: create/switch to a dedicated branch before edits.
 
 ---
 

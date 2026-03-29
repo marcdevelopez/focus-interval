@@ -52,7 +52,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       25/01/2026: Phase 13 reopen item completed (auto-open running session on launch/login).
       25/01/2026: Active-session auto-open listener moved to app root (covers Task Editor/macOS).
       25/01/2026: macOS auto-open stabilized with navigator-ready retry (release build edge case).
-      26/01/2026: Scheduled auto-start + resume/launch catch-up implemented (validation pending).
+      26/01/2026: Scheduled auto-start + resume/launch catch-up implemented (validated 20/03/2026; `RVP-001` Closed/OK).
       26/01/2026: Scheduled auto-start allows any device to claim immediately at scheduled time.
       26/01/2026: Release validation — scheduled by Android (app closed), macOS open claimed owner; Android opened later in mirror mode.
       29/01/2026: Desktop GitHub device flow validated on macOS/Windows.
@@ -86,26 +86,26 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       02/02/2026: Duplicate resolution now exits the New Preset screen after use/rename to avoid loops.
       02/02/2026: Duplicate rename in Edit Preset now exits to Manage Presets after completion.
       02/02/2026: Duplicate rename now exits the editor in all flows (new/edit).
-      02/02/2026: Completion modal now navigates to Groups Hub; placeholder Groups Hub route added (validation pending).
-      02/02/2026: Cancel running group now confirms and navigates to Groups Hub (validation pending).
+      02/02/2026: Completion modal now navigates to Groups Hub; placeholder Groups Hub route added (validated 20/03/2026; `RVP-002` Closed/OK).
+      02/02/2026: Cancel running group now confirms and navigates to Groups Hub (validated 20/03/2026; `RVP-003` Closed/OK).
       02/02/2026: Phase 18 completed (completion flow + cancel flow -> Groups Hub).
-      02/02/2026: Phase 19 Groups Hub core UI implemented (sections + actions); Task List banner + Run Mode indicator now open Groups Hub (validation pending).
-      02/02/2026: Task List banner now clears stale sessions when group ends (validation pending).
-      02/02/2026: Scheduled auto-start rechecks when active session ends; expired running groups auto-complete to unblock scheduled starts (validation pending).
-      02/02/2026: Running group expiry now clears stale active sessions (Task List banner updates; validation pending).
-      02/02/2026: Scheduling now reserves the full Pre-Run window (noticeMinutes) and blocks invalid times (validation pending).
-      02/02/2026: Pre-Run entry points added for scheduled groups (Task List banner + Groups Hub action; no AppBar changes) (validation pending).
-      02/02/2026: Task List now exposes a persistent Groups Hub CTA even with no active group (validation pending).
-      02/02/2026: Task List running banner now falls back to running groups when no active session exists (Local Mode) (validation pending).
-      02/02/2026: Groups Hub hides notice/pre-run info for “Start now” groups (scheduledStartTime == null) (validation pending).
-      03/02/2026: Auto-adjust short/long breaks on valid pomodoro changes and break edits (Task Editor + Edit Preset) (validation pending).
-      03/02/2026: Break auto-adjust on break edits now applies on focus loss (no per-keystroke adjustments) (validation pending).
-      03/02/2026: Pomodoro Integrity Warning actions now show exact configuration source names (validation pending).
-      03/02/2026: Pomodoro Integrity Warning now lists visual options per distinct structure + Default Preset badge (validation pending).
-      03/02/2026: Run Mode now auto-exits to Groups Hub when a group is canceled (validation pending).
-      03/02/2026: Integrity Warning copy clarified with explicit instruction + default badge moved below cards (validation pending).
-      03/02/2026: Groups Hub summary modal expanded with timing, totals, and task breakdown (validation pending).
-      03/02/2026: Groups Hub summary hides Scheduled start for non-planned runs (validation pending).
+      02/02/2026: Phase 19 Groups Hub core UI implemented (sections + actions); Task List banner + Run Mode indicator now open Groups Hub (validated 20/03/2026; `RVP-004` Closed/OK).
+      02/02/2026: Task List banner now clears stale sessions when group ends (validated 20/03/2026; `RVP-005` Closed/OK).
+      02/02/2026: Scheduled auto-start rechecks when active session ends; expired running groups auto-complete to unblock scheduled starts (validated 20/03/2026; `RVP-006` Closed/OK).
+      02/02/2026: Running group expiry now clears stale active sessions (Task List banner updates; validated 20/03/2026; `RVP-007` Closed/OK).
+      02/02/2026: Scheduling now reserves the full Pre-Run window (noticeMinutes) and blocks invalid times (validated 20/03/2026; `RVP-008` Closed/OK).
+      02/02/2026: Pre-Run entry points added for scheduled groups (Task List banner + Groups Hub action; no AppBar changes) (validated 20/03/2026; `RVP-009` Closed/OK).
+      02/02/2026: Task List now exposes a persistent Groups Hub CTA even with no active group (validated 20/03/2026; `RVP-010` Closed/OK).
+      02/02/2026: Task List running banner now falls back to running groups when no active session exists (Local Mode) (validated 20/03/2026; `RVP-011` Closed/OK).
+      02/02/2026: Groups Hub hides notice/pre-run info for “Start now” groups (scheduledStartTime == null) (validated 20/03/2026; `RVP-012` Closed/OK).
+      03/02/2026: Auto-adjust short/long breaks on valid pomodoro changes and break edits (Task Editor + Edit Preset) (validated 20/03/2026; `RVP-063` + `RVP-013` Closed/OK).
+      03/02/2026: Break auto-adjust on break edits now applies on focus loss (no per-keystroke adjustments) (validated 20/03/2026; `RVP-063` + `RVP-014` Closed/OK).
+      03/02/2026: Pomodoro Integrity Warning actions now show exact configuration source names (validated 20/03/2026; `RVP-015` Closed/OK).
+      03/02/2026: Pomodoro Integrity Warning now lists visual options per distinct structure + Default Preset badge (validated 20/03/2026; `RVP-016` Closed/OK).
+      03/02/2026: Run Mode now auto-exits to Groups Hub when a group is canceled (validated 20/03/2026; `RVP-017` Closed/OK).
+      03/02/2026: Integrity Warning copy clarified with explicit instruction + default badge moved below cards (validated 20/03/2026; `RVP-018` Closed/OK).
+      03/02/2026: Groups Hub summary modal expanded with timing, totals, and task breakdown (validated 20/03/2026; `RVP-019` Closed/OK).
+      03/02/2026: Groups Hub summary hides Scheduled start for non-planned runs (validated 20/03/2026; `RVP-020` Closed/OK).
       03/02/2026: Groups Hub cards hide Scheduled row for non-planned runs (validation pending).
       03/02/2026: TimerScreen reloads on groupId changes; /timer routes now use page keys to prevent stale state (validation pending).
       03/02/2026: Cancel navigation uses root navigator and retries if still on /timer (validation pending).
@@ -437,9 +437,9 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 
 ## 🔄 Reopened phases (must complete before moving on)
 
-- Phase 10 — Auto-adjust breaks on valid pomodoro changes and break edits (focus-loss adjustment; Task Editor + Edit Preset) (validation pending).
-- Phase 10 — Task weight (%) is selection-scoped in Edit Task + info modal (validation pending).
-- Phase 13 — Mirror session gaps must not drop Run Mode to Ready (validation pending).
+- ~~Phase 10 — Auto-adjust breaks on valid pomodoro changes and break edits (focus-loss adjustment; Task Editor + Edit Preset) (validation pending).~~ **Closed/OK on 20/03/2026 (`RVP-063`; implementation commits `466b4223` + `5c21dc9`; local validation PASS).**
+- ~~Phase 10 — Task weight (%) is selection-scoped in Edit Task + info modal (validation pending).~~ **Closed/OK on 20/03/2026 (`RVP-064`; implementation commit `cca359f`; local validation PASS).**
+- ~~Phase 13 — Mirror session gaps must not drop Run Mode to Ready (validation pending).~~ **Closed/OK on 20/03/2026 (`RVP-065`; covered by Fix 26 rewrite `cbd800a` + local session-gap test suite PASS).**
 - ~~Phase 13 — **Fix 26 sync architecture rewrite required** (P0-F26-005 failed device validation
   2026-03-14; Phase 6 B1+B2 patch verified insufficient — latch fires from spontaneous Firestore
   stream null independent of VM disposal; all focalized hardenings exhausted; solution requires
@@ -455,9 +455,10 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 17 — Late-start queue anchor (server time) + owner-only queue + realtime projections + activeSession creation on confirm + mirror Run Mode CTA + revalidate post-postpone overlaps (bug).
 - Phase 17 — Late-start queue Cancel all (no loop) + exit cleanly (no black screen) + mirror “Owner resolved” modal + zero-selection = Cancel all (bug).
 - Phase 17 — Running conflict modal must show conflicting group context (name + time range) (new requirement).
-- Phase 17 — Re-plan conflict modal must show conflicting group name + time range — currently shows generic "Conflict with scheduled group" with no identifying information (`BUG-F25-E`) (new requirement).
-- Phase 17 — Postpone snackbar must suppress "(pre-run at X)" clause when noticeMinutes=0 — currently shown even when pre-run equals start time (`BUG-F25-F`); requires spec clarification at specs.md:1716 (bug).
-- Phase 17 — Postponed group must keep fixed scheduled start after anchor cancel; canceling running anchor must not re-anchor postponed start to `now` or trigger premature auto-start (`BUG-F25-I`) (bug, P1 regression 19/03/2026).
+- Phase 17 — Task List scheduling conflicts must use a blocking explainer modal (not ephemeral snackbar), listing all exact blockers (running/scheduled) with ranges + pre-run where applicable, auto-adjusting notice for pre-run-only conflicts, and offering up to two nearest valid start suggestions for execution conflicts while preserving current pre-run (new feature, deferred until historical RVP validation backlog closes).
+- ~~Phase 17 — Re-plan conflict modal must show conflicting group name + time range — currently shows generic "Conflict with scheduled group" with no identifying information (`BUG-F25-E`) (new requirement).~~ **Closed/OK on 19/03/2026 (commit `c248c91`, Chrome validation PASS).**
+- ~~Phase 17 — Postpone snackbar must suppress "(pre-run at X)" clause when noticeMinutes=0 — currently shown even when pre-run equals start time (`BUG-F25-F`); requires spec clarification at specs.md:1716 (bug).~~ **Closed/OK on 19/03/2026 (commit `68429c5`).**
+- ~~Phase 17 — Postponed group must keep fixed scheduled start after anchor cancel; canceling running anchor must not re-anchor postponed start to `now` or trigger premature auto-start (`BUG-F25-I`) (bug, P1 regression 19/03/2026).~~ **Closed/OK on 19/03/2026 (commit `6c87009`, Chrome+iOS validation PASS).**
 - ~~Phase 17 — Indefinite "Syncing session..." hold after G1→cancel→G2→cancel flow — stale ViewModel data in `build()` blocks `_cancelNavigationHandled`; `_recoverFromServer()` missing terminal-group exit; `stopTick()` potentially missing in cancel handler (`BUG-F25-H`) (bug, P1 regression 19/03/2026).~~ **Closed/OK on 19/03/2026 (commit `ba8db6f`, Chrome+iOS validation PASS).**
 - ~~Phase 17 — Running overlap StateController<RunningOverlapDecision?> must not be modified during widget build — causes red error flash on mirror when overlap fires on Resume (`BUG-F25-D`) (bug, runtime patch implemented 18/03/2026; validation pending).~~ **Closed/OK on 18/03/2026 (commit `79c534d`, iOS+Chrome validation PASS).**
 - Phase 17 — Pre-Run auto-open is idempotent on owner/mirror (no duplicate navigation / no Groups Hub bounce) and must not open Resolve overlaps without a real conflict (bug).
@@ -469,8 +470,8 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 6 — Account profile metadata (display name + avatar) in Firestore/Storage; Settings UI (Account Mode only); ownership UI uses Name (Platform) (new requirement).
 - Phase 6 — Logout while running/paused must never produce a black screen (return to Local Mode Task List) (bug).
 - Phase 19 — Groups Hub canceled reason details (tappable reason label) (new requirement).
-- Phase 18 — Mode-specific breaks (global long-break counter in Mode A) implemented; validation pending.
-- Phase 18 — Run Mode task transition catch-up after background/resume (validation pending).
+- ~~Phase 18 — Mode-specific breaks (global long-break counter in Mode A) implemented; validation pending.~~ **Closed/OK on 20/03/2026 (`RVP-066`; implementation commit `45b522f` + dedicated Mode A global-break tests PASS).**
+- ~~Phase 18 — Run Mode task transition catch-up after background/resume (validation pending).~~ **Closed/OK on 20/03/2026 (`RVP-067`; implementation commit `992de22` + resume catch-up validation test PASS).**
 - Phase 18 — Run Mode lifecycle resync on resume (no transient Ready state; owner re-verify before controls) (bug).
 - Phase 18 — Run Mode task ranges must anchor to group actualStartTime + accumulated durations + pause offsets (no phaseStartedAt) (bug).
 - Phase 18 — Run Mode status boxes must match contextual list ranges (no stale ranges after pause/resume) (bug).
@@ -498,17 +499,17 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
   timeSync offset measurements after offline/background reconnect and avoid
   transient wrong timer projection (validation pending).~~
   **Closed/OK 09/03/2026** (commit `418c75f`, quick packet rerun PASS).
-- Phase 18 — Completion modal + Groups Hub navigation must work on owner and mirror devices (validation pending).
+- ~~Phase 18 — Completion modal + Groups Hub navigation must work on owner and mirror devices (validation pending).~~ **Closed/OK on 20/03/2026 (`RVP-068`; implementation commit `323f6bf` + owner/mirror widget validation tests PASS).**
 - Phase 18 — Run Mode ownership visibility + take ownership UX (new requirement).
 - Phase 18 — Ownership transfer requires owner approval + rejection state (new requirement).
 - Phase 18 — Mirror auto-takeover when owner is inactive (stale heartbeat) (new requirement).
-- Phase 18 — Initial ownership assignment must be deterministic when multiple devices are open (implemented; validation pending).
+- ~~Phase 18 — Initial ownership assignment must be deterministic when multiple devices are open (implemented; validation pending).~~ **Closed/OK on 20/03/2026 (`RVP-069`; implementation commit `33a17b7` + deterministic ownership tests PASS).**
 - Phase 18 — Group progress bar + task color accents still pending (new requirement).
 - Phase 19 — Groups Hub: group name display + rename action (new requirement).
 - Phase 19 — Groups Hub: canceled groups visible + re-plan action (new requirement).
 - Phase 19 — Groups Hub: sticky “Go to Task List” CTA (regression).
 - Phase 19 — Task List / Groups Hub countdowns update in real time (bug).
-- Phase 19 — Groups Hub scheduled row must show run start; show “Pre-Run X min starts at …” when notice applies (no +1 min gap) (bug).
+- Phase 19 — Groups Hub timing rows/cards must show actual `Started` time for Start-now groups (no planned start), and run-start timing for scheduled groups; when notice applies, show “Pre-Run X min starts at …” (no +1 min gap) (new requirement).
 - Phase 6 — Web auth session persistence (Chrome dev profile + Firebase Auth LOCAL persistence) (new requirement).
 - Outstanding items from specs sections 10.4.2 / 10.4.6 / 12 / 10.5 are tracked in Phases 18, 19, and 25 (not reopened).
 - Rule: if any previously completed phase is missing required behavior, list it here and resolve it before continuing in normal phase order.

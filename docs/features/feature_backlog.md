@@ -35,7 +35,7 @@ Notes:
 
 ---
 
-## Recommended execution order (updated 16/03/2026)
+## Recommended execution order (updated 20/03/2026)
 
 This section defines the recommended implementation order. The idea entries
 below remain in chronological order; new ideas must be appended at the end.
@@ -80,6 +80,8 @@ execution slot.
 36. IDEA-024 — Workspaces With Shared TaskRunGroups
 37. IDEA-025 — Workspace Break Chat (Text + Deferred DM)
 38. IDEA-035 — Global SnackBar Theme + Unified UI Messaging
+39. IDEA-039 — Scheduling Conflict Explainer + Guided Start Suggestions
+40. IDEA-040 — Groups Hub Started Time For Start-Now Groups
 
 Notes:
 
@@ -94,6 +96,10 @@ Notes:
   models in Local Mode.
 - IDEA-038 supersedes IDEA-009. Once IDEA-038 is done, IDEA-009 must be reviewed
   and either closed as redundant or repurposed as an in-tab CTA within Groups Hub.
+- IDEA-039 is intentionally deferred until the historical RVP validation backlog
+  is closed. It requires a specs update before implementation.
+- IDEA-040 should be implemented together with the reopened Phase 19 timing-row
+  requirement to keep card/summary timing labels coherent.
 
 ## In progress
 
@@ -3158,3 +3164,246 @@ Notes:
   for this iteration. Default tab on launch is Task List.
 - The timer/run screen is intentionally excluded from the tab pager; it is a
   full-screen modal-style route launched on top of the main tab shell.
+
+---
+
+## IDEA-039 — Scheduling Conflict Explainer + Guided Start Suggestions
+
+ID: IDEA-039
+Title: Scheduling Conflict Explainer + Guided Start Suggestions
+Type: UX / Planning
+Scope: M
+Priority: P1
+Status: in planning (unblocked 24/03/2026 — first Phase 20 feature)
+
+Problem / Goal:
+When scheduling is blocked by pre-run or execution conflicts, current feedback
+is a short generic snackbar. Users cannot understand which groups block the
+plan, why the overlap happens, or what exact next step is valid.
+
+Summary:
+Replace generic conflict snackbar feedback with a blocking conflict explainer
+modal that lists exact conflicting groups (running/scheduled), shows their
+time ranges (and pre-run ranges when applicable), and provides guided,
+context-specific fixes.
+
+Design / UX:
+Layout / placement:
+Two-layer feedback model: inline indicator in Plan Group (proactive, before
+Confirm) + blocking explainer modal (reactive, on Confirm attempt).
+
+Layer 1 — Inline indicator in Plan Group (pre-Confirm):
+- As soon as the user selects a time in the time picker and taps OK, run
+  conflict detection immediately (both pre-run and execution window).
+- If conflict detected: show a leve non-blocking hint inline (e.g. brief
+  visual cue near the time field) so the user notices something is wrong.
+- In the Plan Group screen, the scheduled-by item for the conflicting time
+  shows: colored border + chip/text identifying each conflicting group
+  (name, time range HH:mm–HH:mm, status badge Running/Scheduled).
+- Confirm button remains disabled while any conflict exists.
+- If the conflict is pre-run-only (Case A), apply auto-clamp silently and
+  update the notice field in-place — no user action needed, no indicator
+  shown (conflict resolved automatically, Confirm stays enabled).
+
+Layer 2 — Blocking explainer modal (at Confirm, for execution conflicts):
+Launched when user reaches Confirm with an unresolved execution conflict.
+Modal body must be scrollable and show:
+- Planned group timeline (attempted start, pre-run window, execution window).
+- Conflicting groups list (1..N), each with type badge (Running/Scheduled),
+  group name, execution range, and pre-run range when notice > 0.
+
+Visual states:
+Conflict rows must remain readable on small screens. Type badges distinguish
+running vs scheduled blockers. Colored border on conflicting item in Plan
+Group uses error/warning color token consistent with the rest of the app.
+
+Animation rules:
+No custom animation required.
+
+Interaction:
+Case A (pre-run-only conflict — handled inline, no modal):
+- If execution window does not conflict and only pre-run conflicts, auto-adjust
+  effective notice using the same clamp as "start too soon":
+  `effectiveNotice = clamp(0, globalNotice, minutesBetweenPrecedingGroupEndAndStart)`
+  (group-only effect; global notice unchanged unless user opts in, same post-schedule
+  snackbar flow as the existing "start too soon" case).
+- Update the notice field in Plan Group silently. Confirm stays enabled.
+- No modal, no snackbar during editing. User sees the adjusted value in the field.
+- Notice picker max: if user opens the notice picker manually after auto-clamp,
+  the maximum allowed must be `minutesBetweenPrecedingGroupEndAndStart`, not the
+  global 15-minute default — consistent with the existing "Allowed right now: 0–X
+  minutes" behavior for the "start too soon" case.
+
+Case B (execution conflict — inline indicator + modal on Confirm):
+- Inline: colored border + conflict chip on the scheduled-by item, one chip per
+  conflicting group (name, HH:mm–HH:mm, Running/Scheduled badge).
+- Confirm button disabled while any execution conflict exists.
+- If user edits the time to a valid slot, all indicators clear and Confirm re-enables.
+- If user taps Confirm while conflict persists (edge case): blocking modal opens.
+  The modal lists ALL conflicting groups (N ≥ 1), each with a checkbox + name +
+  range + badge. User selects which groups to delete (can be a subset).
+  Actions:
+  1. Delete selected group(s) — deletes only checked ones and closes modal.
+     If conflicts remain after deletion, user returns to Plan Group with updated
+     inline indicators. Plan Group does NOT exit successfully until zero conflicts.
+  2. Change this group's time — opens time picker restricted to valid ranges,
+     up to two suggested slots (nearest valid before + nearest valid after all
+     remaining blockers), respecting duration and 1-minute separation.
+  3. Cancel — returns to Plan Group unchanged, conflict still shown inline.
+  Delete action only enabled when at least one group is checked.
+
+Real-time conflict data:
+- Conflict detection must always use the current theoretical end time of any
+  group (running, paused, or scheduled). While a group is paused its theoretical
+  end extends continuously — conflict calculation must reflect this live value
+  at all times while Plan Group is open. The live theoretical end is always the
+  source of truth regardless of group state.
+
+If both conditions appear, execution conflict rules (Case B) take precedence.
+
+Text / typography:
+Use clear, non-technical copy focused on "why blocked" and "what to do next".
+
+Data & Logic:
+Source of truth:
+TaskRunGroup + effective scheduled timing helpers + current planning payload.
+
+Calculations:
+- Pre-run-only conflict detection vs execution conflict detection.
+- Suggested start computation constrained to two options max:
+  - nearest valid before blockers
+  - nearest valid after blockers
+- Use minute-safe boundaries to prevent edge overlap by seconds.
+
+Sync / multi-device:
+No authority or ownership changes. Planning-side UX only.
+
+Edge cases:
+- Multiple conflicting groups: show all inline (one chip per group) and all in
+  modal with checkboxes, sorted by start time. User can delete a subset; if
+  conflicts remain after partial delete, Plan Group stays open with updated
+  inline indicators — no successful exit while any conflict remains.
+- Paused preceding group: always use the current theoretical end time of any
+  group (running, paused, or scheduled) for conflict calculation. While a group
+  is paused its theoretical end extends; conflict detection must reflect this
+  continuously while Plan Group is open. No special trigger needed on resume —
+  the live theoretical end value is always the source of truth.
+- Missing names/times: fallback labels (`Task group`, `--:--`) without breaking
+  actions.
+- If only one suggestion side is valid, show one option.
+- Case A notice picker: max must be `minutesBetweenPrecedingGroupEndAndStart`,
+  not the global 15-minute cap.
+
+Accessibility:
+Modal content and actions must be screen-reader accessible with explicit
+announcement of group names and ranges.
+
+Dependencies:
+- Existing planning + conflict detection in Task List.
+- Shared timing helpers for effective scheduled/pre-run ranges.
+- Specs update required before implementation.
+
+Risks:
+- Overly dense modal copy; keep layout compact and scannable.
+- Suggestion calculation drift if duplicated outside shared helpers.
+
+Acceptance criteria:
+- Generic conflict snackbar / ephemeral banner replaced entirely for this path.
+- Layer 1 (inline): conflict chip(s) on scheduled-by item appear immediately
+  after time selection; one chip per conflicting group (name, range, badge).
+- Layer 1 (inline): Confirm button disabled while any execution conflict exists.
+- Case A (pre-run-only): notice auto-clamped silently; Confirm stays enabled;
+  notice picker max = `minutesBetweenPrecedingGroupEndAndStart`, not global 15m.
+- Case B (execution conflict, N groups): inline indicators shown; blocking modal
+  on Confirm lists all N groups with checkboxes; user can delete a subset;
+  Plan Group stays open until zero conflicts remain.
+- Case B modal: "Change time" opens restricted picker with up to two valid
+  start suggestions (before/after all remaining blockers, minute-safe).
+- Paused preceding group: conflict uses live theoretical end time continuously;
+  no special trigger needed on resume — live value is always the source of truth.
+- Suggested starts avoid boundary overlap by enforcing minute-safe separation.
+- UI consistent with the rest of the app: same color tokens, same badge style,
+  same modal pattern as other conflict flows.
+
+Notes:
+Deferral lifted 24/03/2026 — historical RVP validation backlog is now closed.
+First feature to implement in Phase 20.
+
+---
+
+## IDEA-040 — Groups Hub Started Time For Start-Now Groups
+
+ID: IDEA-040
+Title: Groups Hub Started Time For Start-Now Groups
+Type: UI/UX
+Scope: S
+Priority: P2
+Status: idea
+
+Problem / Goal:
+When a group is created as Start-now, Groups Hub hides Scheduled metadata as
+expected, but users lose the start context. The card can show end/tasks/total
+time without stating when the run actually started.
+
+Summary:
+Add a clear `Started` timing row (based on `actualStartTime`) for Start-now
+groups in Groups Hub so users can understand the timeline without implying a
+planned schedule.
+
+Design / UX:
+Layout / placement:
+- Groups Hub cards (running/paused/completed/canceled): when
+  `scheduledStartTime == null`, show `Started: <time>` in the timing meta area.
+- Group summary modal: when `scheduledStartTime == null`, keep
+  `Scheduled start` hidden and show `Started: <time>` in the Timing section.
+
+Visual states:
+- Start-now groups: show `Started`.
+- Scheduled groups: keep existing scheduled/pre-run timing presentation.
+
+Animation rules:
+None.
+
+Interaction:
+Read-only informational row. No new actions.
+
+Text / typography:
+Use label `Started` (not `Scheduled start`) for Start-now groups to avoid
+confusion with planning semantics.
+
+Data & Logic:
+Source of truth:
+Use `TaskRunGroup.actualStartTime` only.
+
+Calculations:
+Format with existing group date/time formatter; when the start is today, show
+time, otherwise include date + time per current formatting rules.
+
+Sync / multi-device:
+No authority changes. Mirrors render the same value from the shared group
+snapshot.
+
+Edge cases:
+- `actualStartTime == null` on a Start-now group: show fallback `Started: --:--`
+  and keep the UI stable.
+- Pre-run row remains hidden for Start-now groups.
+
+Accessibility:
+Expose `Started` row in semantics so screen readers announce start context.
+
+Dependencies:
+Groups Hub card metadata renderer and summary modal timing block.
+
+Risks:
+Low; purely presentational. Must avoid reintroducing `Scheduled start` label on
+Start-now groups.
+
+Acceptance criteria:
+- Start-now group cards show `Started` with actual start time.
+- Start-now summary modal shows `Started` and does not show `Scheduled start`.
+- Scheduled groups remain unchanged.
+- `flutter analyze` and targeted widget tests pass.
+
+Notes:
+This idea is intentionally deferred until historical RVP validation closure
+continues to avoid context switching.

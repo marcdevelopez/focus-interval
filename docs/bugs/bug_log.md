@@ -293,11 +293,12 @@ Residual symptom confirmed (rejection banner on owner):
   before re-projecting from TimerService.
 
 Status:
-Partially open. Primary symptoms (revert, Ready state) resolved by Fix 26.
-Residual: rejection banner persistence on owner device (~1 Firestore cycle delay;
-occasionally requires second Reject press). Root cause is lack of optimistic
-banner clear on the owner side after respondToOwnershipRequest returns. See also
-BUG-F26-001 for the secondary 00:00 flash symptom.
+Closed/OK (23/03/2026).
+Primary symptoms (ownership revert, Ready fallback, rejection-banner persistence)
+are resolved in current builds. The owner-side optimistic clear path implemented
+in `rejectOwnershipRequest()` remains stable in re-validation evidence, and the
+residual brief banner re-show noted on 21/03/2026 was transient, self-correcting,
+and not user-impacting.
 
 Code area: likely `lib/presentation/viewmodels/pomodoro_view_model.dart`
 `rejectOwnershipRequest()` / `approveOwnershipRequest()` — add optimistic local
@@ -310,6 +311,26 @@ Implementation update (17/03/2026):
   on owner side and triggers `_notifySessionMetaChanged()` before Firestore
   round-trip.
 - Status moved to **In validation** pending device re-run evidence.
+
+Re-validation update (21/03/2026, user-run evidence):
+- User repeated pause/background + reject/accept ownership cycles on Android
+  and Chrome; owner-side rejection banner cleared immediately on reject.
+- Residual symptom ("banner persistence on owner", second reject press) was not
+  reproduced in this run.
+- Shared evidence in thread includes Android + Chrome diagnostic excerpts for
+  group `15e6300b-0ab9-47a4-a5f8-7e220a7c31c3`, with stable Run Mode continuity
+  and no stuck rejection banner after repeated retries.
+- Monitor-only note (same run, ~13:37:11): Chrome owner banner appeared to
+  re-show for ~1 second after reject, then cleared without user intervention.
+  Related logs show short-lived out-of-order `activeSession` snapshots
+  (`ownerDeviceId` / `lastUpdatedAt` oscillation between web and android values)
+  that self-corrected on the next snapshots.
+- Decision: no patch now (to avoid masking a potential underlying sync-order
+  issue). Keep traceability and monitor; reopen only if the symptom becomes
+  persistent or user-impacting.
+- Final closure decision (23/03/2026): close monitor item as non-repro after
+  explicit validation confirmation. Reopen only if recurrence becomes
+  deterministic/user-impacting.
 
 ---
 
@@ -365,7 +386,13 @@ Hypothesis:
   pause/resume snapshots, causing alternating projections (local vs remote).
 
 Status:
-Open. Low priority; cosmetic unless it escalates.
+Closed/OK (24/03/2026). Both root causes eliminated by Fix 26 architecture:
+(1) AP-1 elimination — no more periodic `_sessionSub` cancel/restart in `build()`;
+SSS persistent subscription removes the resubscribe cycle that caused ~15s rebuilds.
+(2) Timer drift variant (macOS alternating between correct and stale timer) covered
+by BUG-009 non-repro re-validation 21/03/2026. No recurrence observed in
+BUG-005/006/007 device runs 24/03/2026 where macOS acted as mirror for multiple
+minutes. User confirmed: "apenas se percibe en la UI ahora."
 
 ---
 
@@ -404,10 +431,13 @@ Fix applied:
   mirror projects solely from activeSession snapshots (merge #122).
   Regression reported (18/02/2026): after ownership accept, the new owner
   freezes and ownership reverts to the previous owner within seconds. Rollback
-  pending.
+  was applied on 18/02/2026 (`0d2f7a4`: `Revert mirror timer suppression due to ownership freeze`).
 
 Status:
-Open. Fix attempt regressed ownership stability; rollback pending.
+Closed/OK.
+Re-validated by owner on 21/03/2026: multiple manual runs across different
+flows did not reproduce the per-second swap behavior again.
+Implementation closure reference remains rollback commit `0d2f7a4`.
 
 ---
 
@@ -487,12 +517,16 @@ Hypothesis:
 
 Fix applied:
 - Implemented server-time offset projection in `PomodoroViewModel` so mirrors
-  project from lastUpdatedAt-derived server time (pending validation).
+  project from lastUpdatedAt-derived server time (commit `25878cc`:
+  `Stabilize ownership sync and server-time projection`).
 - Added Run Mode keep-alive while active sessions exist to prevent offset reset
-  on navigation (pending validation).
+  on navigation (same fix packet `25878cc`).
 
 Status:
-Open. Medium priority (visible correctness issue).
+Closed/OK.
+Owner re-validation confirmation (21/03/2026): long multi-device soak runs
+(`>10h` Android + macOS simultaneously) did not reproduce drift growth or
+navigation-related timer jumps again.
 
 ---
 
@@ -532,10 +566,15 @@ Mode switch triggers a brief local projection using stale anchors before the
 activeSession snapshot is re-applied.
 
 Fix applied:
-None.
+Fix 26 (`cbd800a`): `appModeProvider` listener calls `_timerService.stopTick()` +
+state clear on mode switch away from Account Mode, eliminating the stale local
+projection that caused the ~25s mismatch. On return to Account Mode, ViewModel
+is in a clean state and re-anchors immediately from the first SSS snapshot via
+`loadGroup()` → `_subscribeToRemoteSession`.
 
 Status:
-Open. Low priority (brief visual inconsistency).
+Closed/OK (24/03/2026). Root cause eliminated by Fix 26 mode-switch cleanup.
+User-confirmed: tested on device, bug no longer manifests.
 
 ---
 
@@ -574,10 +613,16 @@ Resume path reuses stale pause anchors or misses pause offset recomputation
 after backgrounding.
 
 Fix applied:
-None.
+- Stabilized owner hydration after pause re-entry in
+  `PomodoroViewModel` by pinning phase-start from session snapshots and avoiding
+  Account Mode timeline overrides that could reintroduce stale anchors
+  (`abb053d`: `fix: stabilize owner hydration after pause re-entry`).
 
 Status:
-Open. Medium priority (time correctness).
+Closed/OK.
+Owner re-validation confirmation (21/03/2026): no trace of the bug in current
+builds; pause/resume + background/foreground no longer shows the previous offset
+drift symptom.
 
 ---
 
@@ -621,39 +666,102 @@ Session stream subscriptions pause or debounce while the window is inactive,
 and the UI never rebinds until a user event triggers a resubscribe.
 
 Fix applied:
-None.
+- Covered by Fix 26 sync architecture rewrite (`P0-F26-006`): runtime timer
+  continuity decoupled from stream nulls via app-scope `TimerService` +
+  `SessionSyncService` recovery authority, including terminal-boundary hold
+  suppression and lifecycle hardening (`cbd800a`:
+  `fix(f26): suppress terminal-boundary hold and harden ref-after-dispose in recovery paths`).
 
 Status:
-Open. Medium priority (mirror usability).
+Closed/OK.
+Validated under Fix 26 closure packet and subsequent owner confirmation
+(21/03/2026): mirror no longer remains stuck in `Syncing session...` waiting
+for user interaction.
 
 ---
 
 ## BUG-009 — Late-start queue desync + ownership gaps in Account Mode
 
 ID: BUG-009  
-Date: 20/02/2026 (UTC+1)  
-Platforms: macOS owner + Android mirror  
-Context: Account Mode late-open with multiple overdue scheduled groups.
+Date: 20/02/2026 (UTC+1), revalidated 23/03/2026 (UTC+1)  
+Platforms: macOS + iOS simulator + web Chrome (Account Mode)  
+Context: Late-open with consecutive planned groups and pre-run notice.
 
 Symptom:
-- Late-start projections differed across devices (minute drift).
-- Queue projections froze; confirm time did not match actual Run Mode start.
-- Ownership unclear; mirrors could act or got stuck.
-- Postpone did not drag remaining queued groups, causing repeated overlaps.
+- Resolve-overlaps queue applies only a partial chain in some sequences.
+- Third (or later) conflicting groups can remain outside the queue and conflict
+  later during runtime.
+- Queue confirmation does not reopen queue flow when new overlaps still exist
+  after the selected queue is projected.
+
+Repro (23/03/2026):
+- Plan 3 groups, all with 15m duration and 1m pre-run:
+  - G1 scheduled 08:51
+  - G2 scheduled 09:07
+  - G3 scheduled 09:23
+- Open late in Account Mode while G1 must start immediately.
+- Resolve-overlaps queue includes G1/G2 but leaves G3 outside queue.
+- G1 starts and G2 is postponed to 09:14-09:29, but G3 remains 09:23-09:38.
+- At 09:14 runtime overlap modal appears for G3, proving unresolved overlap.
+
+Observed behavior:
+- Runtime queueing resolved first two groups but not the full chain.
+- G3 was not assigned `lateStartQueueId`/`lateStartQueueOrder` while G1/G2 were.
+- Conflict reappeared later as `Scheduling conflict` modal in Run Mode.
 
 Expected behavior:
-Deterministic late-start queue with a single owner, consistent projections, and
-chained postpone for queued groups.
+- Queue formation must cascade until no overlaps remain in the projected chain.
+- After queue confirmation, overlaps against scheduled groups outside selection
+  must be revalidated and queue flow reopened if any conflict remains.
+- A single queue flow should resolve all currently implied conflicts, avoiding
+  a second runtime conflict modal for the same chain.
+
+Evidence:
+- Validation logs (23/03/2026):
+  - `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_76ee374_ios_simulator_iphone_17_pro_debug.log`
+  - `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_76ee374_web_chrome_debug.log`
+- Firestore snapshots captured in validation notes show:
+  - G1: `lateStartQueueOrder=0`
+  - G2: `lateStartQueueOrder=1`
+  - G3: `lateStartQueueId=null` (not included)
+- Runtime modal at 09:14 confirms unresolved G2↔G3 overlap.
+
+Hypothesis:
+- Layer 1: `resolveLateStartConflictSet` does not cascade conflict formation
+  when only one group is overdue initially.
+- Layer 2: post-confirm revalidation against scheduled groups outside current
+  selection is missing or incomplete (spec section 10.4.1.b).
 
 Fix applied:
-- Server-anchored queue timebase + owner heartbeat.
-- Owner-only queue with request/auto-claim.
-- Live projected ranges, confirm sets scheduledStartTime to queueNow.
-- ActiveSession bootstrap on confirm.
-- Chained postpone for queued groups.
+Implemented on branch `fix-bug009b-cascade-completion-overlap`:
+- cascading conflict-set formation in `resolveLateStartConflictSet`,
+- post-confirm overlap revalidation + queue reopen in late-start queue apply flow.
+- anchored-chain timing helper applied across queue/finalize/postpone paths to
+  keep pre-run strictly after previous group end when `noticeMinutes > 0`.
+- Local gates PASS:
+  - `flutter analyze`
+  - `flutter test test/presentation/utils/scheduled_group_timing_test.dart`
+  - `flutter test test/presentation/timer_screen_completion_navigation_test.dart`
+  - `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+- Device validation update (`fix_v2`, 23/03/2026):
+  - iOS log shows one queue opening with all 3 groups:
+    `LateStartQueue overdue=3` + `Opening late-start overlap queue`.
+  - No second runtime queue (`overdue=2`) appears after G1 completion.
+  - G2 pre-run/start fired normally (`14:03`/`14:04`) without re-queue chain.
+- User rerun update (23/03/2026 15:07, iOS owner):
+  - core re-queue remains fixed,
+  - but Groups Hub still showed `G3 pre-run` in the same minute as `G2 end`.
+  - follow-up timing patch added; `fix_v4` device rerun pending.
 
 Status:
-Pending validation on macOS/Android.
+Closed/OK (23/03/2026).
+fix_v4 device rerun PASS:
+- iOS + web logs show single late-start queue chain (`LateStartQueue overdue=3`)
+  with no runtime re-queue (`overdue=2` absent).
+- Timing coherence follow-up PASS: chained scheduling no longer reproduces the
+  problematic same-minute pre-run/end overlap in user rerun.
+Closed under implementation commit `2fdd99b`
+(`fix(late-start, timer): BUGLOG-009B re-queue + BUG-013 modal + BUG-014 postpone`).
 
 ---
 
@@ -714,7 +822,16 @@ Fix applied:
 - Added unit test for 3 overdue groups emitting late-start queue.
 
 Status:
-Fixed; validation pending on Android.
+Closed/OK (23/03/2026).
+Android validation PASS (`validation_bug008_2026_03_23`):
+- `LateStartQueue overdue=3` emitted on late open and queue opened immediately.
+- After confirmation, scheduler moved to `scheduled=2 overdue=0` and opened the
+  running timer cleanly (`running-open-timer`), confirming no overdue bypass.
+- Manual `Start now` on the following queued group was blocked by
+  `Conflict with running group` (no bypass path).
+- No `Tasks group completed` empty-summary symptom observed in this run.
+Validation log:
+  `docs/bugs/validation_bug008_2026_03_23/logs/2026-03-23_bug008a_4ef7f42_android_RMX3771_debug.log`
 
 ---
 
@@ -754,8 +871,10 @@ Risks:
 - Can introduce visible jumps if the projection re-anchors.
 
 Status:
-Not implemented. Documented as a release mitigation if root cause is not fully
-resolved.
+Closed/OK (24/03/2026). Superseded by Fix 26 SSS architecture — persistent session
+subscription (AP-1 eliminated) + `_startInactiveResync()` + `handleAppResumed()`
+re-anchor eliminate the sync failure scenarios that motivated this fallback.
+No implementation needed. User-confirmed 24/03/2026.
 
 ---
 
@@ -787,10 +906,20 @@ During session stream gaps, owner heartbeat is suppressed (controls disabled),
 so lastUpdatedAt becomes stale even while owner is active.
 
 Fix applied:
-Pending (allow owner heartbeats while session is missing).
+Commit `9916204` ("Allow owner heartbeats while awaiting session", 02/03/2026):
+allowed session publish and heartbeats when owner is active but activeSession is
+temporarily missing — prevents `lastUpdatedAt` freeze that caused stale ownership
+auto-claim by mirror.
+Architecture-level resolution: Fix 26 sync rewrite (P0-F26-006, `cbd800a`) decoupled
+owner heartbeat from the session stream entirely via `SessionSyncService`.
 
 Status:
-Open. High priority (ownership correctness).
+Closed/OK (user-confirmed, 24/03/2026).
+Evidence: `docs/bugs/validation_fix_2026_03_02-02/quick_pass_checklist.md` (all PASS,
+02/03/2026, Chrome+macOS: `lastUpdatedAt` advancing confirmed);
+P0-F26-006 Stage C pass2 soak (5h+, Android RMX3771 + macOS, 2026-03-16, no
+unauthorized ownership flips observed).
+closed_commit_hash: `9916204`
 
 ## BUG-002 — Ownership rejection desync after background/resume
 
@@ -946,10 +1075,20 @@ Hypothesis:
   leaving pending requests invisible until a manual resubscribe.
 
 Fix applied:
-None.
+- Variant A (`b093270`): `_startInactiveResync()` in `pomodoro_view_model.dart:2863` — periodic
+  15s `syncWithRemoteSession(preferServer: true, reason: 'inactive-resync')` triggered by
+  `AppLifecycleState.inactive` (including macOS window focus loss) via `handleAppPaused()`.
+- Variant B (`cbd800a`): Fix 26 architecture rewrite — `SessionSyncService` maintains persistent
+  Firestore stream subscription independent of ViewModel lifecycle. AP-1 eliminated; stream
+  delivers `ownershipRequest` changes in real-time without navigation or resubscribe.
 
 Status:
-Open. Medium priority (blocks timely ownership handoff).
+Closed/OK. Validated 24/03/2026 — both scenarios PASS.
+Escenario A: macOS log line 5850 `[ActiveSession] Resync start (inactive-resync).` at 11:43:54
+(~4s after focus loss); modal appeared instantly on macOS. Escenario B: Android stream delivered
+ownership request at ~11:49:28.5 (`[RunModeDiag] Active session change`, no inactive-resync);
+user accepted modal at ~11:49:30.8 (~3s, <5s threshold).
+Evidence: `docs/bugs/validation_bug005_2026_03_24/`.
 
 ---
 
@@ -999,10 +1138,20 @@ Hypothesis:
   without applying the same pause-offset anchoring used by the task list.
 
 Fix applied:
-None.
+Commit `34d1938` ("Fix 5: align status box ranges", 25/02/2026):
+`currentPhaseStartFromGroup` / `currentPhaseEndFromGroup` in
+`pomodoro_view_model.dart` apply `_pauseSecondsSincePhaseStart` to attribute
+only the pause accumulated after the estimated start of the current phase,
+extending the end time forward without retroactively shifting the start.
+Used by `timer_screen.dart` lines 2689–2690.
 
 Status:
-Open. Medium priority (UX consistency).
+Closed/OK (24/03/2026).
+Evidence: Android debug run — pause at 11:02:01 (remaining=861, log line 6983),
+resume at 11:03:04 (log line 7029): status box showed 11:01-11:16 → 11:01-11:17
+(start fixed, end extended ~1min by pause duration). Status box and task list agree.
+Log: `docs/bugs/validation_bug006_bug007_2026_03_24/logs/2026-03-24_bug006_bug007_97f6365_android_RMX3771_debug.log`
+closed_commit_hash: `34d1938`
 
 ---
 
@@ -1043,10 +1192,22 @@ re-anchoring from activeSession (server snapshot), causing a short owner lag
 until a manual resubscribe occurs.
 
 Fix applied:
-None.
+`handleAppResumed()` in `pomodoro_view_model.dart` (line 2871): in Account Mode
+calls `_subscribeToRemoteSession(reason: 'resume-rebind')` + `syncWithRemoteSession
+(preferServer: true, reason: 'resume')` + `_schedulePostResumeResync()` (2s delay).
+Owner re-anchors from server snapshot immediately on foreground return.
 
 Status:
-Open. Medium priority (visible correctness issue).
+Closed/OK (24/03/2026).
+Evidence: Android background at 11:09:00 (2min), foreground at 11:11:02 — Android
+showed 6:21, macOS mirror showed 6:20 (±1s). Log confirms full resume sequence:
+`[SessionSub] close reason=resume-rebind` (line 10400),
+`[SessionSub] open (→SSS) reason=resume-rebind` (line 10401),
+`[ActiveSession] Resync start (resume).` (line 10402),
+`[ActiveSession] Resync start (post-resume).` (line 10414).
+No `Resync missing` after resume.
+Log: `docs/bugs/validation_bug006_bug007_2026_03_24/logs/2026-03-24_bug006_bug007_97f6365_android_RMX3771_debug.log`
+closed_commit_hash: `handleAppResumed` (in develop via Fix 26 rewrite)
 
 ---
 
@@ -1360,12 +1521,16 @@ group approaches a scheduled group). This bug covers the RE-PLAN conflict modal 
 a distinct flow. Both must be addressed.
 
 Fix applied:
-None yet. Pending Codex implementation.
-In the re-plan conflict modal builder, pass the list of conflicting groups and
-render each group's name + scheduled time range inline in the dialog content.
+groups_hub_screen.dart `_resolveScheduledConflict` (line 1396) and
+task_list_screen.dart `_resolveScheduledConflict` (line 1850): replaced
+static generic dialog content with a dynamic Column listing each conflicting
+group as "• {name} — {start}–{end}" (HH:mm today, MMM d, HH:mm otherwise).
+Group name derived from tasks.first.name ?? 'Task group'. Validated on Chrome.
+Note: bug_log entry was stale (merge artifact from fix-f25-h branch); fix was
+already applied and roadmap line 459 confirms Closed/OK.
 
 Status:
-Open. P2 — UX clarity. Add to Phase 17 scope for implementation.
+Closed/OK (19/03/2026). closed_commit_hash: c248c91
 
 ---
 
@@ -1850,3 +2015,540 @@ Closed/OK. Re-validation 18/03/2026 (Android RMX3771 + macOS, commit `92731b3`):
 sessionRevision grows +1 per discrete event (5→6→7→9→10); lastUpdatedAt updates
 every ~30s (heartbeat only). No high-frequency churn observed.
 Logs: `docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-18__guard_hot-swap_92731b3_android_RMX3771_debug.log`.
+
+---
+
+## BUG-013 — Completion modal remains over next group auto-open
+
+ID: BUG-013
+Date: 23/03/2026 (UTC+1)
+Platforms: iOS simulator + web Chrome (Account Mode)
+Context: Consecutive planned groups in Run Mode with pre-run enabled.
+
+Repro steps:
+- Execute consecutive planned groups (e.g., G1 -> G2 -> G3, 1m pre-run).
+- Let G1 complete and keep `Tasks group completed` modal open.
+- Wait for G2 pre-run/start.
+
+Symptom:
+Completion modal from previous group remains visible and blocks the next
+group pre-run/run view until user presses `OK`.
+
+Observed behavior:
+- Next group starts in background, but completion modal overlays timer UI.
+- On iOS, pre-run/start of the next group is hidden until manual dismissal.
+- Same pattern repeats when G2 completes and G3 pre-run starts.
+
+Expected behavior:
+- If a next group auto-opens (pre-run or running), completion modal from the
+  previous group must auto-dismiss immediately and not force manual `OK`.
+
+Evidence:
+- Validation logs:
+  - `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_76ee374_ios_simulator_iphone_17_pro_debug.log`
+  - `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_76ee374_web_chrome_debug.log`
+- Screenshots captured in the same validation packet show completion modal
+  over active next-group timer/pre-run.
+
+Hypothesis:
+- Completion modal dismissal path was still tied to group switch/running-state
+  transitions.
+- Pre-run announcements for a different next group (`scheduledAutoStartGroupId`
+  changed to `next != widget.groupId`) did not dismiss the modal.
+- Additionally, the scheduled-action bridge deferred all actions while
+  `completionDialogVisibleProvider` was true, including `openTimer`; this
+  blocked pre-run auto-open execution until the next start transition.
+
+Fix applied:
+Implemented on branch `fix-bug009b-cascade-completion-overlap`:
+- Initial implementation covered group switch + active-state transitions.
+- Follow-up patch added explicit pre-run dismissal when next-group auto-open is
+  announced for a different group id.
+- Additional follow-up patch in `ScheduledGroupAutoStarter` allows
+  `ScheduledGroupActionType.openTimer` even when completion modal is visible,
+  so pre-run auto-open is not deferred.
+- Local gates PASS:
+  - `flutter analyze`
+  - `flutter test test/presentation/timer_screen_completion_navigation_test.dart`
+  - Includes dedicated regression:
+    `auto-dismisses completion modal when next group pre-run auto-open is announced`
+
+Validation update (`fix_v2`, 23/03/2026):
+- iOS log confirms partial fix:
+  - pre-run started at `14:03` (`prealert-timer-fired` for G2),
+  - modal auto-dismiss happened at `14:04` (`Auto-dismiss ... group switch`).
+- User rerun at `15:07` still reproduced the same pattern (no dismiss at pre-run).
+- Current packet adds the missing scheduled-action bridge fix; device rerun is pending.
+
+Validation update (`fix_v4`, 23/03/2026):
+- PASS on rerun:
+  - iOS pre-run fires for G2 at `17:00:00` (`prealert-timer-fired`).
+  - completion modal auto-dismiss is logged at `17:00:00`
+    (`Auto-dismiss completion dialog: group switch`), before G2 start timer at
+    `17:01:00`.
+- User confirmation on rerun: modal dismissal during next-group pre-run works
+  on owner/mirror flow.
+
+Status:
+Closed/OK (23/03/2026) under implementation commit `2fdd99b`
+(`fix(late-start, timer): BUGLOG-009B re-queue + BUG-013 modal + BUG-014 postpone`).
+
+---
+
+## BUG-014 — Postpone scheduled requires double press in overlap modal
+
+ID: BUG-014
+Date: 23/03/2026 (UTC+1)
+Platforms: web Chrome (Account Mode)
+Context: Running overlap modal with action `Postpone scheduled`.
+
+Repro steps:
+- Trigger runtime overlap modal (`Scheduling conflict`).
+- Press `Postpone scheduled`.
+
+Symptom:
+Modal may persist/reappear after first postpone action; user must press
+`Postpone scheduled` a second time for final dismissal.
+
+Observed behavior:
+- SnackBar confirms postpone after first click:
+  `Scheduled start moved to 09:31 (pre-run at 09:30).`
+- Conflict modal remains visible (or reopens) immediately after the first click.
+- Second click applies same action and finally dismisses modal.
+
+Expected behavior:
+- Single postpone action should both apply scheduling update and close modal
+  deterministically (no re-open race).
+
+Evidence:
+- Validation logs:
+  - `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_76ee374_web_chrome_debug.log`
+  - `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_76ee374_ios_simulator_iphone_17_pro_debug.log`
+- Timestamped user validation notes: first postpone at 09:14:43 showed success
+  SnackBar while modal remained; second postpone at 09:14:52 closed it.
+
+Hypothesis:
+- Race between modal dismissal and running-overlap re-evaluation from stream
+  snapshots before postponed `scheduledStartTime` is confirmed.
+
+Fix applied:
+Implemented on branch `fix-bug009b-cascade-completion-overlap`:
+- deterministic postpone guard using decision key + expected scheduled start
+  confirmed by repository snapshots (no time-based suppression).
+- Local gates PASS:
+  - `flutter analyze`
+  - `flutter test test/presentation/timer_screen_completion_navigation_test.dart`
+  - Includes dedicated regression:
+    `suppresses immediate duplicate running-overlap modal after postpone`
+
+Status:
+Closed/OK (23/03/2026).
+fix_v4 rerun/user validation confirms one-tap postpone behavior with no repeated
+conflict modal in the validated flow; no `Scheduling conflict` signatures were
+observed in `fix_v4` logs after overlap confirmation.
+Closed under implementation commit `2fdd99b`
+(`fix(late-start, timer): BUGLOG-009B re-queue + BUG-013 modal + BUG-014 postpone`).
+
+---
+
+## BUG-008C — Android opens stale group in Ready/Completed at startup
+
+ID: BUG-008C
+Date: 23/03/2026 (UTC+1)
+Platforms: Android owner (Account Mode)
+Context: Startup after previous scheduled/late-start validation flows.
+
+Repro steps:
+Scenario A (primary, stale running residue):
+1. Run a late-open flow with queued groups on Android owner.
+2. Leave the app and reopen after a gap while a previous group/session may still
+   exist in remote state.
+3. Observe first timer screen shown on startup.
+
+Scenario B (alternative, explicit cancellation path):
+1. Run late-open queue flow (3 groups) and confirm overlaps.
+2. Cancel running and queued groups explicitly.
+3. Close app, reopen Android owner, and observe first timer screen.
+
+Symptom:
+On app open, Android can show an old group as `Ready/Completed` with `15:00`
+and `Start`, even though this group belongs to a prior run/cancel context and
+should not be restored as an active startup target.
+
+Observed behavior:
+- In `BUG008B` startup log, same group id is loaded first as completed:
+  `Timer load group=... result=... status=completed` (line 6763),
+  then remote active session snapshots arrive as running for that same group
+  seconds later (`ActiveSession][snapshot ... status=pomodoroRunning`,
+  lines 6794/6819).
+- User observed the ready/start flash at startup, pressed Start to inspect,
+  then canceled and created a new group for the actual validation run.
+- Firestore state later captured for this group includes:
+  `status=canceled`, `canceledReason=user`, `actualStartTime=2026-03-23T19:41:16`,
+  indicating startup restoration and subsequent manual cancel happened in the
+  same time window.
+
+Expected behavior:
+- On startup, app must not restore a stale/canceled/completed group as a
+  `Ready` run target.
+- If a stale active session exists, startup should deterministically reconcile
+  to valid running state or clear stale state before exposing run controls.
+- No transient `Ready 15:00 Start` flash should appear for historical groups.
+
+Evidence:
+- Android log:
+  `docs/bugs/validation_bug008_2026_03_23/logs/2026-03-23_bug008b_d400a99_android_RMX3771_debug.log`
+  (notable lines: 6763, 6794, 6819).
+- Prior related chain where this group was created/queued:
+  `docs/bugs/validation_bug008_2026_03_23/logs/2026-03-23_bug008a_4ef7f42_android_RMX3771_debug.log`
+  (group id `f58d0434-173e-4a7d-b508-de8e949fffa9` appears in queue set).
+- Firestore snapshot provided during analysis:
+  group id `f58d0434-173e-4a7d-b508-de8e949fffa9`,
+  `status=canceled`, `canceledReason=user`, `updatedAt=2026-03-23T19:41:25`.
+
+Workaround:
+Manual cancel and restart of a new group (temporary only).
+
+Hypothesis:
+Startup hydration race/inconsistency between local group load and remote
+`activeSession` snapshot application:
+- startup path can load stale terminal group state (`completed`) before remote
+  running snapshot settles;
+- auto-open/openTimer actions still target that group id during the transient.
+Alternative path to validate:
+- cancellation-cleanup may leave stale targeting metadata for the last queued
+  group, causing the same startup restore artifact even after explicit cancel.
+
+Fix applied:
+Implemented on branch `fix/buglog-008c-ready-flash-validation`:
+- `ScheduledGroupCoordinator` now expires running groups even when
+  `activeSession == null` if `theoreticalEndTime` is already passed.
+- When all running groups in that startup check are expired/completed, it emits
+  a dedicated action to open `Groups Hub` (instead of opening `Timer` in stale
+  ready/completed state).
+- `ScheduledGroupAutoStarter` now handles `openGroupsHub` coordinator action.
+- Regression test added:
+  `completes expired running group without active session and routes to Groups Hub`
+  in `scheduled_group_coordinator_test.dart`.
+- Local verification PASS:
+  - `flutter analyze`
+  - `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+
+Status:
+Closed/OK.
+closed_commit_hash: pending (fix/buglog-008c-ready-flash-validation, pre-merge)
+closed_date: 23/03/2026
+Evidence:
+- Android debug log: `docs/bugs/validation_bug008c_2026_03_23/logs/2026-03-23_bug008c_d400a99_android_RMX3771_debug.log`
+- Scenario A PASS: stale running group on reopen → coordinator marks completed,
+  routes to Groups Hub. No persistent "Ready 15:00 + Start" observed.
+- Key log signals: `[ExpiryCheck][expire-running-groups]` (line 6747),
+  `[ExpiryCheck][mark-running-group-completed]` (line 6751),
+  `Active session cleared route=/groups` (line 6764).
+- Screenshot sequence confirmed by user (6 frames: tasks open → running banner →
+  tasks loaded → timer loading flash → Groups Hub with completed group).
+- Residual observation (not a bug, noted for reference): brief timer-screen flash
+  (frame 5) before Groups Hub when activeSession arrives before expiry check
+  completes; app lands correctly on Groups Hub.
+- Residual observation (not a bug, noted for reference): `Cannot use Ref after disposed`
+  exception in log lines 6775–6787 during the same navigation transition;
+  no functional breakage. Context documented in dev_log Block 657.
+
+---
+
+## BUG-015 — Running group falls into invalid Ready/finished mismatch after background
+
+ID: BUG-015
+Date: 25/03/2026 (UTC+1)
+Platforms: Android + macOS (Account Mode)
+Context: Cross-device running group; owner device powered off; remaining device later goes background and resumes.
+
+Repro summary:
+- Group remains in `running` lifecycle with future theoretical end.
+- Owner device (macOS) is fully powered off.
+- Remaining device (Android) later goes background and resumes.
+
+Symptom:
+- Run Mode can reopen in invalid terminal UI (`Ready`, amber/golden full ring,
+  `Start` button) while the same group should still be in-progress by timeline.
+
+Observed behavior:
+- During the inconsistent window, session data can appear terminal (`finished`)
+  while group lifecycle/context still indicates the run should continue.
+- Reopening another device can republish/reconcile and return the first device
+  to the correct running timeline.
+
+Expected behavior:
+- Group continuity must not depend on any device being in foreground.
+- If no device is open, progression remains timeline-authoritative and resumes
+  correctly on next foreground without passing through `Ready` for non-terminal groups.
+- While a group is non-terminal, terminal UI (`Ready` + `Start` + amber
+  complete ring) must never be rendered.
+- If the group has not truly ended, `activeSession/current.status` must not be
+  written as `finished` in Firestore.
+
+Evidence:
+- User-reported Android logs before owner power-off show active snapshots and
+  normal progression.
+- User-reported Firestore state showed temporary inconsistency (`current` with
+  terminal status while group context should still progress), then recovery after
+  macOS reopened and republished active timeline.
+
+Workaround:
+- Reopen a second device/session so active snapshot is republished and mirror
+  re-anchors.
+
+Hypothesis:
+- Transitional/non-active session snapshots can be accepted as render authority
+  during/after background resume without strict non-terminal group corroboration,
+  causing temporary terminal UI fallback (`Ready`) for an active group.
+
+Fix applied:
+Implemented in ViewModel stream-ingestion path:
+- Repair inconsistent active-session cursor synchronously before ingest on
+  stream updates (`_repairStreamSessionForCurrentGroup` →
+  `_repairInconsistentSessionCursor`) so mirror projection never captures
+  invalid snapshots (`currentPomodoro > totalPomodoros`, stale task index).
+- Keep owner-hydration and owner-publish guards from BUG-015 patch set:
+  prevent transient non-terminal `finished` publication during resync/task
+  boundary windows.
+
+Validation update (25/03/2026):
+- Exact repro PASS on Android + macOS (owner handoff + background + late resume).
+- Android resumed directly in active timer state (no amber `Ready 00:00` flip).
+- Firestore stayed non-terminal (`status: pomodoroRunning`) during resumed run.
+- Evidence log:
+  `docs/bugs/validation_bug015_2026_03_25/logs/2026-03-25_bug015_f929117_android_RMX3771_debug_2.log`
+
+Status:
+Closed/OK (25/03/2026). Validated on branch
+`fix/buglog-running-without-foreground-ready-invalid`.
+Closed commit: `e10a5028` (`fix(bug-015): repair stream cursor ingest and close validation`).
+
+---
+
+## BUG-016 — Task weight (%) redistribution produces wrong result due to reactive baseline on per-keystroke update
+
+ID: BUG-016
+Date: 25/03/2026 (UTC+1)
+Platforms: All (Android, macOS, iOS — UI logic, platform-independent)
+Context: Task Editor — Task weight (%) field, group planning mode.
+
+Repro summary:
+- Open Task Editor for a task that is selected in a group (Task weight % field visible).
+- Task has 5 pomodoros (~53% of group total).
+- Type "80" in the weight field.
+- Observe: task ends up with 1 pomodoro (~19%) instead of the expected ~7 pomodoros (~78%).
+
+Symptom:
+- Editing Task weight (%) produces a result that is dramatically worse than the
+  starting value and far from the requested percentage.
+- The more the requested value differs from the current, the worse the result can be.
+- The notice "Closest possible is X%" may not fire correctly because the algorithm
+  produces a non-optimal intermediate result, not a genuine constraint limit.
+
+Root cause:
+`redistributeWeightPercent` (task_editor_view_model.dart:240) is called inside
+the `onChanged` handler of the weight field (task_editor_screen.dart:2077).
+`onChanged` fires per character — each keystroke triggers a full redistribution.
+
+The baseline passed to the algorithm (`weightScopeTasks`) is built in `build()`
+via `_selectedTasksForWeight` (task_editor_screen.dart:1220), which injects the
+current provider state of the edited task (`edited: selectedTask`).
+Each keystroke calls `_update(task.copyWith(totalPomodoros: newPomodoros))` at
+line 2106, which updates `taskEditorProvider`. On the next keystroke, the widget
+has rebuilt and `weightScopeTasks` now contains the task with the intermediate
+pomodoro count — not the original.
+
+Concrete trace (5 tasks x 25 min, A=5 pom, B=C=D=E=1 pom):
+1. User types "8" → target=8%, totalWork=225, desiredWork=18,
+   bounded=25 (floor), editedPom=1.
+   Provider updated: A → 1 pom. Widget rebuilds.
+2. User types "80" → weightScopeTasks now has A=1 pom.
+   totalWork=125, desiredWork=100, minOthersWork=100, maxEditedWork=25,
+   bounded=clamp(100,25,25)=25, editedPom=1.
+   Final result: 1 pomodoro (19%) instead of ~7 (78%).
+
+The algorithm in `task_editor_view_model.dart` is individually correct.
+The bug is in how the screen calls it: there is no stable baseline snapshot
+frozen at the moment the user begins editing the weight field.
+
+Expected behavior (per specs section 10.3.x):
+- Editing Task weight (%) adjusts the task's totalPomodoros to the closest
+  achievable result for the requested percentage.
+- The result must be coherent: if the starting value (53%) is already closer
+  to the target (80%) than the result (19%), the algorithm is wrong.
+- If no better allocation is achievable, the notice "Closest possible is X%"
+  must fire — not silently apply a worse result.
+
+Product decision required before fix:
+The specs define the redistribution logic but leave open the UX approach.
+Four options noted (any is valid — needs explicit user choice):
+  1. Fix the baseline bug only (keep text field UX, freeze snapshot on focus).
+  2. Replace field with a visual slider/picker showing only reachable percentages.
+  3. Incremental controls (+/- buttons) to step the weight progressively.
+  4. Two-mode selector: fix total group pomodoros vs allow total to change.
+
+Fix direction (option 1 — minimal, no UX change):
+Freeze the baseline `weightScopeTasks` at the moment the weight field gains focus
+(capture `_stableWeightScopeTasks` alongside `_weightPercentStartValue` in the
+focus listener, task_editor_screen.dart:97). Use this frozen snapshot for all
+`redistributeWeightPercent` calls until the field loses focus. Reset on blur.
+This eliminates per-keystroke baseline corruption without changing UX.
+
+Files involved (option 1):
+- lib/presentation/screens/task_editor_screen.dart — baseline capture + onChanged
+- lib/presentation/viewmodels/task_editor_view_model.dart — no change needed
+
+Fix applied:
+None yet — product direction pending.
+
+Status:
+Open.
+
+---
+
+## BUG-017 — "Custom" appears as selectable item in Edit Task preset dropdown
+
+ID: BUG-017
+Date: 25/03/2026 (UTC+1)
+Platforms: All (Android, macOS, iOS — UI logic, platform-independent)
+Context: Edit Task screen — Preset selector dropdown field.
+
+Repro summary:
+- Open Edit Task for any existing task.
+- Tap or open the Preset dropdown selector.
+- Observe "Custom" listed alongside real user-defined presets (e.g., "Classic Pomodoro").
+
+Symptom:
+- "Custom" is presented as a selectable preset option in the dropdown, as if it
+  were a real saved preset from Settings.
+
+Observed behavior:
+- The dropdown renders "Custom" as an option users can actively choose, mixed in
+  with real presets.
+- "Custom" is not a saved preset — it is a derived UI label indicating the task's
+  current configuration does not match any stored preset.
+- Selecting "Custom" from the dropdown creates ambiguous state (not linked to any
+  real preset configuration).
+- If a user has saved a real preset named "Custom", this creates a naming collision
+  with the derived UI label.
+
+Expected behavior:
+- The preset dropdown must show ONLY real presets stored in Settings (including
+  the default "Classic Pomodoro" if present).
+- "Custom" must never appear as a selectable option inside the dropdown.
+- If the task has no linked preset (config does not match any stored preset),
+  the selector shows nothing selected — no placeholder text, no "Custom" entry.
+- The linked/unlinked state is communicated by the visual state of the preset name
+  and a small indicator (dot or check icon) displayed inline next to the preset
+  selector field:
+    · Active (config matches selected preset): preset name shown in green,
+      green dot or green check icon visible next to the field label.
+    · Inactive / unlinked (config diverged, or no preset selected):
+      no preset name shown in the selector; indicator dot/check shown in grey
+      (or hidden entirely) to signal the unlinked state.
+- This removes any need for a "Custom" label — the absence of a selected preset
+  plus the grey/hidden indicator is sufficient communication of the unlinked state.
+
+Root cause:
+Not yet analyzed — requires reading the preset selector widget and its data source.
+
+Hypothesis:
+- The widget that builds the dropdown items includes a synthetic "Custom" entry
+  alongside the real preset list, likely to represent the unlinked state as a
+  visible option rather than as a separate indicator.
+
+Fix applied:
+None yet — pending analysis and implementation scheduling.
+
+Status:
+Open.
+
+---
+
+## BUG-018 — Owner background largo → running+remaining=0 → Ready inválido → recovery tardía
+
+ID: BUG-018
+Date: 27/03/2026 (UTC+1)
+Platforms: All (Android, macOS — sync logic, platform-independent)
+Context: Run Mode — Account Mode, owner device en background ≥25 min (ej. MacBook en reposo).
+Cross-reference: Related to BUG-015 (cursor ingest/close validation, Closed/OK `e10a5028`).
+Fix branch: fix/bug018-running-zero-resume
+
+Repro summary:
+- Owner device (macOS) con sesión activa en `pomodoroRunning` (25 min), restante ~1050s.
+- MacBook se cierra / entra en reposo durante ≥25 min (el pomodoro expira durante el sueño).
+- MacBook se reabre.
+- Observar Run Mode en macOS y en dispositivo mirror (Android).
+
+Symptom:
+- Timer congelado en 00:00 con estado `Ready` y anillo ámbar completo durante ~20 minutos.
+- El grupo sigue running en Firestore; la pantalla Ready no debería aparecer.
+- Se recupera solo (~21 min en repro del 27/03/2026), pero el tiempo de congelación es inaceptable.
+
+Observed behavior:
+- Después de la apertura del MacBook, el old VM publica heartbeat con
+  `status=pomodoroRunning + remainingSeconds=0 + phaseStartedAt=antiguo`
+  (máquina local no ticked durante el sueño; `_deriveRemainingSeconds` calcula elapsed > phaseDuration → 0).
+- El nuevo VM se hidrata con `overshotTaskBoundary=true` pero la reconciliación
+  (`_applyGroupTimelineProjection`) tarda en completarse o necesita condiciones previas
+  (TimeSync válido, snapshot disponible).
+- Mientras tanto, el snapshot `running+remaining=0` en Firestore es recibido por dispositivos
+  mirror que lo proyectan via `_projectStateFromSession` a `PomodoroStatus.finished` → UI muestra Ready.
+- Heartbeats cada ~30s siguen publicando `running+remaining=0` (máquina local sigue en
+  `pomodoroRunning` sin transición), perpetuando el estado inválido en Firestore.
+- Log de Android muestra además saturación del buffer gráfico (`BLASTBufferQueue: Can't acquire
+  next buffer`) durante el periodo de congelación, causada por el mirror timer renderizando
+  cada segundo sin avanzar.
+- Firestore snapshot confirmado: `status=pomodoroRunning, remainingSeconds=0, lastUpdatedAt`
+  avanzando cada 30s. Snapshot coherente restaurado a las 17:08 UTC+1 (sessionRevision=33,
+  `shortBreakRunning`).
+
+Expected behavior:
+- Al volver de background largo, el owner device reconcilia la timeline del grupo ANTES de
+  publicar cualquier heartbeat.
+- Si el cursor/fase ya expiraron según la timeline, avanzar la máquina al estado correcto
+  y publicar ese estado coherente.
+- Ningún snapshot `activeExecution + remainingSeconds=0` debe publicarse sin transición previa.
+- Los dispositivos mirror no deben renderizar Ready si el grupo sigue en status=running en Firestore.
+
+Root cause (confirmed, 27/03/2026):
+1. `handleAppResumed` en Account mode (pomodoro_view_model.dart:2914-2923) salta
+   `_applyGroupTimelineProjection` y delega a `syncWithRemoteSession`. Si la sesión remota
+   ya está corrompida (publicada por el old VM justo antes de cerrarse), el sync remoto replica
+   el estado roto en lugar de corregirlo.
+2. `_buildCurrentSessionSnapshot` (línea 1186) usa `_machine.state.status` (todavía
+   `pomodoroRunning`, la máquina no transitó durante el sueño) con `_deriveRemainingSeconds`
+   que devuelve 0 por timeline — produciendo snapshot imposible sin disparar transición.
+3. `_projectStateFromSession` en mirror (línea 3581) proyecta `running+remaining=0+phaseStartedAt
+   antiguo` a `PomodoroStatus.finished` → renderiza Ready aunque grupo siga running.
+4. La recuperación final ocurre por `_hydrateOwnerSession` → `overshotTaskBoundary=true` →
+   `_applyGroupTimelineProjection(skipControlsCheck:true)`, pero depende de condiciones lentas
+   (TimeSync, snapshot procesado), resultando en ~21 min de congelación.
+5. Arquitectura de fondo: el avance de fase depende de que haya un device activo y en foreground.
+   Sin device activo, Firestore queda en el último estado publicado indefinidamente (sin Cloud
+   Function que avance la sesión server-side).
+
+Fix applied:
+Yes.
+
+Final fix (validated):
+- `b10fa02`: introdujo reconciliación de resume + hardening de mirror/repair,
+  pero generó regresión de amplificación de publish en owner echo.
+- `547c6f7` (`fix(bug-018): stop owner echo publish amplification in account mode`):
+  elimina reconciliación del publish normal y conserva reconciliación explícita en resume,
+  cortando el loop de publish/revisión y estabilizando transiciones.
+
+Validation evidence (27/03/2026):
+- Log PASS:
+  `docs/bugs/validation_bug018_2026_03_27/logs/2026-03-27_bug018_547c6f7_android_RMX3771_debug.log`
+- Señales clave:
+  - `Reconciled owner timeline before publish reason=resume` (1 vez).
+  - `TimeSync refreshed (break-start)` (1 vez) y `TimeSync refreshed (pomodoro-start)` (2 veces:
+    inicio + siguiente pomodoro), sin ráfagas de transiciones.
+  - `running + remaining=0`: 0 coincidencias.
+  - Resume coherente en G2: snapshot `remaining=663` a `20:00:55`, alineado con UI (~11:25).
+
+Status:
+Closed/OK (27/03/2026). closed_commit_hash: `547c6f7`.

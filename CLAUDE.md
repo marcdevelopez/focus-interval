@@ -27,6 +27,9 @@ If you are about to edit any of these files, read the listed docs first:
 - **Dev log**: `docs/dev_log.md` — full history, use to understand context of past decisions
 - **Roadmap**: `docs/roadmap.md` — active phase and open bugs
 - **Log commands**: `docs/bugs/README.md` — flutter run + tee templates per platform
+- **Mandatory preflight gate**: before proposing "what's next", reconcile all
+  non-closed `bug_log.md` entries against `validation_ledger.md`; if mismatch
+  exists, sync ledger first and document it in `dev_log.md`.
 
 Active branch: `develop` (created 2026-03-18; fix/feature branches merge here)
 Production branch: `main`
@@ -309,6 +312,16 @@ All work happens on short-lived branches (`fix/xxx`, `feature/xxx`).
 - Features: `feature/<short-description>`
 - Never use generic names like `patch`, `temp`, `wip`.
 
+**R-7 Branch scope lock (mandatory):**
+- A branch must keep one scope family only: bug fix, feature implementation,
+  roadmap/validation closure, or process-governance docs.
+- If the user asks for a different scope family, stop and create/switch to a
+  dedicated branch before editing.
+
+**R-8 Pre-commit branch check (mandatory):**
+- Before each commit, confirm commit scope matches branch intent.
+- If mismatch is detected, do not commit on the current branch; branch-split first.
+
 ---
 
 ## 10. Validation folder structure — MANDATORY
@@ -451,6 +464,12 @@ Example: `2026-03-18_f25d_07ac0cb_android_RMX3771_debug.log`
 Every bug follows this exact sequence. No step may be skipped.
 
 ```
+0. PRE-FLIGHT SYNC
+   → Scan docs/bugs/bug_log.md for non-closed statuses
+   → Ensure each non-closed bug has an active entry in docs/validation/validation_ledger.md
+      (stable ID, priority, status, source reference)
+   → If mismatch exists: stop and sync ledger + dev_log before continuing
+
 1. DISCOVERY
    → Add entry to docs/bugs/bug_log.md (status: Open, priority P0/P1/P2)
    → Add entry to docs/validation/validation_ledger.md (status: Open)
@@ -491,6 +510,9 @@ Every bug follows this exact sequence. No step may be skipped.
    → Update validation_ledger.md: status = Closed/OK + closed_commit_hash
    → Merge fix branch → develop (never directly to main)
    → Add Block to dev_log.md documenting the closure
+   → Send user-facing closure recap per closed ID (concrete case validated:
+     trigger/repro, expected behavior, PASS evidence) and ask for explicit
+     final user confirmation
 
 8. DEVELOP → MAIN
    → Only when validation_ledger.md shows zero open [ ] P0/P1 entries

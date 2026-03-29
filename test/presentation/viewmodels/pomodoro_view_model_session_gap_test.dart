@@ -301,6 +301,64 @@ TaskRunGroup _buildTwoTaskRunningGroup({
   );
 }
 
+TaskRunGroup _buildTwoSinglePomodoroRunningGroup({
+  required String id,
+  required DateTime start,
+}) {
+  const taskOne = TaskRunItem(
+    sourceTaskId: 'task-1',
+    name: 'Task one',
+    presetId: null,
+    pomodoroMinutes: 15,
+    shortBreakMinutes: 5,
+    longBreakMinutes: 15,
+    totalPomodoros: 1,
+    longBreakInterval: 2,
+    startSound: SelectedSound.builtIn('default_chime'),
+    startBreakSound: SelectedSound.builtIn('default_chime_break'),
+    finishTaskSound: SelectedSound.builtIn('default_chime_finish'),
+  );
+  const taskTwo = TaskRunItem(
+    sourceTaskId: 'task-2',
+    name: 'Task two',
+    presetId: null,
+    pomodoroMinutes: 15,
+    shortBreakMinutes: 5,
+    longBreakMinutes: 15,
+    totalPomodoros: 1,
+    longBreakInterval: 2,
+    startSound: SelectedSound.builtIn('default_chime'),
+    startBreakSound: SelectedSound.builtIn('default_chime_break'),
+    finishTaskSound: SelectedSound.builtIn('default_chime_finish'),
+  );
+  final tasks = const [taskOne, taskTwo];
+  final totalDurationSeconds = groupDurationSecondsByMode(
+    tasks,
+    TaskRunIntegrityMode.shared,
+  );
+  return TaskRunGroup(
+    id: id,
+    ownerUid: 'user-1',
+    dataVersion: kCurrentDataVersion,
+    integrityMode: TaskRunIntegrityMode.shared,
+    tasks: tasks,
+    createdAt: start,
+    scheduledStartTime: null,
+    scheduledByDeviceId: 'device-1',
+    theoreticalEndTime: start.add(Duration(seconds: totalDurationSeconds)),
+    status: TaskRunStatus.running,
+    noticeMinutes: null,
+    totalTasks: tasks.length,
+    totalPomodoros: tasks.fold<int>(
+      0,
+      (sum, item) => sum + item.totalPomodoros,
+    ),
+    totalDurationSeconds: totalDurationSeconds,
+    updatedAt: start,
+    actualStartTime: start,
+  );
+}
+
 PomodoroSession _buildRunningSession({
   required String groupId,
   required String taskId,
@@ -610,6 +668,311 @@ void main() {
   );
 
   test(
+    'owner hydration with stale session past task boundary does not publish finished during resync',
+    () async {
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildTwoTaskRunningGroup(
+        id: 'group-bug015-owner-hydration-resync',
+        start: now.subtract(const Duration(minutes: 40)),
+      );
+      final initialMirrorSession = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        ownerDeviceId: 'other-device',
+        now: now,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(initialMirrorSession);
+      final appModeService = AppModeService.memory();
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      addTearDown(() {
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      container.listen<PomodoroState>(pomodoroViewModelProvider, (_, __) {});
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      final firstTask = group.tasks.first;
+      final staleOwnerSession = PomodoroSession(
+        taskId: firstTask.sourceTaskId,
+        groupId: group.id,
+        currentTaskId: firstTask.sourceTaskId,
+        currentTaskIndex: 0,
+        totalTasks: group.tasks.length,
+        dataVersion: kCurrentDataVersion,
+        sessionRevision: 12,
+        ownerDeviceId: deviceInfo.deviceId,
+        status: PomodoroStatus.pomodoroRunning,
+        phase: PomodoroPhase.pomodoro,
+        currentPomodoro: 1,
+        totalPomodoros: firstTask.totalPomodoros,
+        phaseDurationSeconds: firstTask.pomodoroMinutes * 60,
+        remainingSeconds: 10,
+        accumulatedPausedSeconds: 0,
+        phaseStartedAt: now.subtract(const Duration(minutes: 40)),
+        currentTaskStartedAt: now.subtract(const Duration(minutes: 40)),
+        pausedAt: null,
+        lastUpdatedAt: now.subtract(const Duration(minutes: 40)),
+        finishedAt: null,
+        pauseReason: null,
+      );
+
+      // Pre-fix BUG-015 behavior published `finished` here because
+      // _applyGroupTimelineProjection was blocked by _controlsEnabled while
+      // syncWithRemoteSession kept _resyncInProgress=true.
+      sessionRepo._lastSession = staleOwnerSession;
+      await vm.syncWithRemoteSession(
+        preferServer: true,
+        reason: 'bug-015-owner-hydration-resync',
+      );
+      await _pumpQueue();
+
+      final state = container.read(pomodoroViewModelProvider);
+      expect(state.status, isNot(PomodoroStatus.finished));
+      expect(state.status.isActiveExecution, isTrue);
+      expect(vm.currentTaskIndex, 1);
+      expect(vm.currentItem?.sourceTaskId, group.tasks[1].sourceTaskId);
+      expect(sessionRepo.lastPublished, isNotNull);
+      expect(sessionRepo.lastPublished?.status, isNot(PomodoroStatus.finished));
+      expect(sessionRepo.lastPublished?.currentTaskIndex, 1);
+    },
+  );
+
+  test(
+    'stream snapshot with inconsistent cursor is repaired before ingest',
+    () async {
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildTwoSinglePomodoroRunningGroup(
+        id: 'group-bug015-stream-cursor-repair',
+        start: now.subtract(const Duration(minutes: 33)),
+      );
+
+      final secondTask = group.tasks[1];
+      final initialSession = PomodoroSession(
+        taskId: secondTask.sourceTaskId,
+        groupId: group.id,
+        currentTaskId: secondTask.sourceTaskId,
+        currentTaskIndex: 1,
+        totalTasks: group.tasks.length,
+        dataVersion: kCurrentDataVersion,
+        sessionRevision: 20,
+        ownerDeviceId: 'android-owner',
+        status: PomodoroStatus.pomodoroRunning,
+        phase: PomodoroPhase.pomodoro,
+        currentPomodoro: 1,
+        totalPomodoros: secondTask.totalPomodoros,
+        phaseDurationSeconds: secondTask.pomodoroMinutes * 60,
+        remainingSeconds: 150,
+        accumulatedPausedSeconds: 0,
+        phaseStartedAt: now.subtract(const Duration(minutes: 12, seconds: 30)),
+        currentTaskStartedAt: now.subtract(const Duration(minutes: 13)),
+        pausedAt: null,
+        lastUpdatedAt: now.subtract(const Duration(seconds: 30)),
+        finishedAt: null,
+        pauseReason: null,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(initialSession);
+      final appModeService = AppModeService.memory();
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      addTearDown(() {
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      container.listen<PomodoroState>(pomodoroViewModelProvider, (_, __) {});
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      // BUG-015 stream case: active snapshot arrives with invalid cursor.
+      // Pre-fix this could project to finished/Ready 00:00 in mirror mode.
+      final corrupted = PomodoroSession(
+        taskId: group.tasks.first.sourceTaskId,
+        groupId: group.id,
+        currentTaskId: group.tasks.first.sourceTaskId,
+        currentTaskIndex: 0,
+        totalTasks: group.tasks.length,
+        dataVersion: kCurrentDataVersion,
+        sessionRevision: 21,
+        ownerDeviceId: 'android-owner',
+        status: PomodoroStatus.pomodoroRunning,
+        phase: PomodoroPhase.pomodoro,
+        currentPomodoro: 2,
+        totalPomodoros: 1,
+        phaseDurationSeconds: 15 * 60,
+        remainingSeconds: 0,
+        accumulatedPausedSeconds: 0,
+        phaseStartedAt: now.subtract(const Duration(minutes: 18)),
+        currentTaskStartedAt: group.actualStartTime,
+        pausedAt: null,
+        lastUpdatedAt: now,
+        finishedAt: null,
+        pauseReason: null,
+      );
+
+      sessionRepo.emit(corrupted);
+      await _pumpQueue();
+
+      final state = container.read(pomodoroViewModelProvider);
+      final active = vm.activeSessionForCurrentGroup;
+      expect(state.status, isNot(PomodoroStatus.finished));
+      expect(state.status.isActiveExecution, isTrue);
+      expect(vm.currentTaskIndex, 1);
+      expect(vm.currentItem?.sourceTaskId, secondTask.sourceTaskId);
+      expect(active, isNotNull);
+      expect(active!.currentTaskIndex, 1);
+      expect(active.currentPomodoro, lessThanOrEqualTo(active.totalPomodoros));
+    },
+  );
+
+  test(
+    'stream snapshot running+remaining=0 stale is repaired via group timeline before ingest',
+    () async {
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'group-bug018-stream-running-zero-repair',
+        start: now.subtract(const Duration(minutes: 40)),
+      );
+      final taskId = group.tasks.first.sourceTaskId;
+      final initialSession = PomodoroSession(
+        taskId: taskId,
+        groupId: group.id,
+        currentTaskId: taskId,
+        currentTaskIndex: 0,
+        totalTasks: group.tasks.length,
+        dataVersion: kCurrentDataVersion,
+        sessionRevision: 30,
+        ownerDeviceId: 'owner-device',
+        status: PomodoroStatus.pomodoroRunning,
+        phase: PomodoroPhase.pomodoro,
+        currentPomodoro: 1,
+        totalPomodoros: group.tasks.first.totalPomodoros,
+        phaseDurationSeconds: group.tasks.first.pomodoroMinutes * 60,
+        remainingSeconds: 1200,
+        accumulatedPausedSeconds: 0,
+        phaseStartedAt: now.subtract(const Duration(minutes: 5)),
+        currentTaskStartedAt: now.subtract(const Duration(minutes: 5)),
+        pausedAt: null,
+        lastUpdatedAt: now.subtract(const Duration(seconds: 30)),
+        finishedAt: null,
+        pauseReason: null,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(initialSession);
+      final appModeService = AppModeService.memory();
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      addTearDown(() {
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      container.listen<PomodoroState>(pomodoroViewModelProvider, (_, __) {});
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      final staleRunningZero = PomodoroSession(
+        taskId: taskId,
+        groupId: group.id,
+        currentTaskId: taskId,
+        currentTaskIndex: 0,
+        totalTasks: group.tasks.length,
+        dataVersion: kCurrentDataVersion,
+        sessionRevision: 31,
+        ownerDeviceId: 'owner-device',
+        status: PomodoroStatus.pomodoroRunning,
+        phase: PomodoroPhase.pomodoro,
+        currentPomodoro: 1,
+        totalPomodoros: group.tasks.first.totalPomodoros,
+        phaseDurationSeconds: group.tasks.first.pomodoroMinutes * 60,
+        remainingSeconds: 0,
+        accumulatedPausedSeconds: 0,
+        phaseStartedAt: now.subtract(const Duration(minutes: 40)),
+        currentTaskStartedAt: now.subtract(const Duration(minutes: 40)),
+        pausedAt: null,
+        lastUpdatedAt: now,
+        finishedAt: null,
+        pauseReason: null,
+      );
+
+      sessionRepo.emit(staleRunningZero);
+      await _pumpQueue();
+
+      final state = container.read(pomodoroViewModelProvider);
+      final active = vm.activeSessionForCurrentGroup;
+      expect(state.status, isNot(PomodoroStatus.finished));
+      expect(state.status.isActiveExecution, isTrue);
+      expect(state.remainingSeconds, greaterThan(0));
+      expect(active, isNotNull);
+      expect(active!.status.isActiveExecution, isTrue);
+      expect(
+        active.remainingSeconds,
+        greaterThan(0),
+        reason:
+            'BUG-018: stale running+0 snapshots must be repaired before ingest.',
+      );
+    },
+  );
+
+  test(
     'owner hot-swap fallback publish is one-shot for repeated snapshots',
     () async {
       final now = DateTime.now();
@@ -708,6 +1071,217 @@ void main() {
             'Hot-swap fallback publish must run at most once per ownership '
             'acquisition; repeated same-revision snapshots must not trigger '
             'a write loop.',
+      );
+    },
+  );
+
+  test(
+    'owner echo snapshot does not amplify publish loop on matching revision',
+    () async {
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'group-bug018-owner-echo-no-amplify',
+        start: now,
+      );
+      final taskId = group.tasks.first.sourceTaskId;
+      final ownerSession = PomodoroSession(
+        taskId: taskId,
+        groupId: group.id,
+        currentTaskId: taskId,
+        currentTaskIndex: 0,
+        totalTasks: 1,
+        dataVersion: kCurrentDataVersion,
+        sessionRevision: 50,
+        ownerDeviceId: deviceInfo.deviceId,
+        status: PomodoroStatus.pomodoroRunning,
+        phase: PomodoroPhase.pomodoro,
+        currentPomodoro: 1,
+        totalPomodoros: 2,
+        phaseDurationSeconds: 25 * 60,
+        remainingSeconds: 1400,
+        accumulatedPausedSeconds: 0,
+        phaseStartedAt: now.subtract(const Duration(minutes: 2)),
+        currentTaskStartedAt: now.subtract(const Duration(minutes: 2)),
+        pausedAt: null,
+        lastUpdatedAt: now,
+        finishedAt: null,
+        pauseReason: null,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(ownerSession);
+      final appModeService = AppModeService.memory();
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      addTearDown(() {
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      sessionRepo.publishCount = 0;
+      sessionRepo.lastPublished = null;
+
+      final incoming = PomodoroSession(
+        taskId: ownerSession.taskId,
+        groupId: ownerSession.groupId,
+        currentTaskId: ownerSession.currentTaskId,
+        currentTaskIndex: ownerSession.currentTaskIndex,
+        totalTasks: ownerSession.totalTasks,
+        dataVersion: ownerSession.dataVersion,
+        sessionRevision: 51,
+        ownerDeviceId: ownerSession.ownerDeviceId,
+        status: ownerSession.status,
+        phase: ownerSession.phase,
+        currentPomodoro: ownerSession.currentPomodoro,
+        totalPomodoros: ownerSession.totalPomodoros,
+        phaseDurationSeconds: ownerSession.phaseDurationSeconds,
+        remainingSeconds: 1390,
+        accumulatedPausedSeconds: ownerSession.accumulatedPausedSeconds,
+        phaseStartedAt: ownerSession.phaseStartedAt,
+        currentTaskStartedAt: ownerSession.currentTaskStartedAt,
+        pausedAt: ownerSession.pausedAt,
+        lastUpdatedAt: now.add(const Duration(seconds: 1)),
+        finishedAt: ownerSession.finishedAt,
+        pauseReason: ownerSession.pauseReason,
+      );
+      sessionRepo.emit(incoming);
+      await _pumpQueue();
+
+      final echoed = sessionRepo.lastPublished ?? incoming;
+
+      sessionRepo.emit(echoed);
+      await _pumpQueue();
+      final afterFirstEcho = sessionRepo.publishCount;
+
+      // Replaying the exact same owner echo again must not keep publishing.
+      sessionRepo.emit(echoed);
+      await _pumpQueue();
+
+      expect(
+        sessionRepo.publishCount,
+        afterFirstEcho,
+        reason:
+            'Owner echo snapshots must not trigger repeated publish '
+            'amplification on identical replay (BUG-018 regression guard).',
+      );
+    },
+  );
+
+  test(
+    'handleAppResumed reconciles owner timeline in account mode before remote resync',
+    () async {
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'group-bug018-resume-owner-reconcile',
+        start: now.subtract(const Duration(minutes: 40)),
+      );
+      final taskId = group.tasks.first.sourceTaskId;
+      final ownerSession = PomodoroSession(
+        taskId: taskId,
+        groupId: group.id,
+        currentTaskId: taskId,
+        currentTaskIndex: 0,
+        totalTasks: group.tasks.length,
+        dataVersion: kCurrentDataVersion,
+        sessionRevision: 50,
+        ownerDeviceId: deviceInfo.deviceId,
+        status: PomodoroStatus.pomodoroRunning,
+        phase: PomodoroPhase.pomodoro,
+        currentPomodoro: 1,
+        totalPomodoros: group.tasks.first.totalPomodoros,
+        phaseDurationSeconds: group.tasks.first.pomodoroMinutes * 60,
+        remainingSeconds: 1200,
+        accumulatedPausedSeconds: 0,
+        phaseStartedAt: now.subtract(const Duration(minutes: 5)),
+        currentTaskStartedAt: now.subtract(const Duration(minutes: 5)),
+        pausedAt: null,
+        lastUpdatedAt: now,
+        finishedAt: null,
+        pauseReason: null,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(ownerSession);
+      final appModeService = AppModeService.memory();
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      addTearDown(() {
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpQueue();
+
+      container.listen<PomodoroState>(pomodoroViewModelProvider, (_, __) {});
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final result = await vm.loadGroup(group.id);
+      expect(result, PomodoroGroupLoadResult.loaded);
+      await _pumpQueue();
+
+      // Force a stale local runtime state that mimics the long-background bug.
+      container
+          .read(timerServiceProvider.notifier)
+          .startTick(
+            remainingSeconds: 0,
+            totalSeconds: group.tasks.first.pomodoroMinutes * 60,
+            phase: PomodoroPhase.pomodoro,
+            status: PomodoroStatus.pomodoroRunning,
+            groupId: group.id,
+            currentPomodoro: 1,
+            totalPomodoros: group.tasks.first.totalPomodoros,
+            phaseStartedAt: now.subtract(const Duration(minutes: 40)),
+            ownerDeviceId: deviceInfo.deviceId,
+          );
+      await _pumpQueue();
+
+      sessionRepo.publishCount = 0;
+      sessionRepo.lastPublished = null;
+
+      vm.handleAppResumed();
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      await _pumpQueue();
+
+      final published = sessionRepo.lastPublished;
+      expect(sessionRepo.publishCount, greaterThan(0));
+      expect(published, isNotNull);
+      expect(published!.status.isActiveExecution, isTrue);
+      expect(
+        published.remainingSeconds,
+        greaterThan(0),
+        reason:
+            'BUG-018: resume reconciliation must not publish running+remaining=0.',
       );
     },
   );

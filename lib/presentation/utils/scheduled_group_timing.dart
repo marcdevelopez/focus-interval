@@ -43,6 +43,23 @@ DateTime ceilToMinute(DateTime value) {
   ).add(const Duration(minutes: 1));
 }
 
+DateTime resolveAnchoredScheduledStart({
+  required DateTime anchorEnd,
+  required int noticeMinutes,
+}) {
+  var scheduledStart = ceilToMinute(
+    anchorEnd.add(Duration(minutes: noticeMinutes)),
+  );
+  if (noticeMinutes <= 0) return scheduledStart;
+
+  final preRunStart = scheduledStart.subtract(Duration(minutes: noticeMinutes));
+  // Keep pre-run strictly after previous group end to avoid same-minute overlap.
+  if (!preRunStart.isAfter(anchorEnd)) {
+    scheduledStart = scheduledStart.add(const Duration(minutes: 1));
+  }
+  return scheduledStart;
+}
+
 const Duration runningOverlapGrace = Duration(minutes: 1);
 
 DateTime resolveRunningOverlapThreshold(DateTime preRunStart) {
@@ -185,7 +202,10 @@ DateTime? resolveEffectiveScheduledStart({
     group,
     fallback: fallbackNoticeMinutes,
   );
-  return ceilToMinute(anchorEnd.add(Duration(minutes: noticeMinutes)));
+  return resolveAnchoredScheduledStart(
+    anchorEnd: anchorEnd,
+    noticeMinutes: noticeMinutes,
+  );
 }
 
 DateTime? resolveEffectivePreRunStart({
@@ -242,73 +262,89 @@ List<TaskRunGroup> resolveLateStartConflictSet({
   int? fallbackNoticeMinutes,
 }) {
   if (scheduled.isEmpty) return const [];
-  final overdue =
-      scheduled.where((group) {
-        final effectiveStart =
-            resolveEffectiveScheduledStart(
-              group: group,
-              allGroups: allGroups,
-              activeSession: activeSession,
-              now: now,
-              fallbackNoticeMinutes: fallbackNoticeMinutes,
-            ) ??
-            group.scheduledStartTime!;
-        return !effectiveStart.isAfter(now);
-      }).toList()..sort((a, b) {
-        final aStart =
-            resolveEffectiveScheduledStart(
-              group: a,
-              allGroups: allGroups,
-              activeSession: activeSession,
-              now: now,
-              fallbackNoticeMinutes: fallbackNoticeMinutes,
-            ) ??
-            a.scheduledStartTime!;
-        final bStart =
-            resolveEffectiveScheduledStart(
-              group: b,
-              allGroups: allGroups,
-              activeSession: activeSession,
-              now: now,
-              fallbackNoticeMinutes: fallbackNoticeMinutes,
-            ) ??
-            b.scheduledStartTime!;
-        return aStart.compareTo(bStart);
-      });
+  final sorted = scheduled.toList()
+    ..sort((a, b) {
+      final aStart =
+          resolveEffectiveScheduledStart(
+            group: a,
+            allGroups: allGroups,
+            activeSession: activeSession,
+            now: now,
+            fallbackNoticeMinutes: fallbackNoticeMinutes,
+          ) ??
+          a.scheduledStartTime!;
+      final bStart =
+          resolveEffectiveScheduledStart(
+            group: b,
+            allGroups: allGroups,
+            activeSession: activeSession,
+            now: now,
+            fallbackNoticeMinutes: fallbackNoticeMinutes,
+          ) ??
+          b.scheduledStartTime!;
+      return aStart.compareTo(bStart);
+    });
+
+  final overdue = sorted.where((group) {
+    // Groups anchored via postponedAfterGroupId were already repositioned by
+    // the system (same mechanism used by running-overlap postpone). They
+    // should follow normal scheduled -> auto-start flow, not re-enter the
+    // late-start queue.
+    if (group.postponedAfterGroupId != null) return false;
+    final effectiveStart =
+        resolveEffectiveScheduledStart(
+          group: group,
+          allGroups: allGroups,
+          activeSession: activeSession,
+          now: now,
+          fallbackNoticeMinutes: fallbackNoticeMinutes,
+        ) ??
+        group.scheduledStartTime!;
+    return !effectiveStart.isAfter(now);
+  }).toList();
   if (overdue.isEmpty) return const [];
 
-  if (overdue.length == 1) {
-    final horizonEnd = now.add(
-      Duration(seconds: resolveGroupDurationSeconds(overdue.first)),
-    );
-    final conflict = _collectLateStartConflicts(
-      scheduled: scheduled,
-      overdueIds: {overdue.first.id},
-      windowStart: now,
-      windowEnd: horizonEnd,
-      allGroups: allGroups,
-      activeSession: activeSession,
-      now: now,
+  // Cascading expansion: include any scheduled group whose window overlaps the
+  // projected queue horizon, and keep expanding until stable.
+  final conflictIds = overdue.map((g) => g.id).toSet();
+  var changed = true;
+  while (changed) {
+    changed = false;
+    final selected = sorted
+        .where((group) => conflictIds.contains(group.id))
+        .toList();
+    final horizonEnd = _projectedQueueEnd(
+      selected,
+      now,
       fallbackNoticeMinutes: fallbackNoticeMinutes,
     );
-    return conflict.length > 1 ? conflict : const [];
+    for (final group in sorted) {
+      if (conflictIds.contains(group.id)) continue;
+      final start = _scheduledWindowStart(
+        group,
+        allGroups: allGroups,
+        activeSession: activeSession,
+        now: now,
+        fallbackNoticeMinutes: fallbackNoticeMinutes,
+      );
+      final end = _scheduledWindowEnd(
+        group,
+        allGroups: allGroups,
+        activeSession: activeSession,
+        now: now,
+        fallbackNoticeMinutes: fallbackNoticeMinutes,
+      );
+      if (_overlaps(now, horizonEnd, start, end)) {
+        conflictIds.add(group.id);
+        changed = true;
+      }
+    }
   }
 
-  final horizonEnd = _projectedQueueEnd(
-    overdue,
-    now,
-    fallbackNoticeMinutes: fallbackNoticeMinutes,
-  );
-  return _collectLateStartConflicts(
-    scheduled: scheduled,
-    overdueIds: overdue.map((g) => g.id).toSet(),
-    windowStart: now,
-    windowEnd: horizonEnd,
-    allGroups: allGroups,
-    activeSession: activeSession,
-    now: now,
-    fallbackNoticeMinutes: fallbackNoticeMinutes,
-  );
+  final conflicts = sorted
+      .where((group) => conflictIds.contains(group.id))
+      .toList();
+  return conflicts.length > 1 ? conflicts : const [];
 }
 
 DateTime? resolveLateStartAnchor(List<TaskRunGroup> groups) {
@@ -389,45 +425,6 @@ String? resolveLateStartClaimRequesterDeviceId(List<TaskRunGroup> groups) {
     return requesterId;
   }
   return requesterId;
-}
-
-List<TaskRunGroup> _collectLateStartConflicts({
-  required List<TaskRunGroup> scheduled,
-  required Set<String> overdueIds,
-  required DateTime windowStart,
-  required DateTime windowEnd,
-  required List<TaskRunGroup> allGroups,
-  required PomodoroSession? activeSession,
-  required DateTime now,
-  int? fallbackNoticeMinutes,
-}) {
-  final conflicts = <TaskRunGroup>{};
-  for (final group in scheduled) {
-    if (overdueIds.contains(group.id)) {
-      conflicts.add(group);
-      continue;
-    }
-    final start = _scheduledWindowStart(
-      group,
-      allGroups: allGroups,
-      activeSession: activeSession,
-      now: now,
-      fallbackNoticeMinutes: fallbackNoticeMinutes,
-    );
-    final end = _scheduledWindowEnd(
-      group,
-      allGroups: allGroups,
-      activeSession: activeSession,
-      now: now,
-      fallbackNoticeMinutes: fallbackNoticeMinutes,
-    );
-    if (_overlaps(windowStart, windowEnd, start, end)) {
-      conflicts.add(group);
-    }
-  }
-  final list = conflicts.toList()
-    ..sort((a, b) => a.scheduledStartTime!.compareTo(b.scheduledStartTime!));
-  return list;
 }
 
 DateTime _projectedQueueEnd(
