@@ -15855,3 +15855,32 @@ from Run Mode / Groups Hub flows instead of returning to root navigation.
 - BUG-019 is formally queued and traceable across bug log, ledger, roadmap, and
   validation packet.
 - Project is ready for Claude review and runtime fix planning.
+
+---
+
+## Block 692 — BUG-019 validation-scope hardening: Settings back-stack non-regression added (29/03/2026)
+
+**Current branch intent:** BUG-019 docs-only validation hardening before runtime implementation.
+**Branch:** `fix/bug019-android-back-navigation-exit`
+**Scope:** Validation packet refinement (no runtime code).
+
+### Context
+
+Follow-up requirement: BUG-019 must not break screens that already use normal
+stack back navigation (explicitly Settings).
+
+### Changes applied
+
+- `docs/bugs/validation_bug019_2026_03_29/plan_validacion_rapida_fix.md`
+  - Added Scenario D (`Settings` stack-back non-regression on Android).
+  - Added dedicated quick-scan grep for `/settings` -> previous-route pop behavior.
+  - Updated closure criteria to require Scenario D PASS evidence.
+- `docs/bugs/validation_bug019_2026_03_29/quick_pass_checklist.md`
+  - Added Scenario D exact-repro checkbox.
+  - Added explicit regression-smoke checkbox for Settings AppBar/system back.
+
+### Status after this block
+
+- BUG-019 validation matrix now covers both:
+  - root-route fallback hardening (`/groups`, `/timer/:id`), and
+  - non-regression of existing stack-pop routes (`/settings`).

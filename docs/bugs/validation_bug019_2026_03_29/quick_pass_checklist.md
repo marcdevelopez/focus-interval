@@ -2,11 +2,13 @@
 - [ ] Scenario A PASS (Groups Hub back returns to Task List root, no app termination)
 - [ ] Scenario B PASS (Run Mode non-active back does not terminate app)
 - [ ] Scenario C PASS (Run Mode active execution keeps cancel/confirmation guard; no silent exit)
+- [ ] Scenario D PASS (Settings AppBar back and Android back keep stack-pop behavior; no forced fallback/exit)
 
 ## Regression smoke
 - [ ] Task List -> Groups Hub -> back remains deterministic across 3 consecutive runs
 - [ ] Task List -> Run Mode -> back remains deterministic across 3 consecutive runs
 - [ ] Cancel-flow navigation still ends in Groups Hub per existing contract
+- [ ] Settings -> back returns to previous route in stack (AppBar + system back), unchanged from baseline
 
 ## Local gate
 - [ ] `flutter analyze` PASS
