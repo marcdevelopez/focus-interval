@@ -2767,7 +2767,12 @@ Hypothesis:
   cover all runtime ownership/session combinations that should block termination.
 
 Fix applied:
-None yet — docs-first registration and validation packet preparation only.
+- `d1a1f19` — GroupsHubScreen: PopScope(canPop: false) with fallback to /tasks
+- `e16a692` — TimerScreen: canPop: false always; non-active path uses context.canPop()
+  fallback to /tasks or /groups per mode; active path delegates to _confirmExit unchanged
+- `ed97de7` — Tests: 4 system-back regression tests covering all validation scenarios
 
 Status:
-Open.
+Closed/OK. closed_commit_hash: ed97de7. Device validation PASS 29/03/2026 (Android RMX3771):
+Scenario A (Groups Hub → /tasks), B (Timer non-active → /groups), C (active confirmation
+guard preserved), D (Settings stack-pop unchanged). flutter analyze + flutter test PASS.

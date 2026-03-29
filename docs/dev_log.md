@@ -15884,3 +15884,61 @@ stack back navigation (explicitly Settings).
 - BUG-019 validation matrix now covers both:
   - root-route fallback hardening (`/groups`, `/timer/:id`), and
   - non-regression of existing stack-pop routes (`/settings`).
+
+
+---
+
+## Block 693 — BUG-019 closure: Android back navigation exit fix validated (29/03/2026)
+
+**Branch:** `fix/bug019-android-back-navigation-exit`
+**Commits:** `d1a1f19`, `e16a692`, `ed97de7`
+**Bugs closed:** BUG-019 / BUGLOG-019 (P1)
+
+### Root cause confirmed
+
+All major screens (`/groups`, `/timer/:id`) are navigated to via `context.go()`,
+which replaces the entire navigation stack with a single entry. When Android system
+back fired on a single-entry stack, go_router had nothing to pop and delegated to
+the platform → app exited. `GroupsHubScreen` had no `PopScope`. `TimerScreen` had
+`PopScope(canPop: !shouldBlockExit)`: when non-active (`canPop=true`), same exit
+problem; the `navigator.pop()` in the active path was dead code (`_confirmExit`
+always returns `false` for active execution and handles navigation internally).
+
+### Fix applied
+
+**`d1a1f19` — GroupsHubScreen**: Wrapped `return Scaffold(...)` in
+`PopScope(canPop: false)`. Handler: `context.canPop()` → pop; else →
+`context.go('/tasks')`. Synchronous, no logic changes.
+
+**`e16a692` — TimerScreen**: Changed `canPop: !shouldBlockExit` → `canPop: false`.
+Active path: `await _confirmExit(state, vm); return` (identical behavior, dead code
+removed). Non-active path: `context.canPop()` → pop; else →
+`context.go(isLocalMode ? '/tasks' : '/groups')`. Zero changes to `_confirmExit`,
+`_cancelAndNavigateToHub`, or any session/group logic.
+
+**`ed97de7` — Tests**: 4 new `testWidgets` in
+`timer_screen_completion_navigation_test.dart`:
+- Groups Hub system back → `/tasks` (single-entry stack)
+- Timer non-active system back → `/groups` (account mode, single-entry stack)
+- Timer active system back → confirmation dialog; "Keep running" keeps timer running
+- Settings route stack-pop non-regression (no fallback override)
+Helper `_buildRunningSession` extended with optional `status`/`phase`/`finishedAt`
+params (defaults preserve all existing tests).
+
+### Validation results (Android RMX3771, 29/03/2026)
+
+- Scenario A — Groups Hub back → Task List root: **PASS**
+- Scenario B — Timer non-active back → Groups Hub: **PASS**
+  (Note: group must be truly non-active; running/paused groups correctly show the
+  confirmation dialog per Scenario C — this is expected behavior, not a bug.)
+- Scenario C — Timer active confirmation guard: **PASS** (screenshot evidence)
+- Scenario D — Settings stack-pop non-regression: **PASS**
+- `flutter analyze`: PASS
+- `flutter test timer_screen_completion_navigation_test.dart`: PASS
+- `flutter test timer_screen_syncing_overlay_test.dart`: PASS
+
+### Status after this block
+
+BUG-019 / BUGLOG-019: **Closed/OK**.
+Active P1 bugs: **0**. Active P2 bugs: **1** (BUG-017, Edit Task preset dropdown).
+Branch ready to merge into `develop`.

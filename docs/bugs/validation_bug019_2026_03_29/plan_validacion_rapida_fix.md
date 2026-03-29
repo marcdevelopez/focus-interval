@@ -3,7 +3,7 @@
 ## 1. Header
 - Date: 2026-03-29
 - Branch: `fix/bug019-android-back-navigation-exit`
-- Commit hash: `a4b1915` (docs-registration baseline)
+- Commit hash: `ed97de7` (runtime fix + tests)
 - Bugs covered: `BUG-019` / `BUGLOG-019`
 - Target devices: `android_RMX3771` (primary), `macos` (control)
 
@@ -77,13 +77,13 @@ Root cause is not confirmed yet. Current hypothesis: top-level routes (`/timer/:
 ```bash
 flutter run -v --debug -d RMX3771 --dart-define=APP_ENV=prod \
   --dart-define=ALLOW_PROD_IN_DEBUG=true \
-  2>&1 | tee docs/bugs/validation_bug019_2026_03_29/logs/2026-03-29_bug019_a4b1915_android_RMX3771_debug.log
+  2>&1 | tee docs/bugs/validation_bug019_2026_03_29/logs/2026-03-29_bug019_ed97de7_android_RMX3771_debug.log
 ```
 
 ```bash
 flutter run -v --debug -d macos --dart-define=APP_ENV=prod \
   --dart-define=ALLOW_PROD_IN_DEBUG=true \
-  2>&1 | tee docs/bugs/validation_bug019_2026_03_29/logs/2026-03-29_bug019_a4b1915_macos_debug.log
+  2>&1 | tee docs/bugs/validation_bug019_2026_03_29/logs/2026-03-29_bug019_ed97de7_macos_debug.log
 ```
 
 ## 7. Log analysis - quick scan
@@ -91,24 +91,25 @@ flutter run -v --debug -d macos --dart-define=APP_ENV=prod \
 ### Bug present signals
 ```bash
 grep -nE "AppLifecycleState\.detached|SystemNavigator\.pop|onPopInvoked|route=/timer|route=/groups" \
-  docs/bugs/validation_bug019_2026_03_29/logs/2026-03-29_bug019_a4b1915_android_RMX3771_debug.log
+  docs/bugs/validation_bug019_2026_03_29/logs/2026-03-29_bug019_ed97de7_android_RMX3771_debug.log
 ```
 
 ### Fix working signals
 ```bash
 grep -nE "route=/tasks|Cancel nav:|didPop=true|didPop=false" \
-  docs/bugs/validation_bug019_2026_03_29/logs/2026-03-29_bug019_a4b1915_android_RMX3771_debug.log
+  docs/bugs/validation_bug019_2026_03_29/logs/2026-03-29_bug019_ed97de7_android_RMX3771_debug.log
 ```
 
 ```bash
 grep -nE "route=/settings|route=/tasks|didPop=true|didPop=false" \
-  docs/bugs/validation_bug019_2026_03_29/logs/2026-03-29_bug019_a4b1915_android_RMX3771_debug.log
+  docs/bugs/validation_bug019_2026_03_29/logs/2026-03-29_bug019_ed97de7_android_RMX3771_debug.log
 ```
 
 ## 8. Verificacion local
-- [ ] `flutter analyze` (pending)
-- [ ] `flutter test test/presentation/timer_screen_completion_navigation_test.dart` (pending)
-- [ ] Additional navigation/system-back regression tests (pending; TBD after implementation)
+- [x] `flutter analyze` — PASS (commit `ed97de7`)
+- [x] `flutter test test/presentation/timer_screen_completion_navigation_test.dart` — PASS (commit `ed97de7`)
+- [x] `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` — PASS (commit `ed97de7`)
+- [x] Claude QA review — PASS (2026-03-29): GroupsHubScreen, TimerScreen, 4 regression tests reviewed
 
 ## 9. Criterios de cierre
 - Exact repro PASS on Android (`Scenario A`, `B`, `C`) with log evidence.
@@ -121,4 +122,5 @@ grep -nE "route=/settings|route=/tasks|didPop=true|didPop=false" \
 - `docs/bugs/bug_log.md` + `docs/validation/validation_ledger.md` moved to `Closed/OK` with commit/evidence fields.
 
 ## 10. Status line
-Status: Open
+Status: Closed/OK — 29/03/2026. Device validation PASS (Android RMX3771). All 4 scenarios confirmed.
+Closed commit: `ed97de7`.
