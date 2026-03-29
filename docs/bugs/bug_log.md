@@ -2632,3 +2632,91 @@ None yet — pending analysis and implementation scheduling.
 
 Status:
 Open.
+
+---
+
+## BUG-018 — Owner background largo → running+remaining=0 → Ready inválido → recovery tardía
+
+ID: BUG-018
+Date: 27/03/2026 (UTC+1)
+Platforms: All (Android, macOS — sync logic, platform-independent)
+Context: Run Mode — Account Mode, owner device en background ≥25 min (ej. MacBook en reposo).
+Cross-reference: Related to BUG-015 (cursor ingest/close validation, Closed/OK `e10a5028`).
+Fix branch: fix/bug018-running-zero-resume
+
+Repro summary:
+- Owner device (macOS) con sesión activa en `pomodoroRunning` (25 min), restante ~1050s.
+- MacBook se cierra / entra en reposo durante ≥25 min (el pomodoro expira durante el sueño).
+- MacBook se reabre.
+- Observar Run Mode en macOS y en dispositivo mirror (Android).
+
+Symptom:
+- Timer congelado en 00:00 con estado `Ready` y anillo ámbar completo durante ~20 minutos.
+- El grupo sigue running en Firestore; la pantalla Ready no debería aparecer.
+- Se recupera solo (~21 min en repro del 27/03/2026), pero el tiempo de congelación es inaceptable.
+
+Observed behavior:
+- Después de la apertura del MacBook, el old VM publica heartbeat con
+  `status=pomodoroRunning + remainingSeconds=0 + phaseStartedAt=antiguo`
+  (máquina local no ticked durante el sueño; `_deriveRemainingSeconds` calcula elapsed > phaseDuration → 0).
+- El nuevo VM se hidrata con `overshotTaskBoundary=true` pero la reconciliación
+  (`_applyGroupTimelineProjection`) tarda en completarse o necesita condiciones previas
+  (TimeSync válido, snapshot disponible).
+- Mientras tanto, el snapshot `running+remaining=0` en Firestore es recibido por dispositivos
+  mirror que lo proyectan via `_projectStateFromSession` a `PomodoroStatus.finished` → UI muestra Ready.
+- Heartbeats cada ~30s siguen publicando `running+remaining=0` (máquina local sigue en
+  `pomodoroRunning` sin transición), perpetuando el estado inválido en Firestore.
+- Log de Android muestra además saturación del buffer gráfico (`BLASTBufferQueue: Can't acquire
+  next buffer`) durante el periodo de congelación, causada por el mirror timer renderizando
+  cada segundo sin avanzar.
+- Firestore snapshot confirmado: `status=pomodoroRunning, remainingSeconds=0, lastUpdatedAt`
+  avanzando cada 30s. Snapshot coherente restaurado a las 17:08 UTC+1 (sessionRevision=33,
+  `shortBreakRunning`).
+
+Expected behavior:
+- Al volver de background largo, el owner device reconcilia la timeline del grupo ANTES de
+  publicar cualquier heartbeat.
+- Si el cursor/fase ya expiraron según la timeline, avanzar la máquina al estado correcto
+  y publicar ese estado coherente.
+- Ningún snapshot `activeExecution + remainingSeconds=0` debe publicarse sin transición previa.
+- Los dispositivos mirror no deben renderizar Ready si el grupo sigue en status=running en Firestore.
+
+Root cause (confirmed, 27/03/2026):
+1. `handleAppResumed` en Account mode (pomodoro_view_model.dart:2914-2923) salta
+   `_applyGroupTimelineProjection` y delega a `syncWithRemoteSession`. Si la sesión remota
+   ya está corrompida (publicada por el old VM justo antes de cerrarse), el sync remoto replica
+   el estado roto en lugar de corregirlo.
+2. `_buildCurrentSessionSnapshot` (línea 1186) usa `_machine.state.status` (todavía
+   `pomodoroRunning`, la máquina no transitó durante el sueño) con `_deriveRemainingSeconds`
+   que devuelve 0 por timeline — produciendo snapshot imposible sin disparar transición.
+3. `_projectStateFromSession` en mirror (línea 3581) proyecta `running+remaining=0+phaseStartedAt
+   antiguo` a `PomodoroStatus.finished` → renderiza Ready aunque grupo siga running.
+4. La recuperación final ocurre por `_hydrateOwnerSession` → `overshotTaskBoundary=true` →
+   `_applyGroupTimelineProjection(skipControlsCheck:true)`, pero depende de condiciones lentas
+   (TimeSync, snapshot procesado), resultando en ~21 min de congelación.
+5. Arquitectura de fondo: el avance de fase depende de que haya un device activo y en foreground.
+   Sin device activo, Firestore queda en el último estado publicado indefinidamente (sin Cloud
+   Function que avance la sesión server-side).
+
+Fix applied:
+Yes.
+
+Final fix (validated):
+- `b10fa02`: introdujo reconciliación de resume + hardening de mirror/repair,
+  pero generó regresión de amplificación de publish en owner echo.
+- `547c6f7` (`fix(bug-018): stop owner echo publish amplification in account mode`):
+  elimina reconciliación del publish normal y conserva reconciliación explícita en resume,
+  cortando el loop de publish/revisión y estabilizando transiciones.
+
+Validation evidence (27/03/2026):
+- Log PASS:
+  `docs/bugs/validation_bug018_2026_03_27/logs/2026-03-27_bug018_547c6f7_android_RMX3771_debug.log`
+- Señales clave:
+  - `Reconciled owner timeline before publish reason=resume` (1 vez).
+  - `TimeSync refreshed (break-start)` (1 vez) y `TimeSync refreshed (pomodoro-start)` (2 veces:
+    inicio + siguiente pomodoro), sin ráfagas de transiciones.
+  - `running + remaining=0`: 0 coincidencias.
+  - Resume coherente en G2: snapshot `remaining=663` a `20:00:55`, alineado con UI (~11:25).
+
+Status:
+Closed/OK (27/03/2026). closed_commit_hash: `547c6f7`.

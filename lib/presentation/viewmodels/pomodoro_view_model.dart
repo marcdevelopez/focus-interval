@@ -1264,7 +1264,48 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     return (phaseDuration - elapsed).clamp(0, phaseDuration);
   }
 
-  void _publishCurrentSession({DateTime? now}) {
+  bool _canReconcileOwnerTimelineBeforePublish() {
+    final group = _currentGroup;
+    if (group == null || group.status != TaskRunStatus.running) return false;
+    final appMode = ref.read(appModeProvider);
+    if (appMode != AppMode.account) return !isMirrorMode;
+    final active = activeSessionForCurrentGroup;
+    if (active != null) {
+      return active.ownerDeviceId == _deviceInfo.deviceId;
+    }
+    if (_sessionMissingWhileRunning) {
+      return _canPublishHeartbeatWhileSyncing();
+    }
+    if (!_machine.state.status.isActiveExecution) return false;
+    final initiator = group.scheduledByDeviceId;
+    return initiator == null || initiator == _deviceInfo.deviceId;
+  }
+
+  bool _reconcileOwnerTimelineBeforePublish(
+    DateTime now, {
+    required String reason,
+  }) {
+    if (!_canReconcileOwnerTimelineBeforePublish()) return false;
+    final reconciled = _applyGroupTimelineProjection(
+      now,
+      skipControlsCheck: true,
+    );
+    if (!reconciled) return false;
+    _bumpSessionRevision();
+    if (kDebugMode) {
+      debugPrint(
+        '[ActiveSession] Reconciled owner timeline before publish '
+        'reason=$reason '
+        'group=${_currentGroup?.id ?? 'n/a'} '
+        'taskIndex=$_currentTaskIndex '
+        'status=${_machine.state.status.name} '
+        'remaining=${_machine.state.remainingSeconds}',
+      );
+    }
+    return true;
+  }
+
+  void _publishCurrentSession({DateTime? now, String reason = 'publish'}) {
     if (ref.read(appModeProvider) == AppMode.account && !isTimeSyncReady) {
       final localNow = DateTime.now();
       _markTimeSyncWaitStarted(localNow);
@@ -1276,6 +1317,20 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     final resolvedNow = now ?? _serverNowFromOffset() ?? DateTime.now();
     final session = _buildCurrentSessionSnapshot(resolvedNow);
     if (session == null) return;
+    if (_isRunning(session.status) &&
+        session.remainingSeconds <= 0 &&
+        _currentGroup?.status == TaskRunStatus.running) {
+      if (kDebugMode) {
+        debugPrint(
+          '[ActiveSession] Suppressed impossible publish '
+          '(running+remaining=0) '
+          'reason=$reason '
+          'group=${session.groupId ?? 'n/a'} '
+          'owner=${session.ownerDeviceId}',
+        );
+      }
+      return;
+    }
     _sessionRepo.publishSession(session);
     _lastAppliedSessionRevision = session.sessionRevision;
     _lastAppliedSessionUpdatedAt = session.lastUpdatedAt;
@@ -2275,15 +2330,41 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   void _updateMirrorStateFromSession(PomodoroSession session) {
     final projectionNow = _projectionNowForSession(session);
-    final projected = _projectStateFromSession(
+    final resolvedNow = projectionNow ?? DateTime.now();
+    var projected = _projectStateFromSession(
       session,
       projectionNow: projectionNow,
     );
-    _applyProjectedState(
-      projected,
-      now: projectionNow ?? DateTime.now(),
-      syncMachine: false,
-    );
+    if (session.status.isActiveExecution &&
+        projected.status == PomodoroStatus.finished) {
+      final group = _currentGroup;
+      if (group != null && group.status == TaskRunStatus.running) {
+        final fallback = _projectFromGroupTimelineWithPauseOffset(
+          group,
+          resolvedNow,
+        );
+        if (fallback != null && fallback.state.status.isActiveExecution) {
+          _currentTaskIndex = fallback.taskIndex;
+          _currentItem = _resolveTaskItem(group, fallback.taskIndex);
+          _currentTaskStartedAt = fallback.taskStartedAt;
+          if (_currentItem != null) {
+            configureFromItem(_currentItem!);
+            projected = fallback.state;
+            if (kDebugMode) {
+              debugPrint(
+                '[ActiveSession] Mirror projection fallback '
+                '(prevent finished overshoot) '
+                'group=${group.id} '
+                'taskIndex=${fallback.taskIndex} '
+                'status=${projected.status.name} '
+                'remaining=${projected.remainingSeconds}',
+              );
+            }
+          }
+        }
+      }
+    }
+    _applyProjectedState(projected, now: resolvedNow, syncMachine: false);
   }
 
   bool _isRunning(PomodoroStatus status) =>
@@ -2916,6 +2997,13 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     _stopInactiveResync();
     final appMode = ref.read(appModeProvider);
     if (appMode == AppMode.account) {
+      final localNow = DateTime.now();
+      if (_reconcileOwnerTimelineBeforePublish(localNow, reason: 'resume')) {
+        _publishCurrentSession(
+          now: _serverNowFromOffset(localNow: localNow) ?? localNow,
+          reason: 'resume-reconcile',
+        );
+      }
       unawaited(_refreshTimeSyncIfNeeded(reason: 'resume'));
       _subscribeToRemoteSession(reason: 'resume-rebind');
       unawaited(syncWithRemoteSession(preferServer: true, reason: 'resume'));
@@ -3309,8 +3397,18 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
     final currentPomodoro = session.currentPomodoro;
     final outOfRangePomodoro =
         currentPomodoro < 1 || currentPomodoro > canonicalTotalPomodoros;
+    final sessionPhaseStartedAt = session.phaseStartedAt;
+    final activeZeroRemainingStale =
+        session.status.isActiveExecution &&
+        session.remainingSeconds <= 0 &&
+        session.phase != null &&
+        sessionPhaseStartedAt != null &&
+        session.phaseDurationSeconds > 0 &&
+        now.difference(sessionPhaseStartedAt).inSeconds >
+            session.phaseDurationSeconds;
     final needsRepair =
         inactiveWhileGroupRunning ||
+        activeZeroRemainingStale ||
         outOfRangePomodoro ||
         session.totalPomodoros != canonicalTotalPomodoros ||
         session.currentTaskIndex != resolvedIndex ||
@@ -3328,7 +3426,9 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         session.currentTaskStartedAt ??
         _resolveTaskStart(group, session, resolvedIndex);
 
-    if (inactiveWhileGroupRunning || outOfRangePomodoro) {
+    if (inactiveWhileGroupRunning ||
+        outOfRangePomodoro ||
+        activeZeroRemainingStale) {
       final projection = _projectFromGroupTimelineWithPauseOffset(group, now);
       if (projection != null) {
         targetIndex = projection.taskIndex;
@@ -3336,6 +3436,8 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
         targetState = projection.state;
         targetTaskStartedAt = projection.taskStartedAt;
       } else if (inactiveWhileGroupRunning) {
+        return session;
+      } else if (activeZeroRemainingStale) {
         return session;
       } else {
         final clampedPomodoro = currentPomodoro.clamp(
