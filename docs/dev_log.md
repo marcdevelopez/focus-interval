@@ -15709,3 +15709,40 @@ currently being edited."
 ### Status after this block
 
 - Edited task intent is visually clearer with minimal UI noise increase.
+
+---
+
+## Block 689 — BUG-016 Patch 2 fix: duplicate “No changes applied.” hint on sheet exit (29/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 UX correctness fix.
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** prevent duplicate exit hint when closing preview sheet with Back.
+
+### Context
+
+User validation detected that exiting preview with Back after local edits could
+show the same `No changes applied.` SnackBar twice in a row.
+
+### Root cause
+
+Two independent paths were showing the same hint for the same close action:
+- explicit Back handler (`_closeWithoutApply`), and
+- `PopScope.onPopInvokedWithResult` after `Navigator.pop()`.
+
+### Changes applied
+
+- Added a one-shot suppression guard (`_skipNextPopHint`) in
+  `task_weight_preview_sheet.dart`.
+- Behavior now:
+  - Back button close with unapplied edits: hint shown once.
+  - System back/gesture close with unapplied edits: hint shown once.
+  - No unapplied edits: no hint.
+
+### Runtime evidence
+
+- Local gate PASS:
+  - `flutter analyze`
+
+### Status after this block
+
+- Exit feedback is now consistent and non-duplicated across close paths.

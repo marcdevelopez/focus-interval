@@ -44,6 +44,7 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
   String? _warningMessage;
   int? _requestedValue;
   bool _hasUserInteracted = false;
+  bool _skipNextPopHint = false;
 
   bool get _singleTask => widget.baselineTasks.length <= 1;
 
@@ -365,6 +366,7 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
   void _closeWithoutApply() {
     if (_hasUnappliedChanges) {
       _showNoChangesAppliedHint();
+      _skipNextPopHint = true;
     }
     Navigator.of(context).pop();
   }
@@ -436,7 +438,10 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
         child: PopScope(
           canPop: true,
           onPopInvokedWithResult: (didPop, _) {
-            if (didPop && _hasUnappliedChanges) {
+            if (!didPop) return;
+            final skipHint = _skipNextPopHint;
+            _skipNextPopHint = false;
+            if (!skipHint && _hasUnappliedChanges) {
               _showNoChangesAppliedHint();
             }
           },
