@@ -6,6 +6,7 @@ import 'package:focus_interval/data/models/selected_sound.dart';
 import 'package:focus_interval/data/models/schema_version.dart';
 import 'package:focus_interval/domain/validators.dart';
 import 'package:focus_interval/presentation/providers.dart';
+import 'package:focus_interval/presentation/viewmodels/task_editor_view_model.dart';
 
 void main() {
   group('TaskEditorViewModel break guidance', () {
@@ -91,6 +92,182 @@ void main() {
       expect(guidance.hasSoftWarning, true);
       expect(guidance.shortStatus, BreakDurationStatus.suboptimal);
       expect(guidance.longStatus, BreakDurationStatus.suboptimal);
+    });
+  });
+
+  group('TaskEditorViewModel weight redistribution', () {
+    late ProviderContainer container;
+    late DateTime now;
+
+    setUp(() {
+      container = ProviderContainer();
+      now = DateTime(2026, 3, 28);
+    });
+
+    tearDown(() {
+      container.dispose();
+    });
+
+    PomodoroTask buildTask({
+      required String id,
+      required int totalPomodoros,
+      int pomodoroMinutes = 15,
+    }) {
+      return PomodoroTask(
+        id: id,
+        name: id,
+        dataVersion: kCurrentDataVersion,
+        pomodoroMinutes: pomodoroMinutes,
+        shortBreakMinutes: 5,
+        longBreakMinutes: 15,
+        totalPomodoros: totalPomodoros,
+        longBreakInterval: 4,
+        order: now.millisecondsSinceEpoch,
+        startSound: const SelectedSound.builtIn('default_chime'),
+        startBreakSound: const SelectedSound.builtIn('default_chime_break'),
+        finishTaskSound: const SelectedSound.builtIn('default_chime_finish'),
+        createdAt: now,
+        updatedAt: now,
+      );
+    }
+
+    test('redistributeWeightPercent keeps existing fixed behavior', () {
+      final viewModel = container.read(taskEditorProvider.notifier);
+      final edited = buildTask(id: 'A', totalPomodoros: 5);
+      final tasks = [
+        edited,
+        buildTask(id: 'B', totalPomodoros: 4),
+        buildTask(id: 'C', totalPomodoros: 1),
+        buildTask(id: 'D', totalPomodoros: 1),
+      ];
+
+      final defaultResult = viewModel.redistributeWeightPercent(
+        edited: edited,
+        targetPercent: 80,
+        tasks: tasks,
+      );
+      final fixedResult = viewModel.redistributeWeightPercent(
+        edited: edited,
+        targetPercent: 80,
+        tasks: tasks,
+        mode: WeightEditMode.fixed,
+      );
+
+      expect(defaultResult, fixedResult);
+    });
+
+    test('redistributeWeightPercent flexible changes only edited task', () {
+      final viewModel = container.read(taskEditorProvider.notifier);
+      final edited = buildTask(id: 'A', totalPomodoros: 5);
+      final tasks = [
+        edited,
+        buildTask(id: 'B', totalPomodoros: 4),
+        buildTask(id: 'C', totalPomodoros: 1),
+        buildTask(id: 'D', totalPomodoros: 1),
+      ];
+
+      final result = viewModel.redistributeWeightPercent(
+        edited: edited,
+        targetPercent: 80,
+        tasks: tasks,
+        mode: WeightEditMode.flexible,
+      );
+
+      expect(result['B'], 4);
+      expect(result['C'], 1);
+      expect(result['D'], 1);
+      expect(result['A'], 24);
+    });
+
+    test('redistributeWeightPercent flexible can grow beyond historical cap', () {
+      final viewModel = container.read(taskEditorProvider.notifier);
+      final edited = buildTask(id: 'G1', totalPomodoros: 3, pomodoroMinutes: 15);
+      final tasks = [
+        edited,
+        buildTask(id: 'G2', totalPomodoros: 3, pomodoroMinutes: 15),
+        buildTask(id: 'G3', totalPomodoros: 3, pomodoroMinutes: 15),
+        buildTask(id: 'G4', totalPomodoros: 10, pomodoroMinutes: 25),
+      ];
+
+      final result = viewModel.redistributeWeightPercent(
+        edited: edited,
+        targetPercent: 80,
+        tasks: tasks,
+        mode: WeightEditMode.flexible,
+      );
+
+      expect(result['G1'], greaterThan(27));
+    });
+
+    test('redistributeTotalPomodoros fixed preserves group total', () {
+      final viewModel = container.read(taskEditorProvider.notifier);
+      final edited = buildTask(id: 'A', totalPomodoros: 5);
+      final tasks = [
+        edited,
+        buildTask(id: 'B', totalPomodoros: 4),
+        buildTask(id: 'C', totalPomodoros: 1),
+        buildTask(id: 'D', totalPomodoros: 1),
+      ];
+
+      final result = viewModel.redistributeTotalPomodoros(
+        edited: edited,
+        targetPomodoros: 8,
+        tasks: tasks,
+        mode: WeightEditMode.fixed,
+      );
+
+      final total = result.values.fold<int>(0, (sum, value) => sum + value);
+      expect(total, 11);
+      expect(result['A'], 8);
+      expect(result['B']!, greaterThanOrEqualTo(1));
+      expect(result['C']!, greaterThanOrEqualTo(1));
+      expect(result['D']!, greaterThanOrEqualTo(1));
+    });
+
+    test('redistributeTotalPomodoros flexible changes only edited task', () {
+      final viewModel = container.read(taskEditorProvider.notifier);
+      final edited = buildTask(id: 'A', totalPomodoros: 5);
+      final tasks = [
+        edited,
+        buildTask(id: 'B', totalPomodoros: 4),
+        buildTask(id: 'C', totalPomodoros: 1),
+        buildTask(id: 'D', totalPomodoros: 1),
+      ];
+
+      final result = viewModel.redistributeTotalPomodoros(
+        edited: edited,
+        targetPomodoros: 8,
+        tasks: tasks,
+        mode: WeightEditMode.flexible,
+      );
+
+      expect(result['A'], 8);
+      expect(result['B'], 4);
+      expect(result['C'], 1);
+      expect(result['D'], 1);
+    });
+
+    test('flexible picks exact percentage when reachable', () {
+      final viewModel = container.read(taskEditorProvider.notifier);
+      final edited = buildTask(id: 'A', totalPomodoros: 90);
+      final tasks = [
+        edited,
+        buildTask(id: 'B', totalPomodoros: 1),
+        buildTask(id: 'C', totalPomodoros: 1),
+        buildTask(id: 'D', totalPomodoros: 1),
+      ];
+
+      final result = viewModel.redistributeWeightPercent(
+        edited: edited,
+        targetPercent: 98,
+        tasks: tasks,
+        mode: WeightEditMode.flexible,
+      );
+
+      expect(result['A'], 117);
+      expect(result['B'], 1);
+      expect(result['C'], 1);
+      expect(result['D'], 1);
     });
   });
 }

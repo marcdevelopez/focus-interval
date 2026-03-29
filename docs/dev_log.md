@@ -25,9 +25,9 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **Postponed-anchor cancel no longer re-anchors postponed scheduled start (`BUG-F25-I`)**
-Current focus: **Prioritize active bug-log queue sync/triage before continuing RVP backlog**
-Last update: **25/03/2026**
+Last bug fix: **BUG-016 Patch 2 — preview-first Task weight/Total pomodoros flow finalized (`1edb63f` + follow-up polish through `231b468`)**
+Current focus: **BUG-017 follow-up + roadmap validation backlog**
+Last update: **29/03/2026**
 
 ---
 
@@ -14924,3 +14924,875 @@ bug (`BUG-016`), which no longer matched the ledger queue.
 - Snapshot summary now matches the active non-closed bug queue in the same file
   (`BUGLOG-016`, `BUGLOG-017` both `Pending`).
 - Zero open P0/P1 bugs remains unchanged.
+
+---
+
+## Block 671 — BUG-016 docs-first plan locked: preview flow + explicit fixed/flexible modes (27/03/2026)
+
+**Current branch intent:** BUG-016 documentation planning with explicit two-mode task-weight editing.
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Docs-first only (no runtime code changes in this block).
+
+### Decision locked
+
+- BUG-016 now has an explicit product direction approved on 27/03/2026:
+  preview-first editing with two calculation modes.
+- Mode 1: **Fixed total** (default) — keeps selected-group total work constant
+  and redistributes other selected tasks proportionally.
+- Mode 2: **Flexible total** — keeps other selected tasks unchanged and allows
+  selected-group total work to change.
+- The same preview logic is required for both **Task weight (%)** and
+  **Total pomodoros** edits, with explicit **Apply** and **Cancel**.
+
+### Documents synchronized
+
+- `docs/specs.md`
+  - Added explicit preview-first editing contract.
+  - Added explicit two-mode behavior (`Fixed total` / `Flexible total`).
+  - Clarified that Total pomodoros edits reuse the same preview and mode selector.
+- `docs/bugs/bug_log.md`
+  - Updated BUG-016 from “product decision pending” to “product decision approved”.
+  - Replaced option list with approved implementation direction and planned file scope.
+- `docs/validation/validation_ledger.md`
+  - Updated BUGLOG-016 item text to reflect locked two-mode direction and baseline-freeze requirement.
+  - Synced active bug-log queue header date to 27/03/2026.
+- `docs/roadmap.md`
+  - Added Phase 10 reopened item for BUG-016 follow-up (preview-first editor + explicit two modes).
+
+### Ledger status after this block
+
+- Active non-closed bug-log entries remain: 2 (`BUG-016`, `BUG-017`; both P2 Pending).
+- Zero open P0/P1 bugs remains unchanged.
+
+---
+
+## Block 672 — BUG-016 baseline validation packet documented (FAIL) with full evidence set (27/03/2026)
+
+**Current branch intent:** BUG-016 docs-first validation evidence and root-cause tracing.
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Validation documentation only (no runtime fix in this block).
+
+### What was added
+
+- Created mandatory validation artifacts for BUG-016:
+  - `docs/bugs/validation_bug016_2026_03_27/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug016_2026_03_27/quick_pass_checklist.md`
+- Preserved run log evidence:
+  - `docs/bugs/validation_bug016_2026_03_27/logs/2026-03-27_bug016_fa907c9_macos_debug.log`
+- Imported and normalized screenshot evidence names:
+  - `docs/bugs/validation_bug016_2026_03_27/screenshots/2026-03-27_bug016_01_macos.png`
+  - …
+  - `docs/bugs/validation_bug016_2026_03_27/screenshots/2026-03-27_bug016_13_macos.png`
+
+### Validation findings recorded
+
+- Repeatable blur overwrite in editor:
+  - `69 -> 43`, `50 -> 36`, `45 -> 35`.
+- Save-time inconsistency between editor blur-state and Task List outcome.
+- Selected-group total pomodoros collapse captured in evidence sequence:
+  - initial selected total: `11` (`5+4+1+1`)
+  - final selected total: `6` (`3+1+1+1`)
+
+### Root-cause trace documented
+
+- Per-keystroke baseline mutation in weight `onChanged` path.
+- Blur-time percent resync recomputes from partial state before full redistribution apply.
+- Pending redistribution map is applied on Save after intermediate-state contamination.
+
+### Document synchronization
+
+- `docs/bugs/bug_log.md` (BUG-016): added 27/03 validation FAIL update with evidence refs.
+- `docs/validation/validation_ledger.md`:
+  - BUGLOG-016 moved `Pending -> In validation`.
+  - Item text extended with FAIL summary and evidence references.
+  - 27/03 snapshot wording updated (`BUG-016` now In validation P2).
+
+### Ledger status after this block
+
+- Active non-closed bug-log entries: 2 (`BUG-016` In validation P2, `BUG-017` Open P2).
+- Zero open P0/P1 bugs remains unchanged.
+
+---
+
+## Block 673 — BUG-016 Patch 1 implementation + validation closure (28/03/2026)
+
+**Current branch intent:** BUG-016 correctness fix closure (baseline freeze + blur/save sync) and documentation synchronization.
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Runtime patch + closure docs (Patch 1 only; Patch 2 UX remains pending).
+
+### Runtime fix delivered
+
+- Implemented Patch 1 on `lib/presentation/screens/task_editor_screen.dart`.
+- Commit: `8bad479` — `fix(bug016): stabilize task-weight baseline and save-flow percent sync`.
+- Core changes:
+  - Freeze selected weight baseline at weight-field focus gain.
+  - Prevent mixed-state overwrite in blur/save sync by prioritizing pending redistribution/last computed result.
+  - Keep save-confirmation modal flow deterministic (no `%` snap-back during modal).
+
+### Validation closure (owner-run + local gate)
+
+- Owner manual validation packet (28/03/2026) PASS:
+  - `80% -> 69%` closest result stays stable through blur/save/list/reopen.
+  - `50%` path remains coherent through blur + save-warning modal + list + reopen (no `36%` regression).
+  - `1%` path shows `No change possible` and persists coherent values.
+  - Task list values match editor values after save (deterministic persistence).
+- Local gate PASS:
+  - `flutter analyze`
+  - `flutter test test/domain/task_weighting_test.dart`
+  - `flutter test test/presentation/viewmodels/task_editor_view_model_test.dart`
+
+### Documents synchronized
+
+- `docs/bugs/bug_log.md`:
+  - BUG-016 status moved to `Closed/OK` for Patch 1.
+  - Added 28/03 PASS validation update and closure evidence.
+- `docs/bugs/validation_bug016_2026_03_27/plan_validacion_rapida_fix.md`:
+  - Local verification marked PASS; status moved to `Closed/OK (Patch 1)`.
+- `docs/bugs/validation_bug016_2026_03_27/quick_pass_checklist.md`:
+  - Closure checklist completed (all required boxes checked).
+- `docs/validation/validation_ledger.md`:
+  - `BUGLOG-016` moved to `Closed/OK` with commit + evidence.
+  - Active non-closed bug count snapshot updated.
+- `docs/roadmap.md`:
+  - Phase 10 BUG-016 line updated: Patch 1 Closed/OK; Patch 2 remains blocked on UX decisions (a–i).
+
+### Ledger status after this block
+
+- Active non-closed bug-log entries: 1 (`BUG-017` Open P2).
+- `BUGLOG-016` is now `Closed/OK` (Patch 1).
+- Phase 10 Patch 2 (preview UX) remains pending as roadmap follow-up, not a reopened correctness defect.
+
+---
+
+## Block 674 — BUG-016 Patch 2 UX decisions closed (28/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 UX design lock — documentation only.
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Design decisions only (no runtime changes in this block).
+
+### Context
+
+Following Patch 1 closure (Block 673), a design session between the user and Codex
+produced a complete and unambiguous specification for the Patch 2 preview sheet UX.
+Claude reviewed the full design, confirmed it is implementable without further ambiguity,
+and flagged one architectural detail not previously explicit: the editor fields
+become read-only tap targets in Patch 2 (not inline-editable), which supersedes
+the per-keystroke handlers introduced in Patch 1.
+
+### Decisions locked (a–p)
+
+All 9 original UX questions (a–i) plus 7 additional micro-clarifications (j–p):
+
+- a. Mode selector: segmented control (Fixed total | Flexible total) inside sheet.
+- b. Preview content: three-tier (result line + group impact + mini-table of all selected tasks).
+- c. Apply/Cancel: fixed footer, Cancel left / Apply right.
+- d. Preview trigger: tapping field opens sheet; live recalculation inside sheet.
+     Fields in editor are read-only tap targets — per-keystroke onChanged removed in Patch 2.
+- e. Mode switch: recalculates immediately, does not reset entered value.
+- f. Snackbar: eliminated; replaced by inline content inside sheet.
+- g. Visual form: three-tier layout (result + group impact + mini-table).
+- h. Cancel: restores pre-open snapshot; no DB write.
+- i. Scope: same sheet and selector for both Task weight (%) and Total pomodoros.
+- j. Flexible total: only edited task changes; all other selected tasks unchanged.
+- k. Search range (Flexible, % path): candidates 1..max(pom×3, pom+12), cap 99 (algorithmic only).
+- l. Tiebreaker: (1) smallest % deviation, (2) smallest group total change,
+     (3) smallest edited task change, (4) smaller resulting group total.
+- m. Apply/Save/Discard: Apply = local draft + dirty; Save = persist; Discard = reverts all draft.
+- n. 1 task selected: field disabled at 100%, no sheet, optional helper text.
+- o. Selection change with sheet open: close without apply + non-modal notice.
+- p. New ViewModel method: `redistributeTotalPomodoros` required for Total pomodoros path.
+
+### Documents synchronized
+
+- `docs/bugs/bug_log.md`: pending questions (a–i) replaced with closed decisions (a–p).
+  Patch 2 status updated from "blocked" to "implementation ready."
+- `docs/specs.md`: "UI implications" section expanded with full preview sheet specification
+  and ViewModel requirements for Patch 2.
+- `docs/roadmap.md`: Phase 10 BUG-016 Patch 2 line updated from "blocked 9 decisions" to
+  "all decisions closed, implementation ready."
+
+### Ledger status after this block
+
+- Active non-closed bug-log entries: 1 (`BUG-017` Open P2) — unchanged.
+- BUG-016 Patch 2 is a roadmap follow-up, not an open bug.
+
+---
+
+## Block 675 — BUG-016 Patch 2 implementation landed (preview sheet + fixed/flexible modes) (28/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 runtime implementation (preview-first editing UX).
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Runtime implementation + local gate (no device packet yet).
+
+### Implemented scope
+
+- Added `WeightEditMode` (`fixed` / `flexible`) in Task Editor ViewModel.
+- Extended `redistributeWeightPercent(...)` with mode-aware behavior.
+- Added `redistributeTotalPomodoros(...)` for the total-pomodoros preview path.
+- Added flexible-mode search with deterministic tiebreaking and algorithmic cap rule
+  `min(99, max(currentPom * 3, currentPom + 12))`.
+- Added new preview sheet UI (`task_weight_preview_sheet.dart`) with:
+  - input + live recalculation (inside sheet),
+  - segmented selector Fixed/Flexible for multi-task scope,
+  - requested/closest/result summary,
+  - before/after group impact,
+  - affected-tasks mini-list,
+  - fixed footer `Cancel` / `Apply`.
+- Refactored Task Editor weight row:
+  - `Task weight (%)` and `Total pomodoros` are now read-only tap targets.
+  - `Total pomodoros` stays enabled regardless of weight-field visibility.
+  - single-task scope rule applied: weight field disabled at `100%`, no sheet.
+- Added selection-change invalidation while sheet is open:
+  - close sheet without apply,
+  - show non-modal notice: `Group selection changed. Reopen to recalculate.`
+
+### Files changed
+
+- `lib/presentation/viewmodels/task_editor_view_model.dart`
+- `lib/presentation/screens/task_editor_screen.dart`
+- `lib/presentation/screens/task_weight_preview_sheet.dart` (new)
+- `test/presentation/viewmodels/task_editor_view_model_test.dart`
+- `docs/roadmap.md`
+
+### Local gate
+
+- PASS — `flutter analyze`
+- PASS — `flutter test test/presentation/viewmodels/task_editor_view_model_test.dart`
+- PASS — `flutter test test/domain/task_weighting_test.dart`
+
+### Status after this block
+
+- Patch 2 implementation is in branch and locally validated.
+- Device validation packet for Patch 2 remains pending before closure.
+
+---
+
+## Block 676 — BUG-016 Patch 2 UX clarity refinement: fullscreen preview + Back=Cancel (28/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 runtime/UI refinement (context clarity).
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Runtime UX adjustment + docs alignment.
+
+### Context
+
+User validation feedback confirmed contextual confusion because preview was rendered
+as a partial-height sheet, leaving `Edit task` AppBar content (`Save`) visible behind.
+This could lead to accidental mixed-context interactions and unclear navigation outcomes.
+
+### Changes applied
+
+- Preview surface updated to full-screen opaque rendering (no underlying editor
+  elements visible during preview).
+- Added top-left `Back` action inside preview with the exact same semantics as
+  `Cancel` (close without apply).
+- Existing footer actions remain unchanged (`Cancel` / `Apply`).
+
+### Runtime evidence
+
+- Commit: `bfcfa14` — `fix(bug016): make preview sheet fullscreen and add back action`
+- Local gate PASS after change:
+  - `flutter analyze`
+
+### Docs synchronized
+
+- `docs/specs.md`:
+  - Added explicit full-screen opaque preview-surface requirement.
+  - Added explicit `Back` action semantics equal to `Cancel`.
+
+### Status after this block
+
+- Patch 2 keeps local gate PASS.
+- Device validation packet still pending before final Patch 2 closure.
+
+---
+
+## Block 678 — BUG-016 Patch 2 UX clarity refinement: compact status semantics + interaction-aware warning gating (28/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 runtime/UI refinement (status clarity and redundancy reduction).
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Runtime UX adjustment + docs alignment.
+
+### Context
+
+User feedback identified two clarity issues in preview:
+- `Fixed total` explanation remained ambiguous about what total is preserved.
+- Orange warning text appeared immediately on open (and could feel incorrect) even
+  before a meaningful user change.
+Additionally, the top summary repeated data already visible elsewhere.
+
+### Changes applied
+
+- Reworded `Fixed total` explanation to explicitly state:
+  - selected-group total (pomodoros + work minutes) is preserved,
+  - closest achievable outcome is applied,
+  - other selected tasks are redistributed proportionally.
+- Removed redundant top summary lines:
+  - removed `Requested`,
+  - removed gray `Closest achievable`,
+  - removed `Result`.
+- Added compact status semantics:
+  - **green** success line for exact result,
+  - **orange** warning line only when needed.
+- Warning gating is now interaction-aware:
+  - no orange warning on first open,
+  - no orange warning when user returns to opening snapshot
+    (initial value in default mode),
+  - orange warning shown only after interaction when exactness is not possible or
+    when no change can be applied.
+
+### Runtime evidence
+
+- Commit: `37af472` — `fix(bug016): simplify preview status and suppress non-actionable warnings`
+- Local gate PASS after change:
+  - `flutter analyze`
+
+### Docs synchronized
+
+- `docs/specs.md`:
+  - clarified Fixed-mode explanation with preserved totals + closest-achievable semantics.
+  - defined compact status behavior and interaction-aware warning gating.
+- `docs/roadmap.md`:
+  - updated Phase 10 BUG-016 Patch 2 key decisions with compact status semantics.
+
+### Status after this block
+
+- Patch 2 keeps local gate PASS.
+- Device validation packet still pending before final Patch 2 closure.
+
+---
+
+## Block 677 — BUG-016 Patch 2 UX clarity refinement: inline business-rule explanation per mode (28/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 runtime/UI refinement (mode comprehension).
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Runtime UX adjustment + docs alignment.
+
+### Context
+
+User feedback: with only `Fixed total` / `Flexible total` labels, users have to
+guess expected behavior by trial-and-error because business rules are not explicit
+inside the preview flow.
+
+### Changes applied
+
+- Added inline explanation block directly below the segmented selector in preview.
+- Explanation updates dynamically with the selected mode:
+  - **Fixed total:** selected-group total stays constant; other selected tasks are
+    redistributed proportionally.
+  - **Flexible total:** other selected tasks stay unchanged; only edited task changes,
+    so selected-group total may change.
+
+### Runtime evidence
+
+- Commit: `7699ba4` — `fix(bug016): explain fixed vs flexible business rules in preview`
+- Local gate PASS after change:
+  - `flutter analyze`
+
+### Docs synchronized
+
+- `docs/specs.md`:
+  - Added mandatory inline mode explanation requirement under preview-sheet spec.
+- `docs/roadmap.md`:
+  - Updated Phase 10 BUG-016 Patch 2 key decisions with inline mode explanation.
+
+### Status after this block
+
+- Patch 2 keeps local gate PASS.
+- Device validation packet still pending before final Patch 2 closure.
+
+---
+
+## Block 679 — BUG-016 Patch 2 algorithm refinement: Flexible % search without hard cap (28/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 runtime algorithm correctness refinement.
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** ViewModel redistribution logic + tests.
+
+### Context
+
+User validation exposed a correctness gap in Flexible `%`: high requested percentages
+could collapse to low outcomes because the historical candidate cap prevented
+mathematically reachable results.
+
+### Changes applied
+
+- Removed the artificial Flexible `%` candidate cap from `TaskEditorViewModel`.
+- Reworked flexible search to evaluate achievable displayed percentages with
+  deterministic selection (same tiebreak policy).
+- Updated/extended redistribution tests:
+  - preserved fixed-mode parity check,
+  - added regression for growth beyond historical cap,
+  - updated exact-reachable flexible expectation.
+
+### Runtime evidence
+
+- Commit: `e51de5f` — `fix(bug016): remove flexible percent cap and update redistribution tests`
+- Local gate PASS:
+  - `flutter test test/presentation/viewmodels/task_editor_view_model_test.dart`
+
+### Status after this block
+
+- Flexible `%` closest-achievable behavior is now mathematically consistent with
+  unlimited candidate search.
+- Device validation packet remains pending.
+
+---
+
+## Block 680 — BUG-016 Patch 2 UX refinement: continuous-time caution + reminder chips (28/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 runtime UX clarity and persistence refinement.
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Preview sheet + Task List + Groups Hub + shared utility + tests.
+
+### Context
+
+Approved UX direction:
+- warn users inline (non-blocking) when edited plans become unusually long in
+  continuous `start → end` time (focus + breaks),
+- keep a persistent reminder label after save,
+- expose `Total time` chip clearly in Task List selected cards.
+
+### Changes applied
+
+- Added shared domain helper:
+  - `ContinuousPlanLoadLevel` (`none`, `unusual`, `superhuman`, `machineLevel`)
+  - thresholds: `>=11h`, `>=24h`, `>=72h`
+  - label/message helpers and continuous-duration calculators.
+- Added shared presentation visual helper for level icon+color chips.
+- Preview sheet:
+  - renders inline caution (icon + text) below `Group work`,
+  - caution appears only after interaction and only when net preview differs from opening snapshot.
+- Task List selected cards:
+  - `Time range` row now includes `Total <duration>` chip (`start → end`, includes breaks),
+  - adds persistent level reminder chip (`Unusual` / `Superhuman` / `Machine-level`).
+- Groups Hub:
+  - adds level reminder chip to `Total time` in cards and summary modal.
+
+### Runtime evidence
+
+- Commit: `7736f7b` — `feat(bug016): add continuous-time cautions and reminder chips across preview/list/hub`
+- Local gate PASS:
+  - `flutter analyze`
+  - `flutter test test/domain/continuous_plan_load_test.dart`
+  - `flutter test test/presentation/viewmodels/task_editor_view_model_test.dart`
+  - `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Groups Hub summary modal shows timing totals and task breakdown"`
+
+### Status after this block
+
+- Continuous-time caution/reminder UX is implemented with non-blocking behavior.
+- Device validation packet remains pending before final Patch 2 closure.
+
+---
+
+## Block 681 — BUG-016 Patch 2 UX polish: work-duration readability + header consistency in preview sheets (28/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 runtime/UI polish (preview clarity).
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Preview sheet UI consistency + docs alignment.
+
+### Context
+
+User feedback highlighted two coherence issues:
+- `Group work` values in preview were hard to read when large (`N min` only),
+- preview top bar used `Back` text style inconsistent with other app screens
+  (`< Edit ...` pattern).
+
+### Changes applied
+
+- Preview `Group work` now formats durations as:
+  - `N min` for values `< 60`,
+  - `Hh Mm` for values `>= 60`.
+- Updated preview header to app-consistent style:
+  - chevron back icon + sheet title row,
+  - removed standalone `Back` text button presentation.
+
+### Runtime evidence
+
+- Local gate PASS:
+  - `flutter analyze`
+
+### Docs synchronized
+
+- `docs/specs.md`:
+  - Group impact block now specifies readable duration formatting (`min` vs `Hh Mm`).
+  - Preview top-left back affordance wording aligned with app header style expectation.
+
+### Status after this block
+
+- BUG-016 Patch 2 UI polish applied and documented.
+- Device validation packet remains pending before final Patch 2 closure.
+
+---
+
+## Block 682 — BUG-016 Patch 2 visual consistency: chevron-style back affordance in preview sheets (28/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 runtime/UI polish (navigation visual coherence).
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Preview sheet visual consistency only.
+
+### Context
+
+User feedback: preview header back icon still looked different from the rest of
+the app (`Edit task` style), creating a subtle but visible style break.
+
+### Changes applied
+
+- Replaced the preview header back icon from arrow-with-shaft to chevron-style
+  icon to align with app navigation visual language.
+- Behavior remains unchanged (`Back` semantics still equal to `Cancel`).
+
+### Runtime evidence
+
+- Local gate PASS:
+  - `flutter analyze`
+
+### Status after this block
+
+- Preview navigation affordance now follows the same visual convention as
+  adjacent app screens.
+
+---
+
+## Block 683 — BUG-016 Patch 2 consistency fix: Edit Task weight percent after Apply now matches preview map (28/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 runtime correctness fix (Edit Task interim percent coherence).
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Task Editor local scope calculation only.
+
+### Context
+
+Validation found a deterministic mismatch after `Apply` in preview sheets:
+`Edit task` could show an interim `%` inconsistent with sheet preview and final
+post-save Task List values (examples: `86% -> 49%`, `72% -> 84%`).
+
+Root cause was local-only: after `Apply`, the editor recalculated `%` with only
+the edited task updated, while other selected tasks still came from the old
+list snapshot until save.
+
+### Changes applied
+
+- `task_editor_screen.dart` now overlays `_pendingRedistribution` onto the
+  selected-weight scope used for `%` rendering in `Edit task`.
+- Added helper `_overlayPendingRedistribution(...)` and applied it before
+  `normalizeTaskWeightPercents(...)` in `build()`.
+- This keeps interim `%` in `Edit task` aligned with the exact map already
+  produced by preview and later persisted on `Save`.
+
+### Runtime evidence
+
+- Local gate PASS:
+  - `flutter analyze`
+
+### Status after this block
+
+- Interim `%` rendering in `Edit task` is now coherent with preview/apply/save
+  for pending redistribution scenarios.
+
+---
+
+## Block 684 — BUG-016 Patch 2 UI compactness: value-only total-time chip + single-line timing row + machine label shortening (28/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 runtime/UI compactness refinement.
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Task List chip presentation + continuous-load label normalization.
+
+### Context
+
+User feedback requested tighter task-card timing rows so chips stay in one line
+more consistently:
+- remove redundant `Total` prefix in selected-card total duration chips,
+- visually distinguish total duration chip,
+- shorten extreme-load label to `Machine`.
+
+### Changes applied
+
+- `TaskCard` timing chips:
+  - switched from wrapping layout to one-line horizontal flow with manual scroll.
+  - total-duration chip now shows value only (example: `2h 11m`).
+  - total-duration chip receives emphasized style (stronger tone and weight).
+- Continuous-load label:
+  - renamed `Machine-level` chip label to `Machine`.
+  - load chip now has a max width with ellipsis-safe text behavior.
+
+### Runtime evidence
+
+- Local gate PASS:
+  - `flutter analyze`
+
+### Docs synchronized
+
+- `docs/specs.md`:
+  - Task List selected `Time range` row now specifies value-only total-duration chip
+    and single-line horizontal chip behavior.
+  - continuous-load reminder label list updated to `Unusual / Superhuman / Machine`.
+- `docs/roadmap.md`:
+  - Phase 10 BUG-016 Patch 2 decision line updated from `Machine-level` to `Machine`.
+
+### Status after this block
+
+- Task List timing row is now more compact and consistent for long plans without
+  changing business logic.
+
+---
+
+## Block 685 — BUG-016 Patch 2 desktop input fix: macOS mouse-wheel horizontal chip scrolling (28/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 runtime UX/input compatibility fix.
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** Task List selected-card timing row interaction on desktop pointer devices.
+
+### Context
+
+After compact-chip rollout, Android behaved correctly but macOS users could not
+scroll the horizontal chip row with a mouse wheel. This blocked access to hidden
+chips when content overflowed.
+
+### Changes applied
+
+- Added desktop-friendly horizontal scroller wrapper in `TaskCard` timing row:
+  - maps pointer wheel delta (vertical or horizontal) to horizontal scroll while hovered,
+  - enables drag scrolling with mouse/trackpad devices.
+- Kept visual layout unchanged (single-line compact chips).
+
+### Runtime evidence
+
+- Local gate PASS:
+  - `flutter analyze`
+
+### Docs synchronized
+
+- `docs/specs.md`:
+  - selected `Time range` row now explicitly requires desktop pointer input support
+    (drag + wheel/scroll horizontal navigation while hovered).
+
+### Status after this block
+
+- Horizontal chip overflow is now reachable on macOS pointer input without
+  requiring touch gestures.
+
+---
+
+## Block 686 — BUG-016 Patch 2 preview-sheet clarity: stronger task identity + full-width selected-task chips (29/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 preview-sheet readability/consistency refinement.
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** `TaskWeightPreviewSheet` UI hierarchy and selected-task result emphasis.
+
+### Context
+
+User validation highlighted two clarity issues in the preview sheet:
+- the edited task/group identifier under the title was visually weak,
+- `Selected tasks` cards had inconsistent widths and text-heavy rows, making
+  before/after comparison harder to scan.
+
+### Changes applied
+
+- Header identity line (task/group name under the sheet title):
+  - increased contrast (`white70`), semibold weight, and stable left alignment
+    with the title text start.
+- `Selected tasks` redesign:
+  - cards are now full-width with uniform layout across all devices.
+  - each card uses two metric rows with chips:
+    - `Pomodoros`: initial chip -> result chip
+    - `Weight`: initial chip -> result chip
+  - initial chips remain neutral gray.
+  - result-chip emphasis is field-focused:
+    - editing `Total pomodoros`: only pomodoros result chip uses success/warning color.
+    - editing `Task weight (%)`: only weight result chip uses success/warning color.
+    - non-edited dimension result chip stays neutral gray.
+  - edited task keeps a stronger neutral border highlight (no severity red).
+- Fixed-mode explanation text updated to avoid promising strict invariance and
+  reflect integer-constrained closest-achievable behavior.
+
+### Runtime evidence
+
+- Local gate PASS:
+  - `flutter analyze`
+
+### Docs synchronized
+
+- `docs/specs.md`:
+  - Fixed mode wording aligned with closest-achievable + integer constraints.
+  - `Selected tasks` section updated to single-column full-width chip rows and
+    field-focused result-chip coloring rules.
+
+### Status after this block
+
+- Preview-sheet comparisons are more legible and less ambiguous, especially for
+  large numbers and dense selected-task sets.
+
+---
+
+## Block 687 — BUG-016 Patch 2 sheet actions simplification + edited-row baseline emphasis (29/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 preview-sheet interaction simplification.
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** sheet exit/apply UX and edited-dimension baseline chip emphasis.
+
+### Context
+
+Follow-up user review requested:
+- remove duplicate bottom actions (`Cancel` + `Apply`) and keep a faster
+  sub-screen interaction model,
+- keep `Back` as the cancel-equivalent,
+- provide a subtle confirmation when exiting with unapplied changes,
+- improve initial-state chip distinction on the edited row/dimension.
+
+### Changes applied
+
+- Sheet action model:
+  - removed bottom footer buttons (`Cancel` / `Apply`).
+  - added top-right `Apply` button on the same row as the sheet title.
+  - top-left back chevron now closes without applying (cancel semantics).
+- Exit feedback:
+  - if the user exits with pending unapplied changes, a lightweight hint is shown:
+    `No changes applied.`
+  - if there are no pending changes, close remains silent.
+  - system back uses the same hint policy via `PopScope`.
+- Edited-row baseline focus:
+  - initial (left) chip now receives a brighter/stronger neutral style only for
+    the edited dimension on the edited task row.
+  - non-edited dimensions and other task rows keep neutral baseline style.
+
+### Runtime evidence
+
+- Local gate PASS:
+  - `flutter analyze`
+
+### Docs synchronized
+
+- `docs/specs.md`:
+  - preview-sheet actions updated from footer Cancel/Apply to header Back + Apply.
+  - added Back-exit hint rule for unapplied changes.
+
+### Status after this block
+
+- Preview sheet is now faster and less redundant (single visible apply action),
+  while preserving safe exit semantics and clearer focus on the edited baseline.
+
+---
+
+## Block 688 — BUG-016 Patch 2 edited-task focus reinforcement in selected-task list (29/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 visual focus refinement.
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** selected-task chips — stronger differentiation for edited task/dimension.
+
+### Context
+
+User review detected that edited-dimension result chips still looked too similar
+between the edited task and other tasks, reducing clarity about "which task is
+currently being edited."
+
+### Changes applied
+
+- In selected-task cards, for the edited dimension:
+  - edited task result chip now uses stronger emphasis than the rest
+    (thicker border + stronger fill intensity),
+  - other task result chips keep standard emphasis.
+- Existing behavior preserved:
+  - only the edited dimension is color-accented,
+  - non-edited dimension remains neutral,
+  - edited task row keeps neutral border highlight.
+
+### Runtime evidence
+
+- Local gate PASS:
+  - `flutter analyze`
+
+### Docs synchronized
+
+- `docs/specs.md`:
+  - selected-task list rules now explicitly require stronger edited-task chip emphasis
+    within the edited dimension.
+
+### Status after this block
+
+- Edited task intent is visually clearer with minimal UI noise increase.
+
+---
+
+## Block 689 — BUG-016 Patch 2 fix: duplicate “No changes applied.” hint on sheet exit (29/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 UX correctness fix.
+**Branch:** `fix/bug016-weight-edit-preview-modes`
+**Scope:** prevent duplicate exit hint when closing preview sheet with Back.
+
+### Context
+
+User validation detected that exiting preview with Back after local edits could
+show the same `No changes applied.` SnackBar twice in a row.
+
+### Root cause
+
+Two independent paths were showing the same hint for the same close action:
+- explicit Back handler (`_closeWithoutApply`), and
+- `PopScope.onPopInvokedWithResult` after `Navigator.pop()`.
+
+### Changes applied
+
+- Added a one-shot suppression guard (`_skipNextPopHint`) in
+  `task_weight_preview_sheet.dart`.
+- Behavior now:
+  - Back button close with unapplied edits: hint shown once.
+  - System back/gesture close with unapplied edits: hint shown once.
+  - No unapplied edits: no hint.
+
+### Runtime evidence
+
+- Local gate PASS:
+  - `flutter analyze`
+
+### Status after this block
+
+- Exit feedback is now consistent and non-duplicated across close paths.
+
+---
+
+## Block 690 — BUG-016 Patch 2 closure (29/03/2026)
+
+**Current branch intent:** BUG-016 Patch 2 closure and docs synchronization.  
+**Branch:** `fix/bug016-weight-edit-preview-modes`  
+**Scope:** Formal closure of Phase 10 BUG-016 follow-up (preview UX track).
+
+### Context
+
+After the final UI/UX polish cycle and user-driven validation matrix, Patch 2
+behavior is stable and coherent with the latest approved semantics:
+- preview-first editing for Task weight (%) and Total pomodoros,
+- Fixed/Flexible mode behavior and messaging alignment,
+- Back/Apply semantics clarity,
+- deterministic preview -> apply -> save pipeline,
+- continuous-time caution/reminder rendering consistency.
+
+### Validation closure packet synchronized
+
+Created and synchronized:
+- `docs/bugs/validation_bug016_2026_03_28/plan_validacion_rapida_fix.md`
+- `docs/bugs/validation_bug016_2026_03_28/quick_pass_checklist.md`
+- Existing runtime evidence log retained:
+  - `docs/bugs/validation_bug016_2026_03_28/logs/2026-03-28_bug016p2_7736f7b_macos_debug.log`
+
+### Local gate (final closure run)
+
+- `flutter analyze` — PASS
+- `flutter test test/domain/task_weighting_test.dart` — PASS
+- `flutter test test/presentation/viewmodels/task_editor_view_model_test.dart` — PASS
+- `flutter test test/domain/continuous_plan_load_test.dart` — PASS
+
+### Cross-doc synchronization
+
+- `docs/roadmap.md`
+  - Reopened Phase 10 BUG-016 Patch 2 line moved to **Closed/OK**
+    (`RVP-070`, validation complete 29/03/2026).
+- `docs/validation/validation_ledger.md`
+  - Added `RVP-070` as **Closed/OK** with evidence references.
+  - Updated `BUGLOG-016` note to reflect Patch 2 closure tracked via `RVP-070`.
+- `docs/bugs/bug_log.md`
+  - BUG-016 section updated: Patch 2 implementation + validation packet + final
+    status now fully closed (Patch 1 + Patch 2).
+
+### Status after this block
+
+- BUG-016 is fully closed end-to-end (Patch 1 correctness + Patch 2 preview UX).
+- Phase 10 BUG-016 follow-up no longer pending device validation.

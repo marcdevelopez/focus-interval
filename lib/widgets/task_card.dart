@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import '../data/models/pomodoro_task.dart';
 import '../data/models/selected_sound.dart';
 import '../data/services/local_sound_overrides.dart';
@@ -28,6 +29,8 @@ class TaskCard extends StatelessWidget {
   final VoidCallback onDelete;
   final Widget? reorderHandle;
   final String? timeRange;
+  final String? totalTime;
+  final Widget? loadLevelChip;
   final LocalSoundOverrides? soundOverrides;
   final int? weightPercent;
   final bool enableInteraction;
@@ -41,6 +44,8 @@ class TaskCard extends StatelessWidget {
     required this.onDelete,
     this.reorderHandle,
     this.timeRange,
+    this.totalTime,
+    this.loadLevelChip,
     this.soundOverrides,
     this.weightPercent,
     this.enableInteraction = true,
@@ -87,8 +92,7 @@ class TaskCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (weightPercent != null)
-                          _weightBadge(weightPercent!),
+                        if (weightPercent != null) _weightBadge(weightPercent!),
                       ],
                     ),
                     const SizedBox(height: 10),
@@ -175,7 +179,13 @@ class TaskCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Expanded(child: _timeRangeChips(timeRange!)),
+                          Expanded(
+                            child: _timeRangeChips(
+                              timeRange!,
+                              totalTime: totalTime,
+                              loadLevelChip: loadLevelChip,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -220,11 +230,7 @@ class TaskCard extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        Container(
-          width: 1,
-          height: 18,
-          color: Colors.white24,
-        ),
+        Container(width: 1, height: 18, color: Colors.white24),
         const SizedBox(width: 10),
         Expanded(
           child: _soundEntry(
@@ -237,7 +243,9 @@ class TaskCard extends StatelessWidget {
     );
   }
 
-  Future<_SoundLabels> _resolveSoundLabels(LocalSoundOverrides overrides) async {
+  Future<_SoundLabels> _resolveSoundLabels(
+    LocalSoundOverrides overrides,
+  ) async {
     final startOverride = await overrides.getOverride(
       task.id,
       SoundSlot.pomodoroStart,
@@ -247,9 +255,11 @@ class TaskCard extends StatelessWidget {
       SoundSlot.breakStart,
     );
     return _SoundLabels(
-      start: _overrideLabel(startOverride) ??
+      start:
+          _overrideLabel(startOverride) ??
           _soundLabel(task.startSound, slot: SoundSlot.pomodoroStart),
-      breakStart: _overrideLabel(breakOverride) ??
+      breakStart:
+          _overrideLabel(breakOverride) ??
           _soundLabel(task.startBreakSound, slot: SoundSlot.breakStart),
     );
   }
@@ -438,8 +448,7 @@ class TaskCard extends StatelessWidget {
     double spacing,
     int totalDots, {
     int? maxRows,
-  }
-  ) {
+  }) {
     final rows = ((maxHeight + spacing) / (dotSize + spacing)).floor();
     if (rows < 1) return 1;
     final clampedRows = maxRows != null && rows > maxRows ? maxRows : rows;
@@ -512,13 +521,20 @@ class TaskCard extends StatelessWidget {
     );
   }
 
-  Widget _timeRangeChips(String timeRange) {
+  Widget _timeRangeChips(
+    String timeRange, {
+    String? totalTime,
+    Widget? loadLevelChip,
+  }) {
     final parts = _splitTimeRange(timeRange);
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: parts.map(_timeChip).toList(),
-    );
+    final chips = <Widget>[...parts.map(_timeChip)];
+    if (totalTime != null && totalTime.trim().isNotEmpty) {
+      chips.add(_timeChip(totalTime, emphasized: true));
+    }
+    if (loadLevelChip != null) {
+      chips.add(loadLevelChip);
+    }
+    return _HorizontalWheelScroller(children: _withChipSpacing(chips));
   }
 
   List<String> _splitTimeRange(String timeRange) {
@@ -538,29 +554,42 @@ class TaskCard extends StatelessWidget {
     return [trimmed];
   }
 
-  Widget _timeChip(String value) {
+  List<Widget> _withChipSpacing(List<Widget> chips) {
+    final children = <Widget>[];
+    for (var i = 0; i < chips.length; i += 1) {
+      children.add(chips[i]);
+      if (i < chips.length - 1) {
+        children.add(const SizedBox(width: 6));
+      }
+    }
+    return children;
+  }
+
+  Widget _timeChip(String value, {bool emphasized = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white10,
+        color: emphasized
+            ? Colors.white.withValues(alpha: 0.14)
+            : Colors.white10,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white24, width: 1),
+        border: Border.all(
+          color: emphasized ? Colors.white38 : Colors.white24,
+          width: 1,
+        ),
       ),
       child: Text(
         value,
-        style: const TextStyle(
-          color: Colors.white70,
+        style: TextStyle(
+          color: emphasized ? Colors.white : Colors.white70,
           fontSize: 11,
-          fontWeight: FontWeight.w600,
+          fontWeight: emphasized ? FontWeight.w700 : FontWeight.w600,
         ),
       ),
     );
   }
 
-  _SoundLabel _soundLabel(
-    SelectedSound sound, {
-    required SoundSlot slot,
-  }) {
+  _SoundLabel _soundLabel(SelectedSound sound, {required SoundSlot slot}) {
     if (sound.type == SoundType.custom) {
       final name = _basename(sound.value);
       return _SoundLabel(
@@ -655,6 +684,70 @@ class _Dot extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
+  }
+}
+
+class _HorizontalWheelScroller extends StatefulWidget {
+  const _HorizontalWheelScroller({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  State<_HorizontalWheelScroller> createState() =>
+      _HorizontalWheelScrollerState();
+}
+
+class _HorizontalWheelScrollerState extends State<_HorizontalWheelScroller> {
+  late final ScrollController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onPointerSignal(PointerSignalEvent event) {
+    if (event is! PointerScrollEvent || !_controller.hasClients) return;
+    final maxExtent = _controller.position.maxScrollExtent;
+    if (maxExtent <= 0) return;
+    final delta = event.scrollDelta.dx != 0
+        ? event.scrollDelta.dx
+        : event.scrollDelta.dy;
+    if (delta == 0) return;
+    final nextOffset = (_controller.offset + delta).clamp(0.0, maxExtent);
+    if (nextOffset == _controller.offset) return;
+    _controller.jumpTo(nextOffset);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dragDevices = <PointerDeviceKind>{
+      PointerDeviceKind.touch,
+      PointerDeviceKind.mouse,
+      PointerDeviceKind.trackpad,
+      PointerDeviceKind.stylus,
+      PointerDeviceKind.invertedStylus,
+      PointerDeviceKind.unknown,
+    };
+    return Listener(
+      onPointerSignal: _onPointerSignal,
+      child: ScrollConfiguration(
+        behavior: const MaterialScrollBehavior().copyWith(
+          dragDevices: dragDevices,
+        ),
+        child: SingleChildScrollView(
+          controller: _controller,
+          scrollDirection: Axis.horizontal,
+          child: Row(children: widget.children),
+        ),
+      ),
     );
   }
 }

@@ -22,11 +22,13 @@ import '../../data/services/firebase_auth_service.dart';
 import '../../data/services/app_mode_service.dart';
 import '../../data/services/local_sound_overrides.dart';
 import '../../data/services/task_run_notice_service.dart';
+import '../../domain/continuous_plan_load.dart';
 import '../../domain/pomodoro_machine.dart';
 import '../../domain/validators.dart';
 import '../../widgets/task_card.dart';
 import '../../widgets/mode_indicator.dart';
 import 'task_group_planning_screen.dart';
+import '../utils/continuous_plan_load_ui.dart';
 import '../utils/scheduled_group_timing.dart';
 import '../utils/run_mode_launcher.dart';
 
@@ -109,6 +111,16 @@ class _StructureOption {
   void addTask(PomodoroTask task) {
     tasks.add(task);
   }
+}
+
+class _SelectedTaskTiming {
+  const _SelectedTaskTiming({
+    required this.timeRange,
+    required this.totalSeconds,
+  });
+
+  final String timeRange;
+  final int totalSeconds;
 }
 
 class TaskListScreen extends ConsumerStatefulWidget {
@@ -858,10 +870,14 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                   _planningAnchorKey = planningKey;
                   _planningAnchor = DateTime.now();
                 }
-                final ranges = _buildSelectedTimeRanges(
+                final selectedTimings = _buildSelectedTaskTimings(
                   tasks,
                   selectedIds,
                   _planningAnchor,
+                );
+                final selectedLoadLevel = _selectedContinuousPlanLoadLevel(
+                  tasks: tasks,
+                  selectedIds: selectedIds,
                 );
 
                 final soundOverrides = ref.read(localSoundOverridesProvider);
@@ -890,8 +906,12 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                       itemBuilder: (context, i) {
                         final t = tasks[i];
                         final isSelected = selectedIds.contains(t.id);
+                        final timing = selectedTimings[t.id];
                         final weightPercent = isSelected
                             ? selectedWeightPercents[t.id]
+                            : null;
+                        final loadChip = isSelected
+                            ? buildContinuousPlanLoadChip(selectedLoadLevel)
                             : null;
                         return TaskCard(
                           key: ValueKey(t.id),
@@ -900,7 +920,11 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                           weightPercent: weightPercent,
                           selected: isSelected,
                           onTap: () => selection.toggle(t.id),
-                          timeRange: ranges[t.id],
+                          timeRange: timing?.timeRange,
+                          totalTime: timing == null
+                              ? null
+                              : _formatDurationCompact(timing.totalSeconds),
+                          loadLevelChip: loadChip,
                           reorderHandle: ReorderableDragStartListener(
                             index: i,
                             child: const Padding(
@@ -2001,9 +2025,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                 messenger.clearSnackBars();
                 messenger.showSnackBar(
                   SnackBar(
-                    content: Text(
-                      'Global pre-run notice set to ${applied}m.',
-                    ),
+                    content: Text('Global pre-run notice set to ${applied}m.'),
                   ),
                 );
               },
@@ -2036,12 +2058,12 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     return buffer.toString();
   }
 
-  Map<String, String> _buildSelectedTimeRanges(
+  Map<String, _SelectedTaskTiming> _buildSelectedTaskTimings(
     List<PomodoroTask> tasks,
     Set<String> selectedIds,
     DateTime start,
   ) {
-    final ranges = <String, String>{};
+    final timings = <String, _SelectedTaskTiming>{};
     final selectedTasks = tasks
         .where((task) => selectedIds.contains(task.id))
         .toList();
@@ -2054,10 +2076,27 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       final task = selectedTasks[index];
       final duration = durations[index];
       final end = cursor.add(Duration(seconds: duration));
-      ranges[task.id] = _formatRangeWithDate(cursor, end);
+      timings[task.id] = _SelectedTaskTiming(
+        timeRange: _formatRangeWithDate(cursor, end),
+        totalSeconds: duration,
+      );
       cursor = end;
     }
-    return ranges;
+    return timings;
+  }
+
+  ContinuousPlanLoadLevel _selectedContinuousPlanLoadLevel({
+    required List<PomodoroTask> tasks,
+    required Set<String> selectedIds,
+  }) {
+    final selectedTasks = tasks
+        .where((task) => selectedIds.contains(task.id))
+        .toList();
+    if (selectedTasks.isEmpty) return ContinuousPlanLoadLevel.none;
+    final continuousSeconds = continuousGroupDurationSecondsForTasks(
+      selectedTasks,
+    );
+    return continuousPlanLoadLevelForSeconds(continuousSeconds);
   }
 
   String _formatRangeWithDate(DateTime start, DateTime end) {
@@ -2069,6 +2108,16 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         start.day == now.day;
     if (isToday) return range;
     return '${_dateFormat.format(start)}, $range';
+  }
+
+  String _formatDurationCompact(int seconds) {
+    if (seconds <= 0) return '0m';
+    final hours = seconds ~/ 3600;
+    final minutes = (seconds % 3600) ~/ 60;
+    if (hours > 0) {
+      return '${hours}h ${minutes.toString().padLeft(2, '0')}m';
+    }
+    return '${minutes}m';
   }
 
   Future<_IntegritySelection> _maybeShowIntegrityWarning(

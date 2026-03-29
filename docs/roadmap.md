@@ -439,6 +439,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 
 - ~~Phase 10 — Auto-adjust breaks on valid pomodoro changes and break edits (focus-loss adjustment; Task Editor + Edit Preset) (validation pending).~~ **Closed/OK on 20/03/2026 (`RVP-063`; implementation commits `466b4223` + `5c21dc9`; local validation PASS).**
 - ~~Phase 10 — Task weight (%) is selection-scoped in Edit Task + info modal (validation pending).~~ **Closed/OK on 20/03/2026 (`RVP-064`; implementation commit `cca359f`; local validation PASS).**
+- ~~Phase 10 — BUG-016 follow-up: Task Editor must use preview-first editing for **Task weight (%)** and **Total pomodoros** with explicit two-mode selector (**Fixed total** default / **Flexible total**) and apply-or-cancel semantics (docs-first decision approved 27/03/2026).~~ **Closed/OK on 29/03/2026 (`RVP-070`; implementation branch `fix/bug016-weight-edit-preview-modes`, core commit `1edb63f`, follow-up polish through `231b468`; device packet PASS + local gate PASS).**
 - ~~Phase 13 — Mirror session gaps must not drop Run Mode to Ready (validation pending).~~ **Closed/OK on 20/03/2026 (`RVP-065`; covered by Fix 26 rewrite `cbd800a` + local session-gap test suite PASS).**
 - ~~Phase 13 — **Fix 26 sync architecture rewrite required** (P0-F26-005 failed device validation
   2026-03-14; Phase 6 B1+B2 patch verified insufficient — latch fires from spontaneous Firestore

@@ -12,9 +12,11 @@ import '../../data/models/schema_version.dart';
 import '../../data/repositories/task_run_group_repository.dart';
 import '../../data/services/app_mode_service.dart';
 import '../../data/services/task_run_notice_service.dart';
+import '../../domain/continuous_plan_load.dart';
 import '../../domain/pomodoro_machine.dart';
 import '../../widgets/mode_indicator.dart';
 import '../providers.dart';
+import '../utils/continuous_plan_load_ui.dart';
 import '../viewmodels/pre_run_notice_view_model.dart';
 import 'task_group_planning_screen.dart';
 import '../utils/scheduled_group_timing.dart';
@@ -863,9 +865,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                 messenger.clearSnackBars();
                 messenger.showSnackBar(
                   SnackBar(
-                    content: Text(
-                      'Global pre-run notice set to ${applied}m.',
-                    ),
+                    content: Text('Global pre-run notice set to ${applied}m.'),
                   ),
                 );
               },
@@ -972,8 +972,9 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     TaskRunGroup source,
   ) async {
     var items = _cloneRunItems(source.tasks);
-    final globalNoticeMinutes =
-        await ref.read(taskRunNoticeServiceProvider).getNoticeMinutes();
+    final globalNoticeMinutes = await ref
+        .read(taskRunNoticeServiceProvider)
+        .getNoticeMinutes();
     if (!context.mounted) return;
     var planningNoticeMinutes = source.noticeMinutes ?? globalNoticeMinutes;
     var initialOption = TaskGroupPlanOption.startNow;
@@ -1496,6 +1497,10 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     );
     final totalTasks = group.totalTasks ?? group.tasks.length;
     final totalDuration = _formatDuration(group.totalDurationSeconds ?? 0);
+    final totalLoadLevel = continuousPlanLoadLevelForSeconds(
+      group.totalDurationSeconds ?? 0,
+    );
+    final totalLoadChip = buildContinuousPlanLoadChip(totalLoadLevel);
     final totalPomodoros =
         group.totalPomodoros ??
         group.tasks.fold<int>(0, (total, item) => total + item.totalPomodoros);
@@ -1552,7 +1557,11 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                   ),
                 _summaryRow('Actual start', actualLabel),
                 _summaryRow('End', endLabel),
-                _summaryRow('Total time', totalDuration),
+                _summaryRow(
+                  'Total time',
+                  totalDuration,
+                  trailing: totalLoadChip,
+                ),
                 const SizedBox(height: 12),
                 _summarySectionTitle('Totals'),
                 _summaryRow('Tasks', totalTasks.toString()),
@@ -1633,7 +1642,7 @@ Widget _summarySectionTitle(String label) {
   );
 }
 
-Widget _summaryRow(String label, String value) {
+Widget _summaryRow(String label, String value, {Widget? trailing}) {
   return Padding(
     padding: const EdgeInsets.only(top: 6),
     child: Row(
@@ -1652,6 +1661,7 @@ Widget _summaryRow(String label, String value) {
             fontWeight: FontWeight.w600,
           ),
         ),
+        if (trailing != null) ...[const SizedBox(width: 8), trailing],
       ],
     ),
   );
@@ -2055,6 +2065,10 @@ class _GroupCard extends StatelessWidget {
     final name = group.tasks.isNotEmpty ? group.tasks.first.name : 'Task group';
     final totalTasks = group.totalTasks ?? group.tasks.length;
     final totalDuration = _formatDuration(group.totalDurationSeconds ?? 0);
+    final totalLoadLevel = continuousPlanLoadLevelForSeconds(
+      group.totalDurationSeconds ?? 0,
+    );
+    final totalLoadChip = buildContinuousPlanLoadChip(totalLoadLevel);
     final scheduledStart = scheduledStartOverride ?? group.scheduledStartTime;
     final endTime = scheduledEndOverride ?? group.theoreticalEndTime;
     final showScheduled =
@@ -2122,7 +2136,11 @@ class _GroupCard extends StatelessWidget {
               ),
             _MetaRow(label: 'Ends', value: _formatGroupDateTime(endTime, now)),
             _MetaRow(label: 'Tasks', value: totalTasks.toString()),
-            _MetaRow(label: 'Total time', value: totalDuration),
+            _MetaRow(
+              label: 'Total time',
+              value: totalDuration,
+              trailing: totalLoadChip,
+            ),
             const SizedBox(height: 10),
             Wrap(
               spacing: 8,
@@ -2203,8 +2221,9 @@ class _GroupCard extends StatelessWidget {
 class _MetaRow extends StatelessWidget {
   final String label;
   final String value;
+  final Widget? trailing;
 
-  const _MetaRow({required this.label, required this.value});
+  const _MetaRow({required this.label, required this.value, this.trailing});
 
   @override
   Widget build(BuildContext context) {
@@ -2220,6 +2239,7 @@ class _MetaRow extends StatelessWidget {
             value,
             style: const TextStyle(color: Colors.white70, fontSize: 12),
           ),
+          if (trailing != null) ...[const SizedBox(width: 8), trailing!],
         ],
       ),
     );

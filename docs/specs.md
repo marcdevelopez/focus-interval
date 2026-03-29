@@ -877,8 +877,11 @@ Item layout (top → bottom):
 3. **Context row (time)**
    - **When selected**:
      - Label: **Time range**
-     - Two chips: start time and end time (theoretical schedule preview)
-     - Per-task total time is hidden (the group summary already shows totals)
+     - Chips on a single horizontal line: start time + end time (theoretical schedule preview),
+       plus the per-task total-duration chip value only (no `Total` prefix, e.g. `2h 11m`),
+       visually emphasized vs regular time chips.
+     - Desktop input support: on pointer devices (mouse/trackpad), this row must be
+       horizontally navigable without touch (drag and wheel/scroll panning while hovered).
    - **When not selected**:
      - Label: **Total time**
      - One chip: total task duration
@@ -1077,8 +1080,13 @@ Behavior:
 - The Task weight (%) field appears **only** when the task is selected for the current group preparation.
 - Directly below **Total pomodoros**, show a **non-editable total time chip** with
   the task's full duration (work + breaks). This chip is always visible and updates live.
-- Editing the percentage updates totalPomodoros to the closest integer (pomodoros are never fractional),
-  and redistributes the remaining tasks to preserve their relative proportions.
+- Editing **Task weight (%)** or **Total pomodoros** must open a preview-first flow before applying any change.
+- Preview must show: requested value, closest achievable result, resulting per-task weights for selected tasks,
+  and selected-group total pomodoros/work before vs after.
+- Preview must expose two explicit calculation modes:
+  - **Fixed total** (default): keep selected-group total work constant and redistribute other selected tasks proportionally.
+  - **Flexible total**: keep other selected tasks unchanged and allow selected-group total work to change.
+- Preview must provide explicit **Apply** and **Back** actions; **Back** leaves the task unchanged.
 - Display Total pomodoros and Task weight (%) on the same row directly below the task name to emphasize task weight.
 - Visually separate **Task weight** from **Pomodoro configuration** with section headers.
   Pomodoro configuration sits below Task weight and above Sounds.
@@ -1128,20 +1136,31 @@ Task weight rules:
   - Task List: sum of work time for the **selected** tasks only; if none are selected, do not show percentages.
   - Task Editor: sum of work time for the **selected** tasks only (including the task being edited).
   - If the task is **not selected**, the Task weight (%) field is hidden.
+- Weight edits and total-pomodoros edits are **preview-first** (no per-keystroke authoritative write).
 - When a user edits the percentage of a task:
-  - The edited task is adjusted so its work time matches the requested percentage
-    of the group's total work time (closest possible).
-  - Other **selected** tasks are automatically redistributed to fill the remaining percentage,
-    preserving their **relative proportions** to each other.
+  - The editor evaluates integer-only outcomes and shows the closest achievable result before apply.
+  - The user must explicitly select one mode in preview:
+    - **Fixed total**:
+      - The edited task is adjusted toward the requested percentage of the current selected-group total work.
+      - Other **selected** tasks are redistributed to fill the remaining percentage,
+        preserving their **relative proportions** to each other.
+    - **Flexible total**:
+      - The edited task is adjusted toward the requested percentage while other selected tasks remain unchanged.
+      - Selected-group total work is allowed to change to improve approximation fidelity.
+      - For `%` input, Flexible search must not use a hard cap that blocks reachable outcomes;
+        evaluate candidates without artificial upper limit so closest-achievable is mathematically consistent.
   - Unselected tasks are never affected by weight edits.
-  - Redistribution adjusts `totalPomodoros` only (integer), never splitting pomodoros.
+  - Redistribution/adjustment changes `totalPomodoros` only (integer), never fractional pomodoros.
+  - All selected tasks keep a minimum of 1 pomodoro.
   - `roundHalfUp` means .5 ties always round up.
   - Exact percentages are not guaranteed due to integer constraints.
   - If the closest achievable result deviates by **≥ 10 percentage points**, or if
-    no redistribution change is possible, show a lightweight (non-modal) notice:
+    no change is possible under the selected mode, show a lightweight (non-modal) notice:
     - Pomodoros are indivisible.
     - Few total pomodoros limits precision.
-    - Suggest adding pomodoros, selecting more tasks, or trying another percentage.
+    - Suggest adding pomodoros, selecting more tasks, switching mode, or trying another percentage.
+- When a user edits **Total pomodoros**, reuse the same preview flow and mode selector,
+  and show resulting task weight (%) changes before apply.
 
 UI implications (documentation only):
 
@@ -1149,11 +1168,107 @@ UI implications (documentation only):
 - Percentages are shown only when tasks are selected; unselected tasks do not show percentages.
 - Task Editor should display totalPomodoros and derived percentage **only** when the task is selected.
   If the task is not selected, hide the Task weight (%) field entirely.
+- **Task weight (%) and Total pomodoros are tap targets in the editor, not editable inline.**
+  Tapping either field opens the preview sheet. The fields display the current value as read-only.
+  All editing happens inside the sheet. Per-keystroke onChanged handlers for these two fields
+  do not exist in Patch 2 — they are replaced by a tap-to-open-sheet gesture.
 - On first exposure, show an informational modal explaining that task weight is
   relative to the selected group only, with a “Don’t show again” checkbox.
   Provide an info icon next to Task weight (%) to reopen the explanation later.
 - Task Editor should place Total pomodoros + Task weight (%) together, above Pomodoro structural configuration and sounds.
 - If a TaskRunGroup mixes structural configurations, show a clear integrity warning (education-only).
+
+Preview sheet specification (locked 28/03/2026):
+
+- **Trigger:** tapping Task weight (%) or Total pomodoros in the editor.
+- **Surface:** preview opens as a full-screen opaque sheet/surface. Underlying
+  Edit Task UI (including AppBar actions) must not remain visible to avoid
+  mixed-context interaction.
+- **Baseline:** frozen at sheet open from current editor draft state. Immune to widget rebuilds
+  during the sheet session. If the selected-task scope changes while the sheet is open,
+  close the sheet without applying and show a non-modal notice:
+  “Group selection changed. Reopen to recalculate.”
+- **Input field:** numeric, displayed at the top of the sheet. Type adapts to context:
+  integer 1–100 for Task weight (%), integer ≥ 1 for Total pomodoros.
+- **Mode selector:** segmented control with two options — “Fixed total” (default) and
+  “Flexible total” — placed immediately below the input, above the results panel.
+  Switching mode recalculates the preview immediately using the current entered value.
+  The sheet must show an inline mode explanation directly below the selector so users
+  understand the business rule before applying:
+  - **Fixed total:** apply the closest achievable result and redistribute other selected
+    tasks proportionally, keeping selected-group totals as close as possible under
+    integer pomodoro constraints.
+  - **Flexible total:** keep other selected tasks unchanged; only the edited task changes,
+    so selected-group total pomodoros/work may change.
+- **Preview content (three tiers):**
+  1. Compact status line for the edited task (no redundant requested/result blocks):
+     - Exact match: show green success text (e.g., “Exact result: X%” / “Exact result: N pomodoros”).
+     - Non-exact or no-change possible: show orange explanatory text inline.
+     - Do not show both gray “Closest achievable …” and a second orange duplicate message.
+     - Orange warning must be interaction-aware:
+       - never on first open before user edits,
+       - never when user returns to the original opening value (no net change vs sheet baseline),
+       - shown only after user interaction when exactness is not possible or no change can be applied.
+     - Show a non-blocking playful caution based on **continuous planned time**
+       (`start → end`, including breaks):
+       - `>= 11h`: “Unusually high total focus time. Are you sure?”
+       - `>= 24h`: “Superhuman plan detected. Double-check this is intentional.”
+       - `>= 72h`: “Machine-level schedule. Proceed only if this is really intended.”
+       - In multi-task selection, evaluate the selected-group continuous total.
+         In single-task scope, evaluate that task's own continuous total.
+     - In preview, render this caution inline below `Group work`.
+       - After save, show a persistent reminder chip with level label
+         (`Unusual` / `Superhuman` / `Machine`) in Task List and Groups Hub.
+         Placement:
+         - Task List selected cards: on the `Time range` row, after the new
+           total-duration chip (`start → end`, includes breaks), displayed as
+           value-only (example: `2h 11m`).
+         - Groups Hub card + summary modal: inline to the right of `Total time`.
+  2. Group impact block:
+     - “Group total: N → N pomodoros” (before/after)
+     - “Group work: <duration> → <duration>” where duration is:
+       - `N min` when `< 60 min`
+       - `Hh Mm` when `>= 60 min` (for readability in long plans)
+  3. Selected tasks list (single-column, all form factors):
+     - Full-width row cards, one per selected task, with consistent width.
+     - Row content:
+       - task name
+       - Pomodoros row: initial chip (gray) → result chip
+       - Weight row: initial chip (gray) → result chip
+     - Result-chip color focus depends on edited field:
+     - Editing **Total pomodoros**: color only the pomodoros result chip; keep weight result chip gray.
+     - Editing **Task weight (%)**: color only the weight result chip; keep pomodoros result chip gray.
+     - Use success/warning color coding only on the edited dimension's result chip.
+       No additional red severity styling is used in this selected-tasks list.
+     - Within the edited dimension, the edited task result chip must have
+       stronger emphasis than other rows (thicker border and stronger fill)
+       so users can immediately identify which task is being edited.
+     - The edited task row is visually highlighted with a stronger neutral border (not severity color).
+- **Snackbar:** the existing “Closest possible is X%” toast is removed. All precision
+  information is shown inline within the sheet only.
+- **Header actions (single action row):**
+  - top-left **Back** (chevron only, aligned to app header style) closes sheet
+    without applying and restores pre-open snapshot.
+  - top-right **Apply** writes result to local editor draft, marks editor dirty,
+    then closes sheet. Next sheet open uses post-Apply draft as baseline.
+  - No bottom Cancel/Apply footer buttons are shown.
+  - If user exits with Back and there are unapplied changes, show a lightweight
+    hint (`No changes applied.`). If there are no pending changes, close silently.
+- **1 task selected:** Task weight (%) is shown disabled at 100%, optional helper text
+  “Only one task selected”. Sheet does not open. No redistribution runs.
+- **Apply / Save / Discard lifecycle:**
+  — Apply writes to local draft only (no DB write, no network call).
+  — Save (Edit Task) persists the full local draft including all applied sheet changes.
+  — Discard (Edit Task exit) reverts the entire local draft, including applied sheet changes.
+
+ViewModel requirements for Patch 2:
+
+- `redistributeWeightPercent` (existing): used for the Task weight (%) path (target = percentage).
+- `redistributeTotalPomodoros` (new): used for the Total pomodoros path (target = integer pomodoro count).
+  Must return the same redistribution map structure as `redistributeWeightPercent`.
+  Fixed-total variant redistributes others proportionally; Flexible-total variant leaves others unchanged.
+- Both methods must accept an explicit `mode` parameter (fixed / flexible).
+- Both methods must use the frozen baseline passed in as argument, never read mutable provider state.
 
 ### **10.3.z. Task colors (visual accent, documentation-first)**
 

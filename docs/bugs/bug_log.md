@@ -2381,30 +2381,198 @@ Expected behavior (per specs section 10.3.x):
 - If no better allocation is achievable, the notice "Closest possible is X%"
   must fire — not silently apply a worse result.
 
-Product decision required before fix:
-The specs define the redistribution logic but leave open the UX approach.
-Four options noted (any is valid — needs explicit user choice):
-  1. Fix the baseline bug only (keep text field UX, freeze snapshot on focus).
-  2. Replace field with a visual slider/picker showing only reachable percentages.
-  3. Incremental controls (+/- buttons) to step the weight progressively.
-  4. Two-mode selector: fix total group pomodoros vs allow total to change.
+Product decision (approved 27/03/2026):
+The UX direction is now explicitly defined: **preview-first editing with two modes**.
 
-Fix direction (option 1 — minimal, no UX change):
-Freeze the baseline `weightScopeTasks` at the moment the weight field gains focus
-(capture `_stableWeightScopeTasks` alongside `_weightPercentStartValue` in the
-focus listener, task_editor_screen.dart:97). Use this frozen snapshot for all
-`redistributeWeightPercent` calls until the field loses focus. Reset on blur.
-This eliminates per-keystroke baseline corruption without changing UX.
+- Mode 1 — **Fixed total** (default): preserve selected-group total work and
+  redistribute other selected tasks proportionally.
+- Mode 2 — **Flexible total**: keep other selected tasks unchanged and allow
+  selected-group total work to change to improve approximation.
+- This same preview logic must apply when editing **Task weight (%)** and when
+  editing **Total pomodoros**.
+- The flow must support explicit **Apply** and **Cancel** (cancel = no changes).
 
-Files involved (option 1):
-- lib/presentation/screens/task_editor_screen.dart — baseline capture + onChanged
-- lib/presentation/viewmodels/task_editor_view_model.dart — no change needed
+Fix direction (approved):
+1. **Correctness patch — Patch 1 (independent, ready for Codex):**
+   freeze baseline `weightScopeTasks` when weight editing starts and keep that
+   snapshot stable for the entire interaction to eliminate per-keystroke
+   baseline corruption. Fix blur-time overwrite by using the actual redistribution
+   result instead of recomputing from mixed provider state.
+   - Only file modified: `lib/presentation/screens/task_editor_screen.dart`.
+   - No UI structure changes, no new widgets, no mode selector.
+   - Handoff written: `docs/bugs/validation_bug016_2026_03_27/codex_handoff.md`.
+   - Can be implemented and validated in device BEFORE any UX decision is made.
+
+2. **UX complement — Patch 2 (UX decisions closed 28/03/2026 — implementation ready):**
+   replace blind per-keystroke updates with a preview sheet: live preview inside sheet,
+   segmented control Fixed/Flexible, three-tier results display, Apply/Cancel footer.
+   Fields in editor become read-only tap targets.
+
+Files involved (Patch 1):
+- `lib/presentation/screens/task_editor_screen.dart` — baseline freeze, blur fix.
+
+Files involved (Patch 2):
+- `lib/presentation/screens/task_editor_screen.dart` — fields converted to tap targets,
+  sheet integration, apply/cancel flow, per-keystroke handlers removed.
+- `lib/presentation/viewmodels/task_editor_view_model.dart` — mode-aware helpers
+  (fixed/flexible), new `redistributeTotalPomodoros` method.
+- `test/presentation/viewmodels/task_editor_view_model_test.dart` — mode-specific
+  cases and baseline-stability regression coverage.
+- `test/domain/task_weighting_test.dart` — rounding/constraints coverage.
+
+UX decisions locked (28/03/2026) — Patch 2 unblocked:
+
+  a. **Mode selector widget:** Segmented control with two mutually-exclusive options
+     (Fixed total | Flexible total), placed inside the preview sheet above the
+     results panel. Default: Fixed total on every new sheet session.
+
+  b. **Preview content:** Full list of all selected tasks. Sheet shows:
+     — header: field being edited + requested value + closest achievable result + active mode.
+     — before/after summary: selected-group total pomodoros and work time.
+     — mini-table: every selected task with name, pomodoros before→after, weight before→after.
+     — inline warning if deviation ≥ 10 pp or no improvement possible.
+
+  c. **Apply / Cancel placement:** Fixed footer bar at the bottom of the sheet.
+     Cancel on the left, Apply on the right. Not inline — prevents buttons from
+     scrolling out of view when the task list grows.
+
+  d. **Preview trigger:** Tapping Task weight (%) or Total pomodoros in the editor
+     opens the sheet. Preview recalculates live while the user types inside the
+     sheet. No blur trigger, no separate "Preview" button. Importantly: both fields
+     in the editor become tap targets (read-only display); all editing happens inside
+     the sheet. The existing per-keystroke onChanged handlers are removed in Patch 2.
+
+  e. **Mode switch with value already entered:** Switching mode immediately
+     recalculates the preview for the new mode using the same entered value and the
+     frozen baseline. The entered value is not reset.
+
+  f. **Snackbar fate:** The existing "Closest possible is X%" snackbar is removed
+     entirely. Precision information is shown inline inside the sheet only
+     (text under the header + optional warning badge if deviation ≥ 10 pp).
+
+  g. **Preview visual form:** Three-tier layout inside the sheet:
+     (1) Result line for the edited task: "Result: Y pomodoros · X%".
+     (2) Group impact block: "Group total: 11 → 11 pom · 225 → 225 min".
+     (3) Mini-table: one row per selected task (name | pom before→after | % before→after).
+
+  h. **Cancel semantics:** Cancel restores the pre-edit snapshot — the state the task
+     had when the sheet was opened, not the last DB value. Cancel does not trigger any
+     write or rollback to DB. It simply closes the sheet without applying.
+     Apply updates the local editor draft (marks dirty). Save persists. Discard from
+     the editor reverts all local draft including applied sheet changes.
+
+  i. **Mode selector scope:** The same sheet and the same Fixed/Flexible selector
+     apply to both Task weight (%) and Total pomodoros.
+
+Additional micro-clarifications locked (28/03/2026):
+
+  j. **Flexible total — exact definition:** Only the edited task's totalPomodoros
+     changes. All other selected tasks remain at their exact current totalPomodoros.
+     No redistribution of others in Flexible mode. The selected-group total may
+     increase or decrease to improve approximation fidelity.
+
+  k. **Search range in Flexible total (% path):** Flexible `%` search must not use
+     a hard cap that can block mathematically reachable outcomes. Candidate evaluation
+     is unbounded (no artificial max cap), with deterministic tie-break preserved.
+     Resulting extreme plans are allowed and surfaced to users with a non-blocking
+     caution based on continuous planned time (start→end, breaks included).
+
+  l. **Closest achievable tiebreaker (deterministic, both modes):**
+     (1) Smallest absolute percentage-point deviation, measured against the
+         shown percentage (same normalization rule as the UI display).
+     (2) Smallest absolute change in selected-group total pomodoros.
+     (3) Smallest absolute change in edited task totalPomodoros.
+     (4) Smaller resulting group total if still tied.
+
+  m. **Apply / Save / Discard lifecycle:**
+     — Apply (sheet): writes to local editor draft only, marks dirty. Does not persist.
+       After Apply, the sheet closes. If the user reopens the sheet, the frozen baseline
+       is the post-Apply draft state (not the original pre-session value).
+     — Save (Edit Task): persists the full local draft (including all Apply'd changes).
+     — Discard (Edit Task exit): reverts the entire local draft, including Apply'd
+       changes not yet saved. Contract is unchanged from current Save/Discard semantics.
+
+  n. **1 task selected edge case:** Task weight (%) field is visible but disabled,
+     displays 100%, shows optional helper "Only one task selected". No sheet opens.
+     No redistribution logic runs.
+
+  o. **Selection change while sheet is open:** If the selected-task scope changes while
+     the sheet is open, the sheet closes immediately without applying and shows a
+     lightweight non-modal notice: "Group selection changed. Reopen to recalculate."
+     No live recomputation on changing selection — this would violate the frozen
+     baseline guarantee.
+
+  p. **VM method for Total pomodoros path:** The existing ViewModel method
+     `redistributeWeightPercent` takes a target percentage. For the Total pomodoros
+     path, a new method `redistributeTotalPomodoros` (or equivalent) is required,
+     taking the target integer and returning the same redistribution map. Codex must
+     implement this new method in `task_editor_view_model.dart` as part of Patch 2.
 
 Fix applied:
-None yet — product direction pending.
+Patch 1 — implemented on 28/03/2026 (commit `8bad479`):
+- frozen weight baseline at focus-gain to avoid per-keystroke baseline contamination.
+- blur/save sync now prioritizes pending redistribution/last computed result and
+  avoids mixed-state overwrite while save confirmation modals are open.
+- runtime file touched: `lib/presentation/screens/task_editor_screen.dart`.
+Patch 2 — implemented on 28–29/03/2026 (preview-first UX + follow-up polish):
+- preview sub-screen for both Task weight (%) and Total pomodoros with
+  Fixed/Flexible segmented mode selector.
+- fields in editor converted to tap targets; Apply updates local draft, Save persists.
+- full-screen opaque preview surface; `Back = Cancel` semantics with non-duplicated
+  unapplied-change hint.
+- compact non-redundant status messaging (exact/closest, warning gating after interaction).
+- Flexible `%` path without hard cap; continuous-time caution/reminder levels
+  (`Unusual`/`Superhuman`/`Machine`) surfaced in preview + Task List + Groups Hub.
+- runtime files touched:
+  - `lib/presentation/screens/task_editor_screen.dart`
+  - `lib/presentation/screens/task_weight_preview_sheet.dart`
+  - `lib/presentation/viewmodels/task_editor_view_model.dart`
+  - `lib/domain/continuous_plan_load.dart`
+  - `lib/widgets/task_card.dart`
+
+Validation update (27/03/2026, macOS) — FAIL:
+- Scenario packet executed with evidence in:
+  - `docs/bugs/validation_bug016_2026_03_27/logs/2026-03-27_bug016_fa907c9_macos_debug.log`
+  - `docs/bugs/validation_bug016_2026_03_27/screenshots/2026-03-27_bug016_01_macos.png` … `2026-03-27_bug016_13_macos.png`
+- Reconfirmed field overwrite on blur:
+  - G3: `80%` (requested) + snackbar suggests `69%`, but blur moves field to `43%`.
+  - Re-entering `69%` still blurs to `43%`.
+  - G1: `50%` blurs to `36%`; `80%` / suggested `45%` blurs to `35%`.
+- Save-time inconsistency confirmed:
+  - Editor blur-state and Task List post-save are not deterministic matches.
+  - Selected-group total pomodoros dropped from `11` (`5+4+1+1`) to `6` (`3+1+1+1`) in the captured sequence.
+- Additional diagnosis:
+  - Current runtime log has no dedicated Task-weight instrumentation; evidence is primarily UI screenshots + reproducible steps.
+
+Validation update (28/03/2026, owner-run packet) — PASS for Patch 1:
+- Exact repro rerun from the same group baseline after Patch 1:
+  - `80% -> 69%` closest result stable through blur, save, Task List, and reopen.
+  - `50%` case stable and deterministic through blur, save warning modal, Task List, and reopen
+    (no return to `36%`).
+  - `1%` edge case correctly reports `No change possible` and keeps coherent persisted values.
+- Local gate PASS on code commit `8bad479`:
+  - `flutter analyze`
+  - `flutter test test/domain/task_weighting_test.dart`
+  - `flutter test test/presentation/viewmodels/task_editor_view_model_test.dart`
+- Validation packet synchronized:
+  - `docs/bugs/validation_bug016_2026_03_27/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug016_2026_03_27/quick_pass_checklist.md`
+
+Validation update (28/03/2026 + 29/03/2026, Patch 2 packet) — PASS:
+- Device packet and runtime log:
+  - `docs/bugs/validation_bug016_2026_03_28/logs/2026-03-28_bug016p2_7736f7b_macos_debug.log`
+- Validation docs synchronized:
+  - `docs/bugs/validation_bug016_2026_03_28/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug016_2026_03_28/quick_pass_checklist.md`
+- Local gate PASS on final branch state:
+  - `flutter analyze`
+  - `flutter test test/domain/task_weighting_test.dart`
+  - `flutter test test/presentation/viewmodels/task_editor_view_model_test.dart`
+  - `flutter test test/domain/continuous_plan_load_test.dart`
 
 Status:
-Open.
+Closed/OK (Patch 1 + Patch 2 implemented and validated; Phase 10 follow-up closure
+completed on 29/03/2026).
 
 ---
 
