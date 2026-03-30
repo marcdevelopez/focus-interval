@@ -11,11 +11,14 @@ enum TaskWeightField { percent, pomodoros }
 typedef WeightPreviewComputer =
     Map<String, int> Function(int value, WeightEditMode mode);
 
+enum _BackDecision { apply, discard, continueEdit }
+
 class TaskWeightPreviewSheet extends StatefulWidget {
   const TaskWeightPreviewSheet({
     super.key,
     required this.editedTask,
     required this.baselineTasks,
+    required this.isGroupContext,
     required this.field,
     required this.computePreview,
     required this.onApply,
@@ -23,6 +26,7 @@ class TaskWeightPreviewSheet extends StatefulWidget {
 
   final PomodoroTask editedTask;
   final List<PomodoroTask> baselineTasks;
+  final bool isGroupContext;
   final TaskWeightField field;
   final WeightPreviewComputer computePreview;
   final void Function(Map<String, int> result) onApply;
@@ -44,9 +48,11 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
   String? _warningMessage;
   int? _requestedValue;
   bool _hasUserInteracted = false;
-  bool _skipNextPopHint = false;
+  bool _allowPop = false;
+  bool _handlingBackFlow = false;
 
   bool get _singleTask => widget.baselineTasks.length <= 1;
+  String get _scopeLabel => widget.isGroupContext ? 'Group' : 'Task';
 
   String get _modeExplanation {
     if (_mode == WeightEditMode.fixed) {
@@ -187,6 +193,20 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
     final hours = minutes ~/ 60;
     final remainingMinutes = minutes % 60;
     return '${hours}h ${remainingMinutes}m';
+  }
+
+  int _continuousDurationSecondsForTasks(List<PomodoroTask> tasks) {
+    if (tasks.isEmpty) return 0;
+    if (widget.isGroupContext) {
+      return continuousGroupDurationSecondsForTasks(tasks);
+    }
+    final durations = continuousTaskDurationsSecondsForTasks(tasks);
+    return durations.isEmpty ? 0 : durations.first;
+  }
+
+  String _formatDurationSeconds(int seconds) {
+    final minutes = seconds <= 0 ? 0 : (seconds ~/ 60);
+    return _formatWorkMinutes(minutes);
   }
 
   Widget _buildValueChip({
@@ -354,28 +374,116 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
     return !_isAtOpeningSnapshot(requested: parsed, result: result);
   }
 
-  void _showNoChangesAppliedHint() {
+  void _showNoChangesMadeHint() {
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(
       const SnackBar(
-        content: Text('No changes applied.'),
+        content: Text('No changes made.'),
         duration: Duration(milliseconds: 1300),
       ),
     );
   }
 
-  void _closeWithoutApply() {
-    if (_hasUnappliedChanges) {
-      _showNoChangesAppliedHint();
-      _skipNextPopHint = true;
-    }
+  void _showChangesAppliedHint() {
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      const SnackBar(
+        content: Text('Changes applied.'),
+        duration: Duration(milliseconds: 1300),
+      ),
+    );
+  }
+
+  void _closeSheet() {
+    setState(() {
+      _allowPop = true;
+    });
     Navigator.of(context).pop();
   }
 
   void _applyAndClose() {
     final result = _result;
     if (result == null) return;
+    final hadChanges = _hasUnappliedChanges;
     widget.onApply(result);
-    Navigator.of(context).pop();
+    _closeSheet();
+    if (hadChanges) {
+      _showChangesAppliedHint();
+    } else {
+      _showNoChangesMadeHint();
+    }
+  }
+
+  String _pendingChangeSummary() {
+    final result = _result;
+    if (result == null) {
+      return 'Current input is invalid and cannot be applied yet.';
+    }
+    final resultTasks = _resultTasks(result);
+    final baselinePercents = normalizeTaskWeightPercents(widget.baselineTasks);
+    final resultPercents = normalizeTaskWeightPercents(resultTasks);
+    final beforePom = widget.editedTask.totalPomodoros;
+    final afterPom = result[widget.editedTask.id] ?? beforePom;
+    final beforeWeight = baselinePercents[widget.editedTask.id] ?? 0;
+    final afterWeight = resultPercents[widget.editedTask.id] ?? beforeWeight;
+    if (widget.field == TaskWeightField.percent) {
+      return 'Task weight: $beforeWeight% → $afterWeight%\n'
+          'Total pomodoros: $beforePom → $afterPom';
+    }
+    return 'Total pomodoros: $beforePom → $afterPom\n'
+        'Task weight: $beforeWeight% → $afterWeight%';
+  }
+
+  Future<void> _confirmDiscardOrApply() async {
+    final canApply = _result != null;
+    final decision = await showDialog<_BackDecision>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Unapplied changes'),
+        content: Text('${_pendingChangeSummary()}\n\nApply before leaving?'),
+        actions: [
+          TextButton(
+            onPressed: () =>
+                Navigator.of(context).pop(_BackDecision.continueEdit),
+            child: const Text('Continue editing'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(_BackDecision.discard),
+            child: const Text('Discard and close'),
+          ),
+          if (canApply)
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(_BackDecision.apply),
+              child: const Text('Apply and close'),
+            ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    switch (decision) {
+      case _BackDecision.apply:
+        _applyAndClose();
+        break;
+      case _BackDecision.discard:
+        _closeSheet();
+        break;
+      case _BackDecision.continueEdit:
+      case null:
+        break;
+    }
+  }
+
+  Future<void> _handleBackPressed() async {
+    if (_handlingBackFlow) return;
+    _handlingBackFlow = true;
+    try {
+      if (_hasUnappliedChanges) {
+        await _confirmDiscardOrApply();
+        return;
+      }
+      _closeSheet();
+      _showNoChangesMadeHint();
+    } finally {
+      _handlingBackFlow = false;
+    }
   }
 
   @override
@@ -393,21 +501,20 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
     final editedResultPom =
         result?[widget.editedTask.id] ?? widget.editedTask.totalPomodoros;
     final editedResultPercent = resultPercents[widget.editedTask.id] ?? 0;
-    final singleTaskDurations = resultTasks.length <= 1
-        ? continuousTaskDurationsSecondsForTasks(resultTasks)
-        : const <int>[];
-    final continuousSeconds = resultTasks.length <= 1
-        ? (singleTaskDurations.isEmpty ? 0 : singleTaskDurations.first)
-        : continuousGroupDurationSecondsForTasks(resultTasks);
+    final baselineContinuousSeconds = _continuousDurationSecondsForTasks(
+      baselineTasks,
+    );
+    final resultContinuousSeconds = _continuousDurationSecondsForTasks(
+      resultTasks,
+    );
+    final continuousSeconds = resultContinuousSeconds;
     final continuousLevel = continuousPlanLoadLevelForSeconds(
       continuousSeconds,
     );
     final continuousVisual = continuousPlanLoadVisualForLevel(continuousLevel);
     final continuousMessage = continuousPlanLoadMessage(continuousLevel);
     final showContinuousCaution =
-        _hasUserInteracted &&
         result != null &&
-        _hasChange(result) &&
         continuousLevel != ContinuousPlanLoadLevel.none &&
         continuousVisual != null &&
         continuousMessage != null;
@@ -428,6 +535,11 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
     final title = widget.field == TaskWeightField.percent
         ? 'Edit Task weight'
         : 'Edit Total pomodoros';
+    final totalPomodorosLabel = '$_scopeLabel total pomodoros';
+    final workLabel = '$_scopeLabel work';
+    final totalDurationLabel = widget.isGroupContext
+        ? 'Total group duration'
+        : 'Total task duration';
 
     return AnimatedPadding(
       duration: const Duration(milliseconds: 120),
@@ -436,14 +548,13 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
       child: FractionallySizedBox(
         heightFactor: 1.0,
         child: PopScope(
-          canPop: true,
+          canPop: _allowPop,
           onPopInvokedWithResult: (didPop, _) {
-            if (!didPop) return;
-            final skipHint = _skipNextPopHint;
-            _skipNextPopHint = false;
-            if (!skipHint && _hasUnappliedChanges) {
-              _showNoChangesAppliedHint();
-            }
+            if (didPop) return;
+            Future<void>(() async {
+              if (!mounted) return;
+              await _handleBackPressed();
+            });
           },
           child: Material(
             color: Colors.black,
@@ -461,7 +572,7 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
                           Row(
                             children: [
                               IconButton(
-                                onPressed: _closeWithoutApply,
+                                onPressed: _handleBackPressed,
                                 icon: const Icon(Icons.chevron_left, size: 30),
                                 color: Colors.white,
                                 padding: EdgeInsets.zero,
@@ -484,7 +595,8 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
                                 ),
                               ),
                               TextButton(
-                                onPressed: result == null
+                                onPressed:
+                                    (result == null || !_hasUnappliedChanges)
                                     ? null
                                     : _applyAndClose,
                                 child: const Text(
@@ -608,11 +720,15 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
                           ],
                           const SizedBox(height: 14),
                           Text(
-                            'Group total pomodoros: $baselineGroupPom → $resultGroupPom',
+                            '$totalPomodorosLabel: $baselineGroupPom → $resultGroupPom',
                             style: const TextStyle(color: Colors.white70),
                           ),
                           Text(
-                            'Group work: ${_formatWorkMinutes(baselineGroupMin)} → ${_formatWorkMinutes(resultGroupMin)}',
+                            '$workLabel: ${_formatWorkMinutes(baselineGroupMin)} → ${_formatWorkMinutes(resultGroupMin)}',
+                            style: const TextStyle(color: Colors.white70),
+                          ),
+                          Text(
+                            '$totalDurationLabel: ${_formatDurationSeconds(baselineContinuousSeconds)} → ${_formatDurationSeconds(resultContinuousSeconds)}',
                             style: const TextStyle(color: Colors.white70),
                           ),
                           if (showContinuousCaution) ...[

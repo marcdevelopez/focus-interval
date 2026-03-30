@@ -451,6 +451,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
   **Closed/OK on 16/03/2026 (`P0-F26-006`, commit `cbd800a`, pass2 soak logs validated).**
 - Phase 13 — Mirror must not start behind on resume (stale lastUpdatedAt compensation) (bug).
 - Phase 10 — Task Editor: total time chip + task color picker (new requirement).
+- Phase 10 — Edit Group: show both `Group work` (focus-only) and `Total group duration` (focus + breaks), and evaluate Unusual/Superhuman/Machine caution against the final group configuration (separate follow-up requirement).
 - Phase 9 — Task List: group name input + group summary + per-task total time + selection reset (new requirement).
 - Phase 17 — Early overlap warning (pause drift) + mirror ownership CTA + persistent conflict snackbar + auto-follow postpone (no repeat modal) + paused overlap alerts (new requirement).
 - Phase 17 — Late-start queue anchor (server time) + owner-only queue + realtime projections + activeSession creation on confirm + mirror Run Mode CTA + revalidate post-postpone overlaps (bug).

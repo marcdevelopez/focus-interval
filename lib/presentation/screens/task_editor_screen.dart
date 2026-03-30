@@ -1929,7 +1929,11 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     final singleTask = weightScopeTasks.length <= 1;
     final totalField = Expanded(
       child: InkWell(
-        onTap: () => _openPomodorosPreviewSheet(task, weightScopeTasks),
+        onTap: () => _openPomodorosPreviewSheet(
+          task,
+          weightScopeTasks,
+          isGroupContext: showWeightPercent,
+        ),
         child: InputDecorator(
           decoration: InputDecoration(
             labelText: 'Total pomodoros',
@@ -2037,6 +2041,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       builder: (_) => TaskWeightPreviewSheet(
         editedTask: task,
         baselineTasks: frozenScope,
+        isGroupContext: true,
         field: TaskWeightField.percent,
         computePreview: (value, mode) => editor.redistributeWeightPercent(
           edited: task,
@@ -2056,7 +2061,11 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     });
   }
 
-  void _openPomodorosPreviewSheet(PomodoroTask task, List<PomodoroTask> scope) {
+  void _openPomodorosPreviewSheet(
+    PomodoroTask task,
+    List<PomodoroTask> scope, {
+    required bool isGroupContext,
+  }) {
     final frozenScope = _freezeWeightScope(task, scope);
     final editor = ref.read(taskEditorProvider.notifier);
     setState(() => _weightSheetOpen = true);
@@ -2066,6 +2075,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       builder: (_) => TaskWeightPreviewSheet(
         editedTask: task,
         baselineTasks: frozenScope,
+        isGroupContext: isGroupContext,
         field: TaskWeightField.pomodoros,
         computePreview: (value, mode) => editor.redistributeTotalPomodoros(
           edited: task,
