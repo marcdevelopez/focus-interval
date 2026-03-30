@@ -520,6 +520,11 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         backgroundColor: Colors.black,
         appBar: AppBar(
           backgroundColor: Colors.black,
+          leading: IconButton(
+            onPressed: () => Navigator.of(context).maybePop(),
+            icon: const Icon(Icons.arrow_back),
+            tooltip: 'Back',
+          ),
           title: Text(widget.isEditing ? "Edit task" : "New task"),
           actions: [
             const ModeIndicatorAction(compact: true),

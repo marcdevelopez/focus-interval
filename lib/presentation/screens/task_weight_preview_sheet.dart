@@ -573,7 +573,7 @@ class _TaskWeightPreviewSheetState extends State<TaskWeightPreviewSheet> {
                             children: [
                               IconButton(
                                 onPressed: _handleBackPressed,
-                                icon: const Icon(Icons.chevron_left, size: 30),
+                                icon: const Icon(Icons.arrow_back),
                                 color: Colors.white,
                                 padding: EdgeInsets.zero,
                                 constraints: const BoxConstraints.tightFor(
