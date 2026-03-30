@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **BUG-020 — task editor preview sheet context/feedback consistency (`78b72db`, 30/03/2026)**
-Current focus: **Phase 20 — Group Naming & Task Visual Identity (next up after BUG-017)**
+Current focus: **BUG-022 — macOS Authentication keyboard lock after sign-out/account switch (runtime patch + validation)**
 Last update: **30/03/2026**
 
 ---
@@ -16032,3 +16032,46 @@ Active P1 bugs: **0**. Active P2 bugs: **1** (BUG-017, Edit Task preset dropdown
 ### Status after this block
 
 - Back icon is now visually consistent between `Edit task` and `Edit Total pomodoros` / `Edit Task weight`.
+
+---
+
+## Block 696 — BUG-022 docs-first + runtime patch: macOS Authentication keyboard lock after sign-out (30/03/2026)
+
+**Current branch intent:** BUG-022 registration, runtime hardening, and validation bootstrap.
+**Branch:** `fix/bug022-macos-auth-keyboard-stuck`
+**Scope:** Bug docs synchronization + LoginScreen macOS keyboard-state repair.
+
+### Context
+
+User reported a recurring macOS issue: after signing out to switch account, Authentication fields (`Email`/`Password`) stopped accepting keyboard input. Logs repeatedly showed duplicate key-down exceptions (`physical key is already pressed`) tied to stale Backspace key state.
+
+### Changes applied
+
+- Documentation-first registration:
+  - Added `BUG-022` entry to `docs/bugs/bug_log.md` with repro, expected behavior, root-cause hypothesis, patch summary, and status `In validation`.
+  - Added `BUGLOG-022` to `docs/validation/validation_ledger.md` as `P1 / In validation`; snapshot updated to 2026-03-30 with active non-closed bug count = 2 (`BUG-022`, `BUG-017`).
+  - Updated `docs/roadmap.md` global timeline and reopened phases with explicit Phase 6 bug item for Authentication keyboard reliability (`BUG-022`).
+  - Updated `docs/specs.md` section 10.1 with desktop auth reliability rule (Authentication must keep keyboard input usable after sign-out/account switch).
+  - Created validation packet:
+    - `docs/bugs/validation_bug022_2026_03_30/plan_validacion_rapida_fix.md`
+    - `docs/bugs/validation_bug022_2026_03_30/quick_pass_checklist.md`
+    - `docs/bugs/validation_bug022_2026_03_30/logs/`
+    - `docs/bugs/validation_bug022_2026_03_30/screenshots/`
+
+- Runtime patch (`lib/presentation/screens/login_screen.dart`):
+  - Added macOS-only stale-key repair routine when Authentication opens and when user taps email/password fields.
+  - Repair path reads engine keyboard state (`SystemChannels.keyboard` `getKeyboardState`) and compares it against framework pressed keys.
+  - For stale pressed keys, synthesizes `KeyUpEvent` through `HardwareKeyboard.instance.handleKeyEvent` to unblock text input.
+  - Added `[AuthKeyboardRepair]` debug diagnostics for validation logs.
+
+### Tests executed
+
+- `flutter analyze` -> PASS (`No issues found!`).
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> PASS (`+25`, all tests passed).
+
+### Status after this block
+
+- `BUG-022` / `BUGLOG-022`: **In validation** (runtime patch landed; macOS device exact repro validation pending in packet).
+- Active bug queue:
+  - P1: `BUG-022` (In validation)
+  - P2: `BUG-017` (Open)

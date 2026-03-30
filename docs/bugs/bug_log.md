@@ -2813,3 +2813,50 @@ Fix applied:
 Status:
 Closed/OK. closed_commit_hash: 78b72db. Device validation PASS 30/03/2026 (Android + macOS):
 Terminology correct per selection context, dual duration lines shown, caution always visible when threshold, back modal fires on unapplied changes, snackbar correct in all exit paths. flutter analyze PASS.
+
+---
+
+## BUG-022 — macOS Authentication fields stop accepting keyboard input after account switch
+
+ID: BUG-022
+Date: 30/03/2026 (UTC+2)
+Platforms: macOS (confirmed)
+Context: Account Mode on desktop. User signs out from one account and goes to Authentication to sign in with a different account.
+
+Repro summary:
+- Start signed in on macOS.
+- Sign out to switch user.
+- Open Authentication screen.
+- Tap email/password fields and try typing.
+
+Symptom:
+- Keyboard input is blocked in Authentication (`Email` and `Password`).
+- User cannot type credentials and cannot recover without restarting the app.
+
+Observed behavior:
+- Repeated framework exception:
+  `A KeyDownEvent is dispatched, but the state shows that the physical key is already pressed`.
+- Repeated stale event details point to `Backspace` with identical event identity/timestamp across retries.
+- While exception loop is active, text fields do not accept normal typing.
+
+Expected behavior:
+- Authentication fields must always accept keyboard input after sign-out/account switch.
+- Any stale keyboard state must self-heal automatically when opening Authentication.
+
+Root cause:
+Not fully confirmed yet.
+
+Hypothesis:
+- Flutter `HardwareKeyboard` pressed-key state can remain stale across sign-out/navigation transitions on macOS.
+- When stale pressed keys are not reconciled, subsequent key events are rejected as duplicate key-down events, blocking text input.
+
+Fix applied:
+- Branch: `fix/bug022-macos-auth-keyboard-stuck`
+- Runtime patch in `lib/presentation/screens/login_screen.dart`:
+  - Added macOS-only keyboard-state repair on Authentication screen open and on email/password field tap.
+  - Repair compares framework pressed keys vs engine-reported keyboard state (`SystemChannels.keyboard/getKeyboardState`).
+  - For stale pressed keys, synthesize `KeyUpEvent` via `HardwareKeyboard.instance.handleKeyEvent` to unblock typing.
+  - Added debug diagnostics `[AuthKeyboardRepair]` for evidence in runtime logs.
+
+Status:
+In validation (local runtime patch applied, device validation pending).

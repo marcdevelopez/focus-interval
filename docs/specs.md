@@ -813,6 +813,7 @@ Account profile metadata
 - Login entry hidden on Linux (Account Mode unavailable)
 - Text: “Sync your tasks in the cloud”
 - If a provider conflict occurs (account exists with different credential), prompt the user to sign in with the original provider and link the new provider.
+- Desktop auth reliability rule: returning to Authentication after sign-out/account switch must keep keyboard input usable in email/password fields (no stuck key state that blocks typing).
 
 ---
 

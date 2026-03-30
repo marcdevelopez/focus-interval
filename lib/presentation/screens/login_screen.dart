@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -38,6 +41,60 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passCtrl = TextEditingController();
   bool _loading = false;
   bool _passwordVisible = false;
+  bool _repairingKeyboardState = false;
+
+  bool get _isMacOsDesktop =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.macOS;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(
+        _repairStaleKeyboardStateIfNeeded(trigger: 'login_screen_opened'),
+      );
+    });
+  }
+
+  Future<void> _repairStaleKeyboardStateIfNeeded({
+    required String trigger,
+  }) async {
+    if (!_isMacOsDesktop || _repairingKeyboardState) return;
+    _repairingKeyboardState = true;
+    try {
+      final keyboardState =
+          await SystemChannels.keyboard.invokeMapMethod<int, int>(
+            'getKeyboardState',
+          ) ??
+          const <int, int>{};
+      final platformPressed = keyboardState.keys
+          .map(PhysicalKeyboardKey.new)
+          .toSet();
+      final stalePressed = HardwareKeyboard.instance.physicalKeysPressed
+          .difference(platformPressed);
+      if (stalePressed.isEmpty) return;
+      for (final physicalKey in stalePressed) {
+        final logicalKey = HardwareKeyboard.instance.lookUpLayout(physicalKey);
+        if (logicalKey == null) continue;
+        HardwareKeyboard.instance.handleKeyEvent(
+          KeyUpEvent(
+            physicalKey: physicalKey,
+            logicalKey: logicalKey,
+            synthesized: true,
+            timeStamp: Duration.zero,
+          ),
+        );
+      }
+      debugPrint(
+        '[AuthKeyboardRepair] trigger=$trigger cleared=${stalePressed.length}',
+      );
+    } catch (e) {
+      debugPrint('[AuthKeyboardRepair] trigger=$trigger failed: $e');
+    } finally {
+      _repairingKeyboardState = false;
+    }
+  }
 
   void _invalidateAccountProviders() {
     ref.invalidate(taskListProvider);
@@ -188,14 +245,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         builder: (context) {
           return AlertDialog(
             title: const Text('Verify your email to enable sync'),
-          content: Text(
+            content: Text(
               'We need to verify ${auth.currentUser?.email ?? 'this email'} before enabling Account Mode. '
               'Until then, sync is disabled. Check your spam folder if it does not arrive within a few minutes.',
             ),
             actions: [
               TextButton(
-                onPressed: () =>
-                    Navigator.of(context).pop(_EmailVerificationAction.useLocal),
+                onPressed: () => Navigator.of(
+                  context,
+                ).pop(_EmailVerificationAction.useLocal),
                 child: const Text('Use Local Mode'),
               ),
               TextButton(
@@ -209,8 +267,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: const Text('Resend email'),
               ),
               ElevatedButton(
-                onPressed: () =>
-                    Navigator.of(context).pop(_EmailVerificationAction.verified),
+                onPressed: () => Navigator.of(
+                  context,
+                ).pop(_EmailVerificationAction.verified),
                 child: const Text("I've verified"),
               ),
             ],
@@ -867,6 +926,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const SizedBox(height: 12),
               TextField(
                 controller: _emailCtrl,
+                onTap: () {
+                  unawaited(
+                    _repairStaleKeyboardStateIfNeeded(
+                      trigger: 'email_field_tap',
+                    ),
+                  );
+                },
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(
                   labelText: 'Email',
@@ -880,6 +946,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const SizedBox(height: 12),
               TextField(
                 controller: _passCtrl,
+                onTap: () {
+                  unawaited(
+                    _repairStaleKeyboardStateIfNeeded(
+                      trigger: 'password_field_tap',
+                    ),
+                  );
+                },
                 obscureText: !_passwordVisible,
                 decoration: InputDecoration(
                   labelText: 'Password',
@@ -888,8 +961,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     borderSide: BorderSide(color: Colors.white24),
                   ),
                   suffixIcon: IconButton(
-                    tooltip:
-                        _passwordVisible ? 'Hide password' : 'Show password',
+                    tooltip: _passwordVisible
+                        ? 'Hide password'
+                        : 'Show password',
                     icon: Icon(
                       _passwordVisible
                           ? Icons.visibility_off
