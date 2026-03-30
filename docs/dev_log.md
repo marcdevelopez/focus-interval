@@ -15945,7 +15945,7 @@ Branch ready to merge into `develop`.
 
 ---
 
-## Block N+1 — BUG-020: Task editor preview sheet context/feedback consistency (30/03/2026)
+## Block 694 — BUG-020: Task editor preview sheet context/feedback consistency (30/03/2026)
 
 Branch: fix/task-editor-preview-context-duration-feedback
 Commit: 78b72db
@@ -16008,3 +16008,27 @@ incoherencies:
 
 BUG-020 / BUGLOG-020: **Closed/OK**.
 Active P1 bugs: **0**. Active P2 bugs: **1** (BUG-017, Edit Task preset dropdown).
+
+---
+
+## Block 695 — UI consistency: unified Back icon in Edit Task + preview sheets (30/03/2026)
+
+**Current branch intent:** UI polish only (navigation icon consistency).
+**Branch:** `fix/unify-back-icon-preview-sheets`
+**Scope:** Make Back icon glyph consistent between `Edit task` and preview sheets across platforms.
+
+### Change applied
+
+- `lib/presentation/screens/task_editor_screen.dart`
+  - Added explicit AppBar leading icon button with `Icons.arrow_back` to avoid
+    platform-dependent implicit icon rendering.
+- `lib/presentation/screens/task_weight_preview_sheet.dart`
+  - Replaced preview-sheet leading icon `Icons.chevron_left` with `Icons.arrow_back`.
+
+### Validation
+
+- `flutter analyze`: PASS
+
+### Status after this block
+
+- Back icon is now visually consistent between `Edit task` and `Edit Total pomodoros` / `Edit Task weight`.
