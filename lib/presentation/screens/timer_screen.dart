@@ -55,6 +55,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   int? _noticeFallbackMinutes;
   bool _ownerEducationInFlight = false;
   String? _lastOwnershipRejectionKey;
+  String? _activeOwnershipRejectionSnackKey;
   String? _dismissedOwnershipRequestKey;
   String? _dismissedOwnershipRequesterId;
   bool _ownershipRejectionSnackVisible = false;
@@ -222,6 +223,11 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _setInactiveRepaintEnabled(false);
     _preRunInfo = null;
     _preRunRemainingSeconds = 0;
+    if (_ownershipRejectionSnackVisible && mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    }
+    _activeOwnershipRejectionSnackKey = null;
+    _ownershipRejectionSnackVisible = false;
     _stopPreRunTimer();
   }
 
@@ -1612,6 +1618,18 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     return request.requestId ?? request.requesterDeviceId;
   }
 
+  String? _rejectedOwnershipRequestKeyForDevice({
+    required OwnershipRequest? request,
+    required String deviceId,
+  }) {
+    if (request == null) return null;
+    if (request.status != OwnershipRequestStatus.rejected) return null;
+    if (request.requesterDeviceId != deviceId) return null;
+    final respondedAt = request.respondedAt;
+    return request.requestId ??
+        '${request.requesterDeviceId}-${respondedAt?.millisecondsSinceEpoch ?? 0}';
+  }
+
   bool _isDismissedOwnershipRequest(OwnershipRequest? request) {
     if (request == null) return false;
     if (request.requestId != null) {
@@ -1642,15 +1660,24 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   }) {
     final session = vm.activeSessionForCurrentGroup;
     final request = vm.ownershipRequest;
+    final rejectedKeyForDevice = _rejectedOwnershipRequestKeyForDevice(
+      request: request,
+      deviceId: deviceId,
+    );
     final hasDismissedRequest =
         _dismissedOwnershipRequestKey != null ||
         _dismissedOwnershipRequesterId != null;
 
-    if (_ownershipRejectionSnackVisible &&
+    final shouldDismissVisibleRejection =
+        _ownershipRejectionSnackVisible &&
         (vm.isOwnerForCurrentSession ||
-            vm.isOwnershipRequestPendingForThisDevice)) {
+            vm.isOwnershipRequestPendingForThisDevice ||
+            vm.hasLocalPendingOwnershipRequest ||
+            _activeOwnershipRejectionSnackKey != rejectedKeyForDevice);
+    if (shouldDismissVisibleRejection) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       _ownershipRejectionSnackVisible = false;
+      _activeOwnershipRejectionSnackKey = null;
     }
 
     if (session != null && hasDismissedRequest) {
@@ -1663,13 +1690,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       }
     }
 
-    if (request == null) return;
-    if (request.status != OwnershipRequestStatus.rejected) return;
-    if (request.requesterDeviceId != deviceId) return;
-    final respondedAt = request.respondedAt;
-    final key =
-        request.requestId ??
-        '${request.requesterDeviceId}-${respondedAt?.millisecondsSinceEpoch ?? 0}';
+    final key = rejectedKeyForDevice;
+    if (key == null) return;
+    final respondedAt = request?.respondedAt;
     if (_lastOwnershipRejectionKey == key) return;
     _lastOwnershipRejectionKey = key;
     if (!mounted) return;
@@ -1694,8 +1717,11 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       ),
     );
     _ownershipRejectionSnackVisible = true;
+    _activeOwnershipRejectionSnackKey = key;
     controller.closed.then((_) {
+      if (_activeOwnershipRejectionSnackKey != key) return;
       _ownershipRejectionSnackVisible = false;
+      _activeOwnershipRejectionSnackKey = null;
     });
   }
 

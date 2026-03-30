@@ -171,6 +171,11 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
 
   Future<void> clearSessionIfInactive({String? expectedGroupId}) async {}
 
+  void emitSession(PomodoroSession? session) {
+    _lastSession = session;
+    _controller.add(session);
+  }
+
   @override
   Future<void> requestOwnership({
     required String requesterDeviceId,
@@ -332,6 +337,7 @@ PomodoroSession _buildRunningSession({
   DateTime? finishedAt,
   DateTime? phaseStartedAt,
   DateTime? currentTaskStartedAt,
+  OwnershipRequest? ownershipRequest,
 }) {
   return PomodoroSession(
     taskId: 'task-1',
@@ -356,6 +362,7 @@ PomodoroSession _buildRunningSession({
     lastUpdatedAt: now,
     finishedAt: finishedAt,
     pauseReason: null,
+    ownershipRequest: ownershipRequest,
   );
 }
 
@@ -2220,6 +2227,186 @@ void main() {
       }
     }
   });
+
+  testWidgets(
+    'Run Mode dismisses stale rejection snackbar when requester submits a new request',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'ownership-snackbar-retry',
+        now: now,
+      );
+      final rejected = OwnershipRequest(
+        requestId: 'request-old',
+        requesterDeviceId: deviceInfo.deviceId,
+        status: OwnershipRequestStatus.rejected,
+        requestedAt: now.subtract(const Duration(seconds: 20)),
+        respondedAt: now.subtract(const Duration(seconds: 5)),
+        respondedByDeviceId: 'owner-device',
+      );
+      final pending = OwnershipRequest(
+        requestId: 'request-new',
+        requesterDeviceId: deviceInfo.deviceId,
+        status: OwnershipRequestStatus.pending,
+        requestedAt: now,
+        respondedAt: null,
+        respondedByDeviceId: null,
+      );
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(
+        _buildRunningSession(
+          groupId: group.id,
+          ownerDeviceId: 'owner-device',
+          now: now,
+          ownershipRequest: rejected,
+        ),
+      );
+      final appModeService = AppModeService.memory();
+      await appModeService.saveMode(AppMode.account);
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      try {
+        await _pumpTimerScreen(
+          tester: tester,
+          container: container,
+          groupId: group.id,
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(
+          find.textContaining('Ownership request rejected at'),
+          findsOneWidget,
+        );
+
+        sessionRepo.emitSession(
+          _buildRunningSession(
+            groupId: group.id,
+            ownerDeviceId: 'owner-device',
+            now: now.add(const Duration(seconds: 2)),
+            ownershipRequest: pending,
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(
+          find.textContaining('Ownership request rejected at'),
+          findsNothing,
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets(
+    'Run Mode dismisses stale rejection snackbar when requester becomes owner',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'ownership-snackbar-owner',
+        now: now,
+      );
+      final rejected = OwnershipRequest(
+        requestId: 'request-owner-old',
+        requesterDeviceId: deviceInfo.deviceId,
+        status: OwnershipRequestStatus.rejected,
+        requestedAt: now.subtract(const Duration(seconds: 20)),
+        respondedAt: now.subtract(const Duration(seconds: 5)),
+        respondedByDeviceId: 'owner-device',
+      );
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(
+        _buildRunningSession(
+          groupId: group.id,
+          ownerDeviceId: 'owner-device',
+          now: now,
+          ownershipRequest: rejected,
+        ),
+      );
+      final appModeService = AppModeService.memory();
+      await appModeService.saveMode(AppMode.account);
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      try {
+        await _pumpTimerScreen(
+          tester: tester,
+          container: container,
+          groupId: group.id,
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(
+          find.textContaining('Ownership request rejected at'),
+          findsOneWidget,
+        );
+
+        sessionRepo.emitSession(
+          _buildRunningSession(
+            groupId: group.id,
+            ownerDeviceId: deviceInfo.deviceId,
+            now: now.add(const Duration(seconds: 3)),
+            ownershipRequest: null,
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(
+          find.textContaining('Ownership request rejected at'),
+          findsNothing,
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
 
   testWidgets(
     'Task List blocks scheduling when pre-run window overlaps a running group',

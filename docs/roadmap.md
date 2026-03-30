@@ -439,6 +439,15 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       30/03/2026: BUG-022 closed/OK — user re-test confirms Authentication
                   keyboard input works after account switch; closure recorded
                   with commit `4e439db` and validation packet sync.
+      30/03/2026: BUG-021 moved to In validation — Run Mode stale ownership
+                  rejection snackbar now auto-dismisses on ownership-context
+                  changes (request replacement/new pending/requester owner
+                  transition). Local gate PASS (`flutter analyze` + targeted
+                  widget tests); device validation pending.
+      30/03/2026: BUG-021 closed/OK — stale ownership rejection snackbar
+                  invalidation accepted with logs + local gate + user approval
+                  (scope note: original user flow was automatic owner switch;
+                  closure applies to rejection-snackbar path).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
@@ -487,6 +496,9 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 18 — Run Mode status boxes must match contextual list ranges (no stale ranges after pause/resume) (bug).
 - Phase 18 — Pause offsets must extend TaskRunGroup.theoreticalEndTime on resume (cross-device) (bug).
 - Phase 18 — Ownership request retry when pending exceeds stale threshold (bug).
+- ~~Phase 18 — Run Mode ownership rejection snackbar must auto-dismiss when
+  ownership context changes (new request, requester becomes owner, request
+  replaced/cleared) (`BUG-021`) (in validation).~~ **Closed/OK on 30/03/2026 (`BUGLOG-021`; closure evidence: local gate PASS + validation packet + user acceptance).**
 - Phase 18 — Run Mode shows Syncing state when activeSession is missing + manual refresh (sync icon) (bug).
 - Phase 18 — Missing-session cleanup must not clear activeSession on transient
   group lookup/provider rebuild gaps; sync hold must recover without destructive clears (bug).

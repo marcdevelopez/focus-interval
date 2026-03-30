@@ -2816,6 +2816,69 @@ Terminology correct per selection context, dual duration lines shown, caution al
 
 ---
 
+## BUG-021 — Run Mode ownership rejection snackbar can remain stale after ownership state changes
+
+ID: BUG-021
+Date: 30/03/2026 (UTC+2)
+Platforms: Android, macOS (Run Mode; expected cross-platform behavior)
+Context: Account Mode mirror/requester device with a visible ownership rejection snackbar.
+
+Repro summary:
+- Open Run Mode on a mirror/requester device.
+- Trigger a rejection snackbar (`Ownership request rejected at ...`) and keep it visible.
+- Change ownership context without pressing `OK`:
+  - requester submits a new request (new `requestId` / pending), or
+  - requester becomes owner, or
+  - ownership request is cleared/replaced.
+
+Symptom:
+- The previous rejection snackbar can remain visible with obsolete information.
+- UI feedback contradicts current ownership state.
+
+Observed behavior:
+- Snackbar lifetime was mostly tied to manual dismissal.
+- Invalidation only covered a subset of transitions, so stale messages could survive
+  request replacement/clear paths.
+
+Expected behavior:
+- Ownership snackbar feedback must always match the current ownership context.
+- Obsolete rejection snackbars must auto-dismiss immediately when the requester
+  becomes owner or submits a newer request (specs 10.4.11).
+
+Root cause (confirmed):
+- `TimerScreen` tracked rejection snackbar visibility as a boolean and did not bind
+  the visible snackbar to an active rejected request key.
+- Invalidation logic only checked partial state (`isOwnerForCurrentSession`,
+  `isOwnershipRequestPendingForThisDevice`) and missed other context-invalidating
+  transitions.
+
+Fix applied:
+- Branch: `fix/bug021-ownership-snackbar-autodismiss`
+- Runtime patch in `lib/presentation/screens/timer_screen.dart`:
+  - Added request-key-aware rejection state (`_activeOwnershipRejectionSnackKey`).
+  - Added `_rejectedOwnershipRequestKeyForDevice(...)` resolver.
+  - Auto-dismisses visible rejection snackbar when ownership context changes and
+    the active snackbar key no longer matches the current rejected request key.
+  - Covers requester owner-transition, new request submission (pending/local pending),
+    request clear/replacement, and group switch invalidation.
+- Regression tests:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+    - `Run Mode dismisses stale rejection snackbar when requester submits a new request`
+    - `Run Mode dismisses stale rejection snackbar when requester becomes owner`
+
+Status:
+Closed/OK (30/03/2026). closed_commit_hash: `pending-local`.
+Closure evidence:
+- `flutter analyze` PASS (30/03/2026)
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Run Mode dismisses stale rejection snackbar"` PASS (30/03/2026)
+- Validation packet updated:
+  - `docs/bugs/validation_bug021_2026_03_30/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug021_2026_03_30/quick_pass_checklist.md`
+- User accepted closure in-thread after log review and observed stable behavior.
+- Scope note: the original report described automatic owner change without explicit request; this fix closes the stale **rejection** snackbar path defined in BUG-021.
+
+---
+
 ## BUG-022 — macOS Authentication fields stop accepting keyboard input after account switch
 
 ID: BUG-022
