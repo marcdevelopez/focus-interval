@@ -25,9 +25,9 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **BUG-018 — owner background running+zero recovery stabilized (`547c6f7`, merged to `develop` on 29/03/2026 via PR #164)**
-Current focus: **BUG-019 docs-first registration + Claude architectural review before runtime changes**
-Last update: **29/03/2026**
+Last bug fix: **BUG-020 — task editor preview sheet context/feedback consistency (`78b72db`, 30/03/2026)**
+Current focus: **Phase 20 — Group Naming & Task Visual Identity (next up after BUG-017)**
+Last update: **30/03/2026**
 
 ---
 
@@ -15942,3 +15942,69 @@ params (defaults preserve all existing tests).
 BUG-019 / BUGLOG-019: **Closed/OK**.
 Active P1 bugs: **0**. Active P2 bugs: **1** (BUG-017, Edit Task preset dropdown).
 Branch ready to merge into `develop`.
+
+---
+
+## Block N+1 — BUG-020: Task editor preview sheet context/feedback consistency (30/03/2026)
+
+Branch: fix/task-editor-preview-context-duration-feedback
+Commit: 78b72db
+
+### Problem
+
+Edit Task preview sheets (Total pomodoros + Task weight %) had multiple compounded UX
+incoherencies:
+
+1. Terminology always said "Group work" regardless of whether the task was selected for
+   a group, misleading users editing a standalone task.
+2. Only work duration (no breaks) was shown. The Unusual/Superhuman/Machine threshold
+   warnings are based on total-with-breaks, so the basis for those warnings was invisible.
+3. The Unusual/Superhuman/Machine caution was suppressed after the first show within the
+   sheet session, making it feel like an erratic bug when re-entering the threshold range.
+4. Exit snackbar always said "No changes applied" regardless of whether Apply was pressed.
+5. No confirmation modal when pressing Back with unapplied changes.
+
+### Fix
+
+- `isGroupContext` added to `TaskWeightPreviewSheet`; driven by `showWeightPercent` at
+  call site — true only when task is currently selected in the group scope.
+- `_scopeLabel` resolves 'Task' / 'Group' at runtime. All three label strings
+  (`totalPomodorosLabel`, `workLabel`, `totalDurationLabel`) derived from it.
+- Second duration line added using `continuousTaskDurationsSecondsForTasks` (single task)
+  / `continuousGroupDurationSecondsForTasks` (group), surfacing total-with-breaks so the
+  basis of extreme-duration warnings is visible.
+- `showContinuousCaution` is now value-driven: no `_hasUserInteracted` gate. Caution
+  appears immediately when result meets threshold, disappears when below, reappears on
+  re-entry — deterministic.
+- Back flow replaced with `_handleBackPressed` + `_handlingBackFlow` re-entry guard +
+  `_allowPop` controlled pop:
+  - unapplied changes → modal (Apply and close / Discard and close / Continue editing);
+    Apply button hidden in modal when `_result == null` (invalid input).
+  - no changes → close directly + snackbar "No changes made."
+- Apply button: disabled when `result == null || !_hasUnappliedChanges`.
+- `_applyAndClose`: snackbar "Changes applied." on apply path.
+
+### Validation results (Android RMX3771 + macOS, 30/03/2026)
+
+- Scenario A — Task terminology when not selected: PASS
+- Scenario B — Group terminology when selected: PASS
+- Scenario C — Dual duration lines (work + total with breaks): PASS
+- Scenario D — Caution reappears on re-entry to threshold: PASS
+- Scenario E — Back modal fires on unapplied changes: PASS
+- Scenario F — Snackbar "Changes applied." after Apply: PASS
+- Scenario G — No-change close + "No changes made.": PASS
+- `flutter analyze`: PASS
+- `flutter test task_editor_view_model_test.dart`: PASS
+- `flutter test continuous_plan_load_test.dart`: PASS
+
+### Follow-up registered (separate branch)
+
+- Edit Group: show Group work + Total group duration + threshold caution with the final
+  preset configuration applied (Phase 20 scope, roadmap.md updated).
+- Ícono "atrás" unificado entre plataformas: chevron_left vs arrow_back inconsistency
+  across Edit Task and preview sheets (separate fix branch).
+
+### Status after this block
+
+BUG-020 / BUGLOG-020: **Closed/OK**.
+Active P1 bugs: **0**. Active P2 bugs: **1** (BUG-017, Edit Task preset dropdown).
