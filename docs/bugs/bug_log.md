@@ -2720,3 +2720,59 @@ Validation evidence (27/03/2026):
 
 Status:
 Closed/OK (27/03/2026). closed_commit_hash: `547c6f7`.
+
+---
+
+## BUG-019 — Android system back intermittently exits app instead of returning to root screen
+
+ID: BUG-019
+Date: 29/03/2026 (UTC+1)
+Platforms: Android (confirmed), cross-platform review pending
+Context: Navigation stack behavior on root routes (`/timer/:id`, `/groups`) while using
+system back.
+
+Repro summary:
+- Open the app and navigate to Run Mode (`/timer/:groupId`) or Groups Hub (`/groups`).
+- Press Android system back.
+- Repeat after different navigation paths (Task List -> Groups Hub, Task List -> Run Mode,
+  cancellation/re-entry flows).
+
+Symptom:
+- In some cases, pressing system back closes the app immediately (home/launcher),
+  instead of returning to the expected root screen.
+
+Observed behavior:
+- System back is intermittent: same user flow can sometimes return, sometimes terminate.
+- Expected root fallback (Task List) is not always reached before app exit.
+- Behavior is more visible when navigation has been done with route replacement
+  (`go`) on top-level routes.
+
+Expected behavior:
+- System back must never terminate the app unexpectedly from active product flows.
+- If user is in Run Mode:
+  - active execution: keep existing confirmation/cancel policy (no silent exit).
+  - non-active/root state: return to app root screen instead of closing app.
+- If user is in Groups Hub root route, system back should return to Task List root
+  (future shared tabs host), not close app directly.
+- Behavior must be deterministic across repeated back presses.
+
+Root cause:
+Not yet confirmed.
+
+Hypothesis:
+- Several top-level navigations use stack replacement (`context.go`) and can leave
+  routes without a pop stack; Android system back then delegates to app exit unless
+  a deterministic fallback route is handled explicitly.
+- Run Mode `PopScope` currently gates exit primarily on machine status and may not
+  cover all runtime ownership/session combinations that should block termination.
+
+Fix applied:
+- `d1a1f19` — GroupsHubScreen: PopScope(canPop: false) with fallback to /tasks
+- `e16a692` — TimerScreen: canPop: false always; non-active path uses context.canPop()
+  fallback to /tasks or /groups per mode; active path delegates to _confirmExit unchanged
+- `ed97de7` — Tests: 4 system-back regression tests covering all validation scenarios
+
+Status:
+Closed/OK. closed_commit_hash: ed97de7. Device validation PASS 29/03/2026 (Android RMX3771):
+Scenario A (Groups Hub → /tasks), B (Timer non-active → /groups), C (active confirmation
+guard preserved), D (Settings stack-pop unchanged). flutter analyze + flutter test PASS.

@@ -312,251 +312,266 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     final showOwnerRequestBanner =
         isOwnerDevice && hasPendingOwnerRequest && !isDismissedOwnerRequest;
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go('/tasks');
+        }
+      },
+      child: Scaffold(
         backgroundColor: Colors.black,
-        title: const Text('Groups Hub'),
-        actions: [const ModeIndicatorAction(compact: true)],
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: OutlinedButton.icon(
-              onPressed: () => context.go('/tasks'),
-              icon: const Icon(Icons.library_books),
-              label: const Text('Go to Task List'),
-            ),
-          ),
-          Expanded(
-            child: groupsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(
-                child: Text(
-                  "Error: $e",
-                  style: const TextStyle(color: Colors.red),
-                ),
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          title: const Text('Groups Hub'),
+          actions: [const ModeIndicatorAction(compact: true)],
+        ),
+        body: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: OutlinedButton.icon(
+                onPressed: () => context.go('/tasks'),
+                icon: const Icon(Icons.library_books),
+                label: const Text('Go to Task List'),
               ),
-              data: (groups) {
-                final runningGroups =
-                    groups
-                        .where((g) => g.status == TaskRunStatus.running)
-                        .toList()
-                      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-                final scheduledGroups =
-                    groups
-                        .where((g) => g.status == TaskRunStatus.scheduled)
-                        .toList()
-                      ..sort((a, b) {
-                        final aStart =
-                            resolveEffectiveScheduledStart(
-                              group: a,
-                              allGroups: groups,
-                              activeSession: activeSession,
-                              now: now,
-                              fallbackNoticeMinutes: _noticeFallbackMinutes,
-                            ) ??
-                            a.scheduledStartTime ??
-                            a.createdAt;
-                        final bStart =
-                            resolveEffectiveScheduledStart(
-                              group: b,
-                              allGroups: groups,
-                              activeSession: activeSession,
-                              now: now,
-                              fallbackNoticeMinutes: _noticeFallbackMinutes,
-                            ) ??
-                            b.scheduledStartTime ??
-                            b.createdAt;
-                        return aStart.compareTo(bStart);
-                      });
-                final completedGroups =
-                    groups
-                        .where((g) => g.status == TaskRunStatus.completed)
-                        .toList()
-                      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-                final completedSlice = completedGroups
-                    .take(_completedHistoryLimit)
-                    .toList(growable: false);
-                final canceledGroups =
-                    groups
-                        .where((g) => g.status == TaskRunStatus.canceled)
-                        .toList()
-                      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-                final canceledSlice = canceledGroups
-                    .take(_canceledHistoryLimit)
-                    .toList(growable: false);
+            ),
+            Expanded(
+              child: groupsAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(
+                  child: Text(
+                    "Error: $e",
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
+                data: (groups) {
+                  final runningGroups =
+                      groups
+                          .where((g) => g.status == TaskRunStatus.running)
+                          .toList()
+                        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+                  final scheduledGroups =
+                      groups
+                          .where((g) => g.status == TaskRunStatus.scheduled)
+                          .toList()
+                        ..sort((a, b) {
+                          final aStart =
+                              resolveEffectiveScheduledStart(
+                                group: a,
+                                allGroups: groups,
+                                activeSession: activeSession,
+                                now: now,
+                                fallbackNoticeMinutes: _noticeFallbackMinutes,
+                              ) ??
+                              a.scheduledStartTime ??
+                              a.createdAt;
+                          final bStart =
+                              resolveEffectiveScheduledStart(
+                                group: b,
+                                allGroups: groups,
+                                activeSession: activeSession,
+                                now: now,
+                                fallbackNoticeMinutes: _noticeFallbackMinutes,
+                              ) ??
+                              b.scheduledStartTime ??
+                              b.createdAt;
+                          return aStart.compareTo(bStart);
+                        });
+                  final completedGroups =
+                      groups
+                          .where((g) => g.status == TaskRunStatus.completed)
+                          .toList()
+                        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+                  final completedSlice = completedGroups
+                      .take(_completedHistoryLimit)
+                      .toList(growable: false);
+                  final canceledGroups =
+                      groups
+                          .where((g) => g.status == TaskRunStatus.canceled)
+                          .toList()
+                        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+                  final canceledSlice = canceledGroups
+                      .take(_canceledHistoryLimit)
+                      .toList(growable: false);
 
-                final hasGroups =
-                    runningGroups.isNotEmpty ||
-                    scheduledGroups.isNotEmpty ||
-                    completedSlice.isNotEmpty ||
-                    canceledSlice.isNotEmpty;
+                  final hasGroups =
+                      runningGroups.isNotEmpty ||
+                      scheduledGroups.isNotEmpty ||
+                      completedSlice.isNotEmpty ||
+                      canceledSlice.isNotEmpty;
 
-                final children = <Widget>[];
-                if (showOwnerRequestBanner && ownershipRequest != null) {
-                  children.add(_buildOwnershipRequestBanner(ownershipRequest));
-                  children.add(const SizedBox(height: 16));
-                }
-                if (mirrorConflictDecision != null) {
-                  final ownerStale = _isOwnerStale(activeSession, now);
-                  children.add(
-                    _buildMirrorConflictBanner(
-                      context,
-                      decision: mirrorConflictDecision,
-                      ownerStale: ownerStale,
-                    ),
-                  );
-                  children.add(const SizedBox(height: 16));
-                }
-
-                if (!hasGroups) {
-                  children
-                    ..add(const SizedBox(height: 48))
-                    ..add(
-                      const Center(
-                        child: Text(
-                          'No groups yet.',
-                          style: TextStyle(color: Colors.white54),
-                        ),
+                  final children = <Widget>[];
+                  if (showOwnerRequestBanner && ownershipRequest != null) {
+                    children.add(
+                      _buildOwnershipRequestBanner(ownershipRequest),
+                    );
+                    children.add(const SizedBox(height: 16));
+                  }
+                  if (mirrorConflictDecision != null) {
+                    final ownerStale = _isOwnerStale(activeSession, now);
+                    children.add(
+                      _buildMirrorConflictBanner(
+                        context,
+                        decision: mirrorConflictDecision,
+                        ownerStale: ownerStale,
                       ),
                     );
-                  return ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                    children: children,
-                  );
-                }
+                    children.add(const SizedBox(height: 16));
+                  }
 
-                children.addAll([
-                  _SectionHeader(title: 'Running / Paused'),
-                  if (runningGroups.isEmpty)
-                    const _EmptySection(label: 'No running groups'),
-                  for (final group in runningGroups)
-                    _GroupCard(
-                      group: group,
-                      activeSession: activeSession,
-                      preRunStartOverride: null,
-                      onTap: () => _showSummaryDialog(context, group),
-                      actions: [
-                        _GroupAction(
-                          label: 'Open Run Mode',
-                          onPressed: () =>
-                              openRunModeForGroup(context, ref, group),
+                  if (!hasGroups) {
+                    children
+                      ..add(const SizedBox(height: 48))
+                      ..add(
+                        const Center(
+                          child: Text(
+                            'No groups yet.',
+                            style: TextStyle(color: Colors.white54),
+                          ),
                         ),
-                      ],
-                      now: now,
-                    ),
-                  const SizedBox(height: 20),
-                  _SectionHeader(title: 'Scheduled'),
-                  if (scheduledGroups.isEmpty)
-                    const _EmptySection(label: 'No scheduled groups'),
-                  for (final group in scheduledGroups)
-                    Builder(
-                      builder: (context) {
-                        final effectiveStart = resolveEffectiveScheduledStart(
-                          group: group,
-                          allGroups: groups,
-                          activeSession: activeSession,
-                          now: now,
-                          fallbackNoticeMinutes: _noticeFallbackMinutes,
-                        );
-                        final effectivePreRunStart =
-                            resolveEffectivePreRunStart(
-                              group: group,
-                              allGroups: groups,
-                              activeSession: activeSession,
-                              now: now,
-                              fallbackNoticeMinutes: _noticeFallbackMinutes,
-                            );
-                        final isPreRunActive = _isPreRunActive(
-                          group,
-                          now,
-                          scheduledStartOverride: effectiveStart,
-                        );
-                        return _GroupCard(
-                          group: group,
-                          activeSession: activeSession,
-                          scheduledStartOverride: effectiveStart,
-                          scheduledEndOverride: resolveEffectiveScheduledEnd(
+                      );
+                    return ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                      children: children,
+                    );
+                  }
+
+                  children.addAll([
+                    _SectionHeader(title: 'Running / Paused'),
+                    if (runningGroups.isEmpty)
+                      const _EmptySection(label: 'No running groups'),
+                    for (final group in runningGroups)
+                      _GroupCard(
+                        group: group,
+                        activeSession: activeSession,
+                        preRunStartOverride: null,
+                        onTap: () => _showSummaryDialog(context, group),
+                        actions: [
+                          _GroupAction(
+                            label: 'Open Run Mode',
+                            onPressed: () =>
+                                openRunModeForGroup(context, ref, group),
+                          ),
+                        ],
+                        now: now,
+                      ),
+                    const SizedBox(height: 20),
+                    _SectionHeader(title: 'Scheduled'),
+                    if (scheduledGroups.isEmpty)
+                      const _EmptySection(label: 'No scheduled groups'),
+                    for (final group in scheduledGroups)
+                      Builder(
+                        builder: (context) {
+                          final effectiveStart = resolveEffectiveScheduledStart(
                             group: group,
                             allGroups: groups,
                             activeSession: activeSession,
                             now: now,
                             fallbackNoticeMinutes: _noticeFallbackMinutes,
-                          ),
-                          preRunStartOverride: effectivePreRunStart,
-                          onTap: () => _showSummaryDialog(context, group),
-                          actions: [
-                            if (isPreRunActive)
-                              _GroupAction(
-                                label: 'Open Pre-Run',
-                                onPressed: () =>
-                                    openRunModeForGroup(context, ref, group),
-                              )
-                            else
-                              _GroupAction(
-                                label: 'Start now',
-                                onPressed: () =>
-                                    _handleStartNow(context, ref, group),
-                              ),
-                            _GroupAction(
-                              label: 'Cancel schedule',
-                              outlined: true,
-                              onPressed: () =>
-                                  _handleCancelSchedule(context, ref, group),
+                          );
+                          final effectivePreRunStart =
+                              resolveEffectivePreRunStart(
+                                group: group,
+                                allGroups: groups,
+                                activeSession: activeSession,
+                                now: now,
+                                fallbackNoticeMinutes: _noticeFallbackMinutes,
+                              );
+                          final isPreRunActive = _isPreRunActive(
+                            group,
+                            now,
+                            scheduledStartOverride: effectiveStart,
+                          );
+                          return _GroupCard(
+                            group: group,
+                            activeSession: activeSession,
+                            scheduledStartOverride: effectiveStart,
+                            scheduledEndOverride: resolveEffectiveScheduledEnd(
+                              group: group,
+                              allGroups: groups,
+                              activeSession: activeSession,
+                              now: now,
+                              fallbackNoticeMinutes: _noticeFallbackMinutes,
                             ),
-                          ],
-                          now: now,
-                        );
-                      },
-                    ),
-                  const SizedBox(height: 20),
-                  _SectionHeader(title: 'Completed'),
-                  if (completedSlice.isEmpty)
-                    const _EmptySection(label: 'No completed groups yet'),
-                  for (final group in completedSlice)
-                    _GroupCard(
-                      group: group,
-                      activeSession: activeSession,
-                      preRunStartOverride: null,
-                      onTap: () => _showSummaryDialog(context, group),
-                      actions: [
-                        _GroupAction(
-                          label: 'Run again',
-                          onPressed: () => _handleRunAgain(context, ref, group),
-                        ),
-                      ],
-                      now: now,
-                    ),
-                  const SizedBox(height: 20),
-                  _SectionHeader(title: 'Canceled'),
-                  if (canceledSlice.isEmpty)
-                    const _EmptySection(label: 'No canceled groups yet'),
-                  for (final group in canceledSlice)
-                    _GroupCard(
-                      group: group,
-                      activeSession: activeSession,
-                      preRunStartOverride: null,
-                      onTap: () => _showSummaryDialog(context, group),
-                      actions: [
-                        _GroupAction(
-                          label: 'Re-plan group',
-                          onPressed: () => _handleRunAgain(context, ref, group),
-                        ),
-                      ],
-                      now: now,
-                    ),
-                ]);
+                            preRunStartOverride: effectivePreRunStart,
+                            onTap: () => _showSummaryDialog(context, group),
+                            actions: [
+                              if (isPreRunActive)
+                                _GroupAction(
+                                  label: 'Open Pre-Run',
+                                  onPressed: () =>
+                                      openRunModeForGroup(context, ref, group),
+                                )
+                              else
+                                _GroupAction(
+                                  label: 'Start now',
+                                  onPressed: () =>
+                                      _handleStartNow(context, ref, group),
+                                ),
+                              _GroupAction(
+                                label: 'Cancel schedule',
+                                outlined: true,
+                                onPressed: () =>
+                                    _handleCancelSchedule(context, ref, group),
+                              ),
+                            ],
+                            now: now,
+                          );
+                        },
+                      ),
+                    const SizedBox(height: 20),
+                    _SectionHeader(title: 'Completed'),
+                    if (completedSlice.isEmpty)
+                      const _EmptySection(label: 'No completed groups yet'),
+                    for (final group in completedSlice)
+                      _GroupCard(
+                        group: group,
+                        activeSession: activeSession,
+                        preRunStartOverride: null,
+                        onTap: () => _showSummaryDialog(context, group),
+                        actions: [
+                          _GroupAction(
+                            label: 'Run again',
+                            onPressed: () =>
+                                _handleRunAgain(context, ref, group),
+                          ),
+                        ],
+                        now: now,
+                      ),
+                    const SizedBox(height: 20),
+                    _SectionHeader(title: 'Canceled'),
+                    if (canceledSlice.isEmpty)
+                      const _EmptySection(label: 'No canceled groups yet'),
+                    for (final group in canceledSlice)
+                      _GroupCard(
+                        group: group,
+                        activeSession: activeSession,
+                        preRunStartOverride: null,
+                        onTap: () => _showSummaryDialog(context, group),
+                        actions: [
+                          _GroupAction(
+                            label: 'Re-plan group',
+                            onPressed: () =>
+                                _handleRunAgain(context, ref, group),
+                          ),
+                        ],
+                        now: now,
+                      ),
+                  ]);
 
-                return ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                  children: children,
-                );
-              },
+                  return ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                    children: children,
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

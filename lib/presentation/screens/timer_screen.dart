@@ -725,13 +725,18 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     }
 
     return PopScope(
-      canPop: !shouldBlockExit,
+      canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
-        final navigator = Navigator.of(context);
-        final shouldExit = await _confirmExit(state, vm);
-        if (!mounted || !shouldExit) return;
-        navigator.pop();
+        if (shouldBlockExit) {
+          await _confirmExit(state, vm);
+          return;
+        }
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go(isLocalMode ? '/tasks' : '/groups');
+        }
       },
       child: Scaffold(
         backgroundColor: Colors.black,
