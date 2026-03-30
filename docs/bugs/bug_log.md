@@ -2776,3 +2776,40 @@ Status:
 Closed/OK. closed_commit_hash: ed97de7. Device validation PASS 29/03/2026 (Android RMX3771):
 Scenario A (Groups Hub → /tasks), B (Timer non-active → /groups), C (active confirmation
 guard preserved), D (Settings stack-pop unchanged). flutter analyze + flutter test PASS.
+
+---
+
+## BUG-020 — Task editor preview sheet: incorrect Group/Task terminology, missing break duration, and incorrect exit messages
+
+ID: BUG-020
+Date: 30/03/2026 (UTC+1)
+Platforms: Android (confirmed), macOS (confirmed)
+Context: Edit Task screen — Total pomodoros editor sheet and Task weight (%) editor sheet.
+
+Repro summary:
+- Open Edit Task for a task that is NOT selected for group.
+- Tap Total pomodoros field to open preview sheet.
+- Observe: sheet shows "Group work" label even though task is not a group.
+- Observe: only work duration without breaks is shown; threshold labels (Unusual/Superhuman/Machine) base on total-with-breaks but only work time was displayed, causing confusion.
+- Press Back without applying: snackbar always said "No changes applied" even when changes were applied.
+- Same issue in Task weight (%) sheet when task IS selected and in a group: only work duration shown, not total with breaks.
+
+Symptom:
+- "Group work" terminology shown for individual (non-selected) tasks — misleading.
+- No visibility of total duration including breaks in either sheet, hiding the real basis for extreme-duration warnings.
+- Unusual/Superhuman/Machine caution was suppressed after first show within the sheet session; felt like a bug when re-entering the threshold range.
+- Exit snackbar was always "No changes applied" regardless of whether Apply was pressed.
+- No confirmation modal when leaving with unapplied changes.
+
+Root cause:
+- `isGroupContext` parameter was missing; sheet always used "Group" terminology regardless of selection state.
+- Only `_groupMinutes` (work-only) was displayed; `continuousGroupDurationSecondsForTasks` / `continuousTaskDurationsSecondsForTasks` (total with breaks) was not surfaced in the UI.
+- `showContinuousCaution` guarded by `_hasUserInteracted`, causing caution to disappear and reappear erratically.
+- Exit path had no distinction between applied/unapplied/no-change states.
+
+Fix applied:
+- `78b72db` — isGroupContext passed from both call sites; _scopeLabel resolves 'Task'/'Group' at runtime; dual duration lines (work + total with breaks); caution value-driven (no _hasUserInteracted gate); back modal (Apply and close / Discard and close / Continue editing) when unapplied changes exist; snackbar 'Changes applied.' / 'No changes made.' per case.
+
+Status:
+Closed/OK. closed_commit_hash: 78b72db. Device validation PASS 30/03/2026 (Android + macOS):
+Terminology correct per selection context, dual duration lines shown, caution always visible when threshold, back modal fires on unapplied changes, snackbar correct in all exit paths. flutter analyze PASS.
