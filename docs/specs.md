@@ -1216,7 +1216,11 @@ Preview sheet specification (locked 28/03/2026):
        - `>= 72h`: “Machine-level schedule. Proceed only if this is really intended.”
        - In multi-task selection, evaluate the selected-group continuous total.
          In single-task scope, evaluate that task's own continuous total.
-     - In preview, render this caution inline below `Group work`.
+    - Caution visibility is value-driven by the current preview result:
+      whenever the result is at/above threshold, show it (do not suppress it
+      just because it was already shown earlier in the same sheet session).
+    - In preview, render this caution inline below the work/total-duration block
+      for the current context (`Task` or `Group`).
        - After save, show a persistent reminder chip with level label
          (`Unusual` / `Superhuman` / `Machine`) in Task List and Groups Hub.
          Placement:
@@ -1224,11 +1228,23 @@ Preview sheet specification (locked 28/03/2026):
            total-duration chip (`start → end`, includes breaks), displayed as
            value-only (example: `2h 11m`).
          - Groups Hub card + summary modal: inline to the right of `Total time`.
-  2. Group impact block:
-     - “Group total: N → N pomodoros” (before/after)
-     - “Group work: <duration> → <duration>” where duration is:
+  2. Impact block (context-aware):
+     - If editing in group context (task is currently selected in the active
+       selection scope):
+       - “Group total pomodoros: N → N”
+       - “Group work: <duration> → <duration>” (focus-only, no breaks)
+       - “Total group duration: <duration> → <duration>” (focus + breaks)
+     - If editing in single-task context (task is not currently selected in the
+       active group scope):
+       - “Task total pomodoros: N → N”
+       - “Task work: <duration> → <duration>” (focus-only, no breaks)
+       - “Total task duration: <duration> → <duration>” (focus + breaks)
+     - Duration formatting:
        - `N min` when `< 60 min`
-       - `Hh Mm` when `>= 60 min` (for readability in long plans)
+       - `Hh Mm` when `>= 60 min`
+     - `Total ... duration` is an estimate based on current task-level
+       pomodoro configuration in preview; final group execution/planning
+       configuration may change this total later.
   3. Selected tasks list (single-column, all form factors):
      - Full-width row cards, one per selected task, with consistent width.
      - Row content:
@@ -1252,8 +1268,12 @@ Preview sheet specification (locked 28/03/2026):
   - top-right **Apply** writes result to local editor draft, marks editor dirty,
     then closes sheet. Next sheet open uses post-Apply draft as baseline.
   - No bottom Cancel/Apply footer buttons are shown.
-  - If user exits with Back and there are unapplied changes, show a lightweight
-    hint (`No changes applied.`). If there are no pending changes, close silently.
+  - Back behavior:
+    - If there are unapplied changes, show a confirmation modal with:
+      `Apply and close`, `Discard and close`, `Continue editing`.
+      The modal must summarize what would change on apply.
+    - If there are no net changes vs opening snapshot, close and show a
+      lightweight confirmation hint (`No changes made.`).
 - **1 task selected:** Task weight (%) is shown disabled at 100%, optional helper text
   “Only one task selected”. Sheet does not open. No redistribution runs.
 - **Apply / Save / Discard lifecycle:**

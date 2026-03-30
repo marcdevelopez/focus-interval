@@ -327,6 +327,9 @@ PomodoroSession _buildRunningSession({
   required DateTime now,
   int remainingSeconds = 60,
   int phaseDurationSeconds = 25 * 60,
+  PomodoroStatus status = PomodoroStatus.pomodoroRunning,
+  PomodoroPhase? phase = PomodoroPhase.pomodoro,
+  DateTime? finishedAt,
   DateTime? phaseStartedAt,
   DateTime? currentTaskStartedAt,
 }) {
@@ -339,8 +342,8 @@ PomodoroSession _buildRunningSession({
     dataVersion: kCurrentDataVersion,
     sessionRevision: 1,
     ownerDeviceId: ownerDeviceId,
-    status: PomodoroStatus.pomodoroRunning,
-    phase: PomodoroPhase.pomodoro,
+    status: status,
+    phase: phase,
     currentPomodoro: 1,
     totalPomodoros: 1,
     phaseDurationSeconds: phaseDurationSeconds,
@@ -351,7 +354,7 @@ PomodoroSession _buildRunningSession({
         currentTaskStartedAt ?? now.subtract(const Duration(minutes: 24)),
     pausedAt: null,
     lastUpdatedAt: now,
-    finishedAt: null,
+    finishedAt: finishedAt,
     pauseReason: null,
   );
 }
@@ -738,9 +741,12 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       final now = DateTime.now();
       final deviceInfo = DeviceInfoService.ephemeral();
-      final firstGroup = _buildRunningGroup(id: 'g1-pre-run-complete', now: now);
-      final secondGroup =
-          _buildScheduledGroup(id: 'g2-pre-run-next', now: now).copyWith(
+      final firstGroup = _buildRunningGroup(
+        id: 'g1-pre-run-complete',
+        now: now,
+      );
+      final secondGroup = _buildScheduledGroup(id: 'g2-pre-run-next', now: now)
+          .copyWith(
             scheduledStartTime: now.add(const Duration(minutes: 2)),
             theoreticalEndTime: now.add(const Duration(minutes: 17)),
             noticeMinutes: 1,
@@ -1895,6 +1901,211 @@ void main() {
         groupRepo.dispose();
       }
     }
+  });
+
+  testWidgets('Groups Hub system back falls back to Task List root', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final now = DateTime.now();
+    final groupRepo = FakeTaskRunGroupRepository()
+      ..seed(_buildRunningGroup(id: 'hub-back-running', now: now));
+    final sessionRepo = FakePomodoroSessionRepository(null);
+    final appModeService = AppModeService.memory();
+    var disposed = false;
+
+    final container = ProviderContainer(
+      overrides: [
+        firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+        firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+        taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+        pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+        appModeServiceProvider.overrideWithValue(appModeService),
+        soundServiceProvider.overrideWithValue(FakeSoundService()),
+        timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+      ],
+    );
+    try {
+      await container.read(appModeProvider.notifier).setAccount();
+      await _pumpGroupsHubScreen(tester: tester, container: container);
+
+      expect(find.text('Groups Hub'), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await _pumpUntilFound(tester, find.text('tasks-screen'));
+      expect(find.text('tasks-screen'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 100));
+      container.dispose();
+      sessionRepo.dispose();
+      groupRepo.dispose();
+      disposed = true;
+    } finally {
+      if (!disposed) {
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+      }
+    }
+  });
+
+  testWidgets(
+    'Timer non-active system back falls back to Groups Hub in account mode',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildScheduledGroup(id: 'timer-back-nonactive', now: now);
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(
+        _buildRunningSession(
+          groupId: group.id,
+          ownerDeviceId: deviceInfo.deviceId,
+          now: now,
+          status: PomodoroStatus.idle,
+          phase: null,
+          remainingSeconds: 0,
+        ),
+      );
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+        await _pumpTimerScreen(
+          tester: tester,
+          container: container,
+          groupId: group.id,
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.binding.handlePopRoute();
+        await _pumpUntilFound(tester, find.text('groups-screen'));
+        expect(find.text('groups-screen'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets(
+    'Timer active system back opens confirmation dialog without silent exit',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(id: 'timer-back-active', now: now);
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(
+        _buildRunningSession(
+          groupId: group.id,
+          ownerDeviceId: deviceInfo.deviceId,
+          now: now,
+        ),
+      );
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+        await _pumpTimerScreen(
+          tester: tester,
+          container: container,
+          groupId: group.id,
+        );
+
+        await tester.binding.handlePopRoute();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('Cancel group?'), findsOneWidget);
+        expect(find.text('Keep running'), findsOneWidget);
+        expect(find.text('Cancel group'), findsOneWidget);
+
+        await tester.tap(find.text('Keep running'));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('Cancel group?'), findsNothing);
+        expect(find.text('groups-screen'), findsNothing);
+        expect(find.text('Focus Interval'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets('Settings route keeps stack-based system back behavior', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final router = GoRouter(
+      initialLocation: '/tasks',
+      routes: [
+        GoRoute(
+          path: '/tasks',
+          builder: (_, __) => const Scaffold(body: Text('tasks-screen')),
+        ),
+        GoRoute(
+          path: '/settings',
+          builder: (_, __) => const Scaffold(body: Text('settings-screen')),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pump(const Duration(milliseconds: 120));
+
+    router.push('/settings');
+    await tester.pumpAndSettle();
+    expect(find.text('settings-screen'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('tasks-screen'), findsOneWidget);
+    expect(find.text('settings-screen'), findsNothing);
   });
 
   testWidgets('Task List clears stale active session when group is completed', (

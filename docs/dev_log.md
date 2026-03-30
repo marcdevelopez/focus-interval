@@ -25,9 +25,9 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **BUG-016 Patch 2 — preview-first Task weight/Total pomodoros flow finalized (`1edb63f` + follow-up polish through `231b468`)**
-Current focus: **BUG-017 follow-up + roadmap validation backlog**
-Last update: **29/03/2026**
+Last bug fix: **BUG-020 — task editor preview sheet context/feedback consistency (`78b72db`, 30/03/2026)**
+Current focus: **Phase 20 — Group Naming & Task Visual Identity (next up after BUG-017)**
+Last update: **30/03/2026**
 
 ---
 
@@ -15796,3 +15796,215 @@ Created and synchronized:
 
 - BUG-016 is fully closed end-to-end (Patch 1 correctness + Patch 2 preview UX).
 - Phase 10 BUG-016 follow-up no longer pending device validation.
+
+---
+
+## Block 691 — BUG-019 docs-first registration + validation packet bootstrap (29/03/2026)
+
+**Current branch intent:** BUG-019 navigation-regression documentation and pre-implementation handoff.  
+**Branch:** `fix/bug019-android-back-navigation-exit`  
+**Scope:** Documentation only (no runtime code changes in this block).
+
+### Context
+
+User-reported regression: Android system back can intermittently terminate the app
+from Run Mode / Groups Hub flows instead of returning to root navigation.
+
+### Changes applied
+
+- Registered new bug entry:
+  - `docs/bugs/bug_log.md` -> `BUG-019` (Open), with repro, expected behavior,
+    hypothesis, and scope.
+- Synchronized global validation queue:
+  - `docs/validation/validation_ledger.md`
+    - snapshot updated to 29/03/2026,
+    - active non-closed bug count updated to 2 (`BUG-019` P1 + `BUG-017` P2),
+    - new pending queue item `BUGLOG-019` added.
+- Reopened roadmap scope for regression tracking:
+  - `docs/roadmap.md`
+    - added reopened Phase 19 bug item for deterministic Android back behavior.
+- Created mandatory validation packet:
+  - `docs/bugs/validation_bug019_2026_03_29/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug019_2026_03_29/quick_pass_checklist.md`
+  - `docs/bugs/validation_bug019_2026_03_29/logs/`
+  - `docs/bugs/validation_bug019_2026_03_29/screenshots/`
+
+### Codex -> Claude handoff (required)
+
+- Context and scope:
+  - BUG-019 is now registered as docs-first P1 navigation regression.
+  - No runtime patch has been applied yet.
+- Files changed:
+  - `docs/bugs/bug_log.md`
+  - `docs/validation/validation_ledger.md`
+  - `docs/roadmap.md`
+  - `docs/bugs/validation_bug019_2026_03_29/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug019_2026_03_29/quick_pass_checklist.md`
+- Tests executed:
+  - None in this docs-only block.
+- Known risks and open questions:
+  - Runtime root cause still hypothesis-level (`go` route replacement + root PopScope fallback gaps).
+  - Must decide final UX contract for system back at root routes before implementation.
+- Explicit next action expected from Claude:
+  - Confirm architecture-level navigation contract for Android system back
+    (Run Mode active/non-active + Groups Hub root),
+  - approve runtime implementation plan and test targets before coding starts.
+
+### Status after this block
+
+- BUG-019 is formally queued and traceable across bug log, ledger, roadmap, and
+  validation packet.
+- Project is ready for Claude review and runtime fix planning.
+
+---
+
+## Block 692 — BUG-019 validation-scope hardening: Settings back-stack non-regression added (29/03/2026)
+
+**Current branch intent:** BUG-019 docs-only validation hardening before runtime implementation.
+**Branch:** `fix/bug019-android-back-navigation-exit`
+**Scope:** Validation packet refinement (no runtime code).
+
+### Context
+
+Follow-up requirement: BUG-019 must not break screens that already use normal
+stack back navigation (explicitly Settings).
+
+### Changes applied
+
+- `docs/bugs/validation_bug019_2026_03_29/plan_validacion_rapida_fix.md`
+  - Added Scenario D (`Settings` stack-back non-regression on Android).
+  - Added dedicated quick-scan grep for `/settings` -> previous-route pop behavior.
+  - Updated closure criteria to require Scenario D PASS evidence.
+- `docs/bugs/validation_bug019_2026_03_29/quick_pass_checklist.md`
+  - Added Scenario D exact-repro checkbox.
+  - Added explicit regression-smoke checkbox for Settings AppBar/system back.
+
+### Status after this block
+
+- BUG-019 validation matrix now covers both:
+  - root-route fallback hardening (`/groups`, `/timer/:id`), and
+  - non-regression of existing stack-pop routes (`/settings`).
+
+
+---
+
+## Block 693 — BUG-019 closure: Android back navigation exit fix validated (29/03/2026)
+
+**Branch:** `fix/bug019-android-back-navigation-exit`
+**Commits:** `d1a1f19`, `e16a692`, `ed97de7`
+**Bugs closed:** BUG-019 / BUGLOG-019 (P1)
+
+### Root cause confirmed
+
+All major screens (`/groups`, `/timer/:id`) are navigated to via `context.go()`,
+which replaces the entire navigation stack with a single entry. When Android system
+back fired on a single-entry stack, go_router had nothing to pop and delegated to
+the platform → app exited. `GroupsHubScreen` had no `PopScope`. `TimerScreen` had
+`PopScope(canPop: !shouldBlockExit)`: when non-active (`canPop=true`), same exit
+problem; the `navigator.pop()` in the active path was dead code (`_confirmExit`
+always returns `false` for active execution and handles navigation internally).
+
+### Fix applied
+
+**`d1a1f19` — GroupsHubScreen**: Wrapped `return Scaffold(...)` in
+`PopScope(canPop: false)`. Handler: `context.canPop()` → pop; else →
+`context.go('/tasks')`. Synchronous, no logic changes.
+
+**`e16a692` — TimerScreen**: Changed `canPop: !shouldBlockExit` → `canPop: false`.
+Active path: `await _confirmExit(state, vm); return` (identical behavior, dead code
+removed). Non-active path: `context.canPop()` → pop; else →
+`context.go(isLocalMode ? '/tasks' : '/groups')`. Zero changes to `_confirmExit`,
+`_cancelAndNavigateToHub`, or any session/group logic.
+
+**`ed97de7` — Tests**: 4 new `testWidgets` in
+`timer_screen_completion_navigation_test.dart`:
+- Groups Hub system back → `/tasks` (single-entry stack)
+- Timer non-active system back → `/groups` (account mode, single-entry stack)
+- Timer active system back → confirmation dialog; "Keep running" keeps timer running
+- Settings route stack-pop non-regression (no fallback override)
+Helper `_buildRunningSession` extended with optional `status`/`phase`/`finishedAt`
+params (defaults preserve all existing tests).
+
+### Validation results (Android RMX3771, 29/03/2026)
+
+- Scenario A — Groups Hub back → Task List root: **PASS**
+- Scenario B — Timer non-active back → Groups Hub: **PASS**
+  (Note: group must be truly non-active; running/paused groups correctly show the
+  confirmation dialog per Scenario C — this is expected behavior, not a bug.)
+- Scenario C — Timer active confirmation guard: **PASS** (screenshot evidence)
+- Scenario D — Settings stack-pop non-regression: **PASS**
+- `flutter analyze`: PASS
+- `flutter test timer_screen_completion_navigation_test.dart`: PASS
+- `flutter test timer_screen_syncing_overlay_test.dart`: PASS
+
+### Status after this block
+
+BUG-019 / BUGLOG-019: **Closed/OK**.
+Active P1 bugs: **0**. Active P2 bugs: **1** (BUG-017, Edit Task preset dropdown).
+Branch ready to merge into `develop`.
+
+---
+
+## Block N+1 — BUG-020: Task editor preview sheet context/feedback consistency (30/03/2026)
+
+Branch: fix/task-editor-preview-context-duration-feedback
+Commit: 78b72db
+
+### Problem
+
+Edit Task preview sheets (Total pomodoros + Task weight %) had multiple compounded UX
+incoherencies:
+
+1. Terminology always said "Group work" regardless of whether the task was selected for
+   a group, misleading users editing a standalone task.
+2. Only work duration (no breaks) was shown. The Unusual/Superhuman/Machine threshold
+   warnings are based on total-with-breaks, so the basis for those warnings was invisible.
+3. The Unusual/Superhuman/Machine caution was suppressed after the first show within the
+   sheet session, making it feel like an erratic bug when re-entering the threshold range.
+4. Exit snackbar always said "No changes applied" regardless of whether Apply was pressed.
+5. No confirmation modal when pressing Back with unapplied changes.
+
+### Fix
+
+- `isGroupContext` added to `TaskWeightPreviewSheet`; driven by `showWeightPercent` at
+  call site — true only when task is currently selected in the group scope.
+- `_scopeLabel` resolves 'Task' / 'Group' at runtime. All three label strings
+  (`totalPomodorosLabel`, `workLabel`, `totalDurationLabel`) derived from it.
+- Second duration line added using `continuousTaskDurationsSecondsForTasks` (single task)
+  / `continuousGroupDurationSecondsForTasks` (group), surfacing total-with-breaks so the
+  basis of extreme-duration warnings is visible.
+- `showContinuousCaution` is now value-driven: no `_hasUserInteracted` gate. Caution
+  appears immediately when result meets threshold, disappears when below, reappears on
+  re-entry — deterministic.
+- Back flow replaced with `_handleBackPressed` + `_handlingBackFlow` re-entry guard +
+  `_allowPop` controlled pop:
+  - unapplied changes → modal (Apply and close / Discard and close / Continue editing);
+    Apply button hidden in modal when `_result == null` (invalid input).
+  - no changes → close directly + snackbar "No changes made."
+- Apply button: disabled when `result == null || !_hasUnappliedChanges`.
+- `_applyAndClose`: snackbar "Changes applied." on apply path.
+
+### Validation results (Android RMX3771 + macOS, 30/03/2026)
+
+- Scenario A — Task terminology when not selected: PASS
+- Scenario B — Group terminology when selected: PASS
+- Scenario C — Dual duration lines (work + total with breaks): PASS
+- Scenario D — Caution reappears on re-entry to threshold: PASS
+- Scenario E — Back modal fires on unapplied changes: PASS
+- Scenario F — Snackbar "Changes applied." after Apply: PASS
+- Scenario G — No-change close + "No changes made.": PASS
+- `flutter analyze`: PASS
+- `flutter test task_editor_view_model_test.dart`: PASS
+- `flutter test continuous_plan_load_test.dart`: PASS
+
+### Follow-up registered (separate branch)
+
+- Edit Group: show Group work + Total group duration + threshold caution with the final
+  preset configuration applied (Phase 20 scope, roadmap.md updated).
+- Ícono "atrás" unificado entre plataformas: chevron_left vs arrow_back inconsistency
+  across Edit Task and preview sheets (separate fix branch).
+
+### Status after this block
+
+BUG-020 / BUGLOG-020: **Closed/OK**.
+Active P1 bugs: **0**. Active P2 bugs: **1** (BUG-017, Edit Task preset dropdown).

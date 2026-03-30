@@ -2720,3 +2720,96 @@ Validation evidence (27/03/2026):
 
 Status:
 Closed/OK (27/03/2026). closed_commit_hash: `547c6f7`.
+
+---
+
+## BUG-019 — Android system back intermittently exits app instead of returning to root screen
+
+ID: BUG-019
+Date: 29/03/2026 (UTC+1)
+Platforms: Android (confirmed), cross-platform review pending
+Context: Navigation stack behavior on root routes (`/timer/:id`, `/groups`) while using
+system back.
+
+Repro summary:
+- Open the app and navigate to Run Mode (`/timer/:groupId`) or Groups Hub (`/groups`).
+- Press Android system back.
+- Repeat after different navigation paths (Task List -> Groups Hub, Task List -> Run Mode,
+  cancellation/re-entry flows).
+
+Symptom:
+- In some cases, pressing system back closes the app immediately (home/launcher),
+  instead of returning to the expected root screen.
+
+Observed behavior:
+- System back is intermittent: same user flow can sometimes return, sometimes terminate.
+- Expected root fallback (Task List) is not always reached before app exit.
+- Behavior is more visible when navigation has been done with route replacement
+  (`go`) on top-level routes.
+
+Expected behavior:
+- System back must never terminate the app unexpectedly from active product flows.
+- If user is in Run Mode:
+  - active execution: keep existing confirmation/cancel policy (no silent exit).
+  - non-active/root state: return to app root screen instead of closing app.
+- If user is in Groups Hub root route, system back should return to Task List root
+  (future shared tabs host), not close app directly.
+- Behavior must be deterministic across repeated back presses.
+
+Root cause:
+Not yet confirmed.
+
+Hypothesis:
+- Several top-level navigations use stack replacement (`context.go`) and can leave
+  routes without a pop stack; Android system back then delegates to app exit unless
+  a deterministic fallback route is handled explicitly.
+- Run Mode `PopScope` currently gates exit primarily on machine status and may not
+  cover all runtime ownership/session combinations that should block termination.
+
+Fix applied:
+- `d1a1f19` — GroupsHubScreen: PopScope(canPop: false) with fallback to /tasks
+- `e16a692` — TimerScreen: canPop: false always; non-active path uses context.canPop()
+  fallback to /tasks or /groups per mode; active path delegates to _confirmExit unchanged
+- `ed97de7` — Tests: 4 system-back regression tests covering all validation scenarios
+
+Status:
+Closed/OK. closed_commit_hash: ed97de7. Device validation PASS 29/03/2026 (Android RMX3771):
+Scenario A (Groups Hub → /tasks), B (Timer non-active → /groups), C (active confirmation
+guard preserved), D (Settings stack-pop unchanged). flutter analyze + flutter test PASS.
+
+---
+
+## BUG-020 — Task editor preview sheet: incorrect Group/Task terminology, missing break duration, and incorrect exit messages
+
+ID: BUG-020
+Date: 30/03/2026 (UTC+1)
+Platforms: Android (confirmed), macOS (confirmed)
+Context: Edit Task screen — Total pomodoros editor sheet and Task weight (%) editor sheet.
+
+Repro summary:
+- Open Edit Task for a task that is NOT selected for group.
+- Tap Total pomodoros field to open preview sheet.
+- Observe: sheet shows "Group work" label even though task is not a group.
+- Observe: only work duration without breaks is shown; threshold labels (Unusual/Superhuman/Machine) base on total-with-breaks but only work time was displayed, causing confusion.
+- Press Back without applying: snackbar always said "No changes applied" even when changes were applied.
+- Same issue in Task weight (%) sheet when task IS selected and in a group: only work duration shown, not total with breaks.
+
+Symptom:
+- "Group work" terminology shown for individual (non-selected) tasks — misleading.
+- No visibility of total duration including breaks in either sheet, hiding the real basis for extreme-duration warnings.
+- Unusual/Superhuman/Machine caution was suppressed after first show within the sheet session; felt like a bug when re-entering the threshold range.
+- Exit snackbar was always "No changes applied" regardless of whether Apply was pressed.
+- No confirmation modal when leaving with unapplied changes.
+
+Root cause:
+- `isGroupContext` parameter was missing; sheet always used "Group" terminology regardless of selection state.
+- Only `_groupMinutes` (work-only) was displayed; `continuousGroupDurationSecondsForTasks` / `continuousTaskDurationsSecondsForTasks` (total with breaks) was not surfaced in the UI.
+- `showContinuousCaution` guarded by `_hasUserInteracted`, causing caution to disappear and reappear erratically.
+- Exit path had no distinction between applied/unapplied/no-change states.
+
+Fix applied:
+- `78b72db` — isGroupContext passed from both call sites; _scopeLabel resolves 'Task'/'Group' at runtime; dual duration lines (work + total with breaks); caution value-driven (no _hasUserInteracted gate); back modal (Apply and close / Discard and close / Continue editing) when unapplied changes exist; snackbar 'Changes applied.' / 'No changes made.' per case.
+
+Status:
+Closed/OK. closed_commit_hash: 78b72db. Device validation PASS 30/03/2026 (Android + macOS):
+Terminology correct per selection context, dual duration lines shown, caution always visible when threshold, back modal fires on unapplied changes, snackbar correct in all exit paths. flutter analyze PASS.

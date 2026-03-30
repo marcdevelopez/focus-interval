@@ -451,6 +451,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
   **Closed/OK on 16/03/2026 (`P0-F26-006`, commit `cbd800a`, pass2 soak logs validated).**
 - Phase 13 — Mirror must not start behind on resume (stale lastUpdatedAt compensation) (bug).
 - Phase 10 — Task Editor: total time chip + task color picker (new requirement).
+- Phase 10 — Edit Group: show both `Group work` (focus-only) and `Total group duration` (focus + breaks), and evaluate Unusual/Superhuman/Machine caution against the final group configuration (separate follow-up requirement).
 - Phase 9 — Task List: group name input + group summary + per-task total time + selection reset (new requirement).
 - Phase 17 — Early overlap warning (pause drift) + mirror ownership CTA + persistent conflict snackbar + auto-follow postpone (no repeat modal) + paused overlap alerts (new requirement).
 - Phase 17 — Late-start queue anchor (server time) + owner-only queue + realtime projections + activeSession creation on confirm + mirror Run Mode CTA + revalidate post-postpone overlaps (bug).
@@ -511,6 +512,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 19 — Groups Hub: sticky “Go to Task List” CTA (regression).
 - Phase 19 — Task List / Groups Hub countdowns update in real time (bug).
 - Phase 19 — Groups Hub timing rows/cards must show actual `Started` time for Start-now groups (no planned start), and run-start timing for scheduled groups; when notice applies, show “Pre-Run X min starts at …” (no +1 min gap) (new requirement).
+- Phase 19 — Android system back from Run Mode (`/timer/:id`) and Groups Hub (`/groups`) must never terminate the app unexpectedly; when no deeper stack exists, navigate to Task List root (future tabs host) while preserving existing cancel/confirmation flow for active execution (`BUG-019`) (bug).
 - Deferred — Task edit presence advisory (`IDEA-041`): informational non-blocking advisory when another device is editing the same task (heartbeat ~15-30s, TTL ~45-60s, no hard lock). Design decisions locked 28/03/2026. Implementation guards in ledger entry. Separate from BUG-016 Patch 2.
 - Phase 6 — Web auth session persistence (Chrome dev profile + Firebase Auth LOCAL persistence) (new requirement).
 - Outstanding items from specs sections 10.4.2 / 10.4.6 / 12 / 10.5 are tracked in Phases 18, 19, and 25 (not reopened).
