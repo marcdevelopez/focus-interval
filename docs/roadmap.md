@@ -436,6 +436,9 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
                   keyboard input can lock after sign-out/account switch with
                   duplicate key-down exceptions; LoginScreen stale-key repair
                   patch implemented, device validation pending.
+      30/03/2026: BUG-022 closed/OK — user re-test confirms Authentication
+                  keyboard input works after account switch; closure recorded
+                  with commit `4e439db` and validation packet sync.
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
@@ -475,7 +478,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 15 — TaskRunGroup model updates (group name + task color snapshot + integrityMode) (new requirement).
 - Phase 6 — Account profile metadata (display name + avatar) in Firestore/Storage; Settings UI (Account Mode only); ownership UI uses Name (Platform) (new requirement).
 - Phase 6 — Logout while running/paused must never produce a black screen (return to Local Mode Task List) (bug).
-- Phase 6 — macOS Authentication fields must remain keyboard-usable after sign-out/account switch; stale desktop key state must auto-repair on Authentication open/tap (`BUG-022`) (bug).
+- ~~Phase 6 — macOS Authentication fields must remain keyboard-usable after sign-out/account switch; stale desktop key state must auto-repair on Authentication open/tap (`BUG-022`) (bug).~~ **Closed/OK on 30/03/2026 (`BUGLOG-022`; implementation commit `4e439db`; user validation confirmation + local gate PASS).**
 - Phase 19 — Groups Hub canceled reason details (tappable reason label) (new requirement).
 - ~~Phase 18 — Mode-specific breaks (global long-break counter in Mode A) implemented; validation pending.~~ **Closed/OK on 20/03/2026 (`RVP-066`; implementation commit `45b522f` + dedicated Mode A global-break tests PASS).**
 - ~~Phase 18 — Run Mode task transition catch-up after background/resume (validation pending).~~ **Closed/OK on 20/03/2026 (`RVP-067`; implementation commit `992de22` + resume catch-up validation test PASS).**

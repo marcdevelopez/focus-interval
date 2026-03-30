@@ -2859,4 +2859,13 @@ Fix applied:
   - Added debug diagnostics `[AuthKeyboardRepair]` for evidence in runtime logs.
 
 Status:
-In validation (local runtime patch applied, device validation pending).
+Closed/OK (30/03/2026). closed_commit_hash: `4e439db`.
+Validation evidence:
+- User manual validation confirmation in thread (30/03/2026): after account switch,
+  Authentication `Email`/`Password` fields accept typing normally; no immediate recurrence.
+- Local gate PASS on the same commit:
+  - `flutter analyze`
+  - `flutter test test/presentation/timer_screen_completion_navigation_test.dart`
+- Validation packet synchronized:
+  - `docs/bugs/validation_bug022_2026_03_30/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug022_2026_03_30/quick_pass_checklist.md`

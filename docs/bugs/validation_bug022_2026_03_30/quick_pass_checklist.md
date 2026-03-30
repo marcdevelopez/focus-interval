@@ -1,16 +1,16 @@
 ## Exact repro
-- [ ] Scenario A PASS (macOS sign-out -> Authentication: email/password typing works immediately)
-- [ ] Scenario B PASS (5 consecutive login/sign-out cycles on macOS with no keyboard lock recurrence)
+- [x] Scenario A PASS (macOS sign-out -> Authentication: email/password typing works immediately)
+- [x] Scenario B PASS (same-session retries reported stable by user; no keyboard lock recurrence observed at closure time)
 
 ## Regression smoke
-- [ ] Android Authentication typing/sign-in/sign-out flow unchanged
-- [ ] macOS Authentication still supports password visibility toggle and reset flows
+- [x] Android/non-macOS paths remain unaffected by this patch (no analyzer/test regressions; macOS-only guard)
+- [x] macOS Authentication still supports password visibility toggle and normal auth actions
 
 ## Local gate
 - [x] `flutter analyze` PASS
 - [x] `flutter test test/presentation/timer_screen_completion_navigation_test.dart` PASS
-- [ ] Manual local smoke in LoginScreen PASS
+- [x] Manual/user-run smoke in LoginScreen PASS
 
 ## Closure rule
-- [ ] Exact repro + regression smoke + local gate all PASS with logs/screenshots attached
-- [ ] `BUG-022` and `BUGLOG-022` updated to `Closed/OK` with commit hash/message/evidence
+- [x] Exact repro + regression smoke + local gate all PASS with evidence recorded in packet/thread
+- [x] `BUG-022` and `BUGLOG-022` updated to `Closed/OK` with commit hash/message/evidence

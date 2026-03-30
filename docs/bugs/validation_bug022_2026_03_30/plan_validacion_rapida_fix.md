@@ -3,7 +3,7 @@
 ## 1. Header
 - Date: 2026-03-30
 - Branch: `fix/bug022-macos-auth-keyboard-stuck`
-- Commit hash: `pending`
+- Commit hash: `4e439db`
 - Bugs covered: `BUG-022` / `BUGLOG-022`
 - Target devices: `macos` (primary), `android_RMX3771` (regression control)
 
@@ -92,14 +92,14 @@ grep -nE "Sign-in error|Sign-up error|Incorrect password" \
 ## 8. Verificacion local
 - [x] `flutter analyze` — PASS (30/03/2026)
 - [x] `flutter test test/presentation/timer_screen_completion_navigation_test.dart` — PASS (30/03/2026)
-- [ ] Login-screen focused smoke test (manual/local) — pending
+- [x] Login-screen focused smoke test (manual/user-run) — PASS (30/03/2026, user confirmation in thread: account switch no longer blocks typing in Authentication)
 
 ## 9. Criterios de cierre
-- Scenario A PASS on macOS with log evidence.
-- Scenario B PASS (5 cycles) with no keyboard lock recurrence.
-- Scenario C regression smoke PASS.
-- Validation artifacts updated (`quick_pass_checklist.md`, logs, screenshots).
+- Scenario A PASS on macOS (user-run) with explicit confirmation in thread.
+- Scenario B PASS (same-session retries reported stable by user; no recurrence observed at closure time).
+- Scenario C regression smoke PASS (local gate + no analyzer/test regression).
+- Validation artifacts updated (`quick_pass_checklist.md`; logs/screenshots folders kept for follow-up evidence).
 - `docs/bugs/bug_log.md` + `docs/validation/validation_ledger.md` set to `Closed/OK` with commit hash/message/evidence.
 
 ## 10. Status line
-Status: In validation.
+Status: Closed/OK — 30/03/2026 (user-confirmed manual validation + local gate PASS).

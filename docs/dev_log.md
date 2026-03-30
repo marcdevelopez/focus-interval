@@ -25,8 +25,8 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **BUG-020 — task editor preview sheet context/feedback consistency (`78b72db`, 30/03/2026)**
-Current focus: **BUG-022 — macOS Authentication keyboard lock after sign-out/account switch (runtime patch + validation)**
+Last bug fix: **BUG-022 — macOS Authentication keyboard lock after sign-out/account switch (`4e439db`, 30/03/2026)**
+Current focus: **BUG-017 — Edit Task preset dropdown must not expose synthetic \"Custom\" option**
 Last update: **30/03/2026**
 
 ---
@@ -16075,3 +16075,40 @@ User reported a recurring macOS issue: after signing out to switch account, Auth
 - Active bug queue:
   - P1: `BUG-022` (In validation)
   - P2: `BUG-017` (Open)
+
+---
+
+## Block 697 — BUG-022 closure: macOS Authentication keyboard lock fixed and validated (30/03/2026)
+
+**Current branch intent:** BUG-022 closure and documentation synchronization.
+**Branch:** `fix/bug022-macos-auth-keyboard-stuck`
+**Commit:** `4e439db`
+**Bugs closed:** `BUG-022` / `BUGLOG-022` (P1)
+
+### Closure evidence
+
+- User validation confirmation in thread (30/03/2026): after signing out and switching account on macOS, Authentication `Email` and `Password` fields accept keyboard input normally; no immediate recurrence observed.
+- Local gate on closure commit:
+  - `flutter analyze` -> PASS
+  - `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> PASS
+
+### Documentation synchronization
+
+- `docs/bugs/bug_log.md`
+  - `BUG-022` moved from `In validation` to `Closed/OK`.
+  - Added closure evidence and commit reference.
+- `docs/validation/validation_ledger.md`
+  - Snapshot updated: active non-closed bug-log entries now `1` (`BUG-017` only).
+  - `BUGLOG-022` moved to `Closed/OK` with `closed_commit_hash` + evidence.
+- `docs/bugs/validation_bug022_2026_03_30/`
+  - `plan_validacion_rapida_fix.md` status updated to `Closed/OK` with commit + evidence.
+  - `quick_pass_checklist.md` closure checklist marked PASS.
+- `docs/roadmap.md`
+  - Added timeline closure note for `BUG-022`.
+  - Reopened phase item for `BUG-022` struck through as `Closed/OK`.
+
+### Status after this block
+
+- `BUG-022` / `BUGLOG-022`: **Closed/OK**.
+- Active open bugs:
+  - `BUG-017` (P2).
