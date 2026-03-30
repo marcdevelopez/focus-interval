@@ -25,7 +25,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **BUG-022 — macOS Authentication keyboard lock after sign-out/account switch (`4e439db`, 30/03/2026)**
+Last bug fix: **BUG-021 — Run Mode stale ownership rejection snackbar invalidation (`pending-local`, 30/03/2026)**
 Current focus: **BUG-017 — Edit Task preset dropdown must not expose synthetic \"Custom\" option**
 Last update: **30/03/2026**
 
@@ -16110,5 +16110,62 @@ User reported a recurring macOS issue: after signing out to switch account, Auth
 ### Status after this block
 
 - `BUG-022` / `BUGLOG-022`: **Closed/OK**.
+- Active open bugs:
+  - `BUG-017` (P2).
+
+---
+
+## Block 698 — BUG-021 closure: stale ownership rejection snackbar invalidation accepted (30/03/2026)
+
+**Current branch intent:** BUG-021 runtime fix + validation packet synchronization and closure.
+**Branch:** `fix/bug021-ownership-snackbar-autodismiss`
+**Commit:** `pending-local`
+**Bugs closed:** `BUG-021` / `BUGLOG-021` (P1)
+
+### Context
+
+Run Mode could keep an obsolete ownership rejection snackbar visible after ownership context changed. The runtime fix ties visible snackbar lifecycle to the current rejected request key and auto-dismisses when context becomes invalid.
+
+### Runtime implementation
+
+- `lib/presentation/screens/timer_screen.dart`
+  - Added `_activeOwnershipRejectionSnackKey`.
+  - Added `_rejectedOwnershipRequestKeyForDevice(...)`.
+  - Dismisses a visible rejection snackbar when:
+    - requester becomes owner,
+    - requester has pending/local-pending request,
+    - current rejected request key no longer matches the visible snackbar key,
+    - group switch reset occurs.
+  - Preserves deterministic show-once behavior per rejection key.
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+  - Added widget tests:
+    - `Run Mode dismisses stale rejection snackbar when requester submits a new request`
+    - `Run Mode dismisses stale rejection snackbar when requester becomes owner`
+
+### Validation evidence
+
+- Local gate PASS:
+  - `flutter analyze`
+  - `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Run Mode dismisses stale rejection snackbar"`
+- Validation packet synchronized:
+  - `docs/bugs/validation_bug021_2026_03_30/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug021_2026_03_30/quick_pass_checklist.md`
+  - logs under `docs/bugs/validation_bug021_2026_03_30/logs/`
+- User accepted closure in thread after reviewing behavior and evidence.
+
+### Scope note
+
+The original user report referred to automatic owner switch without explicit ownership request. That path does not emit the rejection snackbar targeted by BUG-021. Closure is accepted for the rejection-snackbar invalidation scope implemented and validated above.
+
+### Documentation synchronization
+
+- `docs/bugs/bug_log.md` — BUG-021 moved to `Closed/OK` with scope/evidence note.
+- `docs/validation/validation_ledger.md` — BUGLOG-021 moved to `Closed/OK`; snapshot updated (active non-closed bug count back to 1).
+- `docs/roadmap.md` — BUG-021 closure note added in timeline; reopened phase entry struck through.
+
+### Status after this block
+
+- `BUG-021` / `BUGLOG-021`: **Closed/OK**.
 - Active open bugs:
   - `BUG-017` (P2).
