@@ -17,7 +17,7 @@ The main goals are:
 - Save and sync tasks/groups in the cloud (Firestore)
 - Sync Pomodoro execution in real time across devices (single session owner, others in mirror mode)
 - Play internal app sounds for state changes (notifications remain silent; web is best-effort per browser/OS)
- - Presets: reusable Pomodoro configurations (durations, breaks, sounds) usable across tasks
+- Presets: reusable Pomodoro configurations (durations, breaks, sounds) usable across tasks
 
 The app syncs with Firebase via Google Sign-In on iOS/Android/Web, email/password on macOS/Windows, and optional GitHub Sign-In where supported. A first-class Local Mode (offline, no auth) is available on all platforms and can be toggled at any time.
 
@@ -642,9 +642,9 @@ users/{uid}/activeSession
       while the group reconciliation confirms the group is also terminal (in
       which case navigate away from Run Mode without freezing),
     - It is a concrete data value, not null/loading/error.
-    Applied snapshot watermarks reset on exit is atomic: set the applied
-    revision and applied updatedAt watermarks to the exit snapshot's values in
-    the same event, even if those values are lower than the prior watermarks.
+      Applied snapshot watermarks reset on exit is atomic: set the applied
+      revision and applied updatedAt watermarks to the exit snapshot's values in
+      the same event, even if those values are lower than the prior watermarks.
 - Owner update rules (Account Mode):
   - On **pause**: set `pausedAt = serverNow`, keep `accumulatedPausedSeconds` unchanged.
   - On **resume**: `accumulatedPausedSeconds += (serverNow - pausedAt)`, then clear `pausedAt`.
@@ -773,11 +773,11 @@ Desktop GitHub OAuth (device flow)
 
 - Required on macOS/Windows because FirebaseAuth `signInWithProvider` is not supported on macOS and is not reliable on Windows.
 - Flow:
-  1) App requests a device code from GitHub.
-  2) App opens the verification URL in the system browser and shows the user code.
-  3) User enters the code in GitHub.
-  4) App polls GitHub until an access token is issued.
-  5) App signs in to Firebase with `GithubAuthProvider.credential(accessToken)`.
+  1. App requests a device code from GitHub.
+  2. App opens the verification URL in the system browser and shows the user code.
+  3. User enters the code in GitHub.
+  4. App polls GitHub until an access token is issued.
+  5. App signs in to Firebase with `GithubAuthProvider.credential(accessToken)`.
 - No backend is required (device flow does not need a client secret).
 - Desktop app configuration:
   - `GITHUB_OAUTH_CLIENT_ID` (dart-define)
@@ -886,8 +886,8 @@ Item layout (top → bottom):
    - **When not selected**:
      - Label: **Total time**
      - One chip: total task duration
-    - Formula: `total = (pomodoros × pomodoroMinutes) + breaks`
-       where breaks include short/long breaks between pomodoros and **exclude** the final break.
+   - Formula: `total = (pomodoros × pomodoroMinutes) + breaks`
+     where breaks include short/long breaks between pomodoros and **exclude** the final break.
 
 4. **Sounds row**
    - Two entries: **Pomodoro start** and **Break start**
@@ -959,8 +959,8 @@ Item layout (top → bottom):
           - If the option is shown but the Default Preset is missing at tap time,
             show a SnackBar and keep the dialog open.
        3. **Keep individual configurations**:
-         - Presented as a visual card in the same list.
-         - Selecting it keeps Mode B (each task preserves its own structure).
+       - Presented as a visual card in the same list.
+       - Selecting it keeps Mode B (each task preserves its own structure).
   2. **Navigate to the full-screen planning screen**  
      The planning screen is where the group is reviewed and finally confirmed
      (see section 10.4.1). The group is created only after the user confirms
@@ -1031,6 +1031,14 @@ Behavior:
   - Delete removes the preset (tasks keep their current values and become Custom)
   - Default toggle (star) marks the preset as the global default (only one default at a time)
 - "Save as new preset" appears only in **Custom** mode and saves the current configuration as a new preset.
+- When "Save as new preset" is launched from Task Editor and the Preset Editor exits
+  with a successful save/resolution, Task Editor must automatically link the current
+  task to the returned presetId and apply that preset configuration immediately.
+- For duplicate-resolution exits in that flow, the returned presetId must be:
+  - **Save anyway** -> id of the newly saved preset.
+  - **Use existing / Discard changes** -> id of the existing duplicate preset.
+  - **Rename existing** -> id of the renamed existing duplicate preset (no new preset created).
+  - **Cancel / blocked save** -> no presetId (task remains Custom/unlinked).
 - "Apply settings to remaining tasks" copies the current task configuration to all remaining tasks in the list (after the current task).
 - Applies to all task settings except Name (pomodoro duration, short break duration, long break duration, total pomodoros, long break interval, sound selections).
 - If the current task uses a preset, Apply Settings propagates the **presetId** to remaining tasks (not just raw values).
@@ -1217,18 +1225,18 @@ Preview sheet specification (locked 28/03/2026):
        - `>= 72h`: “Machine-level schedule. Proceed only if this is really intended.”
        - In multi-task selection, evaluate the selected-group continuous total.
          In single-task scope, evaluate that task's own continuous total.
-    - Caution visibility is value-driven by the current preview result:
-      whenever the result is at/above threshold, show it (do not suppress it
-      just because it was already shown earlier in the same sheet session).
-    - In preview, render this caution inline below the work/total-duration block
-      for the current context (`Task` or `Group`).
-       - After save, show a persistent reminder chip with level label
-         (`Unusual` / `Superhuman` / `Machine`) in Task List and Groups Hub.
-         Placement:
-         - Task List selected cards: on the `Time range` row, after the new
-           total-duration chip (`start → end`, includes breaks), displayed as
-           value-only (example: `2h 11m`).
-         - Groups Hub card + summary modal: inline to the right of `Total time`.
+  - Caution visibility is value-driven by the current preview result:
+    whenever the result is at/above threshold, show it (do not suppress it
+    just because it was already shown earlier in the same sheet session).
+  - In preview, render this caution inline below the work/total-duration block
+    for the current context (`Task` or `Group`).
+    - After save, show a persistent reminder chip with level label
+      (`Unusual` / `Superhuman` / `Machine`) in Task List and Groups Hub.
+      Placement:
+      - Task List selected cards: on the `Time range` row, after the new
+        total-duration chip (`start → end`, includes breaks), displayed as
+        value-only (example: `2h 11m`).
+      - Groups Hub card + summary modal: inline to the right of `Total time`.
   2. Impact block (context-aware):
      - If editing in group context (task is currently selected in the active
        selection scope):
@@ -1511,8 +1519,8 @@ Schedule by total time
 - The system derives the end time and applies the **same** redistribution rules as above.
 - If the requested duration cannot be satisfied without breaking the rules, block scheduling.
 - Adjustments apply only to the TaskRunGroup snapshot; the underlying PomodoroTask values are never modified.
- - If the derived end time is earlier than the user’s requested end time due to integer
-   constraints, show the same lightweight notice (with “Don’t show again”).
+- If the derived end time is earlier than the user’s requested end time due to integer
+  constraints, show the same lightweight notice (with “Don’t show again”).
 
 Redistribution rules (shared)
 
@@ -1744,7 +1752,7 @@ Actions
   queue fields (`lateStartAnchorAt`, owner/claim metadata, queue id/order), and
   return to Groups Hub. Never leave a blank/black screen.
 - If the owner **resolves or cancels** the queue while a mirror is viewing it
-  (lateStart* cleared or all groups canceled), the mirror must:
+  (lateStart\* cleared or all groups canceled), the mirror must:
   - Disable actions immediately.
   - Show a modal: **“Owner resolved”** with a single **OK** action.
   - On OK, navigate to Groups Hub. Never remain on a blank screen.
@@ -1766,7 +1774,7 @@ Actions
       - round up to the next full minute (seconds = 00),
       - and enforce `scheduledStartTime > previousEnd` (if equal after
         rounding, add +1 minute).
-      Never round backwards into the past.
+        Never round backwards into the past.
     - Update scheduledStartTime and theoreticalEndTime for rescheduled groups.
     - Cancel all **unselected** groups using the reason rules above.
     - Clear `lateStartAnchorAt`, `lateStartOwnerDeviceId`,
@@ -1833,34 +1841,34 @@ Flow
   1. **End current group** → cancel current group (canceledReason = interrupted),
      then proceed with the scheduled group’s pre-run/start.
   2. **Postpone scheduled group** →
-    - Set `scheduledStartTime = projectedEnd + noticeMinutes`, and set
-      `postponedAfterGroupId = currentGroupId`.
-    - When deriving scheduledStartTime from a projected end, apply strict
-      minute normalization:
-      - round up to the next full minute (seconds = 00),
-      - and enforce `scheduledStartTime > projectedEnd` (if equal after
-        rounding, add +1 minute).
+  - Set `scheduledStartTime = projectedEnd + noticeMinutes`, and set
+    `postponedAfterGroupId = currentGroupId`.
+  - When deriving scheduledStartTime from a projected end, apply strict
+    minute normalization:
+    - round up to the next full minute (seconds = 00),
+    - and enforce `scheduledStartTime > projectedEnd` (if equal after
+      rounding, add +1 minute).
       Never round backwards into the past.
-     - While the current group is running/paused, the scheduled group’s
-       **effective** start tracks the current group’s projected end in real
-       time (no repeat modal for the same pair).
-     - Task List and Groups Hub must render that **effective** schedule in real
-       time on all devices (owner and mirror), without requiring manual refresh.
-     - When the current group ends, **lock in** the schedule (update
-       `scheduledStartTime` + `theoreticalEndTime`) and clear
-       `postponedAfterGroupId`.
-     - Show a confirmation SnackBar with the **new start time** and the
-       **pre-run time**.
-     - If the scheduled group is part of a resolved late-start queue
-       (`lateStartQueueId` is set) and has **later groups in the same queue**,
-       drag the remaining queued groups forward in sequence:
-       - nextStart = projectedEnd + noticeMinutes
-       - each following group starts at previousEnd + noticeMinutes
-       - this avoids repeated conflict modals for each queued group.
-       - Show a one-time SnackBar:
-         “Postponed. The remaining queued groups will shift sequentially.”
-     - Revalidate conflicts against other scheduled groups; if new overlaps
-       exist outside the queue, reopen the appropriate conflict flow immediately.
+  - While the current group is running/paused, the scheduled group’s
+    **effective** start tracks the current group’s projected end in real
+    time (no repeat modal for the same pair).
+  - Task List and Groups Hub must render that **effective** schedule in real
+    time on all devices (owner and mirror), without requiring manual refresh.
+  - When the current group ends, **lock in** the schedule (update
+    `scheduledStartTime` + `theoreticalEndTime`) and clear
+    `postponedAfterGroupId`.
+  - Show a confirmation SnackBar with the **new start time** and the
+    **pre-run time**.
+  - If the scheduled group is part of a resolved late-start queue
+    (`lateStartQueueId` is set) and has **later groups in the same queue**,
+    drag the remaining queued groups forward in sequence:
+    - nextStart = projectedEnd + noticeMinutes
+    - each following group starts at previousEnd + noticeMinutes
+    - this avoids repeated conflict modals for each queued group.
+    - Show a one-time SnackBar:
+      “Postponed. The remaining queued groups will shift sequentially.”
+  - Revalidate conflicts against other scheduled groups; if new overlaps
+    exist outside the queue, reopen the appropriate conflict flow immediately.
   3. **Cancel scheduled group** → cancel it (canceledReason = conflict) and
      continue the current group.
 
@@ -1873,7 +1881,7 @@ Permissions
 - Mirrors must show a **persistent CTA** in Groups Hub and Task List:
   - If the owner is **stale**: “Owner seems unavailable. **Claim** ownership to resolve this conflict.”
   - If the owner is **active**: “Owner is resolving this conflict. Request ownership if needed.”
-  (Use the appropriate CTA label: **Claim** when stale, **Request** when active.)
+    (Use the appropriate CTA label: **Claim** when stale, **Request** when active.)
 - Show the mirror CTA **only while the overlap is still valid**. If the conflict
   resolves or the session is missing, hide the CTA and clear any related banners.
 - Do **not** show duplicate conflict messaging. If the banner is visible, do not
@@ -1975,20 +1983,19 @@ Break running
 
 Note (mode-specific):
 
-- **Mode A (Shared structure):** 
-   - The group behaves as a single continuous Pomodoro sequence.
-   - Pomodoro and break durations, as well as the long-break interval, are shared across the entire group.
-   - The pomodoro counter is global to the group and does not reset when tasks change.
-   - Breaks are always executed between pomodoros according to the shared configuration.
-   - There is no additional or special break caused by task boundaries.
-   - When a task finishes and there are more tasks, execution continues with the next task’s pomodoro after the appropriate break.
-   - Two pomodoros must never be executed consecutively without an intervening break.
-- **Mode B (Keep individual configurations):** 
-   - Each task preserves its own pomodoro and break structure.
-   - When a task finishes and another task follows, a break is always executed before starting the next task.
-   - The break between tasks is a short break, unless the task’s own long-break interval is reached, in which case a long break is executed.
-   - No break is executed after the final pomodoro of the last task in the group.
-
+- **Mode A (Shared structure):**
+  - The group behaves as a single continuous Pomodoro sequence.
+  - Pomodoro and break durations, as well as the long-break interval, are shared across the entire group.
+  - The pomodoro counter is global to the group and does not reset when tasks change.
+  - Breaks are always executed between pomodoros according to the shared configuration.
+  - There is no additional or special break caused by task boundaries.
+  - When a task finishes and there are more tasks, execution continues with the next task’s pomodoro after the appropriate break.
+  - Two pomodoros must never be executed consecutively without an intervening break.
+- **Mode B (Keep individual configurations):**
+  - Each task preserves its own pomodoro and break structure.
+  - When a task finishes and another task follows, a break is always executed before starting the next task.
+  - The break between tasks is a short break, unless the task’s own long-break interval is reached, in which case a long break is executed.
+  - No break is executed after the final pomodoro of the last task in the group.
 
 Rule: the upper box always matches the current executing phase.
 Rule: time ranges shown in the status boxes are derived from
@@ -2015,7 +2022,7 @@ Location: below the circle and above Pause/Cancel buttons.
 - Completed tasks keep their actual time range; current/upcoming tasks are projected.
 - **Authoritative time range anchoring (task list):**
   - Start = `TaskRunGroup.actualStartTime + accumulated previous task durations +
-    pause offsets before the task`.
+pause offsets before the task`.
   - End = start + task duration (**plus** pause time since task start for the current task).
   - **Do not** use `activeSession.phaseStartedAt` to anchor task/group starts; it is
     only for phase progress.
@@ -2229,7 +2236,7 @@ foreground owner must **not** freeze progression.
   inactive (stale lastUpdatedAt):
   - **Running:** any mirror device may auto-claim even without a manual request.
   - **Paused:** only a requester with a pending ownershipRequest may auto-claim.
-  This is based on session liveness (heartbeat), not app focus.
+    This is based on session liveness (heartbeat), not app focus.
 - If a device loses ownership (another device becomes owner) while a local
   owner-action confirmation is pending, the pending confirmation must be cleared
   immediately. The UI must not remain blocked in Syncing due to stale local
@@ -2259,6 +2266,7 @@ foreground owner must **not** freeze progression.
 ### **10.4.8.b. Missing-session hold exit contract**
 
 **Gate bypass rule (single-shot):**
+
 - When a device is in missing-session hold and the first valid snapshot arrives
   for the current group, that snapshot must be applied unconditionally. The gate
   (`sessionRevision` / `lastUpdatedAt` check) is bypassed for exactly this one
@@ -2282,17 +2290,18 @@ foreground owner must **not** freeze progression.
 
 **Snapshot acceptance gate — decision table:**
 
-| Condition                                                    | wasMissing=false     | wasMissing=true (first valid snapshot) |
-|--------------------------------------------------------------|----------------------|----------------------------------------|
-| Higher `sessionRevision`                                     | apply + update marks | apply + reset watermarks               |
-| Equal revision, newer/equal `lastUpdatedAt`                  | apply + update marks | apply + reset watermarks               |
-| Equal revision, older `lastUpdatedAt`                        | reject (no-op)       | **apply + reset watermarks**           |
-| Lower `sessionRevision`                                      | reject (no-op)       | **apply + reset watermarks**           |
-| `ownerDeviceId` changed with matching `groupId` (handoff)    | apply (handoff)      | apply (handoff)                        |
-| `session == null` / loading / error (during hold)            | debounce → hold      | extend debounce, do not exit hold      |
-| `session == null` (not running context)                      | clear normally       | clear normally                         |
+| Condition                                                 | wasMissing=false     | wasMissing=true (first valid snapshot) |
+| --------------------------------------------------------- | -------------------- | -------------------------------------- |
+| Higher `sessionRevision`                                  | apply + update marks | apply + reset watermarks               |
+| Equal revision, newer/equal `lastUpdatedAt`               | apply + update marks | apply + reset watermarks               |
+| Equal revision, older `lastUpdatedAt`                     | reject (no-op)       | **apply + reset watermarks**           |
+| Lower `sessionRevision`                                   | reject (no-op)       | **apply + reset watermarks**           |
+| `ownerDeviceId` changed with matching `groupId` (handoff) | apply (handoff)      | apply (handoff)                        |
+| `session == null` / loading / error (during hold)         | debounce → hold      | extend debounce, do not exit hold      |
+| `session == null` (not running context)                   | clear normally       | clear normally                         |
 
 **UI contract on exit (same-frame requirement):**
+
 - When the hold is cleared by a valid snapshot, the following must update in the
   same UI frame:
   - `Syncing session...` overlay removed.
@@ -2312,6 +2321,7 @@ foreground owner must **not** freeze progression.
     In those cases, hold must be extended and overlay must remain visible.
 
 **Single latch exit point (hard invariant):**
+
 - In Account Mode, `_sessionMissingWhileRunning` may transition `true -> false`
   only inside the shared resolved-snapshot ingest function
   (`_ingestResolvedSession`, or an explicitly documented successor).
@@ -2324,6 +2334,7 @@ foreground owner must **not** freeze progression.
   not terminally corroborated.
 
 **Non-owner recovery contract (reads allowed, writes owner-scoped):**
+
 - While hold is active, server reads (`fetchSession(preferServer: true)`) are
   allowed for both owner and mirror devices.
 - Ownership checks apply to writes only (`tryClaimSession`, `publishSession`,
@@ -2335,6 +2346,7 @@ foreground owner must **not** freeze progression.
   corroborated, hold must be extended (not cleared) and bounded retries continue.
 
 **Transitional-state rule (phase boundary safety):**
+
 - During active phase boundaries (for example `pomodoroRunning` ->
   `shortBreakRunning`), transient `null` / `idle` / `finished` observations are
   transitional unless group reconciliation corroborates terminality.
@@ -2347,6 +2359,7 @@ foreground owner must **not** freeze progression.
   corroboration; do not render terminal `Ready`.
 
 **Mandatory diagnostics contract (required for validation):**
+
 - Hold lifecycle logs are mandatory in debug and validation builds:
   `hold-enter`, `hold-extend`, `hold-exit`, `hold-timeout`.
 - Each event must include at least:
@@ -2362,6 +2375,7 @@ foreground owner must **not** freeze progression.
   - emit `hold-extend` with reason `projection-unavailable`.
 
 **Phase-4 render/sync decoupling contract (hard invariant):**
+
 - During active execution states (`pomodoroRunning`, `shortBreakRunning`,
   `longBreakRunning`, `paused`), rendered countdown must be derived from timeline
   anchors (`phaseStartedAt` + elapsed against `phaseDurationSeconds`).
@@ -2372,6 +2386,7 @@ foreground owner must **not** freeze progression.
   reason to freeze countdown rendering.
 
 **Sync overlay non-blocking contract (hard invariant):**
+
 - The `Syncing session...` overlay and the countdown render loop are separate
   concerns.
 - Overlay visibility must not pause/freeze countdown projection while there is a
@@ -2380,6 +2395,7 @@ foreground owner must **not** freeze progression.
   unless the group is terminally corroborated.
 
 **Sync overlay trigger diagnostics contract (mandatory):**
+
 - Every transition to/from overlay-visible state must emit a diagnostic event
   with explicit trigger reason(s).
 - Supported trigger reasons map 1:1 to `TimerScreen` sync conditions:
@@ -2397,6 +2413,7 @@ foreground owner must **not** freeze progression.
 - Missing reason metadata for overlay transitions is a contract violation.
 
 **Phase-5 lifecycle observability contract (diagnostic-only):**
+
 - Phase 5 is instrumentation scope only. It must not change ownership rules,
   timeline authority, or hold/overlay business behavior.
 - Every `PomodoroViewModel` instance must carry a stable `vmToken` generated at
@@ -2496,6 +2513,7 @@ foreground owner must **not** freeze progression.
 - `[PHASE6] auto-open guard clears when VM is disposed mid-session`
 
 **Hold timeout (bounded hold rule):**
+
 - Missing-session hold must not persist indefinitely. Release and clean up
   non-destructively when **condition A AND condition B** are both met:
   - **Condition A:** all bounded-backoff retries are exhausted
@@ -2508,6 +2526,7 @@ foreground owner must **not** freeze progression.
     do not clear based on a single null lookup; require corroborated evidence.
 
 **Single application pipeline (architecture rule):**
+
 - The stream path, the manual fetch/resync path, and the recovery path must all
   delegate final snapshot application to one shared function. Duplicate
   apply/gate/notify logic spread across multiple code paths is forbidden.

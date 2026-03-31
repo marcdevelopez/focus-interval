@@ -4,6 +4,7 @@ Central log of observed bugs. Keep entries in chronological order with newest
 at the end.
 
 Entry format:
+
 - ID:
 - Date (with UTC offset):
 - Platforms:
@@ -19,6 +20,7 @@ Entry format:
 - Status:
 
 Optional details (use when available):
+
 - Device roles (owner/mirror) and mode (Account/Local).
 - Group type (planned range/total-time vs start now).
 - Snapshot timeline (timestamp -> key Firestore fields).
@@ -63,6 +65,7 @@ recover; navigation to Groups Hub and back is required to resync Run Mode.
 Observed moment: Pomodoro 2, ~13 minutes remaining.
 
 Evidence (Firestore state at failure):
+
 - status: pomodoroRunning
 - phase: pomodoro
 - ownerDeviceId: macOS
@@ -70,12 +73,14 @@ Evidence (Firestore state at failure):
 - lastUpdatedAt: 13/02/2026 15:08:36 (UTC+1)
 
 Evidence (16/02/2026, planned range group):
+
 - Firestore snapshot 17:25:02 (UTC+1): status pomodoroRunning, phase pomodoro,
   phaseStartedAt 17:05:00, remainingSeconds 298, ownerDeviceId macOS.
 - Android screenshot at ~17:26 shows Ready with Start disabled while the group
   was active; resync after Groups Hub navigation.
 
 Evidence (after foreground):
+
 - remainingSeconds: ~470
 - lastUpdatedAt: 13/02/2026 15:11:10 (UTC+1)
 
@@ -92,7 +97,7 @@ Fix applied:
 Branch: bug-mirror-ready-screen (merged main, PR #78).
 Change: Guard in PomodoroViewModel keeps Syncing based on last session +
 lastUpdatedAt (45s).
-Superseded by Fix 26 rewrite: _shouldTreatMissingSessionAsRunning removed;
+Superseded by Fix 26 rewrite: \_shouldTreatMissingSessionAsRunning removed;
 TimerService now drives countdown independently and SSS debounces stream nulls
 (3s) before entering hold → mirror shows "Syncing session..." instead of Ready.
 
@@ -104,8 +109,8 @@ device during mirror stream gaps or ownership transfers throughout a sustained
 multi-ownership-transfer session. Mirror showed Syncing state (SSS hold) as
 expected and returned to the running timer without navigation. Formally closed
 with logs:
-  docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_android_RMX3771_debug.log
-  docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_macos_debug.log
+docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_android_RMX3771_debug.log
+docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_macos_debug.log
 
 ---
 
@@ -119,12 +124,14 @@ macOS owner. During a break, Android is backgrounded (app kept running), then
 foregrounded. Android issues ownership requests; macOS rejects at least once.
 
 Repro steps:
+
 - Start a planned group (range scheduling). macOS = owner, Android = mirror.
 - Pause on macOS; Android is backgrounded (app running), then foregrounded.
 - Accept ownership on macOS; observe Android UI state and control availability.
 - Repeat with Retry from Android when the amber owner-requested indicator remains.
 
 Symptom:
+
 - Android mirror can remain in requested/Ready after ownership rejection and
   become visually desynced from activeSession; requires navigation to Groups Hub
   and back to resync.
@@ -134,6 +141,7 @@ Symptom:
   pending/requested UI even with no active ownershipRequest in Firestore.
 
 Observed behavior:
+
 - Condensed sequence:
   - Android backgrounded during break (app not closed), then foregrounded.
   - Android requests ownership; macOS rejects; Android requests again.
@@ -169,12 +177,14 @@ Observed behavior:
   matched the owner/Firebase again.
 
 Expected behavior:
+
 - Ownership rejection should immediately clear pending/requested UI and return
   to normal mirror without blocking Run Mode.
 - If `activeSession.status` is running or paused, Android must never sit in
   Ready beyond a brief sync state.
 
 Evidence:
+
 - Firestore snapshot after rejection showed `ownershipRequest.status = rejected`
   and `respondedByDeviceId = macOS...` while Android UI remained Ready or
   requested.
@@ -218,6 +228,7 @@ Evidence:
   froze in requested state; within ~5 seconds ownership reverted to macOS.
 
 Workaround:
+
 - Navigate Android to Groups Hub and back to force re-sync.
 - Use Retry in the ownership sheet to re-issue the request.
 - After ownership acceptance, exit to Groups Hub and return within ~20–30s to
@@ -229,22 +240,26 @@ reverted to macOS within seconds; Android stayed in requested/retry until
 Groups Hub navigation.
 
 Evidence (Firestore snapshots, UTC+1):
+
 - 23:41:51 ownerDeviceId = android after macOS accepted (shortBreakRunning).
 - 23:44:13 ownerDeviceId = macOS shortly after (auto-claim).
 - 23:46:15 ownerDeviceId = android after accept (requestId 7c73a503...).
 - 23:47:17 ownerDeviceId = macOS again; Android stuck pending/retry.
 
 Observed behavior:
+
 - Ownership flips back to macOS shortly after accept, even without a new manual
   request; Android remains in requested/retry UI.
 - Only navigating to Groups Hub and back resets the state.
 
 Hypothesis:
+
 - Ownership accept does not refresh lastUpdatedAt, so the new owner appears stale
   immediately and macOS auto-claims; requester UI remains stale without a
   forced resubscribe.
 
 Hypothesis:
+
 - Ownership request UI state is not cleared/overridden after rejection when the
   requester resumes from background; local pending state or session-gap handling
   may mask the latest snapshot.
@@ -261,10 +276,11 @@ Current state (17/03/2026, post Fix 26 rewrite, BUG-001/002 validation run):
 Devices: Android RMX3771 (mirror initially, then owner-swap) + macOS (owner initially).
 Group was already started before the run; multiple consecutive ownership transfers performed.
 Logs:
-  docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_android_RMX3771_debug.log
-  docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_macos_debug.log
+docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_android_RMX3771_debug.log
+docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_macos_debug.log
 
 Confirmed resolved:
+
 - Ownership revert after accept: ✅ not reproduced.
   lastUpdatedAt fresh after respondToOwnershipRequest; auto-claim does not fire
   within 45s window.
@@ -272,6 +288,7 @@ Confirmed resolved:
   Fix 26 SSS debounce prevents drop to Ready on stream gaps.
 
 Residual symptom confirmed (rejection banner on owner):
+
 - After owner (macOS) rejects a request, the ownership request banner does NOT
   clear immediately on the owner device.
 - First rejection (~20:06): banner cleared at ~20:06:52 — coinciding with the
@@ -306,6 +323,7 @@ clear of the ownershipRequest banner state immediately after the Firestore write
 succeeds, without waiting for the next stream snapshot.
 
 Implementation update (17/03/2026):
+
 - Implemented on branch `fix-ownership-cursor-stamp`:
   `rejectOwnershipRequest()` now applies immediate local ownership-request clear
   on owner side and triggers `_notifySessionMetaChanged()` before Firestore
@@ -313,6 +331,7 @@ Implementation update (17/03/2026):
 - Status moved to **In validation** pending device re-run evidence.
 
 Re-validation update (21/03/2026, user-run evidence):
+
 - User repeated pause/background + reject/accept ownership cycles on Android
   and Chrome; owner-side rejection banner cleared immediately on reject.
 - Residual symptom ("banner persistence on owner", second reject press) was not
@@ -345,9 +364,11 @@ eventually becomes owner. Android pauses ~1 minute and then resumes; macOS moves
 to mirror.
 
 Symptom:
+
 - macOS mirror flicks/rebuilds UI after Android pause/resume.
 
 Observed behavior:
+
 - After Android pause (~1 minute) and resume while Android is owner, macOS mirror
   shows periodic full UI refresh (timer circle, status boxes, task items) every
   ~15s though data appears unchanged.
@@ -358,10 +379,12 @@ Observed behavior:
   before handoff.
 
 Expected behavior:
+
 - Mirror UI should stay visually stable; periodic refresh should not cause full
   rebuilds or visible flicker.
 
 Evidence:
+
 - Visual flick on macOS mirror observed repeatedly post-resume while
   `activeSession.status = pomodoroRunning` and values remain stable.
 - Example snapshot near flick (UTC+1):
@@ -380,6 +403,7 @@ Evidence:
   - 13:53:52 (resume): Android 18:50 vs macOS 18:12.
 
 Hypothesis:
+
 - Periodic resubscribe/refresh may trigger a full Run Mode rebuild even when
   derived values are unchanged.
 - macOS mirror may keep a local timer running after ownership transfer or miss
@@ -406,16 +430,19 @@ occurred earlier (exact device uncertain), then the mirror began alternating
 between two timer values.
 
 Symptom:
+
 - macOS mirror alternates every second between the correct owner timer and a
   stale timer offset by ~17–28 seconds.
 - Break sounds fire late on macOS (~20s late), matching the stale timer.
 
 Observed behavior:
+
 - Per-second swap visible in Run Mode (timer circle and status boxes), while
   Firestore remains consistent with the owner timer.
 - The swap persists across pause/resume and can continue into breaks.
 
 Evidence:
+
 - 13:53:17 (running): Android 19:04 vs macOS 18:47.
 - 13:53:23 (pause): Android 18:58 vs macOS 18:41.
 - 13:53:34 (resume): Android 18:58 vs macOS 18:30.
@@ -423,10 +450,12 @@ Evidence:
 - 13:53:52 (resume): Android 18:50 vs macOS 18:12.
 
 Hypothesis:
+
 - macOS mirror kept the local PomodoroMachine timer running after ownership
   transfer, causing per-second swaps between local ticks and session projection.
 
 Fix applied:
+
 - Attempted: suppress local PomodoroMachine timer while in mirror mode so the
   mirror projects solely from activeSession snapshots (merge #122).
   Regression reported (18/02/2026): after ownership accept, the new owner
@@ -451,14 +480,17 @@ in the session. During long break (Pomodoro 4/7), macOS remained owner and
 Android stayed in mirror.
 
 Repro steps:
+
 - Run a planned group with macOS as owner and Android in mirror.
 - After ownership requests/accepts, enter a long break.
 - Compare remaining time shown on macOS vs Android over several minutes.
 
 Symptom:
+
 - Mirror timer lags behind owner and the drift increases over time.
 
 Observed behavior:
+
 - At the start of the long break, Android showed ~4s less remaining than macOS.
 - The gap grew over time; by ~8 minutes remaining the difference was ~10s.
 - Additional scenario (approx 16/02/2026 20:00 UTC+1):
@@ -472,10 +504,12 @@ Observed behavior:
     original mirror re-synced.
 
 Expected behavior:
+
 - Mirror projection should stay within a small, stable tolerance from the owner
   (no accumulating drift over time).
 
 Evidence:
+
 - Screenshots around 23:42 show Android at 07:41 while macOS shows 07:47
   (same wall clock), indicating ~6s delta.
 - Firestore snapshot (UTC+1) 23:41:28 shows `status = longBreakRunning`,
@@ -491,7 +525,7 @@ Evidence:
   on Android and macOS, yet timers diverged and the gap grew:
   - 00:43:58: macOS 05:56 vs Android 05:14 (delta 42s).
   - 00:55:09: macOS 19:55 vs Android 19:02 (delta 53s).
-  Gap increased ~11s in ~11 minutes during a long break.
+    Gap increased ~11s in ~11 minutes during a long break.
 - User report (18/02/2026 ~02:03–02:05 UTC+1): opening Groups Hub while running
   can **add seconds** on the device that navigated away and back. After return,
   the timer jumped forward (more remaining) and re-synced once a fresh
@@ -500,14 +534,15 @@ Evidence:
   - 02:03:54: remainingSeconds = 150 (before Groups Hub).
   - 02:04:24: remainingSeconds = 120 (2–5s after return).
   - 02:05:26: remainingSeconds = 60 (≈30s later).
-  UI on the returning device briefly increased remaining time despite the
-  Firestore countdown continuing normally.
+    UI on the returning device briefly increased remaining time despite the
+    Firestore countdown continuing normally.
 
 Hypothesis:
+
 - Mirror projection may be using a local clock without correction for snapshot
   cadence or server time offset, causing accumulating drift during long phases.
- - Phase-change projection may reuse a stale offset after resubscribe/ownership
-   changes, and pause/resume re-applies the same offset instead of re-basing.
+- Phase-change projection may reuse a stale offset after resubscribe/ownership
+  changes, and pause/resume re-applies the same offset instead of re-basing.
 - Device clock skew between Android and macOS may compound projection drift;
   use a server time offset derived from Firestore timestamps.
 - Since system clocks matched during the drift, projection logic itself is the
@@ -516,6 +551,7 @@ Hypothesis:
   projection from a stale lastUpdatedAt until the next heartbeat arrives.
 
 Fix applied:
+
 - Implemented server-time offset projection in `PomodoroViewModel` so mirrors
   project from lastUpdatedAt-derived server time (commit `25878cc`:
   `Stabilize ownership sync and server-time projection`).
@@ -539,6 +575,7 @@ Context: User switched Chrome from Local Mode back to Account Mode while a group
 was running on iOS (owner). Mirror was previously in Local Mode.
 
 Repro steps:
+
 - Start a running group on iOS (owner) in Account Mode.
 - On Chrome, switch to Local Mode and interact (create a task/group).
 - Cancel the Local Mode run and switch back to Account Mode.
@@ -556,6 +593,7 @@ Mirror should re-anchor immediately from activeSession without a visible
 timer mismatch after a mode switch.
 
 Evidence:
+
 - Screenshots 13–14 show the temporary mismatch and subsequent sync.
 
 Workaround:
@@ -587,6 +625,7 @@ Context: Group paused and resumed, then owner device backgrounded for ~4 minutes
 and returned to foreground.
 
 Repro steps:
+
 - Pause a running group, resume it.
 - Background the owner device for ~4 minutes (app not killed).
 - Return to foreground and observe remaining time vs expected.
@@ -603,6 +642,7 @@ Pause offset should remain accurate across background/foreground transitions
 without requiring ownership changes.
 
 Evidence:
+
 - User report from real devices (macOS + Android), 27/02/2026.
 
 Workaround:
@@ -613,6 +653,7 @@ Resume path reuses stale pause anchors or misses pause offset recomputation
 after backgrounding.
 
 Fix applied:
+
 - Stabilized owner hydration after pause re-entry in
   `PomodoroViewModel` by pinning phase-start from session snapshots and avoiding
   Account Mode timeline overrides that could reintroduce stale anchors
@@ -635,6 +676,7 @@ Context: Mirror device shows "Syncing session" indefinitely while a group is
 running; timer does not appear until user interacts.
 
 Repro steps:
+
 - Start a running group on an owner device.
 - Open Run Mode on a mirror (macOS or Android).
 - Observe the mirror state without interacting.
@@ -654,8 +696,9 @@ Mirror should exit Syncing automatically once activeSession snapshots resume,
 without requiring user interaction.
 
 Evidence:
+
 - User report: macOS mirror stuck multiple times; click inside the window
-restores the timer. Android mirror also stuck once with macOS owner.
+  restores the timer. Android mirror also stuck once with macOS owner.
 
 Workaround:
 macOS: click the app window or enter Groups Hub and return to Run Mode.
@@ -666,6 +709,7 @@ Session stream subscriptions pause or debounce while the window is inactive,
 and the UI never rebinds until a user event triggers a resubscribe.
 
 Fix applied:
+
 - Covered by Fix 26 sync architecture rewrite (`P0-F26-006`): runtime timer
   continuity decoupled from stream nulls via app-scope `TimerService` +
   `SessionSyncService` recovery authority, including terminal-boundary hold
@@ -688,6 +732,7 @@ Platforms: macOS + iOS simulator + web Chrome (Account Mode)
 Context: Late-open with consecutive planned groups and pre-run notice.
 
 Symptom:
+
 - Resolve-overlaps queue applies only a partial chain in some sequences.
 - Third (or later) conflicting groups can remain outside the queue and conflict
   later during runtime.
@@ -695,6 +740,7 @@ Symptom:
   after the selected queue is projected.
 
 Repro (23/03/2026):
+
 - Plan 3 groups, all with 15m duration and 1m pre-run:
   - G1 scheduled 08:51
   - G2 scheduled 09:07
@@ -705,11 +751,13 @@ Repro (23/03/2026):
 - At 09:14 runtime overlap modal appears for G3, proving unresolved overlap.
 
 Observed behavior:
+
 - Runtime queueing resolved first two groups but not the full chain.
 - G3 was not assigned `lateStartQueueId`/`lateStartQueueOrder` while G1/G2 were.
 - Conflict reappeared later as `Scheduling conflict` modal in Run Mode.
 
 Expected behavior:
+
 - Queue formation must cascade until no overlaps remain in the projected chain.
 - After queue confirmation, overlaps against scheduled groups outside selection
   must be revalidated and queue flow reopened if any conflict remains.
@@ -717,6 +765,7 @@ Expected behavior:
   a second runtime conflict modal for the same chain.
 
 Evidence:
+
 - Validation logs (23/03/2026):
   - `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_76ee374_ios_simulator_iphone_17_pro_debug.log`
   - `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_76ee374_web_chrome_debug.log`
@@ -727,6 +776,7 @@ Evidence:
 - Runtime modal at 09:14 confirms unresolved G2↔G3 overlap.
 
 Hypothesis:
+
 - Layer 1: `resolveLateStartConflictSet` does not cascade conflict formation
   when only one group is overdue initially.
 - Layer 2: post-confirm revalidation against scheduled groups outside current
@@ -734,6 +784,7 @@ Hypothesis:
 
 Fix applied:
 Implemented on branch `fix-bug009b-cascade-completion-overlap`:
+
 - cascading conflict-set formation in `resolveLateStartConflictSet`,
 - post-confirm overlap revalidation + queue reopen in late-start queue apply flow.
 - anchored-chain timing helper applied across queue/finalize/postpone paths to
@@ -756,12 +807,13 @@ Implemented on branch `fix-bug009b-cascade-completion-overlap`:
 Status:
 Closed/OK (23/03/2026).
 fix_v4 device rerun PASS:
+
 - iOS + web logs show single late-start queue chain (`LateStartQueue overdue=3`)
   with no runtime re-queue (`overdue=2` absent).
 - Timing coherence follow-up PASS: chained scheduling no longer reproduces the
   problematic same-minute pre-run/end overlap in user rerun.
-Closed under implementation commit `2fdd99b`
-(`fix(late-start, timer): BUGLOG-009B re-queue + BUG-013 modal + BUG-014 postpone`).
+  Closed under implementation commit `2fdd99b`
+  (`fix(late-start, timer): BUGLOG-009B re-queue + BUG-013 modal + BUG-014 postpone`).
 
 ---
 
@@ -774,6 +826,7 @@ Context: No running group. Multiple scheduled groups already overdue when
 opening the app late.
 
 Repro steps:
+
 - Plan 3 scheduled groups starting at 06:00 (15m each, 1m notice), consecutive.
 - Close the app.
 - Open at ~09:59 (all scheduled windows already in the past).
@@ -785,6 +838,7 @@ scheduled. Manual “Start now” bypasses overdue resolution. Confirm flow can
 trigger duplicate navigation.
 
 Observed behavior:
+
 - Task List shows “Group running” banner despite no real running group.
 - Completion modal “Tasks group completed” appears with 0 tasks/pomodoros/time.
 - Groups Hub shows the 3 groups still scheduled.
@@ -793,6 +847,7 @@ Observed behavior:
 - Confirm can cause Groups Hub double-load and a brief Timer flash.
 
 Expected behavior:
+
 - When opening late with overdue scheduled groups (no running), the late-start
   overlap queue should appear immediately.
 - Manual “Start now” should not bypass overdue resolution.
@@ -800,18 +855,22 @@ Expected behavior:
 - Completion modal should not show with empty totals.
 
 Evidence:
+
 - User reproduction + screenshots (20/02/2026).
 
 Workaround:
+
 - Manually start/cancel to force the queue (not acceptable long-term).
 
 Hypothesis:
+
 - Stale activeSession clearing returned early, skipping overdue evaluation.
 - “Start now” path bypassed late-start queue.
 - Queue confirm and coordinator both navigated, causing duplicate transitions.
 - Completion dialog allowed empty summaries.
 
 Fix applied:
+
 - ScheduledGroupCoordinator continues after clearing stale activeSession and
   re-evaluates overdue queue immediately.
 - Late-start conflict detection moved to shared utility; Groups Hub “Start now”
@@ -824,13 +883,14 @@ Fix applied:
 Status:
 Closed/OK (23/03/2026).
 Android validation PASS (`validation_bug008_2026_03_23`):
+
 - `LateStartQueue overdue=3` emitted on late open and queue opened immediately.
 - After confirmation, scheduler moved to `scheduled=2 overdue=0` and opened the
   running timer cleanly (`running-open-timer`), confirming no overdue bypass.
 - Manual `Start now` on the following queued group was blocked by
   `Conflict with running group` (no bypass path).
 - No `Tasks group completed` empty-summary symptom observed in this run.
-Validation log:
+  Validation log:
   `docs/bugs/validation_bug008_2026_03_23/logs/2026-03-23_bug008a_4ef7f42_android_RMX3771_debug.log`
 
 ---
@@ -847,26 +907,30 @@ non-navigational fallback to achieve the same re-sync without leaving Run Mode.
 
 Summary:
 Add a lightweight "Syncing..." overlay in Run Mode that triggers:
+
 - `syncWithRemoteSession(preferServer: true)`
 - a controlled resubscribe to the activeSession stream
-This should be used only when an inconsistency is detected (or via a manual
-user action), to avoid unnecessary UI jumps.
-Note:
-Do not reuse the ActiveSession auto-opener for this mitigation. It only
-navigates to `/timer/:id` and does not force a resubscribe; it cannot recover
-from a frozen Syncing state.
+  This should be used only when an inconsistency is detected (or via a manual
+  user action), to avoid unnecessary UI jumps.
+  Note:
+  Do not reuse the ActiveSession auto-opener for this mitigation. It only
+  navigates to `/timer/:id` and does not force a resubscribe; it cannot recover
+  from a frozen Syncing state.
 
 Interaction options (pick one or combine):
+
 - Tap anywhere on the Syncing screen to trigger the resync.
 - Pull-to-refresh gesture on the Syncing state (if feasible in the layout).
 - Explicit "Sync now" CTA or sync icon in the header while syncing.
-Android: prefer an explicit "Sync now" CTA (tap-anywhere is unreliable).
+  Android: prefer an explicit "Sync now" CTA (tap-anywhere is unreliable).
 
 When to use:
+
 - Release fallback if ownership/sync bugs persist near MVP launch.
 - Manual user action when timer state appears frozen or out of sync.
 
 Risks:
+
 - May mask underlying ownership bugs if overused.
 - Can introduce visible jumps if the projection re-anchors.
 
@@ -891,6 +955,7 @@ Owner flips from Android to macOS without a manual request, while Android is
 foreground and should be heartbeating.
 
 Observed behavior (Firestore snapshots, UTC+1):
+
 - 20:43:09 ownerDeviceId = android, status pomodoroRunning.
 - 20:46:00 ownerDeviceId = macOS, status pomodoroRunning.
 
@@ -930,6 +995,7 @@ stick on Android (owner reverted back to macOS). Only Groups Hub navigation
 restored a stable state.
 
 Evidence (Firestore snapshots, UTC+1):
+
 - 20:09:03 ownerDeviceId = android, status pomodoroRunning, remainingSeconds 1023.
 - 20:09:50 ownerDeviceId = macOS, status pomodoroRunning, remainingSeconds 972.
 - 20:11:13 ownershipRequest pending (requestId d714b521... requester android).
@@ -939,6 +1005,7 @@ Evidence (Firestore snapshots, UTC+1):
 - 20:13:28 ownerDeviceId = macOS, remainingSeconds 758 (Android stuck pending/retry).
 
 Observed behavior:
+
 - Android request accepted on macOS (Firestore shows Android owner), but owner
   reverted to macOS shortly after.
 - Android remained in requested/retry state and could not retain ownership.
@@ -947,6 +1014,7 @@ Observed behavior:
 - Entering Groups Hub and returning re-synced the UI and cleared the stuck state.
 
 Expected behavior:
+
 - After owner accepts, ownership must remain stable on the requester until a new
   explicit transfer or auto-claim rule applies.
 
@@ -955,21 +1023,24 @@ Context: Running session with macOS as owner. Android mirror requested
 ownership after a background window (macOS lid closed during the wait).
 
 Evidence (Firestore snapshots, UTC+1):
+
 - 23:41:51 ownerDeviceId = android after macOS accept (shortBreakRunning).
 - 23:44:13 ownerDeviceId = macOS (ownership reverted).
 - 23:46:22 ownershipRequest pending (requestId 7c73a503..., requester Android).
 - 23:46:15 ownerDeviceId = android after accept (pomodoroRunning).
 - 23:47:17 ownerDeviceId = macOS (ownership reverted again).
-Note: timestamps come from Firestore; capture order may differ slightly from
-the request/accept sequence.
+  Note: timestamps come from Firestore; capture order may differ slightly from
+  the request/accept sequence.
 
 Observed behavior:
+
 - After accept, Android briefly becomes owner, then flips back to macOS within
   ~15–20 seconds.
 - Android UI remains in requested/retry; repeated retry/accept cycles loop.
 - Only navigating to Groups Hub and returning stabilizes the session.
 
 Expected behavior:
+
 - Accepting an ownership request should stabilize ownership until a new
   explicit transfer or a documented auto-claim condition applies.
 
@@ -977,6 +1048,7 @@ Additional scenario (18/02/2026, UTC+1, long break loop):
 Repeated ownership flips during long break despite accept:
 
 Evidence (Firestore snapshots, UTC+1):
+
 - 00:38:05 ownerDeviceId = android (longBreakRunning).
 - 00:39:06 ownerDeviceId = macOS (auto flip).
 - 00:39:06 ownerDeviceId = android after retry/accept.
@@ -986,6 +1058,7 @@ Evidence (Firestore snapshots, UTC+1):
 - 00:43:06 paused by macOS (pausedAt 00:43:06) while Android remained mirror.
 
 Observed behavior:
+
 - Android can obtain ownership via accept, but macOS reclaims within ~1 minute.
 - Loop repeats without stabilizing on the requester.
 
@@ -998,6 +1071,7 @@ Context: Planned group scheduled by time range. Ownership requests can fail to
 surface on the receiving device until focus or a manual resubscribe.
 
 Repro steps:
+
 - Variant A (macOS inactive): Keep macOS as owner and move focus to another app
   (window inactive).
 - Variant A: From Android mirror, request ownership.
@@ -1010,10 +1084,12 @@ Repro steps:
 - Variant B: Observe Android; then navigate to Groups Hub and back to Run Mode.
 
 Symptom:
+
 - Ownership request does not appear on the receiving device until focus or a
   manual resubscribe.
 
 Observed behavior:
+
 - Variant A: Android shows a pending request, but macOS displays no modal/banner
   until the window is focused.
 - Variant B: Android shows no incoming request; after navigating to Groups Hub
@@ -1032,10 +1108,12 @@ Observed behavior:
   in Firestore and did not surface on Android until Groups Hub navigation.
 
 Expected behavior:
+
 - Ownership requests should surface immediately on the receiving device without
   requiring focus changes or navigation.
 
 Evidence:
+
 - Variant A: 23:44:01 requestId `d4834ac2-...` pending while Android showed the
   request; macOS only displayed the modal after window focus.
 - Variant B: User report — macOS request only appeared on Android after entering
@@ -1064,17 +1142,20 @@ Evidence:
     cleared.
 
 Workaround:
+
 - Click/focus the macOS window to surface pending requests.
 - Navigate Android to Groups Hub and back to force resubscribe.
 - Background/foreground the Android owner to force resubscribe.
 
 Hypothesis:
+
 - Ownership request stream is missed by the receiver until a resubscribe
   trigger (window focus or navigation).
 - Ready->Run recovery on the requester may not refresh the owner-side listener,
   leaving pending requests invisible until a manual resubscribe.
 
 Fix applied:
+
 - Variant A (`b093270`): `_startInactiveResync()` in `pomodoro_view_model.dart:2863` — periodic
   15s `syncWithRemoteSession(preferServer: true, reason: 'inactive-resync')` triggered by
   `AppLifecycleState.inactive` (including macOS window focus loss) via `handleAppPaused()`.
@@ -1103,20 +1184,24 @@ ranges shift forward). The timer status boxes (Current/Next) also show
 HH:mm–HH:mm ranges for Pomodoro/Break and should follow the same rule.
 
 Repro steps:
+
 - Start any group and enter Run Mode.
 - Pause during a Pomodoro or Break phase, then resume.
 - Compare time ranges shown in the status boxes vs the contextual task list.
 
 Symptom:
+
 - Status box HH:mm–HH:mm ranges update inconsistently on pause/resume, as if the
   pause impacts the current range start or rewrites past segments.
 
 Observed behavior:
+
 - On pause/resume, status box ranges do not follow the same anchoring behavior
   as the contextual task list; the current phase range can shift in a way that
   looks retroactive rather than forward-only.
 
 Expected behavior:
+
 - Current status box keeps its original start time and only extends its end
   time by the pause duration.
 - Next status box (and later phases) shift forward by the accumulated pause
@@ -1127,13 +1212,16 @@ Expected behavior:
   after pause/resume)."
 
 Evidence:
+
 - Visual observation: task list time ranges behave correctly; status box ranges
   shift differently during pause/resume.
 
 Workaround:
+
 - None.
 
 Hypothesis:
+
 - Status boxes are computed from a re-based timeline (e.g., now or phase start)
   without applying the same pause-offset anchoring used by the task list.
 
@@ -1170,6 +1258,7 @@ Symptom:
 Owner device resumes a few seconds behind mirror after background crash.
 
 Observed behavior:
+
 - Android owner displayed ~5s less remaining than macOS mirror after resume.
 - The difference resolved after entering and leaving Groups Hub (and clicking
   the macOS app), which re-synced the session.
@@ -1179,6 +1268,7 @@ Owner should re-anchor from the activeSession snapshot on resume so owner and
 mirror show the same remaining time immediately.
 
 Evidence:
+
 - User report (17/02/2026): break after Pomodoro 6/19, ~90s background, Android
   system "app has stopped working" banner, owner returned behind mirror by ~5s.
 
@@ -1221,6 +1311,7 @@ simulator iPhone 17 Pro as owner, Chrome as mirror. Two scheduled groups with
 overlap; iOS triggered requestLateStartOwnership for both groups.
 
 Repro steps:
+
 - Run Account Mode with 2+ overlapping scheduled groups.
 - On the mirror device, let it trigger requestLateStartOwnership (when owner is
   stale or absent).
@@ -1231,6 +1322,7 @@ All ownership request attempts silently fail. Chrome never receives any request.
 Mirror stays blocked in the queue screen without an owner.
 
 Observed behavior:
+
 - iOS logged 4 consecutive requestLateStartOwnership failures at lines 50742,
   50775, 50796, 50819 of the re-validation log.
 - Each failure is a Firestore SDK assertion: `_commands.isEmpty` — the SDK
@@ -1238,7 +1330,7 @@ Observed behavior:
 - In firestore_task_run_group_repository.dart:285, the loop interleaves reads
   and writes:
   Iteration 1: tx.get(group[0]) → tx.set(group[0])
-  Iteration 2: tx.get(group[1]) → FAILS (_commands.isEmpty: write already issued)
+  Iteration 2: tx.get(group[1]) → FAILS (\_commands.isEmpty: write already issued)
 - Chrome received zero ownership claim requests across the entire session.
 
 Expected behavior:
@@ -1246,6 +1338,7 @@ All groups are read first (Phase 1), then all writes are issued (Phase 2),
 so the Firestore transaction invariant is respected.
 
 Evidence:
+
 - iOS re-validation log:
   docs/bugs/validation_fix_2026_03_05/logs/2026-03-16_fix25_reval_ios_iPhone17Pro_debug.log
   Lines 50742, 50775, 50796, 50819 (repeated transaction assertion failures).
@@ -1262,6 +1355,7 @@ transaction. The current loop structure (read-write per group) violates this
 when groups.length > 1.
 
 Fix applied:
+
 - Implemented 16/03/2026 on branch `fix-f25-transaction-order-and-owner-dialog`.
 - `requestLateStartOwnership` now executes in 2 phases inside one transaction:
   1. Read all conflict group documents first (`tx.get` only).
@@ -1280,7 +1374,7 @@ accepted repeatedly with no transaction-order assertion.
 
 ---
 
-## BUG-F25-B — context-after-dispose in _showOwnerResolvedDialog OK button
+## BUG-F25-B — context-after-dispose in \_showOwnerResolvedDialog OK button
 
 ID: BUG-F25-B
 Date: 16/03/2026 (UTC+1)
@@ -1291,6 +1385,7 @@ transitioned to the "Owner resolved" state and showed the dialog. The state
 was disposed before the user tapped OK.
 
 Repro steps:
+
 - Open the late-start overlap queue screen on a mirror device.
 - Have the owner resolve the conflict on their device.
 - The mirror screen transitions to "Owner resolved" and shows the dialog.
@@ -1302,11 +1397,12 @@ Symptom:
 Cascade of exceptions; dialog cannot be dismissed cleanly; app may show errors.
 
 Observed behavior:
-- _showOwnerResolvedDialog (late_start_overlap_queue_screen.dart:549) shows
+
+- \_showOwnerResolvedDialog (late_start_overlap_queue_screen.dart:549) shows
   an AlertDialog whose OK button captures the outer BuildContext:
-    onPressed: () =>
-        Navigator.of(context, rootNavigator: true).pop()  // line 563-564
-- If _LateStartOverlapQueueScreenState is disposed before OK is tapped,
+  onPressed: () =>
+  Navigator.of(context, rootNavigator: true).pop() // line 563-564
+- If \_LateStartOverlapQueueScreenState is disposed before OK is tapped,
   accessing `context` here causes an "Element not mounted" assertion.
 - The mounted guard at line 570 (`if (!mounted) return;`) protects the
   `context.go('/groups')` call AFTER the await, but does NOT protect the
@@ -1317,6 +1413,7 @@ OK button navigation always uses a captured Navigator reference, safe even
 if the parent state disposes during the dialog lifetime.
 
 Evidence:
+
 - Chrome re-validation log:
   docs/bugs/validation_fix_2026_03_05/logs/2026-03-16_fix25_reval_chrome_debug.log
   Exception cascade on dialog dismiss attempt.
@@ -1331,6 +1428,7 @@ capture the Navigator before the await showDialog call so the callback does
 not depend on a mounted context.
 
 Fix applied:
+
 - Implemented 16/03/2026 on branch `fix-f25-transaction-order-and-owner-dialog`.
 - `_showOwnerResolvedDialog` now captures root navigator before `await showDialog`
   and uses that captured navigator in the OK button callback.
@@ -1360,6 +1458,7 @@ the conflict (canceled groups or confirmed selection), the "Owner resolved"
 modal appeared on the iOS device itself — the one that performed the resolution.
 
 Repro steps:
+
 - Open the late-start overlap queue as the owner device (Account Mode).
 - Cancel all groups or confirm a selection to resolve the conflict.
 - Observe: the "Owner resolved" dialog appears on the resolving device.
@@ -1372,10 +1471,10 @@ Observed behavior:
 After the owner resolves the conflict, Firestore writes clear lateStartOwnerDeviceId
 (set to null when isCancelAll is false, line 736) or the state transitions so that
 ownerDeviceId is null in the next snapshot. Then:
-  isOwner = !isAccountMode || ownerDeviceId == deviceId
-          = false  (Account Mode, null != deviceId)
-  !isOwner && allCanceled → true
-→ _showOwnerResolvedDialog() fires on the owner's own device.
+isOwner = !isAccountMode || ownerDeviceId == deviceId
+= false (Account Mode, null != deviceId)
+!isOwner && allCanceled → true
+→ \_showOwnerResolvedDialog() fires on the owner's own device.
 
 Expected behavior:
 "Owner resolved" dialog must appear ONLY on devices that did not initiate
@@ -1383,6 +1482,7 @@ the resolution. The resolving device should navigate directly to Groups Hub
 (or remain on a completion state) without seeing the mirror-targeted dialog.
 
 Evidence:
+
 - iOS re-validation log:
   docs/bugs/validation_fix_2026_03_05/logs/2026-03-16_fix25_reval_ios_iPhone17Pro_debug.log
   "Owner resolved" dialog trigger logged on iOS (owner) immediately after
@@ -1399,6 +1499,7 @@ After the owner resolves, ownerDeviceId is cleared → isOwner evaluates false
 on the resolving device, incorrectly triggering the mirror-only dialog.
 
 Fix applied:
+
 - First attempt (16/03/2026, commit `fd788e6`):
   - Added local state flag `_resolved` in `_LateStartOverlapQueueScreenState`.
   - Added gate `!isOwner && !_resolved` for owner-resolved mirror dialog.
@@ -1435,6 +1536,7 @@ a `runningOverlap` event that tried to update `StateController<RunningOverlapDec
 during the widget tree build phase.
 
 Repro steps:
+
 - Two devices in Account Mode with one group running/paused (owner iOS) and a
   second group scheduled that overlaps if the paused group resumes.
 - Mirror device (Chrome) is on any screen that listens to the overlap provider.
@@ -1448,9 +1550,10 @@ Chrome shows a red full-screen error overlay for <1 second:
 tried to update its state.
 Tried to modify a provider while the widget tree was building."
 Stack trace includes:
-  - `debugCanModifyProviders` in `flutter_riverpod/src/core/provider_scope.dart:333`
-  - `notifyListeners` in `riverpod/src/core/element.dart:768`
-The overlay disappears in <1 second and the app returns to its previous state.
+
+- `debugCanModifyProviders` in `flutter_riverpod/src/core/provider_scope.dart:333`
+- `notifyListeners` in `riverpod/src/core/element.dart:768`
+  The overlay disappears in <1 second and the app returns to its previous state.
 
 Expected behavior:
 Provider state updates must never be triggered synchronously during a build phase.
@@ -1459,6 +1562,7 @@ deferred (e.g., via `Future.microtask` or `WidgetsBinding.addPostFrameCallback`)
 when called from a context that may be inside a build cycle.
 
 Evidence:
+
 - Chrome reval3 log: `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval3_95494ab_chrome_debug.log`
 - iOS reval3 log: `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval3_95494ab_ios_iPhone17Pro_debug.log`
   iOS log shows `runningOverlap=true` first appearing at line 51204 immediately
@@ -1466,6 +1570,7 @@ Evidence:
 
 Fix applied:
 Three-commit fix on 18/03/2026:
+
 - `73d0f23` — coordinator: replace scheduler-phase check with `Future(() {})` in
   `_runRunningOverlapMutation`. `Future.microtask` (prior attempt) is insufficient;
   only a macrotask guarantees execution outside Riverpod's full propagation chain.
@@ -1477,6 +1582,7 @@ Three-commit fix on 18/03/2026:
   and widget-level mutations inside `build()` (fixed by post-frame callback).
 
 Validation:
+
 - iOS (owner) + Chrome (mirror): Scenario A PASS — overlap modal appeared, no
   red screen on mirror at conflict detection or after Postpone action.
 - Logs: `docs/bugs/validation_fix_2026_03_18-01/logs/`
@@ -1497,6 +1603,7 @@ appeared but gave no information about which scheduled group causes the conflict
 or what its time range is.
 
 Repro steps:
+
 - Cancel a running group (status = canceled).
 - In Groups Hub, tap "Re-plan group".
 - Select a start time that overlaps an existing scheduled group.
@@ -1512,6 +1619,7 @@ The conflict modal must show the name and scheduled time range of every conflict
 group (e.g., "G2 — 13:21–13:36") so the user can decide whether to delete or cancel.
 
 Evidence:
+
 - iOS reval3 log: `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval3_95494ab_ios_iPhone17Pro_debug.log`
 - Observed at ~13:02:32 during re-plan of G1 (canceled) that conflicted with G2 (scheduled 13:21).
 
@@ -1545,6 +1653,7 @@ the running overlap modal, a SnackBar appeared: "Scheduled start moved to 13:22
 identical to the start time and therefore meaningless.
 
 Repro steps:
+
 - Schedule a group with noticeMinutes = 0.
 - Start a running group that will overlap it.
 - In the running overlap modal, select "Postpone scheduled".
@@ -1567,6 +1676,7 @@ the pre-run time." This rule does not address the noticeMinutes = 0 case.
 A spec clarification is needed (suppress pre-run clause when noticeMinutes = 0).
 
 Evidence:
+
 - iOS reval3 log: `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval3_95494ab_ios_iPhone17Pro_debug.log`
 - Snackbar text observed at ~13:06:55.
 
@@ -1591,6 +1701,7 @@ formally registered. Not caused by rollback — git blame shows the write path
 got ceilToMinute on 23/02/2026 but the resolver never received it.
 
 Repro steps:
+
 - Schedule a group with noticeMinutes = 1 (or any value).
 - Start a running group that will overlap it.
 - In the running overlap modal, select "Postpone scheduled".
@@ -1605,11 +1716,11 @@ unrounded computation. The difference is typically ~0–59 seconds, visible as a
 
 Root cause:
 All write paths apply ceilToMinute before saving scheduledStartTime to Firestore:
-  timer_screen.dart:1165 — ceilToMinute(cursor + noticeMinutes)
-  scheduled_group_coordinator.dart:1146 — ceilToMinute(anchorEnd + noticeMinutes)
+timer_screen.dart:1165 — ceilToMinute(cursor + noticeMinutes)
+scheduled_group_coordinator.dart:1146 — ceilToMinute(anchorEnd + noticeMinutes)
 But the display path does not:
-  scheduled_group_timing.dart:185 — anchorEnd.add(Duration(minutes: noticeMinutes))
-  (missing ceilToMinute wrapper)
+scheduled_group_timing.dart:185 — anchorEnd.add(Duration(minutes: noticeMinutes))
+(missing ceilToMinute wrapper)
 Groups Hub uses resolveEffectiveScheduledStart (scheduled_group_timing.dart:160)
 for scheduledStartOverride (groups_hub_screen.dart:478). This produces a value
 1 minute behind the stored Firestore value.
@@ -1624,7 +1735,7 @@ value at HH:mm granularity.
 
 Fix:
 In scheduled_group_timing.dart:185, wrap the return value with ceilToMinute:
-  return ceilToMinute(anchorEnd.add(Duration(minutes: noticeMinutes)));
+return ceilToMinute(anchorEnd.add(Duration(minutes: noticeMinutes)));
 One line. No new helpers needed — ceilToMinute is already defined in the same file.
 
 Status:
@@ -1645,6 +1756,7 @@ document no longer exists. Devices never recover without manual app restart.
 Regression introduced 19/03/2026 (worked correctly in prior-day build).
 
 Repro steps:
+
 1. Two devices (e.g. Chrome + iOS) logged in to the same account.
 2. Start group G1 in Run Mode. Both devices show timer running.
 3. Cancel G1 from Chrome (menu → Cancel group → confirm).
@@ -1665,23 +1777,23 @@ to Groups Hub occurs. App requires manual restart to recover.
 
 Root cause (three-component):
 
-Component 1 — _cancelNavigationHandled permanently blocked by stale ViewModel data
+Component 1 — \_cancelNavigationHandled permanently blocked by stale ViewModel data
 (timer_screen.dart:680-682):
 pomodoroViewModelProvider is NotifierProvider.autoDispose and is NOT parameterized
 by group ID — it is a global singleton. When navigating from G1's timer to G2's
-timer, _currentGroup in the ViewModel still holds G1's data (status=canceled) during
+timer, \_currentGroup in the ViewModel still holds G1's data (status=canceled) during
 the first build frame of G2's TimerScreen. The build-phase cancel check at
 timer_screen.dart:680 fires immediately with stale G1 data (canceled), calls
-_navigateToGroupsHub('build canceled'), and throws a Flutter assertion exception
+\_navigateToGroupsHub('build canceled'), and throws a Flutter assertion exception
 (setState()/markNeedsBuild() called during build — confirmed at Chrome log line 2238).
-The navigation call fails due to the exception, but _cancelNavigationHandled is set
+The navigation call fails due to the exception, but \_cancelNavigationHandled is set
 to true permanently beforehand. All subsequent cancel signals for G2 (stream listener
 at line 512, ViewModel listener at line 541) are silently discarded via the guard.
 
-Component 2 — _recoverFromServer() has no exit condition for terminal group
-(session_sync_service.dart:_recoverFromServer):
+Component 2 — \_recoverFromServer() has no exit condition for terminal group
+(session_sync_service.dart:\_recoverFromServer):
 After G2 is canceled the Firestore session document is deleted. The 3-second debounce
-fires, sets holdActive=true, and _recoverFromServer() starts. On null server response
+fires, sets holdActive=true, and \_recoverFromServer() starts. On null server response
 it only checks "serverSession != null" and schedules a retry every 5 seconds. It does
 NOT check whether the attached group is itself in a terminal state (canceled/completed).
 Since the session will never return (group is terminal), the hold never clears.
@@ -1690,16 +1802,16 @@ Confirmed in Chrome log: repeated "hold-extend reason=recovery-failed" every ~5s
 
 Component 3 — stopTick() potentially missing in cancel acknowledgment path
 (pomodoro_view_model.dart cancel handler):
-If _timerService.stopTick() is not called when the group stream delivers status=canceled,
+If \_timerService.stopTick() is not called when the group stream delivers status=canceled,
 isTickingCandidate remains true. When the first session null arrives after the cancel
-acknowledgment, _onSessionNull() enters the 3s debounce path instead of the quiet-clear
+acknowledgment, \_onSessionNull() enters the 3s debounce path instead of the quiet-clear
 path. This contributes to the latch firing unnecessarily on a legitimate cancel.
 
 Fix (three-component):
 
 Fix 0 (pomodoro_view_model.dart — cancel acknowledgment path):
-Added _timerService.stopTick() in cancel() and applyRemoteCancellation() immediately
-before _resetLocalSessionState(). Ensures isTickingCandidate is false when the first
+Added \_timerService.stopTick() in cancel() and applyRemoteCancellation() immediately
+before \_resetLocalSessionState(). Ensures isTickingCandidate is false when the first
 session null arrives, routing through quiet-clear path.
 
 Fix 1 (timer_screen.dart:680-682 — stale group guard + defer out of build):
@@ -1707,7 +1819,7 @@ Added currentGroup?.id == widget.groupId guard and wrapped navigation in
 addPostFrameCallback with !mounted check. Prevents stale G1 data from triggering
 navigation during G2's first build frame and eliminates the Flutter assertion exception.
 
-Fix 2 (session_sync_service.dart:_recoverFromServer — terminal group exit):
+Fix 2 (session_sync_service.dart:\_recoverFromServer — terminal group exit):
 Added terminal-group check after serverSession == null: fetches attached group via
 taskRunGroupRepositoryProvider.getById(attachedGroupId). If canceled or completed,
 clears hold and returns — does not retry. Two corroborated signals (session null +
@@ -1727,6 +1839,7 @@ Context: Discovered during post-F25-H validation (19/03/2026). Flow validated wi
 two devices and overlap resolution via "Postpone scheduled".
 
 Repro steps (confirmed):
+
 1. Start running group G1 on owner device.
 2. Trigger scheduling conflict with G2 and choose "Postpone scheduled".
 3. Verify G2 receives postponed start in the future (example observed: 22:35).
@@ -1735,11 +1848,13 @@ Repro steps (confirmed):
    on the next minute (example observed: changed to 22:22 and started at 22:22:00).
 
 Symptom (user-visible):
+
 - Canceling the running group should not move postponed group's planned time.
 - Instead, postponed group start is pulled forward to current time and starts almost
   immediately, violating expected scheduling behavior and surprising the user.
 
 Expected behavior:
+
 - A postponed group should keep its stored scheduled start after canceling the
   running anchor group.
 - Canceling anchor group must break dynamic linkage for postponed groups (or freeze
@@ -1748,6 +1863,7 @@ Expected behavior:
   anchor is actually running.
 
 Observed evidence (logs):
+
 - iOS log (`docs/bugs/validation_f25i_2026_03_19/logs/2026-03-19_f25i_68429c5_ios_iPhone17Pro_9A6B6687_debug.log`):
   - line 51210: postponed sample still future (`...22:35|22:36`).
   - line 51216: running group cancel signal (`Cancel nav: group stream canceled`).
@@ -1760,6 +1876,7 @@ Observed evidence (logs):
   - line 2687: auto-start fired at 22:22:00.
 
 Probable root cause (pending code-level confirmation):
+
 - `resolvePostponedAnchorEnd` in `scheduled_group_timing.dart` uses fallback to
   `anchor.updatedAt` when anchor is no longer running and no effective end can be
   resolved.
@@ -1770,6 +1887,7 @@ Probable root cause (pending code-level confirmation):
   which should not happen.
 
 Fix direction (minimal, before broader refactor):
+
 1. In postponed-start resolver path, treat anchor terminal states (`canceled`,
    `completed`) as linkage break for postponement timing.
 2. Preserve stored postponed `scheduledStartTime` when anchor is terminal; do not
@@ -1778,6 +1896,7 @@ Fix direction (minimal, before broader refactor):
    truly overdue by stored value, not by terminal-anchor fallback.
 
 Targeted tests to add before closure:
+
 - Resolver unit test: postponed group linked to anchor; anchor canceled; effective
   scheduled start remains stored postponed value (no jump to now).
 - Coordinator unit/integration test: postpone then cancel anchor before postponed
@@ -1787,6 +1906,7 @@ Targeted tests to add before closure:
 
 Fix applied:
 Two-commit fix on branch fix-f25-i-postponed-start-drifts-on-cancel:
+
 1. scheduled_group_coordinator.dart `_finalizePostponedGroupsIfNeeded` (commit 51dcd2d):
    when anchor.status == canceled, sever link (postponedAfterGroupId=null) without
    touching scheduledStartTime. Mirrors the "anchor not found" pattern.
@@ -1815,6 +1935,7 @@ Firestore `activeSession` document shows stale `phaseStartedAt` and
 correct countdown timers and progressing through pomodoros normally.
 
 Observed behavior:
+
 - `phaseStartedAt: 7:31:07pm` (19:31:07) — unchanged throughout the entire
   session (from first screenshot at 20:04 to last at 20:08+). The field reflects
   the initial session start time and was never updated on phase transitions.
@@ -1836,11 +1957,13 @@ Expected behavior:
 On each phase transition (pomodoro→break, break→pomodoro) and on each ownership
 transfer, the owner device must write the current `phaseStartedAt`, `phase`, and
 `remainingSeconds` to Firestore so that:
+
 1. Mirrors can project correctly from the snapshot.
 2. Cold-starting devices can bootstrap from a valid cursor.
 3. The `remainingSeconds: 0` state does not linger across phase boundaries.
 
 Evidence:
+
 - Validation run (17/03/2026):
   docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_android_RMX3771_debug.log
   docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_macos_debug.log
@@ -1858,16 +1981,17 @@ In the Fix 26 architecture, `TimerService` drives the countdown independently.
 The owner's write path for phase transitions may no longer update `phaseStartedAt`
 and `remainingSeconds` in Firestore on each phase change — either because:
 a. `PomodoroViewModel` (now a UI adapter) no longer triggers Firestore writes on
-   phase transitions as it did pre-Fix-26, and `SessionSyncService` doesn't have
-   a write-back path for phase transitions, OR
+phase transitions as it did pre-Fix-26, and `SessionSyncService` doesn't have
+a write-back path for phase transitions, OR
 b. The ownership transfer path clears or resets the cursor to `remainingSeconds: 0`
-   without rewriting the current phase state from `TimerService`.
+without rewriting the current phase state from `TimerService`.
 Need to trace from `TimerService` phase-advance callback → owner write path in
 `SessionSyncService`/`PomodoroViewModel` → Firestore update.
 
 Fix applied:
 Implemented on 17/03/2026 (branch `fix-ownership-cursor-stamp`), pending
 device re-validation:
+
 - Added `_pendingPublishAfterSync` retry path so publish writes dropped by
   `isTimeSyncReady=false` replay immediately after time sync recovers.
 - Added atomic ownership approve cursor stamp by extending
@@ -1877,17 +2001,18 @@ device re-validation:
   (`shouldHydrate=false` and machine non-idle): bump revision + publish now.
 
 Validation log paths (17/03/2026, commit `7ddc1e6`, Android RMX3771 + macOS):
-  docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_android_RMX3771_debug.log
-  docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_macos_debug.log
+docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_android_RMX3771_debug.log
+docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_macos_debug.log
 
 Status:
 Closed/OK. Re-validation 18/03/2026 (Android RMX3771 + macOS, commit `92731b3`):
+
 - `phaseStartedAt` updated correctly on phase transition: pomodoro 3→break =
   13:46:11 p.m. (exact: 3×25min from session start 12:21:11). ✓
 - `remainingSeconds` coherent throughout (851→835→823→766, never 0). ✓
 - No stale cursor observed after ownership transfers.
-Logs: `docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-18__guard_hot-swap_92731b3_android_RMX3771_debug.log`.
-Logs: `docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-18__guard_hot-swap_92731b3_android_RMX3771_debug.log`.
+  Logs: `docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-18__guard_hot-swap_92731b3_android_RMX3771_debug.log`.
+  Logs: `docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-18__guard_hot-swap_92731b3_android_RMX3771_debug.log`.
 
 ---
 
@@ -1905,6 +2030,7 @@ ownership transfer. Both devices show jumps within seconds of the handoff
 without any intervening break or pomodoro completion.
 
 Observed behavior:
+
 - At 20:06:18 (macOS→android transfer): status boxes on both devices briefly
   flip (long break → pomodoro 5). Timer stabilizes.
 - At 20:07:30 (android gets ownership again): timer on android jumps to
@@ -1919,6 +2045,7 @@ should read and apply the current cursor from `TimerService` (or from the last
 valid Firestore snapshot) without incrementing the phase index.
 
 Evidence:
+
 - Validation run (17/03/2026):
   docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_android_RMX3771_debug.log
   docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_macos_debug.log
@@ -1943,21 +2070,23 @@ heartbeat cycle.
 Fix applied:
 Implemented together with BUG-F26-001 hardening packet on 17/03/2026 (branch
 `fix-ownership-cursor-stamp`), pending device re-validation:
+
 - Ownership transfer now carries atomic cursor snapshot at approve write.
 - New owner hot-swap path now stamps live cursor immediately when hydration is
   skipped, reducing stale phase-complete interpretation windows.
 
 Validation log paths (17/03/2026, commit `7ddc1e6`, Android RMX3771 + macOS):
-  docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_android_RMX3771_debug.log
-  docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_macos_debug.log
+docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_android_RMX3771_debug.log
+docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_macos_debug.log
 
 Status:
 Closed/OK. Re-validation 18/03/2026 (Android RMX3771 + macOS, commit `92731b3`):
+
 - `phaseStartedAt` updated correctly on phase transition: pomodoro 3→break =
   13:46:11 p.m. (exact: 3×25min from session start 12:21:11). ✓
 - `remainingSeconds` coherent throughout (851→835→823→766, never 0). ✓
 - `currentPomodoro` stable across ownership transfers (no spurious jumps). ✓
-Logs: `docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-18__guard_hot-swap_92731b3_android_RMX3771_debug.log`.
+  Logs: `docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-18__guard_hot-swap_92731b3_android_RMX3771_debug.log`.
 
 ---
 
@@ -1970,6 +2099,7 @@ Context: Re-validation of ownership cursor hardening packet (`7ddc1e6`) using
 newly started group (`Start now`, no pre-existing running group).
 
 Symptom:
+
 - `activeSession/current.sessionRevision` increased continuously in seconds
   (observed 88 → 121 between 22:27:44 and 22:27:51).
 - `lastUpdatedAt` and `remainingSeconds` rewrote continuously in Firestore.
@@ -1977,12 +2107,14 @@ Symptom:
   repeatedly (create/delete loop) until app closure.
 
 Observed behavior:
+
 - UI looked mostly correct in short run, but Firestore write rate was abnormal.
 - On cancel, app marked group canceled, yet backend kept oscillating `current` doc.
 - Flash samples at 22:28:36 / 22:28:38 / 22:28:39 showed `finishedAt=null` with
   active phase fields while group was already canceled in UI.
 
 Expected behavior:
+
 - Hot-swap fallback publish must execute once per ownership acquisition, not on
   every incoming snapshot.
 - `sessionRevision` should grow monotonically with discrete ownership/phase events,
@@ -1990,6 +2122,7 @@ Expected behavior:
 - Cancel must settle `activeSession/current` deterministically with no recreate loop.
 
 Root cause (confirmed in code):
+
 - In `PomodoroViewModel._applySessionTimelineProjection`, branch:
   `else if (_machine.state.status != PomodoroStatus.idle) { _bumpSessionRevision(); _publishCurrentSession(); }`
   lacked a one-shot guard.
@@ -1997,6 +2130,7 @@ Root cause (confirmed in code):
   creating Firestore feedback loop.
 
 Fix applied (pending device re-validation):
+
 - Added `int _hotSwapPublishedForRevision = -1`.
 - Guarded fallback publish so it runs once per ownership revision.
 - Marked revision before publish and reset guard on local session reset/mode switch.
@@ -2004,6 +2138,7 @@ Fix applied (pending device re-validation):
   `owner hot-swap fallback publish is one-shot for repeated snapshots`.
 
 Evidence:
+
 - Validation logs:
   `docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_android_RMX3771_debug.log`
   `docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_macos_debug.log`
@@ -2026,6 +2161,7 @@ Platforms: iOS simulator + web Chrome (Account Mode)
 Context: Consecutive planned groups in Run Mode with pre-run enabled.
 
 Repro steps:
+
 - Execute consecutive planned groups (e.g., G1 -> G2 -> G3, 1m pre-run).
 - Let G1 complete and keep `Tasks group completed` modal open.
 - Wait for G2 pre-run/start.
@@ -2035,15 +2171,18 @@ Completion modal from previous group remains visible and blocks the next
 group pre-run/run view until user presses `OK`.
 
 Observed behavior:
+
 - Next group starts in background, but completion modal overlays timer UI.
 - On iOS, pre-run/start of the next group is hidden until manual dismissal.
 - Same pattern repeats when G2 completes and G3 pre-run starts.
 
 Expected behavior:
+
 - If a next group auto-opens (pre-run or running), completion modal from the
   previous group must auto-dismiss immediately and not force manual `OK`.
 
 Evidence:
+
 - Validation logs:
   - `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_76ee374_ios_simulator_iphone_17_pro_debug.log`
   - `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_76ee374_web_chrome_debug.log`
@@ -2051,6 +2190,7 @@ Evidence:
   over active next-group timer/pre-run.
 
 Hypothesis:
+
 - Completion modal dismissal path was still tied to group switch/running-state
   transitions.
 - Pre-run announcements for a different next group (`scheduledAutoStartGroupId`
@@ -2061,6 +2201,7 @@ Hypothesis:
 
 Fix applied:
 Implemented on branch `fix-bug009b-cascade-completion-overlap`:
+
 - Initial implementation covered group switch + active-state transitions.
 - Follow-up patch added explicit pre-run dismissal when next-group auto-open is
   announced for a different group id.
@@ -2074,6 +2215,7 @@ Implemented on branch `fix-bug009b-cascade-completion-overlap`:
     `auto-dismisses completion modal when next group pre-run auto-open is announced`
 
 Validation update (`fix_v2`, 23/03/2026):
+
 - iOS log confirms partial fix:
   - pre-run started at `14:03` (`prealert-timer-fired` for G2),
   - modal auto-dismiss happened at `14:04` (`Auto-dismiss ... group switch`).
@@ -2081,6 +2223,7 @@ Validation update (`fix_v2`, 23/03/2026):
 - Current packet adds the missing scheduled-action bridge fix; device rerun is pending.
 
 Validation update (`fix_v4`, 23/03/2026):
+
 - PASS on rerun:
   - iOS pre-run fires for G2 at `17:00:00` (`prealert-timer-fired`).
   - completion modal auto-dismiss is logged at `17:00:00`
@@ -2103,6 +2246,7 @@ Platforms: web Chrome (Account Mode)
 Context: Running overlap modal with action `Postpone scheduled`.
 
 Repro steps:
+
 - Trigger runtime overlap modal (`Scheduling conflict`).
 - Press `Postpone scheduled`.
 
@@ -2111,16 +2255,19 @@ Modal may persist/reappear after first postpone action; user must press
 `Postpone scheduled` a second time for final dismissal.
 
 Observed behavior:
+
 - SnackBar confirms postpone after first click:
   `Scheduled start moved to 09:31 (pre-run at 09:30).`
 - Conflict modal remains visible (or reopens) immediately after the first click.
 - Second click applies same action and finally dismisses modal.
 
 Expected behavior:
+
 - Single postpone action should both apply scheduling update and close modal
   deterministically (no re-open race).
 
 Evidence:
+
 - Validation logs:
   - `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_76ee374_web_chrome_debug.log`
   - `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_76ee374_ios_simulator_iphone_17_pro_debug.log`
@@ -2128,11 +2275,13 @@ Evidence:
   SnackBar while modal remained; second postpone at 09:14:52 closed it.
 
 Hypothesis:
+
 - Race between modal dismissal and running-overlap re-evaluation from stream
   snapshots before postponed `scheduledStartTime` is confirmed.
 
 Fix applied:
 Implemented on branch `fix-bug009b-cascade-completion-overlap`:
+
 - deterministic postpone guard using decision key + expected scheduled start
   confirmed by repository snapshots (no time-based suppression).
 - Local gates PASS:
@@ -2160,12 +2309,14 @@ Context: Startup after previous scheduled/late-start validation flows.
 
 Repro steps:
 Scenario A (primary, stale running residue):
+
 1. Run a late-open flow with queued groups on Android owner.
 2. Leave the app and reopen after a gap while a previous group/session may still
    exist in remote state.
 3. Observe first timer screen shown on startup.
 
 Scenario B (alternative, explicit cancellation path):
+
 1. Run late-open queue flow (3 groups) and confirm overlaps.
 2. Cancel running and queued groups explicitly.
 3. Close app, reopen Android owner, and observe first timer screen.
@@ -2176,6 +2327,7 @@ and `Start`, even though this group belongs to a prior run/cancel context and
 should not be restored as an active startup target.
 
 Observed behavior:
+
 - In `BUG008B` startup log, same group id is loaded first as completed:
   `Timer load group=... result=... status=completed` (line 6763),
   then remote active session snapshots arrive as running for that same group
@@ -2189,6 +2341,7 @@ Observed behavior:
   same time window.
 
 Expected behavior:
+
 - On startup, app must not restore a stale/canceled/completed group as a
   `Ready` run target.
 - If a stale active session exists, startup should deterministically reconcile
@@ -2196,6 +2349,7 @@ Expected behavior:
 - No transient `Ready 15:00 Start` flash should appear for historical groups.
 
 Evidence:
+
 - Android log:
   `docs/bugs/validation_bug008_2026_03_23/logs/2026-03-23_bug008b_d400a99_android_RMX3771_debug.log`
   (notable lines: 6763, 6794, 6819).
@@ -2212,15 +2366,17 @@ Manual cancel and restart of a new group (temporary only).
 Hypothesis:
 Startup hydration race/inconsistency between local group load and remote
 `activeSession` snapshot application:
+
 - startup path can load stale terminal group state (`completed`) before remote
   running snapshot settles;
 - auto-open/openTimer actions still target that group id during the transient.
-Alternative path to validate:
+  Alternative path to validate:
 - cancellation-cleanup may leave stale targeting metadata for the last queued
   group, causing the same startup restore artifact even after explicit cancel.
 
 Fix applied:
 Implemented on branch `fix/buglog-008c-ready-flash-validation`:
+
 - `ScheduledGroupCoordinator` now expires running groups even when
   `activeSession == null` if `theoreticalEndTime` is already passed.
 - When all running groups in that startup check are expired/completed, it emits
@@ -2239,6 +2395,7 @@ Closed/OK.
 closed_commit_hash: pending (fix/buglog-008c-ready-flash-validation, pre-merge)
 closed_date: 23/03/2026
 Evidence:
+
 - Android debug log: `docs/bugs/validation_bug008c_2026_03_23/logs/2026-03-23_bug008c_d400a99_android_RMX3771_debug.log`
 - Scenario A PASS: stale running group on reopen → coordinator marks completed,
   routes to Groups Hub. No persistent "Ready 15:00 + Start" observed.
@@ -2264,21 +2421,25 @@ Platforms: Android + macOS (Account Mode)
 Context: Cross-device running group; owner device powered off; remaining device later goes background and resumes.
 
 Repro summary:
+
 - Group remains in `running` lifecycle with future theoretical end.
 - Owner device (macOS) is fully powered off.
 - Remaining device (Android) later goes background and resumes.
 
 Symptom:
+
 - Run Mode can reopen in invalid terminal UI (`Ready`, amber/golden full ring,
   `Start` button) while the same group should still be in-progress by timeline.
 
 Observed behavior:
+
 - During the inconsistent window, session data can appear terminal (`finished`)
   while group lifecycle/context still indicates the run should continue.
 - Reopening another device can republish/reconcile and return the first device
   to the correct running timeline.
 
 Expected behavior:
+
 - Group continuity must not depend on any device being in foreground.
 - If no device is open, progression remains timeline-authoritative and resumes
   correctly on next foreground without passing through `Ready` for non-terminal groups.
@@ -2288,6 +2449,7 @@ Expected behavior:
   written as `finished` in Firestore.
 
 Evidence:
+
 - User-reported Android logs before owner power-off show active snapshots and
   normal progression.
 - User-reported Firestore state showed temporary inconsistency (`current` with
@@ -2295,16 +2457,19 @@ Evidence:
   macOS reopened and republished active timeline.
 
 Workaround:
+
 - Reopen a second device/session so active snapshot is republished and mirror
   re-anchors.
 
 Hypothesis:
+
 - Transitional/non-active session snapshots can be accepted as render authority
   during/after background resume without strict non-terminal group corroboration,
   causing temporary terminal UI fallback (`Ready`) for an active group.
 
 Fix applied:
 Implemented in ViewModel stream-ingestion path:
+
 - Repair inconsistent active-session cursor synchronously before ingest on
   stream updates (`_repairStreamSessionForCurrentGroup` →
   `_repairInconsistentSessionCursor`) so mirror projection never captures
@@ -2314,6 +2479,7 @@ Implemented in ViewModel stream-ingestion path:
   boundary windows.
 
 Validation update (25/03/2026):
+
 - Exact repro PASS on Android + macOS (owner handoff + background + late resume).
 - Android resumed directly in active timer state (no amber `Ready 00:00` flip).
 - Firestore stayed non-terminal (`status: pomodoroRunning`) during resumed run.
@@ -2335,12 +2501,14 @@ Platforms: All (Android, macOS, iOS — UI logic, platform-independent)
 Context: Task Editor — Task weight (%) field, group planning mode.
 
 Repro summary:
+
 - Open Task Editor for a task that is selected in a group (Task weight % field visible).
 - Task has 5 pomodoros (~53% of group total).
 - Type "80" in the weight field.
 - Observe: task ends up with 1 pomodoro (~19%) instead of the expected ~7 pomodoros (~78%).
 
 Symptom:
+
 - Editing Task weight (%) produces a result that is dramatically worse than the
   starting value and far from the requested percentage.
 - The more the requested value differs from the current, the worse the result can be.
@@ -2361,6 +2529,7 @@ has rebuilt and `weightScopeTasks` now contains the task with the intermediate
 pomodoro count — not the original.
 
 Concrete trace (5 tasks x 25 min, A=5 pom, B=C=D=E=1 pom):
+
 1. User types "8" → target=8%, totalWork=225, desiredWork=18,
    bounded=25 (floor), editedPom=1.
    Provider updated: A → 1 pom. Widget rebuilds.
@@ -2374,6 +2543,7 @@ The bug is in how the screen calls it: there is no stable baseline snapshot
 frozen at the moment the user begins editing the weight field.
 
 Expected behavior (per specs section 10.3.x):
+
 - Editing Task weight (%) adjusts the task's totalPomodoros to the closest
   achievable result for the requested percentage.
 - The result must be coherent: if the starting value (53%) is already closer
@@ -2393,6 +2563,7 @@ The UX direction is now explicitly defined: **preview-first editing with two mod
 - The flow must support explicit **Apply** and **Cancel** (cancel = no changes).
 
 Fix direction (approved):
+
 1. **Correctness patch — Patch 1 (independent, ready for Codex):**
    freeze baseline `weightScopeTasks` when weight editing starts and keep that
    snapshot stable for the entire interaction to eliminate per-keystroke
@@ -2409,9 +2580,11 @@ Fix direction (approved):
    Fields in editor become read-only tap targets.
 
 Files involved (Patch 1):
+
 - `lib/presentation/screens/task_editor_screen.dart` — baseline freeze, blur fix.
 
 Files involved (Patch 2):
+
 - `lib/presentation/screens/task_editor_screen.dart` — fields converted to tap targets,
   sheet integration, apply/cancel flow, per-keystroke handlers removed.
 - `lib/presentation/viewmodels/task_editor_view_model.dart` — mode-aware helpers
@@ -2422,99 +2595,100 @@ Files involved (Patch 2):
 
 UX decisions locked (28/03/2026) — Patch 2 unblocked:
 
-  a. **Mode selector widget:** Segmented control with two mutually-exclusive options
-     (Fixed total | Flexible total), placed inside the preview sheet above the
-     results panel. Default: Fixed total on every new sheet session.
+a. **Mode selector widget:** Segmented control with two mutually-exclusive options
+(Fixed total | Flexible total), placed inside the preview sheet above the
+results panel. Default: Fixed total on every new sheet session.
 
-  b. **Preview content:** Full list of all selected tasks. Sheet shows:
-     — header: field being edited + requested value + closest achievable result + active mode.
-     — before/after summary: selected-group total pomodoros and work time.
-     — mini-table: every selected task with name, pomodoros before→after, weight before→after.
-     — inline warning if deviation ≥ 10 pp or no improvement possible.
+b. **Preview content:** Full list of all selected tasks. Sheet shows:
+— header: field being edited + requested value + closest achievable result + active mode.
+— before/after summary: selected-group total pomodoros and work time.
+— mini-table: every selected task with name, pomodoros before→after, weight before→after.
+— inline warning if deviation ≥ 10 pp or no improvement possible.
 
-  c. **Apply / Cancel placement:** Fixed footer bar at the bottom of the sheet.
-     Cancel on the left, Apply on the right. Not inline — prevents buttons from
-     scrolling out of view when the task list grows.
+c. **Apply / Cancel placement:** Fixed footer bar at the bottom of the sheet.
+Cancel on the left, Apply on the right. Not inline — prevents buttons from
+scrolling out of view when the task list grows.
 
-  d. **Preview trigger:** Tapping Task weight (%) or Total pomodoros in the editor
-     opens the sheet. Preview recalculates live while the user types inside the
-     sheet. No blur trigger, no separate "Preview" button. Importantly: both fields
-     in the editor become tap targets (read-only display); all editing happens inside
-     the sheet. The existing per-keystroke onChanged handlers are removed in Patch 2.
+d. **Preview trigger:** Tapping Task weight (%) or Total pomodoros in the editor
+opens the sheet. Preview recalculates live while the user types inside the
+sheet. No blur trigger, no separate "Preview" button. Importantly: both fields
+in the editor become tap targets (read-only display); all editing happens inside
+the sheet. The existing per-keystroke onChanged handlers are removed in Patch 2.
 
-  e. **Mode switch with value already entered:** Switching mode immediately
-     recalculates the preview for the new mode using the same entered value and the
-     frozen baseline. The entered value is not reset.
+e. **Mode switch with value already entered:** Switching mode immediately
+recalculates the preview for the new mode using the same entered value and the
+frozen baseline. The entered value is not reset.
 
-  f. **Snackbar fate:** The existing "Closest possible is X%" snackbar is removed
-     entirely. Precision information is shown inline inside the sheet only
-     (text under the header + optional warning badge if deviation ≥ 10 pp).
+f. **Snackbar fate:** The existing "Closest possible is X%" snackbar is removed
+entirely. Precision information is shown inline inside the sheet only
+(text under the header + optional warning badge if deviation ≥ 10 pp).
 
-  g. **Preview visual form:** Three-tier layout inside the sheet:
-     (1) Result line for the edited task: "Result: Y pomodoros · X%".
-     (2) Group impact block: "Group total: 11 → 11 pom · 225 → 225 min".
-     (3) Mini-table: one row per selected task (name | pom before→after | % before→after).
+g. **Preview visual form:** Three-tier layout inside the sheet:
+(1) Result line for the edited task: "Result: Y pomodoros · X%".
+(2) Group impact block: "Group total: 11 → 11 pom · 225 → 225 min".
+(3) Mini-table: one row per selected task (name | pom before→after | % before→after).
 
-  h. **Cancel semantics:** Cancel restores the pre-edit snapshot — the state the task
-     had when the sheet was opened, not the last DB value. Cancel does not trigger any
-     write or rollback to DB. It simply closes the sheet without applying.
-     Apply updates the local editor draft (marks dirty). Save persists. Discard from
-     the editor reverts all local draft including applied sheet changes.
+h. **Cancel semantics:** Cancel restores the pre-edit snapshot — the state the task
+had when the sheet was opened, not the last DB value. Cancel does not trigger any
+write or rollback to DB. It simply closes the sheet without applying.
+Apply updates the local editor draft (marks dirty). Save persists. Discard from
+the editor reverts all local draft including applied sheet changes.
 
-  i. **Mode selector scope:** The same sheet and the same Fixed/Flexible selector
-     apply to both Task weight (%) and Total pomodoros.
+i. **Mode selector scope:** The same sheet and the same Fixed/Flexible selector
+apply to both Task weight (%) and Total pomodoros.
 
 Additional micro-clarifications locked (28/03/2026):
 
-  j. **Flexible total — exact definition:** Only the edited task's totalPomodoros
-     changes. All other selected tasks remain at their exact current totalPomodoros.
-     No redistribution of others in Flexible mode. The selected-group total may
-     increase or decrease to improve approximation fidelity.
+j. **Flexible total — exact definition:** Only the edited task's totalPomodoros
+changes. All other selected tasks remain at their exact current totalPomodoros.
+No redistribution of others in Flexible mode. The selected-group total may
+increase or decrease to improve approximation fidelity.
 
-  k. **Search range in Flexible total (% path):** Flexible `%` search must not use
-     a hard cap that can block mathematically reachable outcomes. Candidate evaluation
-     is unbounded (no artificial max cap), with deterministic tie-break preserved.
-     Resulting extreme plans are allowed and surfaced to users with a non-blocking
-     caution based on continuous planned time (start→end, breaks included).
+k. **Search range in Flexible total (% path):** Flexible `%` search must not use
+a hard cap that can block mathematically reachable outcomes. Candidate evaluation
+is unbounded (no artificial max cap), with deterministic tie-break preserved.
+Resulting extreme plans are allowed and surfaced to users with a non-blocking
+caution based on continuous planned time (start→end, breaks included).
 
-  l. **Closest achievable tiebreaker (deterministic, both modes):**
-     (1) Smallest absolute percentage-point deviation, measured against the
-         shown percentage (same normalization rule as the UI display).
-     (2) Smallest absolute change in selected-group total pomodoros.
-     (3) Smallest absolute change in edited task totalPomodoros.
-     (4) Smaller resulting group total if still tied.
+l. **Closest achievable tiebreaker (deterministic, both modes):**
+(1) Smallest absolute percentage-point deviation, measured against the
+shown percentage (same normalization rule as the UI display).
+(2) Smallest absolute change in selected-group total pomodoros.
+(3) Smallest absolute change in edited task totalPomodoros.
+(4) Smaller resulting group total if still tied.
 
-  m. **Apply / Save / Discard lifecycle:**
-     — Apply (sheet): writes to local editor draft only, marks dirty. Does not persist.
-       After Apply, the sheet closes. If the user reopens the sheet, the frozen baseline
-       is the post-Apply draft state (not the original pre-session value).
-     — Save (Edit Task): persists the full local draft (including all Apply'd changes).
-     — Discard (Edit Task exit): reverts the entire local draft, including Apply'd
-       changes not yet saved. Contract is unchanged from current Save/Discard semantics.
+m. **Apply / Save / Discard lifecycle:**
+— Apply (sheet): writes to local editor draft only, marks dirty. Does not persist.
+After Apply, the sheet closes. If the user reopens the sheet, the frozen baseline
+is the post-Apply draft state (not the original pre-session value).
+— Save (Edit Task): persists the full local draft (including all Apply'd changes).
+— Discard (Edit Task exit): reverts the entire local draft, including Apply'd
+changes not yet saved. Contract is unchanged from current Save/Discard semantics.
 
-  n. **1 task selected edge case:** Task weight (%) field is visible but disabled,
-     displays 100%, shows optional helper "Only one task selected". No sheet opens.
-     No redistribution logic runs.
+n. **1 task selected edge case:** Task weight (%) field is visible but disabled,
+displays 100%, shows optional helper "Only one task selected". No sheet opens.
+No redistribution logic runs.
 
-  o. **Selection change while sheet is open:** If the selected-task scope changes while
-     the sheet is open, the sheet closes immediately without applying and shows a
-     lightweight non-modal notice: "Group selection changed. Reopen to recalculate."
-     No live recomputation on changing selection — this would violate the frozen
-     baseline guarantee.
+o. **Selection change while sheet is open:** If the selected-task scope changes while
+the sheet is open, the sheet closes immediately without applying and shows a
+lightweight non-modal notice: "Group selection changed. Reopen to recalculate."
+No live recomputation on changing selection — this would violate the frozen
+baseline guarantee.
 
-  p. **VM method for Total pomodoros path:** The existing ViewModel method
-     `redistributeWeightPercent` takes a target percentage. For the Total pomodoros
-     path, a new method `redistributeTotalPomodoros` (or equivalent) is required,
-     taking the target integer and returning the same redistribution map. Codex must
-     implement this new method in `task_editor_view_model.dart` as part of Patch 2.
+p. **VM method for Total pomodoros path:** The existing ViewModel method
+`redistributeWeightPercent` takes a target percentage. For the Total pomodoros
+path, a new method `redistributeTotalPomodoros` (or equivalent) is required,
+taking the target integer and returning the same redistribution map. Codex must
+implement this new method in `task_editor_view_model.dart` as part of Patch 2.
 
 Fix applied:
 Patch 1 — implemented on 28/03/2026 (commit `8bad479`):
+
 - frozen weight baseline at focus-gain to avoid per-keystroke baseline contamination.
 - blur/save sync now prioritizes pending redistribution/last computed result and
   avoids mixed-state overwrite while save confirmation modals are open.
 - runtime file touched: `lib/presentation/screens/task_editor_screen.dart`.
-Patch 2 — implemented on 28–29/03/2026 (preview-first UX + follow-up polish):
+  Patch 2 — implemented on 28–29/03/2026 (preview-first UX + follow-up polish):
 - preview sub-screen for both Task weight (%) and Total pomodoros with
   Fixed/Flexible segmented mode selector.
 - fields in editor converted to tap targets; Apply updates local draft, Save persists.
@@ -2531,6 +2705,7 @@ Patch 2 — implemented on 28–29/03/2026 (preview-first UX + follow-up polish)
   - `lib/widgets/task_card.dart`
 
 Validation update (27/03/2026, macOS) — FAIL:
+
 - Scenario packet executed with evidence in:
   - `docs/bugs/validation_bug016_2026_03_27/logs/2026-03-27_bug016_fa907c9_macos_debug.log`
   - `docs/bugs/validation_bug016_2026_03_27/screenshots/2026-03-27_bug016_01_macos.png` … `2026-03-27_bug016_13_macos.png`
@@ -2545,6 +2720,7 @@ Validation update (27/03/2026, macOS) — FAIL:
   - Current runtime log has no dedicated Task-weight instrumentation; evidence is primarily UI screenshots + reproducible steps.
 
 Validation update (28/03/2026, owner-run packet) — PASS for Patch 1:
+
 - Exact repro rerun from the same group baseline after Patch 1:
   - `80% -> 69%` closest result stable through blur, save, Task List, and reopen.
   - `50%` case stable and deterministic through blur, save warning modal, Task List, and reopen
@@ -2559,6 +2735,7 @@ Validation update (28/03/2026, owner-run packet) — PASS for Patch 1:
   - `docs/bugs/validation_bug016_2026_03_27/quick_pass_checklist.md`
 
 Validation update (28/03/2026 + 29/03/2026, Patch 2 packet) — PASS:
+
 - Device packet and runtime log:
   - `docs/bugs/validation_bug016_2026_03_28/logs/2026-03-28_bug016p2_7736f7b_macos_debug.log`
 - Validation docs synchronized:
@@ -2584,15 +2761,18 @@ Platforms: All (Android, macOS, iOS — UI logic, platform-independent)
 Context: Edit Task screen — Preset selector dropdown field.
 
 Repro summary:
+
 - Open Edit Task for any existing task.
 - Tap or open the Preset dropdown selector.
 - Observe "Custom" listed alongside real user-defined presets (e.g., "Classic Pomodoro").
 
 Symptom:
+
 - "Custom" is presented as a selectable preset option in the dropdown, as if it
   were a real saved preset from Settings.
 
 Observed behavior:
+
 - The dropdown renders "Custom" as an option users can actively choose, mixed in
   with real presets.
 - "Custom" is not a saved preset — it is a derived UI label indicating the task's
@@ -2603,35 +2783,55 @@ Observed behavior:
   with the derived UI label.
 
 Expected behavior:
+
 - The preset dropdown must show ONLY real presets stored in Settings (including
   the default "Classic Pomodoro" if present).
 - "Custom" must never appear as a selectable option inside the dropdown.
-- If the task has no linked preset (config does not match any stored preset),
-  the selector shows nothing selected — no placeholder text, no "Custom" entry.
-- The linked/unlinked state is communicated by the visual state of the preset name
-  and a small indicator (dot or check icon) displayed inline next to the preset
-  selector field:
-    · Active (config matches selected preset): preset name shown in green,
-      green dot or green check icon visible next to the field label.
-    · Inactive / unlinked (config diverged, or no preset selected):
-      no preset name shown in the selector; indicator dot/check shown in grey
-      (or hidden entirely) to signal the unlinked state.
-- This removes any need for a "Custom" label — the absence of a selected preset
-  plus the grey/hidden indicator is sufficient communication of the unlinked state.
+- If the task has no linked preset (config diverged or no preset selected), the
+  selector must stay unlinked and show a neutral closed-field hint (`Select preset`),
+  without creating a synthetic menu entry.
+- The linked/unlinked state must be communicated by a dedicated inline indicator
+  next to the `Preset` field label:
+  - Linked: green indicator.
+  - Unlinked: neutral/grey indicator.
+- If the user manually edits durations while linked to a preset, preset linkage
+  must be detached automatically (`presetId = null`) and the field returns to
+  unlinked state.
 
-Root cause:
-Not yet analyzed — requires reading the preset selector widget and its data source.
+Root cause (confirmed):
 
-Hypothesis:
-- The widget that builds the dropdown items includes a synthetic "Custom" entry
-  alongside the real preset list, likely to represent the unlinked state as a
-  visible option rather than as a separate indicator.
+- `TaskEditorScreen._presetSelectorRow` injected a synthetic sentinel option
+  (`customValue = '__custom__'`) with visible label `Custom` into the dropdown items.
+- Unlinked tasks defaulted `selectedValue` to this sentinel, so `Custom` was rendered
+  as if it were a real preset.
+- Selecting that synthetic option triggered `onPresetSelected(null)`, introducing
+  an ambiguous pseudo-choice in a menu that should contain only persisted presets.
 
 Fix applied:
-None yet — pending analysis and implementation scheduling.
+
+- Removed synthetic `Custom` item/sentinel from the preset dropdown.
+- Dropdown now renders only persisted presets (`selectedValue = selectedPreset?.id`).
+- Added unlinked closed-field hint (`Select preset`) and dedicated linked/unlinked
+  indicator next to the `Preset` label.
+- Preserved auto-detach behavior when linked preset values diverge after manual edits.
+- Added widget regression coverage in
+  `test/presentation/timer_screen_completion_navigation_test.dart`:
+  - Confirms no synthetic `Custom` duplicate entry.
+  - Confirms real preset named `Custom` remains selectable as a normal preset.
+  - Confirms linked/unlinked indicator transitions and detach behavior.
+
+Validation update (31/03/2026, local gate):
+
+- `flutter analyze` PASS.
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Edit Task preset selector"` PASS.
+- Validation packet synchronized:
+  - `docs/bugs/validation_bug017_2026_03_31/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug017_2026_03_31/quick_pass_checklist.md`
+  - `docs/bugs/validation_bug017_2026_03_31/logs/2026-03-31_bug017_pending-local_analyze.log`
+  - `docs/bugs/validation_bug017_2026_03_31/logs/2026-03-31_bug017_pending-local_widget_debug.log`
 
 Status:
-Open.
+Closed/OK (31/03/2026). closed_commit_hash: `pending-local`.
 
 ---
 
@@ -2645,17 +2845,20 @@ Cross-reference: Related to BUG-015 (cursor ingest/close validation, Closed/OK `
 Fix branch: fix/bug018-running-zero-resume
 
 Repro summary:
+
 - Owner device (macOS) con sesión activa en `pomodoroRunning` (25 min), restante ~1050s.
 - MacBook se cierra / entra en reposo durante ≥25 min (el pomodoro expira durante el sueño).
 - MacBook se reabre.
 - Observar Run Mode en macOS y en dispositivo mirror (Android).
 
 Symptom:
+
 - Timer congelado en 00:00 con estado `Ready` y anillo ámbar completo durante ~20 minutos.
 - El grupo sigue running en Firestore; la pantalla Ready no debería aparecer.
 - Se recupera solo (~21 min en repro del 27/03/2026), pero el tiempo de congelación es inaceptable.
 
 Observed behavior:
+
 - Después de la apertura del MacBook, el old VM publica heartbeat con
   `status=pomodoroRunning + remainingSeconds=0 + phaseStartedAt=antiguo`
   (máquina local no ticked durante el sueño; `_deriveRemainingSeconds` calcula elapsed > phaseDuration → 0).
@@ -2667,13 +2870,14 @@ Observed behavior:
 - Heartbeats cada ~30s siguen publicando `running+remaining=0` (máquina local sigue en
   `pomodoroRunning` sin transición), perpetuando el estado inválido en Firestore.
 - Log de Android muestra además saturación del buffer gráfico (`BLASTBufferQueue: Can't acquire
-  next buffer`) durante el periodo de congelación, causada por el mirror timer renderizando
+next buffer`) durante el periodo de congelación, causada por el mirror timer renderizando
   cada segundo sin avanzar.
 - Firestore snapshot confirmado: `status=pomodoroRunning, remainingSeconds=0, lastUpdatedAt`
   avanzando cada 30s. Snapshot coherente restaurado a las 17:08 UTC+1 (sessionRevision=33,
   `shortBreakRunning`).
 
 Expected behavior:
+
 - Al volver de background largo, el owner device reconcilia la timeline del grupo ANTES de
   publicar cualquier heartbeat.
 - Si el cursor/fase ya expiraron según la timeline, avanzar la máquina al estado correcto
@@ -2682,6 +2886,7 @@ Expected behavior:
 - Los dispositivos mirror no deben renderizar Ready si el grupo sigue en status=running en Firestore.
 
 Root cause (confirmed, 27/03/2026):
+
 1. `handleAppResumed` en Account mode (pomodoro_view_model.dart:2914-2923) salta
    `_applyGroupTimelineProjection` y delega a `syncWithRemoteSession`. Si la sesión remota
    ya está corrompida (publicada por el old VM justo antes de cerrarse), el sync remoto replica
@@ -2690,7 +2895,7 @@ Root cause (confirmed, 27/03/2026):
    `pomodoroRunning`, la máquina no transitó durante el sueño) con `_deriveRemainingSeconds`
    que devuelve 0 por timeline — produciendo snapshot imposible sin disparar transición.
 3. `_projectStateFromSession` en mirror (línea 3581) proyecta `running+remaining=0+phaseStartedAt
-   antiguo` a `PomodoroStatus.finished` → renderiza Ready aunque grupo siga running.
+antiguo` a `PomodoroStatus.finished` → renderiza Ready aunque grupo siga running.
 4. La recuperación final ocurre por `_hydrateOwnerSession` → `overshotTaskBoundary=true` →
    `_applyGroupTimelineProjection(skipControlsCheck:true)`, pero depende de condiciones lentas
    (TimeSync, snapshot procesado), resultando en ~21 min de congelación.
@@ -2702,6 +2907,7 @@ Fix applied:
 Yes.
 
 Final fix (validated):
+
 - `b10fa02`: introdujo reconciliación de resume + hardening de mirror/repair,
   pero generó regresión de amplificación de publish en owner echo.
 - `547c6f7` (`fix(bug-018): stop owner echo publish amplification in account mode`):
@@ -2709,6 +2915,7 @@ Final fix (validated):
   cortando el loop de publish/revisión y estabilizando transiciones.
 
 Validation evidence (27/03/2026):
+
 - Log PASS:
   `docs/bugs/validation_bug018_2026_03_27/logs/2026-03-27_bug018_547c6f7_android_RMX3771_debug.log`
 - Señales clave:
@@ -2732,22 +2939,26 @@ Context: Navigation stack behavior on root routes (`/timer/:id`, `/groups`) whil
 system back.
 
 Repro summary:
+
 - Open the app and navigate to Run Mode (`/timer/:groupId`) or Groups Hub (`/groups`).
 - Press Android system back.
 - Repeat after different navigation paths (Task List -> Groups Hub, Task List -> Run Mode,
   cancellation/re-entry flows).
 
 Symptom:
+
 - In some cases, pressing system back closes the app immediately (home/launcher),
   instead of returning to the expected root screen.
 
 Observed behavior:
+
 - System back is intermittent: same user flow can sometimes return, sometimes terminate.
 - Expected root fallback (Task List) is not always reached before app exit.
 - Behavior is more visible when navigation has been done with route replacement
   (`go`) on top-level routes.
 
 Expected behavior:
+
 - System back must never terminate the app unexpectedly from active product flows.
 - If user is in Run Mode:
   - active execution: keep existing confirmation/cancel policy (no silent exit).
@@ -2760,6 +2971,7 @@ Root cause:
 Not yet confirmed.
 
 Hypothesis:
+
 - Several top-level navigations use stack replacement (`context.go`) and can leave
   routes without a pop stack; Android system back then delegates to app exit unless
   a deterministic fallback route is handled explicitly.
@@ -2767,9 +2979,10 @@ Hypothesis:
   cover all runtime ownership/session combinations that should block termination.
 
 Fix applied:
+
 - `d1a1f19` — GroupsHubScreen: PopScope(canPop: false) with fallback to /tasks
 - `e16a692` — TimerScreen: canPop: false always; non-active path uses context.canPop()
-  fallback to /tasks or /groups per mode; active path delegates to _confirmExit unchanged
+  fallback to /tasks or /groups per mode; active path delegates to \_confirmExit unchanged
 - `ed97de7` — Tests: 4 system-back regression tests covering all validation scenarios
 
 Status:
@@ -2787,6 +3000,7 @@ Platforms: Android (confirmed), macOS (confirmed)
 Context: Edit Task screen — Total pomodoros editor sheet and Task weight (%) editor sheet.
 
 Repro summary:
+
 - Open Edit Task for a task that is NOT selected for group.
 - Tap Total pomodoros field to open preview sheet.
 - Observe: sheet shows "Group work" label even though task is not a group.
@@ -2795,6 +3009,7 @@ Repro summary:
 - Same issue in Task weight (%) sheet when task IS selected and in a group: only work duration shown, not total with breaks.
 
 Symptom:
+
 - "Group work" terminology shown for individual (non-selected) tasks — misleading.
 - No visibility of total duration including breaks in either sheet, hiding the real basis for extreme-duration warnings.
 - Unusual/Superhuman/Machine caution was suppressed after first show within the sheet session; felt like a bug when re-entering the threshold range.
@@ -2802,13 +3017,15 @@ Symptom:
 - No confirmation modal when leaving with unapplied changes.
 
 Root cause:
+
 - `isGroupContext` parameter was missing; sheet always used "Group" terminology regardless of selection state.
 - Only `_groupMinutes` (work-only) was displayed; `continuousGroupDurationSecondsForTasks` / `continuousTaskDurationsSecondsForTasks` (total with breaks) was not surfaced in the UI.
 - `showContinuousCaution` guarded by `_hasUserInteracted`, causing caution to disappear and reappear erratically.
 - Exit path had no distinction between applied/unapplied/no-change states.
 
 Fix applied:
-- `78b72db` — isGroupContext passed from both call sites; _scopeLabel resolves 'Task'/'Group' at runtime; dual duration lines (work + total with breaks); caution value-driven (no _hasUserInteracted gate); back modal (Apply and close / Discard and close / Continue editing) when unapplied changes exist; snackbar 'Changes applied.' / 'No changes made.' per case.
+
+- `78b72db` — isGroupContext passed from both call sites; \_scopeLabel resolves 'Task'/'Group' at runtime; dual duration lines (work + total with breaks); caution value-driven (no \_hasUserInteracted gate); back modal (Apply and close / Discard and close / Continue editing) when unapplied changes exist; snackbar 'Changes applied.' / 'No changes made.' per case.
 
 Status:
 Closed/OK. closed_commit_hash: 78b72db. Device validation PASS 30/03/2026 (Android + macOS):
@@ -2824,6 +3041,7 @@ Platforms: Android, macOS (Run Mode; expected cross-platform behavior)
 Context: Account Mode mirror/requester device with a visible ownership rejection snackbar.
 
 Repro summary:
+
 - Open Run Mode on a mirror/requester device.
 - Trigger a rejection snackbar (`Ownership request rejected at ...`) and keep it visible.
 - Change ownership context without pressing `OK`:
@@ -2832,20 +3050,24 @@ Repro summary:
   - ownership request is cleared/replaced.
 
 Symptom:
+
 - The previous rejection snackbar can remain visible with obsolete information.
 - UI feedback contradicts current ownership state.
 
 Observed behavior:
+
 - Snackbar lifetime was mostly tied to manual dismissal.
 - Invalidation only covered a subset of transitions, so stale messages could survive
   request replacement/clear paths.
 
 Expected behavior:
+
 - Ownership snackbar feedback must always match the current ownership context.
 - Obsolete rejection snackbars must auto-dismiss immediately when the requester
   becomes owner or submits a newer request (specs 10.4.11).
 
 Root cause (confirmed):
+
 - `TimerScreen` tracked rejection snackbar visibility as a boolean and did not bind
   the visible snackbar to an active rejected request key.
 - Invalidation logic only checked partial state (`isOwnerForCurrentSession`,
@@ -2853,6 +3075,7 @@ Root cause (confirmed):
   transitions.
 
 Fix applied:
+
 - Branch: `fix/bug021-ownership-snackbar-autodismiss`
 - Runtime patch in `lib/presentation/screens/timer_screen.dart`:
   - Added request-key-aware rejection state (`_activeOwnershipRejectionSnackKey`).
@@ -2869,6 +3092,7 @@ Fix applied:
 Status:
 Closed/OK (30/03/2026). closed_commit_hash: `pending-local`.
 Closure evidence:
+
 - `flutter analyze` PASS (30/03/2026)
 - `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Run Mode dismisses stale rejection snackbar"` PASS (30/03/2026)
 - Validation packet updated:
@@ -2887,22 +3111,26 @@ Platforms: macOS (confirmed)
 Context: Account Mode on desktop. User signs out from one account and goes to Authentication to sign in with a different account.
 
 Repro summary:
+
 - Start signed in on macOS.
 - Sign out to switch user.
 - Open Authentication screen.
 - Tap email/password fields and try typing.
 
 Symptom:
+
 - Keyboard input is blocked in Authentication (`Email` and `Password`).
 - User cannot type credentials and cannot recover without restarting the app.
 
 Observed behavior:
+
 - Repeated framework exception:
   `A KeyDownEvent is dispatched, but the state shows that the physical key is already pressed`.
 - Repeated stale event details point to `Backspace` with identical event identity/timestamp across retries.
 - While exception loop is active, text fields do not accept normal typing.
 
 Expected behavior:
+
 - Authentication fields must always accept keyboard input after sign-out/account switch.
 - Any stale keyboard state must self-heal automatically when opening Authentication.
 
@@ -2910,10 +3138,12 @@ Root cause:
 Not fully confirmed yet.
 
 Hypothesis:
+
 - Flutter `HardwareKeyboard` pressed-key state can remain stale across sign-out/navigation transitions on macOS.
 - When stale pressed keys are not reconciled, subsequent key events are rejected as duplicate key-down events, blocking text input.
 
 Fix applied:
+
 - Branch: `fix/bug022-macos-auth-keyboard-stuck`
 - Runtime patch in `lib/presentation/screens/login_screen.dart`:
   - Added macOS-only keyboard-state repair on Authentication screen open and on email/password field tap.
@@ -2924,6 +3154,7 @@ Fix applied:
 Status:
 Closed/OK (30/03/2026). closed_commit_hash: `4e439db`.
 Validation evidence:
+
 - User manual validation confirmation in thread (30/03/2026): after account switch,
   Authentication `Email`/`Password` fields accept typing normally; no immediate recurrence.
 - Local gate PASS on the same commit:
@@ -2932,3 +3163,95 @@ Validation evidence:
 - Validation packet synchronized:
   - `docs/bugs/validation_bug022_2026_03_30/plan_validacion_rapida_fix.md`
   - `docs/bugs/validation_bug022_2026_03_30/quick_pass_checklist.md`
+
+---
+
+## BUG-023 — Task Editor "Save as new preset" does not auto-link the saved preset
+
+ID: BUG-023
+Date: 31/03/2026 (UTC+2)
+Platforms: All (UI/navigation integration, platform-independent)
+Context: Edit Task screen -> `Save as new preset` -> Preset Editor -> return to Task Editor.
+
+Repro summary:
+
+- Open Edit Task with a task in Custom/unlinked state.
+- Tap `Save as new preset`.
+- Save the preset in Preset Editor (or resolve duplicate via `Use existing` / `Rename existing`).
+- Return to Task Editor.
+
+Symptom:
+
+- The task remains unlinked (`Select preset`) after returning, even though the preset
+  was saved or explicitly selected via duplicate resolution.
+
+Observed behavior:
+
+- Task Editor launches Preset Editor but does not consume a returned preset id.
+- Preset Editor exits without returning a payload to the caller.
+- As a result, Task Editor never applies/links the resulting preset after a successful
+  save/resolution flow.
+
+Expected behavior:
+
+- After `Save as new preset` succeeds, Task Editor must auto-link the current task to the
+  resulting preset and immediately reflect linked state.
+- Duplicate-resolution mapping in this flow:
+  - `Save anyway` -> link to new preset id.
+  - `Use existing` -> link to existing duplicate id.
+  - `Rename existing` -> link to renamed existing duplicate id.
+  - `Cancel`/blocked save -> keep task unlinked.
+
+Root cause (confirmed):
+
+- Task Editor pushes Preset Editor route without awaiting/using a result payload.
+- Preset Editor save/exit flow pops without returning a preset id.
+
+Fix applied:
+
+- Branch: `fix/bug023-save-as-preset-autolink`
+- Runtime patch:
+  - `lib/presentation/screens/preset_editor_screen.dart`
+    - Save flow now returns deterministic `presetId` payloads on successful exit.
+    - Duplicate-resolution mapping implemented:
+      - Save anyway -> new draft preset id.
+      - Use existing -> existing duplicate id.
+      - Rename existing -> renamed existing duplicate id.
+      - Cancel/blocked -> null.
+    - Added caller-gated route payload support (`returnPresetId`) to avoid
+      leaking payloads to unrelated navigations.
+  - `lib/presentation/screens/task_editor_screen.dart`
+    - `Save as new preset` now awaits route result from
+      `/settings/presets/new?returnPresetId=1` and auto-applies returned preset.
+  - `lib/presentation/viewmodels/task_editor_view_model.dart`
+    - Added `applyPresetById(String id)` to fetch directly from repository and
+      apply deterministically (no stream-timing race).
+  - `lib/app/router.dart`
+    - Preset creation route now parses `returnPresetId` query flag.
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+    - Added regression test: `Edit Task Save as new preset auto-links returned preset`.
+
+Status:
+Closed/OK (31/03/2026). closed_commit_hash: `pending-local`.
+
+Validation evidence (local gate):
+
+- `flutter analyze` PASS.
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Edit Task"` PASS.
+- Validation packet created and synchronized:
+  - `docs/bugs/validation_bug023_2026_03_31/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug023_2026_03_31/quick_pass_checklist.md`
+  - `docs/bugs/validation_bug023_2026_03_31/logs/2026-03-31_bug023_pending-local_analyze.log`
+  - `docs/bugs/validation_bug023_2026_03_31/logs/2026-03-31_bug023_pending-local_widget_debug.log`
+
+Validation evidence (manual run):
+
+- macOS live validation PASS (31/03/2026):
+  - `Save anyway` path auto-links returned preset and hides `Save as new preset`.
+  - `Use existing` path auto-links existing duplicate preset on return.
+  - Evidence captured via screenshots in thread and packet notes.
+- Android manual quick validation PASS (31/03/2026):
+  - Scenario A (new preset save return) linked correctly in Edit Task (`preset 21 min`).
+  - Scenario B (`Use existing`) linked existing duplicate in Edit Task (`preset 20 min (2)`).
+  - Runtime log: `docs/bugs/validation_bug023_2026_03_31/logs/2026-03-31_bug023_pending-local_android_debug.log`.
+  - Evidence captured via user screenshots in thread.

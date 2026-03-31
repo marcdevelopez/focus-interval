@@ -30,11 +30,12 @@ class _Dot extends StatelessWidget {
   final Color color;
   final double size;
 
-  const _Dot({required this.color, this.size = 4});
+  const _Dot({super.key, required this.color, this.size = 4});
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      key: key,
       width: size,
       height: size,
       decoration: BoxDecoration(color: color, shape: BoxShape.circle),
@@ -606,7 +607,20 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                           .read(presetEditorProvider.notifier)
                           .createFromTask(task);
                       if (!context.mounted) return;
-                      context.push('/settings/presets/new');
+                      final linkedPresetId = await context.push<String>(
+                        '/settings/presets/new?returnPresetId=1',
+                      );
+                      if (!context.mounted || linkedPresetId == null) return;
+                      final applied = await editor.applyPresetById(
+                        linkedPresetId,
+                      );
+                      if (!context.mounted || !applied) return;
+                      final updated = ref.read(taskEditorProvider);
+                      if (updated != null) {
+                        _syncControllers(updated);
+                        _revalidateBreakFieldsDeferred();
+                        setState(() {});
+                      }
                     },
                     icon: const Icon(Icons.save_as),
                     label: const Text('Save as new preset'),
@@ -1831,15 +1845,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     VoidCallback? onDeletePreset,
     VoidCallback? onToggleDefault,
   }) {
-    const customValue = '__custom__';
-    final itemLabels = <String>[
-      'Custom',
-      ...presets.map(
-        (preset) => preset.isDefault ? '★ ${preset.name}' : preset.name,
-      ),
-    ];
+    final hasLinkedPreset = selectedPreset != null;
     final items = <DropdownMenuItem<String>>[
-      const DropdownMenuItem(value: customValue, child: Text('Custom')),
       ...presets.map(
         (preset) => DropdownMenuItem(
           value: preset.id,
@@ -1847,24 +1854,47 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         ),
       ),
     ];
-    final selectedValue = selectedPreset?.id ?? customValue;
+    final selectedValue = selectedPreset?.id;
 
     return Row(
       children: [
         Expanded(
           child: DropdownButtonFormField<String>(
-            key: ValueKey<String>(selectedValue),
+            key: ValueKey<String>(selectedValue ?? '__none__'),
             initialValue: selectedValue,
+            hint: const Text(
+              'Select preset',
+              style: TextStyle(color: Colors.white54),
+            ),
             dropdownColor: const Color(0xFF1A1A1A),
-            decoration: const InputDecoration(
-              labelText: 'Preset',
-              labelStyle: TextStyle(color: Colors.white54),
+            decoration: InputDecoration(
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Preset', style: TextStyle(color: Colors.white54)),
+                  const SizedBox(width: 6),
+                  Semantics(
+                    label: hasLinkedPreset
+                        ? 'Preset linked indicator'
+                        : 'Preset unlinked indicator',
+                    child: _Dot(
+                      key: hasLinkedPreset
+                          ? const Key('preset-link-indicator-linked')
+                          : const Key('preset-link-indicator-unlinked'),
+                      color: hasLinkedPreset
+                          ? Colors.greenAccent
+                          : Colors.white38,
+                      size: 6,
+                    ),
+                  ),
+                ],
+              ),
               filled: true,
               fillColor: Colors.white10,
-              enabledBorder: UnderlineInputBorder(
+              enabledBorder: const UnderlineInputBorder(
                 borderSide: BorderSide(color: Colors.white24),
               ),
-              focusedBorder: UnderlineInputBorder(
+              focusedBorder: const UnderlineInputBorder(
                 borderSide: BorderSide(color: Colors.white54),
               ),
             ),
@@ -1872,20 +1902,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
             iconEnabledColor: Colors.white70,
             style: const TextStyle(color: Colors.white),
             items: items,
-            selectedItemBuilder: (context) => itemLabels
-                .map(
-                  (label) => Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(label, overflow: TextOverflow.ellipsis),
-                  ),
-                )
-                .toList(),
             onChanged: (value) async {
               if (value == null) return;
-              if (value == customValue) {
-                await onPresetSelected(null);
-                return;
-              }
               PomodoroPreset? preset;
               for (final entry in presets) {
                 if (entry.id == value) {
