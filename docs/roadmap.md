@@ -466,6 +466,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
   implementation is merged locally; final gate is pass2 soak evidence review for closure).~~
   **Closed/OK on 16/03/2026 (`P0-F26-006`, commit `cbd800a`, pass2 soak logs validated).**
 - Phase 13 — Mirror must not start behind on resume (stale lastUpdatedAt compensation) (bug).
+- ~~Phase 10 — Save as new preset from Task Editor must auto-link the resulting preset after Preset Editor save/duplicate resolution return (`BUG-023`) (bug).~~ **Closed/OK on 31/03/2026 (`BUGLOG-023`; runtime + focused regression PASS; macOS manual PASS; Android quick validation PASS with log + screenshots evidence).**
 - Phase 10 — Task Editor: total time chip + task color picker (new requirement).
 - Phase 10 — Edit Group: show both `Group work` (focus-only) and `Total group duration` (focus + breaks), and evaluate Unusual/Superhuman/Machine caution against the final group configuration (separate follow-up requirement).
 - Phase 9 — Task List: group name input + group summary + per-task total time + selection reset (new requirement).

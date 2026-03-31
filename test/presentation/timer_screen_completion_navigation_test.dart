@@ -24,7 +24,9 @@ import 'package:focus_interval/data/services/sound_service.dart';
 import 'package:focus_interval/data/services/time_sync_service.dart';
 import 'package:focus_interval/domain/pomodoro_machine.dart';
 import 'package:focus_interval/presentation/providers.dart';
+import 'package:focus_interval/presentation/screens/preset_editor_screen.dart';
 import 'package:focus_interval/presentation/screens/groups_hub_screen.dart';
+import 'package:focus_interval/presentation/screens/task_editor_screen.dart';
 import 'package:focus_interval/presentation/screens/task_group_planning_screen.dart';
 import 'package:focus_interval/presentation/screens/task_list_screen.dart';
 import 'package:focus_interval/presentation/screens/timer_screen.dart';
@@ -441,6 +443,56 @@ Future<void> _pumpTaskListScreen({
   await tester.pump(const Duration(milliseconds: 200));
 }
 
+Future<void> _pumpTaskEditorScreen({
+  required WidgetTester tester,
+  required ProviderContainer container,
+  required String taskId,
+}) async {
+  final router = GoRouter(
+    initialLocation: '/tasks/edit/$taskId',
+    routes: [
+      GoRoute(
+        path: '/tasks/edit/:id',
+        builder: (context, state) => TaskEditorScreen(
+          isEditing: true,
+          taskId: state.pathParameters['id'],
+        ),
+      ),
+      GoRoute(path: '/tasks', builder: (_, __) => const SizedBox.shrink()),
+      GoRoute(path: '/settings', builder: (_, __) => const SizedBox.shrink()),
+      GoRoute(
+        path: '/settings/presets',
+        builder: (_, __) => const SizedBox.shrink(),
+      ),
+      GoRoute(
+        path: '/settings/presets/new',
+        builder: (context, state) => PresetEditorScreen(
+          isEditing: false,
+          returnPresetId: state.uri.queryParameters['returnPresetId'] == '1',
+          seed: state.extra is PomodoroPreset
+              ? state.extra as PomodoroPreset
+              : null,
+        ),
+      ),
+      GoRoute(
+        path: '/settings/presets/edit/:id',
+        builder: (context, state) => PresetEditorScreen(
+          isEditing: true,
+          presetId: state.pathParameters['id'],
+        ),
+      ),
+    ],
+  );
+
+  await tester.pumpWidget(
+    UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp.router(routerConfig: router),
+    ),
+  );
+  await tester.pump(const Duration(milliseconds: 250));
+}
+
 Future<void> _pumpGroupsHubScreen({
   required WidgetTester tester,
   required ProviderContainer container,
@@ -500,6 +552,227 @@ Future<void> _dragUntilFound(
 }
 
 void main() {
+  testWidgets(
+    'Edit Task preset selector removes synthetic Custom option and keeps real Custom preset',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final taskRepo = InMemoryTaskRepository();
+      await taskRepo.save(
+        _buildTask(id: 'bug017-task', name: 'BUG-017 task', now: now),
+      );
+
+      final presetRepo = InMemoryPomodoroPresetRepository();
+      await presetRepo.save(
+        PomodoroPreset.classicDefault(
+          id: 'bug017-classic',
+          now: now,
+          name: 'Classic Pomodoro',
+        ),
+      );
+      await presetRepo.save(
+        PomodoroPreset(
+          id: 'bug017-real-custom',
+          name: 'Custom',
+          dataVersion: kCurrentDataVersion,
+          pomodoroMinutes: 30,
+          shortBreakMinutes: 6,
+          longBreakMinutes: 18,
+          longBreakInterval: 3,
+          startSound: const SelectedSound.builtIn('default_chime'),
+          startBreakSound: const SelectedSound.builtIn('default_chime_break'),
+          finishTaskSound: const SelectedSound.builtIn('default_chime_finish'),
+          isDefault: false,
+          createdAt: now.add(const Duration(seconds: 1)),
+          updatedAt: now.add(const Duration(seconds: 1)),
+        ),
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository();
+      final sessionRepo = FakePomodoroSessionRepository(null);
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRepositoryProvider.overrideWithValue(taskRepo),
+          presetRepositoryProvider.overrideWithValue(presetRepo),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+
+      try {
+        await _pumpTaskEditorScreen(
+          tester: tester,
+          container: container,
+          taskId: 'bug017-task',
+        );
+
+        await _pumpUntilFound(tester, find.text('Edit task'));
+
+        expect(
+          find.byKey(const Key('preset-link-indicator-unlinked')),
+          findsWidgets,
+        );
+        expect(find.text('Select preset'), findsOneWidget);
+        expect(
+          find.widgetWithText(OutlinedButton, 'Save as new preset'),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.byType(DropdownButtonFormField<String>));
+        await tester.pumpAndSettle();
+
+        // If the synthetic item still existed, 'Custom' would appear twice.
+        expect(find.text('Custom'), findsOneWidget);
+        expect(find.text('★ Classic Pomodoro'), findsOneWidget);
+
+        await tester.tap(find.text('Custom'));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const Key('preset-link-indicator-linked')),
+          findsWidgets,
+        );
+        expect(
+          find.widgetWithText(OutlinedButton, 'Save as new preset'),
+          findsNothing,
+        );
+
+        await tester.enterText(
+          find.byKey(const ValueKey('pomodoro_duration')),
+          '31',
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const Key('preset-link-indicator-unlinked')),
+          findsWidgets,
+        );
+        expect(
+          find.widgetWithText(OutlinedButton, 'Save as new preset'),
+          findsOneWidget,
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets('Edit Task Save as new preset auto-links returned preset', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final now = DateTime.now();
+    final taskRepo = InMemoryTaskRepository();
+    await taskRepo.save(
+      _buildTask(id: 'bug023-task', name: 'BUG-023 task', now: now),
+    );
+
+    final presetRepo = InMemoryPomodoroPresetRepository();
+    await presetRepo.save(
+      PomodoroPreset.classicDefault(
+        id: 'bug023-classic',
+        now: now,
+        name: 'Classic Pomodoro',
+      ),
+    );
+
+    final groupRepo = FakeTaskRunGroupRepository();
+    final sessionRepo = FakePomodoroSessionRepository(null);
+    final appModeService = AppModeService.memory();
+    var disposed = false;
+
+    final container = ProviderContainer(
+      overrides: [
+        firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+        firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+        taskRepositoryProvider.overrideWithValue(taskRepo),
+        presetRepositoryProvider.overrideWithValue(presetRepo),
+        taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+        pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+        appModeServiceProvider.overrideWithValue(appModeService),
+        soundServiceProvider.overrideWithValue(FakeSoundService()),
+        timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+      ],
+    );
+
+    try {
+      await _pumpTaskEditorScreen(
+        tester: tester,
+        container: container,
+        taskId: 'bug023-task',
+      );
+
+      await _pumpUntilFound(
+        tester,
+        find.widgetWithText(OutlinedButton, 'Save as new preset'),
+      );
+
+      await tester.tap(
+        find.widgetWithText(OutlinedButton, 'Save as new preset'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('New preset'), findsOneWidget);
+
+      await tester.enterText(
+        find.byType(TextFormField).first,
+        'Auto-link from task',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit task'), findsOneWidget);
+      expect(
+        find.byKey(const Key('preset-link-indicator-linked')),
+        findsWidgets,
+      );
+      expect(
+        find.widgetWithText(OutlinedButton, 'Save as new preset'),
+        findsNothing,
+      );
+
+      final updatedTask = container.read(taskEditorProvider);
+      expect(updatedTask?.presetId, isNotNull);
+      final linkedPreset = await presetRepo.getById(updatedTask!.presetId!);
+      expect(linkedPreset, isNotNull);
+      expect(linkedPreset!.name, 'Auto-link from task');
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 100));
+      container.dispose();
+      sessionRepo.dispose();
+      groupRepo.dispose();
+      disposed = true;
+    } finally {
+      if (!disposed) {
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+      }
+    }
+  });
+
   testWidgets(
     'owner sees completion modal and navigates to Groups Hub after confirming',
     (tester) async {

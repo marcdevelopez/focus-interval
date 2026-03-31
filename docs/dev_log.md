@@ -25,9 +25,9 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **BUG-021 — Run Mode stale ownership rejection snackbar invalidation (`pending-local`, 30/03/2026)**
-Current focus: **BUG-017 — Edit Task preset dropdown must not expose synthetic \"Custom\" option**
-Last update: **30/03/2026**
+Last bug fix: **BUG-023 — Task Editor save-as-preset now auto-links returned preset (`pending-local`, 31/03/2026)**
+Current focus: **Validation queue cleanup (RVP + Phase 20 planning after BUG-023 closure)**
+Last update: **31/03/2026**
 
 ---
 
@@ -9443,6 +9443,7 @@ implementation made things **worse** than before:
 ## Fixes applied
 
 ### Fix A — `timer_screen.dart`: defer build-time navigation
+
 - Lines 680-683: replaced direct `_navigateToGroupsHub(reason: 'build canceled')` call with:
   1. Set `_cancelNavigationHandled = true`, `_cancelNavRetryAttempts = 0`,
      `_cancelNavTargetGroupId` immediately (prevents re-queuing on subsequent builds).
@@ -9450,20 +9451,24 @@ implementation made things **worse** than before:
      after the build frame completes.
 
 ### Fix B — `pomodoro_view_model.dart`: ref.mounted guards
+
 - `_publishCurrentSession()`: added `if (!ref.mounted) return;` as first line.
 - `_refreshTimeSyncIfNeeded()`: added `if (!ref.mounted) return;` before the synchronous
   `ref.read()` and again after `await _timeSyncService.refresh()` before using instance state.
 
 ### Fix C — `pomodoro_view_model.dart`: defer build() re-subscription
+
 - `build()` (line ~163): replaced synchronous `_subscribeToRemoteSession()` with a
   `Future.microtask` that guards on `ref.mounted && _sessionSub == null`. This ensures
   the re-subscription happens after build completes and only if no other path (loadGroup,
   handleAppResumed) has already established a subscription.
 
 ## Tests
+
 - `flutter analyze` → no issues.
 
 ## Commit
+
 - Pending (this block recorded before commit).
 
 ---
@@ -9555,8 +9560,8 @@ implementation made things **worse** than before:
     delivering Firestore data during the race window before the new coordinator
     instance rebuilt and re-registered its stream listener.
   - The coordinator's own `ref.listen<AppMode>` already calls `_resetForModeChange()`
-    + `_handleGroups()` on every mode change — invalidating it bypassed this natural
-    mechanism without providing an equivalent guarantee.
+    - `_handleGroups()` on every mode change — invalidating it bypassed this natural
+      mechanism without providing an equivalent guarantee.
 - Applied second-attempt fix (`lib/widgets/app_mode_change_guard.dart`):
   - Removed `ref.invalidate(scheduledGroupCoordinatorProvider)` from `_handleModeChange`.
   - Coordinator now keeps its listeners alive across mode switches; `ref.listen<AppMode>`
@@ -10075,9 +10080,9 @@ but `activeSession/current.status=finished` with stale cursor data.
 
 - Run new release logs on RMX3771 + macOS with this commit.
 - Confirm:
-  1) stale `finished` session is replaced by an active owned session when group is still running;
-  2) no-owner gap is gone;
-  3) if group is truly expired, it completes (no forced running reclaim).
+  1. stale `finished` session is replaced by an active owned session when group is still running;
+  2. no-owner gap is gone;
+  3. if group is truly expired, it completes (no forced running reclaim).
 
 ---
 
@@ -10364,7 +10369,7 @@ freeze reproduction outside the Phase 3 hold path.
     countdown rendering),
   - mandatory overlay-trigger diagnostics with explicit reason taxonomy:
     `sessionMissingHold | runningWithoutSession | timeSyncUnready |
-    awaitingSessionConfirmation`,
+awaitingSessionConfirmation`,
   - deterministic `primaryReason` priority and required transition payload.
 - Added Phase 4 contract tests (no runtime implementation) in:
   - `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
@@ -10544,6 +10549,7 @@ macOS. All devices froze with `Syncing session...` / `Ready + 25:00` between 15:
 ### Chrome (debug log — full trace available)
 
 Last event sequence before freeze:
+
 ```
 15:30:08.572  [ActiveSession][snapshot] remaining=773  ← last Firestore snapshot
 15:30:24.996  [ActiveSession][snapshot] remaining=773  ← stale resync (unchanged)
@@ -10584,6 +10590,7 @@ macOS crash at 15:48:18 (SIGSEGV `EXC_BAD_ACCESS`) — Firestore transaction pat
 `pomodoroViewModelProvider` is `NotifierProvider.autoDispose`. The `_keepAliveLink`
 can close during a Firestore quiet window (10–18s between snapshots) if
 `_syncKeepAliveState()` is called at a moment where all of:
+
 - `_machine.state.status.isActiveExecution` → false
 - `_latestSession?.status.isActiveExecution` → false/null
 - `_remoteSession?.status.isActiveExecution` → false/null
@@ -10604,16 +10611,19 @@ on `/timer/groupId` with a dead ViewModel showing `Ready + 25:00`.
 Add `DateTime? _lastActiveSessionTimestamp` to `PomodoroViewModel`. Update it whenever
 `_ingestResolvedSession` processes a snapshot with `isActiveExecution == true`. In
 `_shouldKeepAlive()`, add:
+
 ```dart
 final lastActive = _lastActiveSessionTimestamp;
 if (lastActive != null &&
     DateTime.now().difference(lastActive) < const Duration(minutes: 2)) return true;
 ```
+
 2-minute grace window > Firestore reconnect window (≤ 30s) and < stale threshold.
 
 ### B2 fix
 
 In `active_session_auto_opener.dart` at the suppression block (line ~147):
+
 ```dart
 if (_autoOpenedGroupId == groupId && !ref.exists(pomodoroViewModelProvider)) {
   // VM was disposed while screen still showed timer — allow recovery
@@ -10640,11 +10650,13 @@ Release mode strips them.
 ## 📋 Context
 
 Phase 5 validation confirmed two runtime bugs:
+
 - **B1**: `autoDispose` race disposed `PomodoroViewModel` during Firestore quiet windows.
 - **B2**: `ActiveSessionAutoOpener` suppressed re-navigation for an already-opened
   group without verifying whether the VM had already been disposed.
 
 Implementation commit:
+
 - `2fc65e4` — `fix(f26): implement phase 6 runtime keepalive grace + auto-open recovery`
 
 Phase 6 contract was defined in `docs/specs.md` section **10.4.9** before coding.
@@ -10698,6 +10710,7 @@ Phase 6 contract was defined in `docs/specs.md` section **10.4.9** before coding
 
 After Phase 6 runtime commit (`2fc65e4`), device validation needed explicit and
 unambiguous log destinations for the two execution windows:
+
 - pass 1 (1h, same day),
 - pass 2 (4h30 soak, next day).
 
@@ -10725,7 +10738,6 @@ unambiguous log destinations for the two execution windows:
 - Phase 6 remains **In validation** until exact repro + regression smoke + soak
   evidence are captured in the registered logs.
 
-
 ---
 
 # 🔹 Block 575 — Phase 6 device validation FAILED + architecture rewrite decision (14/03/2026)
@@ -10734,6 +10746,7 @@ unambiguous log destinations for the two execution windows:
 
 Phase 6 (commit `2fc65e4`) was a focalized fix for two root causes confirmed in Phase 5
 device validation (2026-03-13):
+
 - **B1**: `pomodoroViewModelProvider` disposed during Firestore quiet window (10s gap) →
   `_sessionSub` torn down → new listener emits `null` → 3s debounce → latch.
   Fix: 2-minute `keepAlive` grace window via `_lastActiveSessionTimestamp`.
@@ -11112,12 +11125,14 @@ executable (non-placeholder) red tests tied to explicit Stage B contracts.
 ## 📋 Context
 
 After Block 582, Stage B had executable red tests for Invariants 3/4:
+
 - Invariant 3 failed because VM command intent (`pause`) did not update `TimerService` runtime status.
 - Invariant 4 failed because `PomodoroViewModel` did not expose observable `ownershipSyncState`.
 
 ## ✔ Work completed
 
 ### Commit A — `4112408`
+
 `refactor(f26): delegate vm start/pause/resume commands to timer service`
 
 - `PomodoroViewModel` now delegates command path to `TimerService`:
@@ -11128,6 +11143,7 @@ After Block 582, Stage B had executable red tests for Invariants 3/4:
   - ticker runs only when `syncHealth != healthy` (prevents reintroducing pending-timer regressions in healthy UI/widget scenarios).
 
 ### Commit B — `617cae4`
+
 `refactor(f26): expose deterministic ownership sync state in vm`
 
 - Added `OwnershipSyncState` enum:
@@ -11235,6 +11251,7 @@ handoff format to avoid drift during the sync rewrite.
 ## 📋 Context
 
 After Stage B runtime green, the remaining architectural blockers were:
+
 - VM still owning missing-session recovery paths,
 - dual-path hold mutations (VM + SessionSyncService),
 - keepAlive coupling to `_sessionMissingWhileRunning`,
@@ -11349,6 +11366,7 @@ be closed before device validation could produce a valid result.
 
 Stage C pass1 logs (`c0add32`) were reviewed and accepted for the target P0 vectors
 (`AP-1`/`AP-2` not reproduced). The review produced two implementation follow-ups:
+
 - `O-1`: avoid hold-loop at natural session boundary (`finished -> null`) when
   group terminality is already corroborated.
 - `O-2`: eliminate delayed async/timer callback paths that can use `Ref` after VM
@@ -11451,6 +11469,7 @@ Protocol: 2 groups 1 min apart; Chrome switches to Local Mode during Grupo A;
 returns to Account after Grupo B start time.
 
 Logs:
+
 - `docs/bugs/validation_fix_2026_03_05/logs/2026-03-16_fix25_reval_ios_iPhone17Pro_debug.log`
 - `docs/bugs/validation_fix_2026_03_05/logs/2026-03-16_fix25_reval_chrome_debug.log`
 
@@ -11459,6 +11478,7 @@ Logs:
 Architectural review of re-validation logs identified three blocking bugs:
 
 **BUG-F25-A** — `requestLateStartOwnership` Firestore transaction order violation
+
 - File: `lib/data/repositories/firestore_task_run_group_repository.dart:292`
 - Root cause: per-group loop interleaves tx.get() and tx.set() across iterations.
   When groups.length > 1, tx.get(group[1]) is issued AFTER tx.set(group[0]),
@@ -11469,6 +11489,7 @@ Architectural review of re-validation logs identified three blocking bugs:
 - Fix: split into Phase 1 (all reads, collect results) + Phase 2 (all writes).
 
 **BUG-F25-B** — `_showOwnerResolvedDialog` OK button context-after-dispose
+
 - File: `lib/presentation/screens/late_start_overlap_queue_screen.dart:563`
 - Root cause: OK button closure captures the outer `BuildContext`. If
   `_LateStartOverlapQueueScreenState` is disposed before the user taps OK
@@ -11480,6 +11501,7 @@ Architectural review of re-validation logs identified three blocking bugs:
   `await showDialog(...)` and use `nav.pop()` in the button `onPressed`.
 
 **BUG-F25-C** — "Owner resolved" modal incorrectly shown on owner device
+
 - File: `lib/presentation/screens/late_start_overlap_queue_screen.dart:176`
 - Root cause: `isOwner` is derived from `ownerDeviceId == deviceId`. After
   the owner resolves the conflict, Firestore clears/nulls `ownerDeviceId`
@@ -11517,6 +11539,7 @@ User approved implementation after Block 590 handoff. Work executed on branch
 `fix-f25-transaction-order-and-owner-dialog` (not on `main`).
 
 Scope:
+
 - BUG-F25-A: Firestore transaction order violation in
   `requestLateStartOwnership`.
 - BUG-F25-B: `Owner resolved` dialog OK callback used disposed context.
@@ -11547,6 +11570,7 @@ Code implementation:
      showing `Owner resolved`.
 
 Docs synchronization:
+
 - Updated `quick_pass_checklist.md` (Fix 25 row) with failed re-validation
   review + implementation packet + local verification results.
 - Updated `plan_validacion_rapida_fix.md` with reopened Fix 25 status,
@@ -11594,6 +11618,7 @@ User provided re-validation #2 logs for Fix 25 implementation commit `fd788e6`:
 - `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval2_fd788e6_ios_iPhone17Pro_debug.log`
 
 Scenario validated:
+
 - Local -> Account overlap queue trigger after overdue schedule,
 - mirror ownership request delivery/acceptance flow,
 - resolve overlaps completion path.
@@ -11615,12 +11640,14 @@ Validation outcome recorded:
      but stream snapshots could flip `isOwner` before that set.
 
 Follow-up implementation applied (same branch):
+
 - `lib/presentation/screens/late_start_overlap_queue_screen.dart`
   - moved `_resolved = true` into initial `setState` before first await in
     `_applySelection` to close owner-side race window.
   - removed delayed `_resolved` set after persistence.
 
 Docs synchronization:
+
 - `quick_pass_checklist.md`: re-validation #2 outcome updated (A/B PASS, C FAIL)
   and follow-up patch noted.
 - `plan_validacion_rapida_fix.md`: re-validation #2 + race root cause + follow-up
@@ -11649,6 +11676,7 @@ Docs synchronization:
 ## 📋 Context
 
 User provided re-validation #3 logs (commit `95494ab`, iOS iPhone17Pro owner + Chrome mirror):
+
 - `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval3_95494ab_ios_iPhone17Pro_debug.log`
 - `docs/bugs/validation_fix_2026_03_05/logs/2026-03-17_fix25_reval3_95494ab_chrome_debug.log`
 
@@ -11662,6 +11690,7 @@ Validation outcome:
 - P0-F25-001: Closed/OK. All three blockers (A/B/C) now validated across reval #2 and #3.
 
 Timing verification (user request):
+
 - First trigger (13:00:00): G1 overdue 60s; projected end 13:15:00; G2 starts 13:15:00
   → exact overlap → Resolve overlaps correct ✅
 - Second trigger (13:05:12): G1 overdue 12s; projected end 13:20:12; G2 starts 13:21:00
@@ -11681,6 +11710,7 @@ New findings documented:
    Added to Phase 17 scope.
 
 Additional findings (already documented in Phase 17 — no new entry needed):
+
 - Running overlap not detected during pause (paused overlap alerts, Phase 17 line 437).
 - Chrome Groups Hub stale after postpone (Phase 17 line 443).
 
@@ -11700,17 +11730,20 @@ Additional findings (already documented in Phase 17 — no new entry needed):
 User provided BUG-001/002 validation run (Android RMX3771 + macOS, 17/03/2026).
 Group was already running from a previous session. Multiple consecutive ownership
 transfers were performed over ~4 minutes (20:04–20:08+). Log paths registered:
+
 - `docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_android_RMX3771_debug.log`
 - `docs/bugs/validation_bug001_bug002_2026_03_17/logs/2026-03-17_bug001_bug002_macos_debug.log`
 
 ## ✔ Work completed
 
 **BUG-001 formally closed:**
+
 - No Ready state observed on either device at any point during the session.
 - Mirror showed Syncing state (SSS hold) during stream gaps and returned to the
   running timer without navigation. BUG-001 Closed/OK with this run as final evidence.
 
 **BUG-002 residual confirmed and characterized:**
+
 - Primary symptoms (ownership revert, mirror Ready after rejection): ✅ not reproduced.
 - Residual confirmed: rejection banner on owner device does not clear immediately.
   - Observed at all 4 rejection events during the run.
@@ -11756,6 +11789,7 @@ transfers were performed over ~4 minutes (20:04–20:08+). Log paths registered:
 
 User requested Codex implementation of the architectural handoff for intermittent
 ownership churn issues:
+
 - BUG-002 residual (owner rejection banner delayed clear),
 - BUG-F26-001 (stale Firestore cursor on churn),
 - BUG-F26-002 (phase/pomodoro jumps on consecutive handoffs).
@@ -11795,6 +11829,7 @@ Code changes:
      `_notifySessionMetaChanged()` to remove banner without delay.
 
 Test scaffold updates:
+
 - Updated test fakes implementing `PomodoroSessionRepository` to include the new
   optional `cursorSnapshot` parameter in `respondToOwnershipRequest(...)`.
 
@@ -11831,10 +11866,12 @@ Test scaffold updates:
 ## 📋 Context
 
 User executed ownership churn validation on Android RMX3771 + macOS using logs:
+
 - `docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_android_RMX3771_debug.log`
 - `docs/bugs/validation_ownership_cursor_2026_03_17/logs/2026-03-17_ownership_cursor_7ddc1e6_macos_debug.log`
 
 Run details:
+
 - Group started at ~22:27:30 (`Start now`, newly created group).
 - On UI, ownership looked mostly correct.
 - In Firestore, `sessionRevision` increased abnormally fast and `current` doc
@@ -11862,9 +11899,11 @@ This created Firestore feedback loop (snapshot → write → snapshot → write)
 ## ✔ Follow-up patch implemented
 
 File:
+
 - `lib/presentation/viewmodels/pomodoro_view_model.dart`
 
 Changes:
+
 - Added `int _hotSwapPublishedForRevision = -1`.
 - Reset guard on mode switch and `_resetLocalSessionState()`.
 - Guarded fallback publish to one-shot per ownership revision:
@@ -11873,6 +11912,7 @@ Changes:
 - Mark revision before publish to prevent re-entry loop.
 
 Regression test added:
+
 - `test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
   - `owner hot-swap fallback publish is one-shot for repeated snapshots`
 
@@ -11908,9 +11948,11 @@ when running overlap is detected on Resume.
 ## ✔ Work completed
 
 Runtime fix implemented in:
+
 - `lib/presentation/viewmodels/scheduled_group_coordinator.dart`
 
 Changes:
+
 1. Added scheduler-aware overlap mutation helper.
 2. Deferred `runningOverlapDecisionProvider` set/clear to post-frame only when
    scheduler is in build-phase callbacks.
@@ -11919,11 +11961,13 @@ Changes:
    (keeps provider-container tests stable).
 
 Validation artifacts created:
+
 - `docs/bugs/validation_fix_2026_03_18-01/plan_validacion_rapida_fix.md`
 - `docs/bugs/validation_fix_2026_03_18-01/quick_pass_checklist.md`
 - `docs/bugs/validation_fix_2026_03_18-01/screenshots/`
 
 Documentation synchronization:
+
 - `docs/bugs/bug_log.md` (BUG-F25-D moved to "In validation", runtime fix noted)
 - `docs/validation/validation_ledger.md` (BUG-F25-D status updated to `In validation`)
 - `docs/roadmap.md` (18/03 entry added under active status timeline)
@@ -11933,6 +11977,7 @@ Documentation synchronization:
 ## 🧪 Verification run
 
 PASS:
+
 - `flutter analyze`
 - `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart --plain-name "running overlap decision"`
 - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
@@ -11940,6 +11985,7 @@ PASS:
 - `flutter test test/presentation/timer_screen_syncing_overlay_test.dart`
 
 Global suite status:
+
 - `flutter test` → FAIL (`+90 -8`), with existing failures concentrated in
   `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
   (missing `appModeServiceProvider` test override in multiple cases + one
@@ -11973,6 +12019,7 @@ Device logs revealed **two independent sources** of the same build-phase mutatio
 ## ✔ Work completed
 
 **Commit `73d0f23`** — Coordinator fix:
+
 - `_runRunningOverlapMutation` replaced with `Future(() { mutation(); })` (macrotask).
   Macrotask runs after all pending microtasks, including Riverpod's full propagation chain.
 - Removed `SchedulerBinding` import (no longer used).
@@ -11980,12 +12027,14 @@ Device logs revealed **two independent sources** of the same build-phase mutatio
   between coordinator call and provider read.
 
 **Commit `79c534d`** — Widget fix:
+
 - `GroupsHubScreen.build():283` and `TaskListScreen.build():561`: stale-decision clear
   moved to `WidgetsBinding.instance.addPostFrameCallback` with `mounted` guard and token
   guard. Token is captured before scheduling; callback checks `currentDecision.token !=
-  staleDecisionToken` to avoid clearing a newer decision written after the defer.
+staleDecisionToken` to avoid clearing a newer decision written after the defer.
 
 **Protocol update** (same session):
+
 - `CLAUDE.md` section 8: Codex now reviews fix specs before implementing; reports
   errors to Claude before writing code.
 - `AGENTS.md` + `docs/team_roles.md` updated with the same spec-review rule.
@@ -11993,6 +12042,7 @@ Device logs revealed **two independent sources** of the same build-phase mutatio
 ## 🧪 Validation result
 
 Device: iOS iPhone 17 Pro (owner) + Chrome (mirror).
+
 - Overlap modal appeared correctly during pause.
 - No red screen on mirror at conflict detection.
 - No red screen on mirror after owner Postpone action.
@@ -12040,6 +12090,7 @@ snackbar and Groups Hub "Scheduled" display.
 
 `flutter analyze` PASS. All targeted tests + new unit tests PASS.
 Chrome+iOS device validation PASS 19/03/2026:
+
 - Postpone snackbar: "Scheduled start moved to 18:32 (pre-run at 18:31)."
 - Groups Hub G2 Scheduled: 18:32 / Pre-Run: 1 min starts at 18:31.
 - Values match exactly.
@@ -12088,6 +12139,7 @@ the static `const Text(...)` content with a dynamic `Column` listing each confli
 
 `flutter analyze` PASS. All targeted tests PASS.
 Chrome device validation PASS 19/03/2026:
+
 - Conflict modal shows bullet list with group name + HH:mm–HH:mm range.
 - Cancel action: no groups deleted, planning cancelled.
 - Delete scheduled group: conflicting group deleted, re-plan continues.
@@ -12115,6 +12167,7 @@ running. Firestore `activeSession/current` deleted; no recovery; manual restart 
 Regression introduced 19/03/2026 (confirmed working in prior-day build).
 
 Log evidence:
+
 - `docs/bugs/validation_f25h_2026_03_19/logs/2026-03-19_f25h_3cb2f6c_chrome_debug.log`
 - `docs/bugs/validation_f25h_2026_03_19/logs/2026-03-19_f25h_3cb2f6c_ios_iPhone17Pro_debug.log`
 
@@ -12155,6 +12208,7 @@ G1 canceled → re-plan → G2 starts → Chrome cancels G2 → both devices stu
 indefinite "Syncing session..." with timer running; manual restart required.
 
 Three-component root cause confirmed from Chrome + iOS logs (baseline 3cb2f6c):
+
 1. `_cancelNavigationHandled` permanently blocked by stale G1 data in first build frame
    of G2's TimerScreen — Flutter assertion exception at timer_screen.dart:682.
 2. `_recoverFromServer()` infinite 5s retry on terminal group — no exit condition.
@@ -12164,14 +12218,17 @@ Three-component root cause confirmed from Chrome + iOS logs (baseline 3cb2f6c):
 ## ✔ Work completed
 
 **Commit 9a52405** — `fix(f25-h): add stopTick() to cancel and applyRemoteCancellation paths`
+
 - `pomodoro_view_model.dart` `cancel()` and `applyRemoteCancellation()`: added
   `_timerService.stopTick()` before `_resetLocalSessionState()`.
 
 **Commit e2a69b3** — `fix(f25-h): guard build-phase cancel check with groupId + defer to post-frame`
+
 - `timer_screen.dart:680`: added `currentGroup?.id == widget.groupId` guard; wrapped
   `_navigateToGroupsHub()` in `addPostFrameCallback` with `!mounted` check.
 
 **Commit ba8db6f** — `fix(f25-h): add terminal-group exit to _recoverFromServer()`
+
 - `session_sync_service.dart` `_recoverFromServer()`: after `serverSession == null`,
   fetches group via `taskRunGroupRepositoryProvider.getById(attachedGroupId)`. If
   `canceled` or `completed`, clears hold (`holdActive: false`) and returns — no retry.
@@ -12180,12 +12237,14 @@ Three-component root cause confirmed from Chrome + iOS logs (baseline 3cb2f6c):
 
 `flutter analyze` PASS. All 3 targeted tests PASS.
 Chrome + iOS device validation PASS 19/03/2026:
+
 - Escenario A: G1→cancel→G2→cancel → both devices navigate to Groups Hub in ≤5s.
   No `hold-extend reason=recovery-failed` / no setState/build exception in any log.
 - Escenario B: simple G1 cancel → correct navigation (no regression).
 - Escenario C: Chrome offline ~5s → auto-recovery without permanent hold.
 
 Log evidence:
+
 - `docs/bugs/validation_f25h_2026_03_19/logs/2026-03-19_f25h_ba8db6f_chrome_debug.log`
 - `docs/bugs/validation_f25h_2026_03_19/logs/2026-03-19_f25h_ba8db6f_ios_iPhone17Pro_9A6B6687_debug.log`
 
@@ -12216,6 +12275,7 @@ only included when `hasPreRun` is true. Single-line change, no invariant risk.
 **Commit:** 68429c5 — fix(f25-f): suppress pre-run clause in postpone snackbar when noticeMinutes=0
 **Tests:** flutter analyze PASS · regression suite PASS (33 tests).
 **Docs updated:**
+
 - `docs/bugs/bug_log.md` (BUG-F25-F → Closed/OK)
 - `docs/validation/validation_ledger.md` (BUG-F25-F → [x] Closed/OK)
 - `docs/dev_log.md` (this block)
@@ -12256,6 +12316,7 @@ start time; postponed group should keep stored planned start.
 ## 🔎 Key evidence extracted for Claude review
 
 iOS log (`...ios_iPhone17Pro_9A6B6687_debug.log`):
+
 - line 51210: postponed sample still future (`...22:35|22:36`)
 - line 51216: cancel event (`Cancel nav: group stream canceled`)
 - line 51224: sample collapses to `...22:22|22:22`
@@ -12263,6 +12324,7 @@ iOS log (`...ios_iPhone17Pro_9A6B6687_debug.log`):
 - lines 51244+ / 51246+ / 51253: `start-timer-fired` at `22:22:00`
 
 Chrome log (`...chrome_debug.log`):
+
 - lines 2623/2632/2658: postponed sample at `...22:35|22:35/22:36`
 - lines 2670+ and 2684-2686: sample/postpone-finalized changed to `22:22`
 - line 2687: auto-start fired at `22:22:00`
@@ -12295,14 +12357,15 @@ had no guard for `canceled` status and returned `anchor.updatedAt = now` as fall
 G2 then got `scheduledStartTime = ceilToMinute(now)` written to DB and auto-started.
 The bug also cascaded in chained postpone chains (G1→G2→G3) via `resolveEffectiveScheduledEnd`.
 **Fix — two commits:**
+
 - `51dcd2d`: `_finalizePostponedGroupsIfNeeded` — sever link (postponedAfterGroupId=null)
   without touching scheduledStartTime when anchor is canceled. Mirrors "anchor not found" pattern.
 - `6c87009`: `resolvePostponedAnchorEnd` — return null for canceled anchors. Prevents
   fallback to updatedAt; also protects chained groups (G3→G2→canceled G1).
-**Tests:** 2 new unit tests in scheduled_group_timing_test.dart. flutter analyze PASS.
-**Device validation:** Chrome + iOS PASS 19/03/2026. G2 held Scheduled: 23:29 after G1
-canceled at 23:14. No premature auto-start. Screenshots confirmed.
-**Docs updated:**
+  **Tests:** 2 new unit tests in scheduled_group_timing_test.dart. flutter analyze PASS.
+  **Device validation:** Chrome + iOS PASS 19/03/2026. G2 held Scheduled: 23:29 after G1
+  canceled at 23:14. No premature auto-start. Screenshots confirmed.
+  **Docs updated:**
 - `docs/bugs/bug_log.md` (BUG-F25-I → Closed/OK)
 - `docs/validation/validation_ledger.md` (BUG-F25-I → [x] Closed/OK)
 - `docs/bugs/validation_f25i_2026_03_19/plan_validacion_rapida_fix.md` (status → Closed/OK)
@@ -12344,6 +12407,7 @@ the reopened-phases queue as open items.
 ## 📋 Context
 
 The highest-priority reopened validation queue started with:
+
 - `RVP-063` (Phase 10 break auto-adjust + focus-loss behavior).
 - `RVP-064` (Phase 10 selection-scoped Task weight in Edit Task).
 
@@ -12371,6 +12435,7 @@ already present in code and prior dev-log blocks.
 ## 🧪 Verification run
 
 PASS:
+
 - `flutter analyze` → No issues found.
 - `flutter test test/domain/validators_test.dart test/domain/task_weighting_test.dart test/presentation/viewmodels/task_editor_view_model_test.dart` → `+28` all passed.
 - `flutter test test/domain/task_group_planner_test.dart` → `+11` all passed.
@@ -12415,6 +12480,7 @@ This behavior was already functionally covered by the Fix 26 rewrite closure
 ## 🧪 Verification run
 
 PASS:
+
 - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` → `+25`.
 - `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` → `+4`.
 - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → `+4`.
@@ -12490,6 +12556,7 @@ validation evidence for the cross-task long-break cadence behavior.
 ## 🧪 Verification run
 
 PASS:
+
 - `flutter test test/data/models/task_run_group_mode_a_breaks_test.dart` → `+2`.
 - `flutter test test/domain/task_group_planner_test.dart` → `+11`.
 - `flutter analyze` → No issues found.
@@ -12534,6 +12601,7 @@ republishes corrected session cursor state.
 ## 🧪 Verification run
 
 PASS:
+
 - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` → `+5`.
 - `flutter analyze` → No issues found.
 
@@ -12579,6 +12647,7 @@ explicit owner/mirror validation evidence in the current ledger pass.
 ## 🧪 Verification run
 
 PASS:
+
 - `flutter test test/presentation/timer_screen_completion_navigation_test.dart` → `+2`.
 - `flutter analyze` → No issues found.
 
@@ -12623,6 +12692,7 @@ explicit test evidence for both non-initiator blocking and claim-race fallback.
 ## 🧪 Verification run
 
 PASS:
+
 - `flutter test test/presentation/viewmodels/pomodoro_view_model_ownership_request_test.dart` → `+4`.
 - `flutter analyze` → No issues found.
 
@@ -12668,6 +12738,7 @@ available), then open Run Mode and publish the initial session snapshot.
 ## 🧪 Verification run
 
 PASS:
+
 - `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart --plain-name "launch catch-up auto-starts overdue scheduled group and emits openTimer action"` -> `+1`.
 - `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart --plain-name "resume catch-up starts overdue scheduled group once timeSync becomes available in account mode"` -> `+1`.
 
@@ -12710,6 +12781,7 @@ Run Mode must show the completion modal and, after confirming `OK`, navigate to
 ## 🧪 Verification run
 
 PASS:
+
 - `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+2`.
 
 ## 📁 Updated files
@@ -12754,6 +12826,7 @@ confirmation dialog, `Keep running` keeps Run Mode unchanged, and only
 ## 🧪 Verification run
 
 PASS:
+
 - `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+3`.
 
 ## 📁 Updated files
@@ -12776,6 +12849,7 @@ Next pending P2 historical validation item:
 entry points from Task List banner and Run Mode indicator.
 
 Concrete validated cases to close:
+
 1. Task List `View Groups Hub` CTA opens `/groups`.
 2. Run Mode `Planned groups` indicator opens `/groups`.
 3. Groups Hub renders core sections (`Running / Paused`, `Scheduled`,
@@ -12803,6 +12877,7 @@ Concrete validated cases to close:
 ## 🧪 Verification run
 
 PASS:
+
 - `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+6`.
 
 ## 📁 Updated files
@@ -12825,6 +12900,7 @@ Next pending P2 historical validation item:
 linked group has already ended.
 
 Concrete validated cases to close:
+
 1. Active session points to a `completed` group -> stale session is cleared and
    user gets `Group completed.` feedback.
 2. Active session points to a `canceled` group -> stale session is cleared and
@@ -12850,6 +12926,7 @@ Concrete validated cases to close:
 ## 🧪 Verification run
 
 PASS:
+
 - `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+8`.
 
 ## 📁 Updated files
@@ -12873,6 +12950,7 @@ and expired `running` groups must auto-complete so overdue scheduled groups can
 start.
 
 Concrete validated cases to close:
+
 1. Overdue scheduled auto-start is rechecked on `activeSession` transition
    `non-null -> null`.
 2. Expired running group is completed and no longer blocks overdue scheduled
@@ -12899,6 +12977,7 @@ Concrete validated cases to close:
 ## 🧪 Verification run
 
 PASS:
+
 - `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` -> `+18`.
 
 ## 📁 Updated files
@@ -12922,6 +13001,7 @@ terminal groups do not keep stale live-session ownership, and scheduled
 execution can continue.
 
 Concrete validated cases to close:
+
 1. Expired running group on owner path clears stale session authority
    (`clearSessionAsOwner`) and allows overdue scheduled group progression.
 2. Expired running group on stale non-owner path clears stale session via
@@ -12948,6 +13028,7 @@ Concrete validated cases to close:
 ## 🧪 Verification run
 
 PASS:
+
 - `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` -> `+19`.
 
 ## 📁 Updated files
@@ -12971,6 +13052,7 @@ Next pending P2 historical validation item:
 when that window overlaps existing running/scheduled execution.
 
 Concrete validated cases to close:
+
 1. Scheduling is blocked when the requested Pre-Run window overlaps a running
    group (even if the new execution window would not overlap).
 2. Scheduling is blocked when the requested Pre-Run window overlaps an earlier
@@ -12997,6 +13079,7 @@ Concrete validated cases to close:
 ## 🧪 Verification run
 
 PASS:
+
 - `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+10`.
 - `flutter analyze` -> `No issues found!`.
 
@@ -13017,6 +13100,7 @@ PASS:
 
 After validating `RVP-008`, user testing confirmed the current conflict feedback
 is technically correct but hard to understand in practice:
+
 - message is generic,
 - snackbar disappears too quickly,
 - no explicit blocker context (which groups/ranges cause the conflict).
@@ -13068,6 +13152,7 @@ backlog is closed.
 Next pending P2 historical validation item:
 `RVP-009` — scheduled groups in active Pre-Run must expose direct Run Mode
 entry points from both surfaces:
+
 1. Task List active Pre-Run banner shows `Open Pre-Run`.
 2. Groups Hub scheduled card shows `Open Pre-Run` (instead of `Start now`)
    while the Pre-Run window is active.
@@ -13094,6 +13179,7 @@ entry points from both surfaces:
 ## 🧪 Verification run
 
 PASS:
+
 - `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+12`.
 - `flutter analyze` -> `No issues found!`.
 
@@ -13117,6 +13203,7 @@ Next pending P2 historical validation item:
 when there is no active session and no running/pre-run group.
 
 Concrete validated case to close:
+
 1. With `activeSession = null` and no seeded groups, Task List still renders
    `View Groups Hub` and the CTA navigates to `/groups`.
 
@@ -13135,6 +13222,7 @@ Concrete validated case to close:
 ## 🧪 Verification run
 
 PASS:
+
 - `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+12`.
 - `flutter analyze` -> `No issues found!`.
 
@@ -13157,6 +13245,7 @@ Next pending P2 historical validation item:
 still surface the running-group banner by falling back to `TaskRunGroup.status=running`.
 
 Concrete validated case to close:
+
 1. `activeSession = null` + one running group in repository -> Task List renders
    `Group Running` banner and `Open Run Mode` opens `/timer/:groupId`.
 
@@ -13181,6 +13270,7 @@ Concrete validated case to close:
 ## 🧪 Verification run
 
 PASS:
+
 - `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+13`.
 - `flutter analyze` -> `No issues found!`.
 
@@ -13205,6 +13295,7 @@ groups (`status=scheduled` but `scheduledStartTime == null`), avoiding
 misleading `Scheduled` / `Pre-Run` details.
 
 Concrete validated case to close:
+
 1. Start-now scheduled group (`scheduledStartTime=null`) shows `Start now`
    action but does not render `Open Pre-Run`, `Scheduled start`, or `Pre-Run`
    metadata in card/summary.
@@ -13230,6 +13321,7 @@ Concrete validated case to close:
 ## 🧪 Verification run
 
 PASS:
+
 - `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+14`.
 - `flutter analyze` -> `No issues found!`.
 
@@ -13270,6 +13362,7 @@ evidence.
 ## 🧪 Verification run
 
 Reused existing local gate evidence from `RVP-063` (20/03/2026):
+
 - `flutter analyze` -> `No issues found!`
 - `flutter test test/domain/validators_test.dart test/domain/task_weighting_test.dart test/presentation/viewmodels/task_editor_view_model_test.dart` -> PASS (`+28`)
 
@@ -13311,6 +13404,7 @@ explicitly includes focus-loss adjustment behavior.
 ## 🧪 Verification run
 
 Reused existing local gate evidence from `RVP-063` (20/03/2026):
+
 - `flutter analyze` -> `No issues found!`
 - `flutter test test/domain/validators_test.dart test/domain/task_weighting_test.dart test/presentation/viewmodels/task_editor_view_model_test.dart` -> PASS (`+28`)
 
@@ -13337,6 +13431,7 @@ configuration names so users can identify which structure each option comes
 from before applying it.
 
 Concrete validated case to close:
+
 1. Mixed-structure selection (two tasks with distinct Pomodoro structures)
    opens Integrity Warning with explicit source labeling (`Used by:`) and exact
    task names for each structure option.
@@ -13363,6 +13458,7 @@ Concrete validated case to close:
 ## 🧪 Verification run
 
 PASS:
+
 - `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+15`.
 - `flutter analyze` -> `No issues found!`.
 
@@ -13387,6 +13483,7 @@ distinct structure and include a `Default preset` badge option when a default
 preset exists.
 
 Concrete validated case to close:
+
 1. Mixed selection with two distinct structures + existing default preset must
    render two structure option cards (`Used by:`) and one default-preset option.
 
@@ -13413,6 +13510,7 @@ Concrete validated case to close:
 ## 🧪 Verification run
 
 PASS:
+
 - `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> `+16`.
 - `flutter analyze` -> `No issues found!`.
 
@@ -13436,6 +13534,7 @@ Next pending P2 historical validation item:
 the screen must auto-exit to Groups Hub (no idle/stale timer screen).
 
 Concrete validated case to close:
+
 1. In Run Mode, cancel requires confirmation; after `Cancel group`, status
    becomes `canceled` and navigation must end in Groups Hub.
 
@@ -13460,6 +13559,7 @@ Concrete validated case to close:
 ## 🧪 Verification run
 
 PASS:
+
 - `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "cancel requests confirmation and navigates to Groups Hub only after confirm"` -> `+1`.
 - `flutter analyze` -> `No issues found!`.
 
@@ -13483,6 +13583,7 @@ structures are risky and present the `Default preset` option below the
 structure cards to keep the visual hierarchy clear.
 
 Concrete validated case to close:
+
 1. Mixed-structure selection with a default preset available must show the
    clarified guidance copy and place `Default preset` below the structure
    options (`Used by:` cards).
@@ -13511,6 +13612,7 @@ Concrete validated case to close:
 ## 🧪 Verification run
 
 PASS:
+
 - `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Integrity warning shows clarified guidance copy and keeps default preset option below structure cards"` -> `+1`.
 - `flutter analyze` -> `No issues found!`.
 
@@ -13534,6 +13636,7 @@ Next pending P2 historical validation item:
 with timing details, totals, and per-task breakdown.
 
 Concrete validated case to close:
+
 1. A scheduled group with notice/pre-run and multiple tasks opens `Group summary`
    showing `Timing`, `Totals`, and `Tasks` sections with complete breakdown.
 
@@ -13563,6 +13666,7 @@ Concrete validated case to close:
 ## 🧪 Verification run
 
 PASS:
+
 - `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Groups Hub summary modal shows timing totals and task breakdown"` -> `+1`.
 - `flutter analyze` -> `No issues found!`.
 
@@ -13619,6 +13723,7 @@ Next pending P2 historical validation item:
 non-planned runs (`scheduledStartTime == null`).
 
 Concrete validated case to close:
+
 1. A Start-now group opened in Groups Hub summary must not render
    `Scheduled start` (and no pre-run row for that non-planned flow).
 
@@ -13641,6 +13746,7 @@ Concrete validated case to close:
 ## 🧪 Verification run
 
 PASS:
+
 - `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Groups Hub hides scheduled and pre-run metadata for start-now scheduled groups"` -> `+1`.
 - `flutter analyze` -> `No issues found!`.
 
@@ -13903,6 +14009,7 @@ is no longer reproducible.
 ## 🧪 Verification run
 
 Owner manual validation confirmation (21/03/2026):
+
 - Multiple test runs using different interaction paths.
 - Per-second mirror timer swap did not reappear.
 
@@ -13935,6 +14042,7 @@ growth during long breaks.
 ## 🧪 Verification run
 
 Owner manual soak validation confirmation (21/03/2026):
+
 - Android + macOS simultaneously for >10h.
 - No accumulating mirror drift observed.
 - No timer jump recurrence after navigation was observed in the reported run.
@@ -13967,6 +14075,7 @@ background/foreground) is no longer reproducible.
 ## 🧪 Verification run
 
 Owner validation confirmation (21/03/2026):
+
 - Pause/resume + background/foreground behavior works correctly.
 - Previous pause-offset drift symptom no longer appears.
 
@@ -14017,6 +14126,7 @@ Owner reported that `BUGLOG-012` appears solved after the Fix 26 refactor
 Current branch intent: `P1 bugfixes for late-start overlap queue + completion modal + postpone race`.
 
 User validation on 23/03/2026 confirmed three active issues:
+
 - `BUGLOG-009B`: overlap queue resolved only part of a 3-group chain.
 - `BUGLOG-013`: completion modal blocked next-group pre-run/run.
 - `BUGLOG-014`: `Postpone scheduled` could require a second press.
@@ -14121,6 +14231,7 @@ boundary (`14:03`).
 Current branch intent: `P1 bugfix packet for BUGLOG-009B / BUGLOG-013 / BUGLOG-014 device validation closure`.
 
 User rerun at 15:07 (iOS owner) reported no behavioral change in two points:
+
 - completion modal still stayed visible during next-group pre-run,
 - chained timing in Groups Hub still showed `G3 pre-run` in the same minute as `G2 end`.
 
@@ -14163,6 +14274,7 @@ User rerun at 15:07 (iOS owner) reported no behavioral change in two points:
 Current branch intent: `P1 bugfix validation closure for BUGLOG-009B / BUGLOG-013 / BUGLOG-014`.
 
 User completed the fix_v4 rerun and confirmed:
+
 - chained timing is coherent (`G3` pre-run no longer matches `G2` end minute),
 - completion modal now dismisses during next-group pre-run,
 - validated flow remains stable after overlap confirmation.
@@ -14181,10 +14293,12 @@ User completed the fix_v4 rerun and confirmed:
 ## 🧪 Verification run
 
 Log evidence reviewed from fix_v4 packet:
+
 - `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_fix_v4_76ee374_ios_simulator_iphone_17_pro_debug.log`
 - `docs/bugs/validation_bug009_2026_03_23/logs/2026-03-23_bug009b_fix_v4_76ee374_web_chrome_debug.log`
 
 Key signatures:
+
 - `LateStartQueue overdue=3` present (single chain queue).
 - No `LateStartQueue overdue=2` in fix_v4 iOS/web logs.
 - iOS: `prealert-timer-fired` for G2 at `17:00:00`, then `Auto-dismiss completion dialog: group switch` at `17:00:00`, before start timer at `17:01:00`.
@@ -14192,6 +14306,7 @@ Key signatures:
 - No `Scheduling conflict` signatures after overlap resolution in fix_v4 logs.
 
 Implementation commit referenced for closure:
+
 - `2fdd99b` — `fix(late-start, timer): BUGLOG-009B re-queue + BUG-013 modal + BUG-014 postpone`
 
 ## 📁 Updated files
@@ -14318,6 +14433,7 @@ global queue.
 ## 🧪 Verification run
 
 Android log PASS signatures:
+
 - `LateStartQueue overdue=3` and `Opening late-start overlap queue` on late open.
 - Post-confirm transition: `scheduled=2 overdue=0` and `running-open-timer`.
 - User UI verification: `Start now` on next queued group blocked by
@@ -14397,6 +14513,7 @@ protocols for two plausible paths.
 Current branch intent: `implement BUG-008C startup reconciliation fix (expired running + no active session)`.
 
 User narrowed the bug to a deterministic path:
+
 - group remains `running` while app is closed,
 - app reopens after theoretical end,
 - first open shows stale `Ready` timer for historical group (`15:00 + Start`),
@@ -14452,6 +14569,7 @@ Scenario A executed: app reopened after scheduled group expired while running (a
 Fix confirmed PASS on Android owner (RMX3771, Account Mode).
 
 Key log signals in `2026-03-23_bug008c_d400a99_android_RMX3771_debug.log`:
+
 - `[ExpiryCheck][expire-running-groups]` (line 6747): coordinator detects expired running group.
 - `[ExpiryCheck][mark-running-group-completed]` (line 6751): group marked completed on startup.
 - `Active session cleared route=/groups` (line 6764): stale session cleared, navigation to Groups Hub.
@@ -14463,6 +14581,7 @@ No persistent `Ready 15:00 + Start` flash for historical group.
 ## 📝 Residual observation (not a bug — documented for tracking only)
 
 When `activeSession != null` arrives in stream before the expiry check resolves:
+
 1. Coordinator emits `openTimer` (session present) → brief timer screen shown (frame 5 in screenshots).
 2. Session staleness check fires → session cleared → coordinator re-evaluates → emits `openGroupsHub`.
 3. `Cannot use Ref after disposed` logged (lines 6775–6787) during timer screen disposal — no functional breakage.
@@ -14489,6 +14608,7 @@ validated and the BUGLOG-008C merge hash was still recorded as "pending".
 ### BUGLOG-008B — Owner becomes stale while foreground (unexpected auto-claim)
 
 User confirmed Closed/OK. Evidence traced to:
+
 - Commit `9916204` ("Allow owner heartbeats while awaiting session", 02/03/2026):
   root-cause fix — `lastUpdatedAt` no longer freezes when session is temporarily
   missing; owner heartbeat continues publishing independently of session stream state.
@@ -14499,6 +14619,7 @@ User confirmed Closed/OK. Evidence traced to:
   entire soak window.
 
 Updated:
+
 - `docs/bugs/bug_log.md` (BUG-008 `Fix applied` + `Status` → `Closed/OK`)
 - `docs/validation/validation_ledger.md` (BUGLOG-008B `[ ]` → `[x]` Closed/OK)
 
@@ -14509,6 +14630,7 @@ pre-merge)` because the ledger was updated before the merge completed. Updated t
 actual merge commit `cfaba5e`.
 
 Updated:
+
 - `docs/validation/validation_ledger.md` (BUGLOG-008C `closed_commit_hash` → `cfaba5e`)
 
 ## 📁 Updated files
@@ -14599,6 +14721,7 @@ Branch: `fix/buglog-006-007-validation`, base commit `97f6365`.
 
 BUG-005: ownership requests not surfaced until focus/resubscribe.
 Two variants:
+
 - **Variant A** (macOS window inactive): request never showed until user clicked macOS window.
 - **Variant B/D/E** (Android foreground owner): request never showed until Groups Hub nav.
 
@@ -14648,9 +14771,11 @@ Two variants of BUG-005 confirmed PASS in a single combined run.
 **Escenario A — macOS owner loses window focus (Variant A)**
 
 macOS lost focus at 11:43:50. Log macOS line 5850:
+
 ```
 [ActiveSession] Resync start (inactive-resync).  (11:43:54, ~4s after focus loss)
 ```
+
 Subsequent `inactive-resync` calls confirmed at lines 5859, 5864 (~15s intervals).
 Android requested ownership at 11:46:07 — macOS showed the modal instantaneously
 without any click or focus. ≤15s threshold met ✓.
@@ -14665,20 +14790,24 @@ at ~11:49:30.8 confirms user accepted the modal on Android. Ownership snapshot w
 Elapsed request-to-accept: ~3s (<5s threshold ✓). No Groups Hub navigation ✓.
 
 **Local gate**
+
 - `flutter analyze` → `No issues found!`
 - `flutter test pomodoro_view_model_session_gap_test.dart` → `+25: All tests passed!`
 
 ### Fix commits
+
 - Variant A: `b093270` — `_startInactiveResync()` periodic 15s resync on macOS inactive
 - Variant B: `cbd800a` — Fix 26 SSS persistent subscription (AP-1 eliminated)
 
 ### Documents updated
+
 - `docs/bugs/bug_log.md` → BUG-005 Status: Closed/OK
 - `docs/validation/validation_ledger.md` → BUGLOG-005: `[ ]` → `[x]` Closed/OK (`b093270`)
 - `docs/bugs/validation_bug005_2026_03_24/plan_validacion_rapida_fix.md` → results + Closed/OK
 - `docs/bugs/validation_bug005_2026_03_24/quick_pass_checklist.md` → all boxes checked
 
 ### Ledger status after this block
+
 **All P1 bugs now Closed/OK.** Zero open P0/P1 entries in `validation_ledger.md`.
 Remaining open items: P2 bugs (BUGLOG-003, BUGLOG-010, BUGLOG-008-MIT, BUGLOG-F25-E-R1)
 and RVP validation items (RVP-021–RVP-062). Neither category blocks `develop → main`.
@@ -14719,9 +14848,11 @@ Evidence: Fix 26 SSS architecture (AP-2 debounce + 3s hold) + Stage C soak (5h+)
 no spurious banner re-appearance across stream reconnects.
 
 ### Documents updated
+
 - `docs/validation/validation_ledger.md` → RVP-032/033/041/043/044: `[ ]` → `[x]` Closed/OK
 
 ### Ledger status after this block
+
 Open P2 bugs: BUGLOG-003, BUGLOG-010, BUGLOG-008-MIT, BUGLOG-F25-E-R1
 Open RVP items: RVP-021–RVP-031, RVP-034–RVP-040, RVP-042, RVP-045–RVP-062 (37 items)
 
@@ -14739,11 +14870,13 @@ scenarios this fallback was meant to address.
 User confirmed 24/03/2026: "gracias al refacto originado por el fix 26 se hizo innecesario."
 
 ### Documents updated
+
 - `docs/bugs/bug_log.md` → BUGLOG-008-MIT Status: `Not implemented...` → `Closed/OK (24/03/2026)`
 - `docs/validation/validation_ledger.md` → BUGLOG-008-MIT: `[ ]` → `[x]` Closed/OK (`cbd800a`)
 - Snapshot updated: non-closed bugs 4 → 3 (BUG-003, BUG-010, BUG-F25-E remain open)
 
 ### Ledger status after this block
+
 Open P2 bugs: BUGLOG-003, BUGLOG-010, BUGLOG-F25-E-R1
 Open RVP items: RVP-021–RVP-031, RVP-034–RVP-040, RVP-042, RVP-045–RVP-062 (37 items)
 
@@ -14764,11 +14897,13 @@ in the ledger was created to track this discrepancy.
 Corrected `bug_log.md` and ledger entry to reflect actual Closed/OK state.
 
 ### Documents updated
+
 - `docs/bugs/bug_log.md` → BUG-F25-E Status: `Open` → `Closed/OK (19/03/2026). closed_commit_hash: c248c91`
 - `docs/validation/validation_ledger.md` → BUGLOG-F25-E-R1: `[ ]` → `[x]` Closed/OK (`c248c91`)
 - Snapshot updated: non-closed bugs 1 → 0 (zero P0/P1/P2 open)
 
 ### Ledger status after this block
+
 **Zero open bugs.** All BUGLOG entries closed.
 Open RVP items: RVP-021–RVP-031, RVP-034–RVP-040, RVP-042, RVP-045–RVP-062 (37 items)
 
@@ -14782,6 +14917,7 @@ la causa raíz y dar luz verde al fix.
 ### Análisis de causa raíz confirmado
 
 **Vector A (primario):** `_hydrateOwnerSession` (~línea 2091 pomodoro_view_model.dart).
+
 - Cuando Android toma ownership de sesión stale (macOS apagado), máquina en `idle` (mirror mode).
 - `_projectStateFromSession` proyecta SOLO dentro de la tarea actual.
 - Si elapsed > duración total de la tarea, devuelve `PomodoroStatus.finished`.
@@ -14789,12 +14925,14 @@ la causa raíz y dar luz verde al fix.
 - `_applyGroupTimelineProjection` (que sí conoce todas las tareas) estaba bloqueada en Account mode.
 
 **Vector B (secundario):** `_applySessionTimelineProjection` owner branch (~línea 1626).
+
 - Un sync concurrente durante `await _resolveServerNow()` en `_handleTaskFinishedInternal`
   puede publicar el estado `finished` transitorio de la máquina (entre tareas).
 
 ### Fix design (2 commits)
 
 **Fix A:** En `_hydrateOwnerSession`, ampliar `allowTimelineProjection`:
+
 ```dart
 // antes:
 final allowTimelineProjection = ref.read(appModeProvider) != AppMode.account;
@@ -14805,6 +14943,7 @@ final allowTimelineProjection =
 ```
 
 **Fix B:** En `_applySessionTimelineProjection`, guard antes del publish:
+
 ```dart
 if (_machine.state.status == PomodoroStatus.finished && !_groupCompleted) {
   return;
@@ -14812,6 +14951,7 @@ if (_machine.state.status == PomodoroStatus.finished && !_groupCompleted) {
 ```
 
 ### ✔ Documentación creada en este bloque
+
 - `docs/bugs/validation_bug015_2026_03_25/codex_handoff.md`
 - `docs/bugs/validation_bug015_2026_03_25/plan_validacion_rapida_fix.md`
 - `docs/bugs/validation_bug015_2026_03_25/quick_pass_checklist.md`
@@ -14819,6 +14959,7 @@ if (_machine.state.status == PomodoroStatus.finished && !_groupCompleted) {
 - `docs/bugs/validation_bug015_2026_03_25/screenshots/` (vacío)
 
 ### ⚠️ Siguiente paso
+
 Entregar `codex_handoff.md` a Codex para implementación. Codex entrega diff.
 Claude hace QA review del código modificado. Luego device validation.
 
@@ -14829,18 +14970,21 @@ Claude hace QA review del código modificado. Luego device validation.
 **Scope:** docs closure + ledger synchronization after successful device run
 
 ### Validation recap (BUGLOG-015)
+
 - Device validation PASS on Android RMX3771 + macOS.
 - Exact repro passed with owner handoff + background + late foreground resume.
 - No invalid terminal fallback (`Ready 00:00`, amber complete ring) during resumed run.
 - Firestore session remained non-terminal (`status=pomodoroRunning`) during active timeline.
 
 Evidence:
+
 - `docs/bugs/validation_bug015_2026_03_25/logs/2026-03-25_bug015_f929117_android_RMX3771_debug_2.log`
 - Key signals in log:
   - `Auto-open confirmed in timer` (resume path).
   - `status=pomodoroRunning ... remaining=460`, then `429`, then `399` (continuous active progression).
 
 ### Local gate (post-fix)
+
 - `flutter analyze` — PASS
 - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` — PASS
 - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` — PASS
@@ -14848,12 +14992,14 @@ Evidence:
 - `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` — PASS
 
 ### Documents synchronized
+
 - `docs/bugs/bug_log.md` — BUG-015 status updated to `Closed/OK` with validation evidence.
 - `docs/validation/validation_ledger.md` — `BUGLOG-015` moved to `Closed/OK` with closure evidence.
 - `docs/bugs/validation_bug015_2026_03_25/plan_validacion_rapida_fix.md` — status updated to `Closed/OK`, root cause/fix path aligned with final implementation.
 - `docs/bugs/validation_bug015_2026_03_25/quick_pass_checklist.md` — closure checklist completed.
 
 ### Ledger status after this block
+
 - Active non-closed bug-log entries: 1 (`BUG-016` / `BUGLOG-016`, P2 Pending).
 
 ---
@@ -14886,6 +15032,7 @@ represent the unlinked state visually, rather than expressing that state via a s
 indicator outside the picker.
 
 **Expected behavior:**
+
 - Dropdown contains ONLY real presets from Settings.
 - "Custom" is removed from the list entirely.
 - Linked/unlinked state communicated by a visual indicator next to the "Preset" field
@@ -14893,10 +15040,12 @@ indicator outside the picker.
   when config has diverged or no preset is selected.
 
 **Documents updated:**
+
 - `docs/bugs/bug_log.md` — BUG-017 entry added (Status: Open, P2).
 - `docs/validation/validation_ledger.md` — BUGLOG-017 added (P2, Status: Pending).
 
 ### Ledger status after this block
+
 - Active non-closed bug-log entries: 2 (`BUG-016` P2 Pending, `BUG-017` P2 Pending).
 - Zero open P0/P1 bugs.
 
@@ -15087,7 +15236,7 @@ All 9 original UX questions (a–i) plus 7 additional micro-clarifications (j–
 - b. Preview content: three-tier (result line + group impact + mini-table of all selected tasks).
 - c. Apply/Cancel: fixed footer, Cancel left / Apply right.
 - d. Preview trigger: tapping field opens sheet; live recalculation inside sheet.
-     Fields in editor are read-only tap targets — per-keystroke onChanged removed in Patch 2.
+  Fields in editor are read-only tap targets — per-keystroke onChanged removed in Patch 2.
 - e. Mode switch: recalculates immediately, does not reset entered value.
 - f. Snackbar: eliminated; replaced by inline content inside sheet.
 - g. Visual form: three-tier layout (result + group impact + mini-table).
@@ -15096,7 +15245,7 @@ All 9 original UX questions (a–i) plus 7 additional micro-clarifications (j–
 - j. Flexible total: only edited task changes; all other selected tasks unchanged.
 - k. Search range (Flexible, % path): candidates 1..max(pom×3, pom+12), cap 99 (algorithmic only).
 - l. Tiebreaker: (1) smallest % deviation, (2) smallest group total change,
-     (3) smallest edited task change, (4) smaller resulting group total.
+  (3) smallest edited task change, (4) smaller resulting group total.
 - m. Apply/Save/Discard: Apply = local draft + dirty; Save = persist; Discard = reverts all draft.
 - n. 1 task selected: field disabled at 100%, no sheet, optional helper text.
 - o. Selection change with sheet open: close without apply + non-modal notice.
@@ -15215,10 +15364,11 @@ This could lead to accidental mixed-context interactions and unclear navigation 
 ### Context
 
 User feedback identified two clarity issues in preview:
+
 - `Fixed total` explanation remained ambiguous about what total is preserved.
 - Orange warning text appeared immediately on open (and could feel incorrect) even
   before a meaningful user change.
-Additionally, the top summary repeated data already visible elsewhere.
+  Additionally, the top summary repeated data already visible elsewhere.
 
 ### Changes applied
 
@@ -15347,6 +15497,7 @@ mathematically reachable results.
 ### Context
 
 Approved UX direction:
+
 - warn users inline (non-blocking) when edited plans become unusually long in
   continuous `start → end` time (focus + breaks),
 - keep a persistent reminder label after save,
@@ -15393,6 +15544,7 @@ Approved UX direction:
 ### Context
 
 User feedback highlighted two coherence issues:
+
 - `Group work` values in preview were hard to read when large (`N min` only),
 - preview top bar used `Back` text style inconsistent with other app screens
   (`< Edit ...` pattern).
@@ -15500,6 +15652,7 @@ list snapshot until save.
 
 User feedback requested tighter task-card timing rows so chips stay in one line
 more consistently:
+
 - remove redundant `Total` prefix in selected-card total duration chips,
 - visually distinguish total duration chip,
 - shorten extreme-load label to `Machine`.
@@ -15581,6 +15734,7 @@ chips when content overflowed.
 ### Context
 
 User validation highlighted two clarity issues in the preview sheet:
+
 - the edited task/group identifier under the title was visually weak,
 - `Selected tasks` cards had inconsistent widths and text-heavy rows, making
   before/after comparison harder to scan.
@@ -15632,6 +15786,7 @@ User validation highlighted two clarity issues in the preview sheet:
 ### Context
 
 Follow-up user review requested:
+
 - remove duplicate bottom actions (`Cancel` + `Apply`) and keep a faster
   sub-screen interaction model,
 - keep `Back` as the cancel-equivalent,
@@ -15726,6 +15881,7 @@ show the same `No changes applied.` SnackBar twice in a row.
 ### Root cause
 
 Two independent paths were showing the same hint for the same close action:
+
 - explicit Back handler (`_closeWithoutApply`), and
 - `PopScope.onPopInvokedWithResult` after `Navigator.pop()`.
 
@@ -15759,6 +15915,7 @@ Two independent paths were showing the same hint for the same close action:
 
 After the final UI/UX polish cycle and user-driven validation matrix, Patch 2
 behavior is stable and coherent with the latest approved semantics:
+
 - preview-first editing for Task weight (%) and Total pomodoros,
 - Fixed/Flexible mode behavior and messaging alignment,
 - Back/Apply semantics clarity,
@@ -15768,6 +15925,7 @@ behavior is stable and coherent with the latest approved semantics:
 ### Validation closure packet synchronized
 
 Created and synchronized:
+
 - `docs/bugs/validation_bug016_2026_03_28/plan_validacion_rapida_fix.md`
 - `docs/bugs/validation_bug016_2026_03_28/quick_pass_checklist.md`
 - Existing runtime evidence log retained:
@@ -15885,7 +16043,6 @@ stack back navigation (explicitly Settings).
   - root-route fallback hardening (`/groups`, `/timer/:id`), and
   - non-regression of existing stack-pop routes (`/settings`).
 
-
 ---
 
 ## Block 693 — BUG-019 closure: Android back navigation exit fix validated (29/03/2026)
@@ -15918,12 +16075,13 @@ removed). Non-active path: `context.canPop()` → pop; else →
 
 **`ed97de7` — Tests**: 4 new `testWidgets` in
 `timer_screen_completion_navigation_test.dart`:
+
 - Groups Hub system back → `/tasks` (single-entry stack)
 - Timer non-active system back → `/groups` (account mode, single-entry stack)
 - Timer active system back → confirmation dialog; "Keep running" keeps timer running
 - Settings route stack-pop non-regression (no fallback override)
-Helper `_buildRunningSession` extended with optional `status`/`phase`/`finishedAt`
-params (defaults preserve all existing tests).
+  Helper `_buildRunningSession` extended with optional `status`/`phase`/`finishedAt`
+  params (defaults preserve all existing tests).
 
 ### Validation results (Android RMX3771, 29/03/2026)
 
@@ -16169,3 +16327,234 @@ The original user report referred to automatic owner switch without explicit own
 - `BUG-021` / `BUGLOG-021`: **Closed/OK**.
 - Active open bugs:
   - `BUG-017` (P2).
+
+---
+
+## Block 699 — BUG-017 closure: preset dropdown no longer exposes synthetic Custom (31/03/2026)
+
+**Current branch intent:** BUG-017 targeted UI fix + regression coverage + docs closure.
+**Branch:** `fix/bug017-preset-dropdown-custom`
+**Commit:** `pending-local`
+**Bugs closed:** `BUG-017` / `BUGLOG-017` (P2)
+
+### Context
+
+Edit Task preset selector was exposing a synthetic `Custom` option in the dropdown,
+mixing derived UI state with real persisted presets and creating ambiguity when a real
+preset named `Custom` existed.
+
+### Runtime implementation
+
+- `lib/presentation/screens/task_editor_screen.dart`
+  - Removed synthetic `Custom` sentinel item (`__custom__`) from dropdown items.
+  - Kept dropdown values bound only to persisted preset IDs.
+  - Added unlinked hint (`Select preset`) for closed-field unlinked state.
+  - Added linked/unlinked indicator next to `Preset` label (green when linked,
+    neutral when unlinked).
+  - Preserved existing auto-detach behavior when linked preset values diverge.
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+  - Added dedicated BUG-017 widget regression scenario for synthetic-item removal,
+    real `Custom` preset selection, and linked/unlinked detach transitions.
+
+### Validation evidence
+
+- Local gate PASS:
+  - `flutter analyze`
+  - `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Edit Task preset selector"`
+- Validation packet synchronized:
+  - `docs/bugs/validation_bug017_2026_03_31/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug017_2026_03_31/quick_pass_checklist.md`
+  - `docs/bugs/validation_bug017_2026_03_31/logs/2026-03-31_bug017_pending-local_analyze.log`
+  - `docs/bugs/validation_bug017_2026_03_31/logs/2026-03-31_bug017_pending-local_widget_debug.log`
+
+### Documentation synchronization
+
+- `docs/bugs/bug_log.md` — BUG-017 moved to `Closed/OK` with closure evidence.
+- `docs/validation/validation_ledger.md` — BUGLOG-017 moved to `Closed/OK`.
+
+### Status after this block
+
+- `BUG-017` / `BUGLOG-017`: **Closed/OK** (`pending-local`).
+- Active open bug-log entries: **0**.
+
+---
+
+## Block 700 — BUG-023 opened: Save-as-preset return flow must auto-link in Task Editor (31/03/2026)
+
+**Current branch intent:** BUG-023 docs-first opening + implementation kickoff for route-return preset linking.
+**Branch:** `fix/bug023-save-as-preset-autolink`
+**Commit:** `pending-local`
+**Bugs opened:** `BUG-023` / `BUGLOG-023` (P2)
+
+### Context
+
+During BUG-017 validation, a new flow gap was identified: from Task Editor, `Save as new preset`
+creates/saves a preset but the task remains unlinked (`Select preset`) after returning.
+
+### Root cause summary (confirmed)
+
+- Task Editor launches `/settings/presets/new` without consuming a navigation result.
+- Preset Editor save/exit path pops without returning a preset id payload.
+- Duplicate-resolution branches do not propagate a deterministic link target id back to Task Editor.
+
+### Documentation-first synchronization
+
+- `docs/specs.md`
+  - Added explicit Save-as-preset return contract in Task Editor behavior:
+    successful save/resolution must return a preset id and auto-link the current task.
+  - Added duplicate-resolution id mapping for return payload:
+    - Save anyway -> new preset id
+    - Use existing -> existing duplicate id
+    - Rename existing -> renamed existing duplicate id
+    - Cancel/blocked -> no id (remain Custom)
+- `docs/bugs/bug_log.md`
+  - Added `BUG-023` entry with repro, symptom, expected behavior, and confirmed root cause.
+- `docs/validation/validation_ledger.md`
+  - Added `BUGLOG-023` (Pending, P2) to active bug queue.
+  - Snapshot updated: active non-closed bug-log entries now **1**.
+- `docs/roadmap.md`
+  - Reopened Phase 10 item added for `BUG-023` auto-link return behavior.
+
+### Next execution step
+
+- Implement route-result payload from Preset Editor -> Task Editor.
+- Add `applyPresetById` in TaskEditorViewModel (repo read by id, no stream-race dependency).
+- Add widget regression coverage for Save-as-preset auto-link return path.
+
+### Status after this block
+
+- `BUG-023` / `BUGLOG-023`: **Open**.
+- Active open bug-log entries: **1** (`BUG-023`).
+
+---
+
+## Block 701 — BUG-023 runtime implementation + local validation gate PASS (31/03/2026)
+
+**Current branch intent:** BUG-023 runtime fix + focused regression coverage + packet evidence.
+**Branch:** `fix/bug023-save-as-preset-autolink`
+**Commit:** `pending-local`
+**Bugs in validation:** `BUG-023` / `BUGLOG-023` (P2)
+
+### Runtime implementation
+
+- `lib/presentation/screens/preset_editor_screen.dart`
+  - Replaced enum-only save outcome with payload-capable outcome (`linkedPresetId`).
+  - Added deterministic id mapping for duplicate-resolution exits:
+    - Save anyway -> draft preset id.
+    - Use existing -> existing duplicate id.
+    - Rename existing -> renamed existing duplicate id.
+    - Cancel/blocked -> null.
+  - Added caller-gated result return (`returnPresetId`) to avoid cross-flow payload leakage.
+- `lib/presentation/screens/task_editor_screen.dart`
+  - `Save as new preset` now awaits `/settings/presets/new?returnPresetId=1`.
+  - On returned id, applies preset immediately and refreshes Task Editor UI state.
+- `lib/presentation/viewmodels/task_editor_view_model.dart`
+  - Added `applyPresetById(String id)` with repository read-by-id + `applyPreset` orchestration.
+- `lib/app/router.dart`
+  - Added query parsing for `returnPresetId` on `/settings/presets/new`.
+
+### Regression coverage
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+  - Added `Edit Task Save as new preset auto-links returned preset`.
+  - Updated Task Editor test router harness to use real `PresetEditorScreen` route and return payload query behavior.
+
+### Local validation evidence
+
+- `flutter analyze` -> PASS
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Edit Task"` -> PASS (`+2`)
+- Logs captured in:
+  - `docs/bugs/validation_bug023_2026_03_31/logs/2026-03-31_bug023_pending-local_analyze.log`
+  - `docs/bugs/validation_bug023_2026_03_31/logs/2026-03-31_bug023_pending-local_widget_debug.log`
+
+### Documentation synchronization
+
+- `docs/bugs/bug_log.md` -> BUG-023 moved to **In validation** with implementation details + local evidence.
+- `docs/validation/validation_ledger.md` -> BUGLOG-023 moved to **In validation**.
+- `docs/bugs/validation_bug023_2026_03_31/` -> packet created with required files:
+  - `plan_validacion_rapida_fix.md`
+  - `quick_pass_checklist.md`
+  - `logs/`
+  - `screenshots/`
+
+### Status after this block
+
+- `BUG-023` / `BUGLOG-023`: **In validation**.
+- Active open bug-log entries: **1** (`BUG-023`; device validation pending).
+
+---
+
+## Block 702 — BUG-023 closure: Task Editor save-as-preset return now auto-links (31/03/2026)
+
+**Current branch intent:** BUG-023 validation closure synchronization.
+**Branch:** `fix/bug023-save-as-preset-autolink`
+**Commit:** `pending-local`
+**Bugs closed:** `BUG-023` / `BUGLOG-023` (P2)
+
+### Closure evidence
+
+- Local gate PASS:
+  - `flutter analyze`
+  - `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Edit Task"`
+- macOS live validation PASS (manual):
+  - `Save anyway` flow returns to Edit Task linked state.
+  - `Use existing` duplicate-resolution flow returns to Edit Task linked state.
+- Android manual validation was explicitly waived by project owner decision on 31/03/2026;
+  waiver recorded as accepted residual risk for this UI/navigation-scope fix.
+
+### Documentation synchronization
+
+- `docs/bugs/validation_bug023_2026_03_31/plan_validacion_rapida_fix.md`
+  - Status moved to `Closed/OK`.
+  - Added macOS manual PASS details and Android waiver note.
+- `docs/bugs/validation_bug023_2026_03_31/quick_pass_checklist.md`
+  - Marked macOS scenarios PASS and Android waived by owner decision.
+- `docs/bugs/bug_log.md`
+  - `BUG-023` moved from `In validation` to `Closed/OK` with closure evidence.
+- `docs/validation/validation_ledger.md`
+  - `BUGLOG-023` moved to `Closed/OK`; snapshot updated (active non-closed bug count: 0).
+- `docs/roadmap.md`
+  - Reopened Phase 10 line for `BUG-023` struck through and marked `Closed/OK`.
+
+### Status after this block
+
+- `BUG-023` / `BUGLOG-023`: **Closed/OK** (`pending-local`).
+- Active open bug-log entries: **0**.
+
+---
+
+## Block 703 — BUG-023 Android quick validation evidence synced (31/03/2026)
+
+**Current branch intent:** BUG-023 post-closure evidence sync (Android manual quick PASS).
+**Branch:** `fix/bug023-save-as-preset-autolink`
+**Commit:** `pending-local`
+**Bugs affected:** `BUG-023` / `BUGLOG-023` (P2, remains Closed/OK)
+
+### Validation evidence update
+
+- Android quick device validation PASS (RMX3771):
+  - Scenario A (new preset save return) restored linked Edit Task state (`preset 21 min`).
+  - Scenario B (`Use existing`) restored linked Edit Task state (`preset 20 min (2)`).
+- Runtime log captured:
+  - `docs/bugs/validation_bug023_2026_03_31/logs/2026-03-31_bug023_pending-local_android_debug.log`
+- Screenshot evidence captured in-thread during live validation.
+- Project owner explicit final closure confirmation received in-thread (31/03/2026).
+
+### Documentation synchronization delta
+
+- `docs/bugs/validation_bug023_2026_03_31/plan_validacion_rapida_fix.md`
+  - Replaced Android waiver note with Android manual quick PASS evidence.
+- `docs/bugs/validation_bug023_2026_03_31/quick_pass_checklist.md`
+  - Replaced waived checkbox with Android PASS checks for Scenario A + Scenario B.
+- `docs/bugs/bug_log.md`
+  - Replaced Android waiver evidence with Android PASS + log path + screenshot evidence note.
+- `docs/validation/validation_ledger.md`
+  - `BUGLOG-023` evidence updated from waived to Android PASS.
+- `docs/roadmap.md`
+  - BUG-023 closure note updated from waived to Android quick validation PASS.
+
+### Status after this block
+
+- `BUG-023` / `BUGLOG-023`: **Closed/OK** (`pending-local`) with macOS + Android manual validation evidence.
+- Active open bug-log entries: **0**.

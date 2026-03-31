@@ -236,6 +236,17 @@ class TaskEditorViewModel extends Notifier<PomodoroTask?> {
     _syncDisplayName(SoundSlot.breakStart, breakOverride);
   }
 
+  Future<bool> applyPresetById(String presetId) async {
+    final normalizedId = presetId.trim();
+    if (normalizedId.isEmpty) return false;
+    final preset = await ref
+        .read(presetRepositoryProvider)
+        .getById(normalizedId);
+    if (preset == null) return false;
+    await applyPreset(preset);
+    return true;
+  }
+
   void detachPreset() {
     final task = state;
     if (task == null) return;

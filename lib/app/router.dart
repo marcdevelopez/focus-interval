@@ -65,10 +65,7 @@ GoRouter buildRouter() {
         path: '/timer/:id',
         pageBuilder: (context, state) {
           final id = state.pathParameters['id']!;
-          return _fadeScale(
-            TimerScreen(groupId: id),
-            key: state.pageKey,
-          );
+          return _fadeScale(TimerScreen(groupId: id), key: state.pageKey);
         },
       ),
 
@@ -101,12 +98,19 @@ GoRouter buildRouter() {
       ),
       GoRoute(
         path: '/settings/presets/new',
-        pageBuilder: (context, state) => _slide(
-          PresetEditorScreen(
-            isEditing: false,
-            seed: state.extra is PomodoroPreset ? state.extra as PomodoroPreset : null,
-          ),
-        ),
+        pageBuilder: (context, state) {
+          final returnPresetId =
+              state.uri.queryParameters['returnPresetId'] == '1';
+          return _slide(
+            PresetEditorScreen(
+              isEditing: false,
+              returnPresetId: returnPresetId,
+              seed: state.extra is PomodoroPreset
+                  ? state.extra as PomodoroPreset
+                  : null,
+            ),
+          );
+        },
       ),
       GoRoute(
         path: '/settings/presets/edit/:id',
