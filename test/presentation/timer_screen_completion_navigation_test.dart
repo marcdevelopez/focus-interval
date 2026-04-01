@@ -32,12 +32,13 @@ import 'package:focus_interval/presentation/screens/task_list_screen.dart';
 import 'package:focus_interval/presentation/screens/timer_screen.dart';
 
 class FakeTaskRunGroupRepository implements TaskRunGroupRepository {
-  FakeTaskRunGroupRepository({this.emitOnSave = true});
+  FakeTaskRunGroupRepository({this.emitOnSave = true, this.eventLog});
 
   final Map<String, TaskRunGroup> _store = {};
   final StreamController<List<TaskRunGroup>> _controller =
       StreamController<List<TaskRunGroup>>.broadcast();
   final bool emitOnSave;
+  final List<String>? eventLog;
 
   void seed(TaskRunGroup group) {
     _store[group.id] = group;
@@ -62,6 +63,7 @@ class FakeTaskRunGroupRepository implements TaskRunGroupRepository {
 
   @override
   Future<void> save(TaskRunGroup group) async {
+    eventLog?.add('group:save:${group.id}:${group.status.name}');
     _store[group.id] = group;
     if (emitOnSave) {
       _controller.add(_store.values.toList());
@@ -124,13 +126,24 @@ class FakeTaskRunGroupRepository implements TaskRunGroupRepository {
 }
 
 class FakePomodoroSessionRepository implements PomodoroSessionRepository {
-  FakePomodoroSessionRepository(this._initialSession);
+  FakePomodoroSessionRepository(
+    this._initialSession, {
+    this.eventLog,
+    this.tryAutoClaimResult = false,
+  });
 
   final StreamController<PomodoroSession?> _controller =
       StreamController<PomodoroSession?>.broadcast();
   PomodoroSession? _lastSession;
   PomodoroSession? _initialSession;
   int clearSessionIfGroupNotRunningCalls = 0;
+  final List<String>? eventLog;
+  int requestOwnershipCalls = 0;
+  String? lastRequesterDeviceId;
+  String? lastRequestId;
+  int tryAutoClaimStaleOwnerCalls = 0;
+  String? lastTryAutoClaimRequesterDeviceId;
+  bool tryAutoClaimResult;
 
   @override
   Stream<PomodoroSession?> watchSession() async* {
@@ -159,7 +172,11 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
   }
 
   @override
-  Future<void> clearSessionAsOwner() async {}
+  Future<void> clearSessionAsOwner() async {
+    eventLog?.add('session:clearAsOwner');
+    _lastSession = null;
+    _controller.add(null);
+  }
 
   @override
   Future<void> clearSessionIfStale({required DateTime now}) async {}
@@ -182,13 +199,19 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
   Future<void> requestOwnership({
     required String requesterDeviceId,
     required String requestId,
-  }) async {}
+  }) async {
+    requestOwnershipCalls += 1;
+    lastRequesterDeviceId = requesterDeviceId;
+    lastRequestId = requestId;
+  }
 
   @override
   Future<bool> tryAutoClaimStaleOwner({
     required String requesterDeviceId,
   }) async {
-    return false;
+    tryAutoClaimStaleOwnerCalls += 1;
+    lastTryAutoClaimRequesterDeviceId = requesterDeviceId;
+    return tryAutoClaimResult;
   }
 
   @override
@@ -1220,6 +1243,306 @@ void main() {
   );
 
   testWidgets(
+    'Task List mirror conflict banner shows request ownership CTA and triggers request',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final running = _buildRunningGroup(
+        id: 'task-list-mirror-running',
+        now: now,
+      );
+      final scheduled = _buildScheduledGroup(
+        id: 'task-list-mirror-scheduled',
+        now: now,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()
+        ..seed(running)
+        ..seed(scheduled);
+      final sessionRepo = FakePomodoroSessionRepository(
+        _buildRunningSession(
+          groupId: running.id,
+          ownerDeviceId: '${deviceInfo.deviceId}-owner',
+          now: now,
+        ),
+      );
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+        await _pumpTaskListScreen(tester: tester, container: container);
+
+        container
+            .read(runningOverlapDecisionProvider.notifier)
+            .state = RunningOverlapDecision(
+          runningGroupId: running.id,
+          scheduledGroupId: scheduled.id,
+          token: 1,
+        );
+        await _pumpUntilFound(
+          tester,
+          find.text(
+            'Owner is resolving this conflict. Request ownership if needed.',
+          ),
+        );
+
+        expect(
+          find.text(
+            'Owner is resolving this conflict. Request ownership if needed.',
+          ),
+          findsOneWidget,
+        );
+        final requestCta = find.widgetWithText(
+          OutlinedButton,
+          'Request ownership',
+        );
+        expect(requestCta, findsOneWidget);
+
+        final requestButton = tester.widget<OutlinedButton>(requestCta);
+        expect(requestButton.onPressed, isNotNull);
+        requestButton.onPressed!.call();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 150));
+
+        expect(sessionRepo.requestOwnershipCalls, 1);
+        expect(sessionRepo.lastRequesterDeviceId, deviceInfo.deviceId);
+        expect(sessionRepo.lastRequestId, isNotNull);
+        expect(sessionRepo.lastRequestId, isNotEmpty);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets(
+    'Groups Hub mirror conflict banner shows request ownership CTA and triggers request',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final running = _buildRunningGroup(
+        id: 'groups-hub-mirror-running',
+        now: now,
+      );
+      final scheduled = _buildScheduledGroup(
+        id: 'groups-hub-mirror-scheduled',
+        now: now,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()
+        ..seed(running)
+        ..seed(scheduled);
+      final sessionRepo = FakePomodoroSessionRepository(
+        _buildRunningSession(
+          groupId: running.id,
+          ownerDeviceId: '${deviceInfo.deviceId}-owner',
+          now: now,
+        ),
+      );
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+        await _pumpGroupsHubScreen(tester: tester, container: container);
+
+        container
+            .read(runningOverlapDecisionProvider.notifier)
+            .state = RunningOverlapDecision(
+          runningGroupId: running.id,
+          scheduledGroupId: scheduled.id,
+          token: 1,
+        );
+        await _pumpUntilFound(
+          tester,
+          find.text(
+            'Owner is resolving this conflict. Request ownership if needed.',
+          ),
+        );
+
+        expect(
+          find.text(
+            'Owner is resolving this conflict. Request ownership if needed.',
+          ),
+          findsOneWidget,
+        );
+        final requestCta = find.widgetWithText(
+          OutlinedButton,
+          'Request ownership',
+        );
+        expect(requestCta, findsOneWidget);
+
+        final requestButton = tester.widget<OutlinedButton>(requestCta);
+        expect(requestButton.onPressed, isNotNull);
+        requestButton.onPressed!.call();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 150));
+
+        expect(sessionRepo.requestOwnershipCalls, 1);
+        expect(sessionRepo.lastRequesterDeviceId, deviceInfo.deviceId);
+        expect(sessionRepo.lastRequestId, isNotNull);
+        expect(sessionRepo.lastRequestId, isNotEmpty);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets(
+    'Timer mirror shows persistent conflict snackbar until explicit OK',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final running = _buildRunningGroup(id: 'timer-mirror-running', now: now);
+      final scheduled = _buildScheduledGroup(
+        id: 'timer-mirror-scheduled',
+        now: now,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()
+        ..seed(running)
+        ..seed(scheduled);
+      final sessionRepo = FakePomodoroSessionRepository(
+        _buildRunningSession(
+          groupId: running.id,
+          ownerDeviceId: '${deviceInfo.deviceId}-owner',
+          now: now,
+          remainingSeconds: 14 * 60,
+          phaseDurationSeconds: 25 * 60,
+          phaseStartedAt: now.subtract(const Duration(minutes: 11)),
+          currentTaskStartedAt: now.subtract(const Duration(minutes: 11)),
+        ),
+      );
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+        await _pumpTimerScreen(
+          tester: tester,
+          container: container,
+          groupId: running.id,
+        );
+
+        container
+            .read(runningOverlapDecisionProvider.notifier)
+            .state = RunningOverlapDecision(
+          runningGroupId: running.id,
+          scheduledGroupId: scheduled.id,
+          token: 1,
+        );
+        await _pumpUntilFound(
+          tester,
+          find.text(
+            'Owner is resolving this conflict. Request ownership if needed.',
+          ),
+        );
+
+        expect(find.text('Scheduling conflict'), findsNothing);
+        expect(
+          find.text(
+            'Owner is resolving this conflict. Request ownership if needed.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('OK'), findsOneWidget);
+
+        await tester.pump(const Duration(seconds: 3));
+        expect(
+          find.text(
+            'Owner is resolving this conflict. Request ownership if needed.',
+          ),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.text('OK'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 260));
+        expect(
+          find.text(
+            'Owner is resolving this conflict. Request ownership if needed.',
+          ),
+          findsNothing,
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets(
     'cancel requests confirmation and navigates to Groups Hub only after confirm',
     (tester) async {
       SharedPreferences.setMockInitialValues({});
@@ -1277,6 +1600,82 @@ void main() {
         expect(find.text('groups-screen'), findsOneWidget);
         final canceled = await groupRepo.getById(group.id);
         expect(canceled?.status, TaskRunStatus.canceled);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets(
+    'cancel persists canceled status before clearing active session',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'owner-cancel-order-group',
+        now: now,
+      );
+      final eventLog = <String>[];
+      final groupRepo = FakeTaskRunGroupRepository(eventLog: eventLog)
+        ..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(
+        _buildRunningSession(
+          groupId: group.id,
+          ownerDeviceId: deviceInfo.deviceId,
+          now: now,
+        ),
+        eventLog: eventLog,
+      );
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+        await _pumpTimerScreen(
+          tester: tester,
+          container: container,
+          groupId: group.id,
+        );
+
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Cancel'));
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Cancel group'));
+        await _pumpUntilFound(tester, find.text('groups-screen'));
+
+        final canceled = await groupRepo.getById(group.id);
+        expect(canceled?.status, TaskRunStatus.canceled);
+
+        final saveCanceledIndex = eventLog.indexOf(
+          'group:save:${group.id}:canceled',
+        );
+        final clearSessionIndex = eventLog.indexOf('session:clearAsOwner');
+        expect(saveCanceledIndex, greaterThanOrEqualTo(0));
+        expect(clearSessionIndex, greaterThanOrEqualTo(0));
+        expect(saveCanceledIndex, lessThan(clearSessionIndex));
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump(const Duration(milliseconds: 100));
@@ -1636,6 +2035,14 @@ void main() {
         expect(find.text('Start now'), findsOneWidget);
         expect(find.text('Open Pre-Run'), findsNothing);
         expect(find.text('Pre-Run'), findsNothing);
+        final cardFinder = find.ancestor(
+          of: find.text('Test task').first,
+          matching: find.byType(InkWell),
+        );
+        expect(
+          find.descendant(of: cardFinder, matching: find.text('Scheduled')),
+          findsNothing,
+        );
 
         await tester.tap(find.text('Test task').first);
         await _pumpUntilFound(tester, find.text('Group summary'));
@@ -2144,6 +2551,10 @@ void main() {
       expect(find.text('Groups Hub'), findsOneWidget);
       expect(find.text('Go to Task List'), findsOneWidget);
       expect(find.text('Running / Paused'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Go to Task List')).dy,
+        lessThan(tester.getTopLeft(find.text('Running / Paused')).dy),
+      );
       expect(find.text('Scheduled'), findsOneWidget);
       expect(find.text('Open Run Mode'), findsOneWidget);
       expect(find.text('Start now'), findsOneWidget);
@@ -2182,6 +2593,105 @@ void main() {
       }
     }
   });
+
+  testWidgets(
+    'Groups Hub keeps completed retention visible even with many canceled groups',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final completedItem = const TaskRunItem(
+        sourceTaskId: 'task-completed-keeper',
+        name: 'Completed keeper',
+        presetId: null,
+        pomodoroMinutes: 25,
+        shortBreakMinutes: 5,
+        longBreakMinutes: 15,
+        totalPomodoros: 1,
+        longBreakInterval: 2,
+        startSound: SelectedSound.builtIn('default_chime'),
+        startBreakSound: SelectedSound.builtIn('default_chime_break'),
+        finishTaskSound: SelectedSound.builtIn('default_chime_finish'),
+      );
+      final groupRepo = FakeTaskRunGroupRepository()
+        ..seed(
+          _buildCompletedGroup(id: 'hub-completed-keeper', now: now).copyWith(
+            tasks: [completedItem],
+            updatedAt: now.add(const Duration(minutes: 1)),
+          ),
+        );
+      for (var i = 0; i < 12; i++) {
+        final canceledItem = TaskRunItem(
+          sourceTaskId: 'task-canceled-$i',
+          name: 'Canceled $i',
+          presetId: null,
+          pomodoroMinutes: 25,
+          shortBreakMinutes: 5,
+          longBreakMinutes: 15,
+          totalPomodoros: 1,
+          longBreakInterval: 2,
+          startSound: const SelectedSound.builtIn('default_chime'),
+          startBreakSound: const SelectedSound.builtIn('default_chime_break'),
+          finishTaskSound: const SelectedSound.builtIn('default_chime_finish'),
+        );
+        groupRepo.seed(
+          _buildCanceledGroup(id: 'hub-canceled-$i', now: now).copyWith(
+            tasks: [canceledItem],
+            updatedAt: now.add(Duration(minutes: 2 + i)),
+          ),
+        );
+      }
+      final sessionRepo = FakePomodoroSessionRepository(null);
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+        await _pumpGroupsHubScreen(tester: tester, container: container);
+
+        final hubList = find.byType(ListView).first;
+        await _dragUntilFound(
+          tester,
+          scrollable: hubList,
+          target: find.text('Completed'),
+        );
+        expect(find.text('Completed'), findsOneWidget);
+        expect(find.text('Completed keeper'), findsOneWidget);
+        expect(find.text('Run again'), findsOneWidget);
+
+        await _dragUntilFound(
+          tester,
+          scrollable: hubList,
+          target: find.text('Canceled'),
+        );
+        expect(find.text('Canceled'), findsWidgets);
+        expect(find.textContaining('Canceled '), findsWidgets);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
 
   testWidgets('Groups Hub system back falls back to Task List root', (
     tester,
@@ -2340,6 +2850,65 @@ void main() {
         expect(find.text('Cancel group?'), findsNothing);
         expect(find.text('groups-screen'), findsNothing);
         expect(find.text('Focus Interval'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets(
+    'Timer auto-exits to Groups Hub when the current group is canceled',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final canceledGroup = _buildCanceledGroup(
+        id: 'timer-canceled-build-fallback',
+        now: now,
+      );
+      final groupRepo = FakeTaskRunGroupRepository()..seed(canceledGroup);
+      final sessionRepo = FakePomodoroSessionRepository(
+        _buildRunningSession(
+          groupId: canceledGroup.id,
+          ownerDeviceId: deviceInfo.deviceId,
+          now: now,
+        ),
+      );
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+        await _pumpTimerScreen(
+          tester: tester,
+          container: container,
+          groupId: canceledGroup.id,
+        );
+        await _pumpUntilFound(tester, find.text('groups-screen'));
+        expect(find.text('groups-screen'), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump(const Duration(milliseconds: 100));

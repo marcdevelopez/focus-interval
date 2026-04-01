@@ -3326,7 +3326,8 @@ Acceptance criteria:
   same modal pattern as other conflict flows.
 
 Notes:
-Deferral lifted 24/03/2026 — historical RVP validation backlog is now closed.
+Deferral lifted 24/03/2026 by owner decision. Historical RVP validation backlog
+remains in progress; continue executing pending `RVP-*` items in ledger order.
 First feature to implement in Phase 20.
 
 ---
