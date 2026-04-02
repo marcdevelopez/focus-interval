@@ -29,6 +29,7 @@ import '../../widgets/task_card.dart';
 import '../../widgets/mode_indicator.dart';
 import 'task_group_planning_screen.dart';
 import '../utils/continuous_plan_load_ui.dart';
+import '../utils/scheduling_conflict_helpers.dart';
 import '../utils/scheduled_group_timing.dart';
 import '../utils/run_mode_launcher.dart';
 
@@ -1556,15 +1557,16 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       final preRunStart = scheduledStart.subtract(
         Duration(minutes: noticeMinutes),
       );
-      final preRunConflict = _findPreRunConflict(
+      final preRunConflict = findPreRunConflict(
         existingGroups,
         preRunStart: preRunStart,
         scheduledStart: scheduledStart,
         activeSession: activeSession,
         now: now,
+        fallbackNoticeMinutes: _noticeFallbackMinutes,
       );
       if (preRunConflict != null) {
-        final message = preRunConflict == _PreRunConflictType.running
+        final message = preRunConflict == PreRunConflictType.running
             ? "That time doesn't leave enough pre-run space because another "
                   'group is still running. Choose a later start or reduce the '
                   'pre-run notice.'
@@ -1575,13 +1577,14 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         return;
       }
     }
-    final conflicts = _findConflicts(
+    final conflicts = findSchedulingConflicts(
       existingGroups,
       newStart: conflictStart,
       newEnd: conflictEnd,
       includeRunningAlways: isStartNow,
       activeSession: activeSession,
       now: now,
+      fallbackNoticeMinutes: _noticeFallbackMinutes,
     );
 
     try {
@@ -1714,123 +1717,6 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         initialNoticeMinutes: initialNoticeMinutes,
       ),
     );
-  }
-
-  _GroupConflicts _findConflicts(
-    List<TaskRunGroup> groups, {
-    required DateTime newStart,
-    required DateTime newEnd,
-    required bool includeRunningAlways,
-    required PomodoroSession? activeSession,
-    required DateTime now,
-  }) {
-    final running = <TaskRunGroup>[];
-    final scheduled = <TaskRunGroup>[];
-
-    for (final group in groups) {
-      if (group.status == TaskRunStatus.canceled ||
-          group.status == TaskRunStatus.completed) {
-        continue;
-      }
-      if (group.status == TaskRunStatus.running && includeRunningAlways) {
-        running.add(group);
-        continue;
-      }
-      final start = group.status == TaskRunStatus.scheduled
-          ? (resolveEffectiveScheduledStart(
-                  group: group,
-                  allGroups: groups,
-                  activeSession: activeSession,
-                  now: now,
-                  fallbackNoticeMinutes: _noticeFallbackMinutes,
-                ) ??
-                group.scheduledStartTime ??
-                group.createdAt)
-          : (group.actualStartTime ??
-                group.scheduledStartTime ??
-                group.createdAt);
-      final end = group.status == TaskRunStatus.scheduled
-          ? (resolveEffectiveScheduledEnd(
-                  group: group,
-                  allGroups: groups,
-                  activeSession: activeSession,
-                  now: now,
-                  fallbackNoticeMinutes: _noticeFallbackMinutes,
-                ) ??
-                group.theoreticalEndTime)
-          : (group.theoreticalEndTime.isBefore(start)
-                ? start
-                : group.theoreticalEndTime);
-      if (!_overlaps(newStart, newEnd, start, end)) continue;
-      if (group.status == TaskRunStatus.running) {
-        running.add(group);
-        continue;
-      }
-      if (group.status == TaskRunStatus.scheduled) {
-        scheduled.add(group);
-      }
-    }
-
-    return _GroupConflicts(running: running, scheduled: scheduled);
-  }
-
-  _PreRunConflictType? _findPreRunConflict(
-    List<TaskRunGroup> groups, {
-    required DateTime preRunStart,
-    required DateTime scheduledStart,
-    required PomodoroSession? activeSession,
-    required DateTime now,
-  }) {
-    for (final group in groups) {
-      if (group.status == TaskRunStatus.canceled ||
-          group.status == TaskRunStatus.completed) {
-        continue;
-      }
-      final start = group.status == TaskRunStatus.scheduled
-          ? (resolveEffectiveScheduledStart(
-                  group: group,
-                  allGroups: groups,
-                  activeSession: activeSession,
-                  now: now,
-                  fallbackNoticeMinutes: _noticeFallbackMinutes,
-                ) ??
-                group.scheduledStartTime ??
-                group.createdAt)
-          : (group.actualStartTime ??
-                group.scheduledStartTime ??
-                group.createdAt);
-      final end = group.status == TaskRunStatus.scheduled
-          ? (resolveEffectiveScheduledEnd(
-                  group: group,
-                  allGroups: groups,
-                  activeSession: activeSession,
-                  now: now,
-                  fallbackNoticeMinutes: _noticeFallbackMinutes,
-                ) ??
-                group.theoreticalEndTime)
-          : (group.theoreticalEndTime.isBefore(start)
-                ? start
-                : group.theoreticalEndTime);
-      if (!_overlaps(preRunStart, scheduledStart, start, end)) continue;
-      if (group.status == TaskRunStatus.running) {
-        return _PreRunConflictType.running;
-      }
-      if (group.status == TaskRunStatus.scheduled) {
-        return _PreRunConflictType.scheduled;
-      }
-    }
-    return null;
-  }
-
-  bool _overlaps(
-    DateTime aStart,
-    DateTime aEnd,
-    DateTime bStart,
-    DateTime bEnd,
-  ) {
-    final safeAEnd = aEnd.isBefore(aStart) ? aStart : aEnd;
-    final safeBEnd = bEnd.isBefore(bStart) ? bStart : bEnd;
-    return aStart.isBefore(safeBEnd) && safeAEnd.isAfter(bStart);
   }
 
   Future<bool> _resolveRunningConflict(
@@ -2879,12 +2765,3 @@ class _MiniDot extends StatelessWidget {
 }
 
 enum _WebLocalNoticeAction { stayLocal, signIn }
-
-enum _PreRunConflictType { running, scheduled }
-
-class _GroupConflicts {
-  final List<TaskRunGroup> running;
-  final List<TaskRunGroup> scheduled;
-
-  const _GroupConflicts({required this.running, required this.scheduled});
-}
