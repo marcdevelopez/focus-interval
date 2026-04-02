@@ -26,8 +26,8 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **BUG-023 — Task Editor save-as-preset now auto-links returned preset (`pending-local`, 31/03/2026)**
-Current focus: **Historical RVP validation queue (`RVP-059` onward) + Phase 20 planning sync**
-Last update: **01/04/2026**
+Current focus: **Post-closure sync after BUG-024 / RVP-059 (next backlog item selection)**
+Last update: **02/04/2026**
 
 ---
 
@@ -17592,3 +17592,251 @@ creates/saves a preset but the task remains unlinked (`Select preset`) after ret
 - Closed roadmap validations in this packet: **34** (`RVP-021`..`RVP-031`, `RVP-034`, `RVP-035`, `RVP-036`, `RVP-037`, `RVP-038`, `RVP-039`, `RVP-040`, `RVP-042`, `RVP-045`, `RVP-046`, `RVP-047`, `RVP-048`, `RVP-049`, `RVP-050`, `RVP-051`, `RVP-052`, `RVP-053`, `RVP-054`, `RVP-055`, `RVP-056`, `RVP-057`, `RVP-058`, `RVP-060`).
 - Open historical roadmap queue now: **3**
   (`RVP-059`, `RVP-061`, `RVP-062`).
+
+---
+
+## Block 731 — RVP-061 closure: postpone-follow overlap flow + paused overlap alert validated (02/04/2026)
+
+**Current branch intent:** Historical roadmap validation closure packet continuation (`RVP-061`) with postpone-follow and paused-overlap evidence.
+**Branch:** `validation-rvp021-028-sync`
+**Commit:** `pending-local`
+**Validation ID closed:** `RVP-061`
+
+### Test coverage validated
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+  - `suppresses immediate duplicate running-overlap modal after postpone`
+- `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+  - `uses paused session projection to trigger overlap earlier`
+  - `does not flag overlap when scheduled group follows running group`
+
+### Local validation gate
+
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "suppresses immediate duplicate running-overlap modal after postpone"` -> PASS (`+1`)
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart --plain-name "uses paused session projection to trigger overlap earlier"` -> PASS (`+1`)
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart --plain-name "does not flag overlap when scheduled group follows running group"` -> PASS (`+1`)
+- `flutter analyze` -> PASS (`No issues found!`)
+
+### Documentation synchronization
+
+- `docs/validation/validation_ledger.md`
+  - Snapshot updated to `5` pending roadmap validations.
+  - `RVP-061` moved to `Closed/OK` with postpone-follow + paused-overlap evidence.
+- `docs/roadmap.md`
+  - 19/02/2026 line moved from `validation pending` to validated `Closed/OK` on 02/04/2026.
+
+### Status after this block
+
+- Closed roadmap validations in this packet: **35** (`RVP-021`..`RVP-031`, `RVP-034`, `RVP-035`, `RVP-036`, `RVP-037`, `RVP-038`, `RVP-039`, `RVP-040`, `RVP-042`, `RVP-045`, `RVP-046`, `RVP-047`, `RVP-048`, `RVP-049`, `RVP-050`, `RVP-051`, `RVP-052`, `RVP-053`, `RVP-054`, `RVP-055`, `RVP-056`, `RVP-057`, `RVP-058`, `RVP-060`, `RVP-061`).
+- Open historical roadmap queue now: **2**
+  (`RVP-059`, `RVP-062`).
+
+---
+
+## Block 732 — RVP-062 closure: late-start queue owner-only + auto-claim + queue bootstrap validated (02/04/2026)
+
+**Current branch intent:** Historical roadmap validation closure packet continuation (`RVP-062`) with late-start queue ownership and bootstrap evidence.
+**Branch:** `validation-rvp021-028-sync`
+**Commit:** `pending-local`
+**Validation ID closed:** `RVP-062`
+
+### Test coverage validated
+
+- `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+  - `does not auto-claim late-start queue when heartbeat is missing but anchor is fresh`
+  - `auto-claims late-start queue when heartbeat is missing and anchor is stale`
+  - `launch catch-up auto-starts overdue scheduled group and emits openTimer action`
+  - `resume catch-up starts overdue scheduled group once timeSync becomes available in account mode`
+- `test/presentation/utils/scheduled_group_timing_test.dart`
+  - `excludes queue-confirmed anchored groups from overdue detection`
+
+### Local validation gate
+
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart --plain-name "does not auto-claim late-start queue when heartbeat is missing but anchor is fresh"` -> PASS (`+1`)
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart --plain-name "auto-claims late-start queue when heartbeat is missing and anchor is stale"` -> PASS (`+1`)
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart --plain-name "launch catch-up auto-starts overdue scheduled group and emits openTimer action"` -> PASS (`+1`)
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart --plain-name "resume catch-up starts overdue scheduled group once timeSync becomes available in account mode"` -> PASS (`+1`)
+- `flutter test test/presentation/utils/scheduled_group_timing_test.dart --plain-name "excludes queue-confirmed anchored groups from overdue detection"` -> PASS (`+1`)
+- `flutter analyze` -> PASS (`No issues found!`)
+
+### Documentation synchronization
+
+- `docs/validation/validation_ledger.md`
+  - Snapshot updated to `4` pending roadmap validations.
+  - `RVP-062` moved to `Closed/OK` with late-start queue owner-only + bootstrap evidence.
+- `docs/roadmap.md`
+  - 20/02/2026 line moved from `validation pending` to validated `Closed/OK` on 02/04/2026.
+
+### Status after this block
+
+- Closed roadmap validations in this packet: **36** (`RVP-021`..`RVP-031`, `RVP-034`, `RVP-035`, `RVP-036`, `RVP-037`, `RVP-038`, `RVP-039`, `RVP-040`, `RVP-042`, `RVP-045`, `RVP-046`, `RVP-047`, `RVP-048`, `RVP-049`, `RVP-050`, `RVP-051`, `RVP-052`, `RVP-053`, `RVP-054`, `RVP-055`, `RVP-056`, `RVP-057`, `RVP-058`, `RVP-060`, `RVP-061`, `RVP-062`).
+- Open historical roadmap queue now: **1**
+  (`RVP-059`).
+
+---
+
+## Block 733 — RVP-059 fix applied: reject-dismiss survives requestId materialization (local PASS, device validation pending) (02/04/2026)
+
+**Current branch intent:** Historical roadmap validation packet final item (`RVP-059`) moved to in-validation after exact-repro fix.
+**Branch:** `validation-rvp021-028-sync`
+**Commit:** `pending-local`
+**Validation ID status:** `RVP-059` -> `In validation`
+
+### Runtime fix
+
+- `lib/presentation/screens/timer_screen.dart`
+  - `_isDismissedOwnershipRequest(...)` now keeps dismissal continuity when a pending owner request is first dismissed without `requestId` and later re-ingested with materialized `requestId`, by honoring requester fallback as well as requestId match.
+
+### Test coverage validated
+
+- `test/presentation/timer_screen_syncing_overlay_test.dart`
+  - Added exact-repro regression test:
+    `owner reject dismissal stays hidden when pending request gets requestId materialized`
+  - Regression smoke:
+    `critical ownership flow stays appbar-sheet-only and pending remains stable until owner response`
+    `rejection clears local pending and old rejected requestId does not suppress a new request`
+
+### Local validation gate
+
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart --plain-name "owner reject dismissal stays hidden when pending request gets requestId materialized"` -> PASS (`+1`)
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart --plain-name "critical ownership flow stays appbar-sheet-only and pending remains stable until owner response"` -> PASS (`+1`)
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart --plain-name "rejection clears local pending and old rejected requestId does not suppress a new request"` -> PASS (`+1`)
+- `flutter analyze` -> PASS (`No issues found!`)
+
+### Documentation synchronization
+
+- `docs/validation/validation_ledger.md`
+  - `RVP-059` moved from `Pending` to `In validation` with local PASS evidence and device-validation blocker.
+- `docs/roadmap.md`
+  - 12/02/2026 line updated from `validation pending` to `validation in progress` (local PASS, device pending).
+
+### Device validation policy (owner-approved)
+
+- If real-device validation reveals regression, rollback to pre-fix state and keep this issue as observation (do not close `RVP-059`).
+
+### Status after this block
+
+- Closed roadmap validations in this packet: **36**.
+- Open historical roadmap queue now: **1** (`RVP-059`, in validation pending real-device confirmation).
+
+---
+
+## Block 734 — BUG-024 formalized with validation packet (02/04/2026)
+
+**Current branch intent:** Convert RVP-059 repro into formal bug-validation workflow artifact and keep status in validation until real-device confirmation.
+**Branch:** `validation-rvp021-028-sync`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `RVP-059` (`In validation`), `BUG-024` (`In validation`)
+
+### Documentation-first bug workflow synchronization
+
+- `docs/bugs/bug_log.md`
+  - Registered `BUG-024` with confirmed root cause, runtime fix scope, local evidence, and device-validation pending status.
+- `docs/bugs/validation_bug024_2026_04_02/`
+  - Created required packet structure:
+    - `plan_validacion_rapida_fix.md`
+    - `quick_pass_checklist.md`
+    - `logs/`
+    - `screenshots/`
+- `docs/validation/validation_ledger.md`
+  - Added explicit `BUG-024` entry (`In validation`) to mirror non-closed bug log status.
+  - Updated active bug-log snapshot count from `0` to `1`.
+- `docs/roadmap.md`
+  - RVP-059 line kept as `validation in progress` (local PASS, device pending).
+
+### Local evidence captured in packet logs
+
+- Exact repro test PASS:
+  - `owner reject dismissal stays hidden when pending request gets requestId materialized`
+- Regression smoke PASS:
+  - `critical ownership flow stays appbar-sheet-only and pending remains stable until owner response`
+  - `rejection clears local pending and old rejected requestId does not suppress a new request`
+- `flutter analyze` PASS.
+- Logs saved under:
+  - `docs/bugs/validation_bug024_2026_04_02/logs/2026-04-02_bug024_pending-local_widget_exact_repro_debug.log`
+  - `docs/bugs/validation_bug024_2026_04_02/logs/2026-04-02_bug024_pending-local_widget_regression_critical_debug.log`
+  - `docs/bugs/validation_bug024_2026_04_02/logs/2026-04-02_bug024_pending-local_widget_regression_requestid_debug.log`
+  - `docs/bugs/validation_bug024_2026_04_02/logs/2026-04-02_bug024_pending-local_analyze.log`
+
+### Status after this block
+
+- `BUG-024`: **In validation** (local PASS; device validation pending).
+- `RVP-059`: **In validation** (depends on BUG-024 device validation outcome).
+
+---
+
+## Block 735 — BUG-024 validation workflow compliance audit (02/04/2026)
+
+**Current branch intent:** Keep BUG-024 / RVP-059 in strict bug-validation workflow and fix traceability mismatches only.
+**Branch:** `validation-rvp021-028-sync`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-024` (`In validation`), `RVP-059` (`In validation`)
+
+### Compliance audit performed
+
+- Mandatory preflight docs re-read completed in this session:
+  - `CLAUDE.md`
+  - `docs/specs.md`
+  - `docs/roadmap.md`
+  - `docs/dev_log.md`
+  - `docs/bugs/bug_log.md`
+  - `docs/validation/validation_ledger.md`
+- Date verification executed: `Thu Apr  2 16:58:27 CEST 2026`.
+- Validation packet structure check for `docs/bugs/validation_bug024_2026_04_02/`:
+  - `plan_validacion_rapida_fix.md` present with all mandatory sections.
+  - `quick_pass_checklist.md` present with required checkbox-only sections.
+  - `logs/` and `screenshots/` present.
+  - No extra markdown artifacts found.
+
+### Corrections applied
+
+- `docs/validation/validation_ledger.md`
+  - `BUG-024` source line reference corrected:
+    - `docs/bugs/bug_log.md:3245` -> `docs/bugs/bug_log.md:3261`
+  - `RVP-059` roadmap source line reference corrected:
+    - `docs/roadmap.md:420` -> `docs/roadmap.md:421`
+
+### Status after this block
+
+- `BUG-024`: **In validation** (unchanged; local PASS, device validation pending).
+- `RVP-059`: **In validation** (unchanged; depends on BUG-024 device validation).
+
+---
+
+## Block 736 — BUG-024 / RVP-059 closed after real-device validation PASS (02/04/2026)
+
+**Current branch intent:** Close BUG-024 and RVP-059 with full documentation synchronization after device PASS confirmation.
+**Branch:** `validation-rvp021-028-sync`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-024` (`Closed/OK`), `RVP-059` (`Closed/OK`)
+
+### Validation closure recap (user-confirmed)
+
+- Scenario A PASS (Android owner + macOS mirror):
+  - ownership request reject flow validated without banner reappearance after requestId materialization path.
+- Scenario B PASS:
+  - ownership request lifecycle remained stable (sheet CTA, pending until owner response, reject path clear).
+- Scenario C PASS:
+  - closure packet criteria validated in the same real-device run, no regressions observed.
+
+### Documentation synchronization
+
+- `docs/bugs/validation_bug024_2026_04_02/quick_pass_checklist.md`
+  - device checkboxes completed (A/B/C closure path).
+- `docs/bugs/validation_bug024_2026_04_02/plan_validacion_rapida_fix.md`
+  - device verification section added.
+  - status updated to `Closed/OK`.
+- `docs/bugs/bug_log.md`
+  - `BUG-024` status updated from `In validation` to `Closed/OK` with device PASS evidence.
+- `docs/validation/validation_ledger.md`
+  - snapshot updated:
+    - roadmap pending count `4` -> `3` (IDEA backlog only)
+    - active non-closed bug count `1` -> `0`
+  - `BUG-024` and `RVP-059` entries moved to `Closed/OK` with closure evidence.
+- `docs/roadmap.md`
+  - 12/02/2026 ownership-dismiss line updated to validated `RVP-059 Closed/OK`.
+
+### Status after this block
+
+- `BUG-024`: **Closed/OK** (02/04/2026, real-device PASS confirmed).
+- `RVP-059`: **Closed/OK** (02/04/2026, synchronized with BUG-024 closure).

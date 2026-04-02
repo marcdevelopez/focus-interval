@@ -1,0 +1,27 @@
+00:00 +0: loading /Users/devcodex/development/focus_interval/test/presentation/timer_screen_syncing_overlay_test.dart
+00:00 +0: rejection clears local pending and old rejected requestId does not suppress a new request
+[VMLifecycle] init vmToken=7ef84f5d-67c5-4e93-aa9a-2b1e90360636 groupId=none
+[TimeSync] refreshed (resync) offset=0ms
+[ActiveSession][snapshot] owner=remote-owner-device status=pomodoroRunning phase=pomodoro remaining=1200 lastUpdatedAt=2026-04-02 16:54:10.587771 groupId=group-reject-clears-pending-requestid-guard
+[SessionSync] attach groupId=group-reject-clears-pending-requestid-guard
+[TimeSync] refreshed (session-snapshot) offset=0ms
+[ActiveSession][snapshot] owner=remote-owner-device status=pomodoroRunning phase=pomodoro remaining=1200 lastUpdatedAt=2026-04-02 16:54:10.587771 groupId=group-reject-clears-pending-requestid-guard
+[ActiveSession][snapshot] owner=remote-owner-device status=pomodoroRunning phase=pomodoro remaining=1200 lastUpdatedAt=2026-04-02 16:54:10.587771 groupId=group-reject-clears-pending-requestid-guard
+[TimeSync] refreshed (session-snapshot) offset=0ms
+[TimeSync] refreshed (load-group) offset=0ms
+[SessionSub] close vmToken=7ef84f5d-67c5-4e93-aa9a-2b1e90360636 reason=load-group
+[SessionSub] open (→SSS) vmToken=7ef84f5d-67c5-4e93-aa9a-2b1e90360636 groupId=group-reject-clears-pending-requestid-guard reason=load-group
+[RunModeDiag] Timer load group=group-reject-clears-pending-requestid-guard result=PomodoroGroupLoadResult.loaded status=running route=/timer/group-reject-clears-pending-requestid-guard
+[TimeSync] refreshed (session-snapshot) offset=0ms
+[TimeSync] refreshed (resync) offset=0ms
+[ActiveSession][snapshot] owner=remote-owner-device status=pomodoroRunning phase=pomodoro remaining=1200 lastUpdatedAt=2026-04-02 16:54:10.587771 groupId=group-reject-clears-pending-requestid-guard
+[TimeSync] refreshed (session-snapshot) offset=0ms
+[ActiveSession][snapshot] owner=remote-owner-device status=pomodoroRunning phase=pomodoro remaining=1200 lastUpdatedAt=2026-04-02 16:54:12.587771 groupId=group-reject-clears-pending-requestid-guard
+[TimeSync] refreshed (session-snapshot) offset=0ms
+[TimeSync] refreshed (resync) offset=0ms
+[ActiveSession][snapshot] owner=remote-owner-device status=pomodoroRunning phase=pomodoro remaining=1200 lastUpdatedAt=2026-04-02 16:54:12.587771 groupId=group-reject-clears-pending-requestid-guard
+[TimeSync] refreshed (session-snapshot) offset=0ms
+[ActiveSession][snapshot] owner=remote-owner-device status=pomodoroRunning phase=pomodoro remaining=1200 lastUpdatedAt=2026-04-02 16:54:13.587771 groupId=group-reject-clears-pending-requestid-guard
+[TimeSync] refreshed (session-snapshot) offset=0ms
+[VMLifecycle] dispose vmToken=7ef84f5d-67c5-4e93-aa9a-2b1e90360636 groupId=group-reject-clears-pending-requestid-guard
+00:05 +1: All tests passed!

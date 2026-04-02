@@ -418,7 +418,8 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
                   to prevent suppressing new requests after rejection
                   (validated 01/04/2026; `RVP-058` Closed/OK).
       12/02/2026: Owner-side reject modal dismissal stabilized against
-                  requestId materialization flicker (validation pending).
+                  requestId materialization flicker (validated 02/04/2026;
+                  `RVP-059` Closed/OK).
       18/02/2026: Phase 17 validation closed (planning total duration + conflict
                   resolution).
       18/02/2026: Phase 17 reopened — early overlap warning (pause drift) +
@@ -427,11 +428,11 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
                   SnackBar implemented (validated 01/04/2026; `RVP-060` Closed/OK).
       19/02/2026: Phase 17 scope extended — postpone follows running group in
                   real time (no repeat modal) + paused overlap alerts
-                  implemented (validation pending).
+                  implemented (validated 02/04/2026; `RVP-061` Closed/OK).
       20/02/2026: Phase 17 scope extended — late-start queue owner-only flow
                   (request/auto-claim), server-anchored projections with live
                   updates, queue-confirm session bootstrap, and chained
-                  postpone for queued groups (validation pending).
+                  postpone for queued groups (validated 02/04/2026; `RVP-062` Closed/OK).
       30/03/2026: BUG-022 registered (docs-first) — macOS Authentication
                   keyboard input can lock after sign-out/account switch with
                   duplicate key-down exceptions; LoginScreen stale-key repair

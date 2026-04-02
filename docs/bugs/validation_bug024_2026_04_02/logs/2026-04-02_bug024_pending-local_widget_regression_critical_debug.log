@@ -1,0 +1,24 @@
+00:00 +0: loading /Users/devcodex/development/focus_interval/test/presentation/timer_screen_syncing_overlay_test.dart
+00:00 +0: critical ownership flow stays appbar-sheet-only and pending remains stable until owner response
+[VMLifecycle] init vmToken=bac0ee62-39d2-44af-85ae-6bf5828d1a61 groupId=none
+[TimeSync] refreshed (resync) offset=0ms
+[ActiveSession][snapshot] owner=remote-owner-device status=pomodoroRunning phase=pomodoro remaining=1200 lastUpdatedAt=2026-04-02 16:53:35.643592 groupId=group-critical-sheet-only-pending-stable
+[SessionSync] attach groupId=group-critical-sheet-only-pending-stable
+[TimeSync] refreshed (session-snapshot) offset=0ms
+[ActiveSession][snapshot] owner=remote-owner-device status=pomodoroRunning phase=pomodoro remaining=1200 lastUpdatedAt=2026-04-02 16:53:35.643592 groupId=group-critical-sheet-only-pending-stable
+[ActiveSession][snapshot] owner=remote-owner-device status=pomodoroRunning phase=pomodoro remaining=1200 lastUpdatedAt=2026-04-02 16:53:35.643592 groupId=group-critical-sheet-only-pending-stable
+[TimeSync] refreshed (session-snapshot) offset=0ms
+[TimeSync] refreshed (load-group) offset=0ms
+[SessionSub] close vmToken=bac0ee62-39d2-44af-85ae-6bf5828d1a61 reason=load-group
+[SessionSub] open (→SSS) vmToken=bac0ee62-39d2-44af-85ae-6bf5828d1a61 groupId=group-critical-sheet-only-pending-stable reason=load-group
+[RunModeDiag] Timer load group=group-critical-sheet-only-pending-stable result=PomodoroGroupLoadResult.loaded status=running route=/timer/group-critical-sheet-only-pending-stable
+[TimeSync] refreshed (session-snapshot) offset=0ms
+[TimeSync] refreshed (resync) offset=0ms
+[ActiveSession][snapshot] owner=remote-owner-device status=pomodoroRunning phase=pomodoro remaining=1200 lastUpdatedAt=2026-04-02 16:53:35.643592 groupId=group-critical-sheet-only-pending-stable
+[TimeSync] refreshed (session-snapshot) offset=0ms
+[ActiveSession][snapshot] owner=remote-owner-device status=pomodoroRunning phase=pomodoro remaining=1200 lastUpdatedAt=2026-04-02 16:53:36.643592 groupId=group-critical-sheet-only-pending-stable
+[TimeSync] refreshed (session-snapshot) offset=0ms
+[ActiveSession][snapshot] owner=remote-owner-device status=pomodoroRunning phase=pomodoro remaining=1200 lastUpdatedAt=2026-04-02 16:53:37.643592 groupId=group-critical-sheet-only-pending-stable
+[TimeSync] refreshed (session-snapshot) offset=0ms
+[VMLifecycle] dispose vmToken=bac0ee62-39d2-44af-85ae-6bf5828d1a61 groupId=group-critical-sheet-only-pending-stable
+00:05 +1: All tests passed!

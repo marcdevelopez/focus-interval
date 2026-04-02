@@ -3255,3 +3255,82 @@ Validation evidence (manual run):
   - Scenario B (`Use existing`) linked existing duplicate in Edit Task (`preset 20 min (2)`).
   - Runtime log: `docs/bugs/validation_bug023_2026_03_31/logs/2026-03-31_bug023_pending-local_android_debug.log`.
   - Evidence captured via user screenshots in thread.
+
+---
+
+## BUG-024 — Owner reject banner reappears when pending request materializes `requestId`
+
+ID: BUG-024
+Date: 02/04/2026 (UTC+2)
+Platforms: Account Mode multi-device (owner + mirror)
+Context: Run Mode ownership request banner (`Ownership request`) on owner device.
+
+Repro summary:
+
+- Owner receives a pending ownership request without `requestId`.
+- Owner taps `Reject` and banner dismisses.
+- Backend/session snapshot re-ingests the same pending requester with materialized `requestId`.
+
+Symptom:
+
+- Owner `Ownership request` banner can reappear immediately after rejection even
+  though it is the same requester flow, creating a visible dismiss/reopen flicker.
+
+Observed behavior:
+
+- Dismissal fallback tracks requester id when `requestId` is null.
+- Once `requestId` appears, dismissal check switches to requestId-only path and
+  no longer honors requester fallback for that same pending request.
+
+Expected behavior:
+
+- Once owner dismisses/rejects a pending request, materialization of `requestId`
+  for the same requester pending flow must not re-open the banner.
+
+Root cause (confirmed):
+
+- `lib/presentation/screens/timer_screen.dart`
+  - `_isDismissedOwnershipRequest(...)` returned early on non-null `requestId`,
+    skipping `_dismissedOwnershipRequesterId` fallback matching.
+  - This broke continuity across null->materialized `requestId` transitions.
+
+Fix applied:
+
+- Branch: `validation-rvp021-028-sync`
+- Runtime patch:
+  - `lib/presentation/screens/timer_screen.dart`
+    - `_isDismissedOwnershipRequest(...)` now preserves requester fallback match
+      even when `requestId` is present.
+- Regression coverage added:
+  - `test/presentation/timer_screen_syncing_overlay_test.dart`
+    - `owner reject dismissal stays hidden when pending request gets requestId materialized`
+
+Status:
+Closed/OK (02/04/2026). Local exact-repro PASS + local regression smoke PASS +
+real-device validation PASS (Android owner + macOS mirror).
+
+Validation evidence (local):
+
+- `flutter test ... --plain-name "owner reject dismissal stays hidden when pending request gets requestId materialized"` PASS
+- `flutter test ... --plain-name "critical ownership flow stays appbar-sheet-only and pending remains stable until owner response"` PASS
+- `flutter test ... --plain-name "rejection clears local pending and old rejected requestId does not suppress a new request"` PASS
+- `flutter analyze` PASS
+- Validation packet created:
+  - `docs/bugs/validation_bug024_2026_04_02/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug024_2026_04_02/quick_pass_checklist.md`
+  - `docs/bugs/validation_bug024_2026_04_02/logs/2026-04-02_bug024_pending-local_widget_exact_repro_debug.log`
+  - `docs/bugs/validation_bug024_2026_04_02/logs/2026-04-02_bug024_pending-local_widget_regression_critical_debug.log`
+  - `docs/bugs/validation_bug024_2026_04_02/logs/2026-04-02_bug024_pending-local_widget_regression_requestid_debug.log`
+  - `docs/bugs/validation_bug024_2026_04_02/logs/2026-04-02_bug024_pending-local_analyze.log`
+
+Validation evidence (devices):
+
+- 02/04/2026 user-confirmed real-device PASS in thread:
+  - Scenario A: Android owner + macOS mirror, reject flow validated without banner reappearance.
+  - Scenario B: ownership sheet flow + pending/reject lifecycle validated.
+  - Scenario C: closure criteria validated on the same device run, no regressions observed.
+
+Device validation policy:
+
+- If real-device validation shows regression, rollback to pre-fix state and keep
+  BUG-024 open as observation (do not close).
