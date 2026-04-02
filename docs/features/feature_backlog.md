@@ -111,7 +111,7 @@ When a feature starts, list it here and update its full entry in the ordered IDE
 
 Active:
 - IDEA-034 — Offline Continuation With Rejoin/Sync Choice (Feature folder: docs/features/feature_2026_03_04_offline-continuation-rejoin-choice/; Plan: docs/features/feature_2026_03_04_offline-continuation-rejoin-choice/feature_plan.md)
-- IDEA-039 — Scheduling Conflict Explainer + Guided Start Suggestions (Feature folder: docs/features/feature_2026_04_02_idea039-conflict-explainer/; Plan: docs/features/feature_2026_04_02_idea039-conflict-explainer/codex_handoff.md)
+- IDEA-039 — Scheduling Conflict Explainer + Guided Start Suggestions (Feature folder: docs/features/feature_2026_04_02_idea039-conflict-explainer/; Plan: docs/features/feature_2026_04_02_idea039-conflict-explainer/feature_plan.md)
 
 ## Done
 
@@ -3177,7 +3177,8 @@ Scope: M
 Priority: P1
 Status: in_progress
 Feature folder: docs/features/feature_2026_04_02_idea039-conflict-explainer/
-Plan: docs/features/feature_2026_04_02_idea039-conflict-explainer/codex_handoff.md
+Plan: docs/features/feature_2026_04_02_idea039-conflict-explainer/feature_plan.md
+Checklist: docs/features/feature_2026_04_02_idea039-conflict-explainer/feature_checklist.md
 
 Problem / Goal:
 When scheduling is blocked by pre-run or execution conflicts, current feedback
