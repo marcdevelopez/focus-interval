@@ -1,9 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../providers.dart';
+import '../viewmodels/pre_run_notice_view_model.dart';
 import '../../data/models/pomodoro_task.dart';
 import '../../data/models/schema_version.dart';
 import '../../data/models/task_run_group.dart';
@@ -50,17 +53,18 @@ class TaskGroupPlanningResult {
   });
 }
 
-class TaskGroupPlanningScreen extends StatefulWidget {
+class TaskGroupPlanningScreen extends ConsumerStatefulWidget {
   final TaskGroupPlanningArgs args;
 
   const TaskGroupPlanningScreen({super.key, required this.args});
 
   @override
-  State<TaskGroupPlanningScreen> createState() =>
+  ConsumerState<TaskGroupPlanningScreen> createState() =>
       _TaskGroupPlanningScreenState();
 }
 
-class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
+class _TaskGroupPlanningScreenState
+    extends ConsumerState<TaskGroupPlanningScreen> {
   static const String _infoSeenKey = 'planning_info_seen_v1';
   static const String _shiftNoticeKey = 'planning_range_shift_notice_v1';
   static const String _noticeClampKey = 'planning_notice_clamp_notice_v1';
@@ -352,6 +356,19 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final groupsAsync = ref.watch(taskRunGroupStreamProvider);
+    final allGroups = groupsAsync.value ?? const <TaskRunGroup>[];
+    final activeSession = ref.watch(activePomodoroSessionProvider);
+    final noticeFallbackMinutes = ref
+        .watch(preRunNoticeMinutesProvider)
+        .maybeWhen(data: (v) => v, orElse: () => null);
+    assert(() {
+      // Commit 2 is structural only. Commit 3 consumes these values for
+      // conflict-aware planning behavior.
+      final _ = (allGroups, activeSession, noticeFallbackMinutes);
+      return true;
+    }());
+
     final integrityMode = widget.args.integrityMode;
     final preview = _buildPlanPreview();
     final noticeClampMessage = _noticeClampMessage();
@@ -464,10 +481,7 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
                   const SizedBox(height: 6),
                   Text(
                     startAutoAdjustMessage ?? noticeClampMessage ?? '',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                    ),
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 ],
               ],
@@ -574,10 +588,7 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
             message: 'Select a start time to schedule.',
           );
         }
-        if (!isStartTimeInFuture(
-          start: _scheduledStart!,
-          now: now,
-        )) {
+        if (!isStartTimeInFuture(start: _scheduledStart!, now: now)) {
           return _PlanPreview.error(
             option: _selected,
             items: items,
@@ -697,7 +708,13 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
   }
 
   DateTime _floorToMinute(DateTime value) {
-    return DateTime(value.year, value.month, value.day, value.hour, value.minute);
+    return DateTime(
+      value.year,
+      value.month,
+      value.day,
+      value.hour,
+      value.minute,
+    );
   }
 
   void _applyStartAutoUpdate() {
@@ -853,8 +870,8 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
                                 fillColor: WidgetStateProperty.resolveWith(
                                   (states) =>
                                       states.contains(WidgetState.selected)
-                                          ? primary
-                                          : onSurface.withValues(alpha: 0.2),
+                                      ? primary
+                                      : onSurface.withValues(alpha: 0.2),
                                 ),
                                 onChanged: (value) {
                                   setSnackState(() {
