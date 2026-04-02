@@ -17,6 +17,19 @@ Scope: bugs + features + refactors + roadmap/process validations
 
 Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
 
+## Branch integration safety (mandatory)
+
+- Never overwrite the ledger from a stale feature branch snapshot.
+- Before merging any feature branch into `develop`, verify ledger ancestry first:
+  - `git log --oneline -- docs/validation/validation_ledger.md | head -n 20`
+  - `git branch --contains <closure-commit>`
+- If validation closures exist on a different branch, merge that validation branch into `develop` first.
+- Merge order is mandatory:
+  1. Validation/doc closure branches.
+  2. Feature implementation branches.
+- If a merge conflict touches this file, preserve the most recent `Closed/OK` statuses, evidence, and commit references.
+- Do not finalize push/PR until a post-merge check confirms expected closed IDs are still closed.
+
 ## Snapshot (2026-04-03)
 
 - Roadmap `validation pending`: **3** items (IDEA backlog only). `RVP-021`..`RVP-031` + `RVP-034` + `RVP-035` + `RVP-036` + `RVP-037` + `RVP-038` + `RVP-039` + `RVP-040` + `RVP-042` + `RVP-045` + `RVP-046` + `RVP-047` + `RVP-048` + `RVP-049` + `RVP-050` + `RVP-051` + `RVP-052` + `RVP-053` + `RVP-054` + `RVP-055` + `RVP-056` + `RVP-057` + `RVP-058` + `RVP-059` + `RVP-060` + `RVP-061` + `RVP-062` closed after focused local + real-device validation. IDEA-039 implementation complete on `feature/idea039-conflict-explainer`; pending merge into develop.

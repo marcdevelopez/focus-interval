@@ -422,6 +422,8 @@ Rules:
 - Branch scope lock: one branch = one scope family. Do not mix unrelated tracks in one branch
   (example of forbidden mix: roadmap validation closures + process-rule governance edits).
   If a new request changes scope family, create/switch branch before editing.
+- Merge-order safety (mandatory): when closing a feature branch, merge pending validation/doc-closure branches into `develop` first, then merge the feature branch.
+- If `docs/validation/validation_ledger.md` conflicts, preserve the newest `Closed/OK` statuses with their evidence and closure commit references; never downgrade to `Pending` from a stale branch snapshot.
 
 For every new feature or fix:
 
