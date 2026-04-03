@@ -3334,3 +3334,62 @@ Device validation policy:
 
 - If real-device validation shows regression, rollback to pre-fix state and keep
   BUG-024 open as observation (do not close).
+
+---
+
+## BUG-025 — Running overlap alert missed at boundary and on Run Mode re-entry
+
+ID: BUG-025
+Date: 03/04/2026 (UTC+2)
+Platforms: Android, macOS (expected cross-platform behavior)
+Context: Account Mode, running group paused with a following scheduled group near boundary.
+
+Repro summary:
+
+- Keep `G1` running and pause it.
+- Configure `G2` scheduled so its pre-run/start boundary matches projected `G1` end.
+- Let conflict boundary pass while checking Run Mode and re-entering TimerScreen from other routes.
+
+Symptom:
+
+- `Scheduling conflict` modal may appear late or fail to appear when conflict exists.
+- On TimerScreen entry/re-entry, an already-active overlap decision may not surface.
+
+Observed behavior:
+
+- Overlap threshold used a +1 minute grace, delaying/neutralizing exact-boundary conflicts.
+- TimerScreen consumed overlap decisions mainly on provider change events; pre-existing decisions at screen entry could be missed in edge timing.
+
+Expected behavior:
+
+- Overlap decision must trigger at exact boundary (`runningEnd >= preRunStart`).
+- TimerScreen must consume already-active overlap decisions on enter/re-enter when still valid.
+
+Root cause (confirmed):
+
+- `lib/presentation/utils/scheduled_group_timing.dart`: overlap threshold was `preRunStart + 1 minute`.
+- `lib/presentation/screens/timer_screen.dart`: initial/mount consumption path for existing `runningOverlapDecisionProvider` value was insufficient.
+
+Fix applied:
+
+- Branch: `fix/overlap-threshold-exact`
+- Runtime/docs/tests:
+  - `0a1ea3a` `fix(overlap): trigger running overlap exactly at pre-run boundary`
+    - Removed +1 minute grace from overlap threshold.
+    - Updated overlap timing spec wording to exact boundary.
+    - Added boundary tests in timing/coordinator suites.
+  - `547de2b` `fix(timer): consume existing running-overlap decision on run mode mount`
+    - Added unified `_consumeRunningOverlapDecision(...)` path.
+    - Called from listener + mount/re-entry post-frame flows.
+    - Added widget test for decision already present on TimerScreen mount.
+
+Status:
+In validation (03/04/2026).
+
+Validation packet:
+
+- `docs/bugs/validation_bug025_2026_04_03/plan_validacion_rapida_fix.md`
+- `docs/bugs/validation_bug025_2026_04_03/quick_pass_checklist.md`
+- Local gate PASS logs:
+  - `docs/bugs/validation_bug025_2026_04_03/logs/2026-04-03_bug025_547de2b_local_analyze.log`
+  - `docs/bugs/validation_bug025_2026_04_03/logs/2026-04-03_bug025_547de2b_local_targeted-tests.log`

@@ -26,8 +26,8 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **BUG-023 — Task Editor save-as-preset now auto-links returned preset (`pending-local`, 31/03/2026)**
-Current focus: **Post-closure sync after BUG-024 / RVP-059 (next backlog item selection)**
-Last update: **02/04/2026**
+Current focus: **BUG-025 closed; BUG-026/BUG-028 (P1) next**
+Last update: **03/04/2026**
 
 ---
 
@@ -17840,3 +17840,46 @@ creates/saves a preset but the task remains unlinked (`Select preset`) after ret
 
 - `BUG-024`: **Closed/OK** (02/04/2026, real-device PASS confirmed).
 - `RVP-059`: **Closed/OK** (02/04/2026, synchronized with BUG-024 closure).
+
+---
+
+## Block 737 — BUG-025 overlap-boundary fix packaged for device validation (03/04/2026)
+
+**Current branch intent:** BUG-025 runtime fix validation packet + ledger synchronization before device verification.
+**Branch:** `fix/overlap-threshold-exact`
+**Commits:** `0a1ea3a`, `547de2b`
+**Bug status:** `BUG-025` / `BUGLOG-025` moved to **In validation**
+
+### Context
+
+A regression was reported in running-overlap warning behavior:
+
+- conflict warning could fail at the exact boundary in paused scenarios,
+- TimerScreen entry/re-entry could miss an already-active overlap decision.
+
+### Implemented runtime scope
+
+- `0a1ea3a` `fix(overlap): trigger running overlap exactly at pre-run boundary`
+  - Removed +1 minute grace from running-overlap threshold.
+  - Updated specs timing wording to exact boundary.
+  - Added boundary regression tests in timing + coordinator suites.
+- `547de2b` `fix(timer): consume existing running-overlap decision on run mode mount`
+  - Unified decision consumption path in TimerScreen.
+  - Added mount/re-entry post-frame consumption for active decisions.
+  - Added widget regression for decision already active on TimerScreen mount.
+
+### Validation packet opened
+
+- `docs/bugs/validation_bug025_2026_04_03/plan_validacion_rapida_fix.md`
+- `docs/bugs/validation_bug025_2026_04_03/quick_pass_checklist.md`
+- Folders prepared: `logs/`, `screenshots/`
+
+### Documentation synchronization
+
+- Added `BUG-025` entry to `docs/bugs/bug_log.md` with root cause + applied commits.
+- Added `BUGLOG-025` to `docs/validation/validation_ledger.md` as `In validation` (P1).
+- Snapshot updated to reflect one active non-closed bug-log entry.
+
+### Status after this block
+
+- `BUG-025` / `BUGLOG-025`: **Closed/OK** (device validation PASS 03/04/2026, scenarios A-D).
