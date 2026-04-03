@@ -224,4 +224,4 @@ Additional issues discovered during same run (outside strict BUG-025 functional 
 - F03: Groups Hub paused `Ends` projection coherence gap during pause.
 - F04: Modal escape/navigation ergonomics on Android (physical back dependency observed).
 
-Status: Closed/OK (03/04/2026)
+Status: Closed/OK (03/04/2026).

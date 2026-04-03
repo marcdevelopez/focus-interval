@@ -17882,4 +17882,4 @@ A regression was reported in running-overlap warning behavior:
 
 ### Status after this block
 
-- `BUG-025` / `BUGLOG-025`: **Closed/OK** (device validation PASS 03/04/2026, scenarios A-D).
+- `BUG-025` / `BUGLOG-025`: **Closed/OK** (device validation PASS 03/04/2026, scenarios A-D). Owner explicit closure confirmation recorded.
