@@ -17,6 +17,19 @@ Scope: bugs + features + refactors + roadmap/process validations
 
 Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
 
+## Branch integration safety (mandatory)
+
+- Never overwrite the ledger from a stale feature branch snapshot.
+- Before merging any feature branch into `develop`, verify ledger ancestry first:
+  - `git log --oneline -- docs/validation/validation_ledger.md | head -n 20`
+  - `git branch --contains <closure-commit>`
+- If validation closures exist on a different branch, merge that validation branch into `develop` first.
+- Merge order is mandatory:
+  1. Validation/doc closure branches.
+  2. Feature implementation branches.
+- If a merge conflict touches this file, preserve the most recent `Closed/OK` statuses, evidence, and commit references.
+- Do not finalize push/PR until a post-merge check confirms expected closed IDs are still closed.
+
 ## Snapshot (2026-04-03)
 
 - Roadmap `validation pending`: **3** items (IDEA backlog only). `RVP-021`..`RVP-031` + `RVP-034` + `RVP-035` + `RVP-036` + `RVP-037` + `RVP-038` + `RVP-039` + `RVP-040` + `RVP-042` + `RVP-045` + `RVP-046` + `RVP-047` + `RVP-048` + `RVP-049` + `RVP-050` + `RVP-051` + `RVP-052` + `RVP-053` + `RVP-054` + `RVP-055` + `RVP-056` + `RVP-057` + `RVP-058` + `RVP-059` + `RVP-060` + `RVP-061` + `RVP-062` closed after focused local + real-device validation. IDEA-039 implementation complete on `feature/idea039-conflict-explainer`; pending merge into develop.
@@ -234,7 +247,7 @@ Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
 
 ### P2 deferred feature backlog items (historical RVP backlog still open)
 
-- [ ] ID: `IDEA-039` | Type: feature | Priority: P1 | Status: In planning | Source: `docs/features/feature_backlog.md:3170`, `docs/roadmap.md:458` | Item: Scheduling conflict UX upgrade — inline proactive conflict indicator in Plan Group (colored border + chip per conflicting group, Confirm disabled), Case A pre-run-only auto-clamp with dynamic notice picker max, Case B execution conflict blocking modal with N-group checkboxes + partial delete + restricted time picker with up to 2 valid start suggestions, real-time conflict using live theoreticalEndTime. Deferral lifted 24/03/2026 — first Phase 20 feature. | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: `-`.
+- [ ] ID: `IDEA-039` | Type: feature | Priority: P1 | Status: In validation | Source: `docs/features/feature_backlog.md:3171`, `docs/roadmap.md:477`, `docs/features/feature_2026_04_02_idea039-conflict-explainer/feature_plan.md:1`, `docs/features/feature_2026_04_02_idea039-conflict-explainer/feature_checklist.md:1` | Item: Scheduling conflict UX upgrade — inline proactive conflict indicator in Plan Group (chips + disabled Confirm for execution conflict), Case A pre-run auto-clamp, unified modal resolution path, and transactional pending cancel/delete intents applied only after successful save in Task List. | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: Local gate PASS 2026-04-02 (`flutter analyze`; `flutter test test/presentation/task_group_planning_screen_conflict_test.dart`; `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`; `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart`; `flutter test test/presentation/timer_screen_syncing_overlay_test.dart`; `flutter test test/presentation/utils/scheduled_group_timing_test.dart`; `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart`). Device scenarios A/B/C pending in feature checklist.
 - [ ] ID: `IDEA-040` | Type: feature | Priority: P2 | Status: Pending | Source: `docs/features/feature_backlog.md:3273`, `docs/roadmap.md:512` | Item: Groups Hub Start-now timing clarity: show `Started` (actual start) for non-planned groups in cards/summary while keeping `Scheduled start` hidden for Start-now flows. Deferred until historical RVP backlog continues in order (`RVP-020+`). | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: `-`.
 - [ ] ID: `IDEA-041` | Type: feature | Priority: P2 | Status: Pending | Source: `docs/roadmap.md:513` | Item: Task edit presence advisory (multi-device): when another device has the same task open in Edit Task and has heartbeated within TTL (~45-60s), show non-blocking informational advisory ("This task is being edited on [device]"). Heartbeat every ~15-30s; TTL-based cleanup for all edge cases (background/crash/offline). No hard lock — informative only. Design decisions locked 28/03/2026. Separate from BUG-016 Patch 2. Implementation guards required: heartbeat in ViewModel ref.onDispose; serverTimestamp() for lastSeenAt; stream-based advisory read; presence path users/{uid}/taskPresence/{taskId}. | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: `-`.
 

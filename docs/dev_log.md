@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **BUG-025 — Running overlap boundary + TimerScreen mount consumption (`547de2b`, closed 03/04/2026)**
-Current focus: **P1 bug queue after BUG-025 closure (`BUGLOG-026`, `BUGLOG-028`) + Phase 20 planning discipline**
+Current focus: **P1 bug queue after BUG-025 closure (`BUGLOG-026`, `BUGLOG-028`) + IDEA-039 merged into develop**
 Last update: **03/04/2026**
 
 ---
@@ -17883,3 +17883,33 @@ A regression was reported in running-overlap warning behavior:
 ### Status after this block
 
 - `BUG-025` / `BUGLOG-025`: **Closed/OK** (device validation PASS 03/04/2026, scenarios A-D). Owner explicit closure confirmation recorded.
+
+---
+
+## Block 738 — IDEA-039 implementation completed, merged into develop (03/04/2026)
+
+**Current branch intent:** IDEA-039 implementation + validation synchronization.
+**Branch:** `feature/idea039-conflict-explainer`
+**Commits:** `d336179`, `0cadda4`, `ecbd366`, `81de9e2`
+**Item:** `IDEA-039` (P1 feature)
+
+### Implementation delivered
+
+- Extracted shared conflict helpers (`scheduling_conflict_helpers.dart`) from Task List legacy flow.
+- Migrated `TaskGroupPlanningScreen` to `ConsumerStatefulWidget` for live provider-driven conflict evaluation.
+- Added inline conflict indicator + Confirm gating in Plan Group for scheduled options.
+- Added unified conflict modal with running/scheduled badges and multi-selection.
+- Added transactional intent propagation (`pendingCancelIds`, `pendingDeleteIds`) in planning result.
+- Removed Task List legacy conflict dialogs; destructive actions now applied after successful new-group save.
+
+### Validation updates
+
+- Added targeted widget coverage (`test/presentation/task_group_planning_screen_conflict_test.dart`):
+  - inline conflict indicator + disabled Confirm
+  - race guard → scheduled pending delete accumulation
+  - race guard → running pending cancel accumulation
+- Local gate PASS: `flutter analyze` + full test suite.
+
+### Status after this block
+
+- `IDEA-039`: **Merged into develop** (03/04/2026). Device validation pending (IDEA-039 device scenarios).

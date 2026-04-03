@@ -96,8 +96,8 @@ Notes:
   models in Local Mode.
 - IDEA-038 supersedes IDEA-009. Once IDEA-038 is done, IDEA-009 must be reviewed
   and either closed as redundant or repurposed as an in-tab CTA within Groups Hub.
-- IDEA-039 is intentionally deferred until the historical RVP validation backlog
-  is closed. It requires a specs update before implementation.
+- IDEA-039: deferral lifted 2026-04-02 by owner decision. Implementation in progress
+  on branch feature/idea039-conflict-explainer.
 - IDEA-040 should be implemented together with the reopened Phase 19 timing-row
   requirement to keep card/summary timing labels coherent.
 
@@ -111,6 +111,7 @@ When a feature starts, list it here and update its full entry in the ordered IDE
 
 Active:
 - IDEA-034 — Offline Continuation With Rejoin/Sync Choice (Feature folder: docs/features/feature_2026_03_04_offline-continuation-rejoin-choice/; Plan: docs/features/feature_2026_03_04_offline-continuation-rejoin-choice/feature_plan.md)
+- IDEA-039 — Scheduling Conflict Explainer + Guided Start Suggestions (Feature folder: docs/features/feature_2026_04_02_idea039-conflict-explainer/; Plan: docs/features/feature_2026_04_02_idea039-conflict-explainer/feature_plan.md)
 
 ## Done
 
@@ -3174,7 +3175,10 @@ Title: Scheduling Conflict Explainer + Guided Start Suggestions
 Type: UX / Planning
 Scope: M
 Priority: P1
-Status: in planning (unblocked 24/03/2026 — first Phase 20 feature)
+Status: in_progress
+Feature folder: docs/features/feature_2026_04_02_idea039-conflict-explainer/
+Plan: docs/features/feature_2026_04_02_idea039-conflict-explainer/feature_plan.md
+Checklist: docs/features/feature_2026_04_02_idea039-conflict-explainer/feature_checklist.md
 
 Problem / Goal:
 When scheduling is blocked by pre-run or execution conflicts, current feedback
@@ -3243,8 +3247,9 @@ Case B (execution conflict — inline indicator + modal on Confirm):
   The modal lists ALL conflicting groups (N ≥ 1), each with a checkbox + name +
   range + badge. User selects which groups to delete (can be a subset).
   Actions:
-  1. Delete selected group(s) — deletes only checked ones and closes modal.
-     If conflicts remain after deletion, user returns to Plan Group with updated
+  1. Delete selected group(s) — marks only checked ones as pending deletion
+     (transactional: not applied to Firestore until the new plan saves successfully).
+     If conflicts remain after marking, user returns to Plan Group with updated
      inline indicators. Plan Group does NOT exit successfully until zero conflicts.
   2. Change this group's time — opens time picker restricted to valid ranges,
      up to two suggested slots (nearest valid before + nearest valid after all
@@ -3326,9 +3331,12 @@ Acceptance criteria:
   same modal pattern as other conflict flows.
 
 Notes:
-Deferral lifted 24/03/2026 by owner decision. Historical RVP validation backlog
-remains in progress; continue executing pending `RVP-*` items in ledger order.
-First feature to implement in Phase 20.
+Deferral lifted 2026-04-02 by owner decision. Implementation complete on branch
+feature/idea039-conflict-explainer (pending merge into develop). First feature of Phase 20.
+Destructive actions (cancel running / delete scheduled) are transactional:
+accumulated in memory inside Plan Group and applied to Firestore only after the
+new group saves successfully in task_list_screen.dart. If the save fails, no
+groups are modified.
 
 ---
 

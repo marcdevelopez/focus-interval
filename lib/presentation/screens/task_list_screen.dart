@@ -1527,22 +1527,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     );
     final noticeMinutes = planningResult.noticeMinutes;
     if (!context.mounted) return;
-    final conflictStart = scheduledStart ?? planCapturedAt;
-    final conflictEnd = conflictStart.add(
-      Duration(seconds: totalDurationSeconds),
-    );
-
     final repo = ref.read(taskRunGroupRepositoryProvider);
-    List<TaskRunGroup> existingGroups = const [];
-    try {
-      existingGroups = await _loadGroupsForConflict(repo);
-    } catch (e) {
-      if (!context.mounted) return;
-      _showSnackBar(context, "Failed to check conflicts: $e");
-      return;
-    }
-    if (!context.mounted) return;
-    final now = DateTime.now();
     final shouldOfferGlobalNotice =
         isSchedule &&
         scheduledStart != null &&
@@ -1552,63 +1537,6 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
           globalNoticeMinutes: initialNoticeMinutes,
           effectiveNoticeMinutes: noticeMinutes,
         );
-    if (isSchedule && scheduledStart != null && noticeMinutes > 0) {
-      final preRunStart = scheduledStart.subtract(
-        Duration(minutes: noticeMinutes),
-      );
-      final preRunConflict = _findPreRunConflict(
-        existingGroups,
-        preRunStart: preRunStart,
-        scheduledStart: scheduledStart,
-        activeSession: activeSession,
-        now: now,
-      );
-      if (preRunConflict != null) {
-        final message = preRunConflict == _PreRunConflictType.running
-            ? "That time doesn't leave enough pre-run space because another "
-                  'group is still running. Choose a later start or reduce the '
-                  'pre-run notice.'
-            : "That time doesn't leave enough pre-run space because another "
-                  'group is scheduled earlier. Choose a later start or reduce '
-                  'the pre-run notice.';
-        _showSnackBar(context, message);
-        return;
-      }
-    }
-    final conflicts = _findConflicts(
-      existingGroups,
-      newStart: conflictStart,
-      newEnd: conflictEnd,
-      includeRunningAlways: isStartNow,
-      activeSession: activeSession,
-      now: now,
-    );
-
-    try {
-      if (conflicts.running.isNotEmpty) {
-        final resolved = await _resolveRunningConflict(
-          context,
-          conflicts.running,
-          repo,
-        );
-        if (!context.mounted) return;
-        if (!resolved) return;
-      }
-
-      if (conflicts.scheduled.isNotEmpty) {
-        final resolved = await _resolveScheduledConflict(
-          context,
-          conflicts.scheduled,
-          repo,
-        );
-        if (!context.mounted) return;
-        if (!resolved) return;
-      }
-    } catch (e) {
-      if (!context.mounted) return;
-      _showSnackBar(context, "Failed to resolve conflicts: $e");
-      return;
-    }
 
     final status = isStartNow ? TaskRunStatus.running : TaskRunStatus.scheduled;
     final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
@@ -1642,7 +1570,15 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     );
 
     try {
-      await ref.read(taskRunGroupRepositoryProvider).save(group);
+      await repo.save(group);
+      // Apply transactional destructive actions only after the new group save
+      // succeeds. If this best-effort step fails mid-way, partial changes are
+      // acceptable by design because the user explicitly selected those groups.
+      await _applyPlanningDestructiveActions(
+        planningResult: planningResult,
+        repo: repo,
+        allGroups: ref.read(taskRunGroupStreamProvider).value ?? const [],
+      );
       if (!context.mounted) return;
       selection.clear();
       final message = status == TaskRunStatus.running
@@ -1667,6 +1603,31 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     } catch (e) {
       if (!context.mounted) return;
       _showSnackBar(context, "Failed to create task group: $e");
+    }
+  }
+
+  Future<void> _applyPlanningDestructiveActions({
+    required TaskGroupPlanningResult planningResult,
+    required TaskRunGroupRepository repo,
+    required List<TaskRunGroup> allGroups,
+  }) async {
+    if (planningResult.pendingCancelIds.isEmpty &&
+        planningResult.pendingDeleteIds.isEmpty) {
+      return;
+    }
+    final now = DateTime.now();
+    for (final group in allGroups) {
+      if (planningResult.pendingCancelIds.contains(group.id)) {
+        await repo.save(
+          group.copyWith(
+            status: TaskRunStatus.canceled,
+            canceledReason: TaskRunCanceledReason.user,
+            updatedAt: now,
+          ),
+        );
+      } else if (planningResult.pendingDeleteIds.contains(group.id)) {
+        await repo.delete(group.id);
+      }
     }
   }
 
@@ -1714,230 +1675,6 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         initialNoticeMinutes: initialNoticeMinutes,
       ),
     );
-  }
-
-  _GroupConflicts _findConflicts(
-    List<TaskRunGroup> groups, {
-    required DateTime newStart,
-    required DateTime newEnd,
-    required bool includeRunningAlways,
-    required PomodoroSession? activeSession,
-    required DateTime now,
-  }) {
-    final running = <TaskRunGroup>[];
-    final scheduled = <TaskRunGroup>[];
-
-    for (final group in groups) {
-      if (group.status == TaskRunStatus.canceled ||
-          group.status == TaskRunStatus.completed) {
-        continue;
-      }
-      if (group.status == TaskRunStatus.running && includeRunningAlways) {
-        running.add(group);
-        continue;
-      }
-      final start = group.status == TaskRunStatus.scheduled
-          ? (resolveEffectiveScheduledStart(
-                  group: group,
-                  allGroups: groups,
-                  activeSession: activeSession,
-                  now: now,
-                  fallbackNoticeMinutes: _noticeFallbackMinutes,
-                ) ??
-                group.scheduledStartTime ??
-                group.createdAt)
-          : (group.actualStartTime ??
-                group.scheduledStartTime ??
-                group.createdAt);
-      final end = group.status == TaskRunStatus.scheduled
-          ? (resolveEffectiveScheduledEnd(
-                  group: group,
-                  allGroups: groups,
-                  activeSession: activeSession,
-                  now: now,
-                  fallbackNoticeMinutes: _noticeFallbackMinutes,
-                ) ??
-                group.theoreticalEndTime)
-          : (group.theoreticalEndTime.isBefore(start)
-                ? start
-                : group.theoreticalEndTime);
-      if (!_overlaps(newStart, newEnd, start, end)) continue;
-      if (group.status == TaskRunStatus.running) {
-        running.add(group);
-        continue;
-      }
-      if (group.status == TaskRunStatus.scheduled) {
-        scheduled.add(group);
-      }
-    }
-
-    return _GroupConflicts(running: running, scheduled: scheduled);
-  }
-
-  _PreRunConflictType? _findPreRunConflict(
-    List<TaskRunGroup> groups, {
-    required DateTime preRunStart,
-    required DateTime scheduledStart,
-    required PomodoroSession? activeSession,
-    required DateTime now,
-  }) {
-    for (final group in groups) {
-      if (group.status == TaskRunStatus.canceled ||
-          group.status == TaskRunStatus.completed) {
-        continue;
-      }
-      final start = group.status == TaskRunStatus.scheduled
-          ? (resolveEffectiveScheduledStart(
-                  group: group,
-                  allGroups: groups,
-                  activeSession: activeSession,
-                  now: now,
-                  fallbackNoticeMinutes: _noticeFallbackMinutes,
-                ) ??
-                group.scheduledStartTime ??
-                group.createdAt)
-          : (group.actualStartTime ??
-                group.scheduledStartTime ??
-                group.createdAt);
-      final end = group.status == TaskRunStatus.scheduled
-          ? (resolveEffectiveScheduledEnd(
-                  group: group,
-                  allGroups: groups,
-                  activeSession: activeSession,
-                  now: now,
-                  fallbackNoticeMinutes: _noticeFallbackMinutes,
-                ) ??
-                group.theoreticalEndTime)
-          : (group.theoreticalEndTime.isBefore(start)
-                ? start
-                : group.theoreticalEndTime);
-      if (!_overlaps(preRunStart, scheduledStart, start, end)) continue;
-      if (group.status == TaskRunStatus.running) {
-        return _PreRunConflictType.running;
-      }
-      if (group.status == TaskRunStatus.scheduled) {
-        return _PreRunConflictType.scheduled;
-      }
-    }
-    return null;
-  }
-
-  bool _overlaps(
-    DateTime aStart,
-    DateTime aEnd,
-    DateTime bStart,
-    DateTime bEnd,
-  ) {
-    final safeAEnd = aEnd.isBefore(aStart) ? aStart : aEnd;
-    final safeBEnd = bEnd.isBefore(bStart) ? bStart : bEnd;
-    return aStart.isBefore(safeBEnd) && safeAEnd.isAfter(bStart);
-  }
-
-  Future<bool> _resolveRunningConflict(
-    BuildContext context,
-    List<TaskRunGroup> runningGroups,
-    TaskRunGroupRepository repo,
-  ) async {
-    final shouldCancel = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Conflict with running group'),
-        content: const Text(
-          'A group is already running. Cancel it to continue?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Cancel running group'),
-          ),
-        ],
-      ),
-    );
-    if (shouldCancel != true) return false;
-    final now = DateTime.now();
-    for (final group in runningGroups) {
-      await repo.save(
-        group.copyWith(
-          status: TaskRunStatus.canceled,
-          canceledReason: TaskRunCanceledReason.user,
-          updatedAt: now,
-        ),
-      );
-    }
-    return true;
-  }
-
-  Future<bool> _resolveScheduledConflict(
-    BuildContext context,
-    List<TaskRunGroup> scheduledGroups,
-    TaskRunGroupRepository repo,
-  ) async {
-    final now = DateTime.now();
-    String fmtTime(DateTime? dt) {
-      if (dt == null) return '--:--';
-      final isToday =
-          dt.year == now.year && dt.month == now.month && dt.day == now.day;
-      return isToday
-          ? _timeFormat.format(dt)
-          : '${_dateFormat.format(dt)}, ${_timeFormat.format(dt)}';
-    }
-
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Conflict with scheduled group'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'The following scheduled groups conflict with the selected time. Delete them to continue?',
-            ),
-            const SizedBox(height: 8),
-            ...scheduledGroups.map((group) {
-              final name = group.tasks.isNotEmpty
-                  ? group.tasks.first.name
-                  : 'Task group';
-              final start = fmtTime(group.scheduledStartTime);
-              final end = fmtTime(group.theoreticalEndTime);
-              return Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text('• $name — $start–$end'),
-              );
-            }),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete scheduled group'),
-          ),
-        ],
-      ),
-    );
-    if (shouldDelete != true) return false;
-    for (final group in scheduledGroups) {
-      await repo.delete(group.id);
-    }
-    return true;
-  }
-
-  Future<List<TaskRunGroup>> _loadGroupsForConflict(
-    TaskRunGroupRepository repo,
-  ) async {
-    try {
-      return await repo.getAll();
-    } on StateError {
-      return [];
-    }
   }
 
   Future<bool> _confirmDeleteTask(
@@ -2879,12 +2616,3 @@ class _MiniDot extends StatelessWidget {
 }
 
 enum _WebLocalNoticeAction { stayLocal, signIn }
-
-enum _PreRunConflictType { running, scheduled }
-
-class _GroupConflicts {
-  final List<TaskRunGroup> running;
-  final List<TaskRunGroup> scheduled;
-
-  const _GroupConflicts({required this.running, required this.scheduled});
-}

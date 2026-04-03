@@ -1,10 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../providers.dart';
+import '../utils/scheduling_conflict_helpers.dart';
+import '../viewmodels/pre_run_notice_view_model.dart';
 import '../../data/models/pomodoro_task.dart';
+import '../../data/models/pomodoro_session.dart';
 import '../../data/models/schema_version.dart';
 import '../../data/models/task_run_group.dart';
 import '../../data/services/task_run_notice_service.dart';
@@ -41,26 +46,31 @@ class TaskGroupPlanningResult {
   final DateTime? scheduledStart;
   final List<TaskRunItem> items;
   final int noticeMinutes;
+  final Set<String> pendingCancelIds;
+  final Set<String> pendingDeleteIds;
 
   const TaskGroupPlanningResult({
     required this.option,
     required this.items,
     required this.noticeMinutes,
     this.scheduledStart,
+    this.pendingCancelIds = const {},
+    this.pendingDeleteIds = const {},
   });
 }
 
-class TaskGroupPlanningScreen extends StatefulWidget {
+class TaskGroupPlanningScreen extends ConsumerStatefulWidget {
   final TaskGroupPlanningArgs args;
 
   const TaskGroupPlanningScreen({super.key, required this.args});
 
   @override
-  State<TaskGroupPlanningScreen> createState() =>
+  ConsumerState<TaskGroupPlanningScreen> createState() =>
       _TaskGroupPlanningScreenState();
 }
 
-class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
+class _TaskGroupPlanningScreenState
+    extends ConsumerState<TaskGroupPlanningScreen> {
   static const String _infoSeenKey = 'planning_info_seen_v1';
   static const String _shiftNoticeKey = 'planning_range_shift_notice_v1';
   static const String _noticeClampKey = 'planning_notice_clamp_notice_v1';
@@ -82,6 +92,12 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
   bool _noticeClampSnackShown = false;
   bool _noticeClampSnackVisible = false;
   bool _startAutoAdjusted = false;
+  GroupConflicts _currentConflicts = const GroupConflicts(
+    running: [],
+    scheduled: [],
+  );
+  final Set<String> _pendingCancelIds = {};
+  final Set<String> _pendingDeleteIds = {};
   final ValueNotifier<String?> _noticeClampMessageNotifier =
       ValueNotifier<String?>(null);
   Timer? _noticeNowTicker;
@@ -118,6 +134,11 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
         _noticeNow = DateTime.now();
         _applyStartAutoUpdate();
         _applyNoticeSuggestion();
+        _currentConflicts = _evaluateConflicts(
+          allGroups: ref.read(taskRunGroupStreamProvider).value ?? const [],
+          activeSession: ref.read(activePomodoroSessionProvider),
+          fallbackNoticeMinutes: _readNoticeFallbackMinutes(),
+        );
       });
       if (!mounted) return;
       _maybeShowNoticeClampSnackBar();
@@ -350,8 +371,105 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
     }
   }
 
+  int? _readNoticeFallbackMinutes() {
+    final noticeAsync = ref.read(preRunNoticeMinutesProvider);
+    return noticeAsync.maybeWhen(data: (value) => value, orElse: () => null);
+  }
+
+  GroupConflicts _evaluateConflicts({
+    required List<TaskRunGroup> allGroups,
+    required PomodoroSession? activeSession,
+    required int? fallbackNoticeMinutes,
+  }) {
+    final preview = _buildPlanPreview();
+    if (_selected == TaskGroupPlanOption.startNow) {
+      return const GroupConflicts(running: [], scheduled: []);
+    }
+    final start = preview.scheduledStart;
+    if (start == null) {
+      return const GroupConflicts(running: [], scheduled: []);
+    }
+    final end = start.add(Duration(seconds: preview.totalDurationSeconds));
+    final now = DateTime.now();
+    final effectiveGroups = allGroups
+        .where(
+          (group) =>
+              !_pendingCancelIds.contains(group.id) &&
+              !_pendingDeleteIds.contains(group.id),
+        )
+        .toList();
+    return findSchedulingConflicts(
+      effectiveGroups,
+      newStart: start,
+      newEnd: end,
+      includeRunningAlways: false,
+      activeSession: activeSession,
+      now: now,
+      fallbackNoticeMinutes: fallbackNoticeMinutes,
+    );
+  }
+
+  bool _sameConflicts(GroupConflicts a, GroupConflicts b) {
+    bool sameIds(List<TaskRunGroup> left, List<TaskRunGroup> right) {
+      if (left.length != right.length) return false;
+      final leftIds = left.map((group) => group.id).toSet();
+      if (leftIds.length != right.length) return false;
+      for (final group in right) {
+        if (!leftIds.contains(group.id)) return false;
+      }
+      return true;
+    }
+
+    return sameIds(a.running, b.running) && sameIds(a.scheduled, b.scheduled);
+  }
+
+  void _syncConflictsFromBuild(GroupConflicts conflicts) {
+    if (_sameConflicts(_currentConflicts, conflicts)) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_sameConflicts(_currentConflicts, conflicts)) return;
+      setState(() {
+        _currentConflicts = conflicts;
+      });
+    });
+  }
+
+  List<_ConflictCandidate> _sortedConflictCandidates(GroupConflicts conflicts) {
+    final all = <_ConflictCandidate>[
+      ...conflicts.running.map(
+        (group) => _ConflictCandidate(group: group, isRunning: true),
+      ),
+      ...conflicts.scheduled.map(
+        (group) => _ConflictCandidate(group: group, isRunning: false),
+      ),
+    ];
+    all.sort(
+      (left, right) => _resolveConflictStart(
+        left.group,
+      ).compareTo(_resolveConflictStart(right.group)),
+    );
+    return all;
+  }
+
+  DateTime _resolveConflictStart(TaskRunGroup group) {
+    return group.scheduledStartTime ?? group.actualStartTime ?? group.createdAt;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final groupsAsync = ref.watch(taskRunGroupStreamProvider);
+    final allGroups = groupsAsync.value ?? const <TaskRunGroup>[];
+    final activeSession = ref.watch(activePomodoroSessionProvider);
+    final noticeFallbackMinutes = ref
+        .watch(preRunNoticeMinutesProvider)
+        .maybeWhen(data: (v) => v, orElse: () => null);
+    final computedConflicts = _evaluateConflicts(
+      allGroups: allGroups,
+      activeSession: activeSession,
+      fallbackNoticeMinutes: noticeFallbackMinutes,
+    );
+    _syncConflictsFromBuild(computedConflicts);
+
     final integrityMode = widget.args.integrityMode;
     final preview = _buildPlanPreview();
     final noticeClampMessage = _noticeClampMessage();
@@ -402,11 +520,14 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
             selected: _selected == TaskGroupPlanOption.scheduleStart,
             onTap: () => _selectOption(TaskGroupPlanOption.scheduleStart),
             footer: _selected == TaskGroupPlanOption.scheduleStart
-                ? _SchedulePickerRow(
-                    label: _scheduledStart == null
-                        ? 'Select start time'
-                        : _formatDateTime(_scheduledStart!),
-                    onPressed: _selectScheduleStart,
+                ? _buildScheduleFooter(
+                    picker: _SchedulePickerRow(
+                      label: _scheduledStart == null
+                          ? 'Select start time'
+                          : _formatDateTime(_scheduledStart!),
+                      onPressed: _selectScheduleStart,
+                    ),
+                    conflicts: computedConflicts,
                   )
                 : null,
           ),
@@ -417,12 +538,15 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
             selected: _selected == TaskGroupPlanOption.scheduleRange,
             onTap: () => _selectOption(TaskGroupPlanOption.scheduleRange),
             footer: _selected == TaskGroupPlanOption.scheduleRange
-                ? _SchedulePickerRow(
-                    label: _rangeStart == null || _rangeEnd == null
-                        ? 'Select time range'
-                        : '${_formatDateTime(_rangeStart!)} to '
-                              '${_formatDateTime(_rangeEnd!)}',
-                    onPressed: _selectRangeTimes,
+                ? _buildScheduleFooter(
+                    picker: _SchedulePickerRow(
+                      label: _rangeStart == null || _rangeEnd == null
+                          ? 'Select time range'
+                          : '${_formatDateTime(_rangeStart!)} to '
+                                '${_formatDateTime(_rangeEnd!)}',
+                      onPressed: _selectRangeTimes,
+                    ),
+                    conflicts: computedConflicts,
                   )
                 : null,
           ),
@@ -433,12 +557,15 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
             selected: _selected == TaskGroupPlanOption.scheduleTotal,
             onTap: () => _selectOption(TaskGroupPlanOption.scheduleTotal),
             footer: _selected == TaskGroupPlanOption.scheduleTotal
-                ? _SchedulePickerRow(
-                    label: _totalStart == null || _totalDuration == null
-                        ? 'Select start + duration'
-                        : '${_formatDateTime(_totalStart!)} · '
-                              '${_formatDuration(_totalDuration!)}',
-                    onPressed: _selectTotalTime,
+                ? _buildScheduleFooter(
+                    picker: _SchedulePickerRow(
+                      label: _totalStart == null || _totalDuration == null
+                          ? 'Select start + duration'
+                          : '${_formatDateTime(_totalStart!)} · '
+                                '${_formatDuration(_totalDuration!)}',
+                      onPressed: _selectTotalTime,
+                    ),
+                    conflicts: computedConflicts,
                   )
                 : null,
           ),
@@ -464,10 +591,7 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
                   const SizedBox(height: 6),
                   Text(
                     startAutoAdjustMessage ?? noticeClampMessage ?? '',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                    ),
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 ],
               ],
@@ -531,13 +655,42 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
     );
   }
 
+  Widget _buildScheduleFooter({
+    required Widget picker,
+    required GroupConflicts conflicts,
+  }) {
+    if (conflicts.isEmpty) return picker;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        picker,
+        const SizedBox(height: 8),
+        _ConflictInlineIndicator(conflicts: conflicts),
+      ],
+    );
+  }
+
   bool _canConfirm(_PlanPreview preview) {
     if (!preview.isValid) return false;
     if (_selected == TaskGroupPlanOption.startNow) return true;
-    return preview.scheduledStart != null;
+    if (preview.scheduledStart == null) return false;
+    return _currentConflicts.isEmpty;
   }
 
-  void _handleConfirm(_PlanPreview preview) {
+  Future<void> _handleConfirm(_PlanPreview preview) async {
+    final recheck = _evaluateConflicts(
+      allGroups: ref.read(taskRunGroupStreamProvider).value ?? const [],
+      activeSession: ref.read(activePomodoroSessionProvider),
+      fallbackNoticeMinutes: _readNoticeFallbackMinutes(),
+    );
+    if (recheck.isNotEmpty) {
+      setState(() {
+        _currentConflicts = recheck;
+      });
+      final resolved = await _showConflictModal(recheck, preview);
+      if (!resolved || !mounted) return;
+    }
+
     final scheduledStart = _selected == TaskGroupPlanOption.startNow
         ? null
         : preview.scheduledStart;
@@ -547,8 +700,129 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
         items: preview.items,
         noticeMinutes: _noticeMinutes,
         scheduledStart: scheduledStart,
+        pendingCancelIds: Set<String>.unmodifiable(_pendingCancelIds),
+        pendingDeleteIds: Set<String>.unmodifiable(_pendingDeleteIds),
       ),
     );
+  }
+
+  Future<bool> _showConflictModal(
+    GroupConflicts conflicts,
+    _PlanPreview preview,
+  ) async {
+    final checkedIds = <String>{
+      ...conflicts.running.map((group) => group.id),
+      ...conflicts.scheduled.map((group) => group.id),
+    };
+    final previewStart = preview.scheduledStart;
+    final previewEnd = previewStart?.add(
+      Duration(seconds: preview.totalDurationSeconds),
+    );
+    final rangeLabel = previewStart != null && previewEnd != null
+        ? '${_timeFormat.format(previewStart)}–${_timeFormat.format(previewEnd)}'
+        : '--:--';
+    final allConflicts = _sortedConflictCandidates(conflicts);
+
+    final result = await showDialog<_ConflictModalResult>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final checkedCount = checkedIds.length;
+          return AlertDialog(
+            title: const Text('Scheduling conflict'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Your plan ($rangeLabel) conflicts with:'),
+                  const SizedBox(height: 12),
+                  ...allConflicts.map((entry) {
+                    final group = entry.group;
+                    final name = group.tasks.isNotEmpty
+                        ? group.tasks.first.name
+                        : 'Task group';
+                    final start = _resolveConflictStart(group);
+                    final end = group.theoreticalEndTime;
+                    final badge = entry.isRunning ? 'Running' : 'Scheduled';
+                    return CheckboxListTile(
+                      value: checkedIds.contains(group.id),
+                      onChanged: (checked) {
+                        setModalState(() {
+                          if (checked == true) {
+                            checkedIds.add(group.id);
+                          } else {
+                            checkedIds.remove(group.id);
+                          }
+                        });
+                      },
+                      title: Text(name),
+                      subtitle: Text(
+                        '${_timeFormat.format(start)}–${_timeFormat.format(end)} · $badge',
+                      ),
+                      controlAffinity: ListTileControlAffinity.leading,
+                      contentPadding: EdgeInsets.zero,
+                    );
+                  }),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(
+                  context,
+                ).pop(const _ConflictModalResult.cancelled()),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(
+                  context,
+                ).pop(const _ConflictModalResult.changeTime()),
+                child: const Text('Change time'),
+              ),
+              ElevatedButton(
+                onPressed: checkedCount > 0
+                    ? () => Navigator.of(context).pop(
+                        _ConflictModalResult.delete(
+                          Set<String>.from(checkedIds),
+                        ),
+                      )
+                    : null,
+                child: Text('Delete ($checkedCount)'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (result == null || result.isCancelled) return false;
+    if (result.isChangeTime) {
+      await _selectOption(_selected);
+      return false;
+    }
+    if (result.isDelete) {
+      for (final entry in allConflicts) {
+        if (!result.selectedIds.contains(entry.group.id)) continue;
+        if (entry.isRunning) {
+          _pendingCancelIds.add(entry.group.id);
+        } else {
+          _pendingDeleteIds.add(entry.group.id);
+        }
+      }
+      final remaining = _evaluateConflicts(
+        allGroups: ref.read(taskRunGroupStreamProvider).value ?? const [],
+        activeSession: ref.read(activePomodoroSessionProvider),
+        fallbackNoticeMinutes: _readNoticeFallbackMinutes(),
+      );
+      setState(() {
+        _currentConflicts = remaining;
+      });
+      if (remaining.isNotEmpty) return false;
+      return true;
+    }
+    return false;
   }
 
   _PlanPreview _buildPlanPreview() {
@@ -574,10 +848,7 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
             message: 'Select a start time to schedule.',
           );
         }
-        if (!isStartTimeInFuture(
-          start: _scheduledStart!,
-          now: now,
-        )) {
+        if (!isStartTimeInFuture(start: _scheduledStart!, now: now)) {
           return _PlanPreview.error(
             option: _selected,
             items: items,
@@ -697,7 +968,13 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
   }
 
   DateTime _floorToMinute(DateTime value) {
-    return DateTime(value.year, value.month, value.day, value.hour, value.minute);
+    return DateTime(
+      value.year,
+      value.month,
+      value.day,
+      value.hour,
+      value.minute,
+    );
   }
 
   void _applyStartAutoUpdate() {
@@ -853,8 +1130,8 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
                                 fillColor: WidgetStateProperty.resolveWith(
                                   (states) =>
                                       states.contains(WidgetState.selected)
-                                          ? primary
-                                          : onSurface.withValues(alpha: 0.2),
+                                      ? primary
+                                      : onSurface.withValues(alpha: 0.2),
                                 ),
                                 onChanged: (value) {
                                   setSnackState(() {
@@ -1297,6 +1574,113 @@ class _TaskGroupPlanningScreenState extends State<TaskGroupPlanningScreen> {
     messenger.showSnackBar(SnackBar(content: Text(message)));
   }
 }
+
+class _ConflictInlineIndicator extends StatelessWidget {
+  final GroupConflicts conflicts;
+
+  const _ConflictInlineIndicator({required this.conflicts});
+
+  @override
+  Widget build(BuildContext context) {
+    final timeFormat = DateFormat('HH:mm');
+    final entries = <_ConflictCandidate>[
+      ...conflicts.running.map(
+        (group) => _ConflictCandidate(group: group, isRunning: true),
+      ),
+      ...conflicts.scheduled.map(
+        (group) => _ConflictCandidate(group: group, isRunning: false),
+      ),
+    ];
+    entries.sort((left, right) {
+      DateTime start(TaskRunGroup group) {
+        return group.scheduledStartTime ??
+            group.actualStartTime ??
+            group.createdAt;
+      }
+
+      return start(left.group).compareTo(start(right.group));
+    });
+
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: scheme.error),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Scheduling conflict',
+            style: TextStyle(
+              color: scheme.error,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: entries.map((entry) {
+              final name = entry.group.tasks.isNotEmpty
+                  ? entry.group.tasks.first.name
+                  : 'Task group';
+              final start =
+                  entry.group.scheduledStartTime ??
+                  entry.group.actualStartTime ??
+                  entry.group.createdAt;
+              final end = entry.group.theoreticalEndTime;
+              final badge = entry.isRunning ? 'Running' : 'Scheduled';
+              return Chip(
+                label: Text(
+                  '$name · ${timeFormat.format(start)}–'
+                  '${timeFormat.format(end)} · $badge',
+                  style: const TextStyle(fontSize: 11),
+                ),
+                backgroundColor: scheme.errorContainer,
+                labelStyle: TextStyle(color: scheme.onErrorContainer),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ConflictCandidate {
+  final TaskRunGroup group;
+  final bool isRunning;
+
+  const _ConflictCandidate({required this.group, required this.isRunning});
+}
+
+class _ConflictModalResult {
+  final _ConflictModalAction action;
+  final Set<String> selectedIds;
+
+  const _ConflictModalResult._({
+    required this.action,
+    this.selectedIds = const {},
+  });
+
+  const _ConflictModalResult.cancelled()
+    : this._(action: _ConflictModalAction.cancelled);
+
+  const _ConflictModalResult.changeTime()
+    : this._(action: _ConflictModalAction.changeTime);
+
+  _ConflictModalResult.delete(Set<String> ids)
+    : this._(action: _ConflictModalAction.delete, selectedIds: ids);
+
+  bool get isCancelled => action == _ConflictModalAction.cancelled;
+  bool get isChangeTime => action == _ConflictModalAction.changeTime;
+  bool get isDelete => action == _ConflictModalAction.delete;
+}
+
+enum _ConflictModalAction { cancelled, changeTime, delete }
 
 class _PlanPreview {
   final TaskGroupPlanOption option;
