@@ -1819,16 +1819,14 @@ Trigger
   conflict is detected immediately **even before** the pre-run window begins.
 - While paused, use the **projected end** (theoreticalEndTime + elapsed pause)
   for overlap detection. Trigger as soon as the projected end reaches the
-  pre-run overlap threshold (pre-run start + 1 minute grace); do **not** wait
-  for resume.
+  pre-run overlap threshold (pre-run start, exact); do **not** wait for resume.
 
 Timing of the decision UI
 
-- The moment an overlap becomes possible (runningEnd >= preRunStart + 1 minute
-  grace), begin conflict notification timing. Do **not** wait for the pre-run
-  to start.
-- Because schedules are minute-based, a running end that lands within the same
-  minute as the pre-run start is **not** considered a conflict.
+- The moment an overlap becomes possible (runningEnd >= preRunStart), begin
+  conflict notification timing. Do **not** wait for the pre-run to start.
+- A running end that lands exactly at pre-run start is a conflict and must
+  trigger this flow.
 - The decision modal should appear **during a break** when possible to avoid
   interrupting focus time.
 - If the overlap is detected while the user is already in a **break** (short

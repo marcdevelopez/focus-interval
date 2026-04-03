@@ -1463,6 +1463,58 @@ void main() {
   });
 
   group('ScheduledGroupCoordinator running overlap decision', () {
+    test('flags overlap at exact pre-run start boundary', () async {
+      final groupRepo = FakeTaskRunGroupRepository();
+      final sessionRepo = FakePomodoroSessionRepository();
+      final appModeService = AppModeService.memory();
+      final container = ProviderContainer(
+        overrides: [
+          appModeServiceProvider.overrideWithValue(appModeService),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+        ],
+      );
+      addTearDown(() {
+        groupRepo.dispose();
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      final coordinator = container.read(
+        scheduledGroupCoordinatorProvider.notifier,
+      );
+
+      final now = DateTime.now();
+      final scheduled = _buildScheduledGroup(
+        id: 'scheduled-boundary',
+        scheduledStart: now.add(const Duration(minutes: 10)),
+        durationMinutes: 30,
+        noticeMinutes: 5,
+      );
+      final preRunStart = scheduled.scheduledStartTime!.subtract(
+        const Duration(minutes: 5),
+      );
+      final running = _buildRunningGroup(
+        id: 'running-boundary',
+        start: now.subtract(const Duration(minutes: 30)),
+        theoreticalEnd: preRunStart,
+      );
+
+      coordinator.debugEvaluateRunningOverlap(
+        running: [running],
+        scheduled: [scheduled],
+        allGroups: [running, scheduled],
+        session: null,
+        now: now,
+      );
+      await Future(() {});
+
+      final decision = container.read(runningOverlapDecisionProvider);
+      expect(decision, isNotNull);
+      expect(decision?.runningGroupId, running.id);
+      expect(decision?.scheduledGroupId, scheduled.id);
+    });
+
     test(
       'sets running overlap decision before pre-run window when overlap exists',
       () async {
