@@ -117,6 +117,40 @@ TaskRunGroup _buildLateStartQueueGroup({
 }
 
 void main() {
+  group('running overlap threshold', () {
+    test('uses exact pre-run start as overlap threshold', () {
+      final preRunStart = DateTime(2026, 4, 3, 13, 13, 0);
+
+      final threshold = resolveRunningOverlapThreshold(preRunStart);
+
+      expect(threshold, preRunStart);
+    });
+
+    test('treats exact pre-run boundary as conflict', () {
+      final preRunStart = DateTime(2026, 4, 3, 13, 13, 0);
+      final runningEnd = DateTime(2026, 4, 3, 13, 13, 0);
+
+      final hasOverlap = isRunningOverlapBeyondGrace(
+        runningEnd: runningEnd,
+        preRunStart: preRunStart,
+      );
+
+      expect(hasOverlap, isTrue);
+    });
+
+    test('does not flag overlap before pre-run boundary', () {
+      final preRunStart = DateTime(2026, 4, 3, 13, 13, 0);
+      final runningEnd = DateTime(2026, 4, 3, 13, 12, 59);
+
+      final hasOverlap = isRunningOverlapBeyondGrace(
+        runningEnd: runningEnd,
+        preRunStart: preRunStart,
+      );
+
+      expect(hasOverlap, isFalse);
+    });
+  });
+
   group('resolvePostponedAnchorEnd', () {
     test('returns null when anchor is canceled', () {
       final now = DateTime(2026, 3, 19, 22, 21, 0);

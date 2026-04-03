@@ -60,10 +60,9 @@ DateTime resolveAnchoredScheduledStart({
   return scheduledStart;
 }
 
-const Duration runningOverlapGrace = Duration(minutes: 1);
-
 DateTime resolveRunningOverlapThreshold(DateTime preRunStart) {
-  return preRunStart.add(runningOverlapGrace);
+  // Conflict detection is exact at pre-run boundary.
+  return preRunStart;
 }
 
 bool isRunningOverlapBeyondGrace({
