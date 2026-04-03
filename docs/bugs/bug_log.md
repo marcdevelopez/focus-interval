@@ -3393,3 +3393,186 @@ Validation packet:
 - Local gate PASS logs:
   - `docs/bugs/validation_bug025_2026_04_03/logs/2026-04-03_bug025_547de2b_local_analyze.log`
   - `docs/bugs/validation_bug025_2026_04_03/logs/2026-04-03_bug025_547de2b_local_targeted-tests.log`
+
+---
+
+## BUG-026 — Mirror can remain in temporary black "Syncing session..." state after Start now
+
+ID: BUG-026
+Date: 03/04/2026 (UTC+2)
+Platforms: Android owner + macOS mirror
+Context: Account Mode, Start-now launch after overlap-resolution actions.
+
+Symptom:
+
+- Mirror enters Run Mode with black background and `Syncing session...` plus an inert `Start` CTA.
+- Recovery may require extra owner navigation/action (`Open Run Mode` again) before mirror hydrates.
+
+Observed behavior:
+
+- Visual evidence matrix V10-V13 (`13:55:07` to `13:55:20`) shows mirror stuck while owner already has running group state.
+- Log correlation in BUG-025 packet links this window to delayed session hydration (`Resync missing` then later active-session snapshot).
+
+Expected behavior:
+
+- Mirror should hydrate to live Run Mode without requiring extra owner navigation once active session exists.
+- Any fallback CTA shown during sync must be actionable and deterministic.
+
+Evidence:
+
+- `docs/bugs/validation_bug025_2026_04_03/plan_validacion_rapida_fix.md` (Visual Evidence Matrix V10-V13 + Log Correlation section).
+- Runtime logs:
+  - `docs/bugs/validation_bug025_2026_04_03/logs/2026-04-03_bug025_547de2b_android_RMX3771_debug.log`
+  - `docs/bugs/validation_bug025_2026_04_03/logs/2026-04-03_bug025_547de2b_macos_debug.log`
+
+Workaround:
+
+- Re-open `Open Run Mode` from owner side (or wait for late hydration) until mirror re-attaches.
+
+Hypothesis:
+
+- Start-now/session-hydration timing can leave mirror in a temporary attach gap where UI sync shell renders before authoritative session bind completes.
+
+Fix applied:
+
+- Not yet.
+
+Status:
+
+Open (03/04/2026), sourced from BUG-025 device validation evidence.
+
+---
+
+## BUG-027 — Conflict explanations are missing critical context (groups/ranges) across planning and runtime surfaces
+
+ID: BUG-027
+Date: 03/04/2026 (UTC+2)
+Platforms: Android + macOS
+Context: Planning conflicts and runtime overlap conflict guidance.
+
+Symptom:
+
+- Conflict messages do not always identify both involved groups and full time ranges.
+- User cannot clearly understand why a conflict exists or what changed after resolution.
+
+Observed behavior:
+
+- Planning modal `Conflict with running group` uses generic copy without blocker identity/range context (V03).
+- Pre-run conflict snackbar lacks explicit blocker group + compared ranges (V05).
+- Runtime conflict modal shows scheduled group range but not paused/running projection range.
+- Mirror warning copy remains generic (`Owner is resolving this conflict...`) with no pair/range details (V19, V24).
+
+Expected behavior:
+
+- Conflict copy should consistently show:
+  - current running/paused group identity + projected range,
+  - scheduled/planned conflicting group identity + range,
+  - selected candidate range when applicable.
+
+Evidence:
+
+- `docs/bugs/validation_bug025_2026_04_03/plan_validacion_rapida_fix.md` (Visual Evidence Matrix V03, V05, V19, V24; Evidence-Based Verdict F02).
+
+Workaround:
+
+- Manual cross-check in Groups Hub/Run Mode cards to infer timing/range context.
+
+Hypothesis:
+
+- Message templates are inconsistent across planning/runtime/mirror paths and do not share a single conflict-detail formatter.
+
+Fix applied:
+
+- Not yet.
+
+Status:
+
+Open (03/04/2026), sourced from BUG-025 device validation evidence.
+
+---
+
+## BUG-028 — Groups Hub paused card `Ends` projection stays static during pause while scheduled cards continue shifting
+
+ID: BUG-028
+Date: 03/04/2026 (UTC+2)
+Platforms: Android + macOS
+Context: Running group paused with overlap/postpone actions.
+
+Symptom:
+
+- In Groups Hub, paused running card `Ends` can remain frozen while dependent scheduled cards shift after postpone.
+- Timeline appears incoherent until resume occurs.
+
+Observed behavior:
+
+- Matrix V20 shows `G2` shifted while paused `G1 Ends` stayed static.
+- After resume (V21-V22), `G1 Ends` catches up and coherence returns.
+- Same pattern reproduced in later pause/resume cycle (V27 partial).
+
+Expected behavior:
+
+- Timeline projection in Groups Hub should remain coherent during pause windows.
+- If scheduled cards update in real time after postpone, paused running `Ends` should follow the same projection rule.
+
+Evidence:
+
+- `docs/bugs/validation_bug025_2026_04_03/plan_validacion_rapida_fix.md` (Visual Evidence Matrix V20-V22, V27; Evidence-Based Verdict F03).
+
+Workaround:
+
+- Resume the paused group and re-open Groups Hub to force projection catch-up.
+
+Hypothesis:
+
+- Paused-card `Ends` projection in Groups Hub is not refreshed with the same cadence/path used for scheduled cards and/or Run Mode projection.
+
+Fix applied:
+
+- Not yet.
+
+Status:
+
+Open (03/04/2026), sourced from BUG-025 device validation evidence.
+
+---
+
+## BUG-029 — Scheduling conflict modal escape/navigation ergonomics are inconsistent on Android
+
+ID: BUG-029
+Date: 03/04/2026 (UTC+2)
+Platforms: Android (owner path), with mirror follow-up impact
+Context: Runtime scheduling-conflict modal in Run Mode.
+
+Symptom:
+
+- During active conflict modal, user cannot inspect broader context (Groups Hub) via an explicit in-modal action.
+- Exit path observed in validation relied on physical Android back button.
+
+Observed behavior:
+
+- User needed hardware back to temporarily leave modal and inspect Groups Hub context before deciding.
+- Modal reappears when returning while conflict remains (functional), but ergonomics are unclear/non-explicit.
+
+Expected behavior:
+
+- Conflict modal flow should expose an explicit, predictable path for context inspection (or a clearly documented strict blocking policy), without relying on hardware-specific escape behavior.
+
+Evidence:
+
+- `docs/bugs/validation_bug025_2026_04_03/plan_validacion_rapida_fix.md` (Visual Evidence Matrix V24-V25 + F04 note).
+
+Workaround:
+
+- Use Android physical back and then re-enter Run Mode to continue conflict resolution.
+
+Hypothesis:
+
+- Modal UX contract is underspecified for inspection/navigation needs during conflict resolution.
+
+Fix applied:
+
+- Not yet.
+
+Status:
+
+Open (03/04/2026), sourced from BUG-025 device validation evidence.

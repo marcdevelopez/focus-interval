@@ -8,6 +8,10 @@
 
 - [ ] Scenario D PASS (`Postpone scheduled` does not trigger immediate duplicate modal).
 - [ ] Existing overlap modal actions (`End current group` / `Postpone scheduled` / `Cancel scheduled`) still work.
+- [x] Visual evidence packet reviewed and synchronized (capturas del hilo 03/04/2026, clock-based matrix).
+- [x] Start-now mirror hydration issue triaged with log correlation (`Syncing session...` temporary black state).
+- [x] Paused `Ends` projection behavior in Groups Hub classified (projection coherence gap during pause).
+- [x] Conflict copy/detail gaps cataloged for follow-up UX bug(s) (planning + runtime + mirror banner).
 
 ## Local gate
 
