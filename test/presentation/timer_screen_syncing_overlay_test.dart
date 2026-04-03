@@ -23,6 +23,7 @@ import 'package:focus_interval/data/services/firestore_service.dart';
 import 'package:focus_interval/domain/pomodoro_machine.dart';
 import 'package:focus_interval/presentation/providers.dart';
 import 'package:focus_interval/presentation/screens/timer_screen.dart';
+import 'package:focus_interval/presentation/viewmodels/pomodoro_view_model.dart';
 import 'package:focus_interval/widgets/timer_display.dart';
 import 'package:focus_interval/widgets/active_session_auto_opener.dart';
 
@@ -101,10 +102,15 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
       StreamController<PomodoroSession?>.broadcast();
   PomodoroSession? _lastSession;
   PomodoroSession? _initialSession;
+  bool _initialSnapshotEmitted = false;
+  int requestOwnershipCalls = 0;
+  String? lastRequesterDeviceId;
+  String? lastRequestId;
 
   @override
   Stream<PomodoroSession?> watchSession() async* {
-    if (_initialSession != null) {
+    if (!_initialSnapshotEmitted) {
+      _initialSnapshotEmitted = true;
       _lastSession = _initialSession;
       yield _initialSession;
       _initialSession = null;
@@ -119,7 +125,9 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
 
   @override
   Future<PomodoroSession?> fetchSession({bool preferServer = false}) async {
-    return _lastSession;
+    if (_lastSession != null) return _lastSession;
+    if (!_initialSnapshotEmitted) return _initialSession;
+    return null;
   }
 
   @override
@@ -143,7 +151,11 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
   Future<void> requestOwnership({
     required String requesterDeviceId,
     required String requestId,
-  }) async {}
+  }) async {
+    requestOwnershipCalls += 1;
+    lastRequesterDeviceId = requesterDeviceId;
+    lastRequestId = requestId;
+  }
 
   @override
   Future<bool> tryAutoClaimStaleOwner({
@@ -269,6 +281,8 @@ PomodoroSession _buildRunningSession({
   required String groupId,
   required String taskId,
   required DateTime now,
+  String ownerDeviceId = 'owner-device',
+  OwnershipRequest? ownershipRequest,
 }) {
   return PomodoroSession(
     taskId: taskId,
@@ -278,7 +292,7 @@ PomodoroSession _buildRunningSession({
     totalTasks: 1,
     dataVersion: kCurrentDataVersion,
     sessionRevision: 1,
-    ownerDeviceId: 'owner-device',
+    ownerDeviceId: ownerDeviceId,
     status: PomodoroStatus.pomodoroRunning,
     phase: PomodoroPhase.pomodoro,
     currentPomodoro: 1,
@@ -292,10 +306,1887 @@ PomodoroSession _buildRunningSession({
     lastUpdatedAt: now,
     finishedAt: null,
     pauseReason: null,
+    ownershipRequest: ownershipRequest,
   );
 }
 
 void main() {
+  testWidgets(
+    'ownership indicator stays visible with syncing variant and controls gate when session snapshot is missing',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'group-ownership-syncing-indicator',
+        start: now,
+      );
+      final session = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        now: now,
+        ownerDeviceId: deviceInfo.deviceId,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+      final timeSyncService = FakeTimeSyncService(offset: Duration.zero);
+      final noticeService = FakeTaskRunNoticeService();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(timeSyncService),
+          taskRunNoticeServiceProvider.overrideWithValue(noticeService),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+
+        final router = GoRouter(
+          initialLocation: '/timer/${group.id}',
+          routes: [
+            GoRoute(
+              path: '/timer/:id',
+              builder: (context, state) {
+                final id = state.pathParameters['id']!;
+                return TimerScreen(groupId: id);
+              },
+            ),
+            GoRoute(
+              path: '/groups',
+              builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+            ),
+            GoRoute(
+              path: '/tasks',
+              builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+        final ownerIndicator = find.byTooltip('Owner device');
+        for (var i = 0; i < 20 && ownerIndicator.evaluate().isEmpty; i += 1) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        final vm = container.read(pomodoroViewModelProvider.notifier);
+        expect(ownerIndicator, findsOneWidget);
+        expect(vm.canControlSession, isTrue);
+
+        sessionRepo.emit(null);
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 4));
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(find.byTooltip('Syncing session'), findsOneWidget);
+        expect(find.text('Retry sync'), findsNothing);
+        expect(find.text('Sync now'), findsNothing);
+        expect(vm.canControlSession, isFalse);
+
+        await tester.tap(find.byTooltip('Syncing session'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('Session ownership'), findsOneWidget);
+        expect(find.text('Syncing session ownership...'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        sessionRepo.dispose();
+        container.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          sessionRepo.dispose();
+          container.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets(
+    'ownership indicator shows neutral state when no session exists',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final group = _buildScheduledGroup(
+        id: 'group-ownership-no-session',
+        scheduledStart: now.add(const Duration(minutes: 5)),
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(null);
+      final appModeService = AppModeService.memory();
+      final timeSyncService = FakeTimeSyncService(offset: Duration.zero);
+      final noticeService = FakeTaskRunNoticeService();
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(
+            DeviceInfoService.ephemeral(),
+          ),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(timeSyncService),
+          taskRunNoticeServiceProvider.overrideWithValue(noticeService),
+        ],
+      );
+      addTearDown(() {
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      final loadResult = await vm.loadGroup(group.id);
+      expect(loadResult, PomodoroGroupLoadResult.loaded);
+
+      final router = GoRouter(
+        initialLocation: '/timer/${group.id}',
+        routes: [
+          GoRoute(
+            path: '/timer/:id',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return TimerScreen(groupId: id);
+            },
+          ),
+          GoRoute(
+            path: '/groups',
+            builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+          ),
+          GoRoute(
+            path: '/tasks',
+            builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 120));
+
+      final neutralIndicator = find.byTooltip('No active session yet');
+      for (var i = 0; i < 20 && neutralIndicator.evaluate().isEmpty; i += 1) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      expect(neutralIndicator, findsOneWidget);
+      expect(find.byTooltip('Syncing session'), findsNothing);
+
+      await tester.tap(neutralIndicator);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Session ownership'), findsOneWidget);
+      expect(find.text('No active session yet.'), findsOneWidget);
+    },
+  );
+
+  testWidgets('sync-gap neutralizes stale mirror ownership derivation', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final now = DateTime.now();
+    final deviceInfo = DeviceInfoService.ephemeral();
+    final group = _buildRunningGroup(
+      id: 'group-ownership-mirror-sync-gap',
+      start: now,
+    );
+    final session = _buildRunningSession(
+      groupId: group.id,
+      taskId: group.tasks.first.sourceTaskId,
+      now: now,
+      ownerDeviceId: 'remote-owner-device',
+    );
+
+    final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+    final sessionRepo = FakePomodoroSessionRepository(session);
+    final appModeService = AppModeService.memory();
+    final timeSyncService = FakeTimeSyncService(offset: Duration.zero);
+    final noticeService = FakeTaskRunNoticeService();
+    var disposed = false;
+
+    final container = ProviderContainer(
+      overrides: [
+        firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+        firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+        taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+        pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+        appModeServiceProvider.overrideWithValue(appModeService),
+        deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+        soundServiceProvider.overrideWithValue(FakeSoundService()),
+        timeSyncServiceProvider.overrideWithValue(timeSyncService),
+        taskRunNoticeServiceProvider.overrideWithValue(noticeService),
+      ],
+    );
+    try {
+      await container.read(appModeProvider.notifier).setAccount();
+
+      final router = GoRouter(
+        initialLocation: '/timer/${group.id}',
+        routes: [
+          GoRoute(
+            path: '/timer/:id',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return TimerScreen(groupId: id);
+            },
+          ),
+          GoRoute(
+            path: '/groups',
+            builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+          ),
+          GoRoute(
+            path: '/tasks',
+            builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      final mirrorIndicator = find.byTooltip('Mirror device');
+      for (var i = 0; i < 20 && mirrorIndicator.evaluate().isEmpty; i += 1) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      expect(mirrorIndicator, findsOneWidget);
+      expect(vm.isMirrorMode, isTrue);
+      expect(vm.canRequestOwnership, isTrue);
+
+      sessionRepo.emit(null);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pump(const Duration(milliseconds: 120));
+
+      expect(find.byTooltip('Syncing session'), findsOneWidget);
+      expect(find.byTooltip('Mirror device'), findsNothing);
+      expect(find.byTooltip('Owner device'), findsNothing);
+      expect(vm.isSessionMissingWhileRunning, isTrue);
+      expect(vm.isMirrorMode, isFalse);
+      expect(vm.currentOwnerDeviceId, isNull);
+      expect(vm.canRequestOwnership, isFalse);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 100));
+      sessionRepo.dispose();
+      container.dispose();
+      disposed = true;
+    } finally {
+      if (!disposed) {
+        sessionRepo.dispose();
+        container.dispose();
+      }
+    }
+  });
+
+  testWidgets(
+    'requester pending indicator overrides syncing and no-session visuals during sync-gap',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'group-requester-pending-priority',
+        start: now,
+      );
+      final session = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        now: now,
+        ownerDeviceId: 'remote-owner-device',
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+      final timeSyncService = FakeTimeSyncService(offset: Duration.zero);
+      final noticeService = FakeTaskRunNoticeService();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(timeSyncService),
+          taskRunNoticeServiceProvider.overrideWithValue(noticeService),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+
+        final router = GoRouter(
+          initialLocation: '/timer/${group.id}',
+          routes: [
+            GoRoute(
+              path: '/timer/:id',
+              builder: (context, state) {
+                final id = state.pathParameters['id']!;
+                return TimerScreen(groupId: id);
+              },
+            ),
+            GoRoute(
+              path: '/groups',
+              builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+            ),
+            GoRoute(
+              path: '/tasks',
+              builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+
+        final mirrorIndicator = find.byTooltip('Mirror device');
+        for (var i = 0; i < 20 && mirrorIndicator.evaluate().isEmpty; i += 1) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(mirrorIndicator, findsOneWidget);
+
+        final vm = container.read(pomodoroViewModelProvider.notifier);
+        await vm.requestOwnership();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(find.byTooltip('Ownership request pending'), findsOneWidget);
+
+        sessionRepo.emit(null);
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 4));
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(vm.isSessionMissingWhileRunning, isTrue);
+        expect(vm.isOwnershipRequestPendingForThisDevice, isTrue);
+        expect(vm.hasLocalPendingOwnershipRequest, isTrue);
+        expect(find.byTooltip('Ownership request pending'), findsOneWidget);
+        expect(find.byTooltip('Syncing session'), findsNothing);
+        expect(find.byTooltip('No active session yet'), findsNothing);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        sessionRepo.dispose();
+        container.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          sessionRepo.dispose();
+          container.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets(
+    'optimistic pending survives owner-state reset before mirror snapshot',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'group-optimistic-owner-mirror-reset',
+        start: now,
+      );
+      final session = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        now: now,
+        ownerDeviceId: 'remote-owner-device',
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+      final timeSyncService = FakeTimeSyncService(offset: Duration.zero);
+      final noticeService = FakeTaskRunNoticeService();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(timeSyncService),
+          taskRunNoticeServiceProvider.overrideWithValue(noticeService),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+
+        final router = GoRouter(
+          initialLocation: '/timer/${group.id}',
+          routes: [
+            GoRoute(
+              path: '/timer/:id',
+              builder: (context, state) {
+                final id = state.pathParameters['id']!;
+                return TimerScreen(groupId: id);
+              },
+            ),
+            GoRoute(
+              path: '/groups',
+              builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+            ),
+            GoRoute(
+              path: '/tasks',
+              builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+
+        final mirrorIndicator = find.byTooltip('Mirror device');
+        for (var i = 0; i < 20 && mirrorIndicator.evaluate().isEmpty; i += 1) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(mirrorIndicator, findsOneWidget);
+
+        final vm = container.read(pomodoroViewModelProvider.notifier);
+        await vm.requestOwnership();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(find.byTooltip('Ownership request pending'), findsOneWidget);
+        expect(vm.hasLocalPendingOwnershipRequest, isTrue);
+
+        sessionRepo.emit(null);
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 4));
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(vm.isSessionMissingWhileRunning, isTrue);
+        expect(vm.isMirrorMode, isFalse);
+        expect(find.byTooltip('Ownership request pending'), findsOneWidget);
+        expect(find.byTooltip('Syncing session'), findsNothing);
+
+        final mirrorSessionAfterReset = _buildRunningSession(
+          groupId: group.id,
+          taskId: group.tasks.first.sourceTaskId,
+          now: now.add(const Duration(seconds: 4)),
+          ownerDeviceId: 'remote-owner-device',
+        );
+        sessionRepo.emit(mirrorSessionAfterReset);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(vm.isMirrorMode, isTrue);
+        expect(vm.hasLocalPendingOwnershipRequest, isTrue);
+        expect(vm.isOwnershipRequestPendingForThisDevice, isTrue);
+        expect(find.byTooltip('Ownership request pending'), findsOneWidget);
+        expect(find.byTooltip('Mirror device'), findsNothing);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        sessionRepo.dispose();
+        container.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          sessionRepo.dispose();
+          container.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets(
+    'optimistic pending overrides stale rejected snapshot from stream',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'group-optimistic-stale-rejected-override',
+        start: now,
+      );
+      final staleRejected = OwnershipRequest(
+        requestId: 'old-request',
+        requesterDeviceId: deviceInfo.deviceId,
+        requestedAt: now.subtract(const Duration(minutes: 2)),
+        status: OwnershipRequestStatus.rejected,
+        respondedAt: now.subtract(const Duration(minutes: 1)),
+        respondedByDeviceId: 'remote-owner-device',
+      );
+      final session = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        now: now,
+        ownerDeviceId: 'remote-owner-device',
+        ownershipRequest: staleRejected,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+      final timeSyncService = FakeTimeSyncService(offset: Duration.zero);
+      final noticeService = FakeTaskRunNoticeService();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(timeSyncService),
+          taskRunNoticeServiceProvider.overrideWithValue(noticeService),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+
+        final router = GoRouter(
+          initialLocation: '/timer/${group.id}',
+          routes: [
+            GoRoute(
+              path: '/timer/:id',
+              builder: (context, state) {
+                final id = state.pathParameters['id']!;
+                return TimerScreen(groupId: id);
+              },
+            ),
+            GoRoute(
+              path: '/groups',
+              builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+            ),
+            GoRoute(
+              path: '/tasks',
+              builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+
+        final mirrorIndicator = find.byTooltip('Mirror device');
+        for (var i = 0; i < 20 && mirrorIndicator.evaluate().isEmpty; i += 1) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(mirrorIndicator, findsOneWidget);
+
+        final vm = container.read(pomodoroViewModelProvider.notifier);
+        expect(vm.isOwnershipRequestRejectedForThisDevice, isTrue);
+
+        await vm.requestOwnership();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(vm.isOwnershipRequestPendingForThisDevice, isTrue);
+        expect(vm.hasLocalPendingOwnershipRequest, isTrue);
+        expect(vm.isOwnershipRequestRejectedForThisDevice, isFalse);
+        expect(find.byTooltip('Ownership request pending'), findsOneWidget);
+
+        final staleRejectedReplay = _buildRunningSession(
+          groupId: group.id,
+          taskId: group.tasks.first.sourceTaskId,
+          now: now.add(const Duration(seconds: 2)),
+          ownerDeviceId: 'remote-owner-device',
+          ownershipRequest: staleRejected,
+        );
+        sessionRepo.emit(staleRejectedReplay);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(vm.isOwnershipRequestPendingForThisDevice, isTrue);
+        expect(vm.hasLocalPendingOwnershipRequest, isTrue);
+        expect(vm.isOwnershipRequestRejectedForThisDevice, isFalse);
+        expect(find.byTooltip('Ownership request pending'), findsOneWidget);
+        expect(find.byTooltip('Mirror device'), findsNothing);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        sessionRepo.dispose();
+        container.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          sessionRepo.dispose();
+          container.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets(
+    'optimistic pending is not cleared by stale rejected snapshot from another device',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'group-optimistic-stale-rejected-other-device',
+        start: now,
+      );
+      final session = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        now: now,
+        ownerDeviceId: 'remote-owner-device',
+      );
+
+      final staleRejectedFromOther = OwnershipRequest(
+        requestId: 'other-device-old-request',
+        requesterDeviceId: 'third-device',
+        requestedAt: now.subtract(const Duration(minutes: 3)),
+        status: OwnershipRequestStatus.rejected,
+        respondedAt: now.subtract(const Duration(minutes: 2)),
+        respondedByDeviceId: 'remote-owner-device',
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+      final timeSyncService = FakeTimeSyncService(offset: Duration.zero);
+      final noticeService = FakeTaskRunNoticeService();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(timeSyncService),
+          taskRunNoticeServiceProvider.overrideWithValue(noticeService),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+
+        final router = GoRouter(
+          initialLocation: '/timer/${group.id}',
+          routes: [
+            GoRoute(
+              path: '/timer/:id',
+              builder: (context, state) {
+                final id = state.pathParameters['id']!;
+                return TimerScreen(groupId: id);
+              },
+            ),
+            GoRoute(
+              path: '/groups',
+              builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+            ),
+            GoRoute(
+              path: '/tasks',
+              builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+
+        final mirrorIndicator = find.byTooltip('Mirror device');
+        for (var i = 0; i < 20 && mirrorIndicator.evaluate().isEmpty; i += 1) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(mirrorIndicator, findsOneWidget);
+
+        final vm = container.read(pomodoroViewModelProvider.notifier);
+        await vm.requestOwnership();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(vm.isOwnershipRequestPendingForThisDevice, isTrue);
+        expect(vm.hasLocalPendingOwnershipRequest, isTrue);
+        expect(vm.isOwnershipRequestRejectedForThisDevice, isFalse);
+        expect(find.byTooltip('Ownership request pending'), findsOneWidget);
+
+        final staleRejectedReplay = _buildRunningSession(
+          groupId: group.id,
+          taskId: group.tasks.first.sourceTaskId,
+          now: now.add(const Duration(seconds: 2)),
+          ownerDeviceId: 'remote-owner-device',
+          ownershipRequest: staleRejectedFromOther,
+        );
+        sessionRepo.emit(staleRejectedReplay);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(vm.isOwnershipRequestPendingForThisDevice, isTrue);
+        expect(vm.hasLocalPendingOwnershipRequest, isTrue);
+        expect(vm.isOwnershipRequestRejectedForThisDevice, isFalse);
+        expect(vm.ownershipRequest?.requesterDeviceId, deviceInfo.deviceId);
+        expect(find.byTooltip('Ownership request pending'), findsOneWidget);
+        expect(find.byTooltip('Mirror device'), findsNothing);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        sessionRepo.dispose();
+        container.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          sessionRepo.dispose();
+          container.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets(
+    'local pending gating disables duplicate ownership taps while snapshot lags',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'group-local-pending-gating-no-duplicate',
+        start: now,
+      );
+      final session = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        now: now,
+        ownerDeviceId: 'remote-owner-device',
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+      final timeSyncService = FakeTimeSyncService(offset: Duration.zero);
+      final noticeService = FakeTaskRunNoticeService();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(timeSyncService),
+          taskRunNoticeServiceProvider.overrideWithValue(noticeService),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+
+        final router = GoRouter(
+          initialLocation: '/timer/${group.id}',
+          routes: [
+            GoRoute(
+              path: '/timer/:id',
+              builder: (context, state) {
+                final id = state.pathParameters['id']!;
+                return TimerScreen(groupId: id);
+              },
+            ),
+            GoRoute(
+              path: '/groups',
+              builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+            ),
+            GoRoute(
+              path: '/tasks',
+              builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+
+        final mirrorIndicator = find.byTooltip('Mirror device');
+        for (var i = 0; i < 20 && mirrorIndicator.evaluate().isEmpty; i += 1) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(mirrorIndicator, findsOneWidget);
+
+        final vm = container.read(pomodoroViewModelProvider.notifier);
+        expect(vm.canRequestOwnership, isTrue);
+
+        await tester.tap(mirrorIndicator);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final firstRequestButton = find.widgetWithText(
+          ElevatedButton,
+          'Request ownership',
+        );
+        expect(firstRequestButton, findsOneWidget);
+        expect(
+          tester.widget<ElevatedButton>(firstRequestButton).onPressed,
+          isNotNull,
+        );
+
+        await tester.tap(firstRequestButton);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(sessionRepo.requestOwnershipCalls, 1);
+        expect(sessionRepo.lastRequesterDeviceId, deviceInfo.deviceId);
+        expect(sessionRepo.lastRequestId, isNotNull);
+        expect(vm.isOwnershipRequestPendingForThisDevice, isTrue);
+        expect(vm.hasLocalPendingOwnershipRequest, isTrue);
+        expect(vm.canRequestOwnership, isFalse);
+        expect(find.byTooltip('Ownership request pending'), findsOneWidget);
+
+        await tester.tap(find.byTooltip('Ownership request pending'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final requestSentButton = find.widgetWithText(
+          ElevatedButton,
+          'Request sent',
+        );
+        expect(requestSentButton, findsOneWidget);
+        expect(
+          tester.widget<ElevatedButton>(requestSentButton).onPressed,
+          isNull,
+        );
+
+        await tester.tap(requestSentButton);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(sessionRepo.requestOwnershipCalls, 1);
+        expect(vm.isOwnershipRequestPendingForThisDevice, isTrue);
+        expect(vm.hasLocalPendingOwnershipRequest, isTrue);
+        expect(find.byTooltip('Ownership request pending'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        sessionRepo.dispose();
+        container.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          sessionRepo.dispose();
+          container.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets(
+    'requester pending stays active until owner rejection response arrives',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'group-pending-until-owner-response',
+        start: now,
+      );
+      final session = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        now: now,
+        ownerDeviceId: 'remote-owner-device',
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+      final timeSyncService = FakeTimeSyncService(offset: Duration.zero);
+      final noticeService = FakeTaskRunNoticeService();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(timeSyncService),
+          taskRunNoticeServiceProvider.overrideWithValue(noticeService),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+
+        final router = GoRouter(
+          initialLocation: '/timer/${group.id}',
+          routes: [
+            GoRoute(
+              path: '/timer/:id',
+              builder: (context, state) {
+                final id = state.pathParameters['id']!;
+                return TimerScreen(groupId: id);
+              },
+            ),
+            GoRoute(
+              path: '/groups',
+              builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+            ),
+            GoRoute(
+              path: '/tasks',
+              builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+
+        final mirrorIndicator = find.byTooltip('Mirror device');
+        for (var i = 0; i < 20 && mirrorIndicator.evaluate().isEmpty; i += 1) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(mirrorIndicator, findsOneWidget);
+
+        final vm = container.read(pomodoroViewModelProvider.notifier);
+        await vm.requestOwnership();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        final requestId = sessionRepo.lastRequestId;
+        expect(requestId, isNotNull);
+        expect(requestId, isNotEmpty);
+        expect(vm.isOwnershipRequestPendingForThisDevice, isTrue);
+        expect(vm.hasLocalPendingOwnershipRequest, isTrue);
+        expect(find.byTooltip('Ownership request pending'), findsOneWidget);
+
+        final confirmedPending = OwnershipRequest(
+          requestId: requestId,
+          requesterDeviceId: deviceInfo.deviceId,
+          requestedAt: now.add(const Duration(seconds: 1)),
+          status: OwnershipRequestStatus.pending,
+          respondedAt: null,
+          respondedByDeviceId: null,
+        );
+        final pendingSnapshot = _buildRunningSession(
+          groupId: group.id,
+          taskId: group.tasks.first.sourceTaskId,
+          now: now.add(const Duration(seconds: 1)),
+          ownerDeviceId: 'remote-owner-device',
+          ownershipRequest: confirmedPending,
+        );
+        sessionRepo.emit(pendingSnapshot);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(vm.isOwnershipRequestPendingForThisDevice, isTrue);
+        expect(vm.hasLocalPendingOwnershipRequest, isTrue);
+        expect(find.byTooltip('Ownership request pending'), findsOneWidget);
+
+        final rejectedSnapshot = _buildRunningSession(
+          groupId: group.id,
+          taskId: group.tasks.first.sourceTaskId,
+          now: now.add(const Duration(seconds: 2)),
+          ownerDeviceId: 'remote-owner-device',
+          ownershipRequest: OwnershipRequest(
+            requestId: requestId,
+            requesterDeviceId: deviceInfo.deviceId,
+            requestedAt: now.add(const Duration(seconds: 1)),
+            status: OwnershipRequestStatus.rejected,
+            respondedAt: now.add(const Duration(seconds: 2)),
+            respondedByDeviceId: 'remote-owner-device',
+          ),
+        );
+        sessionRepo.emit(rejectedSnapshot);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(vm.isOwnershipRequestPendingForThisDevice, isFalse);
+        expect(vm.hasLocalPendingOwnershipRequest, isFalse);
+        expect(vm.isOwnershipRequestRejectedForThisDevice, isTrue);
+        expect(find.byTooltip('Ownership request pending'), findsNothing);
+        expect(find.byTooltip('Mirror device'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        sessionRepo.dispose();
+        container.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          sessionRepo.dispose();
+          container.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets(
+    'requester pending yields when another device pending request appears',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'group-pending-yields-to-other-pending',
+        start: now,
+      );
+      final session = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        now: now,
+        ownerDeviceId: 'remote-owner-device',
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+      final timeSyncService = FakeTimeSyncService(offset: Duration.zero);
+      final noticeService = FakeTaskRunNoticeService();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(timeSyncService),
+          taskRunNoticeServiceProvider.overrideWithValue(noticeService),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+
+        final router = GoRouter(
+          initialLocation: '/timer/${group.id}',
+          routes: [
+            GoRoute(
+              path: '/timer/:id',
+              builder: (context, state) {
+                final id = state.pathParameters['id']!;
+                return TimerScreen(groupId: id);
+              },
+            ),
+            GoRoute(
+              path: '/groups',
+              builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+            ),
+            GoRoute(
+              path: '/tasks',
+              builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+
+        final mirrorIndicator = find.byTooltip('Mirror device');
+        for (var i = 0; i < 20 && mirrorIndicator.evaluate().isEmpty; i += 1) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(mirrorIndicator, findsOneWidget);
+
+        final vm = container.read(pomodoroViewModelProvider.notifier);
+        await vm.requestOwnership();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(vm.isOwnershipRequestPendingForThisDevice, isTrue);
+        expect(vm.hasLocalPendingOwnershipRequest, isTrue);
+        expect(find.byTooltip('Ownership request pending'), findsOneWidget);
+
+        final otherPendingSnapshot = _buildRunningSession(
+          groupId: group.id,
+          taskId: group.tasks.first.sourceTaskId,
+          now: now.add(const Duration(seconds: 2)),
+          ownerDeviceId: 'remote-owner-device',
+          ownershipRequest: OwnershipRequest(
+            requestId: 'pending-other-device',
+            requesterDeviceId: 'third-device',
+            requestedAt: now.add(const Duration(seconds: 1)),
+            status: OwnershipRequestStatus.pending,
+            respondedAt: null,
+            respondedByDeviceId: null,
+          ),
+        );
+        sessionRepo.emit(otherPendingSnapshot);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(vm.isOwnershipRequestPendingForThisDevice, isFalse);
+        expect(vm.hasLocalPendingOwnershipRequest, isFalse);
+        expect(vm.isOwnershipRequestPendingForOther, isTrue);
+        expect(find.byTooltip('Ownership request pending'), findsNothing);
+        expect(find.byTooltip('Mirror device'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        sessionRepo.dispose();
+        container.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          sessionRepo.dispose();
+          container.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets(
+    'rejection clears local pending and old rejected requestId does not suppress a new request',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'group-reject-clears-pending-requestid-guard',
+        start: now,
+      );
+      final session = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        now: now,
+        ownerDeviceId: 'remote-owner-device',
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+      final timeSyncService = FakeTimeSyncService(offset: Duration.zero);
+      final noticeService = FakeTaskRunNoticeService();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(timeSyncService),
+          taskRunNoticeServiceProvider.overrideWithValue(noticeService),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+
+        final router = GoRouter(
+          initialLocation: '/timer/${group.id}',
+          routes: [
+            GoRoute(
+              path: '/timer/:id',
+              builder: (context, state) {
+                final id = state.pathParameters['id']!;
+                return TimerScreen(groupId: id);
+              },
+            ),
+            GoRoute(
+              path: '/groups',
+              builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+            ),
+            GoRoute(
+              path: '/tasks',
+              builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+
+        final mirrorIndicator = find.byTooltip('Mirror device');
+        for (var i = 0; i < 20 && mirrorIndicator.evaluate().isEmpty; i += 1) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(mirrorIndicator, findsOneWidget);
+
+        final vm = container.read(pomodoroViewModelProvider.notifier);
+        await vm.requestOwnership();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        final firstRequestId = sessionRepo.lastRequestId;
+        expect(firstRequestId, isNotNull);
+        expect(firstRequestId, isNotEmpty);
+        expect(sessionRepo.requestOwnershipCalls, 1);
+        expect(vm.isOwnershipRequestPendingForThisDevice, isTrue);
+        expect(vm.hasLocalPendingOwnershipRequest, isTrue);
+        expect(find.byTooltip('Ownership request pending'), findsOneWidget);
+
+        final rejectedSnapshot = _buildRunningSession(
+          groupId: group.id,
+          taskId: group.tasks.first.sourceTaskId,
+          now: now.add(const Duration(seconds: 2)),
+          ownerDeviceId: 'remote-owner-device',
+          ownershipRequest: OwnershipRequest(
+            requestId: firstRequestId,
+            requesterDeviceId: deviceInfo.deviceId,
+            requestedAt: now.add(const Duration(seconds: 1)),
+            status: OwnershipRequestStatus.rejected,
+            respondedAt: now.add(const Duration(seconds: 2)),
+            respondedByDeviceId: 'remote-owner-device',
+          ),
+        );
+        sessionRepo.emit(rejectedSnapshot);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(vm.isOwnershipRequestPendingForThisDevice, isFalse);
+        expect(vm.hasLocalPendingOwnershipRequest, isFalse);
+        expect(vm.isOwnershipRequestRejectedForThisDevice, isTrue);
+        expect(vm.canRequestOwnership, isTrue);
+        expect(find.byTooltip('Ownership request pending'), findsNothing);
+        expect(find.byTooltip('Mirror device'), findsOneWidget);
+
+        await vm.requestOwnership();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        final secondRequestId = sessionRepo.lastRequestId;
+        expect(sessionRepo.requestOwnershipCalls, 2);
+        expect(secondRequestId, isNotNull);
+        expect(secondRequestId, isNot(firstRequestId));
+        expect(vm.isOwnershipRequestPendingForThisDevice, isTrue);
+        expect(vm.hasLocalPendingOwnershipRequest, isTrue);
+        expect(find.byTooltip('Ownership request pending'), findsOneWidget);
+
+        final staleRejectedReplay = _buildRunningSession(
+          groupId: group.id,
+          taskId: group.tasks.first.sourceTaskId,
+          now: now.add(const Duration(seconds: 3)),
+          ownerDeviceId: 'remote-owner-device',
+          ownershipRequest: OwnershipRequest(
+            requestId: firstRequestId,
+            requesterDeviceId: deviceInfo.deviceId,
+            requestedAt: now.add(const Duration(seconds: 1)),
+            status: OwnershipRequestStatus.rejected,
+            respondedAt: now.add(const Duration(seconds: 2)),
+            respondedByDeviceId: 'remote-owner-device',
+          ),
+        );
+        sessionRepo.emit(staleRejectedReplay);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(vm.isOwnershipRequestPendingForThisDevice, isTrue);
+        expect(vm.hasLocalPendingOwnershipRequest, isTrue);
+        expect(find.byTooltip('Ownership request pending'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        sessionRepo.dispose();
+        container.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          sessionRepo.dispose();
+          container.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets('mirror mode shows request action only inside ownership sheet', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final now = DateTime.now();
+    final deviceInfo = DeviceInfoService.ephemeral();
+    final group = _buildRunningGroup(
+      id: 'group-request-action-sheet-only',
+      start: now,
+    );
+    final session = _buildRunningSession(
+      groupId: group.id,
+      taskId: group.tasks.first.sourceTaskId,
+      now: now,
+      ownerDeviceId: 'remote-owner-device',
+    );
+
+    final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+    final sessionRepo = FakePomodoroSessionRepository(session);
+    final appModeService = AppModeService.memory();
+    final timeSyncService = FakeTimeSyncService(offset: Duration.zero);
+    final noticeService = FakeTaskRunNoticeService();
+    var disposed = false;
+
+    final container = ProviderContainer(
+      overrides: [
+        firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+        firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+        taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+        pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+        appModeServiceProvider.overrideWithValue(appModeService),
+        deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+        soundServiceProvider.overrideWithValue(FakeSoundService()),
+        timeSyncServiceProvider.overrideWithValue(timeSyncService),
+        taskRunNoticeServiceProvider.overrideWithValue(noticeService),
+      ],
+    );
+    try {
+      await container.read(appModeProvider.notifier).setAccount();
+
+      final router = GoRouter(
+        initialLocation: '/timer/${group.id}',
+        routes: [
+          GoRoute(
+            path: '/timer/:id',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return TimerScreen(groupId: id);
+            },
+          ),
+          GoRoute(
+            path: '/groups',
+            builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+          ),
+          GoRoute(
+            path: '/tasks',
+            builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+
+      final mirrorIndicator = find.byTooltip('Mirror device');
+      for (var i = 0; i < 20 && mirrorIndicator.evaluate().isEmpty; i += 1) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(mirrorIndicator, findsOneWidget);
+
+      // The main control row must not expose request ownership.
+      expect(
+        find.widgetWithText(ElevatedButton, 'Request ownership'),
+        findsNothing,
+      );
+      expect(find.text('Request ownership'), findsNothing);
+
+      await tester.tap(mirrorIndicator);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Session ownership'), findsOneWidget);
+      final requestButton = find.widgetWithText(
+        ElevatedButton,
+        'Request ownership',
+      );
+      expect(requestButton, findsOneWidget);
+      expect(tester.widget<ElevatedButton>(requestButton).onPressed, isNotNull);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 100));
+      sessionRepo.dispose();
+      container.dispose();
+      disposed = true;
+    } finally {
+      if (!disposed) {
+        sessionRepo.dispose();
+        container.dispose();
+      }
+    }
+  });
+
+  testWidgets('stale pending request shows Retry CTA inside ownership sheet', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final now = DateTime.now();
+    final deviceInfo = DeviceInfoService.ephemeral();
+    final group = _buildRunningGroup(
+      id: 'group-stale-pending-retry-sheet',
+      start: now,
+    );
+    final stalePendingForSelf = OwnershipRequest(
+      requestId: 'stale-request-self',
+      requesterDeviceId: deviceInfo.deviceId,
+      requestedAt: now.subtract(const Duration(minutes: 2)),
+      status: OwnershipRequestStatus.pending,
+      respondedAt: null,
+      respondedByDeviceId: null,
+    );
+    final session = _buildRunningSession(
+      groupId: group.id,
+      taskId: group.tasks.first.sourceTaskId,
+      now: now,
+      ownerDeviceId: 'remote-owner-device',
+      ownershipRequest: stalePendingForSelf,
+    );
+
+    final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+    final sessionRepo = FakePomodoroSessionRepository(session);
+    final appModeService = AppModeService.memory();
+    final timeSyncService = FakeTimeSyncService(offset: Duration.zero);
+    final noticeService = FakeTaskRunNoticeService();
+    var disposed = false;
+
+    final container = ProviderContainer(
+      overrides: [
+        firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+        firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+        taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+        pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+        appModeServiceProvider.overrideWithValue(appModeService),
+        deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+        soundServiceProvider.overrideWithValue(FakeSoundService()),
+        timeSyncServiceProvider.overrideWithValue(timeSyncService),
+        taskRunNoticeServiceProvider.overrideWithValue(noticeService),
+      ],
+    );
+    try {
+      await container.read(appModeProvider.notifier).setAccount();
+
+      final router = GoRouter(
+        initialLocation: '/timer/${group.id}',
+        routes: [
+          GoRoute(
+            path: '/timer/:id',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return TimerScreen(groupId: id);
+            },
+          ),
+          GoRoute(
+            path: '/groups',
+            builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+          ),
+          GoRoute(
+            path: '/tasks',
+            builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+
+      final pendingIndicator = find.byTooltip('Ownership request pending');
+      for (var i = 0; i < 20 && pendingIndicator.evaluate().isEmpty; i += 1) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(pendingIndicator, findsOneWidget);
+
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      expect(vm.isMirrorMode, isTrue);
+      expect(vm.isOwnershipRequestPendingForThisDevice, isTrue);
+      expect(vm.hasLocalPendingOwnershipRequest, isFalse);
+      expect(vm.canRequestOwnership, isTrue);
+
+      // Retry action must not be in the main controls; it belongs to the sheet.
+      expect(find.widgetWithText(ElevatedButton, 'Retry'), findsNothing);
+
+      await tester.tap(pendingIndicator);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Session ownership'), findsOneWidget);
+      final retryButton = find.widgetWithText(ElevatedButton, 'Retry');
+      expect(retryButton, findsOneWidget);
+      expect(tester.widget<ElevatedButton>(retryButton).onPressed, isNotNull);
+
+      await tester.tap(retryButton);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 120));
+
+      expect(sessionRepo.requestOwnershipCalls, 1);
+      expect(sessionRepo.lastRequesterDeviceId, deviceInfo.deviceId);
+      expect(sessionRepo.lastRequestId, isNotNull);
+      expect(vm.hasLocalPendingOwnershipRequest, isTrue);
+      expect(vm.isOwnershipRequestPendingForThisDevice, isTrue);
+      expect(find.byTooltip('Ownership request pending'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 100));
+      sessionRepo.dispose();
+      container.dispose();
+      disposed = true;
+    } finally {
+      if (!disposed) {
+        sessionRepo.dispose();
+        container.dispose();
+      }
+    }
+  });
+
+  testWidgets(
+    'critical ownership flow stays appbar-sheet-only and pending remains stable until owner response',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'group-critical-sheet-only-pending-stable',
+        start: now,
+      );
+      final session = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        now: now,
+        ownerDeviceId: 'remote-owner-device',
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+      final timeSyncService = FakeTimeSyncService(offset: Duration.zero);
+      final noticeService = FakeTaskRunNoticeService();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(timeSyncService),
+          taskRunNoticeServiceProvider.overrideWithValue(noticeService),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+
+        final router = GoRouter(
+          initialLocation: '/timer/${group.id}',
+          routes: [
+            GoRoute(
+              path: '/timer/:id',
+              builder: (context, state) {
+                final id = state.pathParameters['id']!;
+                return TimerScreen(groupId: id);
+              },
+            ),
+            GoRoute(
+              path: '/groups',
+              builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+            ),
+            GoRoute(
+              path: '/tasks',
+              builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+
+        final mirrorIndicator = find.byTooltip('Mirror device');
+        for (var i = 0; i < 20 && mirrorIndicator.evaluate().isEmpty; i += 1) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(mirrorIndicator, findsOneWidget);
+
+        final vm = container.read(pomodoroViewModelProvider.notifier);
+
+        // AppBar sheet only: no request CTA or pending copy in main body.
+        expect(
+          find.widgetWithText(ElevatedButton, 'Request ownership'),
+          findsNothing,
+        );
+        expect(find.text('Waiting for owner approval.'), findsNothing);
+        expect(find.byTooltip('Ownership request pending'), findsNothing);
+
+        // Request action is available only after opening the ownership sheet.
+        await tester.tap(mirrorIndicator);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('Session ownership'), findsOneWidget);
+        expect(find.text('Waiting for owner approval.'), findsNothing);
+
+        final requestButton = find.widgetWithText(
+          ElevatedButton,
+          'Request ownership',
+        );
+        expect(requestButton, findsOneWidget);
+        expect(
+          tester.widget<ElevatedButton>(requestButton).onPressed,
+          isNotNull,
+        );
+
+        await tester.tap(requestButton);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        final requestId = sessionRepo.lastRequestId;
+        expect(requestId, isNotNull);
+        expect(requestId, isNotEmpty);
+        expect(vm.isOwnershipRequestPendingForThisDevice, isTrue);
+        expect(vm.hasLocalPendingOwnershipRequest, isTrue);
+        expect(find.byTooltip('Ownership request pending'), findsOneWidget);
+
+        // Pending remains stable after remote pending confirmation.
+        final pendingSnapshot = _buildRunningSession(
+          groupId: group.id,
+          taskId: group.tasks.first.sourceTaskId,
+          now: now.add(const Duration(seconds: 1)),
+          ownerDeviceId: 'remote-owner-device',
+          ownershipRequest: OwnershipRequest(
+            requestId: requestId,
+            requesterDeviceId: deviceInfo.deviceId,
+            requestedAt: now.add(const Duration(seconds: 1)),
+            status: OwnershipRequestStatus.pending,
+            respondedAt: null,
+            respondedByDeviceId: null,
+          ),
+        );
+        sessionRepo.emit(pendingSnapshot);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(vm.isOwnershipRequestPendingForThisDevice, isTrue);
+        expect(find.byTooltip('Ownership request pending'), findsOneWidget);
+
+        // Sheet shows the waiting message while owner has not responded.
+        await tester.tap(find.byTooltip('Ownership request pending'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('Session ownership'), findsOneWidget);
+        expect(find.text('Waiting for owner approval.'), findsOneWidget);
+
+        // Once owner rejects, pending must clear.
+        final rejectedSnapshot = _buildRunningSession(
+          groupId: group.id,
+          taskId: group.tasks.first.sourceTaskId,
+          now: now.add(const Duration(seconds: 2)),
+          ownerDeviceId: 'remote-owner-device',
+          ownershipRequest: OwnershipRequest(
+            requestId: requestId,
+            requesterDeviceId: deviceInfo.deviceId,
+            requestedAt: now.add(const Duration(seconds: 1)),
+            status: OwnershipRequestStatus.rejected,
+            respondedAt: now.add(const Duration(seconds: 2)),
+            respondedByDeviceId: 'remote-owner-device',
+          ),
+        );
+        sessionRepo.emit(rejectedSnapshot);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(vm.isOwnershipRequestPendingForThisDevice, isFalse);
+        expect(vm.hasLocalPendingOwnershipRequest, isFalse);
+        expect(find.byTooltip('Ownership request pending'), findsNothing);
+        expect(find.byTooltip('Mirror device'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        sessionRepo.dispose();
+        container.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          sessionRepo.dispose();
+          container.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets(
+    'owner reject dismissal stays hidden when pending request gets requestId materialized',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final group = _buildRunningGroup(
+        id: 'group-owner-reject-materialized-requestid',
+        start: now,
+      );
+      final pendingWithoutRequestId = OwnershipRequest(
+        requestId: null,
+        requesterDeviceId: 'mirror-test-device',
+        requestedAt: now,
+        status: OwnershipRequestStatus.pending,
+        respondedAt: null,
+        respondedByDeviceId: null,
+      );
+      final session = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        now: now,
+        ownerDeviceId: deviceInfo.deviceId,
+        ownershipRequest: pendingWithoutRequestId,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+      final timeSyncService = FakeTimeSyncService(offset: Duration.zero);
+      final noticeService = FakeTaskRunNoticeService();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(timeSyncService),
+          taskRunNoticeServiceProvider.overrideWithValue(noticeService),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+
+        final router = GoRouter(
+          initialLocation: '/timer/${group.id}',
+          routes: [
+            GoRoute(
+              path: '/timer/:id',
+              builder: (context, state) {
+                final id = state.pathParameters['id']!;
+                return TimerScreen(groupId: id);
+              },
+            ),
+            GoRoute(
+              path: '/groups',
+              builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+            ),
+            GoRoute(
+              path: '/tasks',
+              builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('Ownership request'), findsOneWidget);
+        final rejectButton = find.widgetWithText(OutlinedButton, 'Reject');
+        expect(rejectButton, findsOneWidget);
+
+        await tester.tap(rejectButton);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+        expect(find.text('Ownership request'), findsNothing);
+
+        final pendingWithRequestId = _buildRunningSession(
+          groupId: group.id,
+          taskId: group.tasks.first.sourceTaskId,
+          now: now.add(const Duration(seconds: 1)),
+          ownerDeviceId: deviceInfo.deviceId,
+          ownershipRequest: OwnershipRequest(
+            requestId: 'req-materialized-1',
+            requesterDeviceId: 'mirror-test-device',
+            requestedAt: now,
+            status: OwnershipRequestStatus.pending,
+            respondedAt: null,
+            respondedByDeviceId: null,
+          ),
+        );
+        sessionRepo.emit(pendingWithRequestId);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(find.text('Ownership request'), findsNothing);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        sessionRepo.dispose();
+        container.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          sessionRepo.dispose();
+          container.dispose();
+        }
+      }
+    },
+  );
+
   testWidgets('Pending intent without snapshot shows full loader', (
     tester,
   ) async {

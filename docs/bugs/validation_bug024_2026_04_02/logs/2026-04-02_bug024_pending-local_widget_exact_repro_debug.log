@@ -1,0 +1,22 @@
+00:00 +0: loading /Users/devcodex/development/focus_interval/test/presentation/timer_screen_syncing_overlay_test.dart
+00:00 +0: owner reject dismissal stays hidden when pending request gets requestId materialized
+[VMLifecycle] init vmToken=bd7472f3-c9ee-4095-bbff-74f4268206c7 groupId=none
+[TimeSync] refreshed (resync) offset=0ms
+[ActiveSession][snapshot] owner=android-513338db-c3e3-4745-919d-98303e0a9e2e status=pomodoroRunning phase=pomodoro remaining=1200 lastUpdatedAt=2026-04-02 16:52:54.430040 groupId=group-owner-reject-materialized-requestid
+[SessionSync] attach groupId=group-owner-reject-materialized-requestid
+[TimeSync] refreshed (session-snapshot) offset=0ms
+[ActiveSession][snapshot] owner=android-513338db-c3e3-4745-919d-98303e0a9e2e status=pomodoroRunning phase=pomodoro remaining=1200 lastUpdatedAt=2026-04-02 16:52:54.430040 groupId=group-owner-reject-materialized-requestid
+[ActiveSession][snapshot] owner=android-513338db-c3e3-4745-919d-98303e0a9e2e status=pomodoroRunning phase=pomodoro remaining=1200 lastUpdatedAt=2026-04-02 16:52:54.430040 groupId=group-owner-reject-materialized-requestid
+[TimeSync] refreshed (session-snapshot) offset=0ms
+[TimeSync] refreshed (load-group) offset=0ms
+[SessionSub] close vmToken=bd7472f3-c9ee-4095-bbff-74f4268206c7 reason=load-group
+[SessionSub] open (→SSS) vmToken=bd7472f3-c9ee-4095-bbff-74f4268206c7 groupId=group-owner-reject-materialized-requestid reason=load-group
+[RunModeDiag] Timer load group=group-owner-reject-materialized-requestid result=PomodoroGroupLoadResult.loaded status=running route=/timer/group-owner-reject-materialized-requestid
+[TimeSync] refreshed (session-snapshot) offset=0ms
+[TimeSync] refreshed (resync) offset=0ms
+[ActiveSession][snapshot] owner=android-513338db-c3e3-4745-919d-98303e0a9e2e status=pomodoroRunning phase=pomodoro remaining=1200 lastUpdatedAt=2026-04-02 16:52:54.430040 groupId=group-owner-reject-materialized-requestid
+[TimeSync] refreshed (session-snapshot) offset=0ms
+[ActiveSession][snapshot] owner=android-513338db-c3e3-4745-919d-98303e0a9e2e status=pomodoroRunning phase=pomodoro remaining=1200 lastUpdatedAt=2026-04-02 16:52:55.430040 groupId=group-owner-reject-materialized-requestid
+[TimeSync] refreshed (session-snapshot) offset=0ms
+[VMLifecycle] dispose vmToken=bd7472f3-c9ee-4095-bbff-74f4268206c7 groupId=group-owner-reject-materialized-requestid
+00:06 +1: All tests passed!

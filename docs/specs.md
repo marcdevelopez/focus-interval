@@ -694,6 +694,15 @@ users/{uid}/activeSession
 - Expiry/cleanup is only allowed when the activeSession exists, is **running**, and
   its groupId matches the running group being evaluated. If the session is missing,
   paused, or belongs to a different group, do not complete.
+  - **Exception — startup zombie-run path (BUGLOG-008C):** This rule applies to
+    live execution context (app open, session stream active). At app startup, if
+    `activeSession` is `null` (no device was available to maintain the session) and
+    the group's `theoreticalEndTime` has already passed, the coordinator **may**
+    complete the group to eliminate the zombie run. This prevents the app from
+    showing a stale "Ready / 15:00 / Start" state for a group that ended while all
+    devices were offline or the app was closed. This path is intentional and must
+    not be removed (see `ScheduledGroupCoordinator._resolveExpiredRunningGroups`,
+    added in fix BUGLOG-008C).
 - Repositories must **never** auto-complete groups based on time during reads/streams.
   Status changes only occur through the coordinator/viewmodel expiry rules above.
 - Stale threshold definition (activeSession + ownership): 45 seconds without

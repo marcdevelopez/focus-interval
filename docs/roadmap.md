@@ -106,23 +106,23 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       03/02/2026: Integrity Warning copy clarified with explicit instruction + default badge moved below cards (validated 20/03/2026; `RVP-018` Closed/OK).
       03/02/2026: Groups Hub summary modal expanded with timing, totals, and task breakdown (validated 20/03/2026; `RVP-019` Closed/OK).
       03/02/2026: Groups Hub summary hides Scheduled start for non-planned runs (validated 20/03/2026; `RVP-020` Closed/OK).
-      03/02/2026: Groups Hub cards hide Scheduled row for non-planned runs (validation pending).
-      03/02/2026: TimerScreen reloads on groupId changes; /timer routes now use page keys to prevent stale state (validation pending).
-      03/02/2026: Cancel navigation uses root navigator and retries if still on /timer (validation pending).
-      03/02/2026: Cancel now persists canceled status before clearing activeSession (validation pending).
-      03/02/2026: Groups Hub "Go to Task List" CTA moved to top of content (validation pending).
-      03/02/2026: Completed retention no longer evicted by canceled groups (validation pending).
-      03/02/2026: Classic Pomodoro default now deduped on account-local preset push (validation pending).
-      03/02/2026: Run Mode cancel navigation fallback added in build (validation pending).
+      03/02/2026: Groups Hub cards hide Scheduled row for non-planned runs (validated 01/04/2026; `RVP-021` Closed/OK).
+      03/02/2026: TimerScreen reloads on groupId changes; /timer routes now use page keys to prevent stale state (validated 01/04/2026; `RVP-022` Closed/OK).
+      03/02/2026: Cancel navigation uses root navigator and retries if still on /timer (validated 01/04/2026; `RVP-023` Closed/OK).
+      03/02/2026: Cancel now persists canceled status before clearing activeSession (validated 01/04/2026; `RVP-024` Closed/OK).
+      03/02/2026: Groups Hub "Go to Task List" CTA moved to top of content (validated 01/04/2026; `RVP-025` Closed/OK).
+      03/02/2026: Completed retention no longer evicted by canceled groups (validated 01/04/2026; `RVP-026` Closed/OK).
+      03/02/2026: Classic Pomodoro default now deduped on account-local preset push (validated 01/04/2026; `RVP-027` Closed/OK).
+      03/02/2026: Run Mode cancel navigation fallback added in build (validated 01/04/2026; `RVP-028` Closed/OK).
       04/02/2026: Phase 19 validation completed (multi-platform) and phase closed.
       04/02/2026: Specs/roadmap updated (group naming, task colors, group progress bar,
                   planning by total range/total time, global sound settings) — documentation-only.
       02/03/2026: Plan Group pre-run notice control implemented (Plan group + re-plan snackbar + auto-clamp SnackBar). Validated 02/03/2026 on Android RMX3771.
       02/03/2026: ActiveSession idempotent writes now persist payload changes on equal sessionRevision
-          (remainingSeconds and phase fields no longer dropped) (validation pending).
+          (remainingSeconds and phase fields no longer dropped) (validated 01/04/2026; `RVP-029` Closed/OK).
       02/03/2026: Run Mode owner sync stabilization: owner keeps local machine as render authority,
           projection allows local fallback without server offset, and resync paths guard
-          against disposed provider refs (validation pending).
+          against disposed provider refs (validated 01/04/2026; `RVP-030` Closed/OK).
       05/03/2026: Branch reset to `2c788c3` (Fix 22 P0-3 baseline) to remove
           post‑P0‑3 regressions; re-applied Plan Group notice control features
           and debug prod override. Pause syncing regression reported resolved
@@ -355,29 +355,29 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       08/02/2026: Pre-start planning redesign phase 2 implemented (range/total-time scheduling
                   with redistribution + adjusted-end notice).
       08/02/2026: Planning redistribution max-fit + inline adjusted-end notice + unit tests added
-                  (validation pending).
+                  (validated 01/04/2026; `RVP-031` Closed/OK).
       11/02/2026: Ownership publish guard + ownership UI refresh to prevent stale owner flips
                   (validation pending).
       11/02/2026: Desktop inactive resync keepalive to surface ownership requests
                   while the window is inactive (validation pending).
       11/02/2026: Ownership auto-claim without request + stale threshold 45s +
-                  post-request resync (validation pending).
+                  post-request resync (validated 01/04/2026; `RVP-034` Closed/OK).
       11/02/2026: Paused ownership stability rules + Android paused heartbeats
-                  (validation pending).
+                  (validated 01/04/2026; `RVP-035` Closed/OK).
       11/02/2026: Ownership API hardening (request vs claim split, owner-only clears)
-                  (validation pending).
+                  (validated 01/04/2026; `RVP-036` Closed/OK).
       11/02/2026: Stale ownership checks ignore missing lastUpdatedAt to avoid
-                  phantom auto-claims/cleanup (validation pending).
+                  phantom auto-claims/cleanup (validated 01/04/2026; `RVP-037` Closed/OK).
       11/02/2026: Running-group expiry waits for the first activeSession snapshot
-                  to avoid completing paused sessions on resume (validation pending).
+                  to avoid completing paused sessions on resume (validated 01/04/2026; `RVP-038` Closed/OK).
       11/02/2026: Running-group expiry now requires an activeSession that is
-                  running and matches the groupId (validation pending).
+                  running and matches the groupId (validated 01/04/2026; `RVP-039` Closed/OK).
       11/02/2026: Removed repository auto-complete-on-read; expiry is enforced
-                  only by coordinator/viewmodel guards (validation pending).
+                  only by coordinator/viewmodel guards (validated 01/04/2026; `RVP-040` Closed/OK).
       12/02/2026: Ownership requests re-sync on resume with a post-resume
                   resubscription to surface pending requests (validation pending).
       12/02/2026: Mirror request indicator now shows pending immediately (optimistic UI)
-                  while waiting for ownership approval (validation pending).
+                  while waiting for ownership approval (validated 01/04/2026; `RVP-042` Closed/OK).
       12/02/2026: Ownership request banner dismisses immediately on reject
                   (validation pending).
       12/02/2026: Ownership reject dismiss no longer reappears on transient
@@ -385,53 +385,54 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       12/02/2026: Run Mode ownership indicator always visible (syncing variant);
                   manual sync removed; VM now listens to the shared session
                   stream; control gating requires a valid session snapshot
-                  (validation pending).
+                  (validated 01/04/2026; `RVP-045` Closed/OK).
       12/02/2026: Session-missing gating now always blocks controls while a
                   running group has no activeSession; auto-start performs a
                   sync-then-start check; ownership indicator shows neutral
-                  state when no session exists (validation pending).
+                  state when no session exists (validated 01/04/2026; `RVP-046` Closed/OK).
       12/02/2026: Sync-gap handling now neutralizes session-derived ownership
-                  state to avoid stale mirror/owner derivations (validation pending).
+                  state to avoid stale mirror/owner derivations (validated 01/04/2026; `RVP-047` Closed/OK).
       12/02/2026: Ownership pending indicator now overrides syncing/no-session
-                  visuals on the requester (validation pending).
+                  visuals on the requester (validated 01/04/2026; `RVP-048` Closed/OK).
       12/02/2026: Optimistic ownership request now survives owner->mirror reset
-                  to avoid amber indicator flicker (validation pending).
+                  to avoid amber indicator flicker (validated 01/04/2026; `RVP-049` Closed/OK).
       12/02/2026: Optimistic pending now overrides older rejected ownership
-                  snapshots to prevent request indicator flicker (validation pending).
+                  snapshots to prevent request indicator flicker (validated 01/04/2026; `RVP-050` Closed/OK).
       12/02/2026: Optimistic pending no longer cleared by stale rejected
-                  requests from other devices (validation pending).
+                  requests from other devices (validated 01/04/2026; `RVP-051` Closed/OK).
       12/02/2026: Local pending gating keeps requester UI stable and disables
-                  duplicate request taps during snapshot lag (validation pending).
+                  duplicate request taps during snapshot lag (validated 01/04/2026; `RVP-052` Closed/OK).
       12/02/2026: Ownership requests now include requestId to reconcile
-                  optimistic pending with remote snapshots (validation pending).
+                  optimistic pending with remote snapshots (validated 01/04/2026; `RVP-053` Closed/OK).
       12/02/2026: Requester pending UI now stays active until the owner
                   responds (accept/reject) or another pending request appears
-                  (validation pending).
+                  (validated 01/04/2026; `RVP-054` Closed/OK).
       12/02/2026: Request action moved to the ownership sheet; mirror control
-                  row no longer shows a Request button (validation pending).
+                  row no longer shows a Request button (validated 01/04/2026; `RVP-055` Closed/OK).
       12/02/2026: Retry CTA now lives in the ownership sheet when a pending
-                  request becomes stale (validation pending).
+                  request becomes stale (validated 01/04/2026; `RVP-056` Closed/OK).
       12/02/2026: CRITICAL: ownership request UI locked to AppBar sheet only;
                   pending state remains stable until owner response
-                  (validation pending).
+                  (validated 01/04/2026; `RVP-057` Closed/OK).
       12/02/2026: Reject now clears local pending; request keys use requestId
                   to prevent suppressing new requests after rejection
-                  (validation pending).
+                  (validated 01/04/2026; `RVP-058` Closed/OK).
       12/02/2026: Owner-side reject modal dismissal stabilized against
-                  requestId materialization flicker (validation pending).
+                  requestId materialization flicker (validated 02/04/2026;
+                  `RVP-059` Closed/OK).
       18/02/2026: Phase 17 validation closed (planning total duration + conflict
                   resolution).
       18/02/2026: Phase 17 reopened — early overlap warning (pause drift) +
                   mirror ownership CTA (Groups Hub / Task List) (pending).
       18/02/2026: Early overlap warning + mirror CTA + persistent conflict
-                  SnackBar implemented (validation pending).
+                  SnackBar implemented (validated 01/04/2026; `RVP-060` Closed/OK).
       19/02/2026: Phase 17 scope extended — postpone follows running group in
                   real time (no repeat modal) + paused overlap alerts
-                  implemented (validation pending).
+                  implemented (validated 02/04/2026; `RVP-061` Closed/OK).
       20/02/2026: Phase 17 scope extended — late-start queue owner-only flow
                   (request/auto-claim), server-anchored projections with live
                   updates, queue-confirm session bootstrap, and chained
-                  postpone for queued groups (validation pending).
+                  postpone for queued groups (validated 02/04/2026; `RVP-062` Closed/OK).
       30/03/2026: BUG-022 registered (docs-first) — macOS Authentication
                   keyboard input can lock after sign-out/account switch with
                   duplicate key-down exceptions; LoginScreen stale-key repair

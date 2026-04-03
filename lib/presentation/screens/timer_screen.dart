@@ -1633,7 +1633,12 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   bool _isDismissedOwnershipRequest(OwnershipRequest? request) {
     if (request == null) return false;
     if (request.requestId != null) {
-      return request.requestId == _dismissedOwnershipRequestKey;
+      final matchesRequestId =
+          request.requestId == _dismissedOwnershipRequestKey;
+      final matchesRequesterFallback =
+          _dismissedOwnershipRequesterId != null &&
+          request.requesterDeviceId == _dismissedOwnershipRequesterId;
+      return matchesRequestId || matchesRequesterFallback;
     }
     final requestKey = _ownershipRequestKey(request);
     return (requestKey != null &&
