@@ -3384,7 +3384,7 @@ Fix applied:
     - Added widget test for decision already present on TimerScreen mount.
 
 Status:
-In validation (03/04/2026).
+Closed/OK (03/04/2026). closed_commit_hash: `547de2b`.
 
 Validation packet:
 
@@ -3393,6 +3393,10 @@ Validation packet:
 - Local gate PASS logs:
   - `docs/bugs/validation_bug025_2026_04_03/logs/2026-04-03_bug025_547de2b_local_analyze.log`
   - `docs/bugs/validation_bug025_2026_04_03/logs/2026-04-03_bug025_547de2b_local_targeted-tests.log`
+- Device evidence PASS (scenarios A-D):
+  - `docs/bugs/validation_bug025_2026_04_03/logs/2026-04-03_bug025_547de2b_android_RMX3771_debug.log`
+  - `docs/bugs/validation_bug025_2026_04_03/logs/2026-04-03_bug025_547de2b_macos_debug.log`
+  - Visual clock-based matrix + verdict in `plan_validacion_rapida_fix.md` (`Scenario A/B/C/D: PASS`).
 
 ---
 

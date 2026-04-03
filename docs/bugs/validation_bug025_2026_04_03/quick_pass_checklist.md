@@ -1,13 +1,13 @@
 ## Exact repro
 
-- [ ] Scenario A PASS on Android owner (exact boundary conflict in paused state).
-- [ ] Scenario B PASS on Android/macOS (decision already active before entering Run Mode).
-- [ ] Scenario C PASS on re-entry after route switch with still-valid conflict.
+- [x] Scenario A PASS on Android owner (exact boundary conflict in paused state).
+- [x] Scenario B PASS on Android/macOS (decision already active before entering Run Mode).
+- [x] Scenario C PASS on re-entry after route switch with still-valid conflict.
 
 ## Regression smoke
 
-- [ ] Scenario D PASS (`Postpone scheduled` does not trigger immediate duplicate modal).
-- [ ] Existing overlap modal actions (`End current group` / `Postpone scheduled` / `Cancel scheduled`) still work.
+- [x] Scenario D PASS (`Postpone scheduled` does not trigger immediate duplicate modal).
+- [x] Existing overlap modal actions (`End current group` / `Postpone scheduled` / `Cancel scheduled`) still work.
 - [x] Visual evidence packet reviewed and synchronized (capturas del hilo 03/04/2026, clock-based matrix).
 - [x] Start-now mirror hydration issue triaged with log correlation (`Syncing session...` temporary black state).
 - [x] Paused `Ends` projection behavior in Groups Hub classified (projection coherence gap during pause).

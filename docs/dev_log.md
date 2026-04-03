@@ -25,8 +25,8 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **BUG-023 — Task Editor save-as-preset now auto-links returned preset (`pending-local`, 31/03/2026)**
-Current focus: **BUG-025 closed; BUG-026/BUG-028 (P1) next**
+Last bug fix: **BUG-025 — Running overlap boundary + TimerScreen mount consumption (`547de2b`, closed 03/04/2026)**
+Current focus: **P1 bug queue after BUG-025 closure (`BUGLOG-026`, `BUGLOG-028`) + Phase 20 planning discipline**
 Last update: **03/04/2026**
 
 ---
