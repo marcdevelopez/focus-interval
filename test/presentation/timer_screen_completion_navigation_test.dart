@@ -1151,6 +1151,90 @@ void main() {
   );
 
   testWidgets(
+    'shows running-overlap modal when decision already exists on mount',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final running = _buildRunningGroup(id: 'running-overlap-mount', now: now);
+      final scheduled =
+          _buildScheduledGroup(
+            id: 'scheduled-overlap-mount',
+            now: now,
+          ).copyWith(
+            scheduledStartTime: now.add(const Duration(minutes: 5)),
+            theoreticalEndTime: now.add(const Duration(minutes: 20)),
+            noticeMinutes: 1,
+            updatedAt: now,
+          );
+      final groupRepo = FakeTaskRunGroupRepository(emitOnSave: false)
+        ..seed(running)
+        ..seed(scheduled);
+      final sessionRepo = FakePomodoroSessionRepository(
+        _buildRunningSession(
+          groupId: running.id,
+          ownerDeviceId: deviceInfo.deviceId,
+          now: now,
+          remainingSeconds: 15 * 60,
+          phaseDurationSeconds: 25 * 60,
+          phaseStartedAt: now.subtract(const Duration(minutes: 10)),
+          currentTaskStartedAt: now.subtract(const Duration(minutes: 10)),
+        ),
+      );
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+        container
+            .read(runningOverlapDecisionProvider.notifier)
+            .state = RunningOverlapDecision(
+          runningGroupId: running.id,
+          scheduledGroupId: scheduled.id,
+          token: 1,
+        );
+        await _pumpTimerScreen(
+          tester: tester,
+          container: container,
+          groupId: running.id,
+        );
+
+        await _pumpUntilFound(tester, find.text('Scheduling conflict'));
+        expect(find.text('Scheduling conflict'), findsOneWidget);
+
+        await tester.tap(find.text('Cancel scheduled'));
+        await tester.pump(const Duration(milliseconds: 260));
+        expect(find.text('Scheduling conflict'), findsNothing);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets(
     'suppresses immediate duplicate running-overlap modal after postpone',
     (tester) async {
       SharedPreferences.setMockInitialValues({});
