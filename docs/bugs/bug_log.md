@@ -3550,8 +3550,8 @@ Evidence:
 
 Status:
 
-Closed/OK (24/04/2026, user-confirmed in thread). closed_commit_hash: `pending-local`.
-closed_commit_message: `pending-local`.
+Closed/OK (24/04/2026, user-confirmed in thread). closed_commit_hash: `819745c`.
+closed_commit_message: `fix(bug026): guard stale-cancel routing and finalize validation closure`.
 
 ---
 

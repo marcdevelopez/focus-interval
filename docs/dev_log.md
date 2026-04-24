@@ -25,7 +25,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **BUG-026 — Start now owner/mirror routing + stale-canceled mismatch validation closure (`pending-local`, closed 24/04/2026)**
+Last bug fix: **BUG-026 — Start now owner/mirror routing + stale-canceled mismatch validation closure (`819745c`, closed 24/04/2026)**
 Current focus: **Open bug queue after BUG-026 closure (`BUGLOG-028` P1; `BUGLOG-027`/`BUGLOG-029` P2) + IDEA-039 device validation**
 Last update: **24/04/2026**
 
@@ -17920,7 +17920,7 @@ A regression was reported in running-overlap warning behavior:
 
 **Current branch intent:** Close BUG-026 documentation and ledger state after user-confirmed PASS evidence.
 **Branch:** `fix/bug026-owner-autostart-routing`
-**Commit:** `pending-local`
+**Commit:** `819745c`
 **Validation/Bug IDs:** `BUG-026` / `BUGLOG-026` (`Closed/OK`)
 
 ### Validation recap (user run + local gate)
@@ -17953,5 +17953,5 @@ A regression was reported in running-overlap warning behavior:
 
 ### Status after this block
 
-- `BUG-026` / `BUGLOG-026`: **Closed/OK** (`pending-local`, 24/04/2026, user-confirmed).
+- `BUG-026` / `BUGLOG-026`: **Closed/OK** (`819745c`, 24/04/2026, user-confirmed).
 - Open bug queue: `BUGLOG-028` (P1), `BUGLOG-027` (P2), `BUGLOG-029` (P2).
