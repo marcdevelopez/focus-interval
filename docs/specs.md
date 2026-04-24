@@ -2784,6 +2784,10 @@ List fields per group
   the **effective scheduled start** derived from the anchor’s projected end +
   noticeMinutes, and update it in real time.
 - Theoretical end time
+  - For running/paused groups, when the active session is paused, display the
+    projected end (`theoreticalEndTime + elapsed pause`) on the card.
+  - This projected end must update in real time while paused so card timelines
+    stay coherent with postponed scheduled groups.
 - Number of tasks
 - Total duration
 - Pre-Run start time (scheduled groups only):

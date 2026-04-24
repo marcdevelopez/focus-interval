@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **BUG-026 — Start now owner/mirror routing + stale-canceled mismatch validation closure (`819745c`, closed 24/04/2026)**
-Current focus: **Open bug queue after BUG-026 closure (`BUGLOG-028` P1; `BUGLOG-027`/`BUGLOG-029` P2) + IDEA-039 device validation**
+Current focus: **`BUGLOG-028` (P1) in validation packet (device runs pending) + `BUGLOG-027`/`BUGLOG-029` backlog + IDEA-039 device validation**
 Last update: **24/04/2026**
 
 ---
@@ -17955,3 +17955,50 @@ A regression was reported in running-overlap warning behavior:
 
 - `BUG-026` / `BUGLOG-026`: **Closed/OK** (`819745c`, 24/04/2026, user-confirmed).
 - Open bug queue: `BUGLOG-028` (P1), `BUGLOG-027` (P2), `BUGLOG-029` (P2).
+
+---
+
+## Block 740 — BUG-028 runtime patch implemented, moved to In validation (24/04/2026)
+
+**Current branch intent:** Fix Groups Hub paused `Ends` projection coherence and open validation packet for BUG-028.
+**Branch:** `fix/bug028-paused-ends-projection`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-028` / `BUGLOG-028` (`In validation`)
+
+### Implementation delivered
+
+- Updated `GroupsHub` running card `Ends` projection to use `resolveProjectedRunningEnd(...)`
+  for running/paused groups.
+- Preserved scheduled card override behavior and existing card rendering semantics.
+- Added widget regression coverage:
+  - `Groups Hub paused running card updates Ends projection in real time`
+  - Existing smoke `Groups Hub core sections and actions are visible` rerun PASS.
+- Specs synchronized first:
+  - `docs/specs.md` section 10.5 now explicitly states projected `Ends` behavior
+    for running/paused cards while paused.
+
+### Local verification commands executed
+
+- `flutter analyze` -> PASS (`No issues found!`).
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Groups Hub paused running card updates Ends projection in real time"` -> PASS.
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Groups Hub core sections and actions are visible"` -> PASS.
+
+### Validation packet opened
+
+- `docs/bugs/validation_bug028_2026_04_24/plan_validacion_rapida_fix.md`
+- `docs/bugs/validation_bug028_2026_04_24/quick_pass_checklist.md`
+- `docs/bugs/validation_bug028_2026_04_24/logs/`
+- `docs/bugs/validation_bug028_2026_04_24/screenshots/`
+
+### Documentation synchronization
+
+- `docs/bugs/bug_log.md`
+  - `BUG-028` updated with fix description and moved from `Open` to `In validation`.
+- `docs/validation/validation_ledger.md`
+  - Snapshot updated: `BUGLOG-028` moved `Pending -> In validation`.
+  - `BUGLOG-028` entry now references validation packet + local gate evidence logs.
+
+### Status after this block
+
+- `BUG-028` / `BUGLOG-028`: **In validation** (24/04/2026).
+- Local gate PASS; Android + macOS exact-repro validation pending.

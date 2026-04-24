@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focus_interval/data/models/pomodoro_session.dart';
@@ -178,8 +179,12 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
 
   @override
   Future<PomodoroSession?> fetchSession({bool preferServer = false}) async {
-    if (_lastSession != null) return _lastSession;
-    if (!_initialSnapshotEmitted && _initialSession != null) return _initialSession;
+    if (_lastSession != null) {
+      return _lastSession;
+    }
+    if (!_initialSnapshotEmitted && _initialSession != null) {
+      return _initialSession;
+    }
     return null;
   }
 
@@ -380,11 +385,13 @@ PomodoroSession _buildRunningSession({
   required DateTime now,
   int remainingSeconds = 60,
   int phaseDurationSeconds = 25 * 60,
+  int accumulatedPausedSeconds = 0,
   PomodoroStatus status = PomodoroStatus.pomodoroRunning,
   PomodoroPhase? phase = PomodoroPhase.pomodoro,
   DateTime? finishedAt,
   DateTime? phaseStartedAt,
   DateTime? currentTaskStartedAt,
+  DateTime? pausedAt,
   OwnershipRequest? ownershipRequest,
 }) {
   return PomodoroSession(
@@ -402,11 +409,11 @@ PomodoroSession _buildRunningSession({
     totalPomodoros: 1,
     phaseDurationSeconds: phaseDurationSeconds,
     remainingSeconds: remainingSeconds,
-    accumulatedPausedSeconds: 0,
+    accumulatedPausedSeconds: accumulatedPausedSeconds,
     phaseStartedAt: phaseStartedAt ?? now.subtract(const Duration(minutes: 24)),
     currentTaskStartedAt:
         currentTaskStartedAt ?? now.subtract(const Duration(minutes: 24)),
-    pausedAt: null,
+    pausedAt: pausedAt,
     lastUpdatedAt: now,
     finishedAt: finishedAt,
     pauseReason: null,
@@ -2700,6 +2707,105 @@ void main() {
       }
     }
   });
+
+  testWidgets(
+    'Groups Hub paused running card updates Ends projection in real time',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final running = _buildRunningGroup(
+        id: 'hub-paused-projection',
+        now: now,
+      ).copyWith(theoreticalEndTime: now.add(const Duration(minutes: 30)));
+      final pausedAt = now.subtract(const Duration(minutes: 5));
+
+      final pausedSession = _buildRunningSession(
+        groupId: running.id,
+        ownerDeviceId: deviceInfo.deviceId,
+        now: now,
+        status: PomodoroStatus.paused,
+        pausedAt: pausedAt,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(running);
+      final sessionRepo = FakePomodoroSessionRepository(pausedSession);
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+        await _pumpGroupsHubScreen(tester: tester, container: container);
+
+        await _pumpUntilFound(tester, find.text('Status: Paused'));
+        final endsRow = find.ancestor(
+          of: find.text('Ends: '),
+          matching: find.byType(Row),
+        );
+        expect(endsRow, findsOneWidget);
+
+        String readEndsValue() {
+          final clockFinder = find.descendant(
+            of: endsRow,
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is Text &&
+                  widget.data != null &&
+                  RegExp(r'^\d{2}:\d{2}$').hasMatch(widget.data!),
+            ),
+          );
+          expect(clockFinder, findsOneWidget);
+          return tester.widget<Text>(clockFinder).data!;
+        }
+
+        final endsValue = readEndsValue();
+        final baseEndLabel = DateFormat(
+          'HH:mm',
+        ).format(running.theoreticalEndTime);
+        final projectedEndLabel = DateFormat('HH:mm').format(
+          running.theoreticalEndTime.add(DateTime.now().difference(pausedAt)),
+        );
+
+        expect(
+          endsValue,
+          projectedEndLabel,
+          reason:
+              'Paused running card Ends should use projected end while paused.',
+        );
+        expect(
+          endsValue,
+          isNot(baseEndLabel),
+          reason:
+              'Paused running card Ends must not stay at base theoretical end.',
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
 
   testWidgets(
     'Groups Hub keeps completed retention visible even with many canceled groups',
