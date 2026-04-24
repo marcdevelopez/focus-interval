@@ -3433,53 +3433,55 @@ Timeline from logs:
 - 13:55:07.343 Android: `[ScheduledGroups][running-open-timer]` + `openTimer` dispatched
 - 13:55:07.343 Android: `Auto-start navigate … route=/tasks` (wrong: should push /timer)
 - 13:55:07.891 macOS: `openTimer` received → `Auto-start navigate … route=/groups` → pushes /timer
-- 13:55:08     Android: `[SessionSub] open (→SSS)` + `[ActiveSession] Resync missing`
-- 13:55:08     macOS:   `[ActiveSession] Resync missing` → SyncOverlay shown
-- 13:55:08     Android: `startFromAutoStart` → `_startInternal` fires chime + publishes session
-- 13:55:08–24  Both devices: repeated `Resync missing; no session snapshot` (Firestore write pending)
-- 13:55:24     Android: Firestore snapshot arrives (remaining=900, pomodoroRunning)
-- 13:55:24     macOS:   Firestore snapshot arrives → SyncOverlay clears → Run Mode active
+- 13:55:08 Android: `[SessionSub] open (→SSS)` + `[ActiveSession] Resync missing`
+- 13:55:08 macOS: `[ActiveSession] Resync missing` → SyncOverlay shown
+- 13:55:08 Android: `startFromAutoStart` → `_startInternal` fires chime + publishes session
+- 13:55:08–24 Both devices: repeated `Resync missing; no session snapshot` (Firestore write pending)
+- 13:55:24 Android: Firestore snapshot arrives (remaining=900, pomodoroRunning)
+- 13:55:24 macOS: Firestore snapshot arrives → SyncOverlay clears → Run Mode active
 
 Root bugs (two independent failures):
 
 Root bug A — Owner stays on Groups Hub after Start now; Run Mode not opened:
-  - `task_list_screen.dart:1601` calls `openRunModeForGroup(context, ref, group)` which does
-    `context.go('/timer/${group.id}')`. This fires but the app does NOT end up in Run Mode.
-  - Simultaneously the ScheduledGroupCoordinator detects a running group with no active session
-    (session hasn't propagated to Firestore yet at this instant) and emits `openTimer` via
-    `ScheduledGroupAutoStarter`. This triggers `_openTimerForGroup` in
-    `lib/widgets/scheduled_group_auto_starter.dart`.
-  - The collision between task_list_screen's `context.go` and the auto-starter's `router.go`
-    can cause the navigation to land on `/tasks` or `/groups` instead of `/timer/`. The
-    auto-starter log shows `Auto-start navigate route=/tasks` which means the auto-starter
-    fires while the route is still `/tasks` (before task_list_screen's push completes), and
-    then task_list_screen's push lands but is overwritten by a subsequent coordinator re-emit
-    (coordinator fires again at 13:55:14 because session is still null → `running-open-timer`
-    emits again, macOS log line 6184).
-  - The net result: Android navigates to `/timer/` then back to a hub, or `context.go` conflicts
-    with the coordinator's `router.go`. User ends up in Groups Hub instead of Run Mode.
-  - Log evidence: macOS log shows at 13:55:18 a second `[SessionSub] open (→SSS)` + `Timer load`
-    + `Auto-start attempt` — macOS re-executes the whole load-group + startFromAutoStart cycle.
+
+- `task_list_screen.dart:1601` calls `openRunModeForGroup(context, ref, group)` which does
+  `context.go('/timer/${group.id}')`. This fires but the app does NOT end up in Run Mode.
+- Simultaneously the ScheduledGroupCoordinator detects a running group with no active session
+  (session hasn't propagated to Firestore yet at this instant) and emits `openTimer` via
+  `ScheduledGroupAutoStarter`. This triggers `_openTimerForGroup` in
+  `lib/widgets/scheduled_group_auto_starter.dart`.
+- The collision between task_list_screen's `context.go` and the auto-starter's `router.go`
+  can cause the navigation to land on `/tasks` or `/groups` instead of `/timer/`. The
+  auto-starter log shows `Auto-start navigate route=/tasks` which means the auto-starter
+  fires while the route is still `/tasks` (before task_list_screen's push completes), and
+  then task_list_screen's push lands but is overwritten by a subsequent coordinator re-emit
+  (coordinator fires again at 13:55:14 because session is still null → `running-open-timer`
+  emits again, macOS log line 6184).
+- The net result: Android navigates to `/timer/` then back to a hub, or `context.go` conflicts
+  with the coordinator's `router.go`. User ends up in Groups Hub instead of Run Mode.
+- Log evidence: macOS log shows at 13:55:18 a second `[SessionSub] open (→SSS)` + `Timer load`
+  - `Auto-start attempt` — macOS re-executes the whole load-group + startFromAutoStart cycle.
     This re-execution means the coordinator fired `openTimer` multiple times (once at 13:55:07,
     again at 13:55:14, again at 13:55:18) due to the session still being null.
-  - Android probably had the same re-emissions but `_openTimerForGroup` suppresses if already on
-    `/timer/`. The user manually opens Run Mode from Groups Hub at ~13:55:24 which coincides with
-    the first Firestore snapshot arriving.
-  - This is the PRIMARY UX failure: Start now must always end in Run Mode for the owner
-    without manual navigation.
+- Android probably had the same re-emissions but `_openTimerForGroup` suppresses if already on
+  `/timer/`. The user manually opens Run Mode from Groups Hub at ~13:55:24 which coincides with
+  the first Firestore snapshot arriving.
+- This is the PRIMARY UX failure: Start now must always end in Run Mode for the owner
+  without manual navigation.
 
 Root bug B — Mirror shows `Syncing session...` with inert `Start` CTA for ~17s:
-  - Both devices enter Run Mode via coordinator `openTimer` at 13:55:07 but Firestore has not yet
-    received the session write from Android's `_startInternal` (called inside `startFromAutoStart`).
-  - `startFromAutoStart` calls `syncWithRemoteSession` first → gets null (Firestore not written yet)
-    → proceeds to call `_startInternal` which publishes the session. Firestore write propagation
-    takes ~17s in this run (likely Firestore cold path or contention).
-  - During these 17s both devices show `runningWithoutSession` SyncOverlay (`Syncing session...`).
-  - macOS (mirror) shows a `Start` CTA during this hold that is visually active but does NOT work
-    (mirror cannot call `startFromAutoStart` because it is not the owner). This is a UX contract
-    violation: the Start button during `runningWithoutSession` hold must be disabled/hidden on mirror.
-  - This is SECONDARY: the 17s Firestore propagation delay is an environmental timing issue in this
-    run. The structural bug is the inert `Start` on mirror during the hold.
+
+- Both devices enter Run Mode via coordinator `openTimer` at 13:55:07 but Firestore has not yet
+  received the session write from Android's `_startInternal` (called inside `startFromAutoStart`).
+- `startFromAutoStart` calls `syncWithRemoteSession` first → gets null (Firestore not written yet)
+  → proceeds to call `_startInternal` which publishes the session. Firestore write propagation
+  takes ~17s in this run (likely Firestore cold path or contention).
+- During these 17s both devices show `runningWithoutSession` SyncOverlay (`Syncing session...`).
+- macOS (mirror) shows a `Start` CTA during this hold that is visually active but does NOT work
+  (mirror cannot call `startFromAutoStart` because it is not the owner). This is a UX contract
+  violation: the Start button during `runningWithoutSession` hold must be disabled/hidden on mirror.
+- This is SECONDARY: the 17s Firestore propagation delay is an environmental timing issue in this
+  run. The structural bug is the inert `Start` on mirror during the hold.
 
 Symptom (user perspective):
 
@@ -3640,11 +3642,23 @@ Hypothesis:
 
 Fix applied:
 
-- Not yet.
+- Runtime patch on branch `fix/bug028-paused-ends-projection`:
+  - `GroupsHub` running/paused card now resolves `Ends` using projected running
+    end (`theoreticalEndTime + elapsed pause`) via
+    `resolveProjectedRunningEnd(...)` instead of static `theoreticalEndTime`.
+  - This keeps paused running cards coherent with postponed scheduled cards
+    while pause is active.
+- Regression coverage added:
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+    (`Groups Hub paused running card updates Ends projection in real time`).
+- Specs synchronization:
+  - `docs/specs.md` updated in section 10.5 to state projected `Ends` behavior
+    for running/paused cards.
 
 Status:
 
-Open (03/04/2026), sourced from BUG-025 device validation evidence.
+In validation (24/04/2026). Local gate PASS (`flutter analyze` + targeted
+Groups Hub widget tests). Device validation pending (Android + macOS).
 
 ---
 

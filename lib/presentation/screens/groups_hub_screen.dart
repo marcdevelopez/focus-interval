@@ -2085,7 +2085,15 @@ class _GroupCard extends StatelessWidget {
     );
     final totalLoadChip = buildContinuousPlanLoadChip(totalLoadLevel);
     final scheduledStart = scheduledStartOverride ?? group.scheduledStartTime;
-    final endTime = scheduledEndOverride ?? group.theoreticalEndTime;
+    final projectedRunningEnd = group.status == TaskRunStatus.running
+        ? resolveProjectedRunningEnd(
+            runningGroup: group,
+            activeSession: activeSession,
+            now: now,
+          )
+        : null;
+    final endTime =
+        projectedRunningEnd ?? scheduledEndOverride ?? group.theoreticalEndTime;
     final showScheduled =
         group.status == TaskRunStatus.scheduled && scheduledStart != null;
     final preRunStart = preRunStartOverride;
