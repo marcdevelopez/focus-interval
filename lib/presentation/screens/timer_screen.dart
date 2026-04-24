@@ -571,6 +571,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         });
       }
       if (group?.status == TaskRunStatus.canceled &&
+          group?.id == widget.groupId &&
           !_cancelNavigationHandled) {
         _navigateToGroupsHub(reason: 'vm canceled');
       }

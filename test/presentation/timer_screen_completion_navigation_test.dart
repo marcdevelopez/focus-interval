@@ -125,6 +125,25 @@ class FakeTaskRunGroupRepository implements TaskRunGroupRepository {
   }
 }
 
+class DelayedTaskRunGroupRepository extends FakeTaskRunGroupRepository {
+  DelayedTaskRunGroupRepository({
+    required this.lookupDelays,
+    super.emitOnSave,
+    super.eventLog,
+  });
+
+  final Map<String, Duration> lookupDelays;
+
+  @override
+  Future<TaskRunGroup?> getById(String id) async {
+    final delay = lookupDelays[id];
+    if (delay != null) {
+      await Future.delayed(delay);
+    }
+    return super.getById(id);
+  }
+}
+
 class FakePomodoroSessionRepository implements PomodoroSessionRepository {
   FakePomodoroSessionRepository(
     this._initialSession, {
@@ -136,6 +155,7 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
       StreamController<PomodoroSession?>.broadcast();
   PomodoroSession? _lastSession;
   PomodoroSession? _initialSession;
+  bool _initialSnapshotEmitted = false;
   int clearSessionIfGroupNotRunningCalls = 0;
   final List<String>? eventLog;
   int requestOwnershipCalls = 0;
@@ -147,7 +167,8 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
 
   @override
   Stream<PomodoroSession?> watchSession() async* {
-    if (_initialSession != null) {
+    if (!_initialSnapshotEmitted && _initialSession != null) {
+      _initialSnapshotEmitted = true;
       _lastSession = _initialSession;
       yield _initialSession;
       _initialSession = null;
@@ -157,7 +178,9 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
 
   @override
   Future<PomodoroSession?> fetchSession({bool preferServer = false}) async {
-    return _lastSession;
+    if (_lastSession != null) return _lastSession;
+    if (!_initialSnapshotEmitted && _initialSession != null) return _initialSession;
+    return null;
   }
 
   @override
@@ -3010,6 +3033,100 @@ void main() {
     },
   );
 
+  testWidgets(
+    'Timer ignores stale canceled vm group when displayed group id differs',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final staleCanceledGroup = _buildCanceledGroup(
+        id: 'timer-stale-canceled-other',
+        now: now,
+      );
+      final activeGroup = _buildRunningGroup(
+        id: 'timer-active-target',
+        now: now,
+      );
+      final groupRepo =
+          DelayedTaskRunGroupRepository(
+              lookupDelays: {activeGroup.id: const Duration(milliseconds: 500)},
+            )
+            ..seed(staleCanceledGroup)
+            ..seed(activeGroup);
+      final sessionRepo = FakePomodoroSessionRepository(
+        _buildRunningSession(
+          groupId: staleCanceledGroup.id,
+          ownerDeviceId: deviceInfo.deviceId,
+          now: now,
+          status: PomodoroStatus.idle,
+          phase: null,
+          remainingSeconds: 0,
+        ),
+      );
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      ProviderSubscription<PomodoroState>? vmKeepAlive;
+      try {
+        await container.read(appModeProvider.notifier).setLocal();
+        vmKeepAlive = container.listen<PomodoroState>(
+          pomodoroViewModelProvider,
+          (_, __) {},
+          fireImmediately: true,
+          weak: false,
+        );
+        final vm = container.read(pomodoroViewModelProvider.notifier);
+        await vm.loadGroup(staleCanceledGroup.id);
+
+        await _pumpTimerScreen(
+          tester: tester,
+          container: container,
+          groupId: activeGroup.id,
+        );
+        await tester.pump(const Duration(milliseconds: 220));
+
+        expect(find.text('groups-screen'), findsNothing);
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is TimerScreen && widget.groupId == activeGroup.id,
+          ),
+          findsOneWidget,
+        );
+
+        await tester.pump(const Duration(milliseconds: 520));
+        expect(find.text('groups-screen'), findsNothing);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        vmKeepAlive.close();
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          vmKeepAlive?.close();
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
+
   testWidgets('Settings route keeps stack-based system back behavior', (
     tester,
   ) async {
@@ -3335,7 +3452,7 @@ void main() {
   );
 
   testWidgets(
-    'Task List blocks scheduling when pre-run window overlaps a running group',
+    'Task List allows scheduling when only pre-run window overlaps a running group',
     (tester) async {
       SharedPreferences.setMockInitialValues({
         'linux_sync_notice_seen': true,
@@ -3389,19 +3506,12 @@ void main() {
         await tester.tap(find.widgetWithText(ElevatedButton, 'Next'));
         await tester.pump(const Duration(milliseconds: 250));
 
-        await _pumpUntilFound(
-          tester,
-          find.textContaining(
-            "doesn't leave enough pre-run space because another group is still running",
-          ),
-        );
-        expect(
-          find.textContaining(
-            "doesn't leave enough pre-run space because another group is still running",
-          ),
-          findsOneWidget,
-        );
-        expect(await groupRepo.getAll(), hasLength(1));
+        for (var i = 0; i < 20; i++) {
+          if ((await groupRepo.getAll()).length == 2) break;
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(find.text('Scheduling conflict'), findsNothing);
+        expect(await groupRepo.getAll(), hasLength(2));
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump(const Duration(milliseconds: 100));
@@ -3420,7 +3530,7 @@ void main() {
   );
 
   testWidgets(
-    'Task List blocks scheduling when pre-run window overlaps an earlier scheduled group',
+    'Task List allows scheduling when only pre-run window overlaps an earlier scheduled group',
     (tester) async {
       SharedPreferences.setMockInitialValues({
         'linux_sync_notice_seen': true,
@@ -3478,19 +3588,12 @@ void main() {
         await tester.tap(find.widgetWithText(ElevatedButton, 'Next'));
         await tester.pump(const Duration(milliseconds: 250));
 
-        await _pumpUntilFound(
-          tester,
-          find.textContaining(
-            "doesn't leave enough pre-run space because another group is scheduled earlier",
-          ),
-        );
-        expect(
-          find.textContaining(
-            "doesn't leave enough pre-run space because another group is scheduled earlier",
-          ),
-          findsOneWidget,
-        );
-        expect(await groupRepo.getAll(), hasLength(1));
+        for (var i = 0; i < 20; i++) {
+          if ((await groupRepo.getAll()).length == 2) break;
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(find.text('Scheduling conflict'), findsNothing);
+        expect(await groupRepo.getAll(), hasLength(2));
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump(const Duration(milliseconds: 100));

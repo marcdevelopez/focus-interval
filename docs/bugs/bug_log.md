@@ -3400,50 +3400,158 @@ Validation packet:
 
 ---
 
-## BUG-026 — Mirror can remain in temporary black "Syncing session..." state after Start now
+## BUG-026 — Start now session publish delayed: owner stays on Groups Hub, Run Mode not auto-opened, mirror stuck in Syncing session
 
 ID: BUG-026
 Date: 03/04/2026 (UTC+2)
 Platforms: Android owner + macOS mirror
-Context: Account Mode, Start-now launch after overlap-resolution actions.
+Context: Account Mode, Start-now plan confirmed from Plan Group screen.
 
-Symptom:
+Repro summary (from device logs + screenshots, 03/04/2026 13:55 UTC+2):
 
-- Mirror enters Run Mode with black background and `Syncing session...` plus an inert `Start` CTA.
-- Recovery may require extra owner navigation/action (`Open Run Mode` again) before mirror hydrates.
+1. User (Android owner) opens Plan Group for G1 and taps Confirm with Start now at 13:55:07.
+2. Android returns to Task List showing `Group Running · G1 / Open Run Mode` banner + Groups Hub card
+   `Status: running`, snackbar `Task group started.` fires.
+3. BUT: the app does NOT auto-navigate to Run Mode (TimerScreen) — user stays on Task List / Groups Hub.
+4. Android logs show `[ScheduledGroups][running-open-timer]` fires at 13:55:07, then
+   `[ScheduledActionDiag] actionType=openTimer` fires, then `[RunModeDiag] Auto-start navigate … route=/tasks` —
+   the openTimer action is dispatched but the navigator does not push /timer because the route is already /tasks
+   and the auto-open guard (`_cancelNavigationHandled` or in-flight check) blocks the navigation.
+5. At 13:55:07 Android attempts `startFromAutoStart` → calls `syncWithRemoteSession` →
+   gets `Resync missing; no session snapshot` (Firestore has not yet written the session).
+6. `startFromAutoStart` then proceeds to `_startInternal` (start without confirmed session), fires chime,
+   publishes session to Firestore. This write arrives at Firestore at ~13:55:24 (17 seconds later).
+7. macOS mirror opens TimerScreen for G1 at 13:55:07 (also triggered by `openTimer` coordinator action),
+   immediately hits `Resync missing`, enters `runningWithoutSession` SyncOverlay, shows
+   black screen with `Syncing session...` and an inert `Start` button (13:55:07–13:55:24).
+8. At 13:55:24 Firestore delivers `pomodoroRunning` snapshot (remaining=900) to both devices.
+   Android SyncOverlay goes `runningWithoutSession → awaitingSessionConfirmation`.
+   macOS SyncOverlay clears and Run Mode renders normally (14:58–14:59 countdown visible by 13:55:26).
 
-Observed behavior:
+Timeline from logs:
 
-- Visual evidence matrix V10-V13 (`13:55:07` to `13:55:20`) shows mirror stuck while owner already has running group state.
-- Log correlation in BUG-025 packet links this window to delayed session hydration (`Resync missing` then later active-session snapshot).
+- 13:55:07.343 Android: `[ScheduledGroups][running-open-timer]` + `openTimer` dispatched
+- 13:55:07.343 Android: `Auto-start navigate … route=/tasks` (wrong: should push /timer)
+- 13:55:07.891 macOS: `openTimer` received → `Auto-start navigate … route=/groups` → pushes /timer
+- 13:55:08     Android: `[SessionSub] open (→SSS)` + `[ActiveSession] Resync missing`
+- 13:55:08     macOS:   `[ActiveSession] Resync missing` → SyncOverlay shown
+- 13:55:08     Android: `startFromAutoStart` → `_startInternal` fires chime + publishes session
+- 13:55:08–24  Both devices: repeated `Resync missing; no session snapshot` (Firestore write pending)
+- 13:55:24     Android: Firestore snapshot arrives (remaining=900, pomodoroRunning)
+- 13:55:24     macOS:   Firestore snapshot arrives → SyncOverlay clears → Run Mode active
+
+Root bugs (two independent failures):
+
+Root bug A — Owner stays on Groups Hub after Start now; Run Mode not opened:
+  - `task_list_screen.dart:1601` calls `openRunModeForGroup(context, ref, group)` which does
+    `context.go('/timer/${group.id}')`. This fires but the app does NOT end up in Run Mode.
+  - Simultaneously the ScheduledGroupCoordinator detects a running group with no active session
+    (session hasn't propagated to Firestore yet at this instant) and emits `openTimer` via
+    `ScheduledGroupAutoStarter`. This triggers `_openTimerForGroup` in
+    `lib/widgets/scheduled_group_auto_starter.dart`.
+  - The collision between task_list_screen's `context.go` and the auto-starter's `router.go`
+    can cause the navigation to land on `/tasks` or `/groups` instead of `/timer/`. The
+    auto-starter log shows `Auto-start navigate route=/tasks` which means the auto-starter
+    fires while the route is still `/tasks` (before task_list_screen's push completes), and
+    then task_list_screen's push lands but is overwritten by a subsequent coordinator re-emit
+    (coordinator fires again at 13:55:14 because session is still null → `running-open-timer`
+    emits again, macOS log line 6184).
+  - The net result: Android navigates to `/timer/` then back to a hub, or `context.go` conflicts
+    with the coordinator's `router.go`. User ends up in Groups Hub instead of Run Mode.
+  - Log evidence: macOS log shows at 13:55:18 a second `[SessionSub] open (→SSS)` + `Timer load`
+    + `Auto-start attempt` — macOS re-executes the whole load-group + startFromAutoStart cycle.
+    This re-execution means the coordinator fired `openTimer` multiple times (once at 13:55:07,
+    again at 13:55:14, again at 13:55:18) due to the session still being null.
+  - Android probably had the same re-emissions but `_openTimerForGroup` suppresses if already on
+    `/timer/`. The user manually opens Run Mode from Groups Hub at ~13:55:24 which coincides with
+    the first Firestore snapshot arriving.
+  - This is the PRIMARY UX failure: Start now must always end in Run Mode for the owner
+    without manual navigation.
+
+Root bug B — Mirror shows `Syncing session...` with inert `Start` CTA for ~17s:
+  - Both devices enter Run Mode via coordinator `openTimer` at 13:55:07 but Firestore has not yet
+    received the session write from Android's `_startInternal` (called inside `startFromAutoStart`).
+  - `startFromAutoStart` calls `syncWithRemoteSession` first → gets null (Firestore not written yet)
+    → proceeds to call `_startInternal` which publishes the session. Firestore write propagation
+    takes ~17s in this run (likely Firestore cold path or contention).
+  - During these 17s both devices show `runningWithoutSession` SyncOverlay (`Syncing session...`).
+  - macOS (mirror) shows a `Start` CTA during this hold that is visually active but does NOT work
+    (mirror cannot call `startFromAutoStart` because it is not the owner). This is a UX contract
+    violation: the Start button during `runningWithoutSession` hold must be disabled/hidden on mirror.
+  - This is SECONDARY: the 17s Firestore propagation delay is an environmental timing issue in this
+    run. The structural bug is the inert `Start` on mirror during the hold.
+
+Symptom (user perspective):
+
+- Taps Confirm on Plan Group with Start now.
+- Sees `Task group started.` snackbar and Groups Hub running card — but stays on that screen.
+- Has to manually navigate to Run Mode. Timer had not started yet visually.
+- macOS mirror shows black screen + `Syncing session...` + `Start` button for ~17 seconds.
+- After ~17s both devices show the running timer normally.
 
 Expected behavior:
 
-- Mirror should hydrate to live Run Mode without requiring extra owner navigation once active session exists.
-- Any fallback CTA shown during sync must be actionable and deterministic.
+- Owner should auto-navigate to Run Mode immediately after tapping Confirm on Start now — no manual step.
+- Mirror `Start` CTA during `runningWithoutSession` hold should be disabled or hidden (mirror cannot start).
+- Session should hydrate within a few seconds of the owner writing it; 17s delay is suspicious but may
+  relate to Firestore write timing — requires log analysis of the write path to confirm.
 
 Evidence:
 
-- `docs/bugs/validation_bug025_2026_04_03/plan_validacion_rapida_fix.md` (Visual Evidence Matrix V10-V13 + Log Correlation section).
-- Runtime logs:
-  - `docs/bugs/validation_bug025_2026_04_03/logs/2026-04-03_bug025_547de2b_android_RMX3771_debug.log`
-  - `docs/bugs/validation_bug025_2026_04_03/logs/2026-04-03_bug025_547de2b_macos_debug.log`
+- Screenshots: images V10-V13 in conversation thread (13:55:07–13:55:24 UTC+2 from clock widget).
+- Android log: `docs/bugs/validation_bug025_2026_04_03/logs/2026-04-03_bug025_547de2b_android_RMX3771_debug.log`
+  lines 7384–7468 (key: lines 7388–7390 openTimer/route=/tasks, 7411 Resync missing, 7412 startFromAutoStart,
+  7416 TimeSync, 7417–7418 SyncOverlay, 7468 first session snapshot).
+- macOS log: `docs/bugs/validation_bug025_2026_04_03/logs/2026-04-03_bug025_547de2b_macos_debug.log`
+  lines 6158–6213 (key: lines 6162 route=/groups, 6175 Resync missing, 6192/6196/6206 repeated Resync missing,
+  6208 first session snapshot at 13:55:24, 6209 SyncOverlay clears).
 
 Workaround:
 
-- Re-open `Open Run Mode` from owner side (or wait for late hydration) until mirror re-attaches.
-
-Hypothesis:
-
-- Start-now/session-hydration timing can leave mirror in a temporary attach gap where UI sync shell renders before authoritative session bind completes.
+- After tapping Confirm with Start now, manually tap Open Run Mode in Groups Hub.
+- Mirror resolves on its own after ~17s when Firestore snapshot arrives.
 
 Fix applied:
 
-- Not yet.
+- TimerScreen canceled navigation now enforces strict displayed-group match before routing:
+  - navigate to Groups Hub only when `currentGroup.id == widget.groupId`.
+  - preserves valid cancel navigation and blocks stale-canceled cross-group rebounds.
+- Added deterministic regression coverage for stale canceled mismatch during delayed load:
+  - `Timer ignores stale canceled vm group when displayed group id differs`.
+- Validation harness stabilized for this repro path:
+  - fake session repository now exposes deterministic initial snapshot behavior for this scenario.
+- Scheduling conflict expectations aligned with current planning contract:
+  - pre-run-only overlap no longer blocks scheduling in Task List conflict tests.
+
+Validation recap (24/04/2026):
+
+- Scenario A PASS (Android owner): Start now auto-opened `/timer/:groupId` and stayed stable; no route bounce to `/tasks` or `/groups`.
+- Scenario B PASS (macOS mirror): transient sync overlay recovered automatically; no inert/blocked flow reported.
+- Scenario C PASS: cancel from running group returned to Groups Hub once, smoothly, with no loops.
+- Scenario D PASS: stale canceled mismatch no longer triggers unexpected Groups Hub navigation; focused regression test no longer hangs.
+- Local gate PASS:
+  - `flutter analyze`
+  - `flutter test test/presentation/timer_screen_completion_navigation_test.dart`
+  - `flutter test test/presentation/timer_screen_syncing_overlay_test.dart`
+  - `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Timer ignores stale canceled vm group when displayed group id differs"`
+
+Evidence:
+
+- Validation packet:
+  - `docs/bugs/validation_bug026_2026_04_03/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug026_2026_04_03/quick_pass_checklist.md`
+- Logs:
+  - `docs/bugs/validation_bug026_2026_04_03/logs/2026-04-24_bug026fast_retry_018b6e6_android_RMX3771_debug.log`
+  - `docs/bugs/validation_bug026_2026_04_03/logs/2026-04-24_bug026fast_018b6e6_macos_debug.log`
+  - `docs/bugs/validation_bug026_2026_04_03/logs/2026-04-24_bug026fast_retry_018b6e6_local_analyze_debug.log`
+  - `docs/bugs/validation_bug026_2026_04_03/logs/2026-04-24_bug026fast_retry_018b6e6_timer_completion_debug.log`
+  - `docs/bugs/validation_bug026_2026_04_03/logs/2026-04-24_bug026fast_retry_018b6e6_timer_sync_overlay_debug.log`
+  - `docs/bugs/validation_bug026_2026_04_03/logs/2026-04-24_bug026fast_retry_018b6e6_timer_stale_cancel_debug.log`
 
 Status:
 
-Open (03/04/2026), sourced from BUG-025 device validation evidence.
+Closed/OK (24/04/2026, user-confirmed in thread). closed_commit_hash: `pending-local`.
+closed_commit_message: `pending-local`.
 
 ---
 

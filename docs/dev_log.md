@@ -25,9 +25,9 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **BUG-025 — Running overlap boundary + TimerScreen mount consumption (`547de2b`, closed 03/04/2026)**
-Current focus: **P1 bug queue after BUG-025 closure (`BUGLOG-026`, `BUGLOG-028`) + IDEA-039 merged into develop**
-Last update: **03/04/2026**
+Last bug fix: **BUG-026 — Start now owner/mirror routing + stale-canceled mismatch validation closure (`pending-local`, closed 24/04/2026)**
+Current focus: **Open bug queue after BUG-026 closure (`BUGLOG-028` P1; `BUGLOG-027`/`BUGLOG-029` P2) + IDEA-039 device validation**
+Last update: **24/04/2026**
 
 ---
 
@@ -17913,3 +17913,45 @@ A regression was reported in running-overlap warning behavior:
 ### Status after this block
 
 - `IDEA-039`: **Merged into develop** (03/04/2026). Device validation pending (IDEA-039 device scenarios).
+
+---
+
+## Block 739 — BUG-026 closed after full validation + user confirmation (24/04/2026)
+
+**Current branch intent:** Close BUG-026 documentation and ledger state after user-confirmed PASS evidence.
+**Branch:** `fix/bug026-owner-autostart-routing`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-026` / `BUGLOG-026` (`Closed/OK`)
+
+### Validation recap (user run + local gate)
+
+- Scenario A PASS (Android owner): Start now auto-opened Timer and stayed stable (no `/timer -> /tasks|/groups` rebound).
+- Scenario B PASS (macOS mirror): syncing hold recovered normally; no inert/looped navigation behavior reported.
+- Scenario C PASS: cancel returned once to Groups Hub (fluid, no loops).
+- Scenario D PASS: stale canceled mismatch no longer navigates away; focused stale-cancel test no longer hangs.
+
+### Local verification commands executed
+
+- `flutter analyze` -> PASS (`No issues found!`).
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> PASS (`+37`).
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` -> PASS (`+19`).
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Timer ignores stale canceled vm group when displayed group id differs"` -> PASS.
+
+### Documentation synchronization
+
+- `docs/bugs/bug_log.md`
+  - `BUG-026` moved to `Closed/OK` with fix summary, validation recap, and evidence references.
+- `docs/validation/validation_ledger.md`
+  - Snapshot updated to 2026-04-24.
+  - Active non-closed bug count updated `4 -> 3`.
+  - Active P1 bug list updated (`BUGLOG-026` removed; `BUGLOG-028` remains).
+  - `BUGLOG-026` moved `Pending -> Closed/OK` with evidence and closure metadata.
+- `docs/bugs/validation_bug026_2026_04_03/plan_validacion_rapida_fix.md`
+  - Status updated to `Closed/OK (2026-04-24, user-confirmed)`.
+- `docs/bugs/validation_bug026_2026_04_03/quick_pass_checklist.md`
+  - All closure checkboxes already marked PASS.
+
+### Status after this block
+
+- `BUG-026` / `BUGLOG-026`: **Closed/OK** (`pending-local`, 24/04/2026, user-confirmed).
+- Open bug queue: `BUGLOG-028` (P1), `BUGLOG-027` (P2), `BUGLOG-029` (P2).
