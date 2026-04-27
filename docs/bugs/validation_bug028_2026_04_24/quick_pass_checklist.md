@@ -1,8 +1,9 @@
 ## Exact repro
 
-- [ ] Scenario A PASS on Android owner (paused Ends keeps projecting while paused).
-- [ ] Scenario B PASS on macOS mirror (paused Ends stays coherent with scheduled cards).
-- [ ] Scenario C PASS after resume (no timeline regression).
+- [x] Scope gate respected: BUG-028 validated through runtime overlap path; planning auto-adjust behavior tracked separately (IDEA-039).
+- [x] Scenario A PASS on Android owner (paused Ends keeps projecting while paused).
+- [x] Scenario B PASS on macOS mirror (paused Ends stays coherent with scheduled cards).
+- [x] Scenario C PASS after resume (no timeline regression).
 
 ## Regression smoke
 

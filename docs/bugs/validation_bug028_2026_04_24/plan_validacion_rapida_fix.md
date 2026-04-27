@@ -22,22 +22,36 @@ Groups Hub card rendering used static TaskRunGroup.theoreticalEndTime for runnin
 
 ## 5. Protocolo de validacion
 
+### Scope guard (mandatory)
+
+- BUG-028 validates the runtime overlap path from specs section 10.4.1.c
+  (paused timeline projection coherence in Groups Hub after Postpone scheduled).
+- This packet does not validate Plan Group auto-clamp/auto-adjust behavior
+  (planning contract tracked separately under IDEA-039).
+- If planning auto-adjust behavior differs, record it under IDEA-039 and do not
+  fail BUG-028 unless it prevents entering the runtime overlap validation path.
+
 ### Scenario A — Owner paused timeline coherence after postpone
 
 Preconditions:
 
 1. Account mode enabled on owner Android.
 2. One running group (G1) active, and a second group (G2) scheduled right after G1 end.
-3. Pre-run notice for G2 is > 0m, so pre-run can overlap while G1 is still active.
+3. Prefer G2 noticeMinutes > 0m (for deterministic pre-run overlap at runtime).
+4. noticeMinutes = 0m is also acceptable if overlap is triggered at scheduled-start
+   boundary.
 
 Steps:
 
-1. With G1 running, create G2 starting right after G1 end.
-2. Wait until G2 pre-run starts while G1 is still active.
+1. With G1 running, create G2 starting at G1 projected end or +1 minute.
+2. Wait until runtime overlap decision appears (pre-run boundary when notice > 0,
+   or scheduled-start boundary when notice = 0).
 3. When the conflict modal appears, choose Postpone scheduled.
 4. Confirm G1 is paused by the conflict flow and open Groups Hub.
-5. Observe G1 Running/Paused card Ends for at least 70 seconds.
-6. Compare with G2 scheduled window shown on Groups Hub.
+5. Capture T0 on owner (G1 paused, G1 Ends visible, G2 window visible).
+6. Wait 70-90 seconds without resuming G1.
+7. Capture T+70 on owner.
+8. Compare G1 Ends drift versus G2 scheduled window shown on Groups Hub.
 
 Expected result with fix:
 
@@ -93,10 +107,14 @@ Reference result without fix:
 
 ### Device runs (exact repro)
 
+- Evidence integrity note (27/04/2026):
+  - `2026-04-24_bug028_5df97ec_android_RMX3771_debug.log` was overwritten on
+    27/04/2026 and is invalid for closure evidence.
+  - Keep the file for traceability, but do not use it as closure proof.
 - Android owner:
-  - flutter run -v --debug -d RMX3771 --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true 2>&1 | tee docs/bugs/validation_bug028_2026_04_24/logs/2026-04-24_bug028_5df97ec_android_RMX3771_debug.log
+  - flutter run -v --debug -d RMX3771 --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true 2>&1 | tee docs/bugs/validation_bug028_2026_04_24/logs/2026-04-27_bug028_5df97ec_android_RMX3771_debug.log
 - macOS mirror:
-  - flutter run -v --debug -d macos --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true 2>&1 | tee docs/bugs/validation_bug028_2026_04_24/logs/2026-04-24_bug028_5df97ec_macos_debug.log
+  - flutter run -v --debug -d macos --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true 2>&1 | tee docs/bugs/validation_bug028_2026_04_24/logs/2026-04-27_bug028_5df97ec_macos_debug.log
 
 ### Local gate (already executed)
 
@@ -109,7 +127,8 @@ Reference result without fix:
 ### Bug present signals
 
 - grep -nE "Expected: not|Paused running card Ends should keep projecting|Some tests failed" docs/bugs/validation_bug028_2026_04_24/logs/2026-04-24_bug028_5df97ec_local_bug028_widget_debug.log
-- grep -nE "Timeline appears incoherent|paused.*Ends.*static" docs/bugs/validation_bug028_2026_04_24/logs/2026-04-24_bug028_5df97ec_android_RMX3771_debug.log
+- grep -nE "Timeline appears incoherent|paused.*Ends.*static" docs/bugs/validation_bug028_2026_04_24/logs/2026-04-27_bug028_5df97ec_android_RMX3771_debug.log
+- grep -nE "Timeline appears incoherent|paused.*Ends.*static" docs/bugs/validation_bug028_2026_04_24/logs/2026-04-27_bug028_5df97ec_macos_debug.log
 
 ### Fix working signals
 
@@ -135,7 +154,39 @@ Reference result without fix:
 
 In validation
 
-## 11. Resume checkpoint (24/04/2026)
+## 11. 27/04/2026 rerun findings (owner+mirror)
+
+Execution window reviewed:
+
+- Android owner + macOS mirror run between 16:08 and 16:15 (UTC-4).
+- Logs used:
+  - `docs/bugs/validation_bug028_2026_04_24/logs/2026-04-27_bug028_5df97ec_android_RMX3771_debug.log`
+  - `docs/bugs/validation_bug028_2026_04_24/logs/2026-04-27_bug028_5df97ec_macos_debug.log`
+
+Observed BUG-028 target behavior:
+
+- Paused-window projection coherence was observed during Scenario A/B:
+  - Session paused at ~16:12:13 (`status=paused`, `remaining=675`).
+  - While paused, effective scheduled window shifted in real time:
+    - ~16:13:02 sample `16:26`
+    - ~16:13:46 sample `16:27`
+    - ~16:14:46 sample `16:28`
+    - ~16:14:57 sample `16:30`
+  - This matches expected projected-anchor behavior for paused overlap/postpone flow.
+- Scenario C (resume non-regression) was observed:
+  - Session resumed at ~16:14:57 (`status=pomodoroRunning`), no paused-window projection collapse observed in the immediate post-resume window.
+
+Critical side findings from same run (separate bugs):
+
+- BUG-030 (P1): mirror forced navigation to Run Mode while user was in `/groups` or `/tasks`.
+- BUG-031 (P2): mirror conflict snackbar remained stale after conflict was resolved.
+
+Validation status decision:
+
+- BUG-028 behavior looks functionally corrected in this rerun.
+- Packet remains **In validation** until closure evidence set is finalized and cross-doc closure is done after triaging BUG-030/BUG-031 impact.
+
+## 12. Resume checkpoint (24/04/2026, amended 27/04/2026)
 
 Current git checkpoint:
 
@@ -159,38 +210,24 @@ What is already validated/confirmed:
 
 3. Spec/runtime alignment clarified:
 
-- Auto-clamp applies only when selected start is too soon.
-- Overlap conflicts (running/scheduled) remain explicit conflict resolution flows.
+- BUG-028 closure is based on runtime overlap flow coherence only.
+- Plan Group auto-clamp/auto-adjust belongs to IDEA-039 validation scope.
+- Overlap conflicts (running/scheduled) remain explicit conflict-resolution flows.
 
 What is not validated yet (blocking closure):
 
-1. Paused projection evidence for Scenario A/B is still missing.
-2. Resume non-regression evidence for Scenario C is still missing.
+1. Cross-doc closure sync is still pending (BUG-028 packet + bug_log + ledger + dev_log final closure block).
+2. BUG-030/BUG-031 triage/fix branch must complete before deciding whether BUG-028 closes independently or together.
 
-Exact stop point before interruption:
+Screenshot evidence index (captured and renamed on 27/04/2026):
 
-- Work stopped immediately before executing the paused-validation capture flow.
-- Last guidance to execute was:
-  1. Plan G2 to start at G1 end or +1 minute.
-  2. Keep pre-run at 5m.
-  3. Wait for pre-run conflict modal.
-  4. Choose Postpone scheduled.
-  5. If G1 is still running, pause it manually.
-  6. In Groups Hub (Android + macOS), capture T0 with:
-  - G1 paused
-  - G1 Ends visible
-  - G2 window visible
-  7. Wait 70-90 seconds without resume.
-  8. Capture T+70 on both devices.
-  9. Resume G1 and capture final screenshot for Scenario C.
-
-Pass/fail rule to apply on resume:
-
-- Scenario A/B PASS only if G1 Ends advances from T0 to T+70 while paused and stays coherent with G2 window on both owner and mirror.
-- Scenario C PASS only if timeline remains coherent after resume with no regression in Groups Hub rendering.
-
-Evidence still required in validation folder:
-
-- Android screenshots: T0 paused, T+70 paused, post-resume
-- macOS screenshots: T0 paused, T+70 paused, post-resume
-- Optional log snippets (grep) confirming no incoherent paused timeline behavior
+- Scenario A precondition + conflict path:
+  - `screenshots/2026-04-27_bug028_scenarioA_precondition_161222_owner_android_mirror_macos.png`
+  - `screenshots/2026-04-27_bug028_scenarioA_conflict_modal_161248_owner_android_mirror_macos.png`
+- Scenario A/B paused projection coherence:
+  - `screenshots/2026-04-27_bug028_scenarioAB_T0_paused_161302_owner_android_mirror_macos.png`
+  - `screenshots/2026-04-27_bug028_scenarioAB_T0_postpone_snackbar_161303_owner_android_mirror_macos.png`
+  - `screenshots/2026-04-27_bug028_scenarioAB_mid_paused_161349_owner_android_mirror_macos.png`
+  - `screenshots/2026-04-27_bug028_scenarioAB_Tplus106_paused_161448_owner_android_mirror_macos.png`
+- Scenario C post-resume:
+  - `screenshots/2026-04-27_bug028_scenarioC_post_resume_161459_owner_android_mirror_macos.png`

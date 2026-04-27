@@ -26,8 +26,8 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **BUG-026 — Start now owner/mirror routing + stale-canceled mismatch validation closure (`819745c`, closed 24/04/2026)**
-Current focus: **`BUGLOG-028` (P1) in validation packet (device runs pending) + `BUGLOG-027`/`BUGLOG-029` backlog + IDEA-039 device validation**
-Last update: **24/04/2026**
+Current focus: **`BUGLOG-028` (P1) validation closure sync + new regressions `BUGLOG-030` (P1) / `BUGLOG-031` (P2) from 27/04 device run + `BUGLOG-027`/`BUGLOG-029` backlog + IDEA-039 device validation**
+Last update: **27/04/2026**
 
 ---
 
@@ -18002,3 +18002,177 @@ A regression was reported in running-overlap warning behavior:
 
 - `BUG-028` / `BUGLOG-028`: **In validation** (24/04/2026).
 - Local gate PASS; Android + macOS exact-repro validation pending.
+
+---
+
+## Block 741 — BUG-028 validation scope clarified (runtime overlap vs planning auto-clamp) (27/04/2026)
+
+**Current branch intent:** Keep BUG-028 validation packet strictly aligned to runtime paused-projection scope and avoid cross-scope confusion with IDEA-039 planning behavior.
+**Branch:** `fix/bug028-paused-ends-projection`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-028` / `BUGLOG-028` (`In validation`)
+
+### Documentation updates
+
+- Updated `docs/bugs/validation_bug028_2026_04_24/plan_validacion_rapida_fix.md`:
+  - Added explicit scope guard:
+    - BUG-028 validates runtime overlap path (specs 10.4.1.c).
+    - Plan Group auto-clamp/auto-adjust remains IDEA-039 scope.
+  - Refined Scenario A to trigger overlap at runtime boundary
+    (pre-run boundary when notice > 0 or scheduled-start boundary when notice = 0).
+  - Updated resume checkpoint "Exact stop point" to avoid hard dependency on
+    a fixed 5m notice when planning applies auto-adjust.
+- Updated `docs/bugs/validation_bug028_2026_04_24/quick_pass_checklist.md`:
+  - Added an explicit scope-gate checkbox under Exact repro.
+
+### Validation execution state
+
+- No closure status change.
+- Device evidence for Scenario A/B/C is still pending.
+
+### Status after this block
+
+- `BUG-028` / `BUGLOG-028`: **In validation** (unchanged).
+- Closure remains blocked on real-device paused-window evidence + resume non-regression evidence.
+
+---
+
+## Block 742 — BUG-028 Android evidence invalidated (overwritten log) and rerun commands updated (27/04/2026)
+
+**Current branch intent:** Keep BUG-028 validation evidence traceable after accidental Android log overwrite and reissue exact device-run commands with new dated log paths.
+**Branch:** `fix/bug028-paused-ends-projection`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-028` / `BUGLOG-028` (`In validation`)
+
+### Evidence integrity update
+
+- Confirmed accidental overwrite:
+  - `docs/bugs/validation_bug028_2026_04_24/logs/2026-04-24_bug028_5df97ec_android_RMX3771_debug.log`
+  - mtime changed to 27/04/2026, therefore it is invalid as 24/04 closure evidence.
+- Retention decision:
+  - Keep overwritten file for traceability (no deletion).
+  - Mark it as invalid for closure proof in the validation plan.
+
+### Validation plan updates
+
+- Updated `docs/bugs/validation_bug028_2026_04_24/plan_validacion_rapida_fix.md`:
+  - Added evidence-integrity note under Device runs.
+  - Replaced rerun commands to write new files:
+    - `2026-04-27_bug028_5df97ec_android_RMX3771_debug.log`
+    - `2026-04-27_bug028_5df97ec_macos_debug.log`
+  - Updated quick-scan grep targets to use the new 27/04 logs.
+  - Amended resume checkpoint header/date and added explicit blocker note for overwritten Android log.
+
+### Status after this block
+
+- `BUG-028` / `BUGLOG-028`: **In validation** (unchanged).
+- Closure remains blocked until Scenario A/B/C are rerun with new 27/04 device logs + screenshots.
+
+---
+
+## Block 743 — BUG-028 rerun reviewed; new regressions BUG-030/BUG-031 triaged (27/04/2026)
+
+**Current branch intent:** Review BUG-028 rerun evidence, sync bug queue, and register newly reproduced workflow regressions before runtime fixes.
+**Branch:** `fix/bug028-paused-ends-projection`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-028` (`In validation`), `BUG-030` (`Open`), `BUG-031` (`Open`)
+
+### Rerun evidence reviewed
+
+- Reviewed owner/mirror logs from:
+  - `docs/bugs/validation_bug028_2026_04_24/logs/2026-04-27_bug028_5df97ec_android_RMX3771_debug.log`
+  - `docs/bugs/validation_bug028_2026_04_24/logs/2026-04-27_bug028_5df97ec_macos_debug.log`
+- BUG-028 target behavior is visible in the run:
+  - paused window active at ~16:12:13 (owner paused),
+  - scheduled effective window continues shifting during pause (~16:26 -> ~16:27 -> ~16:28 -> ~16:30),
+  - resume transition observed at ~16:14:57 without immediate projection collapse.
+
+### New regressions discovered during same run
+
+- BUG-030 (P1): mirror forced auto-open to `/timer/:groupId` while user was navigating `/groups` and `/tasks`.
+  - Classified as regression of Fix 15 auto-open gating (Blocks 485-486, 27/02/2026).
+  - Working root cause is dual-path suppression clear in `ActiveSessionAutoOpener`:
+    - resume path (`_resumeAutoOpenPending`) clears suppression for the same group,
+    - bounce-reset path (`_shouldResetAutoOpenForBounce`) can also clear suppression
+      during fast user exits from timer route.
+  - Repeated diagnostics:
+    - `[RunModeDiag] Auto-open resume trigger. Clearing auto-open state ...`
+    - `[RunModeDiag] Attempting auto-open to TimerScreen ...`
+  - Timestamps align with user report: 16:09:01, 16:09:23, 16:10:15, 16:10:29, 16:10:42.
+- BUG-031 (P2): new bug — mirror conflict snackbar remained stale after conflict resolution, persisting across navigation surfaces.
+
+### Documentation synchronization
+
+- `docs/bugs/bug_log.md`
+  - Added `BUG-030` (P1) and `BUG-031` (P2), both `Open`.
+- `docs/validation/validation_ledger.md`
+  - Snapshot updated:
+    - active non-closed bug count `3 -> 5`,
+    - active P1 bug list `BUGLOG-028 -> BUGLOG-028 + BUGLOG-030`.
+  - Added `BUGLOG-030` and `BUGLOG-031` queue entries (`Pending`).
+- `docs/bugs/validation_bug028_2026_04_24/plan_validacion_rapida_fix.md`
+  - Added 27/04 rerun findings and explicit note that BUG-028 remains In validation while BUG-030/031 are triaged.
+
+### Status after this block
+
+- `BUG-028` / `BUGLOG-028`: **In validation** (behavior appears corrected in rerun; closure packet still pending final sync).
+- `BUG-030` / `BUGLOG-030`: **Open (P1)**.
+- `BUG-031` / `BUGLOG-031`: **Open (P2)**.
+
+---
+
+## Block 744 — BUG-030 root cause analysis and fix handoff preparation (27/04/2026)
+
+**Current branch:** `fix/bug028-paused-ends-projection`
+**Context:** Claude audit of Codex BUG-028 rerun session + root cause deep-dive for BUG-030 + fix design + BUG-030 handoff prepared for next implementation session.
+
+### Documentation audit (Codex work from Block 743)
+
+- All Codex documentation changes verified correct:
+  - `BUG-030` marked as Fix 15 regression (dual-path, Blocks 485-486) in bug_log, ledger, dev_log. ✓
+  - `BUG-031` marked as new bug (BUG-021 related domain, different surface). ✓
+  - 7 screenshots renamed and indexed in `validation_bug028_2026_04_24/screenshots/`. ✓
+  - `quick_pass_checklist.md` Scenarios A/B/C marked PASS; closure rule still open. ✓
+- One omission corrected: Codex identified resume path and bounce window as causes, but missed the VM disposal path as the **primary** cause.
+
+### BUG-030 root cause — three independent paths (not two)
+
+All three paths in `ActiveSessionAutoOpener._handleActiveSessionChange` can defeat the "intentional departure" suppression contract established by Fix 15 (Block 485-486):
+
+**Cause 1 — VM disposal path (PRIMARY)** — `lib/widgets/active_session_auto_opener.dart` lines 134-142:
+- `PomodoroViewModel` is `autoDispose`. Every time the user navigates away from `/timer/:groupId`, the VM is disposed.
+- On the FIRST Firestore tick after departure: `_autoOpenedGroupId==groupId`, `vmWasAlive=true`, `vmExists=false` → all three conditions true → clears all suppression AND sets `forceTimerRefresh=true` → forces navigation back to `/timer/:id?refresh=...`.
+- Added in Fix 26 Phase 6 (Block 573, 13/03/2026) for *unexpected* VM disposal while user was still on timer route. But fires on every intentional departure too.
+
+**Cause 2 — Resume path** — lines 123-131:
+- On macOS, `AppLifecycleState.resumed` fires on every window focus change (not just genuine background→foreground).
+- Clears both `_autoOpenedGroupId` and `_autoOpenSuppressedGroupId` → auto-open can fire again on next tick.
+- Only a secondary cause on macOS; on Android this path is usually not triggered by normal navigation.
+
+**Cause 3 — Bounce window** — lines 148-157:
+- Rarely contributes independently; VM disposal path (cause 1) already clears `_autoOpenedGroupId` before the bounce window check runs.
+
+**Critical ordering constraint:** VM disposal path (line 134) runs BEFORE the navigator context block (line 144). A departure flag cannot be set in the navigator block and still protect against the VM disposal path — the flag must be set BEFORE line 134.
+
+### Fix design — `_userDepartedGroupId` sentinel
+
+Add one new field `String? _userDepartedGroupId` that captures "user was auto-opened to this group and then explicitly navigated away." This flag:
+- Is set in an early departure detection block inserted before line 123 (before resume and VM disposal paths).
+- Is NOT cleared by resume events or bounce window for the same groupId.
+- IS cleared by: session null, explicit return to timer, or groupId change.
+- Guards resume path (cause 2), VM disposal path (cause 1), and suppression check.
+
+PHASE6 regression contract preserved: in the PHASE6 scenario the user is still on `/timer/:groupId` when VM is invalidated → `inTimer=true` → departure NOT detected → `_userDepartedGroupId` stays null → VM disposal path fires as before with `forceTimerRefresh=true`. ✓
+
+### BUG-030 handoff
+
+Full implementation spec prepared in `docs/bugs/validation_bug030_2026_04_27/codex_handoff.md`.
+- 7 targeted changes in `lib/widgets/active_session_auto_opener.dart` only.
+- 1 new widget test in `test/presentation/timer_screen_syncing_overlay_test.dart`.
+- PHASE6 test must stay green (verified analytically).
+
+### Status after this block
+
+- `BUG-028` / `BUGLOG-028`: **In validation** — evidence packet complete; awaiting user closure confirmation.
+- `BUG-030` / `BUGLOG-030`: **Open (P1)** — root cause confirmed (3 paths), fix handoff ready.
+- `BUG-031` / `BUGLOG-031`: **Open (P2)** — pending.

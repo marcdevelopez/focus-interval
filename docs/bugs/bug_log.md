@@ -3702,3 +3702,123 @@ Fix applied:
 Status:
 
 Open (03/04/2026), sourced from BUG-025 device validation evidence.
+
+---
+
+## BUG-030 — Mirror auto-opens Run Mode on resume, interrupting Groups Hub/Task List workflow
+
+ID: BUG-030
+Date: 27/04/2026 (UTC-4)
+Platforms: macOS mirror + Android owner
+Context: Account Mode, BUG-028 device validation run with active `G1` running on Android owner while macOS mirror user navigates Groups Hub and Task List.
+
+Classification:
+
+- Regression (Fix 15 auto-open gating, 27/02/2026; dev_log Blocks 485-486).
+- Not a planned behavior.
+
+Symptom:
+
+- Mirror is forced back to Run Mode without user intent while navigating planning surfaces.
+- User cannot stay in Groups Hub/Task List to complete normal workflow actions.
+
+Observed behavior:
+
+- macOS log repeatedly shows resume-triggered auto-open attempts from non-timer routes:
+  - 16:09:01 route `/tasks` -> `Attempting auto-open to TimerScreen`
+  - 16:09:23 route `/groups` -> `Attempting auto-open to TimerScreen`
+  - 16:10:15 route `/groups` -> `Attempting auto-open to TimerScreen`
+  - 16:10:29 route `/tasks` -> `Attempting auto-open to TimerScreen`
+  - 16:10:42 route `/tasks` -> `Attempting auto-open to TimerScreen`
+- Relevant diagnostics:
+  - `[RunModeDiag] Auto-open resume trigger. Clearing auto-open state ...`
+  - `[RunModeDiag] Active session detected. Validating auto-open ...`
+  - `[RunModeDiag] Attempting auto-open to TimerScreen ...`
+- Flow matches user report: mirror is redirected to Run Mode while trying to plan in Task List / inspect Groups Hub.
+
+Expected behavior:
+
+- If user leaves Run Mode while session is active, auto-open must stay suppressed for that group until a valid new trigger (or explicit user open action).
+- Focus/resume events must not override user intent and force route changes from `/groups` or `/tasks`.
+
+Evidence:
+
+- `docs/bugs/validation_bug028_2026_04_24/logs/2026-04-27_bug028_5df97ec_macos_debug.log` (lines 5773-5793, 5838-5843, 5869-5874, 5889-5894).
+- `docs/bugs/validation_bug028_2026_04_24/logs/2026-04-27_bug028_5df97ec_android_RMX3771_debug.log` (parallel active-session continuity around the same timestamps).
+- User screenshots/time notes in validation thread (16:09-16:11 UTC-4).
+
+Workaround:
+
+- Re-enter Groups Hub/Task List repeatedly and navigate quickly before next auto-open cycle.
+- Not reliable; workflow remains interrupted.
+
+Root cause hypothesis (regression detail):
+
+- `ActiveSessionAutoOpener` currently clears suppression for the same group in
+  two paths:
+  1. Resume path (`_resumeAutoOpenPending`) clears `_autoOpenSuppressedGroupId`.
+  2. Bounce-reset path (`_shouldResetAutoOpenForBounce`) can also clear
+     `_autoOpenSuppressedGroupId` during fast user exits from `/timer/:id`.
+- On macOS mirror, focus/resume events and quick route transitions make these
+  paths fire repeatedly, so user-intent suppression ("left Run Mode") is lost
+  and `/timer/:groupId` is auto-opened again from `/groups` or `/tasks`.
+
+Fix applied:
+
+- Not yet.
+
+Status:
+
+Open (27/04/2026), sourced from BUG-028 device validation evidence.
+
+---
+
+## BUG-031 — Mirror conflict snackbar can remain stale after conflict is resolved
+
+ID: BUG-031
+Date: 27/04/2026 (UTC-4)
+Platforms: macOS mirror + Android owner
+Context: Same BUG-028 validation run. Mirror received conflict warning while owner resolved scheduling conflict.
+
+Classification:
+
+- New bug (not tracked as an open item before 27/04/2026).
+- Related domain to BUG-021 (snackbar lifecycle), but different surface
+  (running-overlap mirror conflict snackbar).
+
+Symptom:
+
+- Mirror keeps showing the old conflict snackbar (`Owner is resolving this conflict...`) after conflict is already resolved on owner.
+- Warning persists across route changes and no longer reflects real conflict state.
+
+Observed behavior:
+
+- After owner resolves/cancels scheduled conflict, mirror continues showing stale snackbar while user navigates Groups Hub and Task List.
+- User reports stale snackbar still visible around 16:10:29-16:14:48 despite conflict resolution and scheduled updates.
+- Pressing/interacting while stale snackbar is visible can coincide with forced navigation back to Run Mode (see BUG-030), worsening workflow interruption.
+
+Expected behavior:
+
+- Conflict snackbar must auto-dismiss when overlap is no longer valid, decision is cleared/replaced, or user leaves Run Mode.
+- Mirror should not keep stale conflict messaging on unrelated screens.
+
+Evidence:
+
+- `docs/bugs/validation_bug028_2026_04_24/logs/2026-04-27_bug028_5df97ec_macos_debug.log` (conflict-flow window 16:10-16:15 UTC-4 + route churn evidence).
+- User screenshots in thread show stale snackbar visible while scheduled timeline has already shifted/resolved.
+
+Workaround:
+
+- Manual `OK` dismissal or waiting for long snackbar timeout.
+
+Hypothesis:
+
+- Mirror conflict snackbar lifecycle is managed in `TimerScreen` local state only; dismissal synchronization is incomplete when overlap state changes off-screen or when TimerScreen is exited/disposed.
+
+Fix applied:
+
+- Not yet.
+
+Status:
+
+Open (27/04/2026), sourced from BUG-028 device validation evidence.
