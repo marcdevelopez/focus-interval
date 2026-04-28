@@ -321,6 +321,11 @@ All work happens on short-lived branches (`fix/xxx`, `feature/xxx`).
 **R-8 Pre-commit branch check (mandatory):**
 - Before each commit, confirm commit scope matches branch intent.
 - If mismatch is detected, do not commit on the current branch; branch-split first.
+- Before each commit, run `tools/check_doc_traceability.sh`.
+- Commits must not introduce `pending-local` placeholders in:
+  - `docs/dev_log.md` (`**Commit:**`)
+  - `docs/validation/validation_ledger.md` (`closed_commit_hash`, `closed_commit_message`)
+  - `docs/bugs/bug_log.md` (`closed_commit_hash`)
 
 ---
 

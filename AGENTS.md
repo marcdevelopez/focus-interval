@@ -57,6 +57,11 @@ the `CURRENT PHASE` label alone — pending validations and doc cleanup come fir
    - Append new blocks to the end of `docs/dev_log.md` in chronological order.
    - Block numbers must be strictly increasing and continue from the last block.
    - Update the "Last update" date whenever a new block is added.
+   - Before every commit, run `tools/check_doc_traceability.sh`.
+   - Do not commit if the check reports `pending-local` placeholders in:
+     - `docs/dev_log.md` (`**Commit:**`)
+     - `docs/validation/validation_ledger.md` (`closed_commit_hash`, `closed_commit_message`)
+     - `docs/bugs/bug_log.md` (`closed_commit_hash`)
 10. Never push a branch that contains known bugs or unverified fixes. If there
     is not high confidence that a reported bug is resolved, do not push.
     Production policy: `main` must never contain known bugs.
