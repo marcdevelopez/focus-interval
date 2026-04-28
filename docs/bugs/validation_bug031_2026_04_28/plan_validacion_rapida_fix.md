@@ -4,7 +4,7 @@
 
 - Date: 28/04/2026
 - Branch: `fix/bug031-stale-conflict-snackbar-base030`
-- Working commit hash: `pending-local` (base HEAD: `cfffc92`)
+- Working commit hash: `f16341f` (base HEAD before patch: `cfffc92`)
 - Bugs covered: `BUG-031` / `BUGLOG-031`
 - Target devices: iOS owner (`iPhone 17 Pro`) + Chrome mirror (`localhost:5001`)
 

@@ -18347,7 +18347,7 @@ Full implementation spec prepared in `docs/bugs/validation_bug030_2026_04_27/cod
 
 **Current branch intent:** BUG-031 stale mirror conflict snackbar fix and validation packet preparation.
 **Branch:** `fix/bug031-stale-conflict-snackbar-base030`
-**Commit:** `pending-local`
+**Commit:** `f16341f`
 **Validation/Bug IDs:** `BUG-031` (`In validation`)
 
 ### Change delivered
