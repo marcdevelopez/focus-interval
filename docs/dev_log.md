@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **BUG-026 — Start now owner/mirror routing + stale-canceled mismatch validation closure (`819745c`, closed 24/04/2026)**
-Current focus: **`BUGLOG-028` (P1) validation closure sync + new regressions `BUGLOG-030` (P1) / `BUGLOG-031` (P2) from 27/04 device run + `BUGLOG-027`/`BUGLOG-029` backlog + IDEA-039 device validation**
+Current focus: **`BUGLOG-028` (P1) validation closure sync + `BUGLOG-031` (P2) implementation pending + `BUGLOG-027`/`BUGLOG-029` backlog + IDEA-039 device validation**
 Last update: **28/04/2026**
 
 ---
@@ -18251,3 +18251,92 @@ Full implementation spec prepared in `docs/bugs/validation_bug030_2026_04_27/cod
 
 - No runtime behavior change.
 - `BUG-030` remains **In validation** pending device scenarios A-D.
+
+---
+
+## Block 747 — Web OAuth command standardization (`localhost:5001`) across validation docs (28/04/2026)
+
+**Current branch intent:** BUG-030 validation hardening and documentation consistency for Chrome OAuth runs.
+**Branch:** `fix/bug030-auto-open-suppression`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-030` (`In validation`)
+
+### Problem addressed
+
+- During BUG-030 validation, Chrome command examples without fixed `--web-port`
+  allowed random localhost ports, causing Google OAuth `origin_mismatch` when
+  those ports were not registered in Google Cloud.
+- Repo had an explicit `5001` convention in root `README.md`, but this was not
+  consistently mirrored in bug-validation templates/plans.
+
+### Documentation changes
+
+- Updated `docs/bugs/README.md` web command templates:
+  - now require `--web-hostname=localhost --web-port=5001` for Chrome
+    debug/release validation runs.
+  - added explicit OAuth note: keep `http://localhost` and
+    `http://localhost:5001` in Authorized JavaScript origins.
+- Updated `docs/bugs/validation_bug030_2026_04_27/plan_validacion_rapida_fix.md`:
+  - Chrome mirror execution command now pinned to `localhost:5001`.
+  - added rationale note to avoid OAuth `origin_mismatch`.
+- Updated `docs/specs.md` persistence/auth section:
+  - added explicit local web OAuth discipline requiring fixed
+    `--web-hostname=localhost --web-port=5001`.
+
+### Status after this block
+
+- Canonical local Chrome auth run port is now explicit and synchronized in
+  specs + bug-validation template + active BUG-030 plan.
+- `BUG-030` remains **In validation** pending device scenarios A-D.
+
+---
+
+## Block 748 — BUG-030 device validation PASS and closure sync (28/04/2026)
+
+**Current branch intent:** Close BUG-030 after real-device validation on iOS owner + Chrome mirror.
+**Branch:** `fix/bug030-auto-open-suppression`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-030` (`Closed/OK`), `BUG-031` (`Open`), `BUG-028` (`In validation`)
+
+### Device validation execution (single-pass)
+
+- Order executed: `C -> A -> B -> D` (one continuous run).
+- Devices:
+  - owner: iOS simulator `iPhone 17 Pro`,
+  - mirror: Chrome.
+- User-reported checkpoints:
+  - `14:53:00` entered Groups Hub on Chrome (stable),
+  - `14:54:20` back to Groups Hub, repeated focus switches around `14:54:40`,
+  - `14:56:00` Task List stable,
+  - `14:57:00` Scenario B planning in Task List/Plan Group stable,
+  - Scenario D explicit Open Run Mode from Groups Hub opened correctly.
+
+### Log evidence verified
+
+- `docs/bugs/validation_bug030_2026_04_27/logs/2026-04-28_bug030_24b3667_chrome_debug.log`
+  - no `Attempting auto-open to TimerScreen` matches,
+  - preserved suppression with departure sentinel on planning routes:
+    lines `1952`, `1959-1973`, `1980-2014`, `2020-2074`
+    (`departed=... route=/groups|/tasks`),
+  - explicit timer re-entry confirmed near line `2083`
+    (`RunModeDiag Timer load group ... route=/timer/...`).
+- `docs/bugs/validation_bug030_2026_04_27/logs/2026-04-28_bug030_24b3667_ios_iPhone17Pro_debug.log`
+  - owner active-session continuity maintained during the full run.
+
+### Documentation synchronization
+
+- `docs/bugs/validation_bug030_2026_04_27/quick_pass_checklist.md`
+  - Scenario A/B/C/D + closure rule marked PASS.
+- `docs/bugs/validation_bug030_2026_04_27/plan_validacion_rapida_fix.md`
+  - status moved to `Closed/OK` with execution recap and log references.
+- `docs/bugs/bug_log.md`
+  - BUG-030 moved `In validation -> Closed/OK` with closure evidence.
+- `docs/validation/validation_ledger.md`
+  - BUGLOG-030 moved `In validation -> Closed/OK`,
+  - snapshot updated: active non-closed bug count `5 -> 4`; active P1 list now only `BUGLOG-028`.
+
+### Status after this block
+
+- `BUG-030` / `BUGLOG-030`: **Closed/OK** (`608ce6c` implementation commit, device PASS 28/04/2026).
+- `BUG-031` / `BUGLOG-031`: **Open (P2)**.
+- `BUG-028` / `BUGLOG-028`: **In validation** (pending closure sync).

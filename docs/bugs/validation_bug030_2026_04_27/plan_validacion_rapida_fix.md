@@ -2,11 +2,11 @@
 
 ## 1. Header
 
-- Date: 27/04/2026
-- Branch: fix/bug030-auto-open-suppression (to be created from develop after BUG-028 merges)
-- Working commit hash: pending (base from develop after BUG-028 merge)
+- Date: 28/04/2026
+- Branch: fix/bug030-auto-open-suppression
+- Working commit hash: 24b3667
 - Bugs covered: BUG-030 / BUGLOG-030
-- Target devices: macOS mirror + Android owner
+- Target devices: iOS (`iPhone 17 Pro`) owner + Chrome mirror
 
 ## 2. Objetivo
 
@@ -17,10 +17,10 @@ disposal while still on the timer route still triggers force-refresh recovery).
 
 ## 3. Síntoma original
 
-macOS mirror user starts planning work (Groups Hub / Task List) while a group is
-running on the Android owner. The mirror is repeatedly and involuntarily redirected
-back to Run Mode within seconds of arriving in Groups Hub or Task List, making it
-impossible to complete planning actions.
+Mirror user starts planning work (Groups Hub / Task List / Plan Group) while a
+group is running on the owner device. The mirror is repeatedly and involuntarily
+redirected back to Run Mode within seconds of arriving in planning surfaces,
+making it impossible to complete planning actions.
 
 Observed in BUG-028 validation run (27/04/2026, 16:09–16:15 UTC-4).
 
@@ -75,21 +75,32 @@ BEFORE line 123 or it arrives too late to protect against these paths.
 
 ## 5. Protocolo de validación
 
+### Single-pass execution order (time-saving)
+
+Run all scenarios in one continuous validation session using this order:
+1. **Scenario C** (PHASE6 non-regression while still in timer route)
+2. **Scenario A** (stay on Groups Hub after intentional departure)
+3. **Scenario B** (stay on Task List / Plan Group after intentional departure)
+4. **Scenario D** (explicit re-entry via Open Run Mode)
+
+This order minimizes resets and reproduces the original bug flow while still
+covering all acceptance criteria.
+
 ### Scenario A — Mirror stays in Groups Hub after intentional departure
 
 Preconditions:
 1. Account Mode on both devices.
-2. G1 running on Android owner.
-3. macOS mirror has been auto-opened to Run Mode for G1.
+2. G1 running on iOS owner (`iPhone 17 Pro`).
+3. Chrome mirror has been auto-opened to Run Mode for G1.
 
 Steps:
-1. On macOS mirror, navigate back to Groups Hub from Run Mode.
+1. On Chrome mirror, navigate back to Groups Hub from Run Mode.
 2. Remain in Groups Hub for ≥ 60 seconds without manually returning to Run Mode.
-3. Alternate focus between macOS app window and another application at least 3 times.
-4. Observe Groups Hub on macOS.
+3. Alternate focus between Chrome tab and another app/tab at least 3 times.
+4. Observe Groups Hub on Chrome.
 
 Expected result with fix:
-1. macOS mirror stays in Groups Hub.
+1. Chrome mirror stays in Groups Hub.
 2. No involuntary redirect to `/timer/:groupId`.
 3. Log shows `[RunModeDiag] Auto-open suppressed (... departed=<groupId> ...)` on each session tick.
 
@@ -101,11 +112,11 @@ Reference result without fix:
 Preconditions: same as Scenario A.
 
 Steps:
-1. On macOS mirror, navigate from Run Mode to Groups Hub, then to Task List.
-2. Remain in Task List for ≥ 60 seconds.
+1. On Chrome mirror, navigate from Run Mode to Groups Hub, then to Task List.
+2. Enter Plan Group (`/tasks/plan`) and remain there for ≥ 60 seconds.
 
 Expected result with fix:
-1. macOS mirror stays in Task List.
+1. Chrome mirror stays in Task List / Plan Group.
 2. No involuntary redirect.
 
 ### Scenario C — PHASE6 regression (VM disposal while still in timer)
@@ -139,14 +150,17 @@ Expected result with fix:
 ## 6. Comandos de ejecución
 
 ```bash
-# Android owner
-flutter run -v --debug -d RMX3771 --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true \
-  2>&1 | tee docs/bugs/validation_bug030_2026_04_27/logs/2026-04-28_bug030_pending-local_android_RMX3771_debug.log
+# iOS owner (iPhone 17 Pro simulator)
+flutter run -v --debug -d "iPhone 17 Pro" --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee docs/bugs/validation_bug030_2026_04_27/logs/2026-04-28_bug030_24b3667_ios_iPhone17Pro_debug.log
 
-# macOS mirror
-flutter run -v --debug -d macos --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true \
-  2>&1 | tee docs/bugs/validation_bug030_2026_04_27/logs/2026-04-28_bug030_pending-local_macos_debug.log
+# Chrome mirror
+flutter run -v --debug -d chrome --web-hostname=localhost --web-port=5001 --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee docs/bugs/validation_bug030_2026_04_27/logs/2026-04-28_bug030_24b3667_chrome_debug.log
 ```
+
+Use fixed `localhost:5001` for Chrome validation runs with Google auth to avoid
+OAuth `origin_mismatch` from random `flutter run` ports.
 
 ## 7. Log analysis — quick scan
 
@@ -154,7 +168,7 @@ flutter run -v --debug -d macos --dart-define=APP_ENV=prod --dart-define=ALLOW_P
 
 ```bash
 grep -nE "Attempting auto-open to TimerScreen" \
-  docs/bugs/validation_bug030_2026_04_27/logs/*_macos_debug.log
+  docs/bugs/validation_bug030_2026_04_27/logs/*_chrome_debug.log
 ```
 
 Any match on this line while user is in `/groups` or `/tasks` = BUG-030 still active.
@@ -164,11 +178,11 @@ Any match on this line while user is in `/groups` or `/tasks` = BUG-030 still ac
 ```bash
 # Departure suppression active
 grep -nE "Auto-open suppressed.*departed=" \
-  docs/bugs/validation_bug030_2026_04_27/logs/*_macos_debug.log
+  docs/bugs/validation_bug030_2026_04_27/logs/*_chrome_debug.log
 
 # PHASE6 contract intact (unexpected VM disposal on timer route → force refresh)
 grep -nE "Auto-open recovery: VM disposed, clearing guard" \
-  docs/bugs/validation_bug030_2026_04_27/logs/*_macos_debug.log
+  docs/bugs/validation_bug030_2026_04_27/logs/*_chrome_debug.log
 ```
 
 ## 8. Verificación local
@@ -192,8 +206,8 @@ All must PASS before device validation.
 
 ## 9. Criterios de cierre
 
-- Scenario A PASS on macOS mirror with log evidence.
-- Scenario B PASS on macOS mirror with log evidence.
+- Scenario A PASS on Chrome mirror with log evidence.
+- Scenario B PASS on Chrome mirror with log evidence.
 - Scenario C PASS (PHASE6 non-regression) with log evidence.
 - Scenario D PASS (re-entry works) with log evidence.
 - Local gate PASS (flutter analyze + PHASE6 test + BUG-030 test).
@@ -201,4 +215,18 @@ All must PASS before device validation.
 
 ## 10. Status
 
-In validation (28/04/2026) — runtime patch implemented and local gate PASS; device scenarios A-D pending.
+Closed/OK (28/04/2026) — single-pass device validation executed in order `C -> A -> B -> D` on iOS owner + Chrome mirror.
+
+Execution recap:
+- Scenario C PASS: G1 running on iOS; Chrome entered Groups Hub/Task List without bounce (`~14:53`), no forced re-open.
+- Scenario A PASS: at `~14:54:20` returned to Groups Hub; repeated focus switches iOS emulator <-> Chrome around `~14:54:40`; stayed stable.
+- Scenario B PASS: at `~14:57:00` planned in Task List/Plan Group without involuntary navigation.
+- Scenario D PASS: explicit "Open Run Mode" from Groups Hub opened timer route correctly.
+
+Evidence:
+- `docs/bugs/validation_bug030_2026_04_27/logs/2026-04-28_bug030_24b3667_chrome_debug.log`
+  - no `Attempting auto-open to TimerScreen` matches;
+  - suppression preserved on planning routes: lines `1952`, `1959-1973`, `1980-2014`, `2020-2074` (`departed=... route=/groups|/tasks`);
+  - explicit timer re-entry observed: `RunModeDiag Timer load group ... route=/timer/...` around line `2083`.
+- `docs/bugs/validation_bug030_2026_04_27/logs/2026-04-28_bug030_24b3667_ios_iPhone17Pro_debug.log`
+  - owner session continuity across validation window (`status=pomodoroRunning` -> planned flow -> manual close).

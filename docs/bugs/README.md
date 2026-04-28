@@ -104,14 +104,16 @@ flutter run -v --debug -d "iPhone 17 Pro" --dart-define=APP_ENV=prod \
 Release (prod):
 
 ```bash
-flutter run -v --release -d chrome --dart-define=APP_ENV=prod \
+flutter run -v --release -d chrome --web-hostname=localhost --web-port=5001 \
+  --dart-define=APP_ENV=prod \
   2>&1 | tee docs/bugs/validation_<bug-id>_YYYY_MM_DD/logs/YYYY-MM-DD_web_chrome_diag.log
 ```
 
 Debug (prod + override temporal):
 
 ```bash
-flutter run -v --debug -d chrome --dart-define=APP_ENV=prod \
+flutter run -v --debug -d chrome --web-hostname=localhost --web-port=5001 \
+  --dart-define=APP_ENV=prod \
   --dart-define=ALLOW_PROD_IN_DEBUG=true \
   2>&1 | tee docs/bugs/validation_<bug-id>_YYYY_MM_DD/logs/YYYY-MM-DD_web_chrome_debug.log
 ```
@@ -121,6 +123,10 @@ flutter run -v --debug -d chrome --dart-define=APP_ENV=prod \
 - Sustituye `YYYY_MM_DD` por la fecha de la validacion actual.
 - Sustituye `YYYY-MM-DD` por la fecha real del log.
 - Sustituye el id del dispositivo si cambia (ej. `RMX3771`).
+- Regla fija para Chrome web con autenticacion OAuth/Google: usa siempre
+  `--web-hostname=localhost --web-port=5001`.
+- Asegura `http://localhost` y `http://localhost:5001` en Google Cloud
+  (Authorized JavaScript origins) para evitar `origin_mismatch`.
 - iOS Simulator no soporta `--release` ni `--profile`; usa `--debug`.
 - `ALLOW_PROD_IN_DEBUG=true` es temporal para pruebas reales en debug en todas las plataformas hasta que staging este configurado; al usar staging, elimina este override y usa `APP_ENV=staging`.
 - Si aparece `No pubspec.yaml`, asegurate de estar en la raiz del repo.

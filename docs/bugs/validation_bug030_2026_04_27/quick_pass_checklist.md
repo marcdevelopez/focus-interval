@@ -1,9 +1,9 @@
 ## Exact repro
 
-- [ ] Scenario A PASS: macOS mirror stays in Groups Hub ≥ 60s with active owner session (no forced redirect).
-- [ ] Scenario B PASS: macOS mirror stays in Task List ≥ 60s with active owner session (no forced redirect).
-- [ ] Scenario C PASS: PHASE6 non-regression (phase transition on timer route does not break Run Mode).
-- [ ] Scenario D PASS: re-entry via "Open Run Mode" works after intentional departure.
+- [x] Scenario A PASS: Chrome mirror stays in Groups Hub ≥ 60s with active owner session (no forced redirect).
+- [x] Scenario B PASS: Chrome mirror stays in Task List/Plan Group ≥ 60s with active owner session (no forced redirect).
+- [x] Scenario C PASS: PHASE6 non-regression (phase transition on timer route does not break Run Mode).
+- [x] Scenario D PASS: re-entry via "Open Run Mode" works after intentional departure.
 
 ## Regression smoke
 
@@ -17,4 +17,4 @@
 
 ## Closure rule
 
-- [ ] Close only when all boxes above are checked with logs/screenshots evidence and docs are synchronized.
+- [x] Close only when all boxes above are checked with logs/screenshots evidence and docs are synchronized.

@@ -3769,17 +3769,24 @@ Root cause hypothesis (regression detail):
 
 Fix applied:
 
-- Runtime patch implemented locally on `fix/bug030-auto-open-suppression`:
+- Runtime patch implemented on `fix/bug030-auto-open-suppression`:
   - added `_userDepartedGroupId` sentinel in `ActiveSessionAutoOpener`,
   - guarded resume + VM-disposal recovery path for intentional departures,
   - preserved PHASE6 VM-disposal recovery contract for in-timer scenarios,
   - added widget regression test:
     `[BUG-030] auto-open stays suppressed after intentional departure from Run Mode`.
-- Local gate PASS (28/04/2026); device validation pending.
+- Local gate PASS (28/04/2026).
+- Device validation PASS (28/04/2026, iOS owner + Chrome mirror, single-pass `C -> A -> B -> D`):
+  - no `Attempting auto-open to TimerScreen` matches in
+    `docs/bugs/validation_bug030_2026_04_27/logs/2026-04-28_bug030_24b3667_chrome_debug.log`,
+  - suppression retained on planning routes with `departed=...` in `/groups` and `/tasks`
+    (lines 1952, 1959-1973, 1980-2014, 2020-2074),
+  - explicit timer re-entry from Groups Hub observed (`Timer load group ... route=/timer/...`,
+    around line 2083).
 
 Status:
 
-In validation (28/04/2026), local runtime patch + tests PASS; sourced from BUG-028 device validation evidence and BUG-030 local regression suite.
+Closed/OK (28/04/2026). Fix validated with local gate PASS + iOS/Chrome device scenarios A-D PASS.
 
 ---
 

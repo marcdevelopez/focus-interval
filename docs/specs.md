@@ -797,6 +797,10 @@ Persistence
 - Web uses Firebase Auth local persistence (LOCAL) to restore sessions across reloads.
 - Development note: when running via `flutter run -d chrome`, a stable Chrome
   user-data directory is required to keep sessions between runs.
+- OAuth discipline for local web auth: use fixed
+  `--web-hostname=localhost --web-port=5001` (not random ports), and ensure
+  `http://localhost` + `http://localhost:5001` are registered in Google Cloud
+  Authorized JavaScript origins.
 
 Email verification (email/password)
 
