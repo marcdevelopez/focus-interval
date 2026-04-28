@@ -152,7 +152,8 @@ Reference result without fix:
 
 ## 10. Status
 
-In validation
+Closed/OK (28/04/2026). Runtime patch validated with local gate PASS and
+device evidence from 27/04/2026 (Scenarios A/B/C).
 
 ## 11. 27/04/2026 rerun findings (owner+mirror)
 
@@ -184,7 +185,8 @@ Critical side findings from same run (separate bugs):
 Validation status decision:
 
 - BUG-028 behavior looks functionally corrected in this rerun.
-- Packet remains **In validation** until closure evidence set is finalized and cross-doc closure is done after triaging BUG-030/BUG-031 impact.
+- Packet moved to **Closed/OK** on 28/04/2026 after BUG-030 closure removed the
+  only blocking validation side-effect and cross-doc closure sync was completed.
 
 ## 12. Resume checkpoint (24/04/2026, amended 27/04/2026)
 
@@ -214,10 +216,15 @@ What is already validated/confirmed:
 - Plan Group auto-clamp/auto-adjust belongs to IDEA-039 validation scope.
 - Overlap conflicts (running/scheduled) remain explicit conflict-resolution flows.
 
-What is not validated yet (blocking closure):
+What was blocking closure at that moment:
 
-1. Cross-doc closure sync is still pending (BUG-028 packet + bug_log + ledger + dev_log final closure block).
-2. BUG-030/BUG-031 triage/fix branch must complete before deciding whether BUG-028 closes independently or together.
+1. Cross-doc closure sync pending (BUG-028 packet + bug_log + ledger + dev_log final closure block).
+2. BUG-030/BUG-031 triage/fix pending to confirm BUG-028 can close independently.
+
+Closure update (28/04/2026):
+
+1. BUG-030 is now Closed/OK (device PASS on iOS+Chrome, 28/04/2026).
+2. BUG-028 closure confirmed independently based on 27/04 owner+mirror evidence.
 
 Screenshot evidence index (captured and renamed on 27/04/2026):
 

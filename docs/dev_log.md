@@ -25,8 +25,8 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **BUG-026 — Start now owner/mirror routing + stale-canceled mismatch validation closure (`819745c`, closed 24/04/2026)**
-Current focus: **`BUGLOG-028` (P1) validation closure sync + `BUGLOG-031` (P2) implementation pending + `BUGLOG-027`/`BUGLOG-029` backlog + IDEA-039 device validation**
+Last bug fix: **BUG-030 — Mirror auto-open suppression regression closure (`608ce6c`, closed 28/04/2026)**
+Current focus: **`BUGLOG-031` (P2) implementation pending + `BUGLOG-027`/`BUGLOG-029` backlog + IDEA-039 device validation**
 Last update: **28/04/2026**
 
 ---
@@ -18340,3 +18340,43 @@ Full implementation spec prepared in `docs/bugs/validation_bug030_2026_04_27/cod
 - `BUG-030` / `BUGLOG-030`: **Closed/OK** (`608ce6c` implementation commit, device PASS 28/04/2026).
 - `BUG-031` / `BUGLOG-031`: **Open (P2)**.
 - `BUG-028` / `BUGLOG-028`: **In validation** (pending closure sync).
+
+---
+
+## Block 749 — BUG-028 closure sync finalized after BUG-030 closure (28/04/2026)
+
+**Current branch intent:** Close BUG-028 validation packet and synchronize bug queue state.
+**Branch:** `fix/bug028-closure-sync`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-028` (`Closed/OK`), `BUG-030` (`Closed/OK`), `BUG-031` (`Open`)
+
+### Closure rationale
+
+- BUG-028 target behavior (paused Ends projection coherence during pause/postpone)
+  was already observed as PASS in the 27/04 owner+mirror rerun (Scenarios A/B/C).
+- Closure was deferred only because BUG-030/031 side findings needed triage.
+- With BUG-030 now closed on 28/04 (`608ce6c`), BUG-028 can close independently
+  without additional rerun.
+
+### Documentation synchronization
+
+- `docs/bugs/validation_bug028_2026_04_24/quick_pass_checklist.md`
+  - closure rule checkbox marked PASS.
+- `docs/bugs/validation_bug028_2026_04_24/plan_validacion_rapida_fix.md`
+  - status moved to `Closed/OK (28/04/2026)`,
+  - closure note added: BUG-030 no longer blocks BUG-028 formal closure.
+- `docs/bugs/bug_log.md`
+  - BUG-028 moved `In validation -> Closed/OK`,
+  - implementation commit recorded as `05b1001`,
+  - owner+mirror evidence references added (logs + screenshots).
+- `docs/validation/validation_ledger.md`
+  - BUGLOG-028 moved `In validation -> Closed/OK`,
+  - snapshot updated:
+    - active non-closed bugs `4 -> 3` (`BUGLOG-027`, `BUGLOG-029`, `BUGLOG-031`),
+    - active P1 bug list now empty.
+
+### Status after this block
+
+- `BUG-028` / `BUGLOG-028`: **Closed/OK** (`05b1001`, closure synchronized 28/04/2026).
+- `BUG-030` / `BUGLOG-030`: **Closed/OK** (`608ce6c`).
+- `BUG-031` / `BUGLOG-031`: **Open (P2)**.
