@@ -16277,7 +16277,7 @@ User reported a recurring macOS issue: after signing out to switch account, Auth
 
 **Current branch intent:** BUG-021 runtime fix + validation packet synchronization and closure.
 **Branch:** `fix/bug021-ownership-snackbar-autodismiss`
-**Commit:** `pending-local`
+**Commit:** `891e76f`
 **Bugs closed:** `BUG-021` / `BUGLOG-021` (P1)
 
 ### Context
