@@ -2831,7 +2831,7 @@ Validation update (31/03/2026, local gate):
   - `docs/bugs/validation_bug017_2026_03_31/logs/2026-03-31_bug017_pending-local_widget_debug.log`
 
 Status:
-Closed/OK (31/03/2026). closed_commit_hash: `pending-local`.
+Closed/OK (31/03/2026). closed_commit_hash: `2f9e173`.
 
 ---
 
@@ -3090,7 +3090,7 @@ Fix applied:
     - `Run Mode dismisses stale rejection snackbar when requester becomes owner`
 
 Status:
-Closed/OK (30/03/2026). closed_commit_hash: `pending-local`.
+Closed/OK (30/03/2026). closed_commit_hash: `6f91627`.
 Closure evidence:
 
 - `flutter analyze` PASS (30/03/2026)
@@ -3232,7 +3232,7 @@ Fix applied:
     - Added regression test: `Edit Task Save as new preset auto-links returned preset`.
 
 Status:
-Closed/OK (31/03/2026). closed_commit_hash: `pending-local`.
+Closed/OK (31/03/2026). closed_commit_hash: `2f9e173`.
 
 Validation evidence (local gate):
 

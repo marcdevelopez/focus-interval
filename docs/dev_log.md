@@ -16375,7 +16375,7 @@ preset named `Custom` existed.
 
 ### Status after this block
 
-- `BUG-017` / `BUGLOG-017`: **Closed/OK** (`pending-local`).
+- `BUG-017` / `BUGLOG-017`: **Closed/OK** (`2f9e173`).
 - Active open bug-log entries: **0**.
 
 ---
@@ -16519,7 +16519,7 @@ creates/saves a preset but the task remains unlinked (`Select preset`) after ret
 
 ### Status after this block
 
-- `BUG-023` / `BUGLOG-023`: **Closed/OK** (`pending-local`).
+- `BUG-023` / `BUGLOG-023`: **Closed/OK** (`2f9e173`).
 - Active open bug-log entries: **0**.
 
 ---
@@ -16556,7 +16556,7 @@ creates/saves a preset but the task remains unlinked (`Select preset`) after ret
 
 ### Status after this block
 
-- `BUG-023` / `BUGLOG-023`: **Closed/OK** (`pending-local`) with macOS + Android manual validation evidence.
+- `BUG-023` / `BUGLOG-023`: **Closed/OK** (`2f9e173`) with macOS + Android manual validation evidence.
 - Active open bug-log entries: **0**.
 
 ---
