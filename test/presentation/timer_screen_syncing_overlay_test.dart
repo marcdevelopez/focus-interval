@@ -2572,8 +2572,14 @@ void main() {
         pomodoroViewModelProvider,
         (_, __) {},
       );
-      addTearDown(() {
+      var vmSubClosed = false;
+      void closeVmSub() {
+        if (vmSubClosed) return;
         vmSub.close();
+        vmSubClosed = true;
+      }
+      addTearDown(() {
+        closeVmSub();
         sessionRepo.dispose();
         container.dispose();
       });
@@ -2624,7 +2630,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 80));
       expect(router.routerDelegate.currentConfiguration.uri.path, '/groups');
 
-      vmSub.close();
+      closeVmSub();
       container.invalidate(pomodoroViewModelProvider);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 80));
@@ -2657,7 +2663,6 @@ void main() {
             'BUG-030 contract: force-refresh path must not run after intentional departure.',
       );
 
-      vmSub.close();
       container.dispose();
     },
   );

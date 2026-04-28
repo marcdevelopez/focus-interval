@@ -18226,3 +18226,28 @@ Full implementation spec prepared in `docs/bugs/validation_bug030_2026_04_27/cod
 - `BUG-030` / `BUGLOG-030`: **In validation (P1)** — local runtime patch + local gate PASS; device scenarios A-D pending.
 - `BUG-031` / `BUGLOG-031`: **Open (P2)** — pending implementation.
 - `BUG-028` / `BUGLOG-028`: **In validation** — awaiting final user closure confirmation.
+
+---
+
+## Block 746 — BUG-030 test hygiene: remove vmSub double-close noise (28/04/2026)
+
+**Current branch intent:** BUG-030 runtime/test hardening cleanup before device validation.
+**Branch:** `fix/bug030-auto-open-suppression`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-030` (`In validation`)
+
+### Change delivered
+
+- Updated `test/presentation/timer_screen_syncing_overlay_test.dart` in the `[BUG-030]` case:
+  - replaced repeated direct `vmSub.close()` calls with an idempotent `closeVmSub()` helper,
+  - removed redundant explicit close at test end,
+  - kept teardown safety and behavior unchanged.
+
+### Verification
+
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart --plain-name "[BUG-030] auto-open stays suppressed after intentional departure from Run Mode"` -> PASS.
+
+### Status after this block
+
+- No runtime behavior change.
+- `BUG-030` remains **In validation** pending device scenarios A-D.
