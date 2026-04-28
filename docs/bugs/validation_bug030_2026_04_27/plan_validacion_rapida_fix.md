@@ -141,14 +141,12 @@ Expected result with fix:
 ```bash
 # Android owner
 flutter run -v --debug -d RMX3771 --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true \
-  2>&1 | tee docs/bugs/validation_bug030_2026_04_27/logs/2026-04-XX_bug030_<commit>_android_RMX3771_debug.log
+  2>&1 | tee docs/bugs/validation_bug030_2026_04_27/logs/2026-04-28_bug030_pending-local_android_RMX3771_debug.log
 
 # macOS mirror
 flutter run -v --debug -d macos --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true \
-  2>&1 | tee docs/bugs/validation_bug030_2026_04_27/logs/2026-04-XX_bug030_<commit>_macos_debug.log
+  2>&1 | tee docs/bugs/validation_bug030_2026_04_27/logs/2026-04-28_bug030_pending-local_macos_debug.log
 ```
-
-Replace `XX` with actual date and `<commit>` with 7-char commit hash.
 
 ## 7. Log analysis — quick scan
 
@@ -203,4 +201,4 @@ All must PASS before device validation.
 
 ## 10. Status
 
-Open (27/04/2026)
+In validation (28/04/2026) — runtime patch implemented and local gate PASS; device scenarios A-D pending.

@@ -2508,6 +2508,161 @@ void main() {
   });
 
   testWidgets(
+    '[BUG-030] auto-open stays suppressed after intentional departure from Run Mode',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final group = _buildRunningGroup(
+        id: 'group-bug030-intentional-departure',
+        start: now,
+      );
+      final session = _buildRunningSession(
+        groupId: group.id,
+        taskId: group.tasks.first.sourceTaskId,
+        now: now,
+      );
+      final nextSession = PomodoroSession(
+        taskId: session.taskId,
+        groupId: session.groupId,
+        currentTaskId: session.currentTaskId,
+        currentTaskIndex: session.currentTaskIndex,
+        totalTasks: session.totalTasks,
+        dataVersion: session.dataVersion,
+        sessionRevision: session.sessionRevision + 1,
+        ownerDeviceId: session.ownerDeviceId,
+        status: session.status,
+        phase: session.phase,
+        currentPomodoro: session.currentPomodoro,
+        totalPomodoros: session.totalPomodoros,
+        phaseDurationSeconds: session.phaseDurationSeconds,
+        remainingSeconds: session.remainingSeconds - 10,
+        accumulatedPausedSeconds: session.accumulatedPausedSeconds,
+        phaseStartedAt: session.phaseStartedAt,
+        currentTaskStartedAt: session.currentTaskStartedAt,
+        pausedAt: null,
+        lastUpdatedAt: now.add(const Duration(seconds: 1)),
+        finishedAt: null,
+        pauseReason: null,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()..seed(group);
+      final sessionRepo = FakePomodoroSessionRepository(session);
+      final appModeService = AppModeService.memory();
+      final logs = <String>[];
+      final previousDebugPrint = foundation.debugPrint;
+      foundation.debugPrint = (String? message, {int? wrapWidth}) {
+        if (message != null) logs.add(message);
+      };
+
+      final container = ProviderContainer(
+        overrides: [
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(
+            DeviceInfoService.ephemeral(),
+          ),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(
+            FakeTimeSyncService(offset: Duration.zero),
+          ),
+        ],
+      );
+      final vmSub = container.listen<PomodoroState>(
+        pomodoroViewModelProvider,
+        (_, __) {},
+      );
+      addTearDown(() {
+        vmSub.close();
+        sessionRepo.dispose();
+        container.dispose();
+      });
+
+      await container.read(appModeProvider.notifier).setAccount();
+      final vm = container.read(pomodoroViewModelProvider.notifier);
+      await vm.loadGroup(group.id);
+      expect(container.exists(pomodoroViewModelProvider), isTrue);
+
+      final navigatorKey = GlobalKey<NavigatorState>();
+      final router = GoRouter(
+        navigatorKey: navigatorKey,
+        initialLocation: '/timer/${group.id}',
+        routes: [
+          GoRoute(
+            path: '/timer/:id',
+            builder: (context, state) {
+              return Scaffold(
+                body: Text('timer-${state.pathParameters['id']}'),
+              );
+            },
+          ),
+          GoRoute(
+            path: '/groups',
+            builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+          ),
+          GoRoute(
+            path: '/tasks',
+            builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: ActiveSessionAutoOpener(
+            navigatorKey: navigatorKey,
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+
+      router.go('/groups');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+      expect(router.routerDelegate.currentConfiguration.uri.path, '/groups');
+
+      vmSub.close();
+      container.invalidate(pomodoroViewModelProvider);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+      expect(container.exists(pomodoroViewModelProvider), isFalse);
+
+      sessionRepo.emit(nextSession);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      foundation.debugPrint = previousDebugPrint;
+
+      final merged = logs.join('\n');
+      expect(
+        router.routerDelegate.currentConfiguration.uri.path,
+        '/groups',
+        reason:
+            'BUG-030 contract: after intentional departure, VM disposal ticks must not force navigation back to timer.',
+      );
+      expect(
+        merged.contains(
+          'Auto-open suppressed (VM disposed after intentional departure)',
+        ),
+        isTrue,
+        reason:
+            'BUG-030 contract: intentional-departure sentinel must suppress VM-disposal recovery path.',
+      );
+      expect(
+        merged.contains('Auto-open recovery: forcing timer refresh'),
+        isFalse,
+        reason:
+            'BUG-030 contract: force-refresh path must not run after intentional departure.',
+      );
+
+      vmSub.close();
+      container.dispose();
+    },
+  );
+
+  testWidgets(
     '[PHASE5] sync overlay diagnostics must include vmToken for lifecycle correlation',
     (tester) async {
       SharedPreferences.setMockInitialValues({});

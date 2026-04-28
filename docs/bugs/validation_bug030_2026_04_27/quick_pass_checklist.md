@@ -7,14 +7,14 @@
 
 ## Regression smoke
 
-- [ ] `[PHASE6] auto-open guard clears when VM is disposed mid-session` PASS.
-- [ ] `[BUG-030] auto-open stays suppressed after intentional departure from Run Mode` PASS.
-- [ ] Full `timer_screen_syncing_overlay_test.dart` suite PASS.
+- [x] `[PHASE6] auto-open guard clears when VM is disposed mid-session` PASS.
+- [x] `[BUG-030] auto-open stays suppressed after intentional departure from Run Mode` PASS.
+- [x] Full `timer_screen_syncing_overlay_test.dart` suite PASS.
 
 ## Local gate
 
-- [ ] flutter analyze PASS.
+- [x] flutter analyze PASS.
 
 ## Closure rule
 
-Close only when all boxes above are checked with logs/screenshots evidence and docs are synchronized.
+- [ ] Close only when all boxes above are checked with logs/screenshots evidence and docs are synchronized.

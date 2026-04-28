@@ -27,7 +27,7 @@ Formatting rules:
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **BUG-026 — Start now owner/mirror routing + stale-canceled mismatch validation closure (`819745c`, closed 24/04/2026)**
 Current focus: **`BUGLOG-028` (P1) validation closure sync + new regressions `BUGLOG-030` (P1) / `BUGLOG-031` (P2) from 27/04 device run + `BUGLOG-027`/`BUGLOG-029` backlog + IDEA-039 device validation**
-Last update: **27/04/2026**
+Last update: **28/04/2026**
 
 ---
 
@@ -18176,3 +18176,53 @@ Full implementation spec prepared in `docs/bugs/validation_bug030_2026_04_27/cod
 - `BUG-028` / `BUGLOG-028`: **In validation** — evidence packet complete; awaiting user closure confirmation.
 - `BUG-030` / `BUGLOG-030`: **Open (P1)** — root cause confirmed (3 paths), fix handoff ready.
 - `BUG-031` / `BUGLOG-031`: **Open (P2)** — pending.
+
+---
+
+## Block 745 — BUG-030 runtime fix implemented + local gate PASS (28/04/2026)
+
+**Current branch intent:** Implement BUG-030 auto-open suppression fix (intentional departure guard) and validate PHASE6 non-regression before device runs.
+**Branch:** `fix/bug030-auto-open-suppression`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-030` (`In validation`), `BUG-031` (`Open`), `BUG-028` (`In validation`)
+
+### Runtime implementation delivered
+
+- Updated `lib/widgets/active_session_auto_opener.dart`:
+  - added `_userDepartedGroupId` sentinel to persist intentional user departure from `/timer/:groupId`,
+  - added early departure detection before resume/VM-disposal paths,
+  - guarded resume suppression clear with departure-aware condition,
+  - guarded VM-disposal recovery to prevent forced timer refresh after intentional departure,
+  - expanded suppression gate to include `departed` guard,
+  - cleared departure sentinel on explicit timer re-entry and session/group lifecycle resets.
+- Added widget regression coverage in `test/presentation/timer_screen_syncing_overlay_test.dart`:
+  - `[BUG-030] auto-open stays suppressed after intentional departure from Run Mode`.
+
+### Local verification commands executed
+
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart --plain-name "[PHASE6] auto-open guard clears when VM is disposed mid-session"` -> PASS.
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart --plain-name "[BUG-030] auto-open stays suppressed after intentional departure from Run Mode"` -> PASS.
+- `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` -> PASS.
+- `flutter analyze` -> PASS (`No issues found!`).
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` -> PASS.
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` -> PASS.
+
+### Documentation synchronization
+
+- `docs/bugs/bug_log.md`
+  - BUG-030 root cause text aligned to 3-path model (primary VM-disposal path + resume + bounce).
+  - BUG-030 status moved `Open -> In validation` (local patch + local gate PASS).
+- `docs/validation/validation_ledger.md`
+  - BUGLOG-030 status moved `Pending -> In validation`.
+  - Snapshot line updated to reflect BUGLOG-030 in validation.
+- `docs/bugs/validation_bug030_2026_04_27/plan_validacion_rapida_fix.md`
+  - execution commands made copy-pasteable (no placeholders),
+  - status moved `Open -> In validation`.
+- `docs/bugs/validation_bug030_2026_04_27/quick_pass_checklist.md`
+  - regression smoke and local gate checkboxes marked PASS.
+
+### Status after this block
+
+- `BUG-030` / `BUGLOG-030`: **In validation (P1)** — local runtime patch + local gate PASS; device scenarios A-D pending.
+- `BUG-031` / `BUGLOG-031`: **Open (P2)** — pending implementation.
+- `BUG-028` / `BUGLOG-028`: **In validation** — awaiting final user closure confirmation.

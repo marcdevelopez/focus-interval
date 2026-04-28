@@ -3754,22 +3754,32 @@ Workaround:
 
 Root cause hypothesis (regression detail):
 
-- `ActiveSessionAutoOpener` currently clears suppression for the same group in
-  two paths:
-  1. Resume path (`_resumeAutoOpenPending`) clears `_autoOpenSuppressedGroupId`.
-  2. Bounce-reset path (`_shouldResetAutoOpenForBounce`) can also clear
+- `ActiveSessionAutoOpener` currently defeats user-intent suppression for the
+  same group in three paths:
+  1. VM disposal recovery path (`_autoOpenedGroupId == groupId && !vmExists && vmWasAlive`)
+     clears suppression and sets `forceTimerRefresh=true`. This is the primary
+     trigger because `PomodoroViewModel` is `autoDispose` and is disposed when
+     leaving `/timer/:id`.
+  2. Resume path (`_resumeAutoOpenPending`) clears `_autoOpenSuppressedGroupId`.
+  3. Bounce-reset path (`_shouldResetAutoOpenForBounce`) can also clear
      `_autoOpenSuppressedGroupId` during fast user exits from `/timer/:id`.
-- On macOS mirror, focus/resume events and quick route transitions make these
-  paths fire repeatedly, so user-intent suppression ("left Run Mode") is lost
-  and `/timer/:groupId` is auto-opened again from `/groups` or `/tasks`.
+- On macOS mirror, session ticks + window-focus resume events repeatedly hit
+  these paths, so suppression is lost and `/timer/:groupId` is auto-opened
+  again from `/groups` or `/tasks`.
 
 Fix applied:
 
-- Not yet.
+- Runtime patch implemented locally on `fix/bug030-auto-open-suppression`:
+  - added `_userDepartedGroupId` sentinel in `ActiveSessionAutoOpener`,
+  - guarded resume + VM-disposal recovery path for intentional departures,
+  - preserved PHASE6 VM-disposal recovery contract for in-timer scenarios,
+  - added widget regression test:
+    `[BUG-030] auto-open stays suppressed after intentional departure from Run Mode`.
+- Local gate PASS (28/04/2026); device validation pending.
 
 Status:
 
-Open (27/04/2026), sourced from BUG-028 device validation evidence.
+In validation (28/04/2026), local runtime patch + tests PASS; sourced from BUG-028 device validation evidence and BUG-030 local regression suite.
 
 ---
 
