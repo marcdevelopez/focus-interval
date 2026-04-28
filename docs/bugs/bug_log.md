@@ -3654,11 +3654,24 @@ Fix applied:
 - Specs synchronization:
   - `docs/specs.md` updated in section 10.5 to state projected `Ends` behavior
     for running/paused cards.
+- Device validation evidence (27/04/2026, Android owner + macOS mirror):
+  - Scenario A/B paused projection coherence observed (`T0` to `T+106s`) with
+    moving paused timeline samples (`16:26 -> 16:27 -> 16:28 -> 16:30`).
+  - Scenario C resume non-regression observed (`~16:14:57` resume, no collapse).
+  - Evidence packet:
+    - logs:
+      - `docs/bugs/validation_bug028_2026_04_24/logs/2026-04-27_bug028_5df97ec_android_RMX3771_debug.log`
+      - `docs/bugs/validation_bug028_2026_04_24/logs/2026-04-27_bug028_5df97ec_macos_debug.log`
+    - screenshots:
+      - `docs/bugs/validation_bug028_2026_04_24/screenshots/2026-04-27_bug028_scenarioAB_T0_paused_161302_owner_android_mirror_macos.png`
+      - `docs/bugs/validation_bug028_2026_04_24/screenshots/2026-04-27_bug028_scenarioAB_Tplus106_paused_161448_owner_android_mirror_macos.png`
+      - `docs/bugs/validation_bug028_2026_04_24/screenshots/2026-04-27_bug028_scenarioC_post_resume_161459_owner_android_mirror_macos.png`
 
 Status:
 
-In validation (24/04/2026). Local gate PASS (`flutter analyze` + targeted
-Groups Hub widget tests). Device validation pending (Android + macOS).
+Closed/OK (28/04/2026). Implementation commit: `05b1001`
+(`fix(bug-028): project paused ends in Groups Hub and sync validation docs`).
+Local gate PASS + device scenarios A/B/C PASS with owner/mirror evidence.
 
 ---
 

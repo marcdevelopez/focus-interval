@@ -25,9 +25,9 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **BUG-026 — Start now owner/mirror routing + stale-canceled mismatch validation closure (`819745c`, closed 24/04/2026)**
-Current focus: **`BUGLOG-028` (P1) in validation packet (device runs pending) + `BUGLOG-027`/`BUGLOG-029` backlog + IDEA-039 device validation**
-Last update: **24/04/2026**
+Last closed bug fix: **BUG-028 — Groups Hub paused Ends projection coherence (`05b1001`, closed 28/04/2026)**
+Current focus: **Open bug queue (`BUGLOG-027`/`BUGLOG-029`) + IDEA-039 device validation**
+Last update: **28/04/2026**
 
 ---
 
@@ -18002,3 +18002,25 @@ A regression was reported in running-overlap warning behavior:
 
 - `BUG-028` / `BUGLOG-028`: **In validation** (24/04/2026).
 - Local gate PASS; Android + macOS exact-repro validation pending.
+
+---
+
+## Block 741 — BUG-028 closure sync finalized (28/04/2026)
+
+**Current branch intent:** Close BUG-028 packet and align bug queue status on canonical branch.
+**Branch:** `fix/bug028-closure-sync`
+**Commit:** `05b1001` (implementation), closure sync 28/04/2026
+**Validation/Bug IDs:** `BUG-028` / `BUGLOG-028` (`Closed/OK`)
+
+### Closure evidence synchronized
+
+- Validation packet marked `Closed/OK` with owner+mirror evidence from 27/04:
+  - `docs/bugs/validation_bug028_2026_04_24/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug028_2026_04_24/quick_pass_checklist.md`
+- Bug log updated to `Closed/OK` with implementation commit + device evidence references.
+- Validation ledger updated to `Closed/OK` and snapshot queue adjusted.
+
+### Status after this block
+
+- `BUG-028` / `BUGLOG-028`: **Closed/OK** (`05b1001`).
+- Open bug queue continues with: `BUGLOG-027` (P2), `BUGLOG-029` (P2).

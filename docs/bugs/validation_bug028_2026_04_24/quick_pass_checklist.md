@@ -15,4 +15,4 @@
 
 ## Closure rule
 
-- [ ] Close only when all boxes above are checked with logs/screenshots evidence and docs are synchronized.
+- [x] Close only when all boxes above are checked with logs/screenshots evidence and docs are synchronized.
