@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last bug fix: **BUG-026 — Start now owner/mirror routing + stale-canceled mismatch validation closure (`819745c`, closed 24/04/2026)**
-Current focus: **`BUGLOG-028` (P1) validation closure sync + `BUGLOG-031` (P2) implementation pending + `BUGLOG-027`/`BUGLOG-029` backlog + IDEA-039 device validation**
+Current focus: **`BUGLOG-028` (P1) validation closure sync + `BUGLOG-031` (P2) in validation (device pending) + `BUGLOG-027`/`BUGLOG-029` backlog + IDEA-039 device validation**
 Last update: **28/04/2026**
 
 ---
@@ -18340,3 +18340,49 @@ Full implementation spec prepared in `docs/bugs/validation_bug030_2026_04_27/cod
 - `BUG-030` / `BUGLOG-030`: **Closed/OK** (`608ce6c` implementation commit, device PASS 28/04/2026).
 - `BUG-031` / `BUGLOG-031`: **Open (P2)**.
 - `BUG-028` / `BUGLOG-028`: **In validation** (pending closure sync).
+
+---
+
+## Block 749 — BUG-031 runtime snackbar lifecycle hardening + local gate PASS (28/04/2026)
+
+**Current branch intent:** BUG-031 stale mirror conflict snackbar fix and validation packet preparation.
+**Branch:** `fix/bug031-stale-conflict-snackbar-base030`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-031` (`In validation`)
+
+### Change delivered
+
+- Updated `lib/presentation/screens/timer_screen.dart` to centralize mirror conflict snackbar teardown:
+  - added `_hideMirrorConflictSnack(...)` helper,
+  - added `_mirrorConflictMessenger` + `_mirrorConflictSnackController` state,
+  - teardown now runs when overlap decision becomes `null`,
+  - teardown now runs when overlap decision is no longer valid for current session/group snapshot,
+  - group-switch reset now clears stale mirror conflict snackbar state.
+- Added widget regression coverage in
+  `test/presentation/timer_screen_completion_navigation_test.dart`:
+  - `Timer mirror dismisses conflict snackbar when overlap decision clears`.
+- Prepared BUG-031 validation packet:
+  - `docs/bugs/validation_bug031_2026_04_28/plan_validacion_rapida_fix.md`,
+  - `docs/bugs/validation_bug031_2026_04_28/quick_pass_checklist.md`,
+  - `logs/.gitkeep` and `screenshots/.gitkeep` scaffolding.
+
+### Verification
+
+- `flutter analyze lib/presentation/screens/timer_screen.dart test/presentation/timer_screen_completion_navigation_test.dart` -> PASS.
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Timer mirror shows persistent conflict snackbar until explicit OK"` -> PASS.
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Timer mirror dismisses conflict snackbar when overlap decision clears"` -> PASS.
+
+### Documentation sync
+
+- `docs/bugs/bug_log.md`:
+  - BUG-031 `Fix applied` updated with runtime/test details,
+  - BUG-031 status moved `Open -> In validation`.
+- `docs/validation/validation_ledger.md`:
+  - `BUGLOG-031` moved `Pending -> In validation`,
+  - snapshot line updated (`BUGLOG-031 P2 In validation`).
+
+### Status after this block
+
+- `BUG-031` / `BUGLOG-031`: **In validation** (device scenarios pending).
+- `BUG-028` / `BUGLOG-028`: **In validation** (P1 closure sync pending).
+- `BUG-027` + `BUG-029`: **Pending** backlog.

@@ -1657,6 +1657,106 @@ void main() {
   );
 
   testWidgets(
+    'Timer mirror dismisses conflict snackbar when overlap decision clears',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final deviceInfo = DeviceInfoService.ephemeral();
+      final running = _buildRunningGroup(
+        id: 'timer-mirror-clear-running',
+        now: now,
+      );
+      final scheduled = _buildScheduledGroup(
+        id: 'timer-mirror-clear-scheduled',
+        now: now,
+      );
+
+      final groupRepo = FakeTaskRunGroupRepository()
+        ..seed(running)
+        ..seed(scheduled);
+      final sessionRepo = FakePomodoroSessionRepository(
+        _buildRunningSession(
+          groupId: running.id,
+          ownerDeviceId: '${deviceInfo.deviceId}-owner',
+          now: now,
+          remainingSeconds: 14 * 60,
+          phaseDurationSeconds: 25 * 60,
+          phaseStartedAt: now.subtract(const Duration(minutes: 11)),
+          currentTaskStartedAt: now.subtract(const Duration(minutes: 11)),
+        ),
+      );
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          deviceInfoServiceProvider.overrideWithValue(deviceInfo),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+        await _pumpTimerScreen(
+          tester: tester,
+          container: container,
+          groupId: running.id,
+        );
+
+        container
+            .read(runningOverlapDecisionProvider.notifier)
+            .state = RunningOverlapDecision(
+          runningGroupId: running.id,
+          scheduledGroupId: scheduled.id,
+          token: 1,
+        );
+        await _pumpUntilFound(
+          tester,
+          find.text(
+            'Owner is resolving this conflict. Request ownership if needed.',
+          ),
+        );
+
+        expect(
+          find.text(
+            'Owner is resolving this conflict. Request ownership if needed.',
+          ),
+          findsOneWidget,
+        );
+
+        container.read(runningOverlapDecisionProvider.notifier).state = null;
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 260));
+
+        expect(
+          find.text(
+            'Owner is resolving this conflict. Request ownership if needed.',
+          ),
+          findsNothing,
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
+
+  testWidgets(
     'cancel requests confirmation and navigates to Groups Hub only after confirm',
     (tester) async {
       SharedPreferences.setMockInitialValues({});

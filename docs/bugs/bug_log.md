@@ -3834,8 +3834,19 @@ Hypothesis:
 
 Fix applied:
 
-- Not yet.
+- Runtime patch in `lib/presentation/screens/timer_screen.dart`:
+  - centralized mirror conflict snackbar teardown in `_hideMirrorConflictSnack(...)`,
+  - explicit teardown when overlap decision becomes `null`,
+  - explicit teardown + decision reset when overlap becomes invalid for current session/groups,
+  - mirror snackbar controller/messenger lifecycle hardened to avoid stale local state.
+- Regression coverage added in
+  `test/presentation/timer_screen_completion_navigation_test.dart`:
+  - `Timer mirror dismisses conflict snackbar when overlap decision clears`.
+- Local gate PASS (28/04/2026):
+  - `flutter analyze lib/presentation/screens/timer_screen.dart test/presentation/timer_screen_completion_navigation_test.dart`,
+  - `flutter test ... --plain-name "Timer mirror shows persistent conflict snackbar until explicit OK"`,
+  - `flutter test ... --plain-name "Timer mirror dismisses conflict snackbar when overlap decision clears"`.
 
 Status:
 
-Open (27/04/2026), sourced from BUG-028 device validation evidence.
+In validation (28/04/2026). Device validation pending in `docs/bugs/validation_bug031_2026_04_28/`.
