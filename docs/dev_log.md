@@ -18120,7 +18120,7 @@ Expected behavior per specs: paused sessions must not advance and must not be au
 
 **Current branch intent:** Process hardening to prevent validated fixes/features from being left only in side branches.
 **Branch:** `fix/process-always-on-integration-gate`
-**Commit:** `pending-local`
+**Commits:** `e6574ff` (`docs(process): add strict integration gate command and audit checklist`) + `4a0b68c` (`docs(process): enforce always-on integration gate for all agents`)
 **Scope:** governance/process (`AGENTS.md`)
 
 ### Rule change
@@ -18144,7 +18144,7 @@ Expected behavior per specs: paused sessions must not advance and must not be au
 
 **Current branch intent:** Restore BUG-030 closure traceability on canonical docs after runtime/test cherry-pick integration.
 **Branch:** `fix/bug030-docs-backfill`
-**Commit:** `pending-local`
+**Commit:** `7f15f66` (`docs(bug030): backfill closure packet and canonical traceability`)
 **Validation/Bug IDs:** `BUG-030` / `BUGLOG-030` (`Closed/OK`)
 
 ### Audit result confirmed
@@ -18170,3 +18170,43 @@ Expected behavior per specs: paused sessions must not advance and must not be au
 
 - BUG-030 is now fully traceable in canonical docs on top of already integrated runtime/test fixes.
 - Active open bug queue remains: `BUGLOG-027` (P2), `BUGLOG-029` (P2).
+
+---
+
+## Block 746 — BUG-031 and BUG-033 canonical traceability synchronized on develop (29/04/2026)
+
+**Current branch intent:** Documentation governance — synchronize missing bug entries to develop so next agent preflight scan finds all open items.
+**Branch:** `fix/docs-sync-031-033`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-031` / `BUGLOG-031` (`In validation`); `BUG-033` / `BUGLOG-033` (`Open`)
+
+### Context
+
+BUG-031 and BUG-033 were discovered and documented exclusively in side branches:
+- `fix/bug031-stale-conflict-snackbar-base030` (fix implemented, local gate PASS, device validation pending)
+- `fix/bug033-foreground-service-crash` (crash registered, no fix yet)
+
+Neither entry existed in `develop` canonical docs, so agent preflight scans of `bug_log.md` and `validation_ledger.md` would miss them entirely.
+
+### Documentation synchronized
+
+- `docs/bugs/bug_log.md`
+  - Added BUG-031 entry (symptom, fix applied on branch, In validation status).
+  - Added BUG-033 entry (crash evidence, hypothesis, Open status).
+- `docs/bugs/validation_bug033_2026_04_29/`
+  - Added `plan_validacion_rapida_fix.md` (scenarios A+B, log commands, closure criteria).
+  - Added `quick_pass_checklist.md`.
+- `docs/validation/validation_ledger.md`
+  - Snapshot line updated: 4 non-closed bugs (BUGLOG-027 P2, BUGLOG-029 P2, BUGLOG-031 P2, BUGLOG-033 P1).
+  - Active P1 blocker updated: `BUGLOG-033` blocks `develop→main`.
+  - Added BUGLOG-031 entry (In validation, branch + commit reference).
+  - Added BUGLOG-033 entry (Open, P1 blocker).
+- `docs/dev_log.md`
+  - Replaced `pending-local` in Block 744 with real commits `e6574ff` + `4a0b68c`.
+  - Replaced `pending-local` in Block 745 with real commit `7f15f66`.
+
+### Status after this block
+
+- All open bugs visible from `develop` canonical docs.
+- Next agent preflight will correctly surface: BUGLOG-033 (P1, Open, no fix yet) and BUGLOG-031 (P2, In validation, device validation pending).
+- BUG-031 runtime fix remains isolated on `fix/bug031-stale-conflict-snackbar-base030` until device validation PASS.

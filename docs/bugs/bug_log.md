@@ -3846,3 +3846,118 @@ Fix applied:
 Status:
 
 Closed/OK (29/04/2026). Phase 1 guard validated on Android + macOS single-run repro with post-wake Firestore corroboration; paused state no longer auto-completes after theoretical end.
+
+---
+
+## BUG-031 — Mirror conflict snackbar can remain stale after conflict is resolved
+
+ID: BUG-031
+Date: 27/04/2026 (UTC-4)
+Platforms: macOS mirror + Android owner
+Context: Same BUG-028 validation run. Mirror received conflict warning while owner resolved scheduling conflict.
+
+Classification:
+
+- New bug (not tracked as an open item before 27/04/2026).
+- Related domain to BUG-021 (snackbar lifecycle), but different surface
+  (running-overlap mirror conflict snackbar).
+
+Symptom:
+
+- Mirror keeps showing the old conflict snackbar (`Owner is resolving this conflict...`) after conflict is already resolved on owner.
+- Warning persists across route changes and no longer reflects real conflict state.
+
+Observed behavior:
+
+- After owner resolves/cancels scheduled conflict, mirror continues showing stale snackbar while user navigates Groups Hub and Task List.
+- User reports stale snackbar still visible around 16:10:29-16:14:48 despite conflict resolution and scheduled updates.
+- Pressing/interacting while stale snackbar is visible can coincide with forced navigation back to Run Mode (see BUG-030), worsening workflow interruption.
+
+Expected behavior:
+
+- Conflict snackbar must auto-dismiss when overlap is no longer valid, decision is cleared/replaced, or user leaves Run Mode.
+- Mirror should not keep stale conflict messaging on unrelated screens.
+
+Evidence:
+
+- `docs/bugs/validation_bug028_2026_04_24/logs/2026-04-27_bug028_5df97ec_macos_debug.log` (conflict-flow window 16:10-16:15 UTC-4 + route churn evidence).
+- User screenshots in thread show stale snackbar visible while scheduled timeline has already shifted/resolved.
+
+Workaround:
+
+- Manual `OK` dismissal or waiting for long snackbar timeout.
+
+Hypothesis:
+
+- Mirror conflict snackbar lifecycle is managed in `TimerScreen` local state only; dismissal synchronization is incomplete when overlap state changes off-screen or when TimerScreen is exited/disposed.
+
+Fix applied:
+
+- Runtime patch in `lib/presentation/screens/timer_screen.dart`:
+  - centralized mirror conflict snackbar teardown in `_hideMirrorConflictSnack(...)`,
+  - explicit teardown when overlap decision becomes `null`,
+  - explicit teardown + decision reset when overlap becomes invalid for current session/groups,
+  - mirror snackbar controller/messenger lifecycle hardened to avoid stale local state.
+- Regression coverage added in `test/presentation/timer_screen_completion_navigation_test.dart`:
+  - `Timer mirror dismisses conflict snackbar when overlap decision clears`.
+- Local gate PASS (28/04/2026):
+  - `flutter analyze lib/presentation/screens/timer_screen.dart test/presentation/timer_screen_completion_navigation_test.dart`,
+  - `flutter test ... --plain-name "Timer mirror shows persistent conflict snackbar until explicit OK"`,
+  - `flutter test ... --plain-name "Timer mirror dismisses conflict snackbar when overlap decision clears"`.
+- Runtime fix on branch: `fix/bug031-stale-conflict-snackbar-base030`, commit `f16341f`.
+
+Status:
+
+In validation (28/04/2026). Device validation pending in `docs/bugs/validation_bug031_2026_04_28/`.
+
+---
+
+## BUG-033 — Android background crash on foreground service promotion (`ForegroundServiceStartNotAllowedException`)
+
+ID: BUG-033
+Date: 29/04/2026 (UTC-4)
+Platforms: Android (owner path), with cross-device ownership side effects
+Context: Account Mode runtime while Android app stays in background for several minutes during active execution.
+
+Symptom:
+
+- Android process crashes with system dialog (`focus_interval sigue sin funcionar`) while a run is active in background.
+- After crash, ownership can shift to another device (for example macOS), creating inconsistent multi-device continuity during validation runs.
+
+Observed behavior:
+
+- Runtime log captures:
+  - `FATAL EXCEPTION: main`
+  - `android.app.ForegroundServiceStartNotAllowedException`
+  - `Service.startForeground() not allowed due to mAllowStartForeground false`
+- Crash stack points to:
+  - `android/app/src/main/kotlin/com/marcdevelopez/focusinterval/PomodoroForegroundService.kt`
+  - `onStartCommand(...)` -> `startOrUpdate()` -> `startForeground(...)`.
+- The event occurred during a background interval while session snapshots kept arriving, then process shutdown (`SIG: 9`) followed.
+
+Expected behavior:
+
+- App must not crash when background lifecycle triggers foreground-service update/start paths.
+- Active run continuity must remain stable in background without process kill.
+
+Evidence:
+
+- User-provided Android log excerpt dated 29/04/2026 around 11:40 (UTC-4), including full stacktrace and shutdown sequence.
+- Screenshot evidence from Android system crash dialog.
+- Validation packet: `docs/bugs/validation_bug033_2026_04_29/` (`plan_validacion_rapida_fix.md`, `quick_pass_checklist.md`).
+
+Workaround:
+
+- No reliable user-facing workaround. App may recover only after relaunch, with possible ownership/state side effects.
+
+Hypothesis:
+
+- Foreground service start/update path is invoked from a background state that Android disallows, causing runtime exception before safe fallback can execute.
+
+Fix applied:
+
+- Not yet. Fix on branch: `fix/bug033-foreground-service-crash`.
+
+Status:
+
+Open (29/04/2026). Initial evidence captured; exact forced repro under same conditions is pending in validation packet.
