@@ -44,6 +44,15 @@ Bug-priority preflight gate (hard rule):
   3. If any mismatch exists, stop and synchronize ledger + `docs/dev_log.md` first.
   4. Continue only after the bug queue is explicit and ordered by priority.
 
+Strict integration gate (hard rule):
+- Trigger phrase (owner command): `MODO GATE ESTRICTO: no implementes nada hasta pasar auditoría de integración y mostrar reporte.`
+- When this gate is active, agents must:
+  1. Run `git fetch --all --prune`.
+  2. Prove `develop...origin/develop = 0 0`.
+  3. Report every local branch with `ahead_of_develop > 0`.
+  4. Identify runtime/test commits that are outside `develop` and state whether they must be integrated first.
+  5. Present the audit report to the user and wait for approval before any implementation, cherry-pick, merge, or doc status change.
+
 **"What's next" rule:** When asked what to do next, always cross-reference
 `validation_ledger.md` + `roadmap.md` + tail of `dev_log.md`. Never answer from
 the `CURRENT PHASE` label alone — pending validations and doc cleanup come first.
