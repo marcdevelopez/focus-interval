@@ -26,8 +26,8 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last closed bug fix: **BUG-028 — Groups Hub paused Ends projection coherence (`05b1001`, closed 28/04/2026)**
-Current focus: **Open bug queue (`BUGLOG-027`/`BUGLOG-029`) + IDEA-039 device validation**
-Last update: **28/04/2026**
+Current focus: **BUG-033 crash registration + open bug queue (`BUGLOG-033`/`BUGLOG-027`/`BUGLOG-029`) + IDEA-039 device validation**
+Last update: **29/04/2026**
 
 ---
 
@@ -18024,3 +18024,44 @@ A regression was reported in running-overlap warning behavior:
 
 - `BUG-028` / `BUGLOG-028`: **Closed/OK** (`05b1001`).
 - Open bug queue continues with: `BUGLOG-027` (P2), `BUGLOG-029` (P2).
+
+---
+
+## Block 742 — BUG-033 registration from Android crash evidence (29/04/2026)
+
+**Current branch intent:** Register Android foreground-service crash as independent bug and open validation packet without mixing BUG-032 scope.
+**Branch:** `fix/bug033-foreground-service-crash`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-033` / `BUGLOG-033` (`In validation`)
+
+### Evidence captured
+
+- Android runtime log reports:
+  - `FATAL EXCEPTION: main`
+  - `ForegroundServiceStartNotAllowedException`
+  - `Service.startForeground() not allowed due to mAllowStartForeground false`
+- Stacktrace points to:
+  - `PomodoroForegroundService.onStartCommand(...)`
+  - `startOrUpdate()`
+  - `startForeground(...)`
+- User screenshot captured Android system crash dialog (`focus_interval sigue sin funcionar`).
+
+### Documentation synchronization
+
+- `docs/bugs/bug_log.md`
+  - Added `BUG-033` as open bug with captured evidence and initial hypothesis.
+- `docs/validation/validation_ledger.md`
+  - Snapshot updated to 2026-04-29.
+  - Active non-closed bug count updated (`2 -> 3`).
+  - Active P1 list updated (`BUGLOG-033`).
+  - Added `BUGLOG-033` entry as `In validation`.
+- Validation packet opened:
+  - `docs/bugs/validation_bug033_2026_04_29/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug033_2026_04_29/quick_pass_checklist.md`
+  - `docs/bugs/validation_bug033_2026_04_29/logs/`
+  - `docs/bugs/validation_bug033_2026_04_29/screenshots/`
+
+### Status after this block
+
+- `BUG-033` / `BUGLOG-033`: **In validation**.
+- Forced same-conditions repro is explicitly pending and documented as next mandatory step.

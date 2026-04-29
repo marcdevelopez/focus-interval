@@ -3605,6 +3605,60 @@ Open (03/04/2026), sourced from BUG-025 device validation evidence.
 
 ---
 
+## BUG-033 — Android background crash on foreground service promotion (`ForegroundServiceStartNotAllowedException`)
+
+ID: BUG-033
+Date: 29/04/2026 (UTC-4)
+Platforms: Android (owner path), with cross-device ownership side effects
+Context: Account Mode runtime while Android app stays in background for several minutes during active execution.
+
+Symptom:
+
+- Android process crashes with system dialog (`focus_interval sigue sin funcionar`) while a run is active in background.
+- After crash, ownership can shift to another device (for example macOS), creating inconsistent multi-device continuity during validation runs.
+
+Observed behavior:
+
+- Runtime log captures:
+  - `FATAL EXCEPTION: main`
+  - `android.app.ForegroundServiceStartNotAllowedException`
+  - `Service.startForeground() not allowed due to mAllowStartForeground false`
+- Crash stack points to:
+  - `android/app/src/main/kotlin/com/marcdevelopez/focusinterval/PomodoroForegroundService.kt`
+  - `onStartCommand(...)` -> `startOrUpdate()` -> `startForeground(...)`.
+- The event occurred during a background interval while session snapshots kept arriving, then process shutdown (`SIG: 9`) followed.
+
+Expected behavior:
+
+- App must not crash when background lifecycle triggers foreground-service update/start paths.
+- Active run continuity must remain stable in background without process kill.
+
+Evidence:
+
+- User-provided Android log excerpt dated 29/04/2026 around 11:40 (UTC-4), including full stacktrace and shutdown sequence.
+- Screenshot evidence from Android system crash dialog.
+- Validation packet opened:
+  - `docs/bugs/validation_bug033_2026_04_29/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug033_2026_04_29/quick_pass_checklist.md`
+
+Workaround:
+
+- No reliable user-facing workaround. App may recover only after relaunch, with possible ownership/state side effects.
+
+Hypothesis:
+
+- Foreground service start/update path is invoked from a background state that Android disallows, causing runtime exception before safe fallback can execute.
+
+Fix applied:
+
+- Not yet.
+
+Status:
+
+Open (29/04/2026). Initial evidence captured; exact forced repro under same conditions is pending in validation packet.
+
+---
+
 ## BUG-028 — Groups Hub paused card `Ends` projection stays static during pause while scheduled cards continue shifting
 
 ID: BUG-028
