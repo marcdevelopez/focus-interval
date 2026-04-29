@@ -18137,3 +18137,36 @@ Expected behavior per specs: paused sessions must not advance and must not be au
 ### Status after this block
 
 - Integration-safety process is now explicit, automatic, and auditable in system rules.
+
+---
+
+## Block 745 — BUG-030 documentary backfill synchronized on develop (29/04/2026)
+
+**Current branch intent:** Restore BUG-030 closure traceability on canonical docs after runtime/test cherry-pick integration.
+**Branch:** `fix/bug030-docs-backfill`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-030` / `BUGLOG-030` (`Closed/OK`)
+
+### Audit result confirmed
+
+- Runtime and test restoration for BUG-030 were already in `develop`:
+  - `30be006` (`fix(bug030): preserve intentional-departure suppression and add regression test`)
+  - `825c09c` (`test(bug030): make vmSub close idempotent in BUG-030 case`)
+- Documentation closure artifacts were missing from canonical docs (`bug_log`, `validation_ledger`, and validation packet files).
+
+### Documentation synchronization completed
+
+- `docs/bugs/bug_log.md`
+  - Added BUG-030 entry (regression context, root cause, fix, evidence, Closed/OK status).
+- `docs/bugs/validation_bug030_2026_04_27/`
+  - Added missing `plan_validacion_rapida_fix.md`.
+  - Added missing `quick_pass_checklist.md`.
+  - Existing iOS/Chrome logs kept as closure evidence.
+- `docs/validation/validation_ledger.md`
+  - Added `BUGLOG-030` as `Closed/OK` in active bug queue.
+  - Snapshot line updated to include BUG-030 among closed IDs.
+
+### Status after this block
+
+- BUG-030 is now fully traceable in canonical docs on top of already integrated runtime/test fixes.
+- Active open bug queue remains: `BUGLOG-027` (P2), `BUGLOG-029` (P2).

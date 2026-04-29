@@ -3718,6 +3718,71 @@ Open (03/04/2026), sourced from BUG-025 device validation evidence.
 
 ---
 
+## BUG-030 — Mirror auto-opens Run Mode on resume, interrupting Groups Hub/Task List workflow
+
+ID: BUG-030
+Date: 27/04/2026 (UTC-4)
+Platforms: macOS mirror + Android owner
+Context: Account Mode, BUG-028 device validation run with active `G1` running on Android owner while mirror user navigates Groups Hub and Task List.
+
+Classification:
+
+- Regression (Fix 15 auto-open gating, 27/02/2026; dev_log Blocks 485-486).
+- Not a planned behavior.
+
+Symptom:
+
+- Mirror is forced back to Run Mode without user intent while navigating planning surfaces.
+- User cannot stay in Groups Hub/Task List to complete normal workflow actions.
+
+Observed behavior:
+
+- Repeated auto-open attempts from non-timer routes (`/groups` and `/tasks`) during focus/resume churn while owner session stayed active.
+- Flow matched user report: mirror was redirected to Run Mode while trying to plan in Task List / inspect Groups Hub.
+
+Expected behavior:
+
+- If user leaves Run Mode while session is active, auto-open must stay suppressed for that group until a valid new trigger (or explicit user open action).
+- Focus/resume events must not override user intent and force route changes from `/groups` or `/tasks`.
+
+Evidence:
+
+- Discovery logs from BUG-028 validation:
+  - `docs/bugs/validation_bug028_2026_04_24/logs/2026-04-27_bug028_5df97ec_macos_debug.log`
+  - `docs/bugs/validation_bug028_2026_04_24/logs/2026-04-27_bug028_5df97ec_android_RMX3771_debug.log`
+- Closure packet logs:
+  - `docs/bugs/validation_bug030_2026_04_27/logs/2026-04-28_bug030_24b3667_chrome_debug.log`
+  - `docs/bugs/validation_bug030_2026_04_27/logs/2026-04-28_bug030_24b3667_ios_iPhone17Pro_debug.log`
+
+Workaround:
+
+- Re-enter Groups Hub/Task List repeatedly and navigate quickly before next auto-open cycle.
+- Not reliable; workflow remains interrupted.
+
+Root cause hypothesis (regression detail):
+
+- `ActiveSessionAutoOpener` defeated user-intent suppression for the same group in three paths:
+  1. VM disposal recovery path (`_autoOpenedGroupId == groupId && !vmExists && vmWasAlive`) cleared suppression and set `forceTimerRefresh=true`. This was primary because `PomodoroViewModel` is `autoDispose` when leaving `/timer/:id`.
+  2. Resume path (`_resumeAutoOpenPending`) cleared `_autoOpenSuppressedGroupId`.
+  3. Bounce-reset path (`_shouldResetAutoOpenForBounce`) could also clear suppression during fast user exits from `/timer/:id`.
+
+Fix applied:
+
+- Runtime fix restored on `develop` via cherry-pick:
+  - `30be006` `fix(bug030): preserve intentional-departure suppression and add regression test`.
+- Companion test hardening restored on `develop`:
+  - `825c09c` `test(bug030): make vmSub close idempotent in BUG-030 case`.
+- Validation closure packet completed (28/04/2026):
+  - no `Attempting auto-open to TimerScreen` matches in Chrome validation log,
+  - suppression retained on planning routes with `departed=...`,
+  - explicit timer re-entry from Groups Hub remained functional.
+
+Status:
+
+Closed/OK (28/04/2026). Runtime restored and documented on `develop`; local gate PASS + iOS/Chrome device scenarios A-D PASS.
+
+---
+
 ## BUG-032 — Paused run can be auto-completed after ownership/sleep null-session reconciliation
 
 ID: BUG-032
