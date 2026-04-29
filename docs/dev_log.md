@@ -25,7 +25,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last bug fix: **BUG-026 — Start now owner/mirror routing + stale-canceled mismatch validation closure (`819745c`, closed 24/04/2026)**
+Last closed bug fix: **BUG-026 — Start now owner/mirror routing + stale-canceled mismatch validation closure (`819745c`, closed 24/04/2026)**
 Current focus: **BUG-032 paused-expiry regression (`BUGLOG-032` P1 In validation) + remaining open bug queue (`BUGLOG-028` P1; `BUGLOG-027`/`BUGLOG-029` P2)**
 Last update: **29/04/2026**
 
