@@ -18177,7 +18177,7 @@ Expected behavior per specs: paused sessions must not advance and must not be au
 
 **Current branch intent:** Documentation governance — synchronize missing bug entries to develop so next agent preflight scan finds all open items.
 **Branch:** `fix/docs-sync-031-033`
-**Commit:** `pending-local`
+**Commit:** `e0b2f9f` (`docs(trazabilidad): sync BUG-031/033 canonical docs and fix pending-local markers`)
 **Validation/Bug IDs:** `BUG-031` / `BUGLOG-031` (`In validation`); `BUG-033` / `BUGLOG-033` (`Open`)
 
 ### Context
