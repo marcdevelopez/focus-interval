@@ -3773,7 +3773,11 @@ Fix applied:
 - Local gate:
   - `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` PASS.
   - `flutter analyze` PASS.
+- Device single-run repro PASS (29/04/2026):
+  - Test group `a4d46289-18b7-45d1-b8e2-486036a5daff` remained paused after crossing `theoreticalEndTime=2026-04-29T12:23:22.709404`.
+  - macOS post-wake logs repeatedly emitted paused expiry guards (`skip-expiry-session-not-running`, `skip-complete`) and no completion write for the group.
+  - Firestore post-wake `activeSession` snapshot stayed non-terminal: `status=paused`, `remainingSeconds=722`, `lastUpdatedAt=2026-04-29 12:43:52` (UTC-4), owner `android-029abc12-52ba-4d42-bcca-eda2aaaf257e`.
 
 Status:
 
-In validation (29/04/2026). Phase 1 merged in working tree on branch `fix/bug032-paused-session-expiry-guard`; device exact repro pending.
+Closed/OK (29/04/2026). Phase 1 guard validated on Android + macOS single-run repro with post-wake Firestore corroboration; paused state no longer auto-completes after theoretical end.

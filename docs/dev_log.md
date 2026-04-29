@@ -25,8 +25,8 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last closed bug fix: **BUG-028 — Groups Hub paused Ends projection coherence (`05b1001`, closed 28/04/2026)**
-Current focus: **BUG-032 paused-expiry regression (`BUGLOG-032` P1 In validation) + open bug queue (`BUGLOG-027`/`BUGLOG-029`) + IDEA-039 device validation**
+Last closed bug fix: **BUG-032 — paused-expiry null-session completion guard (`69472d7`, closed 29/04/2026)**
+Current focus: **open bug queue (`BUGLOG-027`/`BUGLOG-029`) + IDEA-039 device validation**
 Last update: **29/04/2026**
 
 ---
@@ -18074,3 +18074,42 @@ Expected behavior per specs: paused sessions must not advance and must not be au
 ### Status after this block
 
 - `BUG-032` / `BUGLOG-032`: **In validation** (Phase 1 implemented, local gate PASS, device exact repro pending).
+
+---
+
+## Block 743 — BUG-032 closed after single-run device validation (29/04/2026)
+
+**Current branch intent:** Close BUG-032 with exact sleep/takeover/pause repro evidence and sync canonical docs.
+**Branch:** `fix/bug032-paused-session-expiry-guard`
+**Commit:** `69472d7` (runtime fix)
+**Validation/Bug IDs:** `BUG-032` / `BUGLOG-032` (`Closed/OK`)
+
+### Validation recap (device + server corroboration)
+
+- Single-run short repro executed in Account Mode using real macOS sleep (lid close) + Android takeover + pause + background past theoretical end.
+- Android reopen stayed paused (`Resume` available), with no `completed` transition in Timer/Groups Hub.
+- macOS post-wake logs repeatedly confirmed:
+  - `ExpiryCheck][skip-expiry-session-not-running` with `sessionStatus=paused`
+  - `RepoNormalize][skip-complete` for group `a4d46289-18b7-45d1-b8e2-486036a5daff` after `theoreticalEndTime=2026-04-29 12:23:22.709404`
+  - no `mark-running-group-completed` for this group.
+- Firestore post-wake `activeSession` remained non-terminal:
+  - `status=paused`
+  - `ownerDeviceId=android-029abc12-52ba-4d42-bcca-eda2aaaf257e`
+  - `remainingSeconds=722`
+  - `lastUpdatedAt=2026-04-29 12:43:52` (UTC-4).
+
+### Documentation synchronization
+
+- `docs/bugs/validation_bug032_2026_04_28/plan_validacion_rapida_fix.md`
+  - Status moved to `Closed/OK`; evidence section updated with final logs/screenshots + Firestore snapshot.
+- `docs/bugs/validation_bug032_2026_04_28/quick_pass_checklist.md`
+  - Exact repro checklist marked PASS.
+- `docs/bugs/bug_log.md`
+  - BUG-032 moved from `In validation` to `Closed/OK` with final device/server evidence.
+- `docs/validation/validation_ledger.md`
+  - `BUGLOG-032` moved to `Closed/OK`; snapshot updated (`non-closed bugs: 2`, active P1: none).
+
+### Status after this block
+
+- `BUG-032` / `BUGLOG-032`: **Closed/OK** (29/04/2026).
+- Remaining open bug queue: `BUGLOG-027` (P2), `BUGLOG-029` (P2).
