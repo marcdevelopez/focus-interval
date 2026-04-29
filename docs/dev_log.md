@@ -18113,3 +18113,27 @@ Expected behavior per specs: paused sessions must not advance and must not be au
 
 - `BUG-032` / `BUGLOG-032`: **Closed/OK** (29/04/2026).
 - Remaining open bug queue: `BUGLOG-027` (P2), `BUGLOG-029` (P2).
+
+---
+
+## Block 744 — Always-on integration gate enforced for all agents (29/04/2026)
+
+**Current branch intent:** Process hardening to prevent validated fixes/features from being left only in side branches.
+**Branch:** `fix/process-always-on-integration-gate`
+**Commit:** `pending-local`
+**Scope:** governance/process (`AGENTS.md`)
+
+### Rule change
+
+- Upgraded strict integration gate from owner-triggered mode to **always-on mandatory**.
+- The rule now applies automatically to every agent (Codex, Claude, Gemini, or future agents) with no user reminder required.
+- Added mandatory post-closure integration steps:
+  - merge validated work into `develop`,
+  - push `develop` to `origin`,
+  - verify `develop...origin/develop = 0 0`,
+  - verify closure commit is contained in `develop`,
+  - only then continue with new work.
+
+### Status after this block
+
+- Integration-safety process is now explicit, automatic, and auditable in system rules.
