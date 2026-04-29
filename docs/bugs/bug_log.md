@@ -3715,3 +3715,65 @@ Fix applied:
 Status:
 
 Open (03/04/2026), sourced from BUG-025 device validation evidence.
+
+---
+
+## BUG-032 — Paused run can be auto-completed after ownership/sleep null-session reconciliation
+
+ID: BUG-032
+Date: 28/04/2026 (UTC-4)
+Platforms: Android + macOS
+Context: Account Mode; ownership transfer after owner sleep/background; paused run reopened after `theoreticalEndTime`.
+
+Symptom:
+
+- A group paused on the new owner device can later appear as `completed` after reopen, even though pause should freeze progression.
+
+Observed behavior:
+
+- Initial owner macOS went to sleep; Android took ownership.
+- Android pause action entered a long `Syncing session...` window.
+- After background/reopen, the group was shown as completed.
+- Firestore evidence reported:
+  - `groupId = b21ec7ed-0dc6-40fc-96e6-d7c889f67863`
+  - `theoreticalEndTime = 2026-04-28T17:28:36.505348`
+  - final `status = completed`
+  - `updatedAt = 2026-04-28T17:39:25.578819`
+
+Expected behavior:
+
+- If session is paused, elapsed time must not advance and the group must not auto-complete by expiry checks.
+- Reopen must preserve paused state.
+- Zombie-run expiry logic must not apply when a relevant active/paused server session exists.
+
+Evidence:
+
+- User-provided runtime logs around reopen/resync (`Resync missing; no session snapshot`, repeated inactive resync loops).
+- Firestore snapshot timeline and state metadata for the affected group.
+- Validation packet: `docs/bugs/validation_bug032_2026_04_28/plan_validacion_rapida_fix.md`.
+
+Workaround:
+
+- None reliable; once completed is persisted, session resumes as terminal history state.
+
+Hypothesis:
+
+- Coordinator null-session expiry path could complete expired `running` groups without server corroboration, allowing paused executions (or transiently hidden active sessions) to be treated as zombie-run completion candidates.
+
+Fix applied:
+
+- Phase 1 implemented in `scheduled_group_coordinator.dart`:
+  - In `activeSession == null` expiry path, fetch server session (`preferServer: true`) before completing.
+  - Suppress completion when server reports active execution for the same running group (`session != null`, `status.isActiveExecution`, matching `groupId`).
+  - Preserve legitimate zombie-run completion when no relevant server session exists.
+- Tests added/updated in `scheduled_group_coordinator_test.dart` for:
+  - paused server session guard,
+  - foreign-group server session (must not block legitimate completion),
+  - existing no-session zombie-run completion behavior.
+- Local gate:
+  - `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` PASS.
+  - `flutter analyze` PASS.
+
+Status:
+
+In validation (29/04/2026). Phase 1 merged in working tree on branch `fix/bug032-paused-session-expiry-guard`; device exact repro pending.

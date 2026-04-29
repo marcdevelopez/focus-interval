@@ -402,27 +402,42 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       var expired = <TaskRunGroup>[];
       TaskRunGroup? activeGroup;
       if (activeSession == null) {
-        expired = _resolveExpiredRunningGroups(running, now);
-        if (expired.isNotEmpty) {
+        final serverSession = await _fetchServerSessionSnapshot();
+        if (!_canUseRef) return;
+        final hasServerSessionForRunningGroup =
+            serverSession != null &&
+            serverSession.status.isActiveExecution &&
+            serverSession.groupId != null &&
+            running.any((group) => group.id == serverSession.groupId);
+        if (hasServerSessionForRunningGroup) {
           _debugLogExpiryDecision(
-            reason: 'expire-running-groups-no-active-session',
+            reason: 'skip-expiry-no-active-session-server-session',
+            now: now,
+            session: serverSession,
+          );
+        } else {
+          expired = _resolveExpiredRunningGroups(running, now);
+          if (expired.isNotEmpty) {
+            _debugLogExpiryDecision(
+              reason: 'expire-running-groups-no-active-session',
+              now: now,
+              session: null,
+              group: expired.first,
+              theoreticalEndTime: _resolveTheoreticalEndTime(expired.first),
+            );
+            await _markRunningGroupsCompleted(expired, now);
+            final allRunningExpired = running.length == expired.length;
+            if (allRunningExpired) {
+              _emitOpenGroupsHub();
+            }
+            return;
+          }
+          _debugLogExpiryDecision(
+            reason: 'skip-expiry-no-active-session',
             now: now,
             session: null,
-            group: expired.first,
-            theoreticalEndTime: _resolveTheoreticalEndTime(expired.first),
           );
-          await _markRunningGroupsCompleted(expired, now);
-          final allRunningExpired = running.length == expired.length;
-          if (allRunningExpired) {
-            _emitOpenGroupsHub();
-          }
-          return;
         }
-        _debugLogExpiryDecision(
-          reason: 'skip-expiry-no-active-session',
-          now: now,
-          session: null,
-        );
       } else if (!activeSession.status.isRunning) {
         _debugLogExpiryDecision(
           reason: 'skip-expiry-session-not-running',
@@ -1341,6 +1356,17 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     final lastSeen = ownerHeartbeat ?? anchor;
     if (lastSeen == null) return false;
     return now.difference(lastSeen) >= _lateStartOwnerStale;
+  }
+
+  Future<PomodoroSession?> _fetchServerSessionSnapshot() async {
+    if (!_canUseRef) return null;
+    try {
+      return await ref
+          .read(pomodoroSessionRepositoryProvider)
+          .fetchSession(preferServer: true);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<int?> _refreshNoticeFallback() async {

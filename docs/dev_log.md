@@ -26,8 +26,8 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last closed bug fix: **BUG-028 — Groups Hub paused Ends projection coherence (`05b1001`, closed 28/04/2026)**
-Current focus: **Open bug queue (`BUGLOG-027`/`BUGLOG-029`) + IDEA-039 device validation**
-Last update: **28/04/2026**
+Current focus: **BUG-032 paused-expiry regression (`BUGLOG-032` P1 In validation) + open bug queue (`BUGLOG-027`/`BUGLOG-029`) + IDEA-039 device validation**
+Last update: **29/04/2026**
 
 ---
 
@@ -18024,3 +18024,53 @@ A regression was reported in running-overlap warning behavior:
 
 - `BUG-028` / `BUGLOG-028`: **Closed/OK** (`05b1001`).
 - Open bug queue continues with: `BUGLOG-027` (P2), `BUGLOG-029` (P2).
+
+---
+
+## Block 742 — BUG-032 Phase 1 coordinator guard implemented and moved to validation (29/04/2026)
+
+**Current branch intent:** BUG-032 paused-session expiry regression hardening (minimal-risk Phase 1 coordinator guard + targeted tests + validation packet sync).
+**Branch:** `fix/bug032-paused-session-expiry-guard`
+**Commit:** `pending-local` (rebased over updated develop)
+**Validation/Bug IDs:** `BUG-032` / `BUGLOG-032` (`In validation`)
+
+### Context
+
+Regression report showed a paused run being marked `completed` after ownership transfer caused by owner sleep/background and later reopen.  
+Expected behavior per specs: paused sessions must not advance and must not be auto-completed by running-expiry reconciliation.
+
+### Implementation delivered (Phase 1 only)
+
+- Updated `lib/presentation/viewmodels/scheduled_group_coordinator.dart`.
+- In `activeSession == null` running-expiry path, coordinator now corroborates server session before completion:
+  - fetches `fetchSession(preferServer: true)`,
+  - suppresses completion when server session exists, is active execution, and belongs to one of current running groups.
+- Legitimate zombie-run completion path remains enabled when no relevant server session exists.
+- Removed previously introduced startup-window gating to keep patch minimal and avoid architecture-side regressions.
+
+### Test updates
+
+- Updated `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`:
+  - Added guard test: null stream + paused server session for same group -> must not complete.
+  - Added foreign-session test: null stream + server session for another group -> legitimate completion still allowed.
+  - Removed startup-window-specific test after simplifying implementation.
+
+### Local verification
+
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` -> PASS (`All tests passed!`).
+- `flutter analyze` -> PASS (`No issues found!`).
+
+### Documentation synchronization
+
+- Added new bug entry: `BUG-032` in `docs/bugs/bug_log.md` with evidence, root cause, and fix summary.
+- Added ledger entry: `BUGLOG-032` as `In validation` in `docs/validation/validation_ledger.md`.
+- Updated ledger snapshot counts and active P1 bug list.
+- Opened validation packet:
+  - `docs/bugs/validation_bug032_2026_04_28/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug032_2026_04_28/quick_pass_checklist.md`
+  - `docs/bugs/validation_bug032_2026_04_28/logs/`
+  - `docs/bugs/validation_bug032_2026_04_28/screenshots/`
+
+### Status after this block
+
+- `BUG-032` / `BUGLOG-032`: **In validation** (Phase 1 implemented, local gate PASS, device exact repro pending).
