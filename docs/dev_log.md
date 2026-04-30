@@ -18283,7 +18283,7 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 **Current branch intent:** Process governance hardening for branch integration traceability.
 **Branch:** `fix/process-pr-origin-branch-gate`
-**Commit:** `pending-local`
+**Commit:** `387cf93`
 **Scope:** documentation/process (`AGENTS.md`, `docs/validation/validation_ledger.md`)
 
 ### Context
