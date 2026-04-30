@@ -322,6 +322,16 @@ All work happens on short-lived branches (`fix/xxx`, `feature/xxx`).
 - Before each commit, confirm commit scope matches branch intent.
 - If mismatch is detected, do not commit on the current branch; branch-split first.
 
+**R-9 PR-first integration when a remote branch already exists (mandatory):**
+- If `origin/fix/xxx` or `origin/feature/xxx` for the same scope already exists,
+  continue work on that branch and push updates there first.
+- For non-P0 work, integration into `develop` must go through a **GitHub PR** from
+  that branch — no direct local merge/push to `develop` as primary path.
+- Emergency exception (P0 only): direct merge/push into `develop` is allowed only
+  when the PR workflow would delay active mitigation. Record explicit justification
+  + timestamp in `docs/dev_log.md` and open a follow-up PR/backfill as soon as
+  stability is restored.
+
 ---
 
 ## 10. Validation folder structure — MANDATORY

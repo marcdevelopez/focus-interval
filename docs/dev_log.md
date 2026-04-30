@@ -18272,6 +18272,12 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 - `docs/roadmap.md`
   - Historical timeline updated with BUG-031 closure note (30/04/2026).
 
+### Integration note — pre-rule exception
+
+- Integration path: local `git merge fix/bug031-validate-on-develop` into `develop` (commit `0fa553e`), then push to `origin/develop`.
+- `fix/bug031-validate-on-develop` was never pushed to `origin`; no GitHub PR was opened for this merge.
+- This predates the PR-first rule (Block 749 / R-9 in `CLAUDE.md`). Not a P0 emergency — a process gap identified retroactively. Rule applies from Block 749 forward.
+
 ### Status after this block
 
 - `BUG-031` / `BUGLOG-031`: **Closed/OK** (30/04/2026).
