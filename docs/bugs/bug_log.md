@@ -3816,6 +3816,11 @@ Evidence:
 
 - `docs/bugs/validation_bug028_2026_04_24/logs/2026-04-27_bug028_5df97ec_macos_debug.log` (conflict-flow window 16:10-16:15 UTC-4 + route churn evidence).
 - User screenshots in thread show stale snackbar visible while scheduled timeline has already shifted/resolved.
+- Closure validation evidence (30/04/2026):
+  - `docs/bugs/validation_bug031_2026_04_28/logs/2026-04-30_bug031_f2005cc_ios_iPhone17Pro_debug.log`
+  - `docs/bugs/validation_bug031_2026_04_28/logs/2026-04-30_bug031_f2005cc_chrome_debug.log`
+  - `docs/bugs/validation_bug031_2026_04_28/screenshots/Captura de pantalla 2026-04-30 a las 15.56.54.png`
+  - `docs/bugs/validation_bug031_2026_04_28/screenshots/Captura de pantalla 2026-04-30 a las 15.57.55.png`
 
 Workaround:
 
@@ -3838,11 +3843,15 @@ Fix applied:
   - `flutter analyze lib/presentation/screens/timer_screen.dart test/presentation/timer_screen_completion_navigation_test.dart`,
   - `flutter test ... --plain-name "Timer mirror shows persistent conflict snackbar until explicit OK"`,
   - `flutter test ... --plain-name "Timer mirror dismisses conflict snackbar when overlap decision clears"`.
-- Runtime fix on branch: `fix/bug031-stale-conflict-snackbar-base030`, commit `f16341f`.
+- Runtime fix integrated on validation branch: `fix/bug031-validate-on-develop`, commit `f2005cc` (cherry-pick of source patch `f16341f`).
+- Device validation PASS (30/04/2026):
+  - Scenario A: conflict UX triggered as expected after owner pause.
+  - Scenario B: owner `Postpone` cleared mirror stale warning and shifted schedule to `16:03` (pre-run `16:02`).
+  - Scenario C: mirror navigation (`Run Mode -> Groups Hub -> Task List -> Run Mode`) stayed clean with no stale conflict warning.
 
 Status:
 
-In validation (28/04/2026). Device validation pending in `docs/bugs/validation_bug031_2026_04_28/`.
+Closed/OK (30/04/2026). Local gate + iOS/Chrome device scenarios A/B/C PASS. Validation packet synchronized in `docs/bugs/validation_bug031_2026_04_28/`.
 
 ---
 

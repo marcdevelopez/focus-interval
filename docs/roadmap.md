@@ -452,6 +452,11 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       24/04/2026: BUG-028 moved to In validation — Groups Hub paused
           running card now projects `Ends` in real time during pause
           (local gate PASS; Android + macOS device validation pending).
+      30/04/2026: BUG-031 closed/OK — mirror conflict snackbar lifecycle
+          validated on iOS owner + Chrome mirror (A/B/C scenarios PASS):
+          stale `Owner is resolving this conflict...` warning clears after
+          owner resolution and does not persist across Groups Hub/Task List
+          navigation; closure tracked in `docs/bugs/validation_bug031_2026_04_28/`.
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 

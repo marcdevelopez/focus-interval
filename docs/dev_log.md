@@ -25,7 +25,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last closed bug fix: **BUG-032 — paused-expiry null-session completion guard (`69472d7`, closed 29/04/2026)**
+Last closed bug fix: **BUG-031 — mirror stale conflict snackbar lifecycle (`f2005cc`, closed 30/04/2026)**
 Current focus: **open bug queue (`BUGLOG-027`/`BUGLOG-029`) + IDEA-039 device validation**
 Last update: **30/04/2026**
 
@@ -18217,7 +18217,7 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 **Current branch intent:** Documentation hygiene — preserve deterministic bug block ordering in canonical `bug_log.md`.
 **Branch:** `fix/docs-buglog-order-031-032`
-**Commit:** `pending-local`
+**Commit:** `0773f87`
 **Validation/Bug IDs:** `BUG-031` (`In validation`), `BUG-032` (`Closed/OK`)
 
 ### Context
@@ -18236,3 +18236,43 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 - Bug statuses remain unchanged:
   - `BUG-031`: In validation (runtime fix still on branch `fix/bug031-stale-conflict-snackbar-base030`).
   - `BUG-032`: Closed/OK.
+
+---
+
+## Block 748 — BUG-031 closed after iOS+Chrome device validation (30/04/2026)
+
+**Current branch intent:** Close BUG-031 with exact owner/mirror repro evidence and synchronize canonical closure docs before integration.
+**Branch:** `fix/bug031-validate-on-develop`
+**Commit:** `a4a929a`
+**Validation/Bug IDs:** `BUG-031` / `BUGLOG-031` (`Closed/OK`)
+
+### Validation recap (owner/mirror)
+
+- Device topology: iOS (`iPhone 17 Pro`) as owner + Chrome (`localhost:5001`) as mirror.
+- Scenario A PASS:
+  - owner running `G1`, mirror in Run Mode, overlap conflict triggered after owner pause.
+  - conflict UX appeared correctly on both devices.
+- Scenario B PASS:
+  - owner selected `Postpone` at 15:49:46.
+  - schedule shifted from 16:02 to 16:03 (pre-run 16:02), and mirror stale warning cleared.
+- Scenario C PASS:
+  - mirror navigated Run Mode -> Groups Hub -> Task List -> Run Mode without stale conflict warning reappearing.
+
+### Evidence and docs synchronization
+
+- `docs/bugs/validation_bug031_2026_04_28/plan_validacion_rapida_fix.md`
+  - Status moved to `Closed/OK`; A/B/C timeline + evidence files recorded.
+- `docs/bugs/validation_bug031_2026_04_28/quick_pass_checklist.md`
+  - Scenario A/B/C checkboxes marked PASS.
+- `docs/bugs/bug_log.md`
+  - BUG-031 moved from `In validation` to `Closed/OK` with closure evidence.
+- `docs/validation/validation_ledger.md`
+  - `BUGLOG-031` moved to `Closed/OK` with closure hash `f2005cc`.
+  - Snapshot updated: non-closed bug-log entries reduced from 4 to 3.
+- `docs/roadmap.md`
+  - Historical timeline updated with BUG-031 closure note (30/04/2026).
+
+### Status after this block
+
+- `BUG-031` / `BUGLOG-031`: **Closed/OK** (30/04/2026).
+- Active non-closed bug queue: `BUGLOG-033` (P1 Open), `BUGLOG-027` (P2 Pending), `BUGLOG-029` (P2 Pending).
