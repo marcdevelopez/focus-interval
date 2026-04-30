@@ -27,6 +27,8 @@ Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
 - Merge order is mandatory:
   1. Validation/doc closure branches.
   2. Feature implementation branches.
+- If the closure branch already exists in `origin`, use branch push + GitHub PR as the default integration path to `develop`.
+- Direct push/merge to `develop` without PR is allowed only for emergency P0 mitigation and must be justified in `docs/dev_log.md` with date/time and reason.
 - If a merge conflict touches this file, preserve the most recent `Closed/OK` statuses, evidence, and commit references.
 - Do not finalize push/PR until a post-merge check confirms expected closed IDs are still closed.
 

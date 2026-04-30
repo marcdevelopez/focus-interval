@@ -432,6 +432,9 @@ Rules:
 - **Never commit directly to `main` or `develop`.** All work on short-lived branches.
 - Fix/feature branches merge into `develop` only after device validation PASS.
 - `develop` merges into `main` only when `validation_ledger.md` shows zero open P0/P1 bugs.
+- If a scope already has a remote branch in `origin` (same fix/feature track), continue on that branch and push updates there first.
+- For non-P0 work when a remote branch already exists, integration into `develop` must go through a GitHub PR from that branch (no direct local merge/push as the primary path).
+- Emergency exception (P0 only): direct merge/push into `develop` is allowed only when PR workflow would delay active mitigation; record explicit justification + timestamp in `docs/dev_log.md`, then open a follow-up PR/backfill reference as soon as stability is restored.
 - Before checking out any branch: run `git branch --show-current` to confirm you are NOT on `main` or `develop`. If you are, ask the user which branch to use.
 - Branch naming: `fix/<short-description>` or `feature/<short-description>`. Never generic names (`patch`, `temp`, `wip`).
 - Branch scope lock: one branch = one scope family. Do not mix unrelated tracks in one branch

@@ -18276,3 +18276,31 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 - `BUG-031` / `BUGLOG-031`: **Closed/OK** (30/04/2026).
 - Active non-closed bug queue: `BUGLOG-033` (P1 Open), `BUGLOG-027` (P2 Pending), `BUGLOG-029` (P2 Pending).
+
+---
+
+## Block 749 — PR-first integration rule for existing origin branches (30/04/2026)
+
+**Current branch intent:** Process governance hardening for branch integration traceability.
+**Branch:** `fix/process-pr-origin-branch-gate`
+**Commit:** `pending-local`
+**Scope:** documentation/process (`AGENTS.md`, `docs/validation/validation_ledger.md`)
+
+### Context
+
+- A closure can be technically integrated into `develop` via local merges, but when the same working branch already exists in `origin`, PR traceability is stronger and review/audit history is clearer.
+- The project needed an explicit rule to avoid ambiguity between "works technically" and "follows canonical integration workflow".
+
+### Rule update
+
+- Added PR-first rule in `AGENTS.md`:
+  - if a scope already has a remote branch in `origin`, continue there and push first;
+  - for non-P0, merge path to `develop` must be via GitHub PR from that branch;
+  - direct merge/push to `develop` without PR is limited to emergency P0 mitigation with explicit dev-log justification.
+- Added matching safety bullets in `docs/validation/validation_ledger.md` under branch integration safety.
+
+### Status after this block
+
+- Project workflow now explicitly distinguishes:
+  - standard path: branch push + PR + merge to `develop`;
+  - emergency path: P0 direct merge with mandatory written justification.
