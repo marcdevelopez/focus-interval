@@ -27,7 +27,7 @@ Formatting rules:
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last closed bug fix: **BUG-032 — paused-expiry null-session completion guard (`69472d7`, closed 29/04/2026)**
 Current focus: **open bug queue (`BUGLOG-027`/`BUGLOG-029`) + IDEA-039 device validation**
-Last update: **29/04/2026**
+Last update: **30/04/2026**
 
 ---
 
@@ -18210,3 +18210,29 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 - All open bugs visible from `develop` canonical docs.
 - Next agent preflight will correctly surface: BUGLOG-033 (P1, Open, no fix yet) and BUGLOG-031 (P2, In validation, device validation pending).
 - BUG-031 runtime fix remains isolated on `fix/bug031-stale-conflict-snackbar-base030` until device validation PASS.
+
+---
+
+## Block 747 — BUG log ordering normalized (`BUG-031` before `BUG-032`) (30/04/2026)
+
+**Current branch intent:** Documentation hygiene — preserve deterministic bug block ordering in canonical `bug_log.md`.
+**Branch:** `fix/docs-buglog-order-031-032`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-031` (`In validation`), `BUG-032` (`Closed/OK`)
+
+### Context
+
+- The canonical bug log listed `BUG-032` before `BUG-031`, breaking the expected numeric block order and making manual review/navigation harder during multi-branch merges.
+
+### Documentation synchronization completed
+
+- `docs/bugs/bug_log.md`
+  - Reordered adjacent blocks so `BUG-031` appears before `BUG-032`.
+  - No content/status/evidence changes inside either bug entry.
+
+### Status after this block
+
+- Canonical bug log order is now consistent for the `BUG-03x` sequence.
+- Bug statuses remain unchanged:
+  - `BUG-031`: In validation (runtime fix still on branch `fix/bug031-stale-conflict-snackbar-base030`).
+  - `BUG-032`: Closed/OK.
