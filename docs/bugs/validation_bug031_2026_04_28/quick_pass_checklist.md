@@ -1,8 +1,8 @@
 ## Exact repro
 
-- [ ] Scenario A PASS: mirror shows conflict snackbar while overlap is active.
-- [ ] Scenario B PASS: snackbar auto-dismisses after owner resolves overlap.
-- [ ] Scenario C PASS: after decision clear, navigation Run Mode <-> Groups Hub <-> Task List does not show stale conflict snackbar.
+- [x] Scenario A PASS: mirror shows conflict snackbar while overlap is active.
+- [x] Scenario B PASS: snackbar auto-dismisses after owner resolves overlap.
+- [x] Scenario C PASS: after decision clear, navigation Run Mode <-> Groups Hub <-> Task List does not show stale conflict snackbar.
 
 ## Regression smoke
 

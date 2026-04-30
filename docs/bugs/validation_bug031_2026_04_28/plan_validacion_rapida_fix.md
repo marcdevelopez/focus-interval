@@ -2,9 +2,9 @@
 
 ## 1. Header
 
-- Date: 28/04/2026
-- Branch: `fix/bug031-stale-conflict-snackbar-base030`
-- Working commit hash: `pending-local` (base HEAD: `cfffc92`)
+- Date: 28/04/2026 (updated 30/04/2026)
+- Branch: `fix/bug031-validate-on-develop`
+- Working commit hash: `f2005cc` (cherry-pick of runtime patch `f16341f` on top of `develop`)
 - Bugs covered: `BUG-031` / `BUGLOG-031`
 - Target devices: iOS owner (`iPhone 17 Pro`) + Chrome mirror (`localhost:5001`)
 
@@ -76,11 +76,11 @@ Reference result without fix:
 ```bash
 # iOS owner
 flutter run -v --debug -d "iPhone 17 Pro" --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true \
-  2>&1 | tee docs/bugs/validation_bug031_2026_04_28/logs/2026-04-28_bug031_cfffc92_ios_iPhone17Pro_debug.log
+  2>&1 | tee docs/bugs/validation_bug031_2026_04_28/logs/2026-04-30_bug031_f2005cc_ios_iPhone17Pro_debug.log
 
 # Chrome mirror (fixed OAuth-safe localhost:5001)
 flutter run -v --debug -d chrome --web-hostname=localhost --web-port=5001 --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true \
-  2>&1 | tee docs/bugs/validation_bug031_2026_04_28/logs/2026-04-28_bug031_cfffc92_chrome_debug.log
+  2>&1 | tee docs/bugs/validation_bug031_2026_04_28/logs/2026-04-30_bug031_f2005cc_chrome_debug.log
 ```
 
 ## 7. Log analysis — quick scan
@@ -88,7 +88,7 @@ flutter run -v --debug -d chrome --web-hostname=localhost --web-port=5001 --dart
 ### Bug present signals
 
 ```bash
-grep -nE "Owner is resolving this conflict\. Request ownership if needed\.|running overlap" docs/bugs/validation_bug031_2026_04_28/logs/*_chrome_debug.log
+grep -nE "runningOverlap=true|Owner is resolving this conflict\. Request ownership if needed\." docs/bugs/validation_bug031_2026_04_28/logs/2026-04-30_bug031_f2005cc_chrome_debug.log
 ```
 
 Manual correlation required: if overlap is resolved on owner and message remains visible in mirror timeline -> bug still present.
@@ -96,7 +96,7 @@ Manual correlation required: if overlap is resolved on owner and message remains
 ### Fix working signals
 
 ```bash
-grep -nE "runningOverlapDecisionProvider|RunModeDiag|Auto-open" docs/bugs/validation_bug031_2026_04_28/logs/*_chrome_debug.log
+grep -nE "runningOverlap=false|16:03:00\.000|route=/groups|route=/tasks|RunModeDiag" docs/bugs/validation_bug031_2026_04_28/logs/2026-04-30_bug031_f2005cc_chrome_debug.log
 ```
 
 Plus widget evidence from local tests:
@@ -105,9 +105,26 @@ Plus widget evidence from local tests:
 
 ## 8. Verificación local
 
-- `flutter analyze lib/presentation/screens/timer_screen.dart test/presentation/timer_screen_completion_navigation_test.dart` -> PASS.
-- `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Timer mirror shows persistent conflict snackbar until explicit OK"` -> PASS.
-- `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Timer mirror dismisses conflict snackbar when overlap decision clears"` -> PASS.
+- Local gate rerun on 30/04/2026 (branch `fix/bug031-validate-on-develop`, commit `f2005cc`):
+  - `flutter analyze lib/presentation/screens/timer_screen.dart test/presentation/timer_screen_completion_navigation_test.dart` -> PASS (`No issues found!`).
+  - `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Timer mirror shows persistent conflict snackbar until explicit OK"` -> PASS.
+  - `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Timer mirror dismisses conflict snackbar when overlap decision clears"` -> PASS.
+
+- Device validation (30/04/2026, iOS owner + Chrome mirror) using:
+  - `docs/bugs/validation_bug031_2026_04_28/logs/2026-04-30_bug031_f2005cc_ios_iPhone17Pro_debug.log`
+  - `docs/bugs/validation_bug031_2026_04_28/logs/2026-04-30_bug031_f2005cc_chrome_debug.log`
+  - `docs/bugs/validation_bug031_2026_04_28/screenshots/Captura de pantalla 2026-04-30 a las 15.56.54.png`
+  - `docs/bugs/validation_bug031_2026_04_28/screenshots/Captura de pantalla 2026-04-30 a las 15.57.55.png`
+- Scenario A PASS:
+  - Owner run started at 15:45:30; scheduled mirror group remained planned with pre-run.
+  - Owner pause at 15:49:00 triggered overlap path; conflict UX appeared on both devices as expected.
+- Scenario B PASS:
+  - Owner selected `Postpone` at 15:49:46; schedule shifted from `16:02` to `16:03`.
+  - Log correlation confirms schedule update on both devices (`sample=...16:03:00.000`).
+  - Mirror stale conflict warning no longer remained after owner resolution.
+- Scenario C PASS:
+  - Mirror navigation around 15:49:53-15:50:02 (`/timer` -> `/groups` -> `/tasks` -> `/timer`) stayed clean with no stale conflict warning reappearing.
+  - `RunModeDiag` route transitions confirm stable navigation state while conflict state remained resolved.
 
 ## 9. Criterios de cierre
 
@@ -119,4 +136,4 @@ Plus widget evidence from local tests:
 
 ## 10. Status
 
-In validation (28/04/2026)
+Closed/OK (30/04/2026; local gate PASS + device scenarios A/B/C PASS with logs and screenshots)
