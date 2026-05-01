@@ -18452,7 +18452,7 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 **Current branch intent:** Close post-review follow-up from Claude for BUG-027 before PR preparation (missing local tests + log-analysis methodology correction).
 **Branch:** `fix/bug033-foreground-service-crash`
-**Commit:** `pending-local`
+**Commit:** `dfdd4d8`
 **Validation/Bug IDs:** `BUG-027` / `BUGLOG-027` (`In validation`)
 
 ### Follow-up actions completed
