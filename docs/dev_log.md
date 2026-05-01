@@ -18317,7 +18317,7 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 **Current branch intent:** Process hardening to prevent loss of successful implementations during branch/PR flow.
 **Branch:** `fix/process-no-loss-pr-checklist`
-**Commit:** `pending-local`
+**Commit:** `bf543a4`
 **Scope:** process/docs governance (`AGENTS.md`, `docs/validation/validation_ledger.md`, `.github/pull_request_template.md`)
 
 ### Context
