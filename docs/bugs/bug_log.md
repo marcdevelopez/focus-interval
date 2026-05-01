@@ -4052,3 +4052,65 @@ Fix applied:
 Status:
 
 Open (29/04/2026). Initial evidence captured; exact forced repro under same conditions is pending in validation packet.
+
+---
+
+## BUG-034 — Shared-mode break/timeline desync between status boxes and contextual task ranges
+
+ID: BUG-034
+Date: 01/05/2026 (UTC-4)
+Platforms: macOS (primary evidence), Android scope check pending
+Context: Run Mode, running group timeline coherence (`integrityMode = shared`).
+
+Symptom:
+
+- In the same transition window, `Next status` predicts `Break: 15 min` but runtime executes `Break: 5 min`.
+- After that transition, contextual task-item ranges appear misaligned against status-box ranges and executed phase timeline.
+
+Observed behavior:
+
+- Evidence captures show:
+  - pre-transition `Next status` as `Break: 15 min` (`16:21-16:36`),
+  - executed break as `Break: 5 min` (`16:21-16:26`),
+  - subsequent task timeline (`Curso Develop Flutter`) and contextual ranges not describing one single coherent timeline together with status boxes.
+- Reported group metadata:
+  - `id=da943ceb-31f9-42b5-b994-235bee6586d0`
+  - `integrityMode=shared`
+  - `actualStartTime=2026-05-01T10:35:58.957245`
+  - `theoreticalEndTime=2026-05-01T17:30:58.957245`
+  - `totalPomodoros=13`
+  - `noticeMinutes=5`
+  - task mix: `3 + 8 + 1 + 1` pomodoros.
+
+Expected behavior:
+
+- In `shared` mode, break insertion must follow a single global pomodoro counter (`longBreakInterval`) across tasks.
+- `Next status`, executed phase transitions, status-box ranges, and contextual task-item ranges must all derive from the same authoritative timeline.
+- No task-boundary exception may silently switch break logic in one surface but not others.
+
+Evidence:
+
+- User report packet source: `bug.md` (ingested into canonical docs on 01/05/2026).
+- Screenshots moved to validation packet:
+  - `docs/bugs/validation_bug034_2026_05_01/screenshots/2026-05-01_bug034_next_status_predicts_long_break_161714.png`
+  - `docs/bugs/validation_bug034_2026_05_01/screenshots/2026-05-01_bug034_runtime_executes_short_break_162539.png`
+  - `docs/bugs/validation_bug034_2026_05_01/screenshots/2026-05-01_bug034_contextual_ranges_desync_163327.png`
+- Validation packet opened:
+  - `docs/bugs/validation_bug034_2026_05_01/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug034_2026_05_01/quick_pass_checklist.md`
+
+Workaround:
+
+- No reliable workaround. User can only manually cross-check runtime phase vs contextual list to avoid trusting a single surface.
+
+Hypothesis:
+
+- Break/timeline projection logic is split across runtime/status/contextual-list paths and at least one path is not using shared-mode global break insertion rules.
+
+Fix applied:
+
+- Not yet.
+
+Status:
+
+In validation (01/05/2026). Initial visual evidence captured; deterministic fresh-run repro + cross-mode guard still pending in the validation packet.

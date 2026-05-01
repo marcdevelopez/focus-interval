@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last closed bug fix: **BUG-031 — mirror stale conflict snackbar lifecycle (`f2005cc`, closed 30/04/2026)**
-Current focus: **BUG-033 rolling monitor + BUG-027 in validation (device evidence pending) + BUGLOG-029 pending**
+Current focus: **BUG-033 rolling monitor + BUG-027 in validation + BUGLOG-034 in validation + BUGLOG-029 pending**
 Last update: **01/05/2026**
 
 ---
@@ -18482,3 +18482,45 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 - `BUG-027` / `BUGLOG-027`: **In validation** (device scenarios A-D still pending).
 - Local review debt reported by Claude is resolved; remaining work is device evidence capture only.
+
+
+---
+
+## Block 754 — BUG-034 registered with validation packet (shared timeline desync) (01/05/2026)
+
+**Current branch intent:** Register BUG-034 from user-provided runtime evidence (shared-mode break/timeline desync), preserve branch-scope clarity, and open deterministic validation packet.
+**Branch:** `fix/bug034-shared-timeline-break-desync`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-034` / `BUGLOG-034` (`In validation`)
+
+### Context
+
+- User reported a shared-mode logic inconsistency in Run Mode for group `da943ceb-31f9-42b5-b994-235bee6586d0`:
+  - `Next status` predicted `Break: 15 min`,
+  - runtime executed `Break: 5 min`,
+  - contextual task-item ranges no longer aligned with status-box/runtime timeline.
+- Source evidence arrived as `bug.md` + three screenshots in repository root.
+- Branch-scope decision applied:
+  - created dedicated bug branch `fix/bug034-shared-timeline-break-desync` from current `fix/bug033-foreground-service-crash` baseline,
+  - reason: keep latest BUG-027/033 documentary state while avoiding further mixed-scope commits on `fix/bug033-*`.
+
+### Work completed
+
+- Opened validation packet:
+  - `docs/bugs/validation_bug034_2026_05_01/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug034_2026_05_01/quick_pass_checklist.md`
+  - `docs/bugs/validation_bug034_2026_05_01/logs/`
+  - `docs/bugs/validation_bug034_2026_05_01/screenshots/`
+- Rehomed and renamed screenshot evidence from root into canonical packet paths:
+  - `docs/bugs/validation_bug034_2026_05_01/screenshots/2026-05-01_bug034_next_status_predicts_long_break_161714.png`
+  - `docs/bugs/validation_bug034_2026_05_01/screenshots/2026-05-01_bug034_runtime_executes_short_break_162539.png`
+  - `docs/bugs/validation_bug034_2026_05_01/screenshots/2026-05-01_bug034_contextual_ranges_desync_163327.png`
+- Updated canonical bug queue docs:
+  - `docs/bugs/bug_log.md` — added BUG-034 full entry and status `In validation`.
+  - `docs/validation/validation_ledger.md` — added `BUGLOG-034` (P1 In validation), updated snapshot and active P1 list.
+  - `docs/roadmap.md` — added Phase 17 in-validation line for shared-mode timeline coherence requirement (`BUGLOG-034`).
+
+### Status after this block
+
+- `BUG-034` / `BUGLOG-034`: **In validation**.
+- Pending closure work: deterministic fresh-run repro + cross-mode guard + targeted fix candidate.
