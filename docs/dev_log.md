@@ -18347,3 +18347,10 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
   1. authoritative process docs (`AGENTS.md`, `validation_ledger.md`),
   2. operational PR gate (`.github/pull_request_template.md`).
 - Future implementations must satisfy this checklist before merge to `develop`.
+
+### Explicit merge dependency note (current wave)
+
+- To avoid `docs/dev_log.md` block-number collision:
+  1. merge `fix/bug034-shared-timeline-break-desync` into `develop` first (it owns Blocks 750-754),
+  2. then update `fix/process-no-loss-pr-checklist` from `develop` and resolve conflict by renumbering this branch block to `755`,
+  3. push conflict-resolution commit before merging this process branch.

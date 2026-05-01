@@ -70,6 +70,9 @@ Use this checklist for every implementation branch before push/PR/merge to preve
    - exact tests run,
    - evidence paths (logs/screenshots),
    - residual risks/open items.
+5. Detect and resolve `docs/dev_log.md` block-number collisions before merge:
+   - if two branches reused the same block number with different content, preserve chronological order and renumber the later branch block(s),
+   - push the renumbering conflict-resolution commit before merge.
 
 ### After merge
 

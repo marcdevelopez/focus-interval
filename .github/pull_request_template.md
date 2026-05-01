@@ -33,7 +33,15 @@
 
 - [ ] PR target is `develop` (never `main`).
 - [ ] If branch was behind `develop`, it was synced and gates were re-run.
+- [ ] `docs/dev_log.md` block numbers checked for collisions vs current `develop`; if collision existed, block renumbering commit was pushed before merge.
 - [ ] Risks/open items documented below.
+
+## Known Merge Dependencies (mandatory when applicable)
+
+- [ ] This PR depends on another branch merging first.
+- Dependency branch(es):
+- Required merge order:
+- Conflict-resolution note (if any):
 
 ## Risks / Open Items
 
