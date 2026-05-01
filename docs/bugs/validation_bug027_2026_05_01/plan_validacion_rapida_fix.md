@@ -2,7 +2,7 @@
 
 Date: 2026-05-01  
 Branch: `fix/bug033-foreground-service-crash`  
-Commit: `pending-local`  
+Commit: `8600f44`  
 Bugs covered: `BUG-027`  
 Target devices: Android owner path (primary), macOS/Chrome mirror path (secondary)
 
@@ -86,35 +86,35 @@ Reference result without fix:
 ## Comandos de ejecución
 
 ```bash
-flutter run -d android --dart-define=APP_ENV=prod 2>&1 | tee docs/bugs/validation_bug027_2026_05_01/logs/2026-05-01_bug027_pending-local_android_RMX3771_debug.log
+flutter run -d android --dart-define=APP_ENV=prod 2>&1 | tee docs/bugs/validation_bug027_2026_05_01/logs/2026-05-01_bug027_8600f44_android_RMX3771_debug.log
 ```
 
 ```bash
-flutter run -d macos --dart-define=APP_ENV=prod 2>&1 | tee docs/bugs/validation_bug027_2026_05_01/logs/2026-05-01_bug027_pending-local_macos_debug.log
+flutter run -d macos --dart-define=APP_ENV=prod 2>&1 | tee docs/bugs/validation_bug027_2026_05_01/logs/2026-05-01_bug027_8600f44_macos_debug.log
 ```
 
 ```bash
-flutter run -d chrome --dart-define=APP_ENV=prod 2>&1 | tee docs/bugs/validation_bug027_2026_05_01/logs/2026-05-01_bug027_pending-local_chrome_debug.log
+flutter run -d chrome --dart-define=APP_ENV=prod 2>&1 | tee docs/bugs/validation_bug027_2026_05_01/logs/2026-05-01_bug027_8600f44_chrome_debug.log
 ```
 
 ## Log analysis — quick scan
 
 ### Bug present signals
 ```bash
-grep -nE "Owner is resolving this conflict\. Request ownership if needed\.$" docs/bugs/validation_bug027_2026_05_01/logs/2026-05-01_bug027_pending-local_*_debug.log
+grep -nE "Owner is resolving this conflict\. Request ownership if needed\.$" docs/bugs/validation_bug027_2026_05_01/logs/2026-05-01_bug027_8600f44_*_debug.log
 ```
 
 ```bash
-grep -nE "Conflict with running group|Conflict with scheduled group" docs/bugs/validation_bug027_2026_05_01/logs/2026-05-01_bug027_pending-local_*_debug.log
+grep -nE "Conflict with running group|Conflict with scheduled group" docs/bugs/validation_bug027_2026_05_01/logs/2026-05-01_bug027_8600f44_*_debug.log
 ```
 
 ### Fix working signals
 ```bash
-grep -nE "Running: |Scheduled: |Pre-Run:" docs/bugs/validation_bug027_2026_05_01/logs/2026-05-01_bug027_pending-local_*_debug.log
+grep -nE "Running: |Scheduled: |Pre-Run:" docs/bugs/validation_bug027_2026_05_01/logs/2026-05-01_bug027_8600f44_*_debug.log
 ```
 
 ```bash
-grep -nE "requestOwnership|claimOwnership|Owner seems unavailable" docs/bugs/validation_bug027_2026_05_01/logs/2026-05-01_bug027_pending-local_*_debug.log
+grep -nE "requestOwnership|claimOwnership|Owner seems unavailable" docs/bugs/validation_bug027_2026_05_01/logs/2026-05-01_bug027_8600f44_*_debug.log
 ```
 
 ## Verificación local

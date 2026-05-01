@@ -18399,7 +18399,7 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 **Current branch intent:** Implement BUG-027 root fix (shared conflict context + range-aware copy) and open formal device validation packet.
 **Branch:** `fix/bug033-foreground-service-crash`
-**Commit:** `pending-local`
+**Commit:** `8600f44`
 **Validation/Bug IDs:** `BUG-027` / `BUGLOG-027` (`In validation`)
 
 ### Context
