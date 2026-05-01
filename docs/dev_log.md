@@ -18490,7 +18490,7 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 **Current branch intent:** Register BUG-034 from user-provided runtime evidence (shared-mode break/timeline desync), preserve branch-scope clarity, and open deterministic validation packet.
 **Branch:** `fix/bug034-shared-timeline-break-desync`
-**Commit:** `pending-local`
+**Commit:** `f910caf`
 **Validation/Bug IDs:** `BUG-034` / `BUGLOG-034` (`In validation`)
 
 ### Context

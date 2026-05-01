@@ -2,7 +2,7 @@
 
 Date: 2026-05-01  
 Branch: `fix/bug034-shared-timeline-break-desync`  
-Commit: `pending-local`  
+Commit: `f910caf`  
 Bugs covered: `BUG-034`  
 Target devices: macOS owner path (primary), Android owner path (secondary)
 
@@ -78,11 +78,11 @@ Reference result without fix:
 ## Comandos de ejecución
 
 ```bash
-flutter run -d macos --dart-define=APP_ENV=prod 2>&1 | tee docs/bugs/validation_bug034_2026_05_01/logs/2026-05-01_bug034_pending-local_macos_debug.log
+flutter run -d macos --dart-define=APP_ENV=prod 2>&1 | tee docs/bugs/validation_bug034_2026_05_01/logs/2026-05-01_bug034_f910caf_macos_debug.log
 ```
 
 ```bash
-flutter run -d android --dart-define=APP_ENV=prod 2>&1 | tee docs/bugs/validation_bug034_2026_05_01/logs/2026-05-01_bug034_pending-local_android_RMX3771_debug.log
+flutter run -d android --dart-define=APP_ENV=prod 2>&1 | tee docs/bugs/validation_bug034_2026_05_01/logs/2026-05-01_bug034_f910caf_android_RMX3771_debug.log
 ```
 
 ## Log analysis — quick scan (secondary only)
@@ -92,11 +92,11 @@ This bug is primarily a visual/runtime-coherence issue. Screenshots/video are au
 Potential supporting signals:
 
 ```bash
-rg -n "da943ceb-31f9-42b5-b994-235bee6586d0|Pomodoro 8 of 8|Break: 15 min|Break: 5 min|End of task" docs/bugs/validation_bug034_2026_05_01/logs/*bug034*_debug.log
+rg -n "da943ceb-31f9-42b5-b994-235bee6586d0|Pomodoro 8 of 8|Break: 15 min|Break: 5 min|End of task" docs/bugs/validation_bug034_2026_05_01/logs/*bug034_f910caf*_debug.log
 ```
 
 ```bash
-rg -n "integrityMode|shared|currentPomodoro|phase" docs/bugs/validation_bug034_2026_05_01/logs/*bug034*_debug.log
+rg -n "integrityMode|shared|currentPomodoro|phase" docs/bugs/validation_bug034_2026_05_01/logs/*bug034_f910caf*_debug.log
 ```
 
 ## Verificación local
