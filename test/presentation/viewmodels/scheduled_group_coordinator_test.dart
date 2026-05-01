@@ -130,6 +130,8 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
   final StreamController<PomodoroSession?> _controller =
       StreamController<PomodoroSession?>.broadcast();
   PomodoroSession? _lastSession;
+  PomodoroSession? serverSessionOverride;
+  bool useServerSessionOverride = false;
   int publishCount = 0;
   PomodoroSession? lastPublishedSession;
   int clearSessionAsOwnerCount = 0;
@@ -152,6 +154,9 @@ class FakePomodoroSessionRepository implements PomodoroSessionRepository {
 
   @override
   Future<PomodoroSession?> fetchSession({bool preferServer = false}) async {
+    if (preferServer && useServerSessionOverride) {
+      return serverSessionOverride;
+    }
     return _lastSession;
   }
 
@@ -527,6 +532,110 @@ void main() {
       final stored = await groupRepo.getById(group.id);
       expect(stored?.status, TaskRunStatus.running);
     });
+
+    test(
+      'does not complete expired running group when stream is null but server has paused session for same group',
+      () async {
+        final groupRepo = FakeTaskRunGroupRepository();
+        final sessionRepo = FakePomodoroSessionRepository();
+        final container = ProviderContainer(
+          overrides: [
+            appModeServiceProvider.overrideWithValue(AppModeService.memory()),
+            taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+            pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          ],
+        );
+        addTearDown(() {
+          groupRepo.dispose();
+          sessionRepo.dispose();
+          container.dispose();
+        });
+
+        container.read(scheduledGroupCoordinatorProvider);
+
+        final now = DateTime.now();
+        final group = _buildRunningGroup(
+          id: 'group-3b',
+          start: now.subtract(const Duration(hours: 2)),
+          theoreticalEnd: now.subtract(const Duration(minutes: 30)),
+        );
+
+        sessionRepo.emit(null);
+        sessionRepo.useServerSessionOverride = true;
+        sessionRepo.serverSessionOverride = _buildPausedSession(
+          groupId: group.id,
+          ownerId: 'device-1',
+          now: now,
+        );
+
+        groupRepo.seed(group);
+        await _pumpQueue();
+
+        final stored = await groupRepo.getById(group.id);
+        expect(stored?.status, TaskRunStatus.running);
+      },
+    );
+
+    test(
+      'completes expired running group when stream is null but server session is for another group',
+      () async {
+        final now = DateTime.now();
+        final groupRepo = FakeTaskRunGroupRepository();
+        final sessionRepo = FakePomodoroSessionRepository();
+        final actionCompleter = Completer<ScheduledGroupAction>();
+        final container = ProviderContainer(
+          overrides: [
+            appModeServiceProvider.overrideWithValue(AppModeService.memory()),
+            taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+            pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          ],
+        );
+        addTearDown(() {
+          groupRepo.dispose();
+          sessionRepo.dispose();
+          container.dispose();
+        });
+
+        final sub = container.listen<ScheduledGroupAction?>(
+          scheduledGroupCoordinatorProvider,
+          (_, next) {
+            if (next != null && !actionCompleter.isCompleted) {
+              actionCompleter.complete(next);
+            }
+          },
+        );
+        addTearDown(sub.close);
+
+        container.read(scheduledGroupCoordinatorProvider);
+        sessionRepo.emit(null);
+        sessionRepo.useServerSessionOverride = true;
+        sessionRepo.serverSessionOverride = _buildRunningSession(
+          groupId: 'another-group',
+          ownerId: 'device-1',
+          now: now,
+        );
+        await _pumpQueue();
+
+        await groupRepo.save(
+          _buildRunningGroup(
+            id: 'group-expired-no-session-foreign-server',
+            start: now.subtract(const Duration(hours: 2)),
+            theoreticalEnd: now.subtract(const Duration(minutes: 30)),
+          ),
+        );
+        await _pumpQueue();
+
+        final action = await actionCompleter.future.timeout(
+          const Duration(seconds: 1),
+        );
+        expect(action.type, ScheduledGroupActionType.openGroupsHub);
+
+        final stored = await groupRepo.getById(
+          'group-expired-no-session-foreign-server',
+        );
+        expect(stored?.status, TaskRunStatus.completed);
+      },
+    );
 
     test(
       'does not complete when active session belongs to another group',

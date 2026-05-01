@@ -38,6 +38,7 @@ class _ActiveSessionAutoOpenerState
   int _retryAttempts = 0;
   bool _resumeAutoOpenPending = false;
   bool _lastPomodoroVmExists = false;
+  String? _userDepartedGroupId;
 
   @override
   void initState() {
@@ -101,6 +102,7 @@ class _ActiveSessionAutoOpenerState
       _autoOpenInFlight = false;
       _autoOpenedGroupId = null;
       _autoOpenSuppressedGroupId = null;
+      _userDepartedGroupId = null;
       _pendingGroupId = null;
       _lastAutoOpenAttemptAt = null;
       _lastAutoOpenAttemptGroupId = null;
@@ -120,25 +122,43 @@ class _ActiveSessionAutoOpenerState
       return;
     }
 
+    // Detect intentional departure before resume/VM-disposal paths can clear
+    // `_autoOpenedGroupId`; this flag preserves user intent for the same group.
+    if (_autoOpenedGroupId == groupId) {
+      final detectNavCtx = widget.navigatorKey.currentContext;
+      if (detectNavCtx != null && !_isAlreadyInTimer(groupId)) {
+        _userDepartedGroupId = groupId;
+      }
+    }
+
     if (_resumeAutoOpenPending) {
       debugPrint(
         '[RunModeDiag] Auto-open resume trigger. Clearing auto-open state '
         'group=$groupId route=${_currentRoute()}',
       );
       _autoOpenedGroupId = null;
-      _autoOpenSuppressedGroupId = null;
+      if (_userDepartedGroupId != groupId) {
+        _autoOpenSuppressedGroupId = null;
+      }
       _resumeAutoOpenPending = false;
     }
 
     var forceTimerRefresh = false;
     if (_autoOpenedGroupId == groupId && !vmExists && vmWasAlive) {
-      debugPrint(
-        '[RunModeDiag] Auto-open recovery: VM disposed, clearing guard '
-        'group=$groupId route=${_currentRoute()}',
-      );
       _autoOpenedGroupId = null;
-      _autoOpenSuppressedGroupId = null;
-      forceTimerRefresh = true;
+      if (_userDepartedGroupId != groupId) {
+        debugPrint(
+          '[RunModeDiag] Auto-open recovery: VM disposed, clearing guard '
+          'group=$groupId route=${_currentRoute()}',
+        );
+        _autoOpenSuppressedGroupId = null;
+        forceTimerRefresh = true;
+      } else {
+        debugPrint(
+          '[RunModeDiag] Auto-open suppressed (VM disposed after intentional departure) '
+          'group=$groupId route=${_currentRoute()}',
+        );
+      }
     }
 
     final navigatorContext = widget.navigatorKey.currentContext;
@@ -162,15 +182,18 @@ class _ActiveSessionAutoOpenerState
         );
         _autoOpenedGroupId = groupId;
         _autoOpenSuppressedGroupId = null;
+        _userDepartedGroupId = null;
       }
     }
 
     if (_autoOpenInFlight ||
         _autoOpenedGroupId == groupId ||
-        _autoOpenSuppressedGroupId == groupId) {
+        _autoOpenSuppressedGroupId == groupId ||
+        _userDepartedGroupId == groupId) {
       debugPrint(
         '[RunModeDiag] Auto-open suppressed (in-flight=$_autoOpenInFlight '
-        'opened=$_autoOpenedGroupId route=${_currentRoute()})',
+        'opened=$_autoOpenedGroupId departed=$_userDepartedGroupId '
+        'route=${_currentRoute()})',
       );
       _lastPomodoroVmExists = vmExists;
       return;
@@ -180,6 +203,9 @@ class _ActiveSessionAutoOpenerState
       _retryTimer?.cancel();
       _retryTimer = null;
       _retryAttempts = 0;
+    }
+    if (_userDepartedGroupId != null && _userDepartedGroupId != groupId) {
+      _userDepartedGroupId = null;
     }
 
     if (_pendingGroupId == groupId && _retryTimer != null) {

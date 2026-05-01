@@ -60,6 +60,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   String? _dismissedOwnershipRequesterId;
   bool _ownershipRejectionSnackVisible = false;
   bool _mirrorConflictSnackVisible = false;
+  ScaffoldMessengerState? _mirrorConflictMessenger;
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason>?
+  _mirrorConflictSnackController;
   final Set<String> _dismissedMirrorConflictSnackKeys = {};
   bool _inactiveRepaintEnabled = false;
   bool _runningOverlapDialogVisible = false;
@@ -230,6 +233,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     if (_ownershipRejectionSnackVisible && mounted) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
     }
+    _hideMirrorConflictSnack(clearDismissedKeys: true, immediate: true);
     _activeOwnershipRejectionSnackKey = null;
     _ownershipRejectionSnackVisible = false;
     _stopPreRunTimer();
@@ -289,6 +293,15 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           break;
       }
     });
+  }
+
+  @override
+  void deactivate() {
+    _mirrorConflictSnackVisible = false;
+    _mirrorConflictSnackController = null;
+    _mirrorConflictMessenger = null;
+    _dismissedMirrorConflictSnackKeys.clear();
+    super.deactivate();
   }
 
   @override
@@ -619,6 +632,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final ownerDeviceId = sessionForGroup?.ownerDeviceId;
     final isMirror = isSessionForGroup && ownerDeviceId != deviceId;
     final hasSession = isSessionForGroup;
+    final routePath = _currentRoute();
+    if (_mirrorConflictSnackVisible && !routePath.startsWith('/timer/')) {
+      _hideMirrorConflictSnack(clearDismissedKeys: true);
+    }
     final isResyncing = vm.isResyncing;
     final isTimeSyncReady = vm.isTimeSyncReady;
     final hasPendingIntent = vm.hasPendingIntent;
@@ -1045,10 +1062,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
     if (next == null) {
       _pendingRunningOverlapDecision = null;
-      if (_mirrorConflictSnackVisible) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        _mirrorConflictSnackVisible = false;
-      }
+      _hideMirrorConflictSnack(clearDismissedKeys: true);
       return;
     }
     final groups = groupsAsync.value ?? const <TaskRunGroup>[];
@@ -1063,6 +1077,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       fallbackNoticeMinutes: _noticeFallbackMinutes,
     );
     if (!stillValid) {
+      _hideMirrorConflictSnack(clearDismissedKeys: true);
       ref.read(runningOverlapDecisionProvider.notifier).state = null;
       return;
     }
@@ -1406,38 +1421,64 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     }
     _mirrorConflictSnackVisible = true;
     final messenger = ScaffoldMessenger.of(context);
+    _mirrorConflictMessenger = messenger;
     final message = ownerStale
         ? 'Owner seems unavailable. Claim ownership to resolve this conflict.'
         : 'Owner is resolving this conflict. Request ownership if needed.';
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      messenger
-          .showSnackBar(
-            SnackBar(
-              content: Text(message),
-              duration: const Duration(minutes: 10),
-              dismissDirection: DismissDirection.none,
-              action: SnackBarAction(
-                label: 'OK',
-                onPressed: () {
-                  _dismissedMirrorConflictSnackKeys.add(key);
-                  messenger.hideCurrentSnackBar();
-                  if (!mounted) return;
-                  setState(() {
-                    _mirrorConflictSnackVisible = false;
-                  });
-                },
-              ),
-            ),
-          )
-          .closed
-          .then((_) {
-            if (!mounted) return;
-            setState(() {
-              _mirrorConflictSnackVisible = false;
-            });
-          });
+      _mirrorConflictSnackController = messenger.showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(minutes: 10),
+          dismissDirection: DismissDirection.none,
+          action: SnackBarAction(
+            label: 'OK',
+            onPressed: () {
+              _dismissedMirrorConflictSnackKeys.add(key);
+              _mirrorConflictSnackController?.close();
+              if (!mounted) return;
+              setState(() {
+                _mirrorConflictSnackVisible = false;
+              });
+            },
+          ),
+        ),
+      );
+      _mirrorConflictSnackController?.closed.then((_) {
+        _mirrorConflictSnackController = null;
+        if (!mounted) return;
+        setState(() {
+          _mirrorConflictSnackVisible = false;
+        });
+      });
     });
+  }
+
+  void _hideMirrorConflictSnack({
+    bool clearDismissedKeys = false,
+    bool immediate = false,
+  }) {
+    final controller = _mirrorConflictSnackController;
+    if (controller != null) {
+      controller.close();
+    }
+    final messenger =
+        _mirrorConflictMessenger ??
+        (mounted ? ScaffoldMessenger.maybeOf(context) : null);
+    if (messenger != null && (_mirrorConflictSnackVisible || immediate)) {
+      if (immediate) {
+        messenger.removeCurrentSnackBar();
+      } else {
+        messenger.hideCurrentSnackBar();
+      }
+    }
+    _mirrorConflictSnackVisible = false;
+    _mirrorConflictSnackController = null;
+    _mirrorConflictMessenger = null;
+    if (clearDismissedKeys) {
+      _dismissedMirrorConflictSnackKeys.clear();
+    }
   }
 
   void _syncPreRunInfo(TaskRunGroup? group) {

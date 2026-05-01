@@ -25,7 +25,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last closed bug fix: **BUG-028 — Groups Hub paused Ends projection coherence (`05b1001`, closed 28/04/2026)**
+Last closed bug fix: **BUG-031 — mirror stale conflict snackbar lifecycle (`f2005cc`, closed 30/04/2026)**
 Current focus: **BUG-033 rolling monitor + open bug queue (`BUGLOG-033`/`BUGLOG-027`/`BUGLOG-029`) + parallel bugfix execution while waiting reproducible crash evidence**
 Last update: **01/05/2026**
 
@@ -18027,11 +18027,297 @@ A regression was reported in running-overlap warning behavior:
 
 ---
 
-## Block 742 — BUG-033 registration from Android crash evidence (29/04/2026)
+## Block 742 — BUG-032 Phase 1 coordinator guard implemented and moved to validation (29/04/2026)
+
+**Current branch intent:** BUG-032 paused-session expiry regression hardening (minimal-risk Phase 1 coordinator guard + targeted tests + validation packet sync).
+**Branch:** `fix/bug032-paused-session-expiry-guard`
+**Commit:** `pending-local` (rebased over updated develop)
+**Validation/Bug IDs:** `BUG-032` / `BUGLOG-032` (`In validation`)
+
+### Context
+
+Regression report showed a paused run being marked `completed` after ownership transfer caused by owner sleep/background and later reopen.  
+Expected behavior per specs: paused sessions must not advance and must not be auto-completed by running-expiry reconciliation.
+
+### Implementation delivered (Phase 1 only)
+
+- Updated `lib/presentation/viewmodels/scheduled_group_coordinator.dart`.
+- In `activeSession == null` running-expiry path, coordinator now corroborates server session before completion:
+  - fetches `fetchSession(preferServer: true)`,
+  - suppresses completion when server session exists, is active execution, and belongs to one of current running groups.
+- Legitimate zombie-run completion path remains enabled when no relevant server session exists.
+- Removed previously introduced startup-window gating to keep patch minimal and avoid architecture-side regressions.
+
+### Test updates
+
+- Updated `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`:
+  - Added guard test: null stream + paused server session for same group -> must not complete.
+  - Added foreign-session test: null stream + server session for another group -> legitimate completion still allowed.
+  - Removed startup-window-specific test after simplifying implementation.
+
+### Local verification
+
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` -> PASS (`All tests passed!`).
+- `flutter analyze` -> PASS (`No issues found!`).
+
+### Documentation synchronization
+
+- Added new bug entry: `BUG-032` in `docs/bugs/bug_log.md` with evidence, root cause, and fix summary.
+- Added ledger entry: `BUGLOG-032` as `In validation` in `docs/validation/validation_ledger.md`.
+- Updated ledger snapshot counts and active P1 bug list.
+- Opened validation packet:
+  - `docs/bugs/validation_bug032_2026_04_28/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug032_2026_04_28/quick_pass_checklist.md`
+  - `docs/bugs/validation_bug032_2026_04_28/logs/`
+  - `docs/bugs/validation_bug032_2026_04_28/screenshots/`
+
+### Status after this block
+
+- `BUG-032` / `BUGLOG-032`: **In validation** (Phase 1 implemented, local gate PASS, device exact repro pending).
+
+---
+
+## Block 743 — BUG-032 closed after single-run device validation (29/04/2026)
+
+**Current branch intent:** Close BUG-032 with exact sleep/takeover/pause repro evidence and sync canonical docs.
+**Branch:** `fix/bug032-paused-session-expiry-guard`
+**Commit:** `69472d7` (runtime fix)
+**Validation/Bug IDs:** `BUG-032` / `BUGLOG-032` (`Closed/OK`)
+
+### Validation recap (device + server corroboration)
+
+- Single-run short repro executed in Account Mode using real macOS sleep (lid close) + Android takeover + pause + background past theoretical end.
+- Android reopen stayed paused (`Resume` available), with no `completed` transition in Timer/Groups Hub.
+- macOS post-wake logs repeatedly confirmed:
+  - `ExpiryCheck][skip-expiry-session-not-running` with `sessionStatus=paused`
+  - `RepoNormalize][skip-complete` for group `a4d46289-18b7-45d1-b8e2-486036a5daff` after `theoreticalEndTime=2026-04-29 12:23:22.709404`
+  - no `mark-running-group-completed` for this group.
+- Firestore post-wake `activeSession` remained non-terminal:
+  - `status=paused`
+  - `ownerDeviceId=android-029abc12-52ba-4d42-bcca-eda2aaaf257e`
+  - `remainingSeconds=722`
+  - `lastUpdatedAt=2026-04-29 12:43:52` (UTC-4).
+
+### Documentation synchronization
+
+- `docs/bugs/validation_bug032_2026_04_28/plan_validacion_rapida_fix.md`
+  - Status moved to `Closed/OK`; evidence section updated with final logs/screenshots + Firestore snapshot.
+- `docs/bugs/validation_bug032_2026_04_28/quick_pass_checklist.md`
+  - Exact repro checklist marked PASS.
+- `docs/bugs/bug_log.md`
+  - BUG-032 moved from `In validation` to `Closed/OK` with final device/server evidence.
+- `docs/validation/validation_ledger.md`
+  - `BUGLOG-032` moved to `Closed/OK`; snapshot updated (`non-closed bugs: 2`, active P1: none).
+
+### Status after this block
+
+- `BUG-032` / `BUGLOG-032`: **Closed/OK** (29/04/2026).
+- Remaining open bug queue: `BUGLOG-027` (P2), `BUGLOG-029` (P2).
+
+---
+
+## Block 744 — Always-on integration gate enforced for all agents (29/04/2026)
+
+**Current branch intent:** Process hardening to prevent validated fixes/features from being left only in side branches.
+**Branch:** `fix/process-always-on-integration-gate`
+**Commits:** `e6574ff` (`docs(process): add strict integration gate command and audit checklist`) + `4a0b68c` (`docs(process): enforce always-on integration gate for all agents`)
+**Scope:** governance/process (`AGENTS.md`)
+
+### Rule change
+
+- Upgraded strict integration gate from owner-triggered mode to **always-on mandatory**.
+- The rule now applies automatically to every agent (Codex, Claude, Gemini, or future agents) with no user reminder required.
+- Added mandatory post-closure integration steps:
+  - merge validated work into `develop`,
+  - push `develop` to `origin`,
+  - verify `develop...origin/develop = 0 0`,
+  - verify closure commit is contained in `develop`,
+  - only then continue with new work.
+
+### Status after this block
+
+- Integration-safety process is now explicit, automatic, and auditable in system rules.
+
+---
+
+## Block 745 — BUG-030 documentary backfill synchronized on develop (29/04/2026)
+
+**Current branch intent:** Restore BUG-030 closure traceability on canonical docs after runtime/test cherry-pick integration.
+**Branch:** `fix/bug030-docs-backfill`
+**Commit:** `7f15f66` (`docs(bug030): backfill closure packet and canonical traceability`)
+**Validation/Bug IDs:** `BUG-030` / `BUGLOG-030` (`Closed/OK`)
+
+### Audit result confirmed
+
+- Runtime and test restoration for BUG-030 were already in `develop`:
+  - `30be006` (`fix(bug030): preserve intentional-departure suppression and add regression test`)
+  - `825c09c` (`test(bug030): make vmSub close idempotent in BUG-030 case`)
+- Documentation closure artifacts were missing from canonical docs (`bug_log`, `validation_ledger`, and validation packet files).
+
+### Documentation synchronization completed
+
+- `docs/bugs/bug_log.md`
+  - Added BUG-030 entry (regression context, root cause, fix, evidence, Closed/OK status).
+- `docs/bugs/validation_bug030_2026_04_27/`
+  - Added missing `plan_validacion_rapida_fix.md`.
+  - Added missing `quick_pass_checklist.md`.
+  - Existing iOS/Chrome logs kept as closure evidence.
+- `docs/validation/validation_ledger.md`
+  - Added `BUGLOG-030` as `Closed/OK` in active bug queue.
+  - Snapshot line updated to include BUG-030 among closed IDs.
+
+### Status after this block
+
+- BUG-030 is now fully traceable in canonical docs on top of already integrated runtime/test fixes.
+- Active open bug queue remains: `BUGLOG-027` (P2), `BUGLOG-029` (P2).
+
+---
+
+## Block 746 — BUG-031 and BUG-033 canonical traceability synchronized on develop (29/04/2026)
+
+**Current branch intent:** Documentation governance — synchronize missing bug entries to develop so next agent preflight scan finds all open items.
+**Branch:** `fix/docs-sync-031-033`
+**Commit:** `e0b2f9f` (`docs(trazabilidad): sync BUG-031/033 canonical docs and fix pending-local markers`)
+**Validation/Bug IDs:** `BUG-031` / `BUGLOG-031` (`In validation`); `BUG-033` / `BUGLOG-033` (`Open`)
+
+### Context
+
+BUG-031 and BUG-033 were discovered and documented exclusively in side branches:
+- `fix/bug031-stale-conflict-snackbar-base030` (fix implemented, local gate PASS, device validation pending)
+- `fix/bug033-foreground-service-crash` (crash registered, no fix yet)
+
+Neither entry existed in `develop` canonical docs, so agent preflight scans of `bug_log.md` and `validation_ledger.md` would miss them entirely.
+
+### Documentation synchronized
+
+- `docs/bugs/bug_log.md`
+  - Added BUG-031 entry (symptom, fix applied on branch, In validation status).
+  - Added BUG-033 entry (crash evidence, hypothesis, Open status).
+- `docs/bugs/validation_bug033_2026_04_29/`
+  - Added `plan_validacion_rapida_fix.md` (scenarios A+B, log commands, closure criteria).
+  - Added `quick_pass_checklist.md`.
+- `docs/validation/validation_ledger.md`
+  - Snapshot line updated: 4 non-closed bugs (BUGLOG-027 P2, BUGLOG-029 P2, BUGLOG-031 P2, BUGLOG-033 P1).
+  - Active P1 blocker updated: `BUGLOG-033` blocks `develop→main`.
+  - Added BUGLOG-031 entry (In validation, branch + commit reference).
+  - Added BUGLOG-033 entry (Open, P1 blocker).
+- `docs/dev_log.md`
+  - Replaced `pending-local` in Block 744 with real commits `e6574ff` + `4a0b68c`.
+  - Replaced `pending-local` in Block 745 with real commit `7f15f66`.
+
+### Status after this block
+
+- All open bugs visible from `develop` canonical docs.
+- Next agent preflight will correctly surface: BUGLOG-033 (P1, Open, no fix yet) and BUGLOG-031 (P2, In validation, device validation pending).
+- BUG-031 runtime fix remains isolated on `fix/bug031-stale-conflict-snackbar-base030` until device validation PASS.
+
+---
+
+## Block 747 — BUG log ordering normalized (`BUG-031` before `BUG-032`) (30/04/2026)
+
+**Current branch intent:** Documentation hygiene — preserve deterministic bug block ordering in canonical `bug_log.md`.
+**Branch:** `fix/docs-buglog-order-031-032`
+**Commit:** `0773f87`
+**Validation/Bug IDs:** `BUG-031` (`In validation`), `BUG-032` (`Closed/OK`)
+
+### Context
+
+- The canonical bug log listed `BUG-032` before `BUG-031`, breaking the expected numeric block order and making manual review/navigation harder during multi-branch merges.
+
+### Documentation synchronization completed
+
+- `docs/bugs/bug_log.md`
+  - Reordered adjacent blocks so `BUG-031` appears before `BUG-032`.
+  - No content/status/evidence changes inside either bug entry.
+
+### Status after this block
+
+- Canonical bug log order is now consistent for the `BUG-03x` sequence.
+- Bug statuses remain unchanged:
+  - `BUG-031`: In validation (runtime fix still on branch `fix/bug031-stale-conflict-snackbar-base030`).
+  - `BUG-032`: Closed/OK.
+
+---
+
+## Block 748 — BUG-031 closed after iOS+Chrome device validation (30/04/2026)
+
+**Current branch intent:** Close BUG-031 with exact owner/mirror repro evidence and synchronize canonical closure docs before integration.
+**Branch:** `fix/bug031-validate-on-develop`
+**Commit:** `a4a929a`
+**Validation/Bug IDs:** `BUG-031` / `BUGLOG-031` (`Closed/OK`)
+
+### Validation recap (owner/mirror)
+
+- Device topology: iOS (`iPhone 17 Pro`) as owner + Chrome (`localhost:5001`) as mirror.
+- Scenario A PASS:
+  - owner running `G1`, mirror in Run Mode, overlap conflict triggered after owner pause.
+  - conflict UX appeared correctly on both devices.
+- Scenario B PASS:
+  - owner selected `Postpone` at 15:49:46.
+  - schedule shifted from 16:02 to 16:03 (pre-run 16:02), and mirror stale warning cleared.
+- Scenario C PASS:
+  - mirror navigated Run Mode -> Groups Hub -> Task List -> Run Mode without stale conflict warning reappearing.
+
+### Evidence and docs synchronization
+
+- `docs/bugs/validation_bug031_2026_04_28/plan_validacion_rapida_fix.md`
+  - Status moved to `Closed/OK`; A/B/C timeline + evidence files recorded.
+- `docs/bugs/validation_bug031_2026_04_28/quick_pass_checklist.md`
+  - Scenario A/B/C checkboxes marked PASS.
+- `docs/bugs/bug_log.md`
+  - BUG-031 moved from `In validation` to `Closed/OK` with closure evidence.
+- `docs/validation/validation_ledger.md`
+  - `BUGLOG-031` moved to `Closed/OK` with closure hash `f2005cc`.
+  - Snapshot updated: non-closed bug-log entries reduced from 4 to 3.
+- `docs/roadmap.md`
+  - Historical timeline updated with BUG-031 closure note (30/04/2026).
+
+### Integration note — pre-rule exception
+
+- Integration path: local `git merge fix/bug031-validate-on-develop` into `develop` (commit `0fa553e`), then push to `origin/develop`.
+- `fix/bug031-validate-on-develop` was never pushed to `origin`; no GitHub PR was opened for this merge.
+- This predates the PR-first rule (Block 749 / R-9 in `CLAUDE.md`). Not a P0 emergency — a process gap identified retroactively. Rule applies from Block 749 forward.
+
+### Status after this block
+
+- `BUG-031` / `BUGLOG-031`: **Closed/OK** (30/04/2026).
+- Active non-closed bug queue: `BUGLOG-033` (P1 Open), `BUGLOG-027` (P2 Pending), `BUGLOG-029` (P2 Pending).
+
+---
+
+## Block 749 — PR-first integration rule for existing origin branches (30/04/2026)
+
+**Current branch intent:** Process governance hardening for branch integration traceability.
+**Branch:** `fix/process-pr-origin-branch-gate`
+**Commit:** `387cf93`
+**Scope:** documentation/process (`AGENTS.md`, `docs/validation/validation_ledger.md`)
+
+### Context
+
+- A closure can be technically integrated into `develop` via local merges, but when the same working branch already exists in `origin`, PR traceability is stronger and review/audit history is clearer.
+- The project needed an explicit rule to avoid ambiguity between "works technically" and "follows canonical integration workflow".
+
+### Rule update
+
+- Added PR-first rule in `AGENTS.md`:
+  - if a scope already has a remote branch in `origin`, continue there and push first;
+  - for non-P0, merge path to `develop` must be via GitHub PR from that branch;
+  - direct merge/push to `develop` without PR is limited to emergency P0 mitigation with explicit dev-log justification.
+- Added matching safety bullets in `docs/validation/validation_ledger.md` under branch integration safety.
+
+### Status after this block
+
+- Project workflow now explicitly distinguishes:
+  - standard path: branch push + PR + merge to `develop`;
+  - emergency path: P0 direct merge with mandatory written justification.
+
+---
+
+## Block 750 — BUG-033 registration from Android crash evidence (29/04/2026)
 
 **Current branch intent:** Register Android foreground-service crash as independent bug and open validation packet without mixing BUG-032 scope.
 **Branch:** `fix/bug033-foreground-service-crash`
-**Commit:** `pending-local`
+**Commit:** `5b9d85c`
 **Validation/Bug IDs:** `BUG-033` / `BUGLOG-033` (`In validation`)
 
 ### Evidence captured
@@ -18068,11 +18354,11 @@ A regression was reported in running-overlap warning behavior:
 
 ---
 
-## Block 750 — BUG-033 rolling monitor protocol activated after long non-repro run (01/05/2026)
+## Block 751 — BUG-033 rolling monitor protocol activated after long non-repro run (01/05/2026)
 
 **Current branch intent:** Keep BUG-033 active in parallel while other bugs continue, with deterministic per-session capture protocol and persistent traceability.
 **Branch:** `fix/bug033-foreground-service-crash`
-**Commit:** `pending-local`
+**Commit:** `cd4e5da`
 **Validation/Bug IDs:** `BUG-033` / `BUGLOG-033` (`In validation`)
 
 ### Validation run recap (today)

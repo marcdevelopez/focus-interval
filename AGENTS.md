@@ -44,6 +44,21 @@ Bug-priority preflight gate (hard rule):
   3. If any mismatch exists, stop and synchronize ledger + `docs/dev_log.md` first.
   4. Continue only after the bug queue is explicit and ordered by priority.
 
+Strict integration gate (always-on hard rule):
+- This gate is automatic and mandatory for all agents (Codex, Claude, Gemini, or any future agent). It never requires an owner reminder.
+- Before any new implementation, agents must:
+  1. Run `git fetch --all --prune`.
+  2. Prove `develop...origin/develop = 0 0`.
+  3. Report every local branch with `ahead_of_develop > 0`.
+  4. Identify runtime/test commits outside `develop` and integrate them first (merge/cherry-pick) before starting unrelated work.
+  5. Present the integration audit report before implementing.
+- After any item is marked `Closed/OK` (bug or feature), agents must immediately:
+  1. Merge validated work into `develop` (never leave closure only in side branches).
+  2. Push `develop` to `origin`.
+  3. Re-check `develop...origin/develop = 0 0`.
+  4. Verify the closure commit is contained in `develop`.
+  5. Continue with next task only after steps 1-4 are complete.
+
 **"What's next" rule:** When asked what to do next, always cross-reference
 `validation_ledger.md` + `roadmap.md` + tail of `dev_log.md`. Never answer from
 the `CURRENT PHASE` label alone — pending validations and doc cleanup come first.
@@ -417,6 +432,9 @@ Rules:
 - **Never commit directly to `main` or `develop`.** All work on short-lived branches.
 - Fix/feature branches merge into `develop` only after device validation PASS.
 - `develop` merges into `main` only when `validation_ledger.md` shows zero open P0/P1 bugs.
+- If a scope already has a remote branch in `origin` (same fix/feature track), continue on that branch and push updates there first.
+- For non-P0 work when a remote branch already exists, integration into `develop` must go through a GitHub PR from that branch (no direct local merge/push as the primary path).
+- Emergency exception (P0 only): direct merge/push into `develop` is allowed only when PR workflow would delay active mitigation; record explicit justification + timestamp in `docs/dev_log.md`, then open a follow-up PR/backfill reference as soon as stability is restored.
 - Before checking out any branch: run `git branch --show-current` to confirm you are NOT on `main` or `develop`. If you are, ask the user which branch to use.
 - Branch naming: `fix/<short-description>` or `feature/<short-description>`. Never generic names (`patch`, `temp`, `wip`).
 - Branch scope lock: one branch = one scope family. Do not mix unrelated tracks in one branch

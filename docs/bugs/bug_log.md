@@ -3774,3 +3774,258 @@ Fix applied:
 Status:
 
 Open (03/04/2026), sourced from BUG-025 device validation evidence.
+
+---
+
+## BUG-030 — Mirror auto-opens Run Mode on resume, interrupting Groups Hub/Task List workflow
+
+ID: BUG-030
+Date: 27/04/2026 (UTC-4)
+Platforms: macOS mirror + Android owner
+Context: Account Mode, BUG-028 device validation run with active `G1` running on Android owner while mirror user navigates Groups Hub and Task List.
+
+Classification:
+
+- Regression (Fix 15 auto-open gating, 27/02/2026; dev_log Blocks 485-486).
+- Not a planned behavior.
+
+Symptom:
+
+- Mirror is forced back to Run Mode without user intent while navigating planning surfaces.
+- User cannot stay in Groups Hub/Task List to complete normal workflow actions.
+
+Observed behavior:
+
+- Repeated auto-open attempts from non-timer routes (`/groups` and `/tasks`) during focus/resume churn while owner session stayed active.
+- Flow matched user report: mirror was redirected to Run Mode while trying to plan in Task List / inspect Groups Hub.
+
+Expected behavior:
+
+- If user leaves Run Mode while session is active, auto-open must stay suppressed for that group until a valid new trigger (or explicit user open action).
+- Focus/resume events must not override user intent and force route changes from `/groups` or `/tasks`.
+
+Evidence:
+
+- Discovery logs from BUG-028 validation:
+  - `docs/bugs/validation_bug028_2026_04_24/logs/2026-04-27_bug028_5df97ec_macos_debug.log`
+  - `docs/bugs/validation_bug028_2026_04_24/logs/2026-04-27_bug028_5df97ec_android_RMX3771_debug.log`
+- Closure packet logs:
+  - `docs/bugs/validation_bug030_2026_04_27/logs/2026-04-28_bug030_24b3667_chrome_debug.log`
+  - `docs/bugs/validation_bug030_2026_04_27/logs/2026-04-28_bug030_24b3667_ios_iPhone17Pro_debug.log`
+
+Workaround:
+
+- Re-enter Groups Hub/Task List repeatedly and navigate quickly before next auto-open cycle.
+- Not reliable; workflow remains interrupted.
+
+Root cause hypothesis (regression detail):
+
+- `ActiveSessionAutoOpener` defeated user-intent suppression for the same group in three paths:
+  1. VM disposal recovery path (`_autoOpenedGroupId == groupId && !vmExists && vmWasAlive`) cleared suppression and set `forceTimerRefresh=true`. This was primary because `PomodoroViewModel` is `autoDispose` when leaving `/timer/:id`.
+  2. Resume path (`_resumeAutoOpenPending`) cleared `_autoOpenSuppressedGroupId`.
+  3. Bounce-reset path (`_shouldResetAutoOpenForBounce`) could also clear suppression during fast user exits from `/timer/:id`.
+
+Fix applied:
+
+- Runtime fix restored on `develop` via cherry-pick:
+  - `30be006` `fix(bug030): preserve intentional-departure suppression and add regression test`.
+- Companion test hardening restored on `develop`:
+  - `825c09c` `test(bug030): make vmSub close idempotent in BUG-030 case`.
+- Validation closure packet completed (28/04/2026):
+  - no `Attempting auto-open to TimerScreen` matches in Chrome validation log,
+  - suppression retained on planning routes with `departed=...`,
+  - explicit timer re-entry from Groups Hub remained functional.
+
+Status:
+
+Closed/OK (28/04/2026). Runtime restored and documented on `develop`; local gate PASS + iOS/Chrome device scenarios A-D PASS.
+
+---
+
+## BUG-031 — Mirror conflict snackbar can remain stale after conflict is resolved
+
+ID: BUG-031
+Date: 27/04/2026 (UTC-4)
+Platforms: macOS mirror + Android owner
+Context: Same BUG-028 validation run. Mirror received conflict warning while owner resolved scheduling conflict.
+
+Classification:
+
+- New bug (not tracked as an open item before 27/04/2026).
+- Related domain to BUG-021 (snackbar lifecycle), but different surface
+  (running-overlap mirror conflict snackbar).
+
+Symptom:
+
+- Mirror keeps showing the old conflict snackbar (`Owner is resolving this conflict...`) after conflict is already resolved on owner.
+- Warning persists across route changes and no longer reflects real conflict state.
+
+Observed behavior:
+
+- After owner resolves/cancels scheduled conflict, mirror continues showing stale snackbar while user navigates Groups Hub and Task List.
+- User reports stale snackbar still visible around 16:10:29-16:14:48 despite conflict resolution and scheduled updates.
+- Pressing/interacting while stale snackbar is visible can coincide with forced navigation back to Run Mode (see BUG-030), worsening workflow interruption.
+
+Expected behavior:
+
+- Conflict snackbar must auto-dismiss when overlap is no longer valid, decision is cleared/replaced, or user leaves Run Mode.
+- Mirror should not keep stale conflict messaging on unrelated screens.
+
+Evidence:
+
+- `docs/bugs/validation_bug028_2026_04_24/logs/2026-04-27_bug028_5df97ec_macos_debug.log` (conflict-flow window 16:10-16:15 UTC-4 + route churn evidence).
+- User screenshots in thread show stale snackbar visible while scheduled timeline has already shifted/resolved.
+- Closure validation evidence (30/04/2026):
+  - `docs/bugs/validation_bug031_2026_04_28/logs/2026-04-30_bug031_f2005cc_ios_iPhone17Pro_debug.log`
+  - `docs/bugs/validation_bug031_2026_04_28/logs/2026-04-30_bug031_f2005cc_chrome_debug.log`
+  - `docs/bugs/validation_bug031_2026_04_28/screenshots/Captura de pantalla 2026-04-30 a las 15.56.54.png`
+  - `docs/bugs/validation_bug031_2026_04_28/screenshots/Captura de pantalla 2026-04-30 a las 15.57.55.png`
+
+Workaround:
+
+- Manual `OK` dismissal or waiting for long snackbar timeout.
+
+Hypothesis:
+
+- Mirror conflict snackbar lifecycle is managed in `TimerScreen` local state only; dismissal synchronization is incomplete when overlap state changes off-screen or when TimerScreen is exited/disposed.
+
+Fix applied:
+
+- Runtime patch in `lib/presentation/screens/timer_screen.dart`:
+  - centralized mirror conflict snackbar teardown in `_hideMirrorConflictSnack(...)`,
+  - explicit teardown when overlap decision becomes `null`,
+  - explicit teardown + decision reset when overlap becomes invalid for current session/groups,
+  - mirror snackbar controller/messenger lifecycle hardened to avoid stale local state.
+- Regression coverage added in `test/presentation/timer_screen_completion_navigation_test.dart`:
+  - `Timer mirror dismisses conflict snackbar when overlap decision clears`.
+- Local gate PASS (28/04/2026):
+  - `flutter analyze lib/presentation/screens/timer_screen.dart test/presentation/timer_screen_completion_navigation_test.dart`,
+  - `flutter test ... --plain-name "Timer mirror shows persistent conflict snackbar until explicit OK"`,
+  - `flutter test ... --plain-name "Timer mirror dismisses conflict snackbar when overlap decision clears"`.
+- Runtime fix integrated on validation branch: `fix/bug031-validate-on-develop`, commit `f2005cc` (cherry-pick of source patch `f16341f`).
+- Device validation PASS (30/04/2026):
+  - Scenario A: conflict UX triggered as expected after owner pause.
+  - Scenario B: owner `Postpone` cleared mirror stale warning and shifted schedule to `16:03` (pre-run `16:02`).
+  - Scenario C: mirror navigation (`Run Mode -> Groups Hub -> Task List -> Run Mode`) stayed clean with no stale conflict warning.
+
+Status:
+
+Closed/OK (30/04/2026). Local gate + iOS/Chrome device scenarios A/B/C PASS. Validation packet synchronized in `docs/bugs/validation_bug031_2026_04_28/`.
+
+---
+
+## BUG-032 — Paused run can be auto-completed after ownership/sleep null-session reconciliation
+
+ID: BUG-032
+Date: 28/04/2026 (UTC-4)
+Platforms: Android + macOS
+Context: Account Mode; ownership transfer after owner sleep/background; paused run reopened after `theoreticalEndTime`.
+
+Symptom:
+
+- A group paused on the new owner device can later appear as `completed` after reopen, even though pause should freeze progression.
+
+Observed behavior:
+
+- Initial owner macOS went to sleep; Android took ownership.
+- Android pause action entered a long `Syncing session...` window.
+- After background/reopen, the group was shown as completed.
+- Firestore evidence reported:
+  - `groupId = b21ec7ed-0dc6-40fc-96e6-d7c889f67863`
+  - `theoreticalEndTime = 2026-04-28T17:28:36.505348`
+  - final `status = completed`
+  - `updatedAt = 2026-04-28T17:39:25.578819`
+
+Expected behavior:
+
+- If session is paused, elapsed time must not advance and the group must not auto-complete by expiry checks.
+- Reopen must preserve paused state.
+- Zombie-run expiry logic must not apply when a relevant active/paused server session exists.
+
+Evidence:
+
+- User-provided runtime logs around reopen/resync (`Resync missing; no session snapshot`, repeated inactive resync loops).
+- Firestore snapshot timeline and state metadata for the affected group.
+- Validation packet: `docs/bugs/validation_bug032_2026_04_28/plan_validacion_rapida_fix.md`.
+
+Workaround:
+
+- None reliable; once completed is persisted, session resumes as terminal history state.
+
+Hypothesis:
+
+- Coordinator null-session expiry path could complete expired `running` groups without server corroboration, allowing paused executions (or transiently hidden active sessions) to be treated as zombie-run completion candidates.
+
+Fix applied:
+
+- Phase 1 implemented in `scheduled_group_coordinator.dart`:
+  - In `activeSession == null` expiry path, fetch server session (`preferServer: true`) before completing.
+  - Suppress completion when server reports active execution for the same running group (`session != null`, `status.isActiveExecution`, matching `groupId`).
+  - Preserve legitimate zombie-run completion when no relevant server session exists.
+- Tests added/updated in `scheduled_group_coordinator_test.dart` for:
+  - paused server session guard,
+  - foreign-group server session (must not block legitimate completion),
+  - existing no-session zombie-run completion behavior.
+- Local gate:
+  - `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` PASS.
+  - `flutter analyze` PASS.
+- Device single-run repro PASS (29/04/2026):
+  - Test group `a4d46289-18b7-45d1-b8e2-486036a5daff` remained paused after crossing `theoreticalEndTime=2026-04-29T12:23:22.709404`.
+  - macOS post-wake logs repeatedly emitted paused expiry guards (`skip-expiry-session-not-running`, `skip-complete`) and no completion write for the group.
+  - Firestore post-wake `activeSession` snapshot stayed non-terminal: `status=paused`, `remainingSeconds=722`, `lastUpdatedAt=2026-04-29 12:43:52` (UTC-4), owner `android-029abc12-52ba-4d42-bcca-eda2aaaf257e`.
+
+Status:
+
+Closed/OK (29/04/2026). Phase 1 guard validated on Android + macOS single-run repro with post-wake Firestore corroboration; paused state no longer auto-completes after theoretical end.
+
+---
+
+## BUG-033 — Android background crash on foreground service promotion (`ForegroundServiceStartNotAllowedException`)
+
+ID: BUG-033
+Date: 29/04/2026 (UTC-4)
+Platforms: Android (owner path), with cross-device ownership side effects
+Context: Account Mode runtime while Android app stays in background for several minutes during active execution.
+
+Symptom:
+
+- Android process crashes with system dialog (`focus_interval sigue sin funcionar`) while a run is active in background.
+- After crash, ownership can shift to another device (for example macOS), creating inconsistent multi-device continuity during validation runs.
+
+Observed behavior:
+
+- Runtime log captures:
+  - `FATAL EXCEPTION: main`
+  - `android.app.ForegroundServiceStartNotAllowedException`
+  - `Service.startForeground() not allowed due to mAllowStartForeground false`
+- Crash stack points to:
+  - `android/app/src/main/kotlin/com/marcdevelopez/focusinterval/PomodoroForegroundService.kt`
+  - `onStartCommand(...)` -> `startOrUpdate()` -> `startForeground(...)`.
+- The event occurred during a background interval while session snapshots kept arriving, then process shutdown (`SIG: 9`) followed.
+
+Expected behavior:
+
+- App must not crash when background lifecycle triggers foreground-service update/start paths.
+- Active run continuity must remain stable in background without process kill.
+
+Evidence:
+
+- User-provided Android log excerpt dated 29/04/2026 around 11:40 (UTC-4), including full stacktrace and shutdown sequence.
+- Screenshot evidence from Android system crash dialog.
+- Validation packet: `docs/bugs/validation_bug033_2026_04_29/` (`plan_validacion_rapida_fix.md`, `quick_pass_checklist.md`).
+
+Workaround:
+
+- No reliable user-facing workaround. App may recover only after relaunch, with possible ownership/state side effects.
+
+Hypothesis:
+
+- Foreground service start/update path is invoked from a background state that Android disallows, causing runtime exception before safe fallback can execute.
+
+Fix applied:
+
+- Not yet. Fix on branch: `fix/bug033-foreground-service-crash`.
+
+Status:
+
+Open (29/04/2026). Initial evidence captured; exact forced repro under same conditions is pending in validation packet.
