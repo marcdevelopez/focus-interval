@@ -18183,6 +18183,7 @@ Expected behavior per specs: paused sessions must not advance and must not be au
 ### Context
 
 BUG-031 and BUG-033 were discovered and documented exclusively in side branches:
+
 - `fix/bug031-stale-conflict-snackbar-base030` (fix implemented, local gate PASS, device validation pending)
 - `fix/bug033-foreground-service-crash` (crash registered, no fix yet)
 
@@ -18392,7 +18393,6 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 - `BUG-033` / `BUGLOG-033`: **In validation**.
 - Required operating mode: keep dual-capture protocol available in each session while parallel fixes continue on `BUGLOG-027` and `BUGLOG-029`.
 
-
 ---
 
 ## Block 752 — BUG-027 context propagation implemented and moved to validation (01/05/2026)
@@ -18445,3 +18445,40 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 - `BUG-027` / `BUGLOG-027`: **In validation**.
 - Device evidence for scenarios A-D (V03/V05/V19/V24) is pending before closure.
+
+---
+
+## Block 753 — BUG-027 follow-up gate completed (tests + validation-plan correction) (01/05/2026)
+
+**Current branch intent:** Close post-review follow-up from Claude for BUG-027 before PR preparation (missing local tests + log-analysis methodology correction).
+**Branch:** `fix/bug033-foreground-service-crash`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-027` / `BUGLOG-027` (`In validation`)
+
+### Follow-up actions completed
+
+- Re-ran and confirmed local gate expansion requested in review:
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` PASS (clean re-run; prior interrupted run invalid).
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS.
+  - `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` PASS.
+  - `flutter test test/presentation/utils/scheduled_group_timing_test.dart` PASS.
+  - `flutter analyze` PASS.
+- Corrected BUG-027 packet methodology for log analysis:
+  - `docs/bugs/validation_bug027_2026_05_01/plan_validacion_rapida_fix.md`
+    now states visual evidence (surfaces A-D) as authoritative for this UI bug.
+  - Ownership-action grep remains as secondary signal only.
+  - UI-string grep checks (`Running:`, `Scheduled:`, `Pre-Run:`) are now explicitly marked non-authoritative for this bug type.
+
+### Documentation synchronization
+
+- `docs/bugs/validation_bug027_2026_05_01/quick_pass_checklist.md`
+  - Local gate section expanded with the four additional PASS tests.
+- `docs/bugs/bug_log.md`
+  - BUG-027 fix section now references commit `8600f44` (no pending hash wording) and expanded regression/local coverage list.
+- `docs/validation/validation_ledger.md`
+  - `BUGLOG-027` evidence updated to include expanded local gate PASS set.
+
+### Status after this block
+
+- `BUG-027` / `BUGLOG-027`: **In validation** (device scenarios A-D still pending).
+- Local review debt reported by Claude is resolved; remaining work is device evidence capture only.

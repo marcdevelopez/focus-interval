@@ -3597,7 +3597,7 @@ Hypothesis:
 
 Fix applied:
 
-- Implementation completed on 01/05/2026 (`fix/bug033-foreground-service-crash`, pending commit hash):
+- Implementation completed on 01/05/2026 (`fix/bug033-foreground-service-crash`, commit `8600f44`):
   - Added centralized conflict context model/formatter in `lib/presentation/utils/scheduling_conflict_helpers.dart`:
     - `ConflictWindow` (group id/name/status + start/end + optional pre-run start),
     - `PreRunConflict` (type + blocker window),
@@ -3614,6 +3614,10 @@ Fix applied:
     - `flutter analyze` PASS.
     - `flutter test test/presentation/timer_screen_completion_navigation_test.dart` PASS.
     - `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` PASS.
+    - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` PASS (clean re-run).
+    - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS.
+    - `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` PASS.
+    - `flutter test test/presentation/utils/scheduled_group_timing_test.dart` PASS.
     - Added assertions for runtime modal context labels (`Running:` / `Scheduled:`).
 
 Status:
