@@ -3640,6 +3640,11 @@ Evidence:
 - Validation packet opened:
   - `docs/bugs/validation_bug033_2026_04_29/plan_validacion_rapida_fix.md`
   - `docs/bugs/validation_bug033_2026_04_29/quick_pass_checklist.md`
+- Follow-up non-repro session (01/05/2026, 13:05-14:35 EDT):
+  - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-01_bug033_5b9d85c_android_RMX3771_debug_prod.log`
+  - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-01_bug033pid_5b9d85c_android_RMX3771_debug.log`
+  - No `ForegroundServiceStartNotAllowedException` or `FATAL EXCEPTION` tied to `com.marcdevelopez.focusinterval` captured in app-focused logcat.
+  - Parallel signal observed: transient network/DNS failures (`Unable to resolve host firestore.googleapis.com`) during long background window.
 
 Workaround:
 
@@ -3655,7 +3660,7 @@ Fix applied:
 
 Status:
 
-Open (29/04/2026). Initial evidence captured; exact forced repro under same conditions is pending in validation packet.
+In validation (01/05/2026). Initial crash evidence captured (29/04/2026); long stress run on 01/05/2026 was non-repro. Rolling dual-capture protocol remains active for each session while other bugfix work proceeds in parallel.
 
 ---
 

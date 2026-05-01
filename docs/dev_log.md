@@ -26,8 +26,8 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last closed bug fix: **BUG-028 — Groups Hub paused Ends projection coherence (`05b1001`, closed 28/04/2026)**
-Current focus: **BUG-033 crash registration + open bug queue (`BUGLOG-033`/`BUGLOG-027`/`BUGLOG-029`) + IDEA-039 device validation**
-Last update: **29/04/2026**
+Current focus: **BUG-033 rolling monitor + open bug queue (`BUGLOG-033`/`BUGLOG-027`/`BUGLOG-029`) + parallel bugfix execution while waiting reproducible crash evidence**
+Last update: **01/05/2026**
 
 ---
 
@@ -18065,3 +18065,43 @@ A regression was reported in running-overlap warning behavior:
 
 - `BUG-033` / `BUGLOG-033`: **In validation**.
 - Forced same-conditions repro is explicitly pending and documented as next mandatory step.
+
+---
+
+## Block 750 — BUG-033 rolling monitor protocol activated after long non-repro run (01/05/2026)
+
+**Current branch intent:** Keep BUG-033 active in parallel while other bugs continue, with deterministic per-session capture protocol and persistent traceability.
+**Branch:** `fix/bug033-foreground-service-crash`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-033` / `BUGLOG-033` (`In validation`)
+
+### Validation run recap (today)
+
+- Session window: **13:05 -> 14:35 EDT** (Android app in background under memory pressure workload).
+- Dual capture was executed (Flutter + app-focused logcat).
+- Result: **non-repro** for BUG-033 in this run.
+  - No `ForegroundServiceStartNotAllowedException` for `com.marcdevelopez.focusinterval`.
+  - No `FATAL EXCEPTION` attributable to Focus Interval process in app-focused logcat.
+- Parallel signal observed:
+  - repeated network/DNS unavailability (`Unable to resolve host firestore.googleapis.com`) during long background window; tracked as separate runtime condition (not closure for BUG-033).
+
+### Documentation synchronization
+
+- `docs/bugs/validation_bug033_2026_04_29/plan_validacion_rapida_fix.md`
+  - Added Scenario C (rolling monitor).
+  - Added exact reusable per-session commands (`adb logcat` + `flutter run` in `APP_ENV=prod`).
+  - Added execution history entry for 01/05/2026 non-repro run and evidence file references.
+- `docs/bugs/validation_bug033_2026_04_29/quick_pass_checklist.md`
+  - Marked Scenario C execution as PASS for non-repro capture.
+  - Added explicit rolling monitor readiness checkbox.
+- `docs/bugs/bug_log.md`
+  - BUG-033 status moved from `Open` to `In validation`.
+  - Added 01/05/2026 non-repro evidence and rolling monitor note.
+- `docs/validation/validation_ledger.md`
+  - Snapshot updated to 2026-05-01.
+  - BUGLOG-033 evidence expanded with non-repro run outcome and rolling monitor requirement.
+
+### Status after this block
+
+- `BUG-033` / `BUGLOG-033`: **In validation**.
+- Required operating mode: keep dual-capture protocol available in each session while parallel fixes continue on `BUGLOG-027` and `BUGLOG-029`.
