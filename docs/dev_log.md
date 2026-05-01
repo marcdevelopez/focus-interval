@@ -26,8 +26,8 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last closed bug fix: **BUG-031 — mirror stale conflict snackbar lifecycle (`f2005cc`, closed 30/04/2026)**
-Current focus: **open bug queue (`BUGLOG-027`/`BUGLOG-029`) + IDEA-039 device validation**
-Last update: **30/04/2026**
+Current focus: **open bug queue (`BUGLOG-027`/`BUGLOG-029`) + IDEA-039 device validation + no-loss PR process hardening**
+Last update: **01/05/2026**
 
 ---
 
@@ -18310,3 +18310,40 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 - Project workflow now explicitly distinguishes:
   - standard path: branch push + PR + merge to `develop`;
   - emergency path: P0 direct merge with mandatory written justification.
+
+---
+
+## Block 750 — Mandatory no-loss PR checklist enforced in docs + PR template (01/05/2026)
+
+**Current branch intent:** Process hardening to prevent loss of successful implementations during branch/PR flow.
+**Branch:** `fix/process-no-loss-pr-checklist`
+**Commit:** `pending-local`
+**Scope:** process/docs governance (`AGENTS.md`, `docs/validation/validation_ledger.md`, `.github/pull_request_template.md`)
+
+### Context
+
+- Repeated concern: implementations can be validated locally but later lost if branch/remote/PR safety gates are skipped.
+- Existing strict integration guidance existed, but practical execution needed a mandatory checklist visible both in docs and in every PR form.
+
+### Changes applied
+
+- `docs/validation/validation_ledger.md`
+  - Added section `No-loss implementation checklist (mandatory)` with explicit required steps:
+    - before push,
+    - before opening PR,
+    - before merge,
+    - after merge.
+  - Added concrete command checkpoints (`fetch`, `rev-list 0/0`, clean tree, tracking parity, closure containment).
+- `AGENTS.md`
+  - Added `No-loss PR checklist rule (always-on hard rule)`.
+  - Made completion of the ledger checklist + PR template mandatory for all agents.
+- `.github/pull_request_template.md` (new)
+  - Added mandatory checklists for pre-PR safety, docs synchronization, validation evidence, and merge safety.
+  - Enforces explicit reporting of tests, evidence paths, and residual risks.
+
+### Status after this block
+
+- No-loss PR/merge discipline is now encoded in two enforcement layers:
+  1. authoritative process docs (`AGENTS.md`, `validation_ledger.md`),
+  2. operational PR gate (`.github/pull_request_template.md`).
+- Future implementations must satisfy this checklist before merge to `develop`.

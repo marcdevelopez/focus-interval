@@ -32,6 +32,52 @@ Allowed status values: `Pending`, `In validation`, `Validated`, `Closed/OK`.
 - If a merge conflict touches this file, preserve the most recent `Closed/OK` statuses, evidence, and commit references.
 - Do not finalize push/PR until a post-merge check confirms expected closed IDs are still closed.
 
+## No-loss implementation checklist (mandatory)
+
+Use this checklist for every implementation branch before push/PR/merge to prevent losing validated work.
+
+### Before push (local safety)
+
+1. `git fetch origin --prune`
+2. Confirm canonical base is synchronized:
+   - `git rev-list --left-right --count develop...origin/develop` must be `0 0`
+3. Confirm branch scope still matches current work intent:
+   - if not, stop and move to a dedicated branch
+4. Confirm working tree is clean after commits:
+   - `git status --short` (expected: empty)
+5. Run required local gate for the current item (`flutter analyze` + targeted tests) and record results in validation docs.
+
+### Before opening PR
+
+1. Confirm branch is published and tracking origin:
+   - `git push -u origin <branch>` (first push) or `git push`
+2. Confirm no hidden drift:
+   - `git rev-list --left-right --count HEAD...origin/<branch>` must be `0 0`
+3. Confirm canonical docs are synchronized in the same branch:
+   - `docs/bugs/bug_log.md`
+   - `docs/validation/validation_ledger.md`
+   - `docs/dev_log.md`
+   - matching validation packet under `docs/bugs/validation_*`
+4. Open PR **to `develop` only** (never to `main`).
+
+### Before merge PR
+
+1. Re-run `git fetch origin --prune`.
+2. Re-check `develop...origin/develop = 0 0`.
+3. If branch is behind `develop`, sync branch first and re-run local gate.
+4. Verify the PR description includes:
+   - bug/validation IDs,
+   - exact tests run,
+   - evidence paths (logs/screenshots),
+   - residual risks/open items.
+
+### After merge
+
+1. Confirm closure commit is contained in `develop`:
+   - `git branch --contains <closure-commit>`
+2. Confirm `develop...origin/develop = 0 0`.
+3. Only then move to the next implementation item.
+
 ## Snapshot (2026-04-30)
 
 - Roadmap `validation pending`: **3** items (IDEA backlog only). `RVP-021`..`RVP-031` + `RVP-034` + `RVP-035` + `RVP-036` + `RVP-037` + `RVP-038` + `RVP-039` + `RVP-040` + `RVP-042` + `RVP-045` + `RVP-046` + `RVP-047` + `RVP-048` + `RVP-049` + `RVP-050` + `RVP-051` + `RVP-052` + `RVP-053` + `RVP-054` + `RVP-055` + `RVP-056` + `RVP-057` + `RVP-058` + `RVP-059` + `RVP-060` + `RVP-061` + `RVP-062` closed after focused local + real-device validation. IDEA-039 implementation complete on `feature/idea039-conflict-explainer`; pending merge into develop.
