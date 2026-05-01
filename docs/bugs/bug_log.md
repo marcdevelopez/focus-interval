@@ -3597,11 +3597,30 @@ Hypothesis:
 
 Fix applied:
 
-- Not yet.
+- Implementation completed on 01/05/2026 (`fix/bug033-foreground-service-crash`, pending commit hash):
+  - Added centralized conflict context model/formatter in `lib/presentation/utils/scheduling_conflict_helpers.dart`:
+    - `ConflictWindow` (group id/name/status + start/end + optional pre-run start),
+    - `PreRunConflict` (type + blocker window),
+    - `RunningOverlapContext` (running + scheduled windows),
+    - shared time/range formatters.
+  - Propagated contextual copy to planning/runtime/mirror surfaces:
+    - Groups Hub re-plan running conflict modal now lists selected range + running blockers (name + range).
+    - Groups Hub re-plan scheduled conflict modal now lists selected range + scheduled blockers (name + range).
+    - Groups Hub pre-run conflict snackbar now includes blocker identity/range and candidate pre-run window.
+    - Timer runtime overlap modal now includes both running and scheduled group context (+ pre-run when applicable).
+    - Timer mirror conflict snackbar now includes contextual running/scheduled summary line.
+    - Task List and Groups Hub mirror conflict banners now expose contextual summary via compact info tooltip.
+  - Regression/local coverage:
+    - `flutter analyze` PASS.
+    - `flutter test test/presentation/timer_screen_completion_navigation_test.dart` PASS.
+    - `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` PASS.
+    - Added assertions for runtime modal context labels (`Running:` / `Scheduled:`).
 
 Status:
 
-Open (03/04/2026), sourced from BUG-025 device validation evidence.
+In validation (01/05/2026). Validation packet opened at
+`docs/bugs/validation_bug027_2026_05_01/`; device scenarios A-D pending
+(V03/V05/V19/V24 closure evidence).
 
 ---
 

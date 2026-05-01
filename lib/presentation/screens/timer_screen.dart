@@ -13,6 +13,7 @@ import '../providers.dart';
 import '../../domain/pomodoro_machine.dart';
 import '../viewmodels/pomodoro_view_model.dart';
 import '../viewmodels/pre_run_notice_view_model.dart';
+import '../utils/scheduling_conflict_helpers.dart';
 import '../utils/scheduled_group_timing.dart';
 import '../../data/models/task_run_group.dart';
 import '../../data/models/pomodoro_session.dart';
@@ -999,13 +1000,13 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     }
 
     _runningOverlapDialogVisible = true;
-    final scheduledInfo = _resolveConflictGroupInfo(decision);
+    final overlapContext = _resolveRunningOverlapDialogContext(decision);
     final choice = await showDialog<_RunningOverlapChoice>(
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
         title: const Text('Scheduling conflict'),
-        content: _ConflictDialogContent(info: scheduledInfo),
+        content: _ConflictDialogContent(contextData: overlapContext),
         actions: [
           TextButton(
             onPressed: () =>
@@ -1093,6 +1094,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       _maybeShowMirrorConflictSnack(
         _overlapDecisionKey(next),
         ownerStale: ownerStale,
+        decision: next,
       );
       return;
     }
@@ -1414,11 +1416,26 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     return now.difference(updatedAt) >= const Duration(seconds: 45);
   }
 
-  void _maybeShowMirrorConflictSnack(String key, {required bool ownerStale}) {
+  void _maybeShowMirrorConflictSnack(
+    String key, {
+    required bool ownerStale,
+    required RunningOverlapDecision decision,
+  }) {
     if (_mirrorConflictSnackVisible ||
         _dismissedMirrorConflictSnackKeys.contains(key)) {
       return;
     }
+    final groups =
+        ref.read(taskRunGroupStreamProvider).value ?? const <TaskRunGroup>[];
+    final activeSession = ref.read(activePomodoroSessionProvider);
+    final conflictContext = resolveRunningOverlapContext(
+      runningGroupId: decision.runningGroupId,
+      scheduledGroupId: decision.scheduledGroupId,
+      groups: groups,
+      activeSession: activeSession,
+      now: DateTime.now(),
+      fallbackNoticeMinutes: _noticeFallbackMinutes,
+    );
     _mirrorConflictSnackVisible = true;
     final messenger = ScaffoldMessenger.of(context);
     _mirrorConflictMessenger = messenger;
@@ -1429,7 +1446,20 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       if (!mounted) return;
       _mirrorConflictSnackController = messenger.showSnackBar(
         SnackBar(
-          content: Text(message),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(message),
+              if (conflictContext != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  formatConflictSummary(conflictContext, now: DateTime.now()),
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ],
+            ],
+          ),
           duration: const Duration(minutes: 10),
           dismissDirection: DismissDirection.none,
           action: SnackBarAction(
@@ -2175,87 +2205,30 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     return DateFormat('MMM d, HH:mm').format(value);
   }
 
-  String _formatConflictRange(DateTime start, DateTime end) {
-    final now = DateTime.now();
-    final isToday =
-        start.year == now.year &&
-        start.month == now.month &&
-        start.day == now.day;
-    if (isToday) {
-      return '${DateFormat('HH:mm').format(start)}-${DateFormat('HH:mm').format(end)}';
-    }
-    final startLabel = DateFormat('MMM d, HH:mm').format(start);
-    final endLabel = DateFormat('HH:mm').format(end);
-    return '$startLabel-$endLabel';
-  }
-
-  _ConflictGroupInfo? _resolveConflictGroupInfo(
+  RunningOverlapContext? _resolveRunningOverlapDialogContext(
     RunningOverlapDecision decision,
   ) {
     final groups = ref.read(taskRunGroupStreamProvider).value ?? const [];
-    final scheduled = findGroupById(groups, decision.scheduledGroupId);
-    if (scheduled == null) return null;
-    final name = scheduled.tasks.isNotEmpty
-        ? scheduled.tasks.first.name
-        : 'Task group';
     final activeSession = ref.read(activePomodoroSessionProvider);
-    final scheduledStart =
-        resolveEffectiveScheduledStart(
-          group: scheduled,
-          allGroups: groups,
-          activeSession: activeSession,
-          now: DateTime.now(),
-          fallbackNoticeMinutes: _noticeFallbackMinutes,
-        ) ??
-        scheduled.scheduledStartTime;
-    String? rangeLabel;
-    String? preRunLabel;
-    if (scheduledStart != null) {
-      final durationSeconds = resolveGroupDurationSeconds(scheduled);
-      final scheduledEnd = scheduledStart.add(
-        Duration(seconds: durationSeconds),
-      );
-      rangeLabel = _formatConflictRange(scheduledStart, scheduledEnd);
-      final noticeMinutes = resolveNoticeMinutes(
-        scheduled,
-        fallback: _noticeFallbackMinutes,
-      );
-      if (noticeMinutes > 0) {
-        final preRunStart = scheduledStart.subtract(
-          Duration(minutes: noticeMinutes),
-        );
-        if (!preRunStart.isAtSameMomentAs(scheduledStart)) {
-          preRunLabel = _formatTimeOrDate(preRunStart);
-        }
-      }
-    }
-    return _ConflictGroupInfo(
-      name: name,
-      scheduledRange: rangeLabel,
-      preRunStartLabel: preRunLabel,
+    return resolveRunningOverlapContext(
+      runningGroupId: decision.runningGroupId,
+      scheduledGroupId: decision.scheduledGroupId,
+      groups: groups,
+      activeSession: activeSession,
+      now: DateTime.now(),
+      fallbackNoticeMinutes: _noticeFallbackMinutes,
     );
   }
 }
 
-class _ConflictGroupInfo {
-  final String name;
-  final String? scheduledRange;
-  final String? preRunStartLabel;
-
-  const _ConflictGroupInfo({
-    required this.name,
-    required this.scheduledRange,
-    required this.preRunStartLabel,
-  });
-}
-
 class _ConflictDialogContent extends StatelessWidget {
-  final _ConflictGroupInfo? info;
+  final RunningOverlapContext? contextData;
 
-  const _ConflictDialogContent({required this.info});
+  const _ConflictDialogContent({required this.contextData});
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2263,16 +2236,38 @@ class _ConflictDialogContent extends StatelessWidget {
         const Text(
           'A scheduled group is about to start while this group is still active.',
         ),
-        if (info != null) ...[
+        if (contextData != null) ...[
           const SizedBox(height: 12),
-          Text(info!.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-          if (info!.scheduledRange != null) ...[
-            const SizedBox(height: 6),
-            Text('Scheduled: ${info!.scheduledRange}'),
-          ],
-          if (info!.preRunStartLabel != null) ...[
+          Text(
+            'Running: ${contextData!.running.groupName}',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            formatConflictRange(
+              contextData!.running.start,
+              contextData!.running.end,
+              now: now,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Scheduled: ${contextData!.scheduled.groupName}',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            formatConflictRange(
+              contextData!.scheduled.start,
+              contextData!.scheduled.end,
+              now: now,
+            ),
+          ),
+          if (contextData!.scheduled.preRunStart != null) ...[
             const SizedBox(height: 4),
-            Text('Pre-Run: ${info!.preRunStartLabel}'),
+            Text(
+              'Pre-Run: ${formatConflictTime(contextData!.scheduled.preRunStart!, now: now)}',
+            ),
           ],
         ],
       ],

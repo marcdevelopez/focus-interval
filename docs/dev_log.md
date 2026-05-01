@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last closed bug fix: **BUG-031 — mirror stale conflict snackbar lifecycle (`f2005cc`, closed 30/04/2026)**
-Current focus: **BUG-033 rolling monitor + open bug queue (`BUGLOG-033`/`BUGLOG-027`/`BUGLOG-029`) + parallel bugfix execution while waiting reproducible crash evidence**
+Current focus: **BUG-033 rolling monitor + BUG-027 in validation (device evidence pending) + BUGLOG-029 pending**
 Last update: **01/05/2026**
 
 ---
@@ -18391,3 +18391,57 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 - `BUG-033` / `BUGLOG-033`: **In validation**.
 - Required operating mode: keep dual-capture protocol available in each session while parallel fixes continue on `BUGLOG-027` and `BUGLOG-029`.
+
+
+---
+
+## Block 752 — BUG-027 context propagation implemented and moved to validation (01/05/2026)
+
+**Current branch intent:** Implement BUG-027 root fix (shared conflict context + range-aware copy) and open formal device validation packet.
+**Branch:** `fix/bug033-foreground-service-crash`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-027` / `BUGLOG-027` (`In validation`)
+
+### Context
+
+- BUG-027 reported that conflict messaging lacked actionable context (blocker identity + compared ranges) across planning/runtime/mirror surfaces.
+- Root cause confirmed: copy and context assembly were fragmented per-screen, while overlap decision payload carried only IDs.
+
+### Implementation summary
+
+- Added shared context model/formatters in `lib/presentation/utils/scheduling_conflict_helpers.dart`:
+  - `ConflictWindow`, `PreRunConflict`, `RunningOverlapContext`
+  - `resolveConflictWindow`, `resolveRunningOverlapContext`
+  - shared time/range summary formatters.
+- Updated `GroupsHubScreen` conflict flows:
+  - running conflict modal now includes selected range + running blockers (name/range),
+  - scheduled conflict modal now includes selected range + scheduled blockers (name/range),
+  - pre-run conflict snackbar now includes blocker context + candidate pre-run window.
+- Updated mirror conflict surfaces:
+  - Task List and Groups Hub banner keep base CTA and add compact contextual summary (info tooltip).
+  - Timer mirror snackbar adds contextual running/scheduled summary line.
+- Updated Timer runtime overlap modal:
+  - now renders `Running:` + range, `Scheduled:` + range, and conditional `Pre-Run:` label.
+
+### Local verification
+
+- `flutter analyze` PASS.
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` PASS.
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` PASS.
+
+### Documentation synchronization
+
+- Opened validation packet:
+  - `docs/bugs/validation_bug027_2026_05_01/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug027_2026_05_01/quick_pass_checklist.md`
+  - `docs/bugs/validation_bug027_2026_05_01/logs/`
+  - `docs/bugs/validation_bug027_2026_05_01/screenshots/`
+- Updated status to `In validation` in:
+  - `docs/bugs/bug_log.md` (`BUG-027`)
+  - `docs/validation/validation_ledger.md` (`BUGLOG-027`)
+  - `docs/roadmap.md` (Phase 17 reopened item now marked In validation)
+
+### Status after this block
+
+- `BUG-027` / `BUGLOG-027`: **In validation**.
+- Device evidence for scenarios A-D (V03/V05/V19/V24) is pending before closure.

@@ -17,6 +17,7 @@ import '../../domain/pomodoro_machine.dart';
 import '../../widgets/mode_indicator.dart';
 import '../providers.dart';
 import '../utils/continuous_plan_load_ui.dart';
+import '../utils/scheduling_conflict_helpers.dart';
 import '../viewmodels/pre_run_notice_view_model.dart';
 import 'task_group_planning_screen.dart';
 import '../utils/scheduled_group_timing.dart';
@@ -136,6 +137,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     BuildContext context, {
     required RunningOverlapDecision decision,
     required bool ownerStale,
+    required RunningOverlapContext? conflictContext,
   }) {
     final message = ownerStale
         ? 'Owner seems unavailable. Claim ownership to resolve this conflict.'
@@ -151,7 +153,29 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(message, style: const TextStyle(color: Colors.white)),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  message,
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+              if (conflictContext != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Tooltip(
+                    message: formatConflictSummary(conflictContext, now: _now),
+                    child: const Icon(
+                      Icons.info_outline,
+                      size: 16,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ),
+            ],
+          ),
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerLeft,
@@ -272,6 +296,16 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
       now: now,
       noticeFallbackMinutes: _noticeFallbackMinutes,
     );
+    final mirrorConflictContext = mirrorConflictDecision == null
+        ? null
+        : resolveRunningOverlapContext(
+            runningGroupId: mirrorConflictDecision.runningGroupId,
+            scheduledGroupId: mirrorConflictDecision.scheduledGroupId,
+            groups: groups,
+            activeSession: activeSession,
+            now: now,
+            fallbackNoticeMinutes: _noticeFallbackMinutes,
+          );
     if (overlapDecision != null && mirrorConflictDecision == null) {
       final stillValid = isRunningOverlapStillValid(
         runningGroupId: overlapDecision.runningGroupId,
@@ -418,6 +452,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                         context,
                         decision: mirrorConflictDecision,
                         ownerStale: ownerStale,
+                        conflictContext: mirrorConflictContext,
                       ),
                     );
                     children.add(const SizedBox(height: 16));
@@ -713,6 +748,11 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
           context,
           conflicts.running,
           repo,
+          selectedRangeStart: conflictStart,
+          selectedRangeEnd: conflictEnd,
+          allGroups: existing,
+          activeSession: activeSession,
+          now: now,
         );
         if (!context.mounted) return;
         if (!resolved) return;
@@ -723,6 +763,11 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
           context,
           conflicts.scheduled,
           repo,
+          selectedRangeStart: conflictStart,
+          selectedRangeEnd: conflictEnd,
+          allGroups: existing,
+          activeSession: activeSession,
+          now: now,
         );
         if (!context.mounted) return;
         if (!resolved) return;
@@ -1083,9 +1128,13 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
           if (preRunConflict == null) {
             break;
           }
-          final message = preRunConflict == _PreRunConflictType.running
-              ? "Notice ${noticeMinutes}m overlaps with a running group. Change notice for this re-plan or dismiss."
-              : "Notice ${noticeMinutes}m overlaps with another scheduled group. Change notice for this re-plan or dismiss.";
+          final message = _buildPreRunConflictMessage(
+            conflict: preRunConflict,
+            noticeMinutes: noticeMinutes,
+            preRunStart: preRunStart,
+            scheduledStart: scheduledStart,
+            now: now,
+          );
           final suggested = _suggestNoticeForStart(
             scheduledStart: scheduledStart,
             current: noticeMinutes,
@@ -1127,6 +1176,11 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
             context,
             conflicts.running,
             repo,
+            selectedRangeStart: conflictStart,
+            selectedRangeEnd: conflictEnd,
+            allGroups: existing,
+            activeSession: activeSession,
+            now: now,
           );
           if (!context.mounted) return;
           if (!resolved) return;
@@ -1137,6 +1191,11 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
             context,
             conflicts.scheduled,
             repo,
+            selectedRangeStart: conflictStart,
+            selectedRangeEnd: conflictEnd,
+            allGroups: existing,
+            activeSession: activeSession,
+            now: now,
           );
           if (!context.mounted) return;
           if (!resolved) return;
@@ -1238,7 +1297,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
         );
   }
 
-  _GroupConflicts _findConflicts(
+  GroupConflicts _findConflicts(
     List<TaskRunGroup> groups, {
     required DateTime newStart,
     required DateTime newEnd,
@@ -1247,127 +1306,111 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
     required DateTime now,
     String? excludeGroupId,
   }) {
-    final running = <TaskRunGroup>[];
-    final scheduled = <TaskRunGroup>[];
-
-    for (final group in groups) {
-      if (excludeGroupId != null && group.id == excludeGroupId) continue;
-      if (group.status == TaskRunStatus.canceled ||
-          group.status == TaskRunStatus.completed) {
-        continue;
-      }
-      if (group.status == TaskRunStatus.running && includeRunningAlways) {
-        running.add(group);
-        continue;
-      }
-      final start = group.status == TaskRunStatus.scheduled
-          ? (resolveEffectiveScheduledStart(
-                  group: group,
-                  allGroups: groups,
-                  activeSession: activeSession,
-                  now: now,
-                  fallbackNoticeMinutes: _noticeFallbackMinutes,
-                ) ??
-                group.scheduledStartTime ??
-                group.createdAt)
-          : (group.actualStartTime ??
-                group.scheduledStartTime ??
-                group.createdAt);
-      final end = group.status == TaskRunStatus.scheduled
-          ? (resolveEffectiveScheduledEnd(
-                  group: group,
-                  allGroups: groups,
-                  activeSession: activeSession,
-                  now: now,
-                  fallbackNoticeMinutes: _noticeFallbackMinutes,
-                ) ??
-                group.theoreticalEndTime)
-          : (group.theoreticalEndTime.isBefore(start)
-                ? start
-                : group.theoreticalEndTime);
-      if (!_overlaps(newStart, newEnd, start, end)) continue;
-      if (group.status == TaskRunStatus.running) {
-        running.add(group);
-        continue;
-      }
-      if (group.status == TaskRunStatus.scheduled) {
-        scheduled.add(group);
-      }
-    }
-
-    return _GroupConflicts(running: running, scheduled: scheduled);
+    final targetGroups = excludeGroupId == null
+        ? groups
+        : groups.where((group) => group.id != excludeGroupId).toList();
+    return findSchedulingConflicts(
+      targetGroups,
+      newStart: newStart,
+      newEnd: newEnd,
+      includeRunningAlways: includeRunningAlways,
+      activeSession: activeSession,
+      now: now,
+      fallbackNoticeMinutes: _noticeFallbackMinutes,
+    );
   }
 
-  _PreRunConflictType? _findPreRunConflict(
+  PreRunConflict? _findPreRunConflict(
     List<TaskRunGroup> groups, {
     required DateTime preRunStart,
     required DateTime scheduledStart,
     required PomodoroSession? activeSession,
     required DateTime now,
   }) {
-    for (final group in groups) {
-      if (group.status == TaskRunStatus.canceled ||
-          group.status == TaskRunStatus.completed) {
-        continue;
-      }
-      final start = group.status == TaskRunStatus.scheduled
-          ? (resolveEffectiveScheduledStart(
-                  group: group,
-                  allGroups: groups,
-                  activeSession: activeSession,
-                  now: now,
-                  fallbackNoticeMinutes: _noticeFallbackMinutes,
-                ) ??
-                group.scheduledStartTime ??
-                group.createdAt)
-          : (group.actualStartTime ??
-                group.scheduledStartTime ??
-                group.createdAt);
-      final end = group.status == TaskRunStatus.scheduled
-          ? (resolveEffectiveScheduledEnd(
-                  group: group,
-                  allGroups: groups,
-                  activeSession: activeSession,
-                  now: now,
-                  fallbackNoticeMinutes: _noticeFallbackMinutes,
-                ) ??
-                group.theoreticalEndTime)
-          : (group.theoreticalEndTime.isBefore(start)
-                ? start
-                : group.theoreticalEndTime);
-      if (!_overlaps(preRunStart, scheduledStart, start, end)) continue;
-      if (group.status == TaskRunStatus.running) {
-        return _PreRunConflictType.running;
-      }
-      if (group.status == TaskRunStatus.scheduled) {
-        return _PreRunConflictType.scheduled;
-      }
-    }
-    return null;
+    return findPreRunConflictDetails(
+      groups,
+      preRunStart: preRunStart,
+      scheduledStart: scheduledStart,
+      activeSession: activeSession,
+      now: now,
+      fallbackNoticeMinutes: _noticeFallbackMinutes,
+    );
   }
 
-  bool _overlaps(
-    DateTime aStart,
-    DateTime aEnd,
-    DateTime bStart,
-    DateTime bEnd,
-  ) {
-    final safeAEnd = aEnd.isBefore(aStart) ? aStart : aEnd;
-    final safeBEnd = bEnd.isBefore(bStart) ? bStart : bEnd;
-    return aStart.isBefore(safeBEnd) && safeAEnd.isAfter(bStart);
+  String _buildPreRunConflictMessage({
+    required PreRunConflict conflict,
+    required int noticeMinutes,
+    required DateTime preRunStart,
+    required DateTime scheduledStart,
+    required DateTime now,
+  }) {
+    final blockerRange = formatConflictRange(
+      conflict.blocker.start,
+      conflict.blocker.end,
+      now: now,
+    );
+    final candidateRange = formatConflictRange(
+      preRunStart,
+      scheduledStart,
+      now: now,
+    );
+    return 'Notice ${noticeMinutes}m overlaps with '
+        '${conflict.blocker.groupName} ($blockerRange). '
+        'Candidate pre-run window: $candidateRange. '
+        'Change notice for this re-plan or dismiss.';
   }
 
   Future<bool> _resolveRunningConflict(
     BuildContext context,
     List<TaskRunGroup> runningGroups,
-    TaskRunGroupRepository repo,
-  ) async {
+    TaskRunGroupRepository repo, {
+    required DateTime selectedRangeStart,
+    required DateTime selectedRangeEnd,
+    required List<TaskRunGroup> allGroups,
+    required PomodoroSession? activeSession,
+    required DateTime now,
+  }) async {
+    final selectedRange = formatConflictRange(
+      selectedRangeStart,
+      selectedRangeEnd,
+      now: now,
+    );
     final shouldCancel = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Conflict with running group'),
-        content: const Text(
-          'A group is already running. Cancel it to continue?',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Selected range: $selectedRange'),
+            const SizedBox(height: 8),
+            const Text('Running blockers:'),
+            const SizedBox(height: 6),
+            ...runningGroups.map((group) {
+              final window = resolveConflictWindow(
+                group: group,
+                allGroups: allGroups,
+                activeSession: activeSession,
+                now: now,
+                fallbackNoticeMinutes: _noticeFallbackMinutes,
+              );
+              if (window == null) {
+                final fallbackName = group.tasks.isNotEmpty
+                    ? group.tasks.first.name
+                    : 'Task group';
+                return Text('• $fallbackName');
+              }
+              final range = formatConflictRange(
+                window.start,
+                window.end,
+                now: now,
+              );
+              return Text('• ${window.groupName} — $range');
+            }),
+            const SizedBox(height: 8),
+            const Text('Cancel the running group to continue?'),
+          ],
         ),
         actions: [
           TextButton(
@@ -1382,24 +1425,24 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
       ),
     );
     if (shouldCancel != true) return false;
-    final now = DateTime.now();
+    final updatedAt = DateTime.now();
     for (final group in runningGroups) {
       await repo.save(
         group.copyWith(
           status: TaskRunStatus.canceled,
           canceledReason: TaskRunCanceledReason.user,
-          updatedAt: now,
+          updatedAt: updatedAt,
         ),
       );
     }
-    final activeSession = ref.read(activePomodoroSessionProvider);
-    if (activeSession != null) {
-      final activeGroupId = activeSession.groupId;
+    final sessionSnapshot = ref.read(activePomodoroSessionProvider);
+    if (sessionSnapshot != null) {
+      final activeGroupId = sessionSnapshot.groupId;
       final canceledIds = runningGroups.map((group) => group.id).toSet();
       if (activeGroupId == null || canceledIds.contains(activeGroupId)) {
         final sessionRepo = ref.read(pomodoroSessionRepositoryProvider);
         final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
-        if (activeSession.ownerDeviceId == deviceId) {
+        if (sessionSnapshot.ownerDeviceId == deviceId) {
           await sessionRepo.clearSessionAsOwner();
         } else {
           await sessionRepo.clearSessionIfGroupNotRunning();
@@ -1412,9 +1455,18 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
   Future<bool> _resolveScheduledConflict(
     BuildContext context,
     List<TaskRunGroup> scheduledGroups,
-    TaskRunGroupRepository repo,
-  ) async {
-    final now = DateTime.now();
+    TaskRunGroupRepository repo, {
+    required DateTime selectedRangeStart,
+    required DateTime selectedRangeEnd,
+    required List<TaskRunGroup> allGroups,
+    required PomodoroSession? activeSession,
+    required DateTime now,
+  }) async {
+    final selectedRange = formatConflictRange(
+      selectedRangeStart,
+      selectedRangeEnd,
+      now: now,
+    );
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -1423,21 +1475,39 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'The following scheduled groups conflict with the selected time. Delete them to continue?',
-            ),
+            Text('Selected range: $selectedRange'),
             const SizedBox(height: 8),
+            const Text('Scheduled blockers:'),
+            const SizedBox(height: 6),
             ...scheduledGroups.map((group) {
-              final name = group.tasks.isNotEmpty
-                  ? group.tasks.first.name
-                  : 'Task group';
-              final start = _formatGroupDateTime(group.scheduledStartTime, now);
-              final end = _formatGroupDateTime(group.theoreticalEndTime, now);
+              final window = resolveConflictWindow(
+                group: group,
+                allGroups: allGroups,
+                activeSession: activeSession,
+                now: now,
+                fallbackNoticeMinutes: _noticeFallbackMinutes,
+              );
+              if (window == null) {
+                final fallbackName = group.tasks.isNotEmpty
+                    ? group.tasks.first.name
+                    : 'Task group';
+                return Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text('• $fallbackName'),
+                );
+              }
+              final range = formatConflictRange(
+                window.start,
+                window.end,
+                now: now,
+              );
               return Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: Text('• $name — $start–$end'),
+                child: Text('• ${window.groupName} — $range'),
               );
             }),
+            const SizedBox(height: 8),
+            const Text('Delete conflicting scheduled groups to continue?'),
           ],
         ),
         actions: [
@@ -2333,13 +2403,4 @@ class _GroupAction extends StatelessWidget {
     }
     return ElevatedButton(onPressed: onPressed, child: Text(label));
   }
-}
-
-enum _PreRunConflictType { running, scheduled }
-
-class _GroupConflicts {
-  final List<TaskRunGroup> running;
-  final List<TaskRunGroup> scheduled;
-
-  const _GroupConflicts({required this.running, required this.scheduled});
 }

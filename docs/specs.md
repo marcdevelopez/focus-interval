@@ -1889,6 +1889,10 @@ Permissions
   - If the owner is **stale**: “Owner seems unavailable. **Claim** ownership to resolve this conflict.”
   - If the owner is **active**: “Owner is resolving this conflict. Request ownership if needed.”
     (Use the appropriate CTA label: **Claim** when stale, **Request** when active.)
+- Mirror conflict messaging must include a compact context line with:
+  - running/paused group name + projected range,
+  - scheduled blocker group name + scheduled range,
+  so mirrors understand the exact pair without manually cross-checking cards.
 - Show the mirror CTA **only while the overlap is still valid**. If the conflict
   resolves or the session is missing, hide the CTA and clear any related banners.
 - Do **not** show duplicate conflict messaging. If the banner is visible, do not
