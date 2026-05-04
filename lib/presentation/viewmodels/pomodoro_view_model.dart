@@ -2401,6 +2401,10 @@ class PomodoroViewModel extends Notifier<PomodoroState> {
 
   int get currentTaskIndex => _currentTaskIndex;
 
+  int get currentGlobalPomodoroOffset => _currentGroup == null
+      ? 0
+      : _globalPomodoroOffsetForTask(_currentGroup!, _currentTaskIndex);
+
   int get totalTasks => _currentGroup?.tasks.length ?? 0;
 
   int get totalGroupPomodoros =>

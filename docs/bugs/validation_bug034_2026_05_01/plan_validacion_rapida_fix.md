@@ -63,7 +63,7 @@ Reference result without fix:
 
 Preconditions:
 1. Reproduce Scenario A/B in `shared`.
-2. Run equivalent boundary case in another mode (`fixed` or `flexible`) when available.
+2. Run equivalent boundary case in another mode (`individual`) when available.
 
 Steps:
 1. Execute same transition checks for break prediction vs execution.
@@ -101,8 +101,10 @@ rg -n "integrityMode|shared|currentPomodoro|phase" docs/bugs/validation_bug034_2
 
 ## Verificación local
 
-- `flutter analyze` -> Pending (execute with fix candidate).
-- Targeted timeline tests -> Pending (to be defined after root-cause localization).
+- `flutter analyze` -> PASS (2026-05-04, no issues found).
+- Targeted timeline tests -> PASS (2026-05-04):
+  - `flutter test test/presentation/timer_screen_break_prediction_test.dart`
+  - `flutter test test/data/models/task_run_group_mode_a_breaks_test.dart`
 
 ## Criterios de cierre
 

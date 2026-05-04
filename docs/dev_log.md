@@ -18614,3 +18614,58 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 - `BUG-035` / `BUGLOG-035`: **Closed/OK**.
 - Active P1 bug queue reduced to: `BUGLOG-033`, `BUGLOG-034`.
+
+---
+
+## Block 757 — BUG-034 shared-mode next-status break prediction fix + local gate PASS (04/05/2026)
+
+**Current branch intent:** Implement BUG-034 root cause fix (shared-mode global break cadence in `Next status`) and leave validation packet ready for device scenarios in the next session.
+**Branch:** `fix/bug034-shared-timeline-break-desync`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-034` / `BUGLOG-034` (`In validation`)
+
+### Root cause confirmed
+
+- Shared-mode runtime and timeline engines already use global pomodoro indexing for long-break cadence.
+- Timer status-box preview (`Next status`) used per-task pomodoro index (`state.currentPomodoro`) directly.
+- This mismatch produced false long-break prediction at task boundaries (e.g., local pomodoro 4 in task 2 with global index 7).
+
+### Implementation applied
+
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`
+  - Added public getter `currentGlobalPomodoroOffset` so UI projections can consume the same shared-mode global offset used by runtime logic.
+- `lib/presentation/screens/timer_screen.dart`
+  - Added `usesLongBreakForNextStatus(...)` helper (`@visibleForTesting`) with mode-aware global/per-task cadence selection.
+  - Replaced direct `% longBreakInterval` check with mode-aware shared calculation using:
+    - `vm.currentGlobalPomodoroOffset`,
+    - `vm.currentGroup?.integrityMode`,
+    - `state.currentPomodoro`.
+
+### Regression coverage added
+
+- New focused regression test:
+  - `test/presentation/timer_screen_break_prediction_test.dart`
+  - Confirms:
+    - shared mode uses global index (offset 3 + local 4 => global 7 => short break),
+    - shared boundary long break case remains correct (offset 3 + local 1 => global 4 => long break),
+    - individual mode preserves per-task cadence.
+
+### Local verification
+
+- `flutter analyze` PASS (`No issues found!`).
+- `flutter test test/presentation/timer_screen_break_prediction_test.dart` PASS.
+- `flutter test test/data/models/task_run_group_mode_a_breaks_test.dart` PASS.
+
+### Packet/doc synchronization
+
+- `docs/bugs/validation_bug034_2026_05_01/plan_validacion_rapida_fix.md`
+  - Scenario C terminology corrected: `fixed/flexible` -> `individual`.
+  - Local verification section updated to PASS with exact commands/date.
+- `docs/bugs/validation_bug034_2026_05_01/quick_pass_checklist.md`
+  - Regression smoke terminology corrected to `individual`.
+  - Local gate checklist marked PASS with explicit test command evidence.
+
+### Status after this block
+
+- `BUG-034` / `BUGLOG-034`: **In validation**.
+- Device scenarios A/B/C remain pending and are the next required step before closure.
