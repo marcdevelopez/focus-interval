@@ -29,6 +29,7 @@ import '../../widgets/task_card.dart';
 import '../../widgets/mode_indicator.dart';
 import 'task_group_planning_screen.dart';
 import '../utils/continuous_plan_load_ui.dart';
+import '../utils/scheduling_conflict_helpers.dart';
 import '../utils/scheduled_group_timing.dart';
 import '../utils/run_mode_launcher.dart';
 
@@ -560,6 +561,16 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       now: now,
       noticeFallbackMinutes: _noticeFallbackMinutes,
     );
+    final mirrorConflictContext = mirrorConflictDecision == null
+        ? null
+        : resolveRunningOverlapContext(
+            runningGroupId: mirrorConflictDecision.runningGroupId,
+            scheduledGroupId: mirrorConflictDecision.scheduledGroupId,
+            groups: groups,
+            activeSession: activeSession,
+            now: now,
+            fallbackNoticeMinutes: _noticeFallbackMinutes,
+          );
     if (overlapDecision != null && mirrorConflictDecision == null) {
       final stillValid = isRunningOverlapStillValid(
         runningGroupId: overlapDecision.runningGroupId,
@@ -808,6 +819,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                 context,
                 decision: mirrorConflictDecision,
                 ownerStale: _isOwnerStale(activeSession, now),
+                conflictContext: mirrorConflictContext,
               ),
             ),
           if (activeGroupBanner != null)
@@ -1058,6 +1070,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     BuildContext context, {
     required RunningOverlapDecision decision,
     required bool ownerStale,
+    required RunningOverlapContext? conflictContext,
   }) {
     final message = ownerStale
         ? 'Owner seems unavailable. Claim ownership to resolve this conflict.'
@@ -1073,7 +1086,32 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(message, style: const TextStyle(color: Colors.white)),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  message,
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+              if (conflictContext != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Tooltip(
+                    message: formatConflictSummary(
+                      conflictContext,
+                      now: DateTime.now(),
+                    ),
+                    child: const Icon(
+                      Icons.info_outline,
+                      size: 16,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ),
+            ],
+          ),
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerLeft,

@@ -1243,6 +1243,8 @@ void main() {
 
         await _pumpUntilFound(tester, find.text('Scheduling conflict'));
         expect(find.text('Scheduling conflict'), findsOneWidget);
+        expect(find.textContaining('Running:'), findsOneWidget);
+        expect(find.textContaining('Scheduled:'), findsOneWidget);
 
         await tester.tap(find.text('Cancel scheduled'));
         await tester.pump(const Duration(milliseconds: 260));

@@ -26,8 +26,8 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last closed bug fix: **BUG-031 — mirror stale conflict snackbar lifecycle (`f2005cc`, closed 30/04/2026)**
-Current focus: **open bug queue (`BUGLOG-027`/`BUGLOG-029`) + IDEA-039 device validation**
-Last update: **30/04/2026**
+Current focus: **BUG-033 rolling monitor + BUG-027 in validation + BUGLOG-034 in validation + BUGLOG-029 pending**
+Last update: **01/05/2026**
 
 ---
 
@@ -18183,6 +18183,7 @@ Expected behavior per specs: paused sessions must not advance and must not be au
 ### Context
 
 BUG-031 and BUG-033 were discovered and documented exclusively in side branches:
+
 - `fix/bug031-stale-conflict-snackbar-base030` (fix implemented, local gate PASS, device validation pending)
 - `fix/bug033-foreground-service-crash` (crash registered, no fix yet)
 
@@ -18310,3 +18311,216 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 - Project workflow now explicitly distinguishes:
   - standard path: branch push + PR + merge to `develop`;
   - emergency path: P0 direct merge with mandatory written justification.
+
+---
+
+## Block 750 — BUG-033 registration from Android crash evidence (29/04/2026)
+
+**Current branch intent:** Register Android foreground-service crash as independent bug and open validation packet without mixing BUG-032 scope.
+**Branch:** `fix/bug033-foreground-service-crash`
+**Commit:** `5b9d85c`
+**Validation/Bug IDs:** `BUG-033` / `BUGLOG-033` (`In validation`)
+
+### Evidence captured
+
+- Android runtime log reports:
+  - `FATAL EXCEPTION: main`
+  - `ForegroundServiceStartNotAllowedException`
+  - `Service.startForeground() not allowed due to mAllowStartForeground false`
+- Stacktrace points to:
+  - `PomodoroForegroundService.onStartCommand(...)`
+  - `startOrUpdate()`
+  - `startForeground(...)`
+- User screenshot captured Android system crash dialog (`focus_interval sigue sin funcionar`).
+
+### Documentation synchronization
+
+- `docs/bugs/bug_log.md`
+  - Added `BUG-033` as open bug with captured evidence and initial hypothesis.
+- `docs/validation/validation_ledger.md`
+  - Snapshot updated to 2026-04-29.
+  - Active non-closed bug count updated (`2 -> 3`).
+  - Active P1 list updated (`BUGLOG-033`).
+  - Added `BUGLOG-033` entry as `In validation`.
+- Validation packet opened:
+  - `docs/bugs/validation_bug033_2026_04_29/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug033_2026_04_29/quick_pass_checklist.md`
+  - `docs/bugs/validation_bug033_2026_04_29/logs/`
+  - `docs/bugs/validation_bug033_2026_04_29/screenshots/`
+
+### Status after this block
+
+- `BUG-033` / `BUGLOG-033`: **In validation**.
+- Forced same-conditions repro is explicitly pending and documented as next mandatory step.
+
+---
+
+## Block 751 — BUG-033 rolling monitor protocol activated after long non-repro run (01/05/2026)
+
+**Current branch intent:** Keep BUG-033 active in parallel while other bugs continue, with deterministic per-session capture protocol and persistent traceability.
+**Branch:** `fix/bug033-foreground-service-crash`
+**Commit:** `cd4e5da`
+**Validation/Bug IDs:** `BUG-033` / `BUGLOG-033` (`In validation`)
+
+### Validation run recap (today)
+
+- Session window: **13:05 -> 14:35 EDT** (Android app in background under memory pressure workload).
+- Dual capture was executed (Flutter + app-focused logcat).
+- Result: **non-repro** for BUG-033 in this run.
+  - No `ForegroundServiceStartNotAllowedException` for `com.marcdevelopez.focusinterval`.
+  - No `FATAL EXCEPTION` attributable to Focus Interval process in app-focused logcat.
+- Parallel signal observed:
+  - repeated network/DNS unavailability (`Unable to resolve host firestore.googleapis.com`) during long background window; tracked as separate runtime condition (not closure for BUG-033).
+
+### Documentation synchronization
+
+- `docs/bugs/validation_bug033_2026_04_29/plan_validacion_rapida_fix.md`
+  - Added Scenario C (rolling monitor).
+  - Added exact reusable per-session commands (`adb logcat` + `flutter run` in `APP_ENV=prod`).
+  - Added execution history entry for 01/05/2026 non-repro run and evidence file references.
+- `docs/bugs/validation_bug033_2026_04_29/quick_pass_checklist.md`
+  - Marked Scenario C execution as PASS for non-repro capture.
+  - Added explicit rolling monitor readiness checkbox.
+- `docs/bugs/bug_log.md`
+  - BUG-033 status moved from `Open` to `In validation`.
+  - Added 01/05/2026 non-repro evidence and rolling monitor note.
+- `docs/validation/validation_ledger.md`
+  - Snapshot updated to 2026-05-01.
+  - BUGLOG-033 evidence expanded with non-repro run outcome and rolling monitor requirement.
+
+### Status after this block
+
+- `BUG-033` / `BUGLOG-033`: **In validation**.
+- Required operating mode: keep dual-capture protocol available in each session while parallel fixes continue on `BUGLOG-027` and `BUGLOG-029`.
+
+---
+
+## Block 752 — BUG-027 context propagation implemented and moved to validation (01/05/2026)
+
+**Current branch intent:** Implement BUG-027 root fix (shared conflict context + range-aware copy) and open formal device validation packet.
+**Branch:** `fix/bug033-foreground-service-crash`
+**Commit:** `8600f44`
+**Validation/Bug IDs:** `BUG-027` / `BUGLOG-027` (`In validation`)
+
+### Context
+
+- BUG-027 reported that conflict messaging lacked actionable context (blocker identity + compared ranges) across planning/runtime/mirror surfaces.
+- Root cause confirmed: copy and context assembly were fragmented per-screen, while overlap decision payload carried only IDs.
+
+### Implementation summary
+
+- Added shared context model/formatters in `lib/presentation/utils/scheduling_conflict_helpers.dart`:
+  - `ConflictWindow`, `PreRunConflict`, `RunningOverlapContext`
+  - `resolveConflictWindow`, `resolveRunningOverlapContext`
+  - shared time/range summary formatters.
+- Updated `GroupsHubScreen` conflict flows:
+  - running conflict modal now includes selected range + running blockers (name/range),
+  - scheduled conflict modal now includes selected range + scheduled blockers (name/range),
+  - pre-run conflict snackbar now includes blocker context + candidate pre-run window.
+- Updated mirror conflict surfaces:
+  - Task List and Groups Hub banner keep base CTA and add compact contextual summary (info tooltip).
+  - Timer mirror snackbar adds contextual running/scheduled summary line.
+- Updated Timer runtime overlap modal:
+  - now renders `Running:` + range, `Scheduled:` + range, and conditional `Pre-Run:` label.
+
+### Local verification
+
+- `flutter analyze` PASS.
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` PASS.
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` PASS.
+
+### Documentation synchronization
+
+- Opened validation packet:
+  - `docs/bugs/validation_bug027_2026_05_01/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug027_2026_05_01/quick_pass_checklist.md`
+  - `docs/bugs/validation_bug027_2026_05_01/logs/`
+  - `docs/bugs/validation_bug027_2026_05_01/screenshots/`
+- Updated status to `In validation` in:
+  - `docs/bugs/bug_log.md` (`BUG-027`)
+  - `docs/validation/validation_ledger.md` (`BUGLOG-027`)
+  - `docs/roadmap.md` (Phase 17 reopened item now marked In validation)
+
+### Status after this block
+
+- `BUG-027` / `BUGLOG-027`: **In validation**.
+- Device evidence for scenarios A-D (V03/V05/V19/V24) is pending before closure.
+
+---
+
+## Block 753 — BUG-027 follow-up gate completed (tests + validation-plan correction) (01/05/2026)
+
+**Current branch intent:** Close post-review follow-up from Claude for BUG-027 before PR preparation (missing local tests + log-analysis methodology correction).
+**Branch:** `fix/bug033-foreground-service-crash`
+**Commit:** `dfdd4d8`
+**Validation/Bug IDs:** `BUG-027` / `BUGLOG-027` (`In validation`)
+
+### Follow-up actions completed
+
+- Re-ran and confirmed local gate expansion requested in review:
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` PASS (clean re-run; prior interrupted run invalid).
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS.
+  - `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` PASS.
+  - `flutter test test/presentation/utils/scheduled_group_timing_test.dart` PASS.
+  - `flutter analyze` PASS.
+- Corrected BUG-027 packet methodology for log analysis:
+  - `docs/bugs/validation_bug027_2026_05_01/plan_validacion_rapida_fix.md`
+    now states visual evidence (surfaces A-D) as authoritative for this UI bug.
+  - Ownership-action grep remains as secondary signal only.
+  - UI-string grep checks (`Running:`, `Scheduled:`, `Pre-Run:`) are now explicitly marked non-authoritative for this bug type.
+
+### Documentation synchronization
+
+- `docs/bugs/validation_bug027_2026_05_01/quick_pass_checklist.md`
+  - Local gate section expanded with the four additional PASS tests.
+- `docs/bugs/bug_log.md`
+  - BUG-027 fix section now references commit `8600f44` (no pending hash wording) and expanded regression/local coverage list.
+- `docs/validation/validation_ledger.md`
+  - `BUGLOG-027` evidence updated to include expanded local gate PASS set.
+
+### Status after this block
+
+- `BUG-027` / `BUGLOG-027`: **In validation** (device scenarios A-D still pending).
+- Local review debt reported by Claude is resolved; remaining work is device evidence capture only.
+
+
+---
+
+## Block 754 — BUG-034 registered with validation packet (shared timeline desync) (01/05/2026)
+
+**Current branch intent:** Register BUG-034 from user-provided runtime evidence (shared-mode break/timeline desync), preserve branch-scope clarity, and open deterministic validation packet.
+**Branch:** `fix/bug034-shared-timeline-break-desync`
+**Commit:** `f910caf`
+**Validation/Bug IDs:** `BUG-034` / `BUGLOG-034` (`In validation`)
+
+### Context
+
+- User reported a shared-mode logic inconsistency in Run Mode for group `da943ceb-31f9-42b5-b994-235bee6586d0`:
+  - `Next status` predicted `Break: 15 min`,
+  - runtime executed `Break: 5 min`,
+  - contextual task-item ranges no longer aligned with status-box/runtime timeline.
+- Source evidence arrived as `bug.md` + three screenshots in repository root.
+- Branch-scope decision applied:
+  - created dedicated bug branch `fix/bug034-shared-timeline-break-desync` from current `fix/bug033-foreground-service-crash` baseline,
+  - reason: keep latest BUG-027/033 documentary state while avoiding further mixed-scope commits on `fix/bug033-*`.
+
+### Work completed
+
+- Opened validation packet:
+  - `docs/bugs/validation_bug034_2026_05_01/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug034_2026_05_01/quick_pass_checklist.md`
+  - `docs/bugs/validation_bug034_2026_05_01/logs/`
+  - `docs/bugs/validation_bug034_2026_05_01/screenshots/`
+- Rehomed and renamed screenshot evidence from root into canonical packet paths:
+  - `docs/bugs/validation_bug034_2026_05_01/screenshots/2026-05-01_bug034_next_status_predicts_long_break_161714.png`
+  - `docs/bugs/validation_bug034_2026_05_01/screenshots/2026-05-01_bug034_runtime_executes_short_break_162539.png`
+  - `docs/bugs/validation_bug034_2026_05_01/screenshots/2026-05-01_bug034_contextual_ranges_desync_163327.png`
+- Updated canonical bug queue docs:
+  - `docs/bugs/bug_log.md` — added BUG-034 full entry and status `In validation`.
+  - `docs/validation/validation_ledger.md` — added `BUGLOG-034` (P1 In validation), updated snapshot and active P1 list.
+  - `docs/roadmap.md` — added Phase 17 in-validation line for shared-mode timeline coherence requirement (`BUGLOG-034`).
+
+### Status after this block
+
+- `BUG-034` / `BUGLOG-034`: **In validation**.
+- Pending closure work: deterministic fresh-run repro + cross-mode guard + targeted fix candidate.
