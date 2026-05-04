@@ -440,6 +440,10 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       30/03/2026: BUG-022 closed/OK — user re-test confirms Authentication
                   keyboard input works after account switch; closure recorded
                   with commit `4e439db` and validation packet sync.
+      04/05/2026: BUG-035 registered (docs-first) — macOS keyboard input can
+                  lock outside Authentication after focus/resume churn
+                  (`physical key already pressed` loop); global app-level
+                  stale-key repair wrapper opened in validation packet.
       30/03/2026: BUG-021 moved to In validation — Run Mode stale ownership
                   rejection snackbar now auto-dismisses on ownership-context
                   changes (request replacement/new pending/requester owner
@@ -499,6 +503,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 6 — Account profile metadata (display name + avatar) in Firestore/Storage; Settings UI (Account Mode only); ownership UI uses Name (Platform) (new requirement).
 - Phase 6 — Logout while running/paused must never produce a black screen (return to Local Mode Task List) (bug).
 - ~~Phase 6 — macOS Authentication fields must remain keyboard-usable after sign-out/account switch; stale desktop key state must auto-repair on Authentication open/tap (`BUG-022`) (bug).~~ **Closed/OK on 30/03/2026 (`BUGLOG-022`; implementation commit `4e439db`; user validation confirmation + local gate PASS).**
+- ~~Phase 6 — macOS desktop keyboard reliability must remain usable across all app screens after focus/resume and account-switch transitions; stale key states must self-heal globally (not only in Authentication) (`BUGLOG-035`) — **In validation on 04/05/2026** (`fix/bug035-macos-global-keyboard-repair`; gate-only packet opened per user-approved non-deterministic repro exception).~~ **Closed/OK on 04/05/2026 (`BUGLOG-035`; implementation commit `88e0bb1`; local gate PASS + macOS quick-run PASS + explicit user acceptance under non-deterministic repro waiver).**
 - Phase 19 — Groups Hub canceled reason details (tappable reason label) (new requirement).
 - ~~Phase 18 — Mode-specific breaks (global long-break counter in Mode A) implemented; validation pending.~~ **Closed/OK on 20/03/2026 (`RVP-066`; implementation commit `45b522f` + dedicated Mode A global-break tests PASS).**
 - ~~Phase 18 — Run Mode task transition catch-up after background/resume (validation pending).~~ **Closed/OK on 20/03/2026 (`RVP-067`; implementation commit `992de22` + resume catch-up validation test PASS).**

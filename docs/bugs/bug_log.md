@@ -4114,3 +4114,64 @@ Fix applied:
 Status:
 
 In validation (01/05/2026). Initial visual evidence captured; deterministic fresh-run repro + cross-mode guard still pending in the validation packet.
+
+---
+
+## BUG-035 — macOS keyboard input lock outside Authentication after focus/resume
+
+ID: BUG-035
+Date: 04/05/2026 (UTC-4)
+Platforms: macOS
+Context: Account Mode while already authenticated (for example Google sign-in); user navigates normal app screens and edits text fields (Task Editor, Preset Editor, list flows).
+
+Symptom:
+
+- Keyboard input can become blocked across app screens (not limited to Authentication).
+- Pressed characters stop being inserted in text fields until app restart.
+
+Observed behavior:
+
+- Runtime repeatedly emits:
+  `A KeyDownEvent is dispatched, but the state shows that the physical key is already pressed`.
+- The repeated event often points to a single key (for example `Key P`) with identical event identity/timestamp.
+- LoginScreen stale-key repair logic is not involved when the user is already logged in and never visits `/login`.
+- Closing and reopening the app restores normal typing (temporary recovery).
+
+Expected behavior:
+
+- Keyboard input must stay usable across all app screens on macOS.
+- Focus/resume churn must not leave the app in a stuck-key state requiring restart.
+
+Evidence:
+
+- User runtime log excerpt (04/05/2026) showing repeated duplicate key-down exceptions while typing fails in non-login screens.
+- Existing implementation inspection:
+  - `lib/presentation/screens/login_screen.dart` stale-key repair currently scoped to Authentication lifecycle/taps.
+- Validation packet opened:
+  - `docs/bugs/validation_bug035_2026_05_04/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug035_2026_05_04/quick_pass_checklist.md`
+
+Workaround:
+
+- Restart the macOS app.
+
+Hypothesis:
+
+- Flutter `HardwareKeyboard` pressed-key map can remain stale after macOS focus transitions.
+- Because repair is currently scoped to LoginScreen only, authenticated flows never run the repair and stale keys remain latched globally.
+
+Fix applied:
+
+- Branch: `fix/bug035-macos-global-keyboard-repair`
+- Runtime patch:
+  - Added app-level macOS keyboard repair wrapper (`MacOsKeyboardStateRepair`) in `MaterialApp.builder` chain.
+  - Repair runs on app bootstrap and on `AppLifecycleState.resumed`.
+  - Wrapper has its own in-instance concurrency guard and synthesizes `KeyUpEvent` for stale pressed keys by reconciling `HardwareKeyboard` vs `SystemChannels.keyboard/getKeyboardState`.
+  - Existing LoginScreen repair remains in place as local defense in depth.
+
+Status:
+
+Closed/OK (04/05/2026). Implementation commit `88e0bb1` validated with:
+- local gate PASS (`flutter analyze`, `flutter test test/presentation/timer_screen_completion_navigation_test.dart`);
+- macOS quick execution PASS log (`docs/bugs/validation_bug035_2026_05_04/logs/2026-05-04_bug035_4b1c94a_macos_debug.log`) without stuck-key signature matches;
+- explicit user acceptance in thread under the documented non-deterministic repro waiver.

@@ -6,6 +6,7 @@ import 'theme.dart';
 import '../widgets/active_session_auto_opener.dart';
 import '../widgets/app_mode_change_guard.dart';
 import '../widgets/linux_dependency_gate.dart';
+import '../widgets/macos_keyboard_state_repair.dart';
 import '../widgets/preset_sync_coordinator.dart';
 import '../widgets/scheduled_group_auto_starter.dart';
 
@@ -34,15 +35,17 @@ class FocusIntervalApp extends StatelessWidget {
           navigatorKey: rootNavigatorKey,
           child: presetSyncWrapped,
         );
-        if (!_isLinux) return scheduledWrapped;
+        final keyboardRepairWrapped = MacOsKeyboardStateRepair(
+          child: scheduledWrapped,
+        );
+        if (!_isLinux) return keyboardRepairWrapped;
         return LinuxDependencyGate(
           navigatorKey: rootNavigatorKey,
-          child: scheduledWrapped,
+          child: keyboardRepairWrapped,
         );
       },
     );
   }
 }
 
-bool get _isLinux =>
-    !kIsWeb && defaultTargetPlatform == TargetPlatform.linux;
+bool get _isLinux => !kIsWeb && defaultTargetPlatform == TargetPlatform.linux;

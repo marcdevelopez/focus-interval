@@ -25,9 +25,9 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last closed bug fix: **BUG-031 — mirror stale conflict snackbar lifecycle (`f2005cc`, closed 30/04/2026)**
-Current focus: **BUG-033 rolling monitor + BUG-027 in validation + BUGLOG-034 in validation + BUGLOG-029 pending**
-Last update: **01/05/2026**
+Last closed bug fix: **BUG-035 — macOS global keyboard stale-key repair (`88e0bb1`, closed 04/05/2026)**
+Current focus: **BUG-033 rolling monitor + BUGLOG-034 in validation + BUGLOG-027 in validation + BUGLOG-029 pending**
+Last update: **04/05/2026**
 
 ---
 
@@ -16277,7 +16277,7 @@ User reported a recurring macOS issue: after signing out to switch account, Auth
 
 **Current branch intent:** BUG-021 runtime fix + validation packet synchronization and closure.
 **Branch:** `fix/bug021-ownership-snackbar-autodismiss`
-**Commit:** `pending-local`
+**Commit:** `88e0bb1`
 **Bugs closed:** `BUG-021` / `BUGLOG-021` (P1)
 
 ### Context
@@ -16334,7 +16334,7 @@ The original user report referred to automatic owner switch without explicit own
 
 **Current branch intent:** BUG-017 targeted UI fix + regression coverage + docs closure.
 **Branch:** `fix/bug017-preset-dropdown-custom`
-**Commit:** `pending-local`
+**Commit:** `88e0bb1`
 **Bugs closed:** `BUG-017` / `BUGLOG-017` (P2)
 
 ### Context
@@ -18524,3 +18524,93 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 - `BUG-034` / `BUGLOG-034`: **In validation**.
 - Pending closure work: deterministic fresh-run repro + cross-mode guard + targeted fix candidate.
+
+---
+
+## Block 755 — BUG-035 docs-first + global macOS keyboard repair wrapper (04/05/2026)
+
+**Current branch intent:** Add global stale-key recovery path for macOS keyboard reliability outside Authentication, with full bug traceability packet.
+**Branch:** `fix/bug035-macos-global-keyboard-repair`
+**Commit:** `88e0bb1`
+**Validation/Bug IDs:** `BUG-035` / `BUGLOG-035` (`In validation`)
+
+### Context
+
+- New report (04/05/2026): while already authenticated, keyboard input can lock across non-login screens (Task Editor and others) with repeated `A KeyDownEvent is dispatched, but the state shows that the physical key is already pressed`.
+- Existing BUG-022 patch (`4e439db`) repaired stale-key state only in `LoginScreen`, so authenticated flows that never open Authentication had no recovery path.
+
+### Changes applied
+
+- Documentation-first sync:
+  - Added `BUG-035` entry to `docs/bugs/bug_log.md`.
+  - Added `BUGLOG-035` entry to `docs/validation/validation_ledger.md` (P1 / In validation) and updated snapshot counters.
+  - Updated `docs/specs.md` desktop keyboard reliability rule to app-wide behavioral scope (no implementation-detail wording).
+  - Updated `docs/roadmap.md` timeline + reopened Phase 6 item for global macOS keyboard reliability.
+  - Opened validation packet:
+    - `docs/bugs/validation_bug035_2026_05_04/plan_validacion_rapida_fix.md`
+    - `docs/bugs/validation_bug035_2026_05_04/quick_pass_checklist.md`
+    - `docs/bugs/validation_bug035_2026_05_04/logs/`
+    - `docs/bugs/validation_bug035_2026_05_04/screenshots/`
+
+- Runtime patch:
+  - Added `lib/widgets/macos_keyboard_state_repair.dart` (`MacOsKeyboardStateRepair`).
+  - Wrapper is app-scoped and runs stale-key reconciliation on:
+    - app bootstrap (`postFrame`),
+    - `AppLifecycleState.resumed`.
+  - Wrapper includes its own `_repairingKeyboardState` guard (independent from LoginScreen state).
+  - Integrated wrapper in `lib/app/app.dart` MaterialApp builder chain so all screens are covered.
+  - Preserved existing LoginScreen repair path as defense in depth.
+
+### Validation policy note
+
+- Exact deterministic device repro for BUG-035 is explicitly waived by user decision because trigger is intermittent/non-deterministic.
+- Validation packet captures this waiver; local gate remains mandatory.
+
+### Tests executed
+
+- `flutter analyze` -> PASS (`No issues found!`).
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> PASS (`All tests passed`, `+39`).
+
+### Status after this block
+
+- `BUG-035` / `BUGLOG-035`: **In validation**.
+- Pending before closure: local gate command evidence + user final acceptance under documented repro waiver.
+
+---
+
+## Block 756 — BUG-035 validation closure and queue sync (04/05/2026)
+
+**Current branch intent:** Close BUG-035 after user-confirmed macOS quick validation PASS and synchronize all canonical tracking docs before merging to `develop`.
+**Branch:** `fix/bug035-macos-global-keyboard-repair`
+**Implementation commit:** `88e0bb1`
+**Validation/Bug IDs:** `BUG-035` / `BUGLOG-035` (**Closed/OK**)
+
+### Validation closure evidence
+
+- User confirmed closure in thread: **"pass, no hubo bugs"**.
+- macOS quick-run evidence captured in:
+  - `docs/bugs/validation_bug035_2026_05_04/logs/2026-05-04_bug035_4b1c94a_macos_debug.log`
+- Log scan result on quick run:
+  - no matches for stuck-key signature (`physical key is already pressed`).
+- Existing local gate PASS evidence retained in packet:
+  - `flutter analyze` log: `.../2026-05-04_bug035_88e0bb1_local_analyze.log`
+  - targeted test log: `.../2026-05-04_bug035_88e0bb1_local_timer_screen_completion_navigation_test.log`
+
+### Documentation synchronization completed
+
+- `docs/bugs/validation_bug035_2026_05_04/plan_validacion_rapida_fix.md`
+  - status moved to `Closed/OK` and quick-run evidence recorded.
+- `docs/bugs/validation_bug035_2026_05_04/quick_pass_checklist.md`
+  - closure checklist marked PASS.
+- `docs/bugs/bug_log.md`
+  - BUG-035 status moved from `In validation` to `Closed/OK`.
+- `docs/validation/validation_ledger.md`
+  - `BUGLOG-035` moved to `Closed/OK` with commit/evidence fields completed.
+  - snapshot counters updated (active bug-log queue and active P1 list).
+- `docs/roadmap.md`
+  - Phase 6 BUGLOG-035 line moved to `Closed/OK`.
+
+### Status after this block
+
+- `BUG-035` / `BUGLOG-035`: **Closed/OK**.
+- Active P1 bug queue reduced to: `BUGLOG-033`, `BUGLOG-034`.
