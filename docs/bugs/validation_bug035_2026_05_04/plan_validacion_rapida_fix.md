@@ -71,7 +71,7 @@ Reference result without fix:
 ## Comandos de ejecución
 
 ```bash
-flutter run -v --debug -d macos --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true 2>&1 | tee docs/bugs/validation_bug035_2026_05_04/logs/2026-05-04_bug035_88e0bb1_macos_debug.log
+flutter run -v --debug -d macos --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true 2>&1 | tee docs/bugs/validation_bug035_2026_05_04/logs/2026-05-04_bug035_4b1c94a_macos_debug.log
 ```
 
 ```bash
@@ -100,13 +100,17 @@ rg -n "\[GlobalKeyboardRepair\]|\[AuthKeyboardRepair\]|trigger=app_wrapper_boots
 
 - `flutter analyze` -> PASS (`No issues found!`), log: `docs/bugs/validation_bug035_2026_05_04/logs/2026-05-04_bug035_88e0bb1_local_analyze.log`.
 - `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> PASS (`All tests passed!`, `+39`), log: `docs/bugs/validation_bug035_2026_05_04/logs/2026-05-04_bug035_88e0bb1_local_timer_screen_completion_navigation_test.log`.
+- macOS quick execution PASS (`flutter run -d macos`) with user validation confirmation ("pass, no hubo bugs"), log: `docs/bugs/validation_bug035_2026_05_04/logs/2026-05-04_bug035_4b1c94a_macos_debug.log`.
+- Quick scan of macOS run log:
+  - no matches for stuck-key signature (`physical key is already pressed`);
+  - app launched and remained interactive during focus/resume churn validation window.
 
 ## Criterios de cierre
 
-1. Local gate PASS (`flutter analyze` + targeted regression test).
-2. No regression reported in Authentication typing behavior.
-3. Validation packet updated with explicit user-approved non-deterministic repro waiver.
+1. Local gate PASS (`flutter analyze` + targeted regression test). PASS.
+2. No regression reported in Authentication typing behavior. PASS.
+3. Validation packet updated with explicit user-approved non-deterministic repro waiver. PASS.
 
 ## Status
 
-In validation.
+Closed/OK.

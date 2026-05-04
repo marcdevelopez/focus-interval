@@ -4171,4 +4171,7 @@ Fix applied:
 
 Status:
 
-In validation (04/05/2026). Device exact-repro run is waived by explicit user decision due non-deterministic trigger; local gate PASS (`flutter analyze`, `flutter test test/presentation/timer_screen_completion_navigation_test.dart`) recorded in `docs/bugs/validation_bug035_2026_05_04/logs/`.
+Closed/OK (04/05/2026). Implementation commit `88e0bb1` validated with:
+- local gate PASS (`flutter analyze`, `flutter test test/presentation/timer_screen_completion_navigation_test.dart`);
+- macOS quick execution PASS log (`docs/bugs/validation_bug035_2026_05_04/logs/2026-05-04_bug035_4b1c94a_macos_debug.log`) without stuck-key signature matches;
+- explicit user acceptance in thread under the documented non-deterministic repro waiver.
