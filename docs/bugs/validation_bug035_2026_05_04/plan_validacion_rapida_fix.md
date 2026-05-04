@@ -2,7 +2,7 @@
 
 Date: 2026-05-04  
 Branch: `fix/bug035-macos-global-keyboard-repair`  
-Commit: `pending-local`  
+Commit: `88e0bb1`  
 Bugs covered: `BUG-035`  
 Target devices: macOS
 
@@ -71,15 +71,15 @@ Reference result without fix:
 ## Comandos de ejecución
 
 ```bash
-flutter run -v --debug -d macos --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true 2>&1 | tee docs/bugs/validation_bug035_2026_05_04/logs/2026-05-04_bug035_pending-local_macos_debug.log
+flutter run -v --debug -d macos --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true 2>&1 | tee docs/bugs/validation_bug035_2026_05_04/logs/2026-05-04_bug035_88e0bb1_macos_debug.log
 ```
 
 ```bash
-flutter analyze 2>&1 | tee docs/bugs/validation_bug035_2026_05_04/logs/2026-05-04_bug035_pending-local_local_analyze.log
+flutter analyze 2>&1 | tee docs/bugs/validation_bug035_2026_05_04/logs/2026-05-04_bug035_88e0bb1_local_analyze.log
 ```
 
 ```bash
-flutter test test/presentation/timer_screen_completion_navigation_test.dart 2>&1 | tee docs/bugs/validation_bug035_2026_05_04/logs/2026-05-04_bug035_pending-local_local_timer_screen_completion_navigation_test.log
+flutter test test/presentation/timer_screen_completion_navigation_test.dart 2>&1 | tee docs/bugs/validation_bug035_2026_05_04/logs/2026-05-04_bug035_88e0bb1_local_timer_screen_completion_navigation_test.log
 ```
 
 ## Log analysis — quick scan
@@ -98,8 +98,8 @@ rg -n "\[GlobalKeyboardRepair\]|\[AuthKeyboardRepair\]|trigger=app_wrapper_boots
 
 ## Verificación local
 
-- `flutter analyze` -> PASS (`No issues found!`), log: `docs/bugs/validation_bug035_2026_05_04/logs/2026-05-04_bug035_pending-local_local_analyze.log`.
-- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> PASS (`All tests passed!`, `+39`), log: `docs/bugs/validation_bug035_2026_05_04/logs/2026-05-04_bug035_pending-local_local_timer_screen_completion_navigation_test.log`.
+- `flutter analyze` -> PASS (`No issues found!`), log: `docs/bugs/validation_bug035_2026_05_04/logs/2026-05-04_bug035_88e0bb1_local_analyze.log`.
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> PASS (`All tests passed!`, `+39`), log: `docs/bugs/validation_bug035_2026_05_04/logs/2026-05-04_bug035_88e0bb1_local_timer_screen_completion_navigation_test.log`.
 
 ## Criterios de cierre
 

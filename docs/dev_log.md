@@ -16277,7 +16277,7 @@ User reported a recurring macOS issue: after signing out to switch account, Auth
 
 **Current branch intent:** BUG-021 runtime fix + validation packet synchronization and closure.
 **Branch:** `fix/bug021-ownership-snackbar-autodismiss`
-**Commit:** `pending-local`
+**Commit:** `88e0bb1`
 **Bugs closed:** `BUG-021` / `BUGLOG-021` (P1)
 
 ### Context
@@ -16334,7 +16334,7 @@ The original user report referred to automatic owner switch without explicit own
 
 **Current branch intent:** BUG-017 targeted UI fix + regression coverage + docs closure.
 **Branch:** `fix/bug017-preset-dropdown-custom`
-**Commit:** `pending-local`
+**Commit:** `88e0bb1`
 **Bugs closed:** `BUG-017` / `BUGLOG-017` (P2)
 
 ### Context
@@ -18531,7 +18531,7 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 **Current branch intent:** Add global stale-key recovery path for macOS keyboard reliability outside Authentication, with full bug traceability packet.
 **Branch:** `fix/bug035-macos-global-keyboard-repair`
-**Commit:** `pending-local`
+**Commit:** `88e0bb1`
 **Validation/Bug IDs:** `BUG-035` / `BUGLOG-035` (`In validation`)
 
 ### Context
