@@ -16384,7 +16384,7 @@ preset named `Custom` existed.
 
 **Current branch intent:** BUG-023 docs-first opening + implementation kickoff for route-return preset linking.
 **Branch:** `fix/bug023-save-as-preset-autolink`
-**Commit:** `9f01491`
+**Commit:** `pending-local`
 **Bugs opened:** `BUG-023` / `BUGLOG-023` (P2)
 
 ### Context
@@ -18676,7 +18676,7 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 **Current branch intent:** Apply a defensive Android foreground-service fix for BUG-033 after deterministic crash recapture, then keep the item in validation until patched-device scenarios pass.
 **Branch:** `fix/bug033-foreground-service-crash`
-**Commit:** `pending-local`
+**Commit:** `9f01491`
 **Validation/Bug IDs:** `BUG-033` / `BUGLOG-033` (`In validation`)
 
 ### Repro evidence recaptured
