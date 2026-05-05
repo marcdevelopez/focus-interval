@@ -16384,7 +16384,7 @@ preset named `Custom` existed.
 
 **Current branch intent:** BUG-023 docs-first opening + implementation kickoff for route-return preset linking.
 **Branch:** `fix/bug023-save-as-preset-autolink`
-**Commit:** `pending-local`
+**Commit:** `9f01491`
 **Bugs opened:** `BUG-023` / `BUGLOG-023` (P2)
 
 ### Context

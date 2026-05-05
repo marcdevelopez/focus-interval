@@ -2,7 +2,7 @@
 
 Date: 2026-04-29  
 Branch: `fix/bug033-foreground-service-crash`  
-Commit: `pending-local`  
+Commit: `9f01491`  
 Bugs covered: `BUG-033`  
 Target devices: Android owner path (primary), macOS observer (secondary ownership side effect check)  
 Protocol update: 2026-05-05
