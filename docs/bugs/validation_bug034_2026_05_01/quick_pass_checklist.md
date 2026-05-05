@@ -8,12 +8,12 @@
 ## Regression smoke
 
 - [ ] Shared mode: break prediction/execution and timeline ranges are coherent across boundary transitions.
-- [ ] Non-shared mode smoke (`fixed`/`flexible`): no new timeline desync introduced.
+- [ ] Non-shared mode smoke (`individual`): no new timeline desync introduced.
 
 ## Local gate
 
-- [ ] `flutter analyze` PASS.
-- [ ] Targeted timeline regression tests PASS.
+- [x] `flutter analyze` PASS.
+- [x] Targeted timeline regression tests PASS (`flutter test test/presentation/timer_screen_break_prediction_test.dart`; `flutter test test/data/models/task_run_group_mode_a_breaks_test.dart`).
 
 ## Closure rule
 

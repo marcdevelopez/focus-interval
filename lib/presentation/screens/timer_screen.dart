@@ -19,6 +19,21 @@ import '../../data/models/task_run_group.dart';
 import '../../data/models/pomodoro_session.dart';
 import '../../data/services/app_mode_service.dart';
 
+@visibleForTesting
+bool usesLongBreakForNextStatus({
+  required int currentPomodoro,
+  required int longBreakInterval,
+  required TaskRunIntegrityMode integrityMode,
+  required int globalPomodoroOffset,
+}) {
+  if (currentPomodoro <= 0) return false;
+  if (longBreakInterval <= 0) return false;
+  final globalIndex = integrityMode == TaskRunIntegrityMode.shared
+      ? globalPomodoroOffset + currentPomodoro
+      : currentPomodoro;
+  return globalIndex % longBreakInterval == 0;
+}
+
 class TimerScreen extends ConsumerStatefulWidget {
   final String groupId;
 
@@ -2807,7 +2822,13 @@ class _RunModeCenterContent extends StatelessWidget {
           nextRange = timeFormat.format(phaseEnd);
         }
       } else if (item != null && phaseEnd != null) {
-        final isLongBreak = state.currentPomodoro % item.longBreakInterval == 0;
+        final isLongBreak = usesLongBreakForNextStatus(
+          currentPomodoro: state.currentPomodoro,
+          longBreakInterval: item.longBreakInterval,
+          integrityMode:
+              vm.currentGroup?.integrityMode ?? TaskRunIntegrityMode.individual,
+          globalPomodoroOffset: vm.currentGlobalPomodoroOffset,
+        );
         final breakMinutes = isLongBreak
             ? item.longBreakMinutes
             : item.shortBreakMinutes;
