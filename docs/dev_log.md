@@ -25,9 +25,9 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last closed bug fix: **BUG-031 — mirror stale conflict snackbar lifecycle (`f2005cc`, closed 30/04/2026)**
-Current focus: **open bug queue (`BUGLOG-027`/`BUGLOG-029`) + IDEA-039 device validation + no-loss PR process hardening**
-Last update: **01/05/2026**
+Last closed bug fix: **BUG-035 — macOS global keyboard stale-key repair (`88e0bb1`, closed 04/05/2026)**
+Current focus: **BUG-033 deterministic repro recapture + BUGLOG-034/027 in validation + BUGLOG-029 pending + process no-loss checklist hardening**
+Last update: **05/05/2026**
 
 ---
 
@@ -16277,7 +16277,7 @@ User reported a recurring macOS issue: after signing out to switch account, Auth
 
 **Current branch intent:** BUG-021 runtime fix + validation packet synchronization and closure.
 **Branch:** `fix/bug021-ownership-snackbar-autodismiss`
-**Commit:** `pending-local`
+**Commit:** `88e0bb1`
 **Bugs closed:** `BUG-021` / `BUGLOG-021` (P1)
 
 ### Context
@@ -16334,7 +16334,7 @@ The original user report referred to automatic owner switch without explicit own
 
 **Current branch intent:** BUG-017 targeted UI fix + regression coverage + docs closure.
 **Branch:** `fix/bug017-preset-dropdown-custom`
-**Commit:** `pending-local`
+**Commit:** `88e0bb1`
 **Bugs closed:** `BUG-017` / `BUGLOG-017` (P2)
 
 ### Context
@@ -18183,6 +18183,7 @@ Expected behavior per specs: paused sessions must not advance and must not be au
 ### Context
 
 BUG-031 and BUG-033 were discovered and documented exclusively in side branches:
+
 - `fix/bug031-stale-conflict-snackbar-base030` (fix implemented, local gate PASS, device validation pending)
 - `fix/bug033-foreground-service-crash` (crash registered, no fix yet)
 
@@ -18313,44 +18314,385 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 ---
 
-## Block 750 — Mandatory no-loss PR checklist enforced in docs + PR template (01/05/2026)
+## Block 750 — BUG-033 registration from Android crash evidence (29/04/2026)
 
-**Current branch intent:** Process hardening to prevent loss of successful implementations during branch/PR flow.
+**Current branch intent:** Register Android foreground-service crash as independent bug and open validation packet without mixing BUG-032 scope.
+**Branch:** `fix/bug033-foreground-service-crash`
+**Commit:** `5b9d85c`
+**Validation/Bug IDs:** `BUG-033` / `BUGLOG-033` (`In validation`)
+
+### Evidence captured
+
+- Android runtime log reports:
+  - `FATAL EXCEPTION: main`
+  - `ForegroundServiceStartNotAllowedException`
+  - `Service.startForeground() not allowed due to mAllowStartForeground false`
+- Stacktrace points to:
+  - `PomodoroForegroundService.onStartCommand(...)`
+  - `startOrUpdate()`
+  - `startForeground(...)`
+- User screenshot captured Android system crash dialog (`focus_interval sigue sin funcionar`).
+
+### Documentation synchronization
+
+- `docs/bugs/bug_log.md`
+  - Added `BUG-033` as open bug with captured evidence and initial hypothesis.
+- `docs/validation/validation_ledger.md`
+  - Snapshot updated to 2026-04-29.
+  - Active non-closed bug count updated (`2 -> 3`).
+  - Active P1 list updated (`BUGLOG-033`).
+  - Added `BUGLOG-033` entry as `In validation`.
+- Validation packet opened:
+  - `docs/bugs/validation_bug033_2026_04_29/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug033_2026_04_29/quick_pass_checklist.md`
+  - `docs/bugs/validation_bug033_2026_04_29/logs/`
+  - `docs/bugs/validation_bug033_2026_04_29/screenshots/`
+
+### Status after this block
+
+- `BUG-033` / `BUGLOG-033`: **In validation**.
+- Forced same-conditions repro is explicitly pending and documented as next mandatory step.
+
+---
+
+## Block 751 — BUG-033 rolling monitor protocol activated after long non-repro run (01/05/2026)
+
+**Current branch intent:** Keep BUG-033 active in parallel while other bugs continue, with deterministic per-session capture protocol and persistent traceability.
+**Branch:** `fix/bug033-foreground-service-crash`
+**Commit:** `cd4e5da`
+**Validation/Bug IDs:** `BUG-033` / `BUGLOG-033` (`In validation`)
+
+### Validation run recap (today)
+
+- Session window: **13:05 -> 14:35 EDT** (Android app in background under memory pressure workload).
+- Dual capture was executed (Flutter + app-focused logcat).
+- Result: **non-repro** for BUG-033 in this run.
+  - No `ForegroundServiceStartNotAllowedException` for `com.marcdevelopez.focusinterval`.
+  - No `FATAL EXCEPTION` attributable to Focus Interval process in app-focused logcat.
+- Parallel signal observed:
+  - repeated network/DNS unavailability (`Unable to resolve host firestore.googleapis.com`) during long background window; tracked as separate runtime condition (not closure for BUG-033).
+
+### Documentation synchronization
+
+- `docs/bugs/validation_bug033_2026_04_29/plan_validacion_rapida_fix.md`
+  - Added Scenario C (rolling monitor).
+  - Added exact reusable per-session commands (`adb logcat` + `flutter run` in `APP_ENV=prod`).
+  - Added execution history entry for 01/05/2026 non-repro run and evidence file references.
+- `docs/bugs/validation_bug033_2026_04_29/quick_pass_checklist.md`
+  - Marked Scenario C execution as PASS for non-repro capture.
+  - Added explicit rolling monitor readiness checkbox.
+- `docs/bugs/bug_log.md`
+  - BUG-033 status moved from `Open` to `In validation`.
+  - Added 01/05/2026 non-repro evidence and rolling monitor note.
+- `docs/validation/validation_ledger.md`
+  - Snapshot updated to 2026-05-01.
+  - BUGLOG-033 evidence expanded with non-repro run outcome and rolling monitor requirement.
+
+### Status after this block
+
+- `BUG-033` / `BUGLOG-033`: **In validation**.
+- Required operating mode: keep dual-capture protocol available in each session while parallel fixes continue on `BUGLOG-027` and `BUGLOG-029`.
+
+---
+
+## Block 752 — BUG-027 context propagation implemented and moved to validation (01/05/2026)
+
+**Current branch intent:** Implement BUG-027 root fix (shared conflict context + range-aware copy) and open formal device validation packet.
+**Branch:** `fix/bug033-foreground-service-crash`
+**Commit:** `8600f44`
+**Validation/Bug IDs:** `BUG-027` / `BUGLOG-027` (`In validation`)
+
+### Context
+
+- BUG-027 reported that conflict messaging lacked actionable context (blocker identity + compared ranges) across planning/runtime/mirror surfaces.
+- Root cause confirmed: copy and context assembly were fragmented per-screen, while overlap decision payload carried only IDs.
+
+### Implementation summary
+
+- Added shared context model/formatters in `lib/presentation/utils/scheduling_conflict_helpers.dart`:
+  - `ConflictWindow`, `PreRunConflict`, `RunningOverlapContext`
+  - `resolveConflictWindow`, `resolveRunningOverlapContext`
+  - shared time/range summary formatters.
+- Updated `GroupsHubScreen` conflict flows:
+  - running conflict modal now includes selected range + running blockers (name/range),
+  - scheduled conflict modal now includes selected range + scheduled blockers (name/range),
+  - pre-run conflict snackbar now includes blocker context + candidate pre-run window.
+- Updated mirror conflict surfaces:
+  - Task List and Groups Hub banner keep base CTA and add compact contextual summary (info tooltip).
+  - Timer mirror snackbar adds contextual running/scheduled summary line.
+- Updated Timer runtime overlap modal:
+  - now renders `Running:` + range, `Scheduled:` + range, and conditional `Pre-Run:` label.
+
+### Local verification
+
+- `flutter analyze` PASS.
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` PASS.
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` PASS.
+
+### Documentation synchronization
+
+- Opened validation packet:
+  - `docs/bugs/validation_bug027_2026_05_01/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug027_2026_05_01/quick_pass_checklist.md`
+  - `docs/bugs/validation_bug027_2026_05_01/logs/`
+  - `docs/bugs/validation_bug027_2026_05_01/screenshots/`
+- Updated status to `In validation` in:
+  - `docs/bugs/bug_log.md` (`BUG-027`)
+  - `docs/validation/validation_ledger.md` (`BUGLOG-027`)
+  - `docs/roadmap.md` (Phase 17 reopened item now marked In validation)
+
+### Status after this block
+
+- `BUG-027` / `BUGLOG-027`: **In validation**.
+- Device evidence for scenarios A-D (V03/V05/V19/V24) is pending before closure.
+
+---
+
+## Block 753 — BUG-027 follow-up gate completed (tests + validation-plan correction) (01/05/2026)
+
+**Current branch intent:** Close post-review follow-up from Claude for BUG-027 before PR preparation (missing local tests + log-analysis methodology correction).
+**Branch:** `fix/bug033-foreground-service-crash`
+**Commit:** `dfdd4d8`
+**Validation/Bug IDs:** `BUG-027` / `BUGLOG-027` (`In validation`)
+
+### Follow-up actions completed
+
+- Re-ran and confirmed local gate expansion requested in review:
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` PASS (clean re-run; prior interrupted run invalid).
+  - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS.
+  - `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` PASS.
+  - `flutter test test/presentation/utils/scheduled_group_timing_test.dart` PASS.
+  - `flutter analyze` PASS.
+- Corrected BUG-027 packet methodology for log analysis:
+  - `docs/bugs/validation_bug027_2026_05_01/plan_validacion_rapida_fix.md`
+    now states visual evidence (surfaces A-D) as authoritative for this UI bug.
+  - Ownership-action grep remains as secondary signal only.
+  - UI-string grep checks (`Running:`, `Scheduled:`, `Pre-Run:`) are now explicitly marked non-authoritative for this bug type.
+
+### Documentation synchronization
+
+- `docs/bugs/validation_bug027_2026_05_01/quick_pass_checklist.md`
+  - Local gate section expanded with the four additional PASS tests.
+- `docs/bugs/bug_log.md`
+  - BUG-027 fix section now references commit `8600f44` (no pending hash wording) and expanded regression/local coverage list.
+- `docs/validation/validation_ledger.md`
+  - `BUGLOG-027` evidence updated to include expanded local gate PASS set.
+
+### Status after this block
+
+- `BUG-027` / `BUGLOG-027`: **In validation** (device scenarios A-D still pending).
+- Local review debt reported by Claude is resolved; remaining work is device evidence capture only.
+
+
+---
+
+## Block 754 — BUG-034 registered with validation packet (shared timeline desync) (01/05/2026)
+
+**Current branch intent:** Register BUG-034 from user-provided runtime evidence (shared-mode break/timeline desync), preserve branch-scope clarity, and open deterministic validation packet.
+**Branch:** `fix/bug034-shared-timeline-break-desync`
+**Commit:** `f910caf`
+**Validation/Bug IDs:** `BUG-034` / `BUGLOG-034` (`In validation`)
+
+### Context
+
+- User reported a shared-mode logic inconsistency in Run Mode for group `da943ceb-31f9-42b5-b994-235bee6586d0`:
+  - `Next status` predicted `Break: 15 min`,
+  - runtime executed `Break: 5 min`,
+  - contextual task-item ranges no longer aligned with status-box/runtime timeline.
+- Source evidence arrived as `bug.md` + three screenshots in repository root.
+- Branch-scope decision applied:
+  - created dedicated bug branch `fix/bug034-shared-timeline-break-desync` from current `fix/bug033-foreground-service-crash` baseline,
+  - reason: keep latest BUG-027/033 documentary state while avoiding further mixed-scope commits on `fix/bug033-*`.
+
+### Work completed
+
+- Opened validation packet:
+  - `docs/bugs/validation_bug034_2026_05_01/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug034_2026_05_01/quick_pass_checklist.md`
+  - `docs/bugs/validation_bug034_2026_05_01/logs/`
+  - `docs/bugs/validation_bug034_2026_05_01/screenshots/`
+- Rehomed and renamed screenshot evidence from root into canonical packet paths:
+  - `docs/bugs/validation_bug034_2026_05_01/screenshots/2026-05-01_bug034_next_status_predicts_long_break_161714.png`
+  - `docs/bugs/validation_bug034_2026_05_01/screenshots/2026-05-01_bug034_runtime_executes_short_break_162539.png`
+  - `docs/bugs/validation_bug034_2026_05_01/screenshots/2026-05-01_bug034_contextual_ranges_desync_163327.png`
+- Updated canonical bug queue docs:
+  - `docs/bugs/bug_log.md` — added BUG-034 full entry and status `In validation`.
+  - `docs/validation/validation_ledger.md` — added `BUGLOG-034` (P1 In validation), updated snapshot and active P1 list.
+  - `docs/roadmap.md` — added Phase 17 in-validation line for shared-mode timeline coherence requirement (`BUGLOG-034`).
+
+### Status after this block
+
+- `BUG-034` / `BUGLOG-034`: **In validation**.
+- Pending closure work: deterministic fresh-run repro + cross-mode guard + targeted fix candidate.
+
+---
+
+## Block 755 — BUG-035 docs-first + global macOS keyboard repair wrapper (04/05/2026)
+
+**Current branch intent:** Add global stale-key recovery path for macOS keyboard reliability outside Authentication, with full bug traceability packet.
+**Branch:** `fix/bug035-macos-global-keyboard-repair`
+**Commit:** `88e0bb1`
+**Validation/Bug IDs:** `BUG-035` / `BUGLOG-035` (`In validation`)
+
+### Context
+
+- New report (04/05/2026): while already authenticated, keyboard input can lock across non-login screens (Task Editor and others) with repeated `A KeyDownEvent is dispatched, but the state shows that the physical key is already pressed`.
+- Existing BUG-022 patch (`4e439db`) repaired stale-key state only in `LoginScreen`, so authenticated flows that never open Authentication had no recovery path.
+
+### Changes applied
+
+- Documentation-first sync:
+  - Added `BUG-035` entry to `docs/bugs/bug_log.md`.
+  - Added `BUGLOG-035` entry to `docs/validation/validation_ledger.md` (P1 / In validation) and updated snapshot counters.
+  - Updated `docs/specs.md` desktop keyboard reliability rule to app-wide behavioral scope (no implementation-detail wording).
+  - Updated `docs/roadmap.md` timeline + reopened Phase 6 item for global macOS keyboard reliability.
+  - Opened validation packet:
+    - `docs/bugs/validation_bug035_2026_05_04/plan_validacion_rapida_fix.md`
+    - `docs/bugs/validation_bug035_2026_05_04/quick_pass_checklist.md`
+    - `docs/bugs/validation_bug035_2026_05_04/logs/`
+    - `docs/bugs/validation_bug035_2026_05_04/screenshots/`
+
+- Runtime patch:
+  - Added `lib/widgets/macos_keyboard_state_repair.dart` (`MacOsKeyboardStateRepair`).
+  - Wrapper is app-scoped and runs stale-key reconciliation on:
+    - app bootstrap (`postFrame`),
+    - `AppLifecycleState.resumed`.
+  - Wrapper includes its own `_repairingKeyboardState` guard (independent from LoginScreen state).
+  - Integrated wrapper in `lib/app/app.dart` MaterialApp builder chain so all screens are covered.
+  - Preserved existing LoginScreen repair path as defense in depth.
+
+### Validation policy note
+
+- Exact deterministic device repro for BUG-035 is explicitly waived by user decision because trigger is intermittent/non-deterministic.
+- Validation packet captures this waiver; local gate remains mandatory.
+
+### Tests executed
+
+- `flutter analyze` -> PASS (`No issues found!`).
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> PASS (`All tests passed`, `+39`).
+
+### Status after this block
+
+- `BUG-035` / `BUGLOG-035`: **In validation**.
+- Pending before closure: local gate command evidence + user final acceptance under documented repro waiver.
+
+---
+
+## Block 756 — BUG-035 validation closure and queue sync (04/05/2026)
+
+**Current branch intent:** Close BUG-035 after user-confirmed macOS quick validation PASS and synchronize all canonical tracking docs before merging to `develop`.
+**Branch:** `fix/bug035-macos-global-keyboard-repair`
+**Implementation commit:** `88e0bb1`
+**Validation/Bug IDs:** `BUG-035` / `BUGLOG-035` (**Closed/OK**)
+
+### Validation closure evidence
+
+- User confirmed closure in thread: **"pass, no hubo bugs"**.
+- macOS quick-run evidence captured in:
+  - `docs/bugs/validation_bug035_2026_05_04/logs/2026-05-04_bug035_4b1c94a_macos_debug.log`
+- Log scan result on quick run:
+  - no matches for stuck-key signature (`physical key is already pressed`).
+- Existing local gate PASS evidence retained in packet:
+  - `flutter analyze` log: `.../2026-05-04_bug035_88e0bb1_local_analyze.log`
+  - targeted test log: `.../2026-05-04_bug035_88e0bb1_local_timer_screen_completion_navigation_test.log`
+
+### Documentation synchronization completed
+
+- `docs/bugs/validation_bug035_2026_05_04/plan_validacion_rapida_fix.md`
+  - status moved to `Closed/OK` and quick-run evidence recorded.
+- `docs/bugs/validation_bug035_2026_05_04/quick_pass_checklist.md`
+  - closure checklist marked PASS.
+- `docs/bugs/bug_log.md`
+  - BUG-035 status moved from `In validation` to `Closed/OK`.
+- `docs/validation/validation_ledger.md`
+  - `BUGLOG-035` moved to `Closed/OK` with commit/evidence fields completed.
+  - snapshot counters updated (active bug-log queue and active P1 list).
+- `docs/roadmap.md`
+  - Phase 6 BUGLOG-035 line moved to `Closed/OK`.
+
+### Status after this block
+
+- `BUG-035` / `BUGLOG-035`: **Closed/OK**.
+- Active P1 bug queue reduced to: `BUGLOG-033`, `BUGLOG-034`.
+
+---
+
+## Block 757 — BUG-034 shared-mode next-status break prediction fix + local gate PASS (04/05/2026)
+
+**Current branch intent:** Implement BUG-034 root cause fix (shared-mode global break cadence in `Next status`) and leave validation packet ready for device scenarios in the next session.
+**Branch:** `fix/bug034-shared-timeline-break-desync`
+**Commit:** `a636b0f`
+**Validation/Bug IDs:** `BUG-034` / `BUGLOG-034` (`In validation`)
+
+### Root cause confirmed
+
+- Shared-mode runtime and timeline engines already use global pomodoro indexing for long-break cadence.
+- Timer status-box preview (`Next status`) used per-task pomodoro index (`state.currentPomodoro`) directly.
+- This mismatch produced false long-break prediction at task boundaries (e.g., local pomodoro 4 in task 2 with global index 7).
+
+### Implementation applied
+
+- `lib/presentation/viewmodels/pomodoro_view_model.dart`
+  - Added public getter `currentGlobalPomodoroOffset` so UI projections can consume the same shared-mode global offset used by runtime logic.
+- `lib/presentation/screens/timer_screen.dart`
+  - Added `usesLongBreakForNextStatus(...)` helper (`@visibleForTesting`) with mode-aware global/per-task cadence selection.
+  - Replaced direct `% longBreakInterval` check with mode-aware shared calculation using:
+    - `vm.currentGlobalPomodoroOffset`,
+    - `vm.currentGroup?.integrityMode`,
+    - `state.currentPomodoro`.
+
+### Regression coverage added
+
+- New focused regression test:
+  - `test/presentation/timer_screen_break_prediction_test.dart`
+  - Confirms:
+    - shared mode uses global index (offset 3 + local 4 => global 7 => short break),
+    - shared boundary long break case remains correct (offset 3 + local 1 => global 4 => long break),
+    - individual mode preserves per-task cadence.
+
+### Local verification
+
+- `flutter analyze` PASS (`No issues found!`).
+- `flutter test test/presentation/timer_screen_break_prediction_test.dart` PASS.
+- `flutter test test/data/models/task_run_group_mode_a_breaks_test.dart` PASS.
+
+### Packet/doc synchronization
+
+- `docs/bugs/validation_bug034_2026_05_01/plan_validacion_rapida_fix.md`
+  - Scenario C terminology corrected: `fixed/flexible` -> `individual`.
+  - Local verification section updated to PASS with exact commands/date.
+- `docs/bugs/validation_bug034_2026_05_01/quick_pass_checklist.md`
+  - Regression smoke terminology corrected to `individual`.
+  - Local gate checklist marked PASS with explicit test command evidence.
+
+### Status after this block
+
+- `BUG-034` / `BUGLOG-034`: **In validation**.
+- Device scenarios A/B/C remain pending and are the next required step before closure.
+
+---
+
+## Block 758 — No-loss PR checklist integration refreshed on top of develop (05/05/2026)
+
+**Current branch intent:** Process governance hardening — integrate and preserve the no-loss PR discipline on top of latest `origin/develop`.
 **Branch:** `fix/process-no-loss-pr-checklist`
-**Commit:** `bf543a4`
+**Commit:** `pending-local`
 **Scope:** process/docs governance (`AGENTS.md`, `docs/validation/validation_ledger.md`, `.github/pull_request_template.md`)
 
 ### Context
 
-- Repeated concern: implementations can be validated locally but later lost if branch/remote/PR safety gates are skipped.
-- Existing strict integration guidance existed, but practical execution needed a mandatory checklist visible both in docs and in every PR form.
+- The no-loss process branch existed but remained outside `develop`, so the checklist rules were not active in the canonical flow.
+- This integration keeps the latest bug/validation history from `develop` and reapplies only the no-loss process layer.
 
-### Changes applied
+### Work completed
 
-- `docs/validation/validation_ledger.md`
-  - Added section `No-loss implementation checklist (mandatory)` with explicit required steps:
-    - before push,
-    - before opening PR,
-    - before merge,
-    - after merge.
-  - Added concrete command checkpoints (`fetch`, `rev-list 0/0`, clean tree, tracking parity, closure containment).
-- `AGENTS.md`
-  - Added `No-loss PR checklist rule (always-on hard rule)`.
-  - Made completion of the ledger checklist + PR template mandatory for all agents.
-- `.github/pull_request_template.md` (new)
-  - Added mandatory checklists for pre-PR safety, docs synchronization, validation evidence, and merge safety.
-  - Enforces explicit reporting of tests, evidence paths, and residual risks.
+- Merged `origin/develop` into `fix/process-no-loss-pr-checklist` and resolved collisions by preserving newer canonical bug/status content.
+- Re-applied and kept no-loss process artifacts:
+  - `AGENTS.md` always-on `No-loss PR checklist rule`.
+  - `docs/validation/validation_ledger.md` section `No-loss implementation checklist (mandatory)`.
+  - `.github/pull_request_template.md` with pre-PR/docs-sync/validation/merge-safety gates.
+- Preserved explicit collision guard for `docs/dev_log.md` block-number conflicts before merge.
 
 ### Status after this block
 
-- No-loss PR/merge discipline is now encoded in two enforcement layers:
-  1. authoritative process docs (`AGENTS.md`, `validation_ledger.md`),
-  2. operational PR gate (`.github/pull_request_template.md`).
-- Future implementations must satisfy this checklist before merge to `develop`.
-
-### Explicit merge dependency note (current wave)
-
-- To avoid `docs/dev_log.md` block-number collision:
-  1. merge `fix/bug034-shared-timeline-break-desync` into `develop` first (it owns Blocks 750-754),
-  2. then update `fix/process-no-loss-pr-checklist` from `develop` and resolve conflict by renumbering this branch block to `755`,
-  3. push conflict-resolution commit before merging this process branch.
+- No-loss PR discipline is now ready to merge from this branch into `develop` without losing current bug queue chronology or ledger state.

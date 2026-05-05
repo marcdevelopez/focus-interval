@@ -440,6 +440,10 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
       30/03/2026: BUG-022 closed/OK — user re-test confirms Authentication
                   keyboard input works after account switch; closure recorded
                   with commit `4e439db` and validation packet sync.
+      04/05/2026: BUG-035 registered (docs-first) — macOS keyboard input can
+                  lock outside Authentication after focus/resume churn
+                  (`physical key already pressed` loop); global app-level
+                  stale-key repair wrapper opened in validation packet.
       30/03/2026: BUG-021 moved to In validation — Run Mode stale ownership
                   rejection snackbar now auto-dismisses on ownership-context
                   changes (request replacement/new pending/requester owner
@@ -482,7 +486,8 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 17 — Early overlap warning (pause drift) + mirror ownership CTA + persistent conflict snackbar + auto-follow postpone (no repeat modal) + paused overlap alerts (new requirement).
 - Phase 17 — Late-start queue anchor (server time) + owner-only queue + realtime projections + activeSession creation on confirm + mirror Run Mode CTA + revalidate post-postpone overlaps (bug).
 - Phase 17 — Late-start queue Cancel all (no loop) + exit cleanly (no black screen) + mirror “Owner resolved” modal + zero-selection = Cancel all (bug).
-- Phase 17 — Running conflict modal must show conflicting group context (name + time range) (new requirement).
+- ~~Phase 17 — Running conflict modal must show conflicting group context (name + time range) (new requirement).~~ **In validation on 01/05/2026 (`BUGLOG-027`, branch `fix/bug033-foreground-service-crash`): implementation complete with local gate PASS (`flutter analyze`; `flutter test test/presentation/timer_screen_completion_navigation_test.dart`; `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart`), device evidence pending (`docs/bugs/validation_bug027_2026_05_01/`).**
+- Phase 17 — Shared-mode runtime timeline must keep break prediction, break execution, status-box ranges, and contextual task-item ranges coherent at task boundaries (`BUGLOG-034`, branch `fix/bug034-shared-timeline-break-desync`) — **In validation on 01/05/2026** (initial visual evidence packet opened at `docs/bugs/validation_bug034_2026_05_01/`; deterministic repro + cross-mode guard pending).
 - ~~Phase 17 — Task List scheduling conflicts must use a blocking explainer modal (not ephemeral snackbar), listing all exact blockers (running/scheduled) with ranges + pre-run where applicable, auto-adjusting notice for pre-run-only conflicts, and offering up to two nearest valid start suggestions for execution conflicts while preserving current pre-run (new feature, deferred until historical RVP validation backlog closes).~~ **In validation on 02/04/2026 (`IDEA-039`, branch `feature/idea039-conflict-explainer`; implementation commits `d336179`, `0cadda4`, `ecbd366`, `81de9e2`; local gate PASS including new `task_group_planning_screen_conflict_test.dart`; device validation scenarios pending).**
 - ~~Phase 17 — Re-plan conflict modal must show conflicting group name + time range — currently shows generic "Conflict with scheduled group" with no identifying information (`BUG-F25-E`) (new requirement).~~ **Closed/OK on 19/03/2026 (commit `c248c91`, Chrome validation PASS).**
 - ~~Phase 17 — Postpone snackbar must suppress "(pre-run at X)" clause when noticeMinutes=0 — currently shown even when pre-run equals start time (`BUG-F25-F`); requires spec clarification at specs.md:1716 (bug).~~ **Closed/OK on 19/03/2026 (commit `68429c5`).**
@@ -498,6 +503,7 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 6 — Account profile metadata (display name + avatar) in Firestore/Storage; Settings UI (Account Mode only); ownership UI uses Name (Platform) (new requirement).
 - Phase 6 — Logout while running/paused must never produce a black screen (return to Local Mode Task List) (bug).
 - ~~Phase 6 — macOS Authentication fields must remain keyboard-usable after sign-out/account switch; stale desktop key state must auto-repair on Authentication open/tap (`BUG-022`) (bug).~~ **Closed/OK on 30/03/2026 (`BUGLOG-022`; implementation commit `4e439db`; user validation confirmation + local gate PASS).**
+- ~~Phase 6 — macOS desktop keyboard reliability must remain usable across all app screens after focus/resume and account-switch transitions; stale key states must self-heal globally (not only in Authentication) (`BUGLOG-035`) — **In validation on 04/05/2026** (`fix/bug035-macos-global-keyboard-repair`; gate-only packet opened per user-approved non-deterministic repro exception).~~ **Closed/OK on 04/05/2026 (`BUGLOG-035`; implementation commit `88e0bb1`; local gate PASS + macOS quick-run PASS + explicit user acceptance under non-deterministic repro waiver).**
 - Phase 19 — Groups Hub canceled reason details (tappable reason label) (new requirement).
 - ~~Phase 18 — Mode-specific breaks (global long-break counter in Mode A) implemented; validation pending.~~ **Closed/OK on 20/03/2026 (`RVP-066`; implementation commit `45b522f` + dedicated Mode A global-break tests PASS).**
 - ~~Phase 18 — Run Mode task transition catch-up after background/resume (validation pending).~~ **Closed/OK on 20/03/2026 (`RVP-067`; implementation commit `992de22` + resume catch-up validation test PASS).**

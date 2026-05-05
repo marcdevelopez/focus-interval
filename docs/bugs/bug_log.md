@@ -3597,11 +3597,93 @@ Hypothesis:
 
 Fix applied:
 
+- Implementation completed on 01/05/2026 (`fix/bug033-foreground-service-crash`, commit `8600f44`):
+  - Added centralized conflict context model/formatter in `lib/presentation/utils/scheduling_conflict_helpers.dart`:
+    - `ConflictWindow` (group id/name/status + start/end + optional pre-run start),
+    - `PreRunConflict` (type + blocker window),
+    - `RunningOverlapContext` (running + scheduled windows),
+    - shared time/range formatters.
+  - Propagated contextual copy to planning/runtime/mirror surfaces:
+    - Groups Hub re-plan running conflict modal now lists selected range + running blockers (name + range).
+    - Groups Hub re-plan scheduled conflict modal now lists selected range + scheduled blockers (name + range).
+    - Groups Hub pre-run conflict snackbar now includes blocker identity/range and candidate pre-run window.
+    - Timer runtime overlap modal now includes both running and scheduled group context (+ pre-run when applicable).
+    - Timer mirror conflict snackbar now includes contextual running/scheduled summary line.
+    - Task List and Groups Hub mirror conflict banners now expose contextual summary via compact info tooltip.
+  - Regression/local coverage:
+    - `flutter analyze` PASS.
+    - `flutter test test/presentation/timer_screen_completion_navigation_test.dart` PASS.
+    - `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` PASS.
+    - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` PASS (clean re-run).
+    - `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart` PASS.
+    - `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` PASS.
+    - `flutter test test/presentation/utils/scheduled_group_timing_test.dart` PASS.
+    - Added assertions for runtime modal context labels (`Running:` / `Scheduled:`).
+
+Status:
+
+In validation (01/05/2026). Validation packet opened at
+`docs/bugs/validation_bug027_2026_05_01/`; device scenarios A-D pending
+(V03/V05/V19/V24 closure evidence).
+
+---
+
+## BUG-033 — Android background crash on foreground service promotion (`ForegroundServiceStartNotAllowedException`)
+
+ID: BUG-033
+Date: 29/04/2026 (UTC-4)
+Platforms: Android (owner path), with cross-device ownership side effects
+Context: Account Mode runtime while Android app stays in background for several minutes during active execution.
+
+Symptom:
+
+- Android process crashes with system dialog (`focus_interval sigue sin funcionar`) while a run is active in background.
+- After crash, ownership can shift to another device (for example macOS), creating inconsistent multi-device continuity during validation runs.
+
+Observed behavior:
+
+- Runtime log captures:
+  - `FATAL EXCEPTION: main`
+  - `android.app.ForegroundServiceStartNotAllowedException`
+  - `Service.startForeground() not allowed due to mAllowStartForeground false`
+- Crash stack points to:
+  - `android/app/src/main/kotlin/com/marcdevelopez/focusinterval/PomodoroForegroundService.kt`
+  - `onStartCommand(...)` -> `startOrUpdate()` -> `startForeground(...)`.
+- The event occurred during a background interval while session snapshots kept arriving, then process shutdown (`SIG: 9`) followed.
+
+Expected behavior:
+
+- App must not crash when background lifecycle triggers foreground-service update/start paths.
+- Active run continuity must remain stable in background without process kill.
+
+Evidence:
+
+- User-provided Android log excerpt dated 29/04/2026 around 11:40 (UTC-4), including full stacktrace and shutdown sequence.
+- Screenshot evidence from Android system crash dialog.
+- Validation packet opened:
+  - `docs/bugs/validation_bug033_2026_04_29/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug033_2026_04_29/quick_pass_checklist.md`
+- Follow-up non-repro session (01/05/2026, 13:05-14:35 EDT):
+  - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-01_bug033_5b9d85c_android_RMX3771_debug_prod.log`
+  - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-01_bug033pid_5b9d85c_android_RMX3771_debug.log`
+  - No `ForegroundServiceStartNotAllowedException` or `FATAL EXCEPTION` tied to `com.marcdevelopez.focusinterval` captured in app-focused logcat.
+  - Parallel signal observed: transient network/DNS failures (`Unable to resolve host firestore.googleapis.com`) during long background window.
+
+Workaround:
+
+- No reliable user-facing workaround. App may recover only after relaunch, with possible ownership/state side effects.
+
+Hypothesis:
+
+- Foreground service start/update path is invoked from a background state that Android disallows, causing runtime exception before safe fallback can execute.
+
+Fix applied:
+
 - Not yet.
 
 Status:
 
-Open (03/04/2026), sourced from BUG-025 device validation evidence.
+In validation (01/05/2026). Initial crash evidence captured (29/04/2026); long stress run on 01/05/2026 was non-repro. Rolling dual-capture protocol remains active for each session while other bugfix work proceeds in parallel.
 
 ---
 
@@ -3970,3 +4052,126 @@ Fix applied:
 Status:
 
 Open (29/04/2026). Initial evidence captured; exact forced repro under same conditions is pending in validation packet.
+
+---
+
+## BUG-034 — Shared-mode break/timeline desync between status boxes and contextual task ranges
+
+ID: BUG-034
+Date: 01/05/2026 (UTC-4)
+Platforms: macOS (primary evidence), Android scope check pending
+Context: Run Mode, running group timeline coherence (`integrityMode = shared`).
+
+Symptom:
+
+- In the same transition window, `Next status` predicts `Break: 15 min` but runtime executes `Break: 5 min`.
+- After that transition, contextual task-item ranges appear misaligned against status-box ranges and executed phase timeline.
+
+Observed behavior:
+
+- Evidence captures show:
+  - pre-transition `Next status` as `Break: 15 min` (`16:21-16:36`),
+  - executed break as `Break: 5 min` (`16:21-16:26`),
+  - subsequent task timeline (`Curso Develop Flutter`) and contextual ranges not describing one single coherent timeline together with status boxes.
+- Reported group metadata:
+  - `id=da943ceb-31f9-42b5-b994-235bee6586d0`
+  - `integrityMode=shared`
+  - `actualStartTime=2026-05-01T10:35:58.957245`
+  - `theoreticalEndTime=2026-05-01T17:30:58.957245`
+  - `totalPomodoros=13`
+  - `noticeMinutes=5`
+  - task mix: `3 + 8 + 1 + 1` pomodoros.
+
+Expected behavior:
+
+- In `shared` mode, break insertion must follow a single global pomodoro counter (`longBreakInterval`) across tasks.
+- `Next status`, executed phase transitions, status-box ranges, and contextual task-item ranges must all derive from the same authoritative timeline.
+- No task-boundary exception may silently switch break logic in one surface but not others.
+
+Evidence:
+
+- User report packet source: `bug.md` (ingested into canonical docs on 01/05/2026).
+- Screenshots moved to validation packet:
+  - `docs/bugs/validation_bug034_2026_05_01/screenshots/2026-05-01_bug034_next_status_predicts_long_break_161714.png`
+  - `docs/bugs/validation_bug034_2026_05_01/screenshots/2026-05-01_bug034_runtime_executes_short_break_162539.png`
+  - `docs/bugs/validation_bug034_2026_05_01/screenshots/2026-05-01_bug034_contextual_ranges_desync_163327.png`
+- Validation packet opened:
+  - `docs/bugs/validation_bug034_2026_05_01/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug034_2026_05_01/quick_pass_checklist.md`
+
+Workaround:
+
+- No reliable workaround. User can only manually cross-check runtime phase vs contextual list to avoid trusting a single surface.
+
+Hypothesis:
+
+- Break/timeline projection logic is split across runtime/status/contextual-list paths and at least one path is not using shared-mode global break insertion rules.
+
+Fix applied:
+
+- Not yet.
+
+Status:
+
+In validation (01/05/2026). Initial visual evidence captured; deterministic fresh-run repro + cross-mode guard still pending in the validation packet.
+
+---
+
+## BUG-035 — macOS keyboard input lock outside Authentication after focus/resume
+
+ID: BUG-035
+Date: 04/05/2026 (UTC-4)
+Platforms: macOS
+Context: Account Mode while already authenticated (for example Google sign-in); user navigates normal app screens and edits text fields (Task Editor, Preset Editor, list flows).
+
+Symptom:
+
+- Keyboard input can become blocked across app screens (not limited to Authentication).
+- Pressed characters stop being inserted in text fields until app restart.
+
+Observed behavior:
+
+- Runtime repeatedly emits:
+  `A KeyDownEvent is dispatched, but the state shows that the physical key is already pressed`.
+- The repeated event often points to a single key (for example `Key P`) with identical event identity/timestamp.
+- LoginScreen stale-key repair logic is not involved when the user is already logged in and never visits `/login`.
+- Closing and reopening the app restores normal typing (temporary recovery).
+
+Expected behavior:
+
+- Keyboard input must stay usable across all app screens on macOS.
+- Focus/resume churn must not leave the app in a stuck-key state requiring restart.
+
+Evidence:
+
+- User runtime log excerpt (04/05/2026) showing repeated duplicate key-down exceptions while typing fails in non-login screens.
+- Existing implementation inspection:
+  - `lib/presentation/screens/login_screen.dart` stale-key repair currently scoped to Authentication lifecycle/taps.
+- Validation packet opened:
+  - `docs/bugs/validation_bug035_2026_05_04/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug035_2026_05_04/quick_pass_checklist.md`
+
+Workaround:
+
+- Restart the macOS app.
+
+Hypothesis:
+
+- Flutter `HardwareKeyboard` pressed-key map can remain stale after macOS focus transitions.
+- Because repair is currently scoped to LoginScreen only, authenticated flows never run the repair and stale keys remain latched globally.
+
+Fix applied:
+
+- Branch: `fix/bug035-macos-global-keyboard-repair`
+- Runtime patch:
+  - Added app-level macOS keyboard repair wrapper (`MacOsKeyboardStateRepair`) in `MaterialApp.builder` chain.
+  - Repair runs on app bootstrap and on `AppLifecycleState.resumed`.
+  - Wrapper has its own in-instance concurrency guard and synthesizes `KeyUpEvent` for stale pressed keys by reconciling `HardwareKeyboard` vs `SystemChannels.keyboard/getKeyboardState`.
+  - Existing LoginScreen repair remains in place as local defense in depth.
+
+Status:
+
+Closed/OK (04/05/2026). Implementation commit `88e0bb1` validated with:
+- local gate PASS (`flutter analyze`, `flutter test test/presentation/timer_screen_completion_navigation_test.dart`);
+- macOS quick execution PASS log (`docs/bugs/validation_bug035_2026_05_04/logs/2026-05-04_bug035_4b1c94a_macos_debug.log`) without stuck-key signature matches;
+- explicit user acceptance in thread under the documented non-deterministic repro waiver.

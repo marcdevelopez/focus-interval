@@ -822,7 +822,7 @@ Account profile metadata
 - Login entry hidden on Linux (Account Mode unavailable)
 - Text: “Sync your tasks in the cloud”
 - If a provider conflict occurs (account exists with different credential), prompt the user to sign in with the original provider and link the new provider.
-- Desktop auth reliability rule: returning to Authentication after sign-out/account switch must keep keyboard input usable in email/password fields (no stuck key state that blocks typing).
+- Desktop keyboard reliability rule: keyboard input must remain usable across Authentication and all app screens after sign-out/account switch and macOS focus/resume transitions. Stuck-key states must self-heal automatically without requiring an app restart.
 
 ---
 
@@ -1889,6 +1889,10 @@ Permissions
   - If the owner is **stale**: “Owner seems unavailable. **Claim** ownership to resolve this conflict.”
   - If the owner is **active**: “Owner is resolving this conflict. Request ownership if needed.”
     (Use the appropriate CTA label: **Claim** when stale, **Request** when active.)
+- Mirror conflict messaging must include a compact context line with:
+  - running/paused group name + projected range,
+  - scheduled blocker group name + scheduled range,
+  so mirrors understand the exact pair without manually cross-checking cards.
 - Show the mirror CTA **only while the overlap is still valid**. If the conflict
   resolves or the session is missing, hide the CTA and clear any related banners.
 - Do **not** show duplicate conflict messaging. If the banner is visible, do not
