@@ -18676,7 +18676,7 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 **Current branch intent:** Process governance hardening — integrate and preserve the no-loss PR discipline on top of latest `origin/develop`.
 **Branch:** `fix/process-no-loss-pr-checklist`
-**Commit:** `pending-local`
+**Commit:** `62a6f0d`
 **Scope:** process/docs governance (`AGENTS.md`, `docs/validation/validation_ledger.md`, `.github/pull_request_template.md`)
 
 ### Context
