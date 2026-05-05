@@ -26,8 +26,8 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last closed bug fix: **BUG-035 — macOS global keyboard stale-key repair (`88e0bb1`, closed 04/05/2026)**
-Current focus: **BUG-033 rolling monitor + BUGLOG-034 in validation + BUGLOG-027 in validation + BUGLOG-029 pending**
-Last update: **04/05/2026**
+Current focus: **BUG-033 deterministic repro recapture + runtime fix candidate validation, with BUGLOG-034 and BUGLOG-027 still in validation**
+Last update: **05/05/2026**
 
 ---
 
@@ -18669,3 +18669,54 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 - `BUG-034` / `BUGLOG-034`: **In validation**.
 - Device scenarios A/B/C remain pending and are the next required step before closure.
+
+---
+
+## Block 758 — BUG-033 deterministic repro recapture + Android service hardening candidate (05/05/2026)
+
+**Current branch intent:** Apply a defensive Android foreground-service fix for BUG-033 after deterministic crash recapture, then keep the item in validation until patched-device scenarios pass.
+**Branch:** `fix/bug033-foreground-service-crash`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-033` / `BUGLOG-033` (`In validation`)
+
+### Repro evidence recaptured
+
+- User captured deterministic crash on 05/05/2026 while Android was owner, then backgrounded:
+  - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-05_bug033_android_RMX3771_debug_prod.log`
+  - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-05_bug033_android_RMX3771_logcat_focus.log`
+- Signature confirms same root path:
+  - `ForegroundServiceStartNotAllowedException`
+  - fatal process shutdown (`SIG: 9`) after disallowed `startForeground` promotion in background.
+
+### Implementation applied
+
+- `android/app/src/main/kotlin/com/marcdevelopez/focusinterval/PomodoroForegroundService.kt`
+  - `onStartCommand()` return changed from `START_STICKY` to `START_NOT_STICKY`.
+  - `startOrUpdate()` now wraps `startForeground(...)` with guarded fallback:
+    - detect Android S+ `ForegroundServiceStartNotAllowedException`,
+    - clear foreground/running flags,
+    - release wake lock,
+    - `stopSelf()` instead of crashing process.
+  - Unexpected exceptions remain re-thrown to avoid masking unrelated failures.
+
+### Local verification
+
+- `flutter analyze` -> PASS (`No issues found!`).
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` -> PASS (`All tests passed`, `+30`).
+
+### Documentation synchronization completed
+
+- `docs/bugs/validation_bug033_2026_04_29/plan_validacion_rapida_fix.md`
+  - Added 05/05 deterministic repro evidence and fix-candidate notes.
+  - Updated local verification section to PASS.
+- `docs/bugs/validation_bug033_2026_04_29/quick_pass_checklist.md`
+  - Marked Scenario A repro evidence and local gate checkboxes PASS.
+- `docs/bugs/bug_log.md`
+  - Updated BUG-033 entries to reflect 05/05 repro recapture + implemented fix candidate status.
+- `docs/validation/validation_ledger.md`
+  - Updated BUGLOG-033 evidence line with 05/05 logs and current local gate results.
+
+### Status after this block
+
+- `BUG-033` / `BUGLOG-033`: **In validation**.
+- Required next step: run Scenario A/B on patched Android build to confirm crash absence and no ownership continuity regressions before closure.

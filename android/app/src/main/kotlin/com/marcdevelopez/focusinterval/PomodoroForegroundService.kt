@@ -74,7 +74,7 @@ class PomodoroForegroundService : Service() {
         startOrUpdate()
       }
     }
-    return START_STICKY
+    return START_NOT_STICKY
   }
 
   override fun onDestroy() {
@@ -92,10 +92,24 @@ class PomodoroForegroundService : Service() {
     createNotificationChannel()
     val notification = buildNotification()
     if (!isForeground) {
-      startForeground(NOTIFICATION_ID, notification)
-      isForeground = true
-      isRunning = true
-      acquireWakeLock()
+      try {
+        startForeground(NOTIFICATION_ID, notification)
+        isForeground = true
+        isRunning = true
+        acquireWakeLock()
+      } catch (e: Exception) {
+        val disallowedForegroundStart =
+          Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            e.javaClass.name == "android.app.ForegroundServiceStartNotAllowedException"
+        if (disallowedForegroundStart) {
+          isForeground = false
+          isRunning = false
+          releaseWakeLock()
+          stopSelf()
+          return
+        }
+        throw e
+      }
     } else {
       val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
       manager.notify(NOTIFICATION_ID, notification)

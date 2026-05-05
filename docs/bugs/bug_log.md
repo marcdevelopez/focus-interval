@@ -3668,6 +3668,10 @@ Evidence:
   - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-01_bug033pid_5b9d85c_android_RMX3771_debug.log`
   - No `ForegroundServiceStartNotAllowedException` or `FATAL EXCEPTION` tied to `com.marcdevelopez.focusinterval` captured in app-focused logcat.
   - Parallel signal observed: transient network/DNS failures (`Unable to resolve host firestore.googleapis.com`) during long background window.
+- Deterministic repro re-captured on 05/05/2026 with dual logs:
+  - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-05_bug033_android_RMX3771_debug_prod.log`
+  - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-05_bug033_android_RMX3771_logcat_focus.log`
+  - Same crash signature present (`ForegroundServiceStartNotAllowedException` + fatal process shutdown) while Android owner remained backgrounded.
 
 Workaround:
 
@@ -3679,11 +3683,16 @@ Hypothesis:
 
 Fix applied:
 
-- Not yet.
+- Runtime fix candidate implemented on 05/05/2026 in `android/app/src/main/kotlin/com/marcdevelopez/focusinterval/PomodoroForegroundService.kt`:
+  - Guard `startForeground(...)` with disallowed-start fallback for Android S+ (`ForegroundServiceStartNotAllowedException`) to avoid process crash path and stop service safely.
+  - Return `START_NOT_STICKY` from `onStartCommand` to avoid restart-crash loops after disallowed promotion events.
+  - Local gate PASS on branch:
+    - `flutter analyze`
+    - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`
 
 Status:
 
-In validation (01/05/2026). Initial crash evidence captured (29/04/2026); long stress run on 01/05/2026 was non-repro. Rolling dual-capture protocol remains active for each session while other bugfix work proceeds in parallel.
+In validation (05/05/2026). Initial crash evidence (29/04/2026) and deterministic repro recapture (05/05/2026) are both recorded. Runtime fix candidate is implemented and requires fresh device validation on patched build before closure.
 
 ---
 
@@ -4036,6 +4045,9 @@ Evidence:
 - User-provided Android log excerpt dated 29/04/2026 around 11:40 (UTC-4), including full stacktrace and shutdown sequence.
 - Screenshot evidence from Android system crash dialog.
 - Validation packet: `docs/bugs/validation_bug033_2026_04_29/` (`plan_validacion_rapida_fix.md`, `quick_pass_checklist.md`).
+- Deterministic repro recapture logs (05/05/2026):
+  - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-05_bug033_android_RMX3771_debug_prod.log`
+  - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-05_bug033_android_RMX3771_logcat_focus.log`
 
 Workaround:
 
@@ -4047,11 +4059,14 @@ Hypothesis:
 
 Fix applied:
 
-- Not yet. Fix on branch: `fix/bug033-foreground-service-crash`.
+- Runtime fix candidate implemented on branch `fix/bug033-foreground-service-crash`:
+  - `PomodoroForegroundService.startOrUpdate()` now guards Android S+ disallowed foreground-service starts and stops service safely instead of propagating crash.
+  - `PomodoroForegroundService.onStartCommand()` now returns `START_NOT_STICKY`.
+  - Local gate PASS (`flutter analyze`, `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`).
 
 Status:
 
-Open (29/04/2026). Initial evidence captured; exact forced repro under same conditions is pending in validation packet.
+In validation (05/05/2026). Deterministic repro is now captured, fix candidate is implemented, and device validation on patched build is pending for closure.
 
 ---
 

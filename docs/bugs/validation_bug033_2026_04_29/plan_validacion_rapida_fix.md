@@ -5,7 +5,7 @@ Branch: `fix/bug033-foreground-service-crash`
 Commit: `pending-local`  
 Bugs covered: `BUG-033`  
 Target devices: Android owner path (primary), macOS observer (secondary ownership side effect check)  
-Protocol update: 2026-05-01
+Protocol update: 2026-05-05
 
 ## Objetivo
 Validate and reproduce under controlled conditions the Android crash caused by foreground-service promotion/update while app is backgrounded during active Account Mode execution, then collect missing evidence required for deterministic root-cause fix and closure criteria.
@@ -19,7 +19,7 @@ Crash path currently points to Android service lifecycle:
 - Methods: `onStartCommand(...)` -> `startOrUpdate()` -> `startForeground(...)`
 - Exception observed: `android.app.ForegroundServiceStartNotAllowedException` (`mAllowStartForeground false`)
 
-Current evidence confirms crash location and stacktrace, but exact deterministic same-conditions repro must be repeated in one controlled pass to finalize fix constraints.
+Deterministic repro was re-captured on 2026-05-05 with dual logs. Sequence shows service calls accepted while app is foreground (`uidState: TOP`) and later rejected in background (`uidState: SVC`) for the same owner session path, which triggers `ForegroundServiceStartNotAllowedException` and process kill.
 
 ## Protocolo de validación
 
@@ -83,22 +83,20 @@ Reference result without fix:
 
 ## Comandos de ejecución
 
-Session bootstrap (run once per session):
+Terminal A — setup + Android system capture (two commands in sequence):
 
 ```bash
-DEVICE="10.0.0.37:5555"; LOGDIR="docs/bugs/validation_bug033_2026_04_29/logs"; TS=$(date +"%Y-%m-%d_bug033_%H%M"); mkdir -p "$LOGDIR"
+mkdir -p docs/bugs/validation_bug033_2026_04_29/logs
 ```
 
-Terminal A — Android system capture (app-focused):
-
 ```bash
-adb -s "$DEVICE" logcat -v threadtime | grep --line-buffered -E "com\\.marcdevelopez\\.focusinterval|ForegroundServiceStartNotAllowedException|FATAL EXCEPTION|AndroidRuntime|PomodoroForegroundService|startForeground\\(|Shutting down VM|Fatal signal|SIG: 9" | tee "$LOGDIR/${TS}_android_RMX3771_logcat_focus.log"
+adb -s 10.0.0.37:5555 logcat -v threadtime | grep --line-buffered -E "com\.marcdevelopez\.focusinterval|ForegroundServiceStartNotAllowedException|FATAL EXCEPTION|AndroidRuntime|PomodoroForegroundService|startForeground\(|Shutting down VM|Fatal signal|SIG: 9" | tee docs/bugs/validation_bug033_2026_04_29/logs/$(date +"%Y-%m-%d")_bug033_android_RMX3771_logcat_focus.log
 ```
 
-Terminal B — Flutter run against real backend:
+Terminal B — Flutter run against real backend (single command):
 
 ```bash
-flutter run -d "$DEVICE" --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true 2>&1 | tee "$LOGDIR/${TS}_android_RMX3771_debug_prod.log"
+flutter run -v --debug -d RMX3771 --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true 2>&1 | tee docs/bugs/validation_bug033_2026_04_29/logs/$(date +"%Y-%m-%d")_bug033_android_RMX3771_debug_prod.log
 ```
 
 Stop capture cleanly:
@@ -142,8 +140,8 @@ Expected for fix-working check: no matches.
 
 ## Verificación local
 
-- `flutter analyze` -> Pending (for runtime fix candidate only).
-- Targeted test commands for service-lifecycle path -> Pending (for runtime fix candidate only).
+- `flutter analyze` -> PASS (2026-05-05, branch `fix/bug033-foreground-service-crash`).
+- `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` -> PASS (2026-05-05, `+30`).
 
 ## Criterios de cierre
 
@@ -161,7 +159,16 @@ Expected for fix-working check: no matches.
   - Evidence files:
     - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-01_bug033_5b9d85c_android_RMX3771_debug_prod.log`
     - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-01_bug033pid_5b9d85c_android_RMX3771_debug.log`
+- 2026-05-05 (repro recaptured):
+  - Exact crash modal reproduced after Android became owner, then stayed backgrounded.
+  - `ForegroundServiceStartNotAllowedException` and fatal process shutdown path captured.
+  - Evidence files:
+    - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-05_bug033_android_RMX3771_debug_prod.log`
+    - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-05_bug033_android_RMX3771_logcat_focus.log`
+  - Runtime fix candidate implemented after repro recapture in `PomodoroForegroundService.kt`:
+    - `startForeground(...)` guarded with Android S+ disallowed-start fallback (graceful stop, no crash throw path).
+    - `onStartCommand` return switched from `START_STICKY` to `START_NOT_STICKY` to avoid restart-crash loop.
 
 ## Status
 
-In validation — rolling monitor active. Continue parallel bugfix work; keep BUG-033 capture protocol enabled each session until reproducible crash evidence is re-captured or a deterministic fix candidate is validated.
+In validation — deterministic repro re-captured on 2026-05-05 and runtime fix candidate is now implemented with local gate PASS. Pending: fresh device validation scenarios A/B on the patched build to confirm no crash recurrence and no continuity regressions.
