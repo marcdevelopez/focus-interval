@@ -18672,7 +18672,7 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 ---
 
-## Block 758 — BUG-033 deterministic repro recapture + Android service hardening candidate (05/05/2026)
+## Block 759 — BUG-033 deterministic repro recapture + Android service hardening candidate (05/05/2026)
 
 **Current branch intent:** Apply a defensive Android foreground-service fix for BUG-033 after deterministic crash recapture, then keep the item in validation until patched-device scenarios pass.
 **Branch:** `fix/bug033-foreground-service-crash`
