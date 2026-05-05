@@ -26,8 +26,8 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last closed bug fix: **BUG-035 — macOS global keyboard stale-key repair (`88e0bb1`, closed 04/05/2026)**
-Current focus: **BUG-033 rolling monitor + BUGLOG-034 in validation + BUGLOG-027 in validation + BUGLOG-029 pending**
-Last update: **04/05/2026**
+Current focus: **BUG-033 deterministic repro recapture + BUGLOG-034/027 in validation + BUGLOG-029 pending + process no-loss checklist hardening**
+Last update: **05/05/2026**
 
 ---
 
@@ -18669,3 +18669,30 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 - `BUG-034` / `BUGLOG-034`: **In validation**.
 - Device scenarios A/B/C remain pending and are the next required step before closure.
+
+---
+
+## Block 758 — No-loss PR checklist integration refreshed on top of develop (05/05/2026)
+
+**Current branch intent:** Process governance hardening — integrate and preserve the no-loss PR discipline on top of latest `origin/develop`.
+**Branch:** `fix/process-no-loss-pr-checklist`
+**Commit:** `pending-local`
+**Scope:** process/docs governance (`AGENTS.md`, `docs/validation/validation_ledger.md`, `.github/pull_request_template.md`)
+
+### Context
+
+- The no-loss process branch existed but remained outside `develop`, so the checklist rules were not active in the canonical flow.
+- This integration keeps the latest bug/validation history from `develop` and reapplies only the no-loss process layer.
+
+### Work completed
+
+- Merged `origin/develop` into `fix/process-no-loss-pr-checklist` and resolved collisions by preserving newer canonical bug/status content.
+- Re-applied and kept no-loss process artifacts:
+  - `AGENTS.md` always-on `No-loss PR checklist rule`.
+  - `docs/validation/validation_ledger.md` section `No-loss implementation checklist (mandatory)`.
+  - `.github/pull_request_template.md` with pre-PR/docs-sync/validation/merge-safety gates.
+- Preserved explicit collision guard for `docs/dev_log.md` block-number conflicts before merge.
+
+### Status after this block
+
+- No-loss PR discipline is now ready to merge from this branch into `develop` without losing current bug queue chronology or ledger state.
