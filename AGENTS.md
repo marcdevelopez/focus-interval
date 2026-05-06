@@ -59,6 +59,13 @@ Strict integration gate (always-on hard rule):
   4. Verify the closure commit is contained in `develop`.
   5. Continue with next task only after steps 1-4 are complete.
 
+No-loss PR checklist rule (always-on hard rule):
+- Every implementation PR must complete the checklist in:
+  - `docs/validation/validation_ledger.md` → **No-loss implementation checklist (mandatory)**
+  - `.github/pull_request_template.md`
+- Agents must not open or merge a PR unless all applicable checklist items are marked complete with concrete command outputs/evidence paths.
+- If any checklist item fails, stop and fix it before continuing.
+
 **"What's next" rule:** When asked what to do next, always cross-reference
 `validation_ledger.md` + `roadmap.md` + tail of `dev_log.md`. Never answer from
 the `CURRENT PHASE` label alone — pending validations and doc cleanup come first.
