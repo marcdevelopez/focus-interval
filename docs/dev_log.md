@@ -18793,3 +18793,28 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 - `BUG-033` / `BUGLOG-033`: **Closed/OK**.
 - `BUG-034` / `BUGLOG-034`: **Closed/OK**.
 - Active non-closed bug-log queue now focuses on: `BUGLOG-027`, `BUGLOG-029`.
+
+---
+
+## Block 761 — BUG-033 bug-log duplicate cleanup (05/05/2026)
+
+**Current branch intent:** Documentation hygiene only — remove duplicated `BUG-033` entry in canonical bug log without changing runtime or validation status.
+**Branch:** `fix/bug033-buglog-dedup`
+**Commit:** `7be455b`
+**Scope:** bug-log canonicalization (`docs/bugs/bug_log.md`)
+
+### Context
+
+- Post-closure audit detected two `BUG-033` entries in `docs/bugs/bug_log.md`.
+- Both entries were `Closed/OK`, but duplication created avoidable audit ambiguity.
+
+### Work completed
+
+- Removed the later duplicate `BUG-033` block located immediately before `BUG-034`.
+- Preserved the original, more complete `BUG-033` entry (full evidence chronology + closure context).
+- Kept `BUG-034` section intact and in-place.
+
+### Status after this block
+
+- Canonical bug log now has one `BUG-033` entry.
+- `BUG-033` and `BUG-034` closure status remains unchanged (`Closed/OK`).

@@ -4015,69 +4015,6 @@ Status:
 
 Closed/OK (29/04/2026). Phase 1 guard validated on Android + macOS single-run repro with post-wake Firestore corroboration; paused state no longer auto-completes after theoretical end.
 
----
-
-## BUG-033 — Android background crash on foreground service promotion (`ForegroundServiceStartNotAllowedException`)
-
-ID: BUG-033
-Date: 29/04/2026 (UTC-4)
-Platforms: Android (owner path), with cross-device ownership side effects
-Context: Account Mode runtime while Android app stays in background for several minutes during active execution.
-
-Symptom:
-
-- Android process crashes with system dialog (`focus_interval sigue sin funcionar`) while a run is active in background.
-- After crash, ownership can shift to another device (for example macOS), creating inconsistent multi-device continuity during validation runs.
-
-Observed behavior:
-
-- Runtime log captures:
-  - `FATAL EXCEPTION: main`
-  - `android.app.ForegroundServiceStartNotAllowedException`
-  - `Service.startForeground() not allowed due to mAllowStartForeground false`
-- Crash stack points to:
-  - `android/app/src/main/kotlin/com/marcdevelopez/focusinterval/PomodoroForegroundService.kt`
-  - `onStartCommand(...)` -> `startOrUpdate()` -> `startForeground(...)`.
-- The event occurred during a background interval while session snapshots kept arriving, then process shutdown (`SIG: 9`) followed.
-
-Expected behavior:
-
-- App must not crash when background lifecycle triggers foreground-service update/start paths.
-- Active run continuity must remain stable in background without process kill.
-
-Evidence:
-
-- User-provided Android log excerpt dated 29/04/2026 around 11:40 (UTC-4), including full stacktrace and shutdown sequence.
-- Screenshot evidence from Android system crash dialog.
-- Validation packet: `docs/bugs/validation_bug033_2026_04_29/` (`plan_validacion_rapida_fix.md`, `quick_pass_checklist.md`).
-- Deterministic repro recapture logs (05/05/2026):
-  - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-05_bug033_android_RMX3771_debug_prod.log`
-  - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-05_bug033_android_RMX3771_logcat_focus.log`
-- Patched-build closure logs (05/05/2026, 19:21-20:45 EDT):
-  - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-05_1921_bug033_9f01491_android_RMX3771_debug_prod.log`
-  - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-05_1921_bug033_9f01491_android_RMX3771_debug_logcat_focus.log`
-
-Workaround:
-
-- No reliable user-facing workaround. App may recover only after relaunch, with possible ownership/state side effects.
-
-Hypothesis:
-
-- Foreground service start/update path is invoked from a background state that Android disallows, causing runtime exception before safe fallback can execute.
-
-Fix applied:
-
-- Runtime fix implemented on branch `fix/bug033-foreground-service-crash`:
-  - `PomodoroForegroundService.startOrUpdate()` now guards Android S+ disallowed foreground-service starts and stops service safely instead of propagating crash.
-  - `PomodoroForegroundService.onStartCommand()` now returns `START_NOT_STICKY`.
-  - Local gate PASS (`flutter analyze`, `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`).
-
-Status:
-
-Closed/OK (05/05/2026). Patched-build validation scenarios A/B completed with no recurrence in the closure window; BUG-033 crash path is considered resolved.
-
----
-
 ## BUG-034 — Shared-mode break/timeline desync between status boxes and contextual task ranges
 
 ID: BUG-034
