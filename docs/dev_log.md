@@ -18727,7 +18727,7 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 **Current branch intent:** Close BUG-033 and BUG-034 using fresh patched-build validation evidence, then synchronize canonical docs/ledger/dev log without touching runtime code.
 **Branch:** `fix/bug033-foreground-service-crash`
-**Commit:** `pending-local`
+**Commit:** `c9f4b92`
 **Validation/Bug IDs:** `BUG-033` / `BUGLOG-033` (**Closed/OK**), `BUG-034` / `BUGLOG-034` (**Closed/OK**)
 
 ### BUG-033 closure evidence
