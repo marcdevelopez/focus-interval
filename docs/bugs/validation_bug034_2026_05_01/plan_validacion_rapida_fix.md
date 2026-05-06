@@ -2,7 +2,7 @@
 
 Date: 2026-05-01  
 Branch: `fix/bug034-shared-timeline-break-desync`  
-Commit: `f910caf`  
+Commit: `a636b0f`  
 Bugs covered: `BUG-034`  
 Target devices: macOS owner path (primary), Android owner path (secondary)
 
@@ -78,11 +78,11 @@ Reference result without fix:
 ## Comandos de ejecución
 
 ```bash
-flutter run -d macos --dart-define=APP_ENV=prod 2>&1 | tee docs/bugs/validation_bug034_2026_05_01/logs/2026-05-01_bug034_f910caf_macos_debug.log
+flutter run -d macos --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true 2>&1 | tee docs/bugs/validation_bug034_2026_05_01/logs/$(date +"%Y-%m-%d")_bug034_a636b0f_macos_debug_prod.log
 ```
 
 ```bash
-flutter run -d android --dart-define=APP_ENV=prod 2>&1 | tee docs/bugs/validation_bug034_2026_05_01/logs/2026-05-01_bug034_f910caf_android_RMX3771_debug.log
+flutter run -d RMX3771 --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true 2>&1 | tee docs/bugs/validation_bug034_2026_05_01/logs/$(date +"%Y-%m-%d")_bug034_a636b0f_android_RMX3771_debug_prod.log
 ```
 
 ## Log analysis — quick scan (secondary only)
@@ -92,11 +92,11 @@ This bug is primarily a visual/runtime-coherence issue. Screenshots/video are au
 Potential supporting signals:
 
 ```bash
-rg -n "da943ceb-31f9-42b5-b994-235bee6586d0|Pomodoro 8 of 8|Break: 15 min|Break: 5 min|End of task" docs/bugs/validation_bug034_2026_05_01/logs/*bug034_f910caf*_debug.log
+rg -n "da943ceb-31f9-42b5-b994-235bee6586d0|Pomodoro 8 of 8|Break: 15 min|Break: 5 min|End of task" docs/bugs/validation_bug034_2026_05_01/logs/*bug034_a636b0f*.log
 ```
 
 ```bash
-rg -n "integrityMode|shared|currentPomodoro|phase" docs/bugs/validation_bug034_2026_05_01/logs/*bug034_f910caf*_debug.log
+rg -n "integrityMode|shared|currentPomodoro|phase" docs/bugs/validation_bug034_2026_05_01/logs/*bug034_a636b0f*.log
 ```
 
 ## Verificación local
@@ -113,6 +113,17 @@ rg -n "integrityMode|shared|currentPomodoro|phase" docs/bugs/validation_bug034_2
 3. Scenario C PASS: no regression in non-shared integrity modes.
 4. Validation checklist updated with logs/screenshots references.
 
+## Historial de ejecución
+
+- 2026-05-05 (fresh long run, patched build):
+  - Group validated to completion in shared mode with no recurrence of the original desync.
+  - User visual verdict: status boxes in Run Mode stayed coherent through the final task transition.
+  - Supporting runtime log:
+    - `docs/bugs/validation_bug034_2026_05_01/logs/2026-05-05_bug034_a636b0f_macos_debug_prod.log`
+  - Cross-mode guard remains covered by targeted local regression tests:
+    - `flutter test test/presentation/timer_screen_break_prediction_test.dart`
+    - `flutter test test/data/models/task_run_group_mode_a_breaks_test.dart`
+
 ## Status
 
-In validation.
+Closed/OK (05/05/2026).

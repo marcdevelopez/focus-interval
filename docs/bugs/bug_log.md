@@ -3672,6 +3672,11 @@ Evidence:
   - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-05_bug033_android_RMX3771_debug_prod.log`
   - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-05_bug033_android_RMX3771_logcat_focus.log`
   - Same crash signature present (`ForegroundServiceStartNotAllowedException` + fatal process shutdown) while Android owner remained backgrounded.
+- Patched-build closure run (05/05/2026, 19:21-20:45 EDT):
+  - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-05_1921_bug033_9f01491_android_RMX3771_debug_prod.log`
+  - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-05_1921_bug033_9f01491_android_RMX3771_debug_logcat_focus.log`
+  - Time-scoped scan for the closure window found no new `ForegroundServiceStartNotAllowedException` / `FATAL EXCEPTION` for Focus Interval.
+  - Scenario B (pause-first, multi-hour pause window) completed without crash recurrence or continuity regression.
 
 Workaround:
 
@@ -3683,7 +3688,7 @@ Hypothesis:
 
 Fix applied:
 
-- Runtime fix candidate implemented on 05/05/2026 in `android/app/src/main/kotlin/com/marcdevelopez/focusinterval/PomodoroForegroundService.kt`:
+- Runtime fix implemented on 05/05/2026 in `android/app/src/main/kotlin/com/marcdevelopez/focusinterval/PomodoroForegroundService.kt`:
   - Guard `startForeground(...)` with disallowed-start fallback for Android S+ (`ForegroundServiceStartNotAllowedException`) to avoid process crash path and stop service safely.
   - Return `START_NOT_STICKY` from `onStartCommand` to avoid restart-crash loops after disallowed promotion events.
   - Local gate PASS on branch:
@@ -3692,7 +3697,7 @@ Fix applied:
 
 Status:
 
-In validation (05/05/2026). Initial crash evidence (29/04/2026) and deterministic repro recapture (05/05/2026) are both recorded. Runtime fix candidate is implemented and requires fresh device validation on patched build before closure.
+Closed/OK (05/05/2026). Initial crash evidence + deterministic repro were captured, runtime fix candidate (`9f01491`) was validated in a fresh patched-build run (Scenarios A/B PASS), and no new foreground-service crash signature recurred in the closure window.
 
 ---
 
@@ -4048,6 +4053,9 @@ Evidence:
 - Deterministic repro recapture logs (05/05/2026):
   - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-05_bug033_android_RMX3771_debug_prod.log`
   - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-05_bug033_android_RMX3771_logcat_focus.log`
+- Patched-build closure logs (05/05/2026, 19:21-20:45 EDT):
+  - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-05_1921_bug033_9f01491_android_RMX3771_debug_prod.log`
+  - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-05_1921_bug033_9f01491_android_RMX3771_debug_logcat_focus.log`
 
 Workaround:
 
@@ -4059,14 +4067,14 @@ Hypothesis:
 
 Fix applied:
 
-- Runtime fix candidate implemented on branch `fix/bug033-foreground-service-crash`:
+- Runtime fix implemented on branch `fix/bug033-foreground-service-crash`:
   - `PomodoroForegroundService.startOrUpdate()` now guards Android S+ disallowed foreground-service starts and stops service safely instead of propagating crash.
   - `PomodoroForegroundService.onStartCommand()` now returns `START_NOT_STICKY`.
   - Local gate PASS (`flutter analyze`, `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`).
 
 Status:
 
-In validation (05/05/2026). Deterministic repro is now captured, fix candidate is implemented, and device validation on patched build is pending for closure.
+Closed/OK (05/05/2026). Patched-build validation scenarios A/B completed with no recurrence in the closure window; BUG-033 crash path is considered resolved.
 
 ---
 
@@ -4113,6 +4121,9 @@ Evidence:
 - Validation packet opened:
   - `docs/bugs/validation_bug034_2026_05_01/plan_validacion_rapida_fix.md`
   - `docs/bugs/validation_bug034_2026_05_01/quick_pass_checklist.md`
+- Fresh closure run evidence (05/05/2026):
+  - `docs/bugs/validation_bug034_2026_05_01/logs/2026-05-05_bug034_a636b0f_macos_debug_prod.log`
+  - User visual validation confirmed coherent status-box behavior through final task transition in shared mode (no recurrence of original desync).
 
 Workaround:
 
@@ -4124,11 +4135,16 @@ Hypothesis:
 
 Fix applied:
 
-- Not yet.
+- Implemented on 01/05/2026 (`a636b0f`):
+  - `TimerScreen` next-status break prediction now uses shared-mode global pomodoro cadence (`usesLongBreakForNextStatus(...)`) instead of per-task-only cadence.
+  - `PomodoroViewModel` exposes `currentGlobalPomodoroOffset` for projection parity with runtime logic.
+  - Targeted local regression PASS:
+    - `flutter test test/presentation/timer_screen_break_prediction_test.dart`
+    - `flutter test test/data/models/task_run_group_mode_a_breaks_test.dart`
 
 Status:
 
-In validation (01/05/2026). Initial visual evidence captured; deterministic fresh-run repro + cross-mode guard still pending in the validation packet.
+Closed/OK (05/05/2026). Fresh long-run visual validation in shared mode completed without desync recurrence, with local regression guardrails still passing.
 
 ---
 

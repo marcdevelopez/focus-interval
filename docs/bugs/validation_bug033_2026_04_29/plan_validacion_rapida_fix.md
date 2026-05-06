@@ -138,6 +138,14 @@ rg -n "ForegroundServiceStartNotAllowedException|FATAL EXCEPTION|AndroidRuntime|
 
 Expected for fix-working check: no matches.
 
+Window-scoped check (closure run only, ignores old buffered crash lines from earlier timestamps):
+
+```bash
+rg -n "05-05 (19|20):.*(ForegroundServiceStartNotAllowedException|FATAL EXCEPTION|Process: com\\.marcdevelopez\\.focusinterval)" docs/bugs/validation_bug033_2026_04_29/logs/2026-05-05_1921_bug033_9f01491_android_RMX3771_debug_logcat_focus.log
+```
+
+Expected for closure window: no matches.
+
 ## Verificación local
 
 - `flutter analyze` -> PASS (2026-05-05, branch `fix/bug033-foreground-service-crash`).
@@ -168,7 +176,15 @@ Expected for fix-working check: no matches.
   - Runtime fix candidate implemented after repro recapture in `PomodoroForegroundService.kt`:
     - `startForeground(...)` guarded with Android S+ disallowed-start fallback (graceful stop, no crash throw path).
     - `onStartCommand` return switched from `START_STICKY` to `START_NOT_STICKY` to avoid restart-crash loop.
+- 2026-05-05 (closure run on patched build, 19:21-20:45 EDT):
+  - Scenario A PASS: Android owner long background window did not reproduce crash modal.
+  - Scenario B PASS: pause-first multi-hour window remained stable and did not contaminate paused-state continuity.
+  - Time-scoped logcat scan in closure window found no `ForegroundServiceStartNotAllowedException` / `FATAL EXCEPTION` for Focus Interval.
+  - Evidence files:
+    - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-05_1921_bug033_9f01491_android_RMX3771_debug_logcat_focus.log`
+    - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-05_1921_bug033_9f01491_android_RMX3771_debug_prod.log`
+  - Note: logcat file contains older buffered crash lines around `10:28` (pre-run history). Closure decision uses the explicit run window (`19:21-20:45 EDT`) and user-observed runtime behavior during that window.
 
 ## Status
 
-In validation — deterministic repro re-captured on 2026-05-05 and runtime fix candidate is now implemented with local gate PASS. Pending: fresh device validation scenarios A/B on the patched build to confirm no crash recurrence and no continuity regressions.
+Closed/OK (05/05/2026) — patched-build validation scenarios A/B passed with closure-window log evidence and no recurrence of `ForegroundServiceStartNotAllowedException`.

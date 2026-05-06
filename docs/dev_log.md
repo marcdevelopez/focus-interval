@@ -25,8 +25,8 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last closed bug fix: **BUG-035 — macOS global keyboard stale-key repair (`88e0bb1`, closed 04/05/2026)**
-Current focus: **BUG-033 deterministic repro recapture + runtime fix candidate validation, with BUGLOG-034 and BUGLOG-027 still in validation**
+Last closed bug fix: **BUG-033 + BUG-034 closed on 05/05/2026 after patched-build validation evidence (`9f01491`, `a636b0f`)**
+Current focus: **BUGLOG-027 in validation + BUGLOG-029 pending (post-closure queue)**
 Last update: **05/05/2026**
 
 ---
@@ -18720,3 +18720,49 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 - `BUG-033` / `BUGLOG-033`: **In validation**.
 - Required next step: run Scenario A/B on patched Android build to confirm crash absence and no ownership continuity regressions before closure.
+
+---
+
+## Block 760 — BUG-033 + BUG-034 closure after patched-build validation evidence (05/05/2026)
+
+**Current branch intent:** Close BUG-033 and BUG-034 using fresh patched-build validation evidence, then synchronize canonical docs/ledger/dev log without touching runtime code.
+**Branch:** `fix/bug033-foreground-service-crash`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-033` / `BUGLOG-033` (**Closed/OK**), `BUG-034` / `BUGLOG-034` (**Closed/OK**)
+
+### BUG-033 closure evidence
+
+- Runtime fix under validation: `9f01491` (`PomodoroForegroundService` hardening).
+- Fresh patched-build run captured:
+  - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-05_1921_bug033_9f01491_android_RMX3771_debug_logcat_focus.log`
+  - `docs/bugs/validation_bug033_2026_04_29/logs/2026-05-05_1921_bug033_9f01491_android_RMX3771_debug_prod.log`
+- Scenario A PASS:
+  - No new `ForegroundServiceStartNotAllowedException` / `FATAL EXCEPTION` for Focus Interval in the explicit closure window (19:21-20:45 EDT).
+  - Note: logcat includes historical buffered crash lines from earlier timestamp (10:28); closure decision is based on the explicit validation window and user-observed behavior during that window.
+- Scenario B PASS:
+  - Pause-first multi-hour background window reported stable by user; no bug recurrence and no continuity regression.
+
+### BUG-034 closure evidence
+
+- Runtime fix under validation: `a636b0f` (shared-mode next-status cadence alignment).
+- Fresh long run captured:
+  - `docs/bugs/validation_bug034_2026_05_01/logs/2026-05-05_bug034_a636b0f_macos_debug_prod.log`
+- User visual validation PASS:
+  - Shared-mode status boxes remained coherent through final task transition.
+  - Original mismatch (`Next status` long break vs runtime short break) did not recur.
+- Non-shared guard remains covered by targeted regression tests already documented in packet/local gate.
+
+### Documentation synchronization completed
+
+- `docs/bugs/validation_bug033_2026_04_29/plan_validacion_rapida_fix.md` -> status moved to `Closed/OK` with closure-run evidence.
+- `docs/bugs/validation_bug033_2026_04_29/quick_pass_checklist.md` -> closure checklist completed.
+- `docs/bugs/validation_bug034_2026_05_01/plan_validacion_rapida_fix.md` -> status moved to `Closed/OK` with fresh run evidence.
+- `docs/bugs/validation_bug034_2026_05_01/quick_pass_checklist.md` -> closure checklist completed.
+- `docs/bugs/bug_log.md` -> BUG-033 + BUG-034 entries updated to `Closed/OK`.
+- `docs/validation/validation_ledger.md` -> `BUGLOG-033` + `BUGLOG-034` moved to `Closed/OK` with closure commit metadata/evidence.
+
+### Status after this block
+
+- `BUG-033` / `BUGLOG-033`: **Closed/OK**.
+- `BUG-034` / `BUGLOG-034`: **Closed/OK**.
+- Active non-closed bug-log queue now focuses on: `BUGLOG-027`, `BUGLOG-029`.
