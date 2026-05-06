@@ -16384,7 +16384,7 @@ preset named `Custom` existed.
 
 **Current branch intent:** BUG-023 docs-first opening + implementation kickoff for route-return preset linking.
 **Branch:** `fix/bug023-save-as-preset-autolink`
-**Commit:** `7be455b`
+**Commit:** `pending-local`
 **Bugs opened:** `BUG-023` / `BUGLOG-023` (P2)
 
 ### Context
@@ -18800,7 +18800,7 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 **Current branch intent:** Documentation hygiene only — remove duplicated `BUG-033` entry in canonical bug log without changing runtime or validation status.
 **Branch:** `fix/bug033-buglog-dedup`
-**Commit:** `pending-local`
+**Commit:** `7be455b`
 **Scope:** bug-log canonicalization (`docs/bugs/bug_log.md`)
 
 ### Context
