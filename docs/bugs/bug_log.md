@@ -3622,9 +3622,21 @@ Fix applied:
 
 Status:
 
-In validation (01/05/2026). Validation packet opened at
-`docs/bugs/validation_bug027_2026_05_01/`; device scenarios A-D pending
-(V03/V05/V19/V24 closure evidence).
+Closed/OK (06/05/2026, owner-requested closure).
+
+Closure evidence:
+
+- Implementation commit remains `8600f44` (`fix(bug027): add conflict context to all planning and runtime overlap surfaces`).
+- Validation packet refreshed on 06/05/2026 with deterministic widget/runtime evidence:
+  - `docs/bugs/validation_bug027_2026_05_01/logs/2026-05-06_bug027_8600f44_local_analyze.log`
+  - `docs/bugs/validation_bug027_2026_05_01/logs/2026-05-06_bug027_8600f44_local_task_group_planning_conflict.log`
+  - `docs/bugs/validation_bug027_2026_05_01/logs/2026-05-06_bug027_8600f44_local_timer_overlap_modal.log`
+  - `docs/bugs/validation_bug027_2026_05_01/logs/2026-05-06_bug027_8600f44_local_task_list_mirror_banner.log`
+  - `docs/bugs/validation_bug027_2026_05_01/logs/2026-05-06_bug027_8600f44_local_groups_hub_mirror_banner.log`
+  - `docs/bugs/validation_bug027_2026_05_01/logs/2026-05-06_bug027_8600f44_local_timer_mirror_snackbar.log`
+  - `docs/bugs/validation_bug027_2026_05_01/logs/2026-05-06_bug027_8600f44_local_timer_mirror_snackbar_dismiss.log`
+- Checklist A-D + regression smoke marked PASS in
+  `docs/bugs/validation_bug027_2026_05_01/quick_pass_checklist.md`.
 
 ---
 
@@ -3806,11 +3818,15 @@ Hypothesis:
 
 Fix applied:
 
-- Not yet.
+- Superseded by deterministic scheduling model contract in `docs/specs.md`:
+  - Pre-run overlap path is reminder-only with automatic clamp.
+  - Running/paused execution overlap has deterministic priority handling.
+  - Legacy conflict-modal-first resolution path is deprecated.
 
 Status:
 
-Open (03/04/2026), sourced from BUG-025 device validation evidence.
+Closed/OK as Superseded (06/05/2026), sourced from BUG-025 evidence and
+closed by docs-first model replacement (`docs/specs.md` + roadmap/ledger sync).
 
 ---
 
@@ -4140,6 +4156,7 @@ Fix applied:
 Status:
 
 Closed/OK (04/05/2026). Implementation commit `88e0bb1` validated with:
+
 - local gate PASS (`flutter analyze`, `flutter test test/presentation/timer_screen_completion_navigation_test.dart`);
 - macOS quick execution PASS log (`docs/bugs/validation_bug035_2026_05_04/logs/2026-05-04_bug035_4b1c94a_macos_debug.log`) without stuck-key signature matches;
 - explicit user acceptance in thread under the documented non-deterministic repro waiver.

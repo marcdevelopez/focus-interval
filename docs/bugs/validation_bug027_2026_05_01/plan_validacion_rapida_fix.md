@@ -5,6 +5,7 @@ Branch: `fix/bug033-foreground-service-crash`
 Commit: `8600f44`  
 Bugs covered: `BUG-027`  
 Target devices: Android owner path (primary), macOS/Chrome mirror path (secondary)
+Validation refresh: 2026-05-06 (owner-requested closure packet)
 
 ## Objetivo
 
@@ -122,7 +123,7 @@ flutter run -d chrome --dart-define=APP_ENV=prod 2>&1 | tee docs/bugs/validation
 
 ## Log analysis — quick scan (secondary only)
 
-This bug is primarily a UI copy/rendering issue. The authoritative validation for BUG-027 is visual evidence in scenarios A-D (screenshots/video), not grep over debug logs.
+This bug is primarily a UI copy/rendering issue. The default authoritative validation is visual evidence in scenarios A-D (screenshots/video), but the 2026-05-06 closure refresh used deterministic widget/runtime evidence under explicit owner-requested closure.
 
 ### Secondary signals that still help
 
@@ -145,6 +146,26 @@ grep -nE "requestOwnership|claimOwnership|Owner seems unavailable" docs/bugs/val
 - `flutter test test/presentation/timer_screen_syncing_overlay_test.dart` -> PASS (2026-05-01).
 - `flutter test test/presentation/utils/scheduled_group_timing_test.dart` -> PASS (2026-05-01).
 
+### Refresh validation packet (2026-05-06)
+
+- `flutter analyze` -> PASS.
+- `flutter test test/presentation/task_group_planning_screen_conflict_test.dart` -> PASS.
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "shows running-overlap modal when decision already exists on mount"` -> PASS.
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Task List mirror conflict banner shows request ownership CTA and triggers request"` -> PASS.
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Groups Hub mirror conflict banner shows request ownership CTA and triggers request"` -> PASS.
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Timer mirror shows persistent conflict snackbar until explicit OK"` -> PASS.
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart --plain-name "Timer mirror dismisses conflict snackbar when overlap decision clears"` -> PASS.
+
+Evidence logs:
+
+- `docs/bugs/validation_bug027_2026_05_01/logs/2026-05-06_bug027_8600f44_local_analyze.log`
+- `docs/bugs/validation_bug027_2026_05_01/logs/2026-05-06_bug027_8600f44_local_task_group_planning_conflict.log`
+- `docs/bugs/validation_bug027_2026_05_01/logs/2026-05-06_bug027_8600f44_local_timer_overlap_modal.log`
+- `docs/bugs/validation_bug027_2026_05_01/logs/2026-05-06_bug027_8600f44_local_task_list_mirror_banner.log`
+- `docs/bugs/validation_bug027_2026_05_01/logs/2026-05-06_bug027_8600f44_local_groups_hub_mirror_banner.log`
+- `docs/bugs/validation_bug027_2026_05_01/logs/2026-05-06_bug027_8600f44_local_timer_mirror_snackbar.log`
+- `docs/bugs/validation_bug027_2026_05_01/logs/2026-05-06_bug027_8600f44_local_timer_mirror_snackbar_dismiss.log`
+
 ## Criterios de cierre
 
 1. Exact repro scenarios A-D PASS with runtime evidence.
@@ -154,4 +175,10 @@ grep -nE "requestOwnership|claimOwnership|Owner seems unavailable" docs/bugs/val
 
 ## Status
 
-In validation.
+Closed/OK (2026-05-06).
+
+Closure note:
+
+- Owner requested immediate closure on 2026-05-06.
+- Packet was refreshed with deterministic widget/runtime evidence across planning and runtime mirror surfaces.
+- No new manual multi-device screenshot capture was added in this refresh cycle.

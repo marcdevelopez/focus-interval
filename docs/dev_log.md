@@ -25,9 +25,9 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last closed bug fix: **BUG-033 + BUG-034 closed on 05/05/2026 after patched-build validation evidence (`9f01491`, `a636b0f`)**
-Current focus: **BUGLOG-027 in validation + BUGLOG-029 pending + process no-loss checklist hardening**
-Last update: **05/05/2026**
+Last closed bug fix: **BUG-029 superseded closure sync completed on 06/05/2026 (`Block 763`, commit pending-local)**
+Current focus: **Deterministic model tracking sync complete; ready for Corte A implementation planning**
+Last update: **06/05/2026**
 
 ---
 
@@ -18483,7 +18483,6 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 - `BUG-027` / `BUGLOG-027`: **In validation** (device scenarios A-D still pending).
 - Local review debt reported by Claude is resolved; remaining work is device evidence capture only.
 
-
 ---
 
 ## Block 754 — BUG-034 registered with validation packet (shared timeline desync) (01/05/2026)
@@ -18818,3 +18817,78 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 - Canonical bug log now has one `BUG-033` entry.
 - `BUG-033` and `BUG-034` closure status remains unchanged (`Closed/OK`).
+
+---
+
+## Block 762 — BUGLOG-027 closure packet refresh and canonical closure sync (06/05/2026)
+
+**Current branch intent:** Close BUGLOG-027 end-to-end by refreshing validation evidence, then synchronizing roadmap/ledger/bug-log/dev-log states.
+**Branch:** `fix/bug027-close-validation`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-027` / `BUGLOG-027` (**Closed/OK**)
+
+### Context
+
+- BUG-027 implementation was already merged on commit `8600f44`, but closure docs remained `In validation` due pending packet completion.
+- User requested immediate closure on 06/05/2026.
+
+### Work completed
+
+- Refreshed validation packet with new local deterministic evidence (2026-05-06):
+  - `flutter analyze` PASS.
+  - `flutter test test/presentation/task_group_planning_screen_conflict_test.dart` PASS.
+  - Focused runtime/mirror widget tests PASS:
+    - `shows running-overlap modal when decision already exists on mount`
+    - `Task List mirror conflict banner shows request ownership CTA and triggers request`
+    - `Groups Hub mirror conflict banner shows request ownership CTA and triggers request`
+    - `Timer mirror shows persistent conflict snackbar until explicit OK`
+    - `Timer mirror dismisses conflict snackbar when overlap decision clears`
+- Logged all refresh outputs under:
+  - `docs/bugs/validation_bug027_2026_05_01/logs/2026-05-06_bug027_8600f44_local_*.log`
+- Updated validation docs to closure state:
+  - `docs/bugs/validation_bug027_2026_05_01/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug027_2026_05_01/quick_pass_checklist.md`
+- Synchronized canonical project docs:
+  - `docs/bugs/bug_log.md` -> BUG-027 status `Closed/OK`
+  - `docs/roadmap.md` reopened entry -> `Closed/OK`
+  - `docs/validation/validation_ledger.md` -> BUGLOG-027 status synchronized to `Closed/OK`
+
+### Status after this block
+
+- `BUG-027` / `BUGLOG-027`: **Closed/OK**.
+- Active non-closed bug-log queue now focuses on: `BUGLOG-029`.
+
+---
+
+## Block 763 — IDEA-039 and BUG-029 superseded closure sync (06/05/2026)
+
+**Current branch intent:** Synchronize canonical tracking docs after deterministic scheduling model adoption (docs-first closure).
+**Branch:** `feature/deterministic-conflict-model-docs`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `IDEA-039`, `BUG-029` / `BUGLOG-029` (**Closed/OK as Superseded**)
+
+### Context
+
+- Deterministic scheduling model contract was approved in specs, replacing legacy conflict-modal-first behavior.
+- Tracking docs still showed `IDEA-039` and `BUGLOG-029` as active/pending and required parity synchronization.
+
+### Documentation synchronization completed
+
+- `docs/roadmap.md`
+  - Reopened Phase 17 `IDEA-039` line moved from in-validation wording to **Closed/OK as Superseded**.
+- `docs/validation/validation_ledger.md`
+  - Snapshot updated to reflect zero non-closed bug-log items.
+  - `BUGLOG-029` moved to **Closed/OK** as superseded.
+  - `IDEA-039` moved to **Closed/OK** as superseded.
+- `docs/bugs/bug_log.md`
+  - `BUG-029` status moved from Open to **Closed/OK as Superseded** with deterministic-model rationale.
+- `docs/features/feature_backlog.md`
+  - `IDEA-039` removed from Active in-progress list and marked `Status: superseded`.
+- `docs/features/feature_2026_04_02_idea039-conflict-explainer/feature_plan.md`
+  - Current status updated to superseded path (no further device packet required for deprecated track).
+
+### Status after this block
+
+- `BUG-029` / `BUGLOG-029`: **Closed/OK as Superseded**.
+- `IDEA-039`: **Closed/OK as Superseded**.
+- Active non-closed bug-log queue: **none**.

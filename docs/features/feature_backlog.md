@@ -96,8 +96,8 @@ Notes:
   models in Local Mode.
 - IDEA-038 supersedes IDEA-009. Once IDEA-038 is done, IDEA-009 must be reviewed
   and either closed as redundant or repurposed as an in-tab CTA within Groups Hub.
-- IDEA-039: deferral lifted 2026-04-02 by owner decision. Implementation in progress
-  on branch feature/idea039-conflict-explainer.
+- IDEA-039: superseded on 2026-05-06 by deterministic scheduling model contract
+  (legacy conflict-modal path deprecated; not an active implementation track).
 - IDEA-040 should be implemented together with the reopened Phase 19 timing-row
   requirement to keep card/summary timing labels coherent.
 
@@ -110,8 +110,8 @@ When a feature starts, list it here and update its full entry in the ordered IDE
 3. Add `Plan: docs/features/feature_YYYY_MM_DD_slug/feature_plan.md`.
 
 Active:
+
 - IDEA-034 — Offline Continuation With Rejoin/Sync Choice (Feature folder: docs/features/feature_2026_03_04_offline-continuation-rejoin-choice/; Plan: docs/features/feature_2026_03_04_offline-continuation-rejoin-choice/feature_plan.md)
-- IDEA-039 — Scheduling Conflict Explainer + Guided Start Suggestions (Feature folder: docs/features/feature_2026_04_02_idea039-conflict-explainer/; Plan: docs/features/feature_2026_04_02_idea039-conflict-explainer/feature_plan.md)
 
 ## Done
 
@@ -122,6 +122,7 @@ When a feature completes, move the full entry here (or to `docs/features/feature
 3. Keep the feature folder link for traceability.
 
 Completed:
+
 - IDEA-032 — Plan Group Pre-Run Notice Control
   (Feature folder: docs/features/feature_2026_03_02_plan-group-notice-control/;
   Plan: docs/features/feature_2026_03_02_plan-group-notice-control/feature_plan.md;
@@ -2947,8 +2948,9 @@ Settings language option can be connected to locale override without refactor.
 
 Notes:
 Implement in phased rollouts to reduce regression risk:
-1) infrastructure, 2) core screens, 3) remaining UI, 4) cleanup/lint guard
-against new hardcoded UI strings.
+
+1. infrastructure, 2) core screens, 3) remaining UI, 4) cleanup/lint guard
+   against new hardcoded UI strings.
 
 ---
 
@@ -3084,6 +3086,7 @@ PageView/TabBarView behavior). No custom animation required beyond the default
 Flutter page transition.
 
 Interaction:
+
 - Tap a tab label to navigate to that screen.
 - Swipe horizontally between screens where the platform gesture model supports it
   (iOS and Android standard; may be disabled on desktop/web if it conflicts with
@@ -3109,6 +3112,7 @@ app restarts; default tab on launch is Task List or last active tab — TBD in
 implementation plan).
 
 Edge cases:
+
 - Deep link or push navigation that opens Groups Hub directly must activate tab 2
   without a visible flash of tab 1.
 - If the user is in Run Mode (timer running), tapping a tab must still work; the
@@ -3127,6 +3131,7 @@ and "selected" state. Swiping between tabs must be achievable via accessibility
 actions as an alternative to the swipe gesture.
 
 Dependencies:
+
 - IDEA-009 (Sticky "Go to Task List" CTA in Groups Hub) is superseded by this
   feature. Review IDEA-009 before or during implementation: close it as redundant
   or repurpose it as an in-tab contextual CTA if still needed after tabs exist.
@@ -3136,6 +3141,7 @@ Dependencies:
   strings from the start.
 
 Risks:
+
 - Routing/navigation stack changes may affect back-button behavior on Android
   (back from tab 2 must not exit the app unexpectedly; must return to tab 1 or
   follow standard Android back behavior — confirm in implementation plan).
@@ -3145,6 +3151,7 @@ Risks:
   audited to avoid duplicating the tab shell.
 
 Acceptance criteria:
+
 - Tab bar is visible at a fixed position on both Task List and Groups Hub.
 - Tapping "Task List" tab navigates to Task List from anywhere within the main nav.
 - Tapping "Groups Hub" tab navigates to Groups Hub from anywhere within the main nav.
@@ -3159,6 +3166,7 @@ Acceptance criteria:
 - Architecture allows adding a third tab without restructuring the shell.
 
 Notes:
+
 - IDEA-009 must be reviewed and resolved (close or repurpose) before or during
   this implementation to avoid conflicting navigation patterns.
 - Tab persistence (remember last active tab across app restarts) is out of scope
@@ -3175,10 +3183,15 @@ Title: Scheduling Conflict Explainer + Guided Start Suggestions
 Type: UX / Planning
 Scope: M
 Priority: P1
-Status: in_progress
+Status: superseded
 Feature folder: docs/features/feature_2026_04_02_idea039-conflict-explainer/
 Plan: docs/features/feature_2026_04_02_idea039-conflict-explainer/feature_plan.md
 Checklist: docs/features/feature_2026_04_02_idea039-conflict-explainer/feature_checklist.md
+
+Superseded note (2026-05-06):
+
+- Superseded by deterministic scheduling model contract in `docs/specs.md`.
+- Legacy conflict-modal-first flow is deprecated and no longer an active feature track.
 
 Problem / Goal:
 When scheduling is blocked by pre-run or execution conflicts, current feedback
@@ -3197,6 +3210,7 @@ Two-layer feedback model: inline indicator in Plan Group (proactive, before
 Confirm) + blocking explainer modal (reactive, on Confirm attempt).
 
 Layer 1 — Inline indicator in Plan Group (pre-Confirm):
+
 - As soon as the user selects a time in the time picker and taps OK, run
   conflict detection immediately (both pre-run and execution window).
 - If conflict detected: show a leve non-blocking hint inline (e.g. brief
@@ -3212,6 +3226,7 @@ Layer 1 — Inline indicator in Plan Group (pre-Confirm):
 Layer 2 — Blocking explainer modal (at Confirm, for execution conflicts):
 Launched when user reaches Confirm with an unresolved execution conflict.
 Modal body must be scrollable and show:
+
 - Planned group timeline (attempted start, pre-run window, execution window).
 - Conflicting groups list (1..N), each with type badge (Running/Scheduled),
   group name, execution range, and pre-run range when notice > 0.
@@ -3226,6 +3241,7 @@ No custom animation required.
 
 Interaction:
 Case A (pre-run-only conflict — handled inline, no modal):
+
 - If execution window does not conflict and only pre-run conflicts, auto-adjust
   effective notice using the same clamp as "start too soon":
   `effectiveNotice = clamp(0, globalNotice, minutesBetweenPrecedingGroupEndAndStart)`
@@ -3239,6 +3255,7 @@ Case A (pre-run-only conflict — handled inline, no modal):
   minutes" behavior for the "start too soon" case.
 
 Case B (execution conflict — inline indicator + modal on Confirm):
+
 - Inline: colored border + conflict chip on the scheduled-by item, one chip per
   conflicting group (name, HH:mm–HH:mm, Running/Scheduled badge).
 - Confirm button disabled while any execution conflict exists.
@@ -3255,9 +3272,10 @@ Case B (execution conflict — inline indicator + modal on Confirm):
      up to two suggested slots (nearest valid before + nearest valid after all
      remaining blockers), respecting duration and 1-minute separation.
   3. Cancel — returns to Plan Group unchanged, conflict still shown inline.
-  Delete action only enabled when at least one group is checked.
+     Delete action only enabled when at least one group is checked.
 
 Real-time conflict data:
+
 - Conflict detection must always use the current theoretical end time of any
   group (running, paused, or scheduled). While a group is paused its theoretical
   end extends continuously — conflict calculation must reflect this live value
@@ -3274,6 +3292,7 @@ Source of truth:
 TaskRunGroup + effective scheduled timing helpers + current planning payload.
 
 Calculations:
+
 - Pre-run-only conflict detection vs execution conflict detection.
 - Suggested start computation constrained to two options max:
   - nearest valid before blockers
@@ -3284,6 +3303,7 @@ Sync / multi-device:
 No authority or ownership changes. Planning-side UX only.
 
 Edge cases:
+
 - Multiple conflicting groups: show all inline (one chip per group) and all in
   modal with checkboxes, sorted by start time. User can delete a subset; if
   conflicts remain after partial delete, Plan Group stays open with updated
@@ -3304,15 +3324,18 @@ Modal content and actions must be screen-reader accessible with explicit
 announcement of group names and ranges.
 
 Dependencies:
+
 - Existing planning + conflict detection in Task List.
 - Shared timing helpers for effective scheduled/pre-run ranges.
 - Specs update required before implementation.
 
 Risks:
+
 - Overly dense modal copy; keep layout compact and scannable.
 - Suggestion calculation drift if duplicated outside shared helpers.
 
 Acceptance criteria:
+
 - Generic conflict snackbar / ephemeral banner replaced entirely for this path.
 - Layer 1 (inline): conflict chip(s) on scheduled-by item appear immediately
   after time selection; one chip per conflicting group (name, range, badge).
@@ -3361,12 +3384,14 @@ planned schedule.
 
 Design / UX:
 Layout / placement:
+
 - Groups Hub cards (running/paused/completed/canceled): when
   `scheduledStartTime == null`, show `Started: <time>` in the timing meta area.
 - Group summary modal: when `scheduledStartTime == null`, keep
   `Scheduled start` hidden and show `Started: <time>` in the Timing section.
 
 Visual states:
+
 - Start-now groups: show `Started`.
 - Scheduled groups: keep existing scheduled/pre-run timing presentation.
 
@@ -3393,6 +3418,7 @@ No authority changes. Mirrors render the same value from the shared group
 snapshot.
 
 Edge cases:
+
 - `actualStartTime == null` on a Start-now group: show fallback `Started: --:--`
   and keep the UI stable.
 - Pre-run row remains hidden for Start-now groups.
@@ -3408,6 +3434,7 @@ Low; purely presentational. Must avoid reintroducing `Scheduled start` label on
 Start-now groups.
 
 Acceptance criteria:
+
 - Start-now group cards show `Started` with actual start time.
 - Start-now summary modal shows `Started` and does not show `Scheduled start`.
 - Scheduled groups remain unchanged.
