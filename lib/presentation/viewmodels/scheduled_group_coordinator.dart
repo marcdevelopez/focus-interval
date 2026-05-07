@@ -18,7 +18,7 @@ final scheduledGroupCoordinatorProvider =
       ScheduledGroupCoordinator.new,
     );
 
-enum ScheduledGroupActionType { openTimer, openGroupsHub, lateStartQueue }
+enum ScheduledGroupActionType { openTimer, openGroupsHub }
 
 class ScheduledGroupAction {
   final ScheduledGroupActionType type;
@@ -39,13 +39,6 @@ class ScheduledGroupAction {
       groupId = null,
       groupIds = null,
       anchor = null;
-
-  const ScheduledGroupAction.lateStartQueue({
-    required this.groupIds,
-    required this.anchor,
-    required this.token,
-  }) : type = ScheduledGroupActionType.lateStartQueue,
-       groupId = null;
 }
 
 class _ScheduledExecutionWindow {

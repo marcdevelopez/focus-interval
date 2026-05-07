@@ -13,7 +13,6 @@ import '../providers.dart';
 import '../../domain/pomodoro_machine.dart';
 import '../viewmodels/pomodoro_view_model.dart';
 import '../viewmodels/pre_run_notice_view_model.dart';
-import '../utils/scheduling_conflict_helpers.dart';
 import '../utils/scheduled_group_timing.dart';
 import '../../data/models/task_run_group.dart';
 import '../../data/models/pomodoro_session.dart';
@@ -75,18 +74,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   String? _dismissedOwnershipRequestKey;
   String? _dismissedOwnershipRequesterId;
   bool _ownershipRejectionSnackVisible = false;
-  bool _mirrorConflictSnackVisible = false;
-  ScaffoldMessengerState? _mirrorConflictMessenger;
-  ScaffoldFeatureController<SnackBar, SnackBarClosedReason>?
-  _mirrorConflictSnackController;
-  final Set<String> _dismissedMirrorConflictSnackKeys = {};
   bool _inactiveRepaintEnabled = false;
-  bool _runningOverlapDialogVisible = false;
-  RunningOverlapDecision? _pendingRunningOverlapDecision;
-  String? _pendingPostponeDecisionKey;
-  String? _pendingPostponeScheduledGroupId;
-  DateTime? _pendingPostponeExpectedStart;
-  int _pendingPostponeSnapshotChecks = 0;
+  final Set<String> _lastShownAtRiskIds = <String>{};
 
   @override
   void initState() {
@@ -98,10 +87,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _startDebugFramePing();
 
     _loadGroup(widget.groupId);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _isDisposing) return;
-      _consumeRunningOverlapDecision(ref.read(runningOverlapDecisionProvider));
-    });
   }
 
   @override
@@ -240,16 +225,14 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _runningAutoStartGroupId = null;
     _cancelNavigationHandled = false;
     _cancelNavRetryAttempts = 0;
-    _pendingRunningOverlapDecision = null;
-    _clearPendingPostponeGuard();
     _stopCancelNavRetry();
     _setInactiveRepaintEnabled(false);
     _preRunInfo = null;
     _preRunRemainingSeconds = 0;
+    _lastShownAtRiskIds.clear();
     if (_ownershipRejectionSnackVisible && mounted) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
     }
-    _hideMirrorConflictSnack(clearDismissedKeys: true, immediate: true);
     _activeOwnershipRejectionSnackKey = null;
     _ownershipRejectionSnackVisible = false;
     _stopPreRunTimer();
@@ -289,12 +272,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
             _maybeAutoStartRunningGroup(group);
           }
           _maybeAutoStartScheduled();
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted || _isDisposing) return;
-            _consumeRunningOverlapDecision(
-              ref.read(runningOverlapDecisionProvider),
-            );
-          });
           break;
         case PomodoroGroupLoadResult.notFound:
           ScaffoldMessenger.of(context).showSnackBar(
@@ -309,15 +286,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           break;
       }
     });
-  }
-
-  @override
-  void deactivate() {
-    _mirrorConflictSnackVisible = false;
-    _mirrorConflictSnackController = null;
-    _mirrorConflictMessenger = null;
-    _dismissedMirrorConflictSnackKeys.clear();
-    super.deactivate();
   }
 
   @override
@@ -539,7 +507,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       next,
     ) {
       final groups = next.value ?? const [];
-      _syncPendingPostponeGuardFromGroups(groups);
       final updated = groups.where((g) => g.id == widget.groupId).toList();
       if (updated.isEmpty) return;
       final group = updated.first;
@@ -606,7 +573,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       }
 
       _syncOwnershipRequestUiState(vm: vm, deviceId: deviceId);
-      _maybeShowPendingRunningOverlap(next, vm, deviceId);
     });
 
     ref.listen<String?>(scheduledAutoStartGroupIdProvider, (previous, next) {
@@ -630,9 +596,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       }
     });
 
-    ref.listen<RunningOverlapDecision?>(
-      runningOverlapDecisionProvider,
-      (previous, next) => _consumeRunningOverlapDecision(next),
+    ref.listen<Set<String>>(
+      atRiskScheduledGroupIdsProvider,
+      (previous, next) => _handleAtRiskScheduledGroupsChanged(next),
     );
 
     final state = ref.watch(pomodoroViewModelProvider);
@@ -648,10 +614,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final ownerDeviceId = sessionForGroup?.ownerDeviceId;
     final isMirror = isSessionForGroup && ownerDeviceId != deviceId;
     final hasSession = isSessionForGroup;
-    final routePath = _currentRoute();
-    if (_mirrorConflictSnackVisible && !routePath.startsWith('/timer/')) {
-      _hideMirrorConflictSnack(clearDismissedKeys: true);
-    }
     final isResyncing = vm.isResyncing;
     final isTimeSyncReady = vm.isTimeSyncReady;
     final hasPendingIntent = vm.hasPendingIntent;
@@ -997,533 +959,37 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     }
   }
 
-  Future<void> _handleRunningOverlapDecision(
-    RunningOverlapDecision decision,
-  ) async {
-    if (_runningOverlapDialogVisible) return;
-    final vm = ref.read(pomodoroViewModelProvider.notifier);
-    final state = ref.read(pomodoroViewModelProvider);
-    final currentGroup = vm.currentGroup;
-    if (currentGroup == null || currentGroup.id != decision.runningGroupId) {
-      ref.read(runningOverlapDecisionProvider.notifier).state = null;
-      return;
-    }
-
-    final wasRunning = state.status.isRunning;
-    if (wasRunning) {
-      vm.pause();
-    }
-
-    _runningOverlapDialogVisible = true;
-    final overlapContext = _resolveRunningOverlapDialogContext(decision);
-    final choice = await showDialog<_RunningOverlapChoice>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        title: const Text('Scheduling conflict'),
-        content: _ConflictDialogContent(contextData: overlapContext),
-        actions: [
-          TextButton(
-            onPressed: () =>
-                Navigator.of(context).pop(_RunningOverlapChoice.endCurrent),
-            child: const Text('End current group'),
-          ),
-          TextButton(
-            onPressed: () =>
-                Navigator.of(context).pop(_RunningOverlapChoice.postponeNext),
-            child: const Text('Postpone scheduled'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(
-              context,
-            ).pop(_RunningOverlapChoice.cancelScheduled),
-            child: const Text('Cancel scheduled'),
-          ),
-        ],
-      ),
-    );
-    _runningOverlapDialogVisible = false;
-
-    ref.read(runningOverlapDecisionProvider.notifier).state = null;
-
-    if (!mounted || choice == null) {
-      if (wasRunning) vm.resume();
-      return;
-    }
-
-    switch (choice) {
-      case _RunningOverlapChoice.endCurrent:
-        await vm.cancel(reason: TaskRunCanceledReason.interrupted);
-        if (!mounted) return;
-        context.go('/timer/${decision.scheduledGroupId}');
-        return;
-      case _RunningOverlapChoice.postponeNext:
-        await _postponeScheduledGroup(decision);
-        if (wasRunning) vm.resume();
-        return;
-      case _RunningOverlapChoice.cancelScheduled:
-        await _cancelScheduledGroup(decision);
-        if (wasRunning) vm.resume();
-        return;
-    }
-  }
-
-  void _consumeRunningOverlapDecision(RunningOverlapDecision? next) {
+  void _handleAtRiskScheduledGroupsChanged(Set<String> atRiskIds) {
     if (!mounted || _isDisposing) return;
-    final groupsAsync = ref.read(taskRunGroupStreamProvider);
-    if (groupsAsync.isLoading) {
+    if (atRiskIds.isEmpty) {
+      _lastShownAtRiskIds.clear();
       return;
     }
-    final vm = ref.read(pomodoroViewModelProvider.notifier);
-    final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
-    if (next == null) {
-      _pendingRunningOverlapDecision = null;
-      _hideMirrorConflictSnack(clearDismissedKeys: true);
+    if (setEquals(_lastShownAtRiskIds, atRiskIds)) {
       return;
     }
-    final groups = groupsAsync.value ?? const <TaskRunGroup>[];
-    final activeSession = ref.read(activePomodoroSessionProvider);
-    final now = DateTime.now();
-    final stillValid = isRunningOverlapStillValid(
-      runningGroupId: next.runningGroupId,
-      scheduledGroupId: next.scheduledGroupId,
-      groups: groups,
-      activeSession: activeSession,
-      now: now,
-      fallbackNoticeMinutes: _noticeFallbackMinutes,
-    );
-    if (!stillValid) {
-      _hideMirrorConflictSnack(clearDismissedKeys: true);
-      ref.read(runningOverlapDecisionProvider.notifier).state = null;
-      return;
-    }
-    if (_isPostponeDecisionSuppressed(next)) {
-      return;
-    }
-    if (_runningOverlapDialogVisible) return;
-    if (_isMirrorOverlapDecision(next, vm, deviceId)) {
-      final ownerStale = _isOwnerStale(
-        vm.activeSessionForCurrentGroup,
-        DateTime.now(),
-      );
-      _maybeShowMirrorConflictSnack(
-        _overlapDecisionKey(next),
-        ownerStale: ownerStale,
-        decision: next,
-      );
-      return;
-    }
-    if (!_isRunningOverlapDecisionForCurrentGroup(next, vm, deviceId)) {
-      return;
-    }
-    final state = ref.read(pomodoroViewModelProvider);
-    if (_shouldShowRunningOverlapNow(state, vm)) {
-      unawaited(_handleRunningOverlapDecision(next));
-      return;
-    }
-    _pendingRunningOverlapDecision = next;
-  }
 
-  bool _isRunningOverlapDecisionForCurrentGroup(
-    RunningOverlapDecision decision,
-    PomodoroViewModel vm,
-    String deviceId,
-  ) {
-    final currentGroup = vm.currentGroup;
-    if (currentGroup == null || currentGroup.id != decision.runningGroupId) {
-      return false;
-    }
-    final session = vm.activeSessionForCurrentGroup;
-    if (session != null && session.ownerDeviceId != deviceId) return false;
-    if (!_isRunningOverlapDecisionActive(decision)) return false;
-    return true;
-  }
+    _lastShownAtRiskIds
+      ..clear()
+      ..addAll(atRiskIds);
 
-  bool _isMirrorOverlapDecision(
-    RunningOverlapDecision decision,
-    PomodoroViewModel vm,
-    String deviceId,
-  ) {
-    final currentGroup = vm.currentGroup;
-    if (currentGroup == null || currentGroup.id != decision.runningGroupId) {
-      return false;
-    }
-    final session = vm.activeSessionForCurrentGroup;
-    if (session == null || session.ownerDeviceId == deviceId) return false;
-    return _isRunningOverlapDecisionActive(decision);
-  }
+    final count = atRiskIds.length;
+    final noun = count == 1 ? 'group is' : 'groups are';
+    final message =
+        '$count scheduled $noun at risk while this group is active.';
 
-  bool _isBreakPhase(PomodoroState state) =>
-      state.phase == PomodoroPhase.shortBreak ||
-      state.phase == PomodoroPhase.longBreak;
-
-  bool _isLastPomodoroInGroup(PomodoroState state, PomodoroViewModel vm) {
-    if (state.phase != PomodoroPhase.pomodoro) return false;
-    if (state.currentPomodoro < state.totalPomodoros) return false;
-    return vm.nextItem == null;
-  }
-
-  bool _shouldShowRunningOverlapNow(PomodoroState state, PomodoroViewModel vm) {
-    if (state.status == PomodoroStatus.paused) return true;
-    if (_isBreakPhase(state)) return true;
-    if (_isLastPomodoroInGroup(state, vm)) return true;
-    return false;
-  }
-
-  void _maybeShowPendingRunningOverlap(
-    PomodoroState state,
-    PomodoroViewModel vm,
-    String deviceId,
-  ) {
-    final pending = _pendingRunningOverlapDecision;
-    if (pending == null || _runningOverlapDialogVisible) return;
-    if (!_isRunningOverlapDecisionActive(pending)) {
-      _pendingRunningOverlapDecision = null;
-      return;
-    }
-    if (!_isRunningOverlapDecisionForCurrentGroup(pending, vm, deviceId)) {
-      _pendingRunningOverlapDecision = null;
-      return;
-    }
-    if (!_shouldShowRunningOverlapNow(state, vm)) return;
-    _pendingRunningOverlapDecision = null;
-    unawaited(_handleRunningOverlapDecision(pending));
-  }
-
-  bool _isRunningOverlapDecisionActive(RunningOverlapDecision decision) {
-    final groups = ref.read(taskRunGroupStreamProvider).value ?? const [];
-    if (groups.isEmpty) return false;
-    final activeSession = ref.read(activePomodoroSessionProvider);
-    final fallback = _noticeFallbackMinutes;
-    return isRunningOverlapStillValid(
-      runningGroupId: decision.runningGroupId,
-      scheduledGroupId: decision.scheduledGroupId,
-      groups: groups,
-      activeSession: activeSession,
-      now: DateTime.now(),
-      fallbackNoticeMinutes: fallback,
-    );
-  }
-
-  Future<void> _postponeScheduledGroup(RunningOverlapDecision decision) async {
-    final repo = ref.read(taskRunGroupRepositoryProvider);
-    final notifier = ref.read(notificationServiceProvider);
-    final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
-    final running = await repo.getById(decision.runningGroupId);
-    final scheduled = await repo.getById(decision.scheduledGroupId);
-    if (running == null || scheduled == null) return;
-
-    final now = DateTime.now();
-    final activeSession = ref.read(activePomodoroSessionProvider);
-    final endTime =
-        resolveProjectedRunningEnd(
-          runningGroup: running,
-          activeSession: activeSession,
-          now: now,
-        ) ??
-        _resolveGroupEnd(running);
-    if (endTime == null) return;
-    final queueId = scheduled.lateStartQueueId;
-    final queueOrder = scheduled.lateStartQueueOrder;
-    final allGroups = queueId == null
-        ? const <TaskRunGroup>[]
-        : await repo.getAll();
-    final queued =
-        queueId == null
-              ? <TaskRunGroup>[]
-              : allGroups
-                    .where(
-                      (group) =>
-                          group.status == TaskRunStatus.scheduled &&
-                          group.lateStartQueueId == queueId,
-                    )
-                    .toList()
-          ..sort((a, b) {
-            final aOrder = a.lateStartQueueOrder ?? 0;
-            final bOrder = b.lateStartQueueOrder ?? 0;
-            return aOrder.compareTo(bOrder);
-          });
-    final startIndex = queued.isEmpty
-        ? 0
-        : queued.indexWhere((group) => group.id == scheduled.id);
-    final applyChain = queueId != null && queueOrder != null && startIndex >= 0;
-    final chainGroups = applyChain ? queued.sublist(startIndex) : [scheduled];
-    final updates = <TaskRunGroup>[];
-    var cursor = endTime;
-    for (var index = 0; index < chainGroups.length; index += 1) {
-      final group = chainGroups[index];
-      final noticeMinutes = _resolveNoticeMinutes(group);
-      final scheduledStart = resolveAnchoredScheduledStart(
-        anchorEnd: cursor,
-        noticeMinutes: noticeMinutes,
-      );
-      final durationSeconds = resolveGroupDurationSeconds(group);
-      final anchorId = index == 0 ? running.id : chainGroups[index - 1].id;
-      final updated = group.copyWith(
-        status: TaskRunStatus.scheduled,
-        scheduledStartTime: scheduledStart,
-        scheduledByDeviceId: deviceId,
-        actualStartTime: null,
-        theoreticalEndTime: scheduledStart.add(
-          Duration(seconds: durationSeconds),
-        ),
-        noticeSentAt: null,
-        noticeSentByDeviceId: null,
-        postponedAfterGroupId: anchorId,
-        updatedAt: now,
-      );
-      updates.add(updated);
-      cursor = scheduledStart.add(Duration(seconds: durationSeconds));
-    }
-    if (updates.isEmpty) return;
-    _setPendingPostponeGuard(
-      decision: decision,
-      scheduledGroupId: updates.first.id,
-      expectedStart: updates.first.scheduledStartTime!,
-    );
-    try {
-      if (updates.length == 1) {
-        await repo.save(updates.first);
-      } else {
-        await repo.saveAll(updates);
-      }
-    } catch (_) {
-      _clearPendingPostponeGuard();
-      rethrow;
-    }
-    for (final group in updates) {
-      await notifier.cancelGroupPreAlert(group.id);
-    }
-    if (!mounted) return;
-    final firstNotice = _resolveNoticeMinutes(updates.first);
-    final preRunStart = firstNotice > 0
-        ? updates.first.scheduledStartTime!.subtract(
-            Duration(minutes: firstNotice),
-          )
-        : updates.first.scheduledStartTime!;
-    _showPostponeConfirmation(
-      scheduledStart: updates.first.scheduledStartTime!,
-      preRunStart: preRunStart,
-      chainedCount: updates.length - 1,
-    );
-  }
-
-  Future<void> _cancelScheduledGroup(RunningOverlapDecision decision) async {
-    final repo = ref.read(taskRunGroupRepositoryProvider);
-    final notifier = ref.read(notificationServiceProvider);
-    final scheduled = await repo.getById(decision.scheduledGroupId);
-    if (scheduled == null) return;
-    final updated = scheduled.copyWith(
-      status: TaskRunStatus.canceled,
-      canceledReason: TaskRunCanceledReason.conflict,
-      postponedAfterGroupId: null,
-      updatedAt: DateTime.now(),
-    );
-    await repo.save(updated);
-    await notifier.cancelGroupPreAlert(updated.id);
-  }
-
-  DateTime? _resolveGroupEnd(TaskRunGroup group) {
-    final start = group.actualStartTime;
-    if (start == null) return null;
-    if (group.theoreticalEndTime.isAfter(start)) {
-      return group.theoreticalEndTime;
-    }
-    final durationSeconds =
-        group.totalDurationSeconds ??
-        groupDurationSecondsByMode(group.tasks, group.integrityMode);
-    if (durationSeconds <= 0) return start;
-    return start.add(Duration(seconds: durationSeconds));
-  }
-
-  void _showPostponeConfirmation({
-    required DateTime scheduledStart,
-    required DateTime preRunStart,
-    int chainedCount = 0,
-  }) {
     final messenger = ScaffoldMessenger.of(context);
-    final startLabel = _formatTimeOrDate(scheduledStart);
-    final hasPreRun = preRunStart.isBefore(scheduledStart);
-    final preRunClause = hasPreRun
-        ? ' (pre-run at ${_formatTimeOrDate(preRunStart)})'
-        : '';
-    final chainNote = chainedCount > 0
-        ? ' Remaining queued groups will shift sequentially.'
-        : '';
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
       SnackBar(
-        content: Text(
-          'Scheduled start moved to $startLabel$preRunClause.$chainNote',
-        ),
-        duration: const Duration(seconds: 4),
+        content: Text(message),
+        duration: const Duration(seconds: 6),
         action: SnackBarAction(
           label: 'OK',
           onPressed: () => messenger.hideCurrentSnackBar(),
         ),
       ),
     );
-  }
-
-  String _overlapDecisionKey(RunningOverlapDecision decision) {
-    return '${decision.runningGroupId}_${decision.scheduledGroupId}';
-  }
-
-  void _setPendingPostponeGuard({
-    required RunningOverlapDecision decision,
-    required String scheduledGroupId,
-    required DateTime expectedStart,
-  }) {
-    _pendingPostponeDecisionKey = _overlapDecisionKey(decision);
-    _pendingPostponeScheduledGroupId = scheduledGroupId;
-    _pendingPostponeExpectedStart = expectedStart;
-    _pendingPostponeSnapshotChecks = 0;
-  }
-
-  void _clearPendingPostponeGuard() {
-    _pendingPostponeDecisionKey = null;
-    _pendingPostponeScheduledGroupId = null;
-    _pendingPostponeExpectedStart = null;
-    _pendingPostponeSnapshotChecks = 0;
-  }
-
-  bool _isPostponeDecisionSuppressed(RunningOverlapDecision decision) {
-    final guardKey = _pendingPostponeDecisionKey;
-    if (guardKey == null) return false;
-    return guardKey == _overlapDecisionKey(decision);
-  }
-
-  void _syncPendingPostponeGuardFromGroups(List<TaskRunGroup> groups) {
-    final scheduledGroupId = _pendingPostponeScheduledGroupId;
-    final expectedStart = _pendingPostponeExpectedStart;
-    if (scheduledGroupId == null || expectedStart == null) return;
-    _pendingPostponeSnapshotChecks += 1;
-    final scheduled = findGroupById(groups, scheduledGroupId);
-    if (scheduled == null || scheduled.status != TaskRunStatus.scheduled) {
-      _clearPendingPostponeGuard();
-      return;
-    }
-    final activeSession = ref.read(activePomodoroSessionProvider);
-    final effectiveStart =
-        resolveEffectiveScheduledStart(
-          group: scheduled,
-          allGroups: groups,
-          activeSession: activeSession,
-          now: DateTime.now(),
-          fallbackNoticeMinutes: _noticeFallbackMinutes,
-        ) ??
-        scheduled.scheduledStartTime;
-    if (effectiveStart != null && !effectiveStart.isBefore(expectedStart)) {
-      _clearPendingPostponeGuard();
-      return;
-    }
-    // Fallback on repeated snapshots to avoid stale suppression if repository
-    // write fails silently or snapshot propagation never confirms.
-    if (_pendingPostponeSnapshotChecks >= 25) {
-      _clearPendingPostponeGuard();
-    }
-  }
-
-  bool _isOwnerStale(PomodoroSession? session, DateTime now) {
-    if (session == null) return false;
-    final updatedAt = session.lastUpdatedAt;
-    if (updatedAt == null) return false;
-    return now.difference(updatedAt) >= const Duration(seconds: 45);
-  }
-
-  void _maybeShowMirrorConflictSnack(
-    String key, {
-    required bool ownerStale,
-    required RunningOverlapDecision decision,
-  }) {
-    if (_mirrorConflictSnackVisible ||
-        _dismissedMirrorConflictSnackKeys.contains(key)) {
-      return;
-    }
-    final groups =
-        ref.read(taskRunGroupStreamProvider).value ?? const <TaskRunGroup>[];
-    final activeSession = ref.read(activePomodoroSessionProvider);
-    final conflictContext = resolveRunningOverlapContext(
-      runningGroupId: decision.runningGroupId,
-      scheduledGroupId: decision.scheduledGroupId,
-      groups: groups,
-      activeSession: activeSession,
-      now: DateTime.now(),
-      fallbackNoticeMinutes: _noticeFallbackMinutes,
-    );
-    _mirrorConflictSnackVisible = true;
-    final messenger = ScaffoldMessenger.of(context);
-    _mirrorConflictMessenger = messenger;
-    final message = ownerStale
-        ? 'Owner seems unavailable. Claim ownership to resolve this conflict.'
-        : 'Owner is resolving this conflict. Request ownership if needed.';
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _mirrorConflictSnackController = messenger.showSnackBar(
-        SnackBar(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(message),
-              if (conflictContext != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  formatConflictSummary(conflictContext, now: DateTime.now()),
-                  style: const TextStyle(fontSize: 12),
-                ),
-              ],
-            ],
-          ),
-          duration: const Duration(minutes: 10),
-          dismissDirection: DismissDirection.none,
-          action: SnackBarAction(
-            label: 'OK',
-            onPressed: () {
-              _dismissedMirrorConflictSnackKeys.add(key);
-              _mirrorConflictSnackController?.close();
-              if (!mounted) return;
-              setState(() {
-                _mirrorConflictSnackVisible = false;
-              });
-            },
-          ),
-        ),
-      );
-      _mirrorConflictSnackController?.closed.then((_) {
-        _mirrorConflictSnackController = null;
-        if (!mounted) return;
-        setState(() {
-          _mirrorConflictSnackVisible = false;
-        });
-      });
-    });
-  }
-
-  void _hideMirrorConflictSnack({
-    bool clearDismissedKeys = false,
-    bool immediate = false,
-  }) {
-    final controller = _mirrorConflictSnackController;
-    if (controller != null) {
-      controller.close();
-    }
-    final messenger =
-        _mirrorConflictMessenger ??
-        (mounted ? ScaffoldMessenger.maybeOf(context) : null);
-    if (messenger != null && (_mirrorConflictSnackVisible || immediate)) {
-      if (immediate) {
-        messenger.removeCurrentSnackBar();
-      } else {
-        messenger.hideCurrentSnackBar();
-      }
-    }
-    _mirrorConflictSnackVisible = false;
-    _mirrorConflictSnackController = null;
-    _mirrorConflictMessenger = null;
-    if (clearDismissedKeys) {
-      _dismissedMirrorConflictSnackKeys.clear();
-    }
   }
 
   void _syncPreRunInfo(TaskRunGroup? group) {
@@ -2206,87 +1672,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final minutes = (seconds % 3600) ~/ 60;
     if (hours > 0) return "${hours}h ${minutes.toString().padLeft(2, '0')}m";
     return "${minutes}m";
-  }
-
-  String _formatTimeOrDate(DateTime value) {
-    final now = DateTime.now();
-    final isToday =
-        value.year == now.year &&
-        value.month == now.month &&
-        value.day == now.day;
-    if (isToday) {
-      return DateFormat('HH:mm').format(value);
-    }
-    return DateFormat('MMM d, HH:mm').format(value);
-  }
-
-  RunningOverlapContext? _resolveRunningOverlapDialogContext(
-    RunningOverlapDecision decision,
-  ) {
-    final groups = ref.read(taskRunGroupStreamProvider).value ?? const [];
-    final activeSession = ref.read(activePomodoroSessionProvider);
-    return resolveRunningOverlapContext(
-      runningGroupId: decision.runningGroupId,
-      scheduledGroupId: decision.scheduledGroupId,
-      groups: groups,
-      activeSession: activeSession,
-      now: DateTime.now(),
-      fallbackNoticeMinutes: _noticeFallbackMinutes,
-    );
-  }
-}
-
-class _ConflictDialogContent extends StatelessWidget {
-  final RunningOverlapContext? contextData;
-
-  const _ConflictDialogContent({required this.contextData});
-
-  @override
-  Widget build(BuildContext context) {
-    final now = DateTime.now();
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'A scheduled group is about to start while this group is still active.',
-        ),
-        if (contextData != null) ...[
-          const SizedBox(height: 12),
-          Text(
-            'Running: ${contextData!.running.groupName}',
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            formatConflictRange(
-              contextData!.running.start,
-              contextData!.running.end,
-              now: now,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Scheduled: ${contextData!.scheduled.groupName}',
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            formatConflictRange(
-              contextData!.scheduled.start,
-              contextData!.scheduled.end,
-              now: now,
-            ),
-          ),
-          if (contextData!.scheduled.preRunStart != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              'Pre-Run: ${formatConflictTime(contextData!.scheduled.preRunStart!, now: now)}',
-            ),
-          ],
-        ],
-      ],
-    );
   }
 }
 
@@ -3093,8 +2478,6 @@ class _PreRunInfo {
     required this.firstPomodoroMinutes,
   });
 }
-
-enum _RunningOverlapChoice { endCurrent, postponeNext, cancelScheduled }
 
 class _ContextItemData {
   final String label;

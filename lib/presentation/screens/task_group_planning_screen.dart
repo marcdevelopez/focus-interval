@@ -46,16 +46,12 @@ class TaskGroupPlanningResult {
   final DateTime? scheduledStart;
   final List<TaskRunItem> items;
   final int noticeMinutes;
-  final Set<String> pendingCancelIds;
-  final Set<String> pendingDeleteIds;
 
   const TaskGroupPlanningResult({
     required this.option,
     required this.items,
     required this.noticeMinutes,
     this.scheduledStart,
-    this.pendingCancelIds = const {},
-    this.pendingDeleteIds = const {},
   });
 }
 
@@ -96,8 +92,6 @@ class _TaskGroupPlanningScreenState
     running: [],
     scheduled: [],
   );
-  final Set<String> _pendingCancelIds = {};
-  final Set<String> _pendingDeleteIds = {};
   final ValueNotifier<String?> _noticeClampMessageNotifier =
       ValueNotifier<String?>(null);
   Timer? _noticeNowTicker;
@@ -391,13 +385,7 @@ class _TaskGroupPlanningScreenState
     }
     final end = start.add(Duration(seconds: preview.totalDurationSeconds));
     final now = DateTime.now();
-    final effectiveGroups = allGroups
-        .where(
-          (group) =>
-              !_pendingCancelIds.contains(group.id) &&
-              !_pendingDeleteIds.contains(group.id),
-        )
-        .toList();
+    final effectiveGroups = allGroups.toList();
     return findSchedulingConflicts(
       effectiveGroups,
       newStart: start,
@@ -682,8 +670,6 @@ class _TaskGroupPlanningScreenState
         items: preview.items,
         noticeMinutes: _noticeMinutes,
         scheduledStart: scheduledStart,
-        pendingCancelIds: Set<String>.unmodifiable(_pendingCancelIds),
-        pendingDeleteIds: Set<String>.unmodifiable(_pendingDeleteIds),
       ),
     );
   }
@@ -951,10 +937,6 @@ class _TaskGroupPlanningScreenState
     for (final group in allGroups) {
       if (group.status == TaskRunStatus.canceled ||
           group.status == TaskRunStatus.completed) {
-        continue;
-      }
-      if (_pendingCancelIds.contains(group.id) ||
-          _pendingDeleteIds.contains(group.id)) {
         continue;
       }
       final window = resolveConflictWindow(

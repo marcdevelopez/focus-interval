@@ -17,7 +17,6 @@ import '../../data/models/pomodoro_task.dart';
 import '../../data/models/selected_sound.dart';
 import '../../data/models/task_run_group.dart';
 import '../../data/models/schema_version.dart';
-import '../../data/repositories/task_run_group_repository.dart';
 import '../../data/services/firebase_auth_service.dart';
 import '../../data/services/app_mode_service.dart';
 import '../../data/services/local_sound_overrides.dart';
@@ -29,7 +28,6 @@ import '../../widgets/task_card.dart';
 import '../../widgets/mode_indicator.dart';
 import 'task_group_planning_screen.dart';
 import '../utils/continuous_plan_load_ui.dart';
-import '../utils/scheduling_conflict_helpers.dart';
 import '../utils/scheduled_group_timing.dart';
 import '../utils/run_mode_launcher.dart';
 
@@ -136,7 +134,6 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   static const String _webLocalNoticeKey = 'web_local_notice_seen';
   static const double _autoScrollEdgeThreshold = 56;
   static const double _autoScrollStep = 12;
-  static const Duration _ownerStaleThreshold = Duration(seconds: 45);
   final _timeFormat = DateFormat('HH:mm');
   final _dateFormat = DateFormat('MMM d');
   final GlobalKey _taskListViewportKey = GlobalKey();
@@ -507,7 +504,6 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final signedIn = currentUser != null;
     final requiresVerification = ref.watch(emailVerificationRequiredProvider);
     final activeSession = ref.watch(activePomodoroSessionProvider);
-    final overlapDecision = ref.watch(runningOverlapDecisionProvider);
     final groupsAsync = ref.watch(taskRunGroupStreamProvider);
     final selectedIds = ref.watch(taskSelectionProvider);
     final selectedWeightPercents = ref.watch(
@@ -550,47 +546,6 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final maxEmailWidth = (maxActionsWidth - actionReservedWidth)
         .clamp(0.0, baseMaxEmailWidth)
         .toDouble();
-    final groups = groupsAsync.value ?? const [];
-    final now = DateTime.now();
-    final mirrorConflictDecision = _resolveMirrorConflictDecision(
-      appMode: appMode,
-      activeSession: activeSession,
-      decision: overlapDecision,
-      deviceId: deviceId,
-      groups: groups,
-      now: now,
-      noticeFallbackMinutes: _noticeFallbackMinutes,
-    );
-    final mirrorConflictContext = mirrorConflictDecision == null
-        ? null
-        : resolveRunningOverlapContext(
-            runningGroupId: mirrorConflictDecision.runningGroupId,
-            scheduledGroupId: mirrorConflictDecision.scheduledGroupId,
-            groups: groups,
-            activeSession: activeSession,
-            now: now,
-            fallbackNoticeMinutes: _noticeFallbackMinutes,
-          );
-    if (overlapDecision != null && mirrorConflictDecision == null) {
-      final stillValid = isRunningOverlapStillValid(
-        runningGroupId: overlapDecision.runningGroupId,
-        scheduledGroupId: overlapDecision.scheduledGroupId,
-        groups: groups,
-        activeSession: activeSession,
-        now: now,
-        fallbackNoticeMinutes: _noticeFallbackMinutes,
-      );
-      if (!stillValid) {
-        final staleDecisionToken = overlapDecision.token;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          final currentDecision = ref.read(runningOverlapDecisionProvider);
-          if (currentDecision == null) return;
-          if (currentDecision.token != staleDecisionToken) return;
-          ref.read(runningOverlapDecisionProvider.notifier).state = null;
-        });
-      }
-    }
     final ownershipRequest = activeSession?.ownershipRequest;
     final isOwnerDevice =
         activeSession != null && activeSession.ownerDeviceId == deviceId;
@@ -812,16 +767,6 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
               child: _buildOwnershipRequestBanner(ownershipRequest),
             ),
-          if (mirrorConflictDecision != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-              child: _buildMirrorConflictBanner(
-                context,
-                decision: mirrorConflictDecision,
-                ownerStale: _isOwnerStale(activeSession, now),
-                conflictContext: mirrorConflictContext,
-              ),
-            ),
           if (activeGroupBanner != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
@@ -1005,31 +950,6 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     );
   }
 
-  RunningOverlapDecision? _resolveMirrorConflictDecision({
-    required AppMode appMode,
-    required PomodoroSession? activeSession,
-    required RunningOverlapDecision? decision,
-    required String deviceId,
-    required List<TaskRunGroup> groups,
-    required DateTime now,
-    int? noticeFallbackMinutes,
-  }) {
-    if (appMode != AppMode.account) return null;
-    if (activeSession == null || decision == null) return null;
-    if (activeSession.ownerDeviceId == deviceId) return null;
-    if (activeSession.groupId != decision.runningGroupId) return null;
-    final isValid = isRunningOverlapStillValid(
-      runningGroupId: decision.runningGroupId,
-      scheduledGroupId: decision.scheduledGroupId,
-      groups: groups,
-      activeSession: activeSession,
-      now: now,
-      fallbackNoticeMinutes: noticeFallbackMinutes,
-    );
-    if (!isValid) return null;
-    return decision;
-  }
-
   String _ownershipRequestKey(OwnershipRequest? request) {
     if (request == null) return '';
     return request.requestId ?? request.requesterDeviceId;
@@ -1057,87 +977,6 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       _dismissedOwnershipRequestKey = null;
       _dismissedOwnershipRequesterId = null;
     }
-  }
-
-  bool _isOwnerStale(PomodoroSession? session, DateTime now) {
-    if (session == null) return false;
-    final updatedAt = session.lastUpdatedAt;
-    if (updatedAt == null) return false;
-    return now.difference(updatedAt) >= _ownerStaleThreshold;
-  }
-
-  Widget _buildMirrorConflictBanner(
-    BuildContext context, {
-    required RunningOverlapDecision decision,
-    required bool ownerStale,
-    required RunningOverlapContext? conflictContext,
-  }) {
-    final message = ownerStale
-        ? 'Owner seems unavailable. Claim ownership to resolve this conflict.'
-        : 'Owner is resolving this conflict. Request ownership if needed.';
-    final actionLabel = ownerStale ? 'Claim ownership' : 'Request ownership';
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.orange.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.6)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  message,
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ),
-              if (conflictContext != null)
-                Padding(
-                  padding: const EdgeInsets.only(left: 8),
-                  child: Tooltip(
-                    message: formatConflictSummary(
-                      conflictContext,
-                      now: DateTime.now(),
-                    ),
-                    child: const Icon(
-                      Icons.info_outline,
-                      size: 16,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: OutlinedButton(
-              onPressed: () => _handleConflictOwnershipAction(
-                decision.runningGroupId,
-                ownerStale: ownerStale,
-              ),
-              child: Text(actionLabel),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _handleConflictOwnershipAction(
-    String groupId, {
-    required bool ownerStale,
-  }) async {
-    final vm = ref.read(pomodoroViewModelProvider.notifier);
-    if (ownerStale) {
-      await vm.claimOwnershipForActiveSession(groupId: groupId);
-      return;
-    }
-    await vm.requestOwnershipForActiveSession(groupId: groupId);
   }
 
   String _platformFromDeviceId(String deviceId) {
@@ -1609,14 +1448,6 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
 
     try {
       await repo.save(group);
-      // Apply transactional destructive actions only after the new group save
-      // succeeds. If this best-effort step fails mid-way, partial changes are
-      // acceptable by design because the user explicitly selected those groups.
-      await _applyPlanningDestructiveActions(
-        planningResult: planningResult,
-        repo: repo,
-        allGroups: ref.read(taskRunGroupStreamProvider).value ?? const [],
-      );
       if (!context.mounted) return;
       selection.clear();
       final message = status == TaskRunStatus.running
@@ -1641,31 +1472,6 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     } catch (e) {
       if (!context.mounted) return;
       _showSnackBar(context, "Failed to create task group: $e");
-    }
-  }
-
-  Future<void> _applyPlanningDestructiveActions({
-    required TaskGroupPlanningResult planningResult,
-    required TaskRunGroupRepository repo,
-    required List<TaskRunGroup> allGroups,
-  }) async {
-    if (planningResult.pendingCancelIds.isEmpty &&
-        planningResult.pendingDeleteIds.isEmpty) {
-      return;
-    }
-    final now = DateTime.now();
-    for (final group in allGroups) {
-      if (planningResult.pendingCancelIds.contains(group.id)) {
-        await repo.save(
-          group.copyWith(
-            status: TaskRunStatus.canceled,
-            canceledReason: TaskRunCanceledReason.user,
-            updatedAt: now,
-          ),
-        );
-      } else if (planningResult.pendingDeleteIds.contains(group.id)) {
-        await repo.delete(group.id);
-      }
     }
   }
 

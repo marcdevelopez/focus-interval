@@ -461,6 +461,13 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           stale `Owner is resolving this conflict...` warning clears after
           owner resolution and does not persist across Groups Hub/Task List
           navigation; closure tracked in `docs/bugs/validation_bug031_2026_04_28/`.
+        07/05/2026: Deterministic scheduling model rollout completed through
+          Corte C (UI/runtime migration): legacy running-overlap modal/mirror
+          banner paths removed from Timer/Task List/Groups Hub, late-start
+          queue route/screen retired, and Lost/Canceled split adopted in
+          Groups Hub with `lost/missedSchedule -> Lost` mapping. Local gate
+          PASS (`flutter analyze` + focused deterministic widget/viewmodel
+          suites).
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 
@@ -483,9 +490,9 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
 - Phase 10 — Task Editor: total time chip + task color picker (new requirement).
 - Phase 10 — Edit Group: show both `Group work` (focus-only) and `Total group duration` (focus + breaks), and evaluate Unusual/Superhuman/Machine caution against the final group configuration (separate follow-up requirement).
 - Phase 9 — Task List: group name input + group summary + per-task total time + selection reset (new requirement).
-- Phase 17 — Early overlap warning (pause drift) + mirror ownership CTA + persistent conflict snackbar + auto-follow postpone (no repeat modal) + paused overlap alerts (new requirement).
-- Phase 17 — Late-start queue anchor (server time) + owner-only queue + realtime projections + activeSession creation on confirm + mirror Run Mode CTA + revalidate post-postpone overlaps (bug).
-- Phase 17 — Late-start queue Cancel all (no loop) + exit cleanly (no black screen) + mirror “Owner resolved” modal + zero-selection = Cancel all (bug).
+- ~~Phase 17 — Early overlap warning (pause drift) + mirror ownership CTA + persistent conflict snackbar + auto-follow postpone (no repeat modal) + paused overlap alerts (new requirement).~~ **Closed/OK as Superseded on 07/05/2026 by deterministic scheduling model runtime/UI contract (Cortes A/B1/B2/C): legacy mirror conflict CTA/snackbar + running-overlap modal path retired; deterministic at-risk warning signal replaces modal/banner flow.**
+- ~~Phase 17 — Late-start queue anchor (server time) + owner-only queue + realtime projections + activeSession creation on confirm + mirror Run Mode CTA + revalidate post-postpone overlaps (bug).~~ **Closed/OK as Superseded on 07/05/2026 by deterministic scheduling model runtime contract (late-start queue path removed from coordinator/router/UI).**
+- ~~Phase 17 — Late-start queue Cancel all (no loop) + exit cleanly (no black screen) + mirror “Owner resolved” modal + zero-selection = Cancel all (bug).~~ **Closed/OK as Superseded on 07/05/2026 by deterministic scheduling model runtime/UI contract (late-start queue screen removed; deterministic conflict handling no longer enters queue flow).**
 - ~~Phase 17 — Running conflict modal must show conflicting group context (name + time range) (new requirement).~~ **Closed/OK on 06/05/2026 (`BUGLOG-027`; implementation commit `8600f44`; closure packet refreshed with focused widget/runtime validation evidence in `docs/bugs/validation_bug027_2026_05_01/`).**
 - Phase 17 — Shared-mode runtime timeline must keep break prediction, break execution, status-box ranges, and contextual task-item ranges coherent at task boundaries (`BUGLOG-034`, branch `fix/bug034-shared-timeline-break-desync`) — **In validation on 01/05/2026** (initial visual evidence packet opened at `docs/bugs/validation_bug034_2026_05_01/`; deterministic repro + cross-mode guard pending).
 - ~~Phase 17 — Task List scheduling conflicts must use a blocking explainer modal (not ephemeral snackbar), listing all exact blockers (running/scheduled) with ranges + pre-run where applicable, auto-adjusting notice for pre-run-only conflicts, and offering up to two nearest valid start suggestions for execution conflicts while preserving current pre-run (new feature, deferred until historical RVP validation backlog closes).~~ **Closed/OK as Superseded on 06/05/2026 (`IDEA-039`) by deterministic scheduling model contract (`docs/specs.md` sections 6.4, 10.4.1.b, 10.4.1.c); conflict-modal path is deprecated and no longer a merge target.**

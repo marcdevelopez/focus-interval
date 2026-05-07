@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last closed bug fix: **BUG-029 superseded closure sync completed on 06/05/2026 (`Block 763`, commit `12bd0fa`)**
-Current focus: **Deterministic overlap model implementation (Corte B2 test migration completed; next target Corte C UI wiring)**
+Current focus: **Deterministic overlap model rollout completed through Corte C (pending merge and branch closure sync)**
 Last update: **07/05/2026**
 
 ---
@@ -18990,3 +18990,59 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 - Deterministic model **Corte B2** is complete and locally validated.
 - Coordinator runtime behavior (Corte B1) and test contract are now synchronized.
 - Next target: **Corte C** (UI wiring for non-blocking at-risk signal surface).
+
+---
+
+## Block 767 — Deterministic UI/runtime migration completed (Corte C) (07/05/2026)
+
+**Current branch intent:** Complete deterministic conflict-model migration in UI/navigation layers by removing legacy overlap queue/modal/banner flows and aligning visible states with Lost/at-risk contract.
+**Branch:** `feature/deterministic-conflict-model`
+**Commit:** `pending-local`
+**Scope:** Timer/Task List/Groups Hub migration + route cleanup + planning dead-code cleanup + focused regression suite refresh
+
+### Work completed
+
+- `lib/presentation/screens/timer_screen.dart`
+  - Removed legacy running-overlap modal and mirror conflict snackbar flow.
+  - Wired deterministic at-risk warning listener (`atRiskScheduledGroupIdsProvider`) with set-based dedup and reset-on-empty semantics.
+- `lib/presentation/screens/groups_hub_screen.dart`
+  - Removed mirror conflict banner and late-start queue redirection path.
+  - Split canceled history into **Lost** and **Canceled** slices.
+  - Mapped `TaskRunCanceledReason.lost` + `missedSchedule` to Lost label/description.
+- `lib/presentation/screens/task_list_screen.dart`
+  - Removed mirror conflict banner/rendering and related helper flow.
+  - Removed obsolete planning destructive-action pass tied to pending cancel/delete ids.
+- `lib/presentation/screens/task_group_planning_screen.dart`
+  - Removed dead pending-cancel/pending-delete state/result plumbing.
+- Route/action cleanup
+  - Removed late-start queue route and imports from:
+    - `lib/app/router.dart`
+    - `lib/widgets/scheduled_group_auto_starter.dart`
+    - `lib/widgets/active_session_auto_opener.dart`
+  - Removed deprecated screen file:
+    - `lib/presentation/screens/late_start_overlap_queue_screen.dart`
+- Coordinator/model cleanup
+  - Removed `lateStartQueue` action type from `ScheduledGroupActionType` in
+    `lib/presentation/viewmodels/scheduled_group_coordinator.dart`.
+  - Added `TaskRunCanceledReason.lost` in
+    `lib/data/models/task_run_group.dart`.
+
+### Test migration completed
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+  - Replaced legacy overlap modal/mirror-banner assertions with deterministic assertions.
+  - Added coverage for at-risk snackbar dedup/re-arm behavior.
+  - Added coverage for Lost section rendering and missed-schedule -> Lost mapping.
+
+### Local verification
+
+- `flutter analyze` -> PASS (`No issues found!`).
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> PASS.
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` -> PASS.
+- `flutter test test/presentation/task_group_planning_screen_conflict_test.dart` -> PASS.
+
+### Status after this block
+
+- Deterministic model rollout is complete across **Corte A + Corte B1 + Corte B2 + Corte C**.
+- Legacy late-start queue UI route/screen and mirror-overlap modal/banner runtime path are retired.
+- Branch is ready for closure commit + PR to `develop` after hash-stamp sync.

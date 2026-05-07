@@ -11,6 +11,7 @@ class TaskRunCanceledReason {
   static const String user = 'user';
   static const String conflict = 'conflict';
   static const String interrupted = 'interrupted';
+  static const String lost = 'lost';
   static const String missedSchedule = 'missedSchedule';
 }
 
@@ -360,13 +361,15 @@ class TaskRunGroup {
       lateStartQueueId: map['lateStartQueueId'] as String?,
       lateStartQueueOrder: (map['lateStartQueueOrder'] as num?)?.toInt(),
       lateStartOwnerDeviceId: map['lateStartOwnerDeviceId'] as String?,
-      lateStartOwnerHeartbeatAt:
-          _parseDateTime(map['lateStartOwnerHeartbeatAt']),
+      lateStartOwnerHeartbeatAt: _parseDateTime(
+        map['lateStartOwnerHeartbeatAt'],
+      ),
       lateStartClaimRequestId: map['lateStartClaimRequestId'] as String?,
       lateStartClaimRequestedByDeviceId:
           map['lateStartClaimRequestedByDeviceId'] as String?,
-      lateStartClaimRequestedAt:
-          _parseDateTime(map['lateStartClaimRequestedAt']),
+      lateStartClaimRequestedAt: _parseDateTime(
+        map['lateStartClaimRequestedAt'],
+      ),
       noticeSentAt: _parseDateTime(map['noticeSentAt']),
       noticeSentByDeviceId: map['noticeSentByDeviceId'] as String?,
       actualStartTime: _parseDateTime(map['actualStartTime']),
@@ -475,7 +478,11 @@ List<int> taskDurationSecondsByMode(
   var globalIndex = 0;
   for (final task in tasks) {
     var taskTotal = 0;
-    for (var localIndex = 0; localIndex < task.totalPomodoros; localIndex += 1) {
+    for (
+      var localIndex = 0;
+      localIndex < task.totalPomodoros;
+      localIndex += 1
+    ) {
       globalIndex += 1;
       taskTotal += pomodoroSeconds;
       if (globalIndex >= totalPomodoros) {

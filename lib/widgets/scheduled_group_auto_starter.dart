@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import '../data/services/app_mode_service.dart';
 import '../presentation/providers.dart';
 import '../presentation/viewmodels/scheduled_group_coordinator.dart';
-import '../presentation/screens/late_start_overlap_queue_screen.dart';
 
 class ScheduledGroupAutoStarter extends ConsumerStatefulWidget {
   final Widget child;
@@ -86,13 +85,6 @@ class _ScheduledGroupAutoStarterState
         break;
       case ScheduledGroupActionType.openGroupsHub:
         _openGroupsHub();
-        break;
-      case ScheduledGroupActionType.lateStartQueue:
-        final groupIds = action.groupIds;
-        if (groupIds == null || groupIds.isEmpty) return;
-        final anchor = action.anchor;
-        if (anchor == null) return;
-        _navigateToLateStartQueue(groupIds, anchor);
         break;
     }
   }
@@ -209,22 +201,6 @@ class _ScheduledGroupAutoStarterState
         ref.read(pomodoroViewModelProvider.notifier).primeGroupForLoad(group);
       }
     }
-  }
-
-  void _navigateToLateStartQueue(List<String> groupIds, DateTime anchor) {
-    final navigatorContext = widget.navigatorKey.currentContext;
-    if (navigatorContext == null) {
-      _scheduleRetry(() => _navigateToLateStartQueue(groupIds, anchor));
-      return;
-    }
-    _retryAttempts = 0;
-    final current = _currentLocation(navigatorContext);
-    if (current.startsWith('/groups/late-start')) return;
-    debugPrint('Opening late-start overlap queue.');
-    navigatorContext.go(
-      '/groups/late-start',
-      extra: LateStartOverlapArgs(groupIds: groupIds, anchor: anchor),
-    );
   }
 
   void _scheduleRetry(VoidCallback action) {
