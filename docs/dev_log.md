@@ -25,9 +25,9 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last closed bug fix: **BUG-033 + BUG-034 closed on 05/05/2026 after patched-build validation evidence (`9f01491`, `a636b0f`)**
-Current focus: **BUGLOG-027 in validation + BUGLOG-029 pending + process no-loss checklist hardening**
-Last update: **05/05/2026**
+Last closed bug fix: **BUG-029 superseded closure sync completed on 06/05/2026 (`Block 763`, commit `12bd0fa`)**
+Current focus: **Deterministic overlap model rollout completed through Corte C (pending merge and branch closure sync)**
+Last update: **07/05/2026**
 
 ---
 
@@ -18483,7 +18483,6 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 - `BUG-027` / `BUGLOG-027`: **In validation** (device scenarios A-D still pending).
 - Local review debt reported by Claude is resolved; remaining work is device evidence capture only.
 
-
 ---
 
 ## Block 754 — BUG-034 registered with validation packet (shared timeline desync) (01/05/2026)
@@ -18818,3 +18817,232 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 - Canonical bug log now has one `BUG-033` entry.
 - `BUG-033` and `BUG-034` closure status remains unchanged (`Closed/OK`).
+
+---
+
+## Block 762 — BUGLOG-027 closure packet refresh and canonical closure sync (06/05/2026)
+
+**Current branch intent:** Close BUGLOG-027 end-to-end by refreshing validation evidence, then synchronizing roadmap/ledger/bug-log/dev-log states.
+**Branch:** `fix/bug027-close-validation`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `BUG-027` / `BUGLOG-027` (**Closed/OK**)
+
+### Context
+
+- BUG-027 implementation was already merged on commit `8600f44`, but closure docs remained `In validation` due pending packet completion.
+- User requested immediate closure on 06/05/2026.
+
+### Work completed
+
+- Refreshed validation packet with new local deterministic evidence (2026-05-06):
+  - `flutter analyze` PASS.
+  - `flutter test test/presentation/task_group_planning_screen_conflict_test.dart` PASS.
+  - Focused runtime/mirror widget tests PASS:
+    - `shows running-overlap modal when decision already exists on mount`
+    - `Task List mirror conflict banner shows request ownership CTA and triggers request`
+    - `Groups Hub mirror conflict banner shows request ownership CTA and triggers request`
+    - `Timer mirror shows persistent conflict snackbar until explicit OK`
+    - `Timer mirror dismisses conflict snackbar when overlap decision clears`
+- Logged all refresh outputs under:
+  - `docs/bugs/validation_bug027_2026_05_01/logs/2026-05-06_bug027_8600f44_local_*.log`
+- Updated validation docs to closure state:
+  - `docs/bugs/validation_bug027_2026_05_01/plan_validacion_rapida_fix.md`
+  - `docs/bugs/validation_bug027_2026_05_01/quick_pass_checklist.md`
+- Synchronized canonical project docs:
+  - `docs/bugs/bug_log.md` -> BUG-027 status `Closed/OK`
+  - `docs/roadmap.md` reopened entry -> `Closed/OK`
+  - `docs/validation/validation_ledger.md` -> BUGLOG-027 status synchronized to `Closed/OK`
+
+### Status after this block
+
+- `BUG-027` / `BUGLOG-027`: **Closed/OK**.
+- Active non-closed bug-log queue now focuses on: `BUGLOG-029`.
+
+---
+
+## Block 763 — IDEA-039 and BUG-029 superseded closure sync (06/05/2026)
+
+**Current branch intent:** Synchronize canonical tracking docs after deterministic scheduling model adoption (docs-first closure).
+**Branch:** `feature/deterministic-conflict-model-docs`
+**Commit:** `pending-local`
+**Validation/Bug IDs:** `IDEA-039`, `BUG-029` / `BUGLOG-029` (**Closed/OK as Superseded**)
+
+### Context
+
+- Deterministic scheduling model contract was approved in specs, replacing legacy conflict-modal-first behavior.
+- Tracking docs still showed `IDEA-039` and `BUGLOG-029` as active/pending and required parity synchronization.
+
+### Documentation synchronization completed
+
+- `docs/roadmap.md`
+  - Reopened Phase 17 `IDEA-039` line moved from in-validation wording to **Closed/OK as Superseded**.
+- `docs/validation/validation_ledger.md`
+  - Snapshot updated to reflect zero non-closed bug-log items.
+  - `BUGLOG-029` moved to **Closed/OK** as superseded.
+  - `IDEA-039` moved to **Closed/OK** as superseded.
+- `docs/bugs/bug_log.md`
+  - `BUG-029` status moved from Open to **Closed/OK as Superseded** with deterministic-model rationale.
+- `docs/features/feature_backlog.md`
+  - `IDEA-039` removed from Active in-progress list and marked `Status: superseded`.
+- `docs/features/feature_2026_04_02_idea039-conflict-explainer/feature_plan.md`
+  - Current status updated to superseded path (no further device packet required for deprecated track).
+
+### Status after this block
+
+- `BUG-029` / `BUGLOG-029`: **Closed/OK as Superseded**.
+- `IDEA-039`: **Closed/OK as Superseded**.
+- Active non-closed bug-log queue: **none**.
+
+---
+
+## Block 764 — Deterministic planning guard (Corte A) implemented (07/05/2026)
+
+**Current branch intent:** Implement deterministic no-modal overlap handling in planning and align pre-run notice clamp with previous-group boundary rules.
+**Branch:** `feature/deterministic-conflict-model`
+**Commit:** `ecbe87e`
+**Scope:** planning screen behavior + focused widget tests
+
+### Work completed
+
+- `lib/presentation/screens/task_group_planning_screen.dart`
+  - Removed the conflict-resolution modal path (cancel/change/delete) from the planning confirm flow.
+  - Confirm-time race recheck now blocks deterministically on overlap, keeps the inline conflict indicator, and shows an informational snackbar.
+  - Preserved pending conflict id propagation (`pendingCancelIds` / `pendingDeleteIds`) for downstream coordinator handling.
+  - Extended notice max clamp to account for both start-distance and nearest previous-group-end boundary (keeping at least a 1-minute gap).
+  - Updated notice picker refresh loop to recompute max using the same deterministic constraints.
+- `test/presentation/task_group_planning_screen_conflict_test.dart`
+  - Reworked race-guard tests to validate no modal appears, snackbar feedback is shown, and confirm becomes disabled once the conflict is detected.
+
+### Local verification
+
+- `flutter test test/presentation/task_group_planning_screen_conflict_test.dart` -> PASS (`3 passed, 0 failed`)
+- `flutter analyze` -> PASS (`No issues found!`)
+
+### Status after this block
+
+- Deterministic model **Corte A** is implemented and locally validated in the planning layer.
+- Next target: coordinator/timer follow-up cuts and broader validation packet refresh.
+
+---
+
+## Block 765 — Deterministic coordinator engine (Corte B1) applied (07/05/2026)
+
+**Current branch intent:** Replace legacy late-start/running-overlap coordinator branches with deterministic execution-window evaluation, preserving AP-1/AP-2 listener safety boundaries.
+**Branch:** `feature/deterministic-conflict-model`
+**Commit:** `4695949`
+**Scope:** coordinator core logic + provider signal contract (no UI changes)
+
+### Work completed
+
+- `lib/presentation/viewmodels/scheduled_group_coordinator.dart`
+  - Removed legacy late-start queue orchestration branch from `_handleGroupsAsync()` and switched to deterministic per-window evaluation.
+  - Kept backward-compatible postpone finalization (`_finalizePostponedGroupsIfNeeded`) intact for legacy records.
+  - Added deterministic Lost transition for expired scheduled windows via race-safe repo re-read (`_markGroupAsLost`).
+  - Kept defensive cleanup of `runningOverlapDecisionProvider`, but removed generation of new running-overlap decisions from coordinator.
+  - Added at-risk scheduled signal emission while a running blocker is active (data only; UI snackbar deferred to Corte C).
+  - Fixed late auto-start anchoring: running start/session now use `scheduledStart` (not wall-clock `now`) to preserve temporal continuity.
+  - Removed orphaned legacy coordinator symbols tied to running-overlap timers and late-start heartbeat support.
+- `lib/presentation/providers.dart`
+  - Added `atRiskScheduledGroupIdsProvider` as coordinator-to-UI contract for upcoming non-blocking warning surface.
+
+### Local verification
+
+- `flutter analyze` -> PASS (`No issues found!`).
+- `flutter test test/presentation/task_group_planning_screen_conflict_test.dart` -> PASS (`3 passed, 0 failed`).
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> PASS (`All tests passed`).
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` -> FAIL expected (`15 passed, 8 failed`) due legacy late-start/running-overlap assertions pending Corte B2 test migration.
+
+### Status after this block
+
+- Deterministic model **Corte B1** is implemented in coordinator runtime flow.
+- Next target: **Corte B2** — migrate coordinator tests from legacy late-start/running-overlap expectations to deterministic window + Lost/at-risk expectations.
+
+---
+
+## Block 766 — Deterministic coordinator test contract migration (Corte B2) completed (07/05/2026)
+
+**Current branch intent:** Align coordinator tests with the deterministic runtime model from Corte B1 (no legacy late-start queue actions and no running-overlap decision generation).
+**Branch:** `feature/deterministic-conflict-model`
+**Commit:** `db01b5a`
+**Scope:** coordinator test suite migration + deterministic assertions only (no runtime code changes)
+
+### Work completed
+
+- `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+  - Migrated legacy `late-start queue` tests to deterministic overdue behavior:
+    - overdue scheduled groups are canceled with `canceledReason: lost`
+    - no `ScheduledGroupActionType.lateStartQueue` emission is expected
+    - stale/fresh late-start metadata paths validate no auto-claim writes
+  - Replaced legacy `running overlap decision` expectations with at-risk projection checks:
+    - `runningOverlapDecisionProvider` remains `null`
+    - `atRiskScheduledGroupIdsProvider` reflects execution-window membership when applicable
+    - added explicit keep-alive listeners in tests to avoid autoDispose race artifacts
+  - Removed obsolete helper usage/imports tied to legacy late-start conflict resolution.
+
+### Local verification
+
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` -> PASS (`23 passed, 0 failed`).
+- `flutter test test/presentation/task_group_planning_screen_conflict_test.dart test/presentation/timer_screen_completion_navigation_test.dart` -> PASS (`3 passed, 0 failed`).
+- `flutter analyze` -> PASS (`No issues found!`).
+
+### Status after this block
+
+- Deterministic model **Corte B2** is complete and locally validated.
+- Coordinator runtime behavior (Corte B1) and test contract are now synchronized.
+- Next target: **Corte C** (UI wiring for non-blocking at-risk signal surface).
+
+---
+
+## Block 767 — Deterministic UI/runtime migration completed (Corte C) (07/05/2026)
+
+**Current branch intent:** Complete deterministic conflict-model migration in UI/navigation layers by removing legacy overlap queue/modal/banner flows and aligning visible states with Lost/at-risk contract.
+**Branch:** `feature/deterministic-conflict-model`
+**Commit:** `045c5e5`
+**Scope:** Timer/Task List/Groups Hub migration + route cleanup + planning dead-code cleanup + focused regression suite refresh
+
+### Work completed
+
+- `lib/presentation/screens/timer_screen.dart`
+  - Removed legacy running-overlap modal and mirror conflict snackbar flow.
+  - Wired deterministic at-risk warning listener (`atRiskScheduledGroupIdsProvider`) with set-based dedup and reset-on-empty semantics.
+- `lib/presentation/screens/groups_hub_screen.dart`
+  - Removed mirror conflict banner and late-start queue redirection path.
+  - Split canceled history into **Lost** and **Canceled** slices.
+  - Mapped `TaskRunCanceledReason.lost` + `missedSchedule` to Lost label/description.
+- `lib/presentation/screens/task_list_screen.dart`
+  - Removed mirror conflict banner/rendering and related helper flow.
+  - Removed obsolete planning destructive-action pass tied to pending cancel/delete ids.
+- `lib/presentation/screens/task_group_planning_screen.dart`
+  - Removed dead pending-cancel/pending-delete state/result plumbing.
+- Route/action cleanup
+  - Removed late-start queue route and imports from:
+    - `lib/app/router.dart`
+    - `lib/widgets/scheduled_group_auto_starter.dart`
+    - `lib/widgets/active_session_auto_opener.dart`
+  - Removed deprecated screen file:
+    - `lib/presentation/screens/late_start_overlap_queue_screen.dart`
+- Coordinator/model cleanup
+  - Removed `lateStartQueue` action type from `ScheduledGroupActionType` in
+    `lib/presentation/viewmodels/scheduled_group_coordinator.dart`.
+  - Added `TaskRunCanceledReason.lost` in
+    `lib/data/models/task_run_group.dart`.
+
+### Test migration completed
+
+- `test/presentation/timer_screen_completion_navigation_test.dart`
+  - Replaced legacy overlap modal/mirror-banner assertions with deterministic assertions.
+  - Added coverage for at-risk snackbar dedup/re-arm behavior.
+  - Added coverage for Lost section rendering and missed-schedule -> Lost mapping.
+
+### Local verification
+
+- `flutter analyze` -> PASS (`No issues found!`).
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> PASS.
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` -> PASS.
+- `flutter test test/presentation/task_group_planning_screen_conflict_test.dart` -> PASS.
+
+### Status after this block
+
+- Deterministic model rollout is complete across **Corte A + Corte B1 + Corte B2 + Corte C**.
+- Legacy late-start queue UI route/screen and mirror-overlap modal/banner runtime path are retired.
+- Branch is ready for closure commit + PR to `develop` after hash-stamp sync.

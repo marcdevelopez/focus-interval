@@ -340,8 +340,7 @@ class _ActiveSessionAutoOpenerState
     return route.startsWith('/tasks/plan') ||
         route.startsWith('/tasks/new') ||
         route.startsWith('/tasks/edit') ||
-        route.startsWith('/settings') ||
-        route.startsWith('/groups/late-start');
+        route.startsWith('/settings');
   }
 
   bool _shouldResetAutoOpenForBounce(String route, String groupId) {

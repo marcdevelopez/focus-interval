@@ -12,7 +12,6 @@ import '../presentation/screens/task_group_planning_screen.dart';
 import '../presentation/screens/preset_list_screen.dart';
 import '../presentation/screens/preset_editor_screen.dart';
 import '../presentation/screens/pre_run_notice_settings_screen.dart';
-import '../presentation/screens/late_start_overlap_queue_screen.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -72,16 +71,6 @@ GoRouter buildRouter() {
       GoRoute(
         path: '/groups',
         pageBuilder: (_, __) => _slide(const GroupsHubScreen()),
-      ),
-      GoRoute(
-        path: '/groups/late-start',
-        pageBuilder: (context, state) {
-          final args = state.extra;
-          if (args is! LateStartOverlapArgs) {
-            return _slide(const GroupsHubScreen());
-          }
-          return _slide(LateStartOverlapQueueScreen(args: args));
-        },
       ),
 
       GoRoute(

@@ -10,7 +10,6 @@ import '../../data/models/pomodoro_session.dart';
 import '../../data/models/task_run_group.dart';
 import '../../data/models/schema_version.dart';
 import '../../data/repositories/task_run_group_repository.dart';
-import '../../data/services/app_mode_service.dart';
 import '../../data/services/task_run_notice_service.dart';
 import '../../domain/continuous_plan_load.dart';
 import '../../domain/pomodoro_machine.dart';
@@ -22,7 +21,6 @@ import '../viewmodels/pre_run_notice_view_model.dart';
 import 'task_group_planning_screen.dart';
 import '../utils/scheduled_group_timing.dart';
 import '../utils/run_mode_launcher.dart';
-import 'late_start_overlap_queue_screen.dart';
 
 final DateFormat _groupsHubTimeFormat = DateFormat('HH:mm');
 final DateFormat _groupsHubDateTimeFormat = DateFormat('MMM d, HH:mm');
@@ -38,6 +36,12 @@ String _formatGroupDateTime(DateTime? value, DateTime now) {
       : _groupsHubDateTimeFormat.format(value);
 }
 
+bool _isLostCanceledGroup(TaskRunGroup group) {
+  if (group.status != TaskRunStatus.canceled) return false;
+  return group.canceledReason == TaskRunCanceledReason.lost ||
+      group.canceledReason == TaskRunCanceledReason.missedSchedule;
+}
+
 class GroupsHubScreen extends ConsumerStatefulWidget {
   const GroupsHubScreen({super.key});
 
@@ -46,11 +50,11 @@ class GroupsHubScreen extends ConsumerStatefulWidget {
 }
 
 class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
-  static const Duration _ownerStaleThreshold = Duration(seconds: 45);
   int? _noticeFallbackMinutes;
   String? _dismissedOwnershipRequestKey;
   String? _dismissedOwnershipRequesterId;
   static const int _completedHistoryLimit = 7;
+  static const int _lostHistoryLimit = 7;
   static const int _canceledHistoryLimit = 7;
   Timer? _nowTickTimer;
   DateTime _now = DateTime.now();
@@ -70,31 +74,6 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
   void dispose() {
     _nowTickTimer?.cancel();
     super.dispose();
-  }
-
-  RunningOverlapDecision? _resolveMirrorConflictDecision({
-    required AppMode appMode,
-    required PomodoroSession? activeSession,
-    required RunningOverlapDecision? decision,
-    required String deviceId,
-    required List<TaskRunGroup> groups,
-    required DateTime now,
-    int? noticeFallbackMinutes,
-  }) {
-    if (appMode != AppMode.account) return null;
-    if (activeSession == null || decision == null) return null;
-    if (activeSession.ownerDeviceId == deviceId) return null;
-    if (activeSession.groupId != decision.runningGroupId) return null;
-    final isValid = isRunningOverlapStillValid(
-      runningGroupId: decision.runningGroupId,
-      scheduledGroupId: decision.scheduledGroupId,
-      groups: groups,
-      activeSession: activeSession,
-      now: now,
-      fallbackNoticeMinutes: noticeFallbackMinutes,
-    );
-    if (!isValid) return null;
-    return decision;
   }
 
   String _ownershipRequestKey(OwnershipRequest? request) {
@@ -124,84 +103,6 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
       _dismissedOwnershipRequestKey = null;
       _dismissedOwnershipRequesterId = null;
     }
-  }
-
-  bool _isOwnerStale(PomodoroSession? session, DateTime now) {
-    if (session == null) return false;
-    final updatedAt = session.lastUpdatedAt;
-    if (updatedAt == null) return false;
-    return now.difference(updatedAt) >= _ownerStaleThreshold;
-  }
-
-  Widget _buildMirrorConflictBanner(
-    BuildContext context, {
-    required RunningOverlapDecision decision,
-    required bool ownerStale,
-    required RunningOverlapContext? conflictContext,
-  }) {
-    final message = ownerStale
-        ? 'Owner seems unavailable. Claim ownership to resolve this conflict.'
-        : 'Owner is resolving this conflict. Request ownership if needed.';
-    final actionLabel = ownerStale ? 'Claim ownership' : 'Request ownership';
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.orange.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.6)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  message,
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ),
-              if (conflictContext != null)
-                Padding(
-                  padding: const EdgeInsets.only(left: 8),
-                  child: Tooltip(
-                    message: formatConflictSummary(conflictContext, now: _now),
-                    child: const Icon(
-                      Icons.info_outline,
-                      size: 16,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: OutlinedButton(
-              onPressed: () => _handleConflictOwnershipAction(
-                decision.runningGroupId,
-                ownerStale: ownerStale,
-              ),
-              child: Text(actionLabel),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _handleConflictOwnershipAction(
-    String groupId, {
-    required bool ownerStale,
-  }) async {
-    final vm = ref.read(pomodoroViewModelProvider.notifier);
-    if (ownerStale) {
-      await vm.claimOwnershipForActiveSession(groupId: groupId);
-      return;
-    }
-    await vm.requestOwnershipForActiveSession(groupId: groupId);
   }
 
   String _platformFromDeviceId(String deviceId) {
@@ -279,54 +180,11 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
   Widget build(BuildContext context) {
     final groupsAsync = ref.watch(taskRunGroupStreamProvider);
     final activeSession = ref.watch(activePomodoroSessionProvider);
-    final overlapDecision = ref.watch(runningOverlapDecisionProvider);
-    final appMode = ref.watch(appModeProvider);
     final deviceId = ref.watch(deviceInfoServiceProvider).deviceId;
     final now = _now;
     _noticeFallbackMinutes = ref
         .watch(preRunNoticeMinutesProvider)
         .maybeWhen(data: (value) => value, orElse: () => null);
-    final groups = groupsAsync.value ?? const [];
-    final mirrorConflictDecision = _resolveMirrorConflictDecision(
-      appMode: appMode,
-      activeSession: activeSession,
-      decision: overlapDecision,
-      deviceId: deviceId,
-      groups: groups,
-      now: now,
-      noticeFallbackMinutes: _noticeFallbackMinutes,
-    );
-    final mirrorConflictContext = mirrorConflictDecision == null
-        ? null
-        : resolveRunningOverlapContext(
-            runningGroupId: mirrorConflictDecision.runningGroupId,
-            scheduledGroupId: mirrorConflictDecision.scheduledGroupId,
-            groups: groups,
-            activeSession: activeSession,
-            now: now,
-            fallbackNoticeMinutes: _noticeFallbackMinutes,
-          );
-    if (overlapDecision != null && mirrorConflictDecision == null) {
-      final stillValid = isRunningOverlapStillValid(
-        runningGroupId: overlapDecision.runningGroupId,
-        scheduledGroupId: overlapDecision.scheduledGroupId,
-        groups: groups,
-        activeSession: activeSession,
-        now: now,
-        fallbackNoticeMinutes: _noticeFallbackMinutes,
-      );
-      if (!stillValid) {
-        final staleDecisionToken = overlapDecision.token;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          final currentDecision = ref.read(runningOverlapDecisionProvider);
-          if (currentDecision == null) return;
-          if (currentDecision.token != staleDecisionToken) return;
-          ref.read(runningOverlapDecisionProvider.notifier).state = null;
-        });
-      }
-    }
-
     final ownershipRequest = activeSession?.ownershipRequest;
     final isOwnerDevice =
         activeSession != null && activeSession.ownerDeviceId == deviceId;
@@ -428,7 +286,16 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                           .where((g) => g.status == TaskRunStatus.canceled)
                           .toList()
                         ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-                  final canceledSlice = canceledGroups
+                  final lostGroups = canceledGroups
+                      .where(_isLostCanceledGroup)
+                      .toList(growable: false);
+                  final canceledOnlyGroups = canceledGroups
+                      .where((group) => !_isLostCanceledGroup(group))
+                      .toList(growable: false);
+                  final lostSlice = lostGroups
+                      .take(_lostHistoryLimit)
+                      .toList(growable: false);
+                  final canceledSlice = canceledOnlyGroups
                       .take(_canceledHistoryLimit)
                       .toList(growable: false);
 
@@ -436,6 +303,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                       runningGroups.isNotEmpty ||
                       scheduledGroups.isNotEmpty ||
                       completedSlice.isNotEmpty ||
+                      lostSlice.isNotEmpty ||
                       canceledSlice.isNotEmpty;
 
                   final children = <Widget>[];
@@ -445,19 +313,6 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                     );
                     children.add(const SizedBox(height: 16));
                   }
-                  if (mirrorConflictDecision != null) {
-                    final ownerStale = _isOwnerStale(activeSession, now);
-                    children.add(
-                      _buildMirrorConflictBanner(
-                        context,
-                        decision: mirrorConflictDecision,
-                        ownerStale: ownerStale,
-                        conflictContext: mirrorConflictContext,
-                      ),
-                    );
-                    children.add(const SizedBox(height: 16));
-                  }
-
                   if (!hasGroups) {
                     children
                       ..add(const SizedBox(height: 48))
@@ -578,6 +433,25 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                         now: now,
                       ),
                     const SizedBox(height: 20),
+                    _SectionHeader(title: 'Lost'),
+                    if (lostSlice.isEmpty)
+                      const _EmptySection(label: 'No lost groups yet'),
+                    for (final group in lostSlice)
+                      _GroupCard(
+                        group: group,
+                        activeSession: activeSession,
+                        preRunStartOverride: null,
+                        onTap: () => _showSummaryDialog(context, group),
+                        actions: [
+                          _GroupAction(
+                            label: 'Re-plan group',
+                            onPressed: () =>
+                                _handleRunAgain(context, ref, group),
+                          ),
+                        ],
+                        now: now,
+                      ),
+                    const SizedBox(height: 20),
                     _SectionHeader(title: 'Canceled'),
                     if (canceledSlice.isEmpty)
                       const _EmptySection(label: 'No canceled groups yet'),
@@ -676,60 +550,6 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
       if (!context.mounted) return;
       _showSnackBar(context, "Failed to check conflicts: $e");
       return;
-    }
-
-    final hasRunning = existing.any(
-      (candidate) => candidate.status == TaskRunStatus.running,
-    );
-    if (!hasRunning) {
-      final scheduled =
-          existing
-              .where(
-                (candidate) =>
-                    candidate.status == TaskRunStatus.scheduled &&
-                    candidate.scheduledStartTime != null,
-              )
-              .toList()
-            ..sort((a, b) {
-              final aStart =
-                  resolveEffectiveScheduledStart(
-                    group: a,
-                    allGroups: existing,
-                    activeSession: activeSession,
-                    now: now,
-                    fallbackNoticeMinutes: _noticeFallbackMinutes,
-                  ) ??
-                  a.scheduledStartTime!;
-              final bStart =
-                  resolveEffectiveScheduledStart(
-                    group: b,
-                    allGroups: existing,
-                    activeSession: activeSession,
-                    now: now,
-                    fallbackNoticeMinutes: _noticeFallbackMinutes,
-                  ) ??
-                  b.scheduledStartTime!;
-              return aStart.compareTo(bStart);
-            });
-      final lateStartConflicts = resolveLateStartConflictSet(
-        scheduled: scheduled,
-        allGroups: existing,
-        activeSession: activeSession,
-        now: now,
-        fallbackNoticeMinutes: _noticeFallbackMinutes,
-      );
-      if (lateStartConflicts.isNotEmpty) {
-        final anchor = resolveLateStartAnchor(lateStartConflicts) ?? now;
-        if (!context.mounted) return;
-        context.go(
-          '/groups/late-start',
-          extra: LateStartOverlapArgs(
-            groupIds: lateStartConflicts.map((g) => g.id).toList(),
-            anchor: anchor,
-          ),
-        );
-        return;
-      }
     }
 
     final conflicts = _findConflicts(
@@ -2260,8 +2080,9 @@ class _GroupCard extends StatelessWidget {
         return 'Interrupted';
       case TaskRunCanceledReason.conflict:
         return 'Conflict';
+      case TaskRunCanceledReason.lost:
       case TaskRunCanceledReason.missedSchedule:
-        return 'Missed schedule';
+        return 'Lost';
       case TaskRunCanceledReason.user:
         return 'Canceled';
       default:
@@ -2277,12 +2098,11 @@ class _GroupCard extends StatelessWidget {
             'conflict).';
       case TaskRunCanceledReason.conflict:
         return 'This group was canceled because it would overlap another '
-            'group. This can happen during running overlap decisions or when '
-            'late-start overdue groups push later groups out of their planned '
-            'time.';
+            'group.';
+      case TaskRunCanceledReason.lost:
       case TaskRunCanceledReason.missedSchedule:
-        return 'This group was canceled because its scheduled start time had '
-            'already passed when conflicts were resolved.';
+        return 'This group could not be promoted before its execution window '
+            'ended, so it is marked as Lost.';
       case TaskRunCanceledReason.user:
         return 'This group was canceled manually by you (for example from '
             'Groups Hub or when canceling a running group).';

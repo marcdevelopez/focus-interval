@@ -161,22 +161,22 @@ class TaskRunGroup {
 
   DateTime? scheduledStartTime; // null when "Start now"
   String? scheduledByDeviceId; // device that initiated schedule or start
-  String? postponedAfterGroupId; // when set, schedule follows another group
-  DateTime? lateStartAnchorAt; // server anchor for late-start queue projections
-  String? lateStartQueueId; // shared id for the late-start queue (conflict set)
-  int? lateStartQueueOrder; // order index within the late-start queue
-  String? lateStartOwnerDeviceId; // device that owns the late-start queue
-  DateTime? lateStartOwnerHeartbeatAt; // heartbeat for stale owner detection
-  String? lateStartClaimRequestId; // pending ownership request id
-  String? lateStartClaimRequestedByDeviceId; // device requesting ownership
-  DateTime? lateStartClaimRequestedAt; // when ownership was requested
+  String? postponedAfterGroupId; // legacy compatibility only (deprecated)
+  DateTime? lateStartAnchorAt; // legacy compatibility only (deprecated)
+  String? lateStartQueueId; // legacy compatibility only (deprecated)
+  int? lateStartQueueOrder; // legacy compatibility only (deprecated)
+  String? lateStartOwnerDeviceId; // legacy compatibility only (deprecated)
+  DateTime? lateStartOwnerHeartbeatAt; // legacy compatibility only (deprecated)
+  String? lateStartClaimRequestId; // legacy compatibility only (deprecated)
+  String? lateStartClaimRequestedByDeviceId; // legacy compatibility only (deprecated)
+  DateTime? lateStartClaimRequestedAt; // legacy compatibility only (deprecated)
   DateTime? noticeSentAt; // pre-run notice sent timestamp (if sent)
   String? noticeSentByDeviceId; // device that sent the pre-run notice
   DateTime? actualStartTime; // authoritative execution anchor once running
   DateTime theoreticalEndTime;  // required for overlap checks
 
   String status; // scheduled | running | completed | canceled
-  String? canceledReason; // user | conflict | interrupted | missedSchedule
+  String? canceledReason; // user | interrupted | lost | conflict(legacy) | missedSchedule(legacy)
   int? noticeMinutes; // per-group pre-alert override
 
   // Optional derived fields (for list rendering):
@@ -210,12 +210,13 @@ class TaskRunItem {
 Notes:
 
 - theoreticalEndTime is calculated when the group is scheduled or started, using scheduledStartTime (if set) or now (for immediate start). Recalculate if the start time changes.
-- postponedAfterGroupId marks a scheduled group as following another group. While the anchor group is running/paused, the effective scheduledStartTime is derived as anchorEnd + noticeMinutes, and pre-run begins at anchorEnd. When the anchor group ends, the schedule is locked in and postponedAfterGroupId is cleared.
-- lateStartAnchorAt is a server timestamp written when the late-start overlap queue is triggered. It is used to anchor projected ranges across devices (consistent projections). It should be cleared when the queue is resolved (confirmed or canceled).
-- lateStartQueueId is a shared identifier for the conflict set (same for all queued groups).
-- lateStartQueueOrder defines the current ordering for queued groups (used for display and chain-postpone).
-- lateStartOwnerDeviceId + lateStartOwnerHeartbeatAt define the queue owner and allow stale detection (>=45s).
-- lateStartClaimRequestId / lateStartClaimRequestedByDeviceId / lateStartClaimRequestedAt define a pending ownership request while the owner is active.
+- `postponedAfterGroupId` and `lateStart*` fields are retained only for backward
+  compatibility reads. Under the deterministic model they are deprecated and
+  must not be the source of active scheduling behavior for new flows.
+- `canceledReason = lost` is the canonical Lost state.
+- Legacy `canceledReason = missedSchedule` must be interpreted as Lost.
+- Legacy `canceledReason = conflict` is backward-compatible read-only data and
+  must not be written by new deterministic planning/runtime flows.
 - During execution, theoreticalEndTime must be extended by **total pause offsets**
   (cumulative paused time). The owner updates this on resume so all devices share
   the same projected end.
@@ -377,9 +378,9 @@ Notes:
   - The app must not remain in an idle Run Mode state.
   - Navigate to Groups Hub after confirmation (see section 10.4.6).
 
-## **6.4. Scheduling and conflict rules**
+## **6.4. Scheduling and deterministic execution rules**
 
-Overlap definition
+Deterministic overlap definition (execution block only)
 
 Two groups conflict if:
 
@@ -387,97 +388,74 @@ Two groups conflict if:
 [newStart, newEnd) ∩ [existingStart, existingEnd) ≠ ∅
 ```
 
-Where end = theoreticalEndTime.
+Where:
 
-Rules
+- `newStart/newEnd` are the candidate group execution bounds.
+- `existingStart/existingEnd` are existing group execution bounds.
+- `end = theoreticalEndTime`.
+- **Pre-Run is not part of overlap blocking.**
 
-- If a group is running:
-  - Cannot schedule another group
-  - Cannot start another group
-  - Options: cancel the running group, or cancel the new action
-- If a group is scheduled:
-  - Show conflict
-  - Options: delete the existing schedule, or cancel the new schedule
+Planning rules
 
-These conflict checks apply to both Start now and Schedule start.
+- Planning is **strictly blocking** on execution overlap.
+- If a candidate execution block overlaps any non-terminal group
+  (scheduled/running), planning is rejected.
+- The planner does **not** offer conflict-resolution branches
+  (no delete/cancel/postpone flow from the conflict prompt).
+- To plan in an occupied slot, the user must first free the slot explicitly.
 
-Scheduled start behavior
+Running/paused priority
 
-- Send the pre-alert noticeMinutes before scheduledStartTime.
-- On supported platforms, schedule the pre-alert notification at planning time
-  so it can fire even when the app is closed.
-- Windows/Linux/Web: no background pre-alert scheduling in MVP; pre-alerts are best-effort and require the app to be open.
-- Android uses AlarmManager to schedule the pre-alert so it can fire with the app closed.
-- If the app is open during the pre-alert window, show the Pre-Run Countdown Mode (see section 10.4.1.a).
-- If the app is closed during the pre-alert window, send a silent notification on platforms with background scheduling (Android/iOS/macOS).
-  On Windows/Linux/Web, no system notification is sent while closed.
-- Auto-start requires at least one device for the account to be active/open at or after scheduledStartTime.
-- If all devices are closed at scheduledStartTime, the group does not start until the next launch/resume
-  on any signed-in device for that account (scheduledStartTime remains unchanged).
-- At scheduledStartTime:
-  - Set status = running.
-  - Set actualStartTime = now.
-  - Recalculate theoreticalEndTime = actualStartTime + totalDurationSeconds.
-  - Automatically open the execution screen and start the group.
-  - Ownership is claimed by the first active device that starts the session (if multiple devices are open).
-- If the app was inactive at scheduledStartTime:
-  - On next launch/resume of any signed-in device, if scheduledStartTime <= now and there is no active conflict,
-    auto-start immediately using actualStartTime = now.
-  - scheduledStartTime remains as historical data and is not overwritten unless the user explicitly
-    reschedules the group via conflict resolution.
+- A running or paused group has priority over scheduled groups for foreground
+  execution.
+- While a running/paused group is active, overlapping scheduled groups are not
+  promoted to foreground.
+- While a blocker is active, if a scheduled group has already entered its
+  execution window (`scheduledStartTime <= now < theoreticalEndTime`) and cannot
+  be promoted yet, show a non-blocking warning snackbar with a single `OK`
+  action to make the risk explicit.
+- The warning is informational only (no conflict modal, no branch options) and
+  must be shown at most once per affected group per blocker session.
+- When the blocker ends/cancels, the coordinator re-evaluates scheduled groups
+  against real time:
+  - If `scheduledStartTime <= now < theoreticalEndTime`, the group is promoted
+    to Run Mode immediately (continuation in real-time).
+  - If `now >= theoreticalEndTime`, the group transitions to Lost.
+- Promotion after blocker release must never classify the group as Lost when its
+  execution window is still active.
 
-Late-start and overlap resolution (Account Mode)
+Late open/resume behavior
 
-Purpose: make delayed auto-start and long pauses deterministic, with explicit user control.
+- Scheduled timeline remains authoritative even when the app is closed.
+- On launch/resume, if a scheduled group is still inside its execution window
+  (`scheduledStartTime <= now < theoreticalEndTime`) and no running/paused
+  blocker exists, the app auto-opens Run Mode and continues at the temporal
+  point it should currently be in.
+- For this continuity, runtime projection must anchor from planned execution
+  start (not from a fresh "start now").
 
-- Owner decision only. If no owner is active, the first active device auto-claims ownership
-  before presenting any decision UI (mirrors remain view-only).
-  - "Owner active" is defined by a recent `lateStartOwnerHeartbeatAt`. If the heartbeat is missing,
-    treat the owner as active for a short grace window based on `lateStartAnchorAt` before allowing auto-claim.
+Lost policy (Perdido)
 
-Late-start overlap resolution (no running group)
+- Lost groups are represented as:
+  - `status = canceled`
+  - `canceledReason = lost`
+- Legacy `canceledReason = missedSchedule` is treated as Lost in UI and logic.
+- Lost groups are recoverable user actions (re-plan or run-again style flow).
 
-- Trigger: app launch/resume with **one or more** overdue scheduled groups
-  (scheduledStartTime <= now) and no running group.
-- Overdue scheduled groups **do not expire**; they must be resolved explicitly by the user.
-- If there is exactly **one** overdue group and starting it now does **not**
-  overlap any other scheduled group, auto-start proceeds as usual.
-- If starting an overdue group now would overlap any other scheduled group
-  (overdue or future), open the **late-start overlap queue** (see section 10.4.1.b).
-- In the queue flow, the user may select any subset (including none) and define
-  their order. The first selected group starts immediately (no pre-run); the
-  remaining selected groups are rescheduled sequentially with their pre-run
-  windows preserved.
-- Any unselected groups are canceled:
-  - If scheduledStartTime <= now → canceledReason = missedSchedule.
-  - If scheduledStartTime > now → canceledReason = conflict.
-- If none are selected and confirmed, cancel all groups in the conflict set
-  using the same reason rules.
+Ownership and authority
 
-Conflict-resolution write safety
+- Account Mode authority remains unchanged:
+  - One owner device controls authoritative session writes.
+  - Mirrors remain read/informational and may request ownership.
+- This deterministic model removes only overlap-resolution branches, not
+  ownership flows.
 
-- Any multi-group cancel/reschedule operation must be applied via a single
-  Firestore batch/transaction.
-- If the batch fails, show a blocking error and keep the flow open for retry;
-  do not start or resume any group until the intended updates succeed.
-- If a partial update is detected on re-open (e.g., some groups updated and
-  others not), re-enter the queue flow and require the owner to reconcile
-  before continuing.
+Deprecated conflict subsystems under this model
 
-Long-pause overlap (running/paused group vs next scheduled)
-
-- Trigger: a group is running or paused, and the next scheduled group's pre-run window
-  begins while the current group is still projected to be active.
-- Immediately present a conflict modal (see section 10.4.1.c). The modal **pauses**
-  the current group and counts as a normal user pause (affects pause offsets).
-- Options:
-  - End current group now → mark current group canceled (canceledReason = interrupted),
-    then proceed with the scheduled group's pre-run/start.
-  - Postpone the scheduled group → reschedule it to start after the current group ends,
-    preserving its pre-run window (noticeMinutes). Update scheduledStartTime and
-    theoreticalEndTime, then revalidate conflicts (repeat if necessary).
-  - Cancel the scheduled group → mark it canceled (canceledReason = conflict) and
-    continue the current group.
+- Late-start overlap queue and running-overlap decision flows are deprecated.
+- `postponedAfterGroupId` and late-start queue metadata are retained only for
+  backward compatibility reads and migration safety; new flows must not depend
+  on writing them.
 
 ---
 
@@ -714,7 +692,9 @@ users/{uid}/activeSession
 - Auto-open must apply on the owner device and on mirror devices (mirror mode with ownership requests).
 - If auto-open cannot occur (missing group data, blocked navigation, or explicit suppression), the user must see a clear entry point to the running group from the initial screen and from Groups Hub.
 - Auto-open is **trigger-based** and must not re-fire on every activeSession update:
-  - Allowed triggers: app launch/resume with an active running/paused session, pre-run window start, scheduled start, resolve overlaps entry, or explicit user actions (Start now / Run again / Open Run Mode / Open Pre-Run).
+  - Allowed triggers: app launch/resume with an active running/paused session,
+    pre-run window start, scheduled start, or explicit user actions
+    (Start now / Run again / Open Run Mode / Open Pre-Run).
   - If the user leaves Run Mode while a session is active, suppress auto-open until a new trigger occurs (or the user explicitly opens it).
   - Auto-open must not interrupt planning/editing/settings flows. When suppressed, keep clear CTAs from Task List and Groups Hub.
 
@@ -1539,35 +1519,28 @@ Redistribution rules (shared)
   - Preserve relative proportions between tasks.
 - If the closest achievable distribution deviates excessively (≥ 10 percentage points)
   or no redistribution is possible, show a blocking warning and do not schedule.
-- Scheduling must reserve the full Pre-Run Countdown window when noticeMinutes > 0:
-  - The window from scheduledStartTime - noticeMinutes to scheduledStartTime
-    is treated as blocked time.
-  - It must not overlap any running group or any previously scheduled group’s
-    execution window.
-- If the full Pre-Run window cannot be reserved **only because the selected
-  start time is too soon** (the pre-run start would be in the past), **auto-clamp**
-  the effective notice for this group to the maximum allowed window:
-  - `effectiveNotice = clamp(0, globalNotice, minutesUntilStart)`
-  - The group is scheduled using `effectiveNotice`.
-  - This is **not** an error; do **not** show a red warning.
-  - Show a lightweight notice that is easy to read:
-    - In Plan Group, show a **persistent info line** in the Pre‑Run notice card
-      stating the effective notice (e.g., “Pre‑run notice reduced to 2m — maximum
-      allowed before the scheduled start.”).
-    - Show a **persistent snackbar** (until the user taps OK) the first time the
-      auto‑clamp occurs in that planning session. It includes:
-      - A “Don’t show again” checkbox (stored per device).
-      - An OK button to dismiss.
-    - If the user opts out, the snackbar is not shown again; the card info line
-      remains the only indicator.
-  - After scheduling, show a lightweight notice (snackbar) that:
-    - States the effective notice applied **for this group**.
-    - Clarifies that the **global notice** is the default for future scheduled
-      groups and remains unchanged unless the user opts in.
-    - Offers an action to **apply this value to the global notice**.
-    - If the user accepts, update the global notice immediately (Account or Local
-      scope as appropriate).
-    - If the user declines, keep the global notice unchanged.
+- Pre-Run is reminder-only and does **not** block planning.
+- The planner auto-clamps effective pre-run notice whenever needed.
+  Clamp must consider both constraints:
+  - time available from now to scheduled start (`minutesUntilStart`), and
+  - time available between the nearest previous group end and the new start.
+- For the previous-group constraint, use the nearest group ending at/before the
+  candidate start (running projected end or scheduled theoretical end).
+- Enforce strict minute separation with the previous group end by keeping at
+  least a one-minute boundary before the new run block.
+- Canonical clamp:
+  - `effectiveNotice = clamp(0, globalNotice, min(minutesUntilStart, minutesBetweenPreviousEndAndStartMinusBoundary))`
+- This is not an error; do not show a blocking/red conflict state.
+- Show a lightweight notice that is easy to read:
+  - In Plan Group, show a persistent info line in the Pre-Run notice card
+    stating the effective notice.
+  - Show a persistent snackbar (until OK) the first time auto-clamp occurs in
+    the planning session, with a per-device "Don't show again" option.
+  - If the user opts out, keep only the in-card info line.
+- After scheduling, show a lightweight notice (snackbar) that:
+  - states the effective notice applied for this group,
+  - clarifies that global notice stays unchanged unless user opts in,
+  - offers applying the value globally.
 - If the user keeps Plan group open and the selected **start time passes**, the
   planner auto-updates the start time to **now** (same minute) and sets the
   effective pre-run notice to **0m**. The user is informed with a persistent
@@ -1579,10 +1552,10 @@ Redistribution rules (shared)
     require the user to edit the range.
   - **Schedule by total time:** start is updated to now; duration remains
     unchanged.
-- If the full Pre-Run window cannot be reserved due to **other conflicts**
-  (running group, scheduled overlap), scheduling is blocked and the user is
-  shown a clear, non-technical explanation (e.g., “That time doesn’t leave enough
-  pre‑run time. Choose a later start or reduce the pre‑run notice.”).
+- Execution overlap is the only planning blocker.
+- If execution windows overlap (running/scheduled), scheduling is blocked with a
+  clear non-technical explanation.
+- Pre-Run overlap alone never blocks planning; it is resolved via auto-clamp.
 - If a schedule is set:
   - Recalculate theoretical start/end times using the selected start time
   - Save as scheduled and add to Groups Hub
@@ -1595,18 +1568,26 @@ Redistribution rules (shared)
   - If the app is open during the pre-alert window, suppress any system notification to avoid duplicate alerts
   - At the scheduled time:
     - Set status = running
-    - Set actualStartTime = now
+    - Set actualStartTime = scheduledStartTime
     - Recalculate theoreticalEndTime = actualStartTime + totalDurationSeconds
     - Auto-open the execution screen and auto-start the group
     - Ownership is claimed by the first active device that starts the session (if multiple devices are open)
     - Auto-start requires **no user action**; if multiple devices are open, exactly one
       device must claim ownership and others enter mirror mode automatically.
   - If the app was inactive at scheduledStartTime:
-    - On next launch/resume of any signed-in device, if scheduledStartTime <= now and there is no active conflict,
-      auto-start immediately using actualStartTime = now (scheduledStartTime remains unchanged)
+    - On next launch/resume of any signed-in device, if scheduledStartTime <= now < theoreticalEndTime
+      and there is no running/paused blocker, auto-start immediately using
+      actualStartTime = scheduledStartTime (scheduledStartTime remains unchanged).
+    - If now >= theoreticalEndTime, transition the group to Lost
+      (`status = canceled`, `canceledReason = lost`; legacy `missedSchedule`
+      interpreted as Lost).
+    - If a running/paused blocker exists, keep the group scheduled until blocker
+      release, then re-evaluate the same window criteria immediately.
   - If the app is open and the user switches from Local Mode to Account Mode after scheduledStartTime:
     - Re-evaluate overdue scheduled groups immediately with the same launch/resume criteria.
-    - If there is no active conflict, auto-start immediately using actualStartTime = now and open Run Mode in the same re-entry flow.
+    - If scheduledStartTime <= now < theoreticalEndTime and no running/paused blocker exists,
+      auto-start immediately using actualStartTime = scheduledStartTime and open Run Mode.
+    - If now >= theoreticalEndTime, transition to Lost.
     - This must not require app restart.
   - The timer remains stopped until the scheduled start
   - When scheduling sequential groups, ensure the next group’s pre-run start
@@ -1665,8 +1646,6 @@ Interactions
 - Pause is visible but disabled (group has not started yet).
 - Start now is not available in this mode.
 - Pre-Run has no authoritative owner; all signed-in devices are equivalent and may cancel.
-  Exception: if a conflict-resolution decision is required (sections 10.4.1.b–c),
-  an owner must be established and only the owner can act.
 - When the countdown reaches zero, the group must auto-start without user action.
 
 Transition at scheduled start
@@ -1686,218 +1665,29 @@ Last 10 seconds
 - Countdown number scales up quickly (≈1–1.5s) to a large, near-full-circle size.
 - The scale completes early and stays stable until it reaches 0.
 
-### **10.4.1.b. Late-start overlap queue (overdue vs scheduled)**
+### **10.4.1.b. Legacy late-start overlap queue (deprecated by deterministic model)**
 
-Purpose: resolve overlaps caused by late starts, including multiple overdue groups.
+This queue flow is deprecated.
 
-Trigger
+- Overdue scheduled groups are no longer resolved through manual queue
+  selection/reordering.
+- Runtime behavior follows section 6.4:
+  - if execution window is active, promote to Run Mode in real-time continuity;
+  - if execution window expired, transition to Lost.
+- `lateStart*` fields are retained for backward compatibility reads only and
+  must not drive new conflict UX.
 
-- On launch/resume, if there is **no running group** and at least one scheduled
-  group is overdue (scheduledStartTime <= now) **and** starting now would
-  overlap another scheduled group window (overdue or future).
-- On **mode switch (Local → Account)** with the app open, re-evaluate the same
-  criteria immediately; if the queue should appear, show it without requiring
-  an app restart.
-- Do **not** trigger this queue during the Pre-Run -> Running transition if the
-  overdue group can start without overlapping any other scheduled group.
+### **10.4.1.c. Legacy running-overlap decision modal (deprecated by deterministic model)**
 
-Anchor & timebase
+This modal flow is deprecated.
 
-- When this queue is triggered, the **owner** writes `lateStartAnchorAt` using
-  a **server timestamp** on all groups in the conflict set.
-- The owner also writes `lateStartQueueId`, `lateStartQueueOrder`,
-  `lateStartOwnerDeviceId`, and `lateStartOwnerHeartbeatAt`.
-- All devices derive a **queue timebase** from `lateStartAnchorAt` to keep
-  projections consistent across devices (do **not** use local `DateTime.now()`
-  directly for projections).
-- The timebase is **anchored** to `lateStartAnchorAt` once set. Owner heartbeat is
-  for **liveness/staleness checks only** and must **not** shift the projection
-  base. If `lateStartAnchorAt` is missing (legacy), fall back to the latest
-  heartbeat **only until** the anchor is materialized.
-- On app resume/reopen, if `lateStartAnchorAt` exists, recompute projections
-  from the anchor + now; never revert to `scheduledStartTime` while the queue
-  is active.
-- `lateStartAnchorAt` is cleared on confirm/cancel so it does not linger.
-- If there is **no owner** yet, the first active device auto-claims ownership
-  for the queue (before it is shown).
-- Owner label: show **"Owner: <device>"** using `lateStartOwnerDeviceId`.
-
-UI (full-screen flow, same visual language as Plan group)
-
-- Show a clear explanation of the late-start overlap situation and options.
-- Show **total time** to run the selected queue, including pre-run windows.
-- If total time > 8 hours, show a clear warning under the total.
-- List **conflicting groups** with:
-  - Group name
-  - Scheduled time range (HH:mm–HH:mm)
-    - If the scheduled date is **not today** (local), include the date
-      before the time range (e.g., "Feb 21, 17:55–18:10").
-  - Projected time range (HH:mm–HH:mm)
-    - If the projected start date is **not today**, include the date
-      before the time range (same format as Scheduled).
-- Owner-only: allow **multi-select** and **drag reorder** of selected groups.
-- Mirror: read-only list + CTA “Request ownership to resolve”.
-  - The CTA writes `lateStartClaimRequestId`, `lateStartClaimRequestedByDeviceId`,
-    and `lateStartClaimRequestedAt` if the owner is active.
-  - If the owner heartbeat is stale (>=45s), the mirror can **auto-claim** and become owner.
-  - If the heartbeat is missing, do **not** auto-claim until the grace window
-    (>=45s since `lateStartAnchorAt`) has elapsed.
-- Show up to **5 groups** by default; include a **“Show more”** control to
-  expand the full list.
-- As the user reorders selections, update the **projected ranges** in the list
-  to reflect the new sequential order.
-- Projected ranges **update in real time** (e.g., every second) based on the
-  queue timebase so the preview matches the actual start on confirm.
-- The **first** selected group starts immediately (**no pre-run**), so its
-  projected start **equals the queue timebase** (no extra minute added).
-
-Actions
-
-- Primary: **Continue**
-- Secondary: **Cancel all**
-- On **Cancel all**: show a confirmation modal stating that **all listed groups
-  will be canceled** and that they can be re-planned from Groups Hub. On
-  confirm, cancel each group using the reason rules below, clear all late-start
-  queue fields (`lateStartAnchorAt`, owner/claim metadata, queue id/order), and
-  return to Groups Hub. Never leave a blank/black screen.
-- If the owner **resolves or cancels** the queue while a mirror is viewing it
-  (lateStart\* cleared or all groups canceled), the mirror must:
-  - Disable actions immediately.
-  - Show a modal: **“Owner resolved”** with a single **OK** action.
-  - On OK, navigate to Groups Hub. Never remain on a blank screen.
-- If **no groups** are selected and the user taps Continue, treat it exactly
-  like **Cancel all** (same modal, same cancel reason rules, same cleanup).
-- If **one or more** groups are selected:
-  - Show a **preview step** (same task list preview style as Plan group)
-    summarizing the selected groups in order.
-  - On confirm:
-    - Start the **first** group immediately (no pre-run).
-    - Set `scheduledStartTime = queueNow` and `actualStartTime = queueNow`
-      for the first group to keep the schedule coherent.
-    - Create/publish the **activeSession** as owner so Run Mode does not
-      stall in “syncing session”.
-    - Schedule the remaining groups **sequentially**, preserving pre-run windows:
-      scheduledStartTime = previousEnd + noticeMinutes.
-    - When deriving scheduledStartTime from queue sequencing, apply strict
-      minute normalization:
-      - round up to the next full minute (seconds = 00),
-      - and enforce `scheduledStartTime > previousEnd` (if equal after
-        rounding, add +1 minute).
-        Never round backwards into the past.
-    - Update scheduledStartTime and theoreticalEndTime for rescheduled groups.
-    - Cancel all **unselected** groups using the reason rules above.
-    - Clear `lateStartAnchorAt`, `lateStartOwnerDeviceId`,
-      `lateStartOwnerHeartbeatAt`, `lateStartClaimRequestId`,
-      `lateStartClaimRequestedByDeviceId`, `lateStartClaimRequestedAt`
-      for all groups in the queue.
-    - Keep `lateStartQueueId` and `lateStartQueueOrder` on the **selected**
-      groups so later postpones can drag the remaining queued groups.
-    - Clear `lateStartQueueId` and `lateStartQueueOrder` on **unselected**
-      (canceled) groups.
-    - Revalidate overlaps against any other scheduled groups not in the selection.
-      If conflicts exist, reopen this queue flow.
-
-Permissions
-
-- Only the **owner** device can act. If no owner is active, the first active device
-  auto-claims ownership before this flow appears.
-- If the owner is active, mirrors must request ownership and wait for
-  explicit approval before acting.
-- Manual “Start now” must not bypass this queue when overdue conflicts exist.
-
-### **10.4.1.c. Running overlap decision (pause drift vs scheduled)**
-
-Purpose: resolve overlaps when a running/paused group reaches another group’s
-scheduled pre-run window.
-
-Trigger
-
-- A scheduled group’s **pre-run window begins** while another group is still
-  running or paused (see section 6.4).
-- If the running group’s **theoreticalEndTime** is pushed (e.g., by pauses)
-  so it now overlaps the next scheduled group’s **pre-run window**, the
-  conflict is detected immediately **even before** the pre-run window begins.
-- While paused, use the **projected end** (theoreticalEndTime + elapsed pause)
-  for overlap detection. Trigger as soon as the projected end reaches the
-  pre-run overlap threshold (pre-run start, exact); do **not** wait for resume.
-
-Timing of the decision UI
-
-- The moment an overlap becomes possible (runningEnd >= preRunStart), begin
-  conflict notification timing. Do **not** wait for the pre-run to start.
-- A running end that lands exactly at pre-run start is a conflict and must
-  trigger this flow.
-- The decision modal should appear **during a break** when possible to avoid
-  interrupting focus time.
-- If the overlap is detected while the user is already in a **break** (short
-  or long), show the modal **immediately**.
-- If the overlap is detected during a **pomodoro**, defer the modal to the
-  **next break**.
-- Exception: if the overlap is detected during the **final pomodoro of the
-  group** (no breaks remain), show the modal **immediately** even during the
-  pomodoro.
-- If the group is **paused**, show the modal **immediately** (no deferral).
-
-Flow
-
-- Show a **blocking decision modal** on the owner device.
-- The modal must include **context** about the conflicting scheduled group:
-  group name and its scheduled time range (and pre-run start time if different).
-- The modal **pauses** the current group immediately and counts as a normal pause.
-- Options:
-  1. **End current group** → cancel current group (canceledReason = interrupted),
-     then proceed with the scheduled group’s pre-run/start.
-  2. **Postpone scheduled group** →
-  - Set `scheduledStartTime = projectedEnd + noticeMinutes`, and set
-    `postponedAfterGroupId = currentGroupId`.
-  - When deriving scheduledStartTime from a projected end, apply strict
-    minute normalization:
-    - round up to the next full minute (seconds = 00),
-    - and enforce `scheduledStartTime > projectedEnd` (if equal after
-      rounding, add +1 minute).
-      Never round backwards into the past.
-  - While the current group is running/paused, the scheduled group’s
-    **effective** start tracks the current group’s projected end in real
-    time (no repeat modal for the same pair).
-  - Task List and Groups Hub must render that **effective** schedule in real
-    time on all devices (owner and mirror), without requiring manual refresh.
-  - When the current group ends, **lock in** the schedule (update
-    `scheduledStartTime` + `theoreticalEndTime`) and clear
-    `postponedAfterGroupId`.
-  - Show a confirmation SnackBar with the **new start time** and the
-    **pre-run time**.
-  - If the scheduled group is part of a resolved late-start queue
-    (`lateStartQueueId` is set) and has **later groups in the same queue**,
-    drag the remaining queued groups forward in sequence:
-    - nextStart = projectedEnd + noticeMinutes
-    - each following group starts at previousEnd + noticeMinutes
-    - this avoids repeated conflict modals for each queued group.
-    - Show a one-time SnackBar:
-      “Postponed. The remaining queued groups will shift sequentially.”
-  - Revalidate conflicts against other scheduled groups; if new overlaps
-    exist outside the queue, reopen the appropriate conflict flow immediately.
-  3. **Cancel scheduled group** → cancel it (canceledReason = conflict) and
-     continue the current group.
-
-Permissions
-
-- Only the **owner** device can act. Mirrors show a read-only state until the
-  owner resolves the decision.
-- If the owner is **stale**, mirrors may auto-claim ownership; otherwise,
-  ownership requires explicit owner approval.
-- Mirrors must show a **persistent CTA** in Groups Hub and Task List:
-  - If the owner is **stale**: “Owner seems unavailable. **Claim** ownership to resolve this conflict.”
-  - If the owner is **active**: “Owner is resolving this conflict. Request ownership if needed.”
-    (Use the appropriate CTA label: **Claim** when stale, **Request** when active.)
-- Mirror conflict messaging must include a compact context line with:
-  - running/paused group name + projected range,
-  - scheduled blocker group name + scheduled range,
-  so mirrors understand the exact pair without manually cross-checking cards.
-- Show the mirror CTA **only while the overlap is still valid**. If the conflict
-  resolves or the session is missing, hide the CTA and clear any related banners.
-- Do **not** show duplicate conflict messaging. If the banner is visible, do not
-  also show a conflict SnackBar on the same screen.
-- Mirrors must **not** navigate away from Run Mode when showing this CTA/banner.
+- No runtime conflict decision modal (end current/postpone/cancel scheduled).
+- Running/paused priority and scheduled promotion/Lost transitions are governed
+  by section 6.4.
+- `postponedAfterGroupId` is retained for backward compatibility reads only and
+  must not be used as an active scheduling strategy in new flows.
+- Ownership request/authority remains active for execution control, but not for
+  conflict-branch resolution UX.
 
 ### **10.4.2. Header**
 
@@ -2056,6 +1846,10 @@ The list rebuilds automatically when tasks change.
 - Primary controls: Start/Resume, Pause, and Cancel (depending on state).
 - Controls must share a full-size button style (no compact sizing tied to owner/mirror state).
 - The layout must remain stable without overlap or clipping.
+- If one or more scheduled groups are currently blocked by the active
+  running/paused group and are inside their execution windows, show the same
+  informational snackbar with `OK` described in section 6.4. This snackbar does
+  not alter control availability and does not open any conflict-resolution flow.
 
 ### **10.4.6. Transitions**
 
@@ -2191,9 +1985,8 @@ The MM:SS timer must not shift horizontally:
   mirror devices; mirror paths must never publish/republish `activeSession`.
 - After a scheduled auto-start, the **first device that starts the session** becomes the owner.
   Other devices open in mirror mode and remain there until ownership is approved.
-- Conflict-resolution flows (late-start overlap queue, running overlap decision)
-  are owner-only. If no owner is active, the first active device auto-claims
-  ownership before presenting any decision UI.
+- Legacy conflict-resolution flows are deprecated by the deterministic model and
+  must not be used by new runtime/planning UX.
 - When ownership changes, mirror devices must discard any local projection and
   re-anchor exclusively to the activeSession timestamps (recompute server-time offset)
   so pause/resume stays globally consistent.
@@ -2774,7 +2567,7 @@ List fields per group
 - If status = canceled and canceledReason is present, show a short reason label:
   - interrupted → "Interrupted"
   - conflict → "Conflict"
-  - missedSchedule → "Missed schedule"
+  - lost or missedSchedule → "Lost"
   - user → "Canceled"
 - If canceledReason is missing, default to "Canceled".
 - The reason label is **tappable**. On tap, show a modal explaining the
@@ -2784,14 +2577,10 @@ List fields per group
   groups can be re-planned from Groups Hub.
 - Scheduled start time (only for scheduled groups; omit when scheduledStartTime is null)
 - Scheduled start time is the **run start** time (not the pre-run start).
-- If `postponedAfterGroupId` is set and the anchor group is running/paused, show
-  the **effective scheduled start** derived from the anchor’s projected end +
-  noticeMinutes, and update it in real time.
 - Theoretical end time
   - For running/paused groups, when the active session is paused, display the
     projected end (`theoreticalEndTime + elapsed pause`) on the card.
-  - This projected end must update in real time while paused so card timelines
-    stay coherent with postponed scheduled groups.
+  - This projected end must update in real time while paused.
 - Number of tasks
 - Total duration
 - Pre-Run start time (scheduled groups only):
@@ -2811,12 +2600,8 @@ Actions
   - Start now (only if no conflicts)
   - Open Run Mode for running/paused groups
   - Run again (completed groups): duplicate the group snapshot into a new TaskRunGroup and open the pre-start planning flow
-  - Re-plan group (canceled groups): duplicate the group snapshot into a new TaskRunGroup and open the pre-start planning flow
-    - If Re-plan detects one or more scheduled conflicts, the conflict modal
-      must list each conflicting group with:
-      - Group name
-      - Scheduled time range (HH:mm–HH:mm); if not today, include date + time.
-    - Modal actions remain `Cancel` and `Delete scheduled group`.
+  - Re-plan group (canceled groups, including Lost): duplicate the group snapshot into a new TaskRunGroup and open the pre-start planning flow
+    - If execution overlap exists, planning is blocked until the user frees the slot.
   - Go to Task List screen (Task Library) to create/edit tasks and build new groups
     - The "Go to Task List" CTA is a **sticky header** outside the scrollable
       list, so it is always visible while scrolling.
