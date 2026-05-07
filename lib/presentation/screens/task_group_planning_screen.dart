@@ -495,6 +495,10 @@ class _TaskGroupPlanningScreenState
                       onPressed: _selectScheduleStart,
                     ),
                     conflicts: computedConflicts,
+                    allGroups: allGroups,
+                    activeSession: activeSession,
+                    fallbackNoticeMinutes: noticeFallbackMinutes,
+                    now: _floorToMinute(_noticeNow),
                   )
                 : null,
           ),
@@ -514,6 +518,10 @@ class _TaskGroupPlanningScreenState
                       onPressed: _selectRangeTimes,
                     ),
                     conflicts: computedConflicts,
+                    allGroups: allGroups,
+                    activeSession: activeSession,
+                    fallbackNoticeMinutes: noticeFallbackMinutes,
+                    now: _floorToMinute(_noticeNow),
                   )
                 : null,
           ),
@@ -533,6 +541,10 @@ class _TaskGroupPlanningScreenState
                       onPressed: _selectTotalTime,
                     ),
                     conflicts: computedConflicts,
+                    allGroups: allGroups,
+                    activeSession: activeSession,
+                    fallbackNoticeMinutes: noticeFallbackMinutes,
+                    now: _floorToMinute(_noticeNow),
                   )
                 : null,
           ),
@@ -625,6 +637,10 @@ class _TaskGroupPlanningScreenState
   Widget _buildScheduleFooter({
     required Widget picker,
     required GroupConflicts conflicts,
+    required List<TaskRunGroup> allGroups,
+    required PomodoroSession? activeSession,
+    required int? fallbackNoticeMinutes,
+    required DateTime now,
   }) {
     if (conflicts.isEmpty) return picker;
     return Column(
@@ -632,7 +648,13 @@ class _TaskGroupPlanningScreenState
       children: [
         picker,
         const SizedBox(height: 8),
-        _ConflictInlineIndicator(conflicts: conflicts),
+        _ConflictInlineIndicator(
+          conflicts: conflicts,
+          allGroups: allGroups,
+          activeSession: activeSession,
+          fallbackNoticeMinutes: fallbackNoticeMinutes,
+          now: now,
+        ),
       ],
     );
   }
@@ -1520,28 +1542,59 @@ class _TaskGroupPlanningScreenState
 
 class _ConflictInlineIndicator extends StatelessWidget {
   final GroupConflicts conflicts;
+  final List<TaskRunGroup> allGroups;
+  final PomodoroSession? activeSession;
+  final int? fallbackNoticeMinutes;
+  final DateTime now;
 
-  const _ConflictInlineIndicator({required this.conflicts});
+  const _ConflictInlineIndicator({
+    required this.conflicts,
+    required this.allGroups,
+    required this.activeSession,
+    required this.fallbackNoticeMinutes,
+    required this.now,
+  });
 
   @override
   Widget build(BuildContext context) {
     final timeFormat = DateFormat('HH:mm');
     final entries = <_ConflictCandidate>[
       ...conflicts.running.map(
-        (group) => _ConflictCandidate(group: group, isRunning: true),
+        (group) => _ConflictCandidate(
+          group: group,
+          isRunning: true,
+          window: resolveConflictWindow(
+            group: group,
+            allGroups: allGroups,
+            activeSession: activeSession,
+            now: now,
+            fallbackNoticeMinutes: fallbackNoticeMinutes,
+          ),
+        ),
       ),
       ...conflicts.scheduled.map(
-        (group) => _ConflictCandidate(group: group, isRunning: false),
+        (group) => _ConflictCandidate(
+          group: group,
+          isRunning: false,
+          window: resolveConflictWindow(
+            group: group,
+            allGroups: allGroups,
+            activeSession: activeSession,
+            now: now,
+            fallbackNoticeMinutes: fallbackNoticeMinutes,
+          ),
+        ),
       ),
     ];
     entries.sort((left, right) {
-      DateTime start(TaskRunGroup group) {
-        return group.scheduledStartTime ??
-            group.actualStartTime ??
-            group.createdAt;
+      DateTime start(_ConflictCandidate entry) {
+        return entry.window?.start ??
+            entry.group.scheduledStartTime ??
+            entry.group.actualStartTime ??
+            entry.group.createdAt;
       }
 
-      return start(left.group).compareTo(start(right.group));
+      return start(left).compareTo(start(right));
     });
 
     final scheme = Theme.of(context).colorScheme;
@@ -1567,14 +1620,18 @@ class _ConflictInlineIndicator extends StatelessWidget {
             spacing: 6,
             runSpacing: 6,
             children: entries.map((entry) {
-              final name = entry.group.tasks.isNotEmpty
-                  ? entry.group.tasks.first.name
-                  : 'Task group';
+              final window = entry.window;
+              final name =
+                  window?.groupName ??
+                  (entry.group.tasks.isNotEmpty
+                      ? entry.group.tasks.first.name
+                      : 'Task group');
               final start =
+                  window?.start ??
                   entry.group.scheduledStartTime ??
                   entry.group.actualStartTime ??
                   entry.group.createdAt;
-              final end = entry.group.theoreticalEndTime;
+              final end = window?.end ?? entry.group.theoreticalEndTime;
               final badge = entry.isRunning ? 'Running' : 'Scheduled';
               return Chip(
                 label: Text(
@@ -1596,8 +1653,13 @@ class _ConflictInlineIndicator extends StatelessWidget {
 class _ConflictCandidate {
   final TaskRunGroup group;
   final bool isRunning;
+  final ConflictWindow? window;
 
-  const _ConflictCandidate({required this.group, required this.isRunning});
+  const _ConflictCandidate({
+    required this.group,
+    required this.isRunning,
+    required this.window,
+  });
 }
 
 class _PlanPreview {

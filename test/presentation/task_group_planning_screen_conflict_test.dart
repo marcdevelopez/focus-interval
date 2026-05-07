@@ -3,11 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:focus_interval/data/models/pomodoro_session.dart';
 import 'package:focus_interval/data/models/schema_version.dart';
 import 'package:focus_interval/data/models/selected_sound.dart';
 import 'package:focus_interval/data/models/task_run_group.dart';
+import 'package:focus_interval/domain/pomodoro_machine.dart';
 import 'package:focus_interval/presentation/providers.dart';
 import 'package:focus_interval/presentation/screens/task_group_planning_screen.dart';
 import 'package:focus_interval/presentation/viewmodels/pre_run_notice_view_model.dart';
@@ -84,17 +87,48 @@ TaskGroupPlanningArgs _buildArgs({required DateTime scheduledStart}) {
 Widget _buildApp({
   required TaskGroupPlanningArgs args,
   required Stream<List<TaskRunGroup>> groupsStream,
+  PomodoroSession? activeSession,
   required Widget home,
 }) {
   return ProviderScope(
     overrides: [
       taskRunGroupStreamProvider.overrideWith((_) => groupsStream),
-      activePomodoroSessionProvider.overrideWith((_) => null),
+      activePomodoroSessionProvider.overrideWith((_) => activeSession),
       preRunNoticeMinutesProvider.overrideWith(
         () => _FixedPreRunNoticeViewModel(0),
       ),
     ],
     child: MaterialApp(home: home),
+  );
+}
+
+PomodoroSession _buildPausedSession({
+  required String groupId,
+  required DateTime now,
+}) {
+  return PomodoroSession(
+    taskId: 'task-1',
+    groupId: groupId,
+    currentTaskId: 'task-1',
+    currentTaskIndex: 0,
+    totalTasks: 1,
+    dataVersion: kCurrentDataVersion,
+    sessionRevision: 1,
+    ownerDeviceId: 'device-a',
+    status: PomodoroStatus.paused,
+    phase: PomodoroPhase.pomodoro,
+    currentPomodoro: 1,
+    totalPomodoros: 1,
+    phaseDurationSeconds: 25 * 60,
+    remainingSeconds: 10 * 60,
+    accumulatedPausedSeconds: 0,
+    phaseStartedAt: now.subtract(const Duration(minutes: 20)),
+    currentTaskStartedAt: now.subtract(const Duration(minutes: 20)),
+    pausedAt: now.subtract(const Duration(minutes: 30)),
+    lastUpdatedAt: now,
+    finishedAt: null,
+    pauseReason: null,
+    ownershipRequest: null,
   );
 }
 
@@ -136,6 +170,64 @@ void main() {
         find.widgetWithText(ElevatedButton, 'Confirm'),
       );
       expect(confirm.onPressed, isNull);
+    },
+  );
+
+  testWidgets(
+    'inline conflict chip uses effective postponed range instead of raw range',
+    (tester) async {
+      final now = DateTime.now();
+      final scheduledStart = _futureMinute(45);
+      final anchorStart = scheduledStart.subtract(const Duration(minutes: 50));
+      final anchorBaseEnd = scheduledStart.subtract(
+        const Duration(minutes: 10),
+      );
+      final anchorRunning = _buildGroup(
+        id: 'anchor-running',
+        status: TaskRunStatus.running,
+        start: anchorStart,
+        end: anchorBaseEnd,
+      );
+
+      final rawStart = scheduledStart.subtract(const Duration(minutes: 40));
+      final rawEnd = rawStart.add(const Duration(minutes: 25));
+      final postponedScheduled = _buildGroup(
+        id: 'postponed-scheduled',
+        status: TaskRunStatus.scheduled,
+        start: rawStart,
+        end: rawEnd,
+      ).copyWith(postponedAfterGroupId: anchorRunning.id);
+
+      final pausedSession = _buildPausedSession(
+        groupId: anchorRunning.id,
+        now: now,
+      );
+
+      await tester.pumpWidget(
+        _buildApp(
+          args: _buildArgs(scheduledStart: scheduledStart),
+          groupsStream: Stream.value([anchorRunning, postponedScheduled]),
+          activeSession: pausedSession,
+          home: TaskGroupPlanningScreen(
+            args: _buildArgs(scheduledStart: scheduledStart),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Scheduling conflict'), findsOneWidget);
+      expect(find.textContaining('Scheduled'), findsWidgets);
+
+      final rawRange =
+          '${DateFormat('HH:mm').format(rawStart)}–${DateFormat('HH:mm').format(rawEnd)}';
+      expect(
+        find.textContaining(rawRange),
+        findsNothing,
+        reason:
+            'Conflict chip must use effective postponed window, not raw stored range.',
+      );
     },
   );
 
