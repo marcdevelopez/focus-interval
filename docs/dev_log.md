@@ -18929,7 +18929,7 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 **Current branch intent:** Replace legacy late-start/running-overlap coordinator branches with deterministic execution-window evaluation, preserving AP-1/AP-2 listener safety boundaries.
 **Branch:** `feature/deterministic-conflict-model`
-**Commit:** `pending-local`
+**Commit:** `4695949`
 **Scope:** coordinator core logic + provider signal contract (no UI changes)
 
 ### Work completed
