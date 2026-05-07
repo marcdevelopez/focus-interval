@@ -25,9 +25,9 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last closed bug fix: **BUG-029 superseded closure sync completed on 06/05/2026 (`Block 763`, commit pending-local)**
-Current focus: **Deterministic model tracking sync complete; ready for Corte A implementation planning**
-Last update: **06/05/2026**
+Last closed bug fix: **BUG-029 superseded closure sync completed on 06/05/2026 (`Block 763`, commit `12bd0fa`)**
+Current focus: **Deterministic overlap model implementation (Corte A completed in planning layer)**
+Last update: **07/05/2026**
 
 ---
 
@@ -18892,3 +18892,33 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 - `BUG-029` / `BUGLOG-029`: **Closed/OK as Superseded**.
 - `IDEA-039`: **Closed/OK as Superseded**.
 - Active non-closed bug-log queue: **none**.
+
+---
+
+## Block 764 — Deterministic planning guard (Corte A) implemented (07/05/2026)
+
+**Current branch intent:** Implement deterministic no-modal overlap handling in planning and align pre-run notice clamp with previous-group boundary rules.
+**Branch:** `feature/deterministic-conflict-model`
+**Commit:** `pending-local`
+**Scope:** planning screen behavior + focused widget tests
+
+### Work completed
+
+- `lib/presentation/screens/task_group_planning_screen.dart`
+  - Removed the conflict-resolution modal path (cancel/change/delete) from the planning confirm flow.
+  - Confirm-time race recheck now blocks deterministically on overlap, keeps the inline conflict indicator, and shows an informational snackbar.
+  - Preserved pending conflict id propagation (`pendingCancelIds` / `pendingDeleteIds`) for downstream coordinator handling.
+  - Extended notice max clamp to account for both start-distance and nearest previous-group-end boundary (keeping at least a 1-minute gap).
+  - Updated notice picker refresh loop to recompute max using the same deterministic constraints.
+- `test/presentation/task_group_planning_screen_conflict_test.dart`
+  - Reworked race-guard tests to validate no modal appears, snackbar feedback is shown, and confirm becomes disabled once the conflict is detected.
+
+### Local verification
+
+- `flutter test test/presentation/task_group_planning_screen_conflict_test.dart` -> PASS (`3 passed, 0 failed`)
+- `flutter analyze` -> PASS (`No issues found!`)
+
+### Status after this block
+
+- Deterministic model **Corte A** is implemented and locally validated in the planning layer.
+- Next target: coordinator/timer follow-up cuts and broader validation packet refresh.

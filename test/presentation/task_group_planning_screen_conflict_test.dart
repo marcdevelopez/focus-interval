@@ -21,50 +21,6 @@ class _FixedPreRunNoticeViewModel extends PreRunNoticeViewModel {
   Future<int> build() async => value;
 }
 
-class _PlanningLauncher extends StatefulWidget {
-  const _PlanningLauncher({required this.args});
-
-  final TaskGroupPlanningArgs args;
-
-  @override
-  State<_PlanningLauncher> createState() => _PlanningLauncherState();
-}
-
-class _PlanningLauncherState extends State<_PlanningLauncher> {
-  TaskGroupPlanningResult? _result;
-  bool _started = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_started) return;
-    _started = true;
-    Future<void>(() async {
-      final result = await Navigator.of(context).push<TaskGroupPlanningResult>(
-        PageRouteBuilder<TaskGroupPlanningResult>(
-          transitionDuration: Duration.zero,
-          reverseTransitionDuration: Duration.zero,
-          pageBuilder: (_, __, ___) =>
-              TaskGroupPlanningScreen(args: widget.args),
-        ),
-      );
-      if (!mounted) return;
-      setState(() {
-        _result = result;
-      });
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final result = _result;
-    final label = result == null
-        ? 'result:pending'
-        : 'result:cancel=${result.pendingCancelIds.length},delete=${result.pendingDeleteIds.length}';
-    return Scaffold(body: Center(child: Text(label)));
-  }
-}
-
 TaskRunItem _buildItem() {
   return const TaskRunItem(
     sourceTaskId: 'task-1',
@@ -183,66 +139,15 @@ void main() {
     },
   );
 
-  testWidgets(
-    'race guard opens modal and returns pendingDeleteIds for scheduled conflicts',
-    (tester) async {
-      final scheduledStart = _futureMinute(120);
-      final conflict = _buildGroup(
-        id: 'scheduled-conflict',
-        status: TaskRunStatus.scheduled,
-        start: scheduledStart.add(const Duration(minutes: 5)),
-        end: scheduledStart.add(const Duration(minutes: 18)),
-      );
-      final groupsController = StreamController<List<TaskRunGroup>>.broadcast();
-      addTearDown(groupsController.close);
-
-      await tester.pumpWidget(
-        _buildApp(
-          args: _buildArgs(scheduledStart: scheduledStart),
-          groupsStream: groupsController.stream,
-          home: _PlanningLauncher(
-            args: _buildArgs(scheduledStart: scheduledStart),
-          ),
-        ),
-      );
-
-      final confirmFinder = find.widgetWithText(ElevatedButton, 'Confirm');
-      await tester.pumpAndSettle();
-      expect(confirmFinder, findsOneWidget);
-
-      groupsController.add(const []);
-      await tester.pump();
-
-      final raceTapCallback = tester
-          .widget<ElevatedButton>(confirmFinder)
-          .onPressed;
-      expect(raceTapCallback, isNotNull);
-
-      groupsController.add([conflict]);
-      await tester.pump();
-
-      raceTapCallback!.call();
-      await tester.pump();
-
-      expect(find.byType(AlertDialog), findsOneWidget);
-      expect(find.text('Scheduling conflict'), findsAtLeastNWidgets(1));
-
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Delete (1)'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('result:cancel=0,delete=1'), findsOneWidget);
-    },
-  );
-
-  testWidgets('race guard returns pendingCancelIds for running conflicts', (
+  testWidgets('race guard blocks confirm without modal for scheduled conflicts', (
     tester,
   ) async {
-    final scheduledStart = _futureMinute(150);
+    final scheduledStart = _futureMinute(120);
     final conflict = _buildGroup(
-      id: 'running-conflict',
-      status: TaskRunStatus.running,
-      start: scheduledStart.subtract(const Duration(minutes: 2)),
-      end: scheduledStart.add(const Duration(minutes: 10)),
+      id: 'scheduled-conflict',
+      status: TaskRunStatus.scheduled,
+      start: scheduledStart.add(const Duration(minutes: 5)),
+      end: scheduledStart.add(const Duration(minutes: 18)),
     );
     final groupsController = StreamController<List<TaskRunGroup>>.broadcast();
     addTearDown(groupsController.close);
@@ -251,14 +156,15 @@ void main() {
       _buildApp(
         args: _buildArgs(scheduledStart: scheduledStart),
         groupsStream: groupsController.stream,
-        home: _PlanningLauncher(
+        home: TaskGroupPlanningScreen(
           args: _buildArgs(scheduledStart: scheduledStart),
         ),
       ),
     );
 
     final confirmFinder = find.widgetWithText(ElevatedButton, 'Confirm');
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump();
     expect(confirmFinder, findsOneWidget);
 
     groupsController.add(const []);
@@ -275,10 +181,71 @@ void main() {
     raceTapCallback!.call();
     await tester.pump();
 
-    expect(find.byType(AlertDialog), findsOneWidget);
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Delete (1)'));
-    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.text('Scheduling conflict'), findsOneWidget);
+    expect(
+      find.text(
+        'Selected execution window overlaps an existing group. Choose another time.',
+      ),
+      findsOneWidget,
+    );
 
-    expect(find.text('result:cancel=1,delete=0'), findsOneWidget);
+    final updatedConfirm = tester.widget<ElevatedButton>(confirmFinder);
+    expect(updatedConfirm.onPressed, isNull);
+  });
+
+  testWidgets('race guard blocks confirm without modal for running conflicts', (
+    tester,
+  ) async {
+    final scheduledStart = _futureMinute(150);
+    final conflict = _buildGroup(
+      id: 'running-conflict',
+      status: TaskRunStatus.running,
+      start: scheduledStart.subtract(const Duration(minutes: 2)),
+      end: scheduledStart.add(const Duration(minutes: 10)),
+    );
+    final groupsController = StreamController<List<TaskRunGroup>>.broadcast();
+    addTearDown(groupsController.close);
+
+    await tester.pumpWidget(
+      _buildApp(
+        args: _buildArgs(scheduledStart: scheduledStart),
+        groupsStream: groupsController.stream,
+        home: TaskGroupPlanningScreen(
+          args: _buildArgs(scheduledStart: scheduledStart),
+        ),
+      ),
+    );
+
+    final confirmFinder = find.widgetWithText(ElevatedButton, 'Confirm');
+    await tester.pump();
+    await tester.pump();
+    expect(confirmFinder, findsOneWidget);
+
+    groupsController.add(const []);
+    await tester.pump();
+
+    final raceTapCallback = tester
+        .widget<ElevatedButton>(confirmFinder)
+        .onPressed;
+    expect(raceTapCallback, isNotNull);
+
+    groupsController.add([conflict]);
+    await tester.pump();
+
+    raceTapCallback!.call();
+    await tester.pump();
+
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.text('Scheduling conflict'), findsOneWidget);
+    expect(
+      find.text(
+        'Selected execution window overlaps an existing group. Choose another time.',
+      ),
+      findsOneWidget,
+    );
+
+    final updatedConfirm = tester.widget<ElevatedButton>(confirmFinder);
+    expect(updatedConfirm.onPressed, isNull);
   });
 }

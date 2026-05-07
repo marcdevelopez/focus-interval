@@ -434,27 +434,6 @@ class _TaskGroupPlanningScreenState
     });
   }
 
-  List<_ConflictCandidate> _sortedConflictCandidates(GroupConflicts conflicts) {
-    final all = <_ConflictCandidate>[
-      ...conflicts.running.map(
-        (group) => _ConflictCandidate(group: group, isRunning: true),
-      ),
-      ...conflicts.scheduled.map(
-        (group) => _ConflictCandidate(group: group, isRunning: false),
-      ),
-    ];
-    all.sort(
-      (left, right) => _resolveConflictStart(
-        left.group,
-      ).compareTo(_resolveConflictStart(right.group)),
-    );
-    return all;
-  }
-
-  DateTime _resolveConflictStart(TaskRunGroup group) {
-    return group.scheduledStartTime ?? group.actualStartTime ?? group.createdAt;
-  }
-
   @override
   Widget build(BuildContext context) {
     final groupsAsync = ref.watch(taskRunGroupStreamProvider);
@@ -687,8 +666,11 @@ class _TaskGroupPlanningScreenState
       setState(() {
         _currentConflicts = recheck;
       });
-      final resolved = await _showConflictModal(recheck, preview);
-      if (!resolved || !mounted) return;
+      _showSnackBar(
+        'Selected execution window overlaps an existing group. '
+        'Choose another time.',
+      );
+      return;
     }
 
     final scheduledStart = _selected == TaskGroupPlanOption.startNow
@@ -704,125 +686,6 @@ class _TaskGroupPlanningScreenState
         pendingDeleteIds: Set<String>.unmodifiable(_pendingDeleteIds),
       ),
     );
-  }
-
-  Future<bool> _showConflictModal(
-    GroupConflicts conflicts,
-    _PlanPreview preview,
-  ) async {
-    final checkedIds = <String>{
-      ...conflicts.running.map((group) => group.id),
-      ...conflicts.scheduled.map((group) => group.id),
-    };
-    final previewStart = preview.scheduledStart;
-    final previewEnd = previewStart?.add(
-      Duration(seconds: preview.totalDurationSeconds),
-    );
-    final rangeLabel = previewStart != null && previewEnd != null
-        ? '${_timeFormat.format(previewStart)}–${_timeFormat.format(previewEnd)}'
-        : '--:--';
-    final allConflicts = _sortedConflictCandidates(conflicts);
-
-    final result = await showDialog<_ConflictModalResult>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          final checkedCount = checkedIds.length;
-          return AlertDialog(
-            title: const Text('Scheduling conflict'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Your plan ($rangeLabel) conflicts with:'),
-                  const SizedBox(height: 12),
-                  ...allConflicts.map((entry) {
-                    final group = entry.group;
-                    final name = group.tasks.isNotEmpty
-                        ? group.tasks.first.name
-                        : 'Task group';
-                    final start = _resolveConflictStart(group);
-                    final end = group.theoreticalEndTime;
-                    final badge = entry.isRunning ? 'Running' : 'Scheduled';
-                    return CheckboxListTile(
-                      value: checkedIds.contains(group.id),
-                      onChanged: (checked) {
-                        setModalState(() {
-                          if (checked == true) {
-                            checkedIds.add(group.id);
-                          } else {
-                            checkedIds.remove(group.id);
-                          }
-                        });
-                      },
-                      title: Text(name),
-                      subtitle: Text(
-                        '${_timeFormat.format(start)}–${_timeFormat.format(end)} · $badge',
-                      ),
-                      controlAffinity: ListTileControlAffinity.leading,
-                      contentPadding: EdgeInsets.zero,
-                    );
-                  }),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(
-                  context,
-                ).pop(const _ConflictModalResult.cancelled()),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(
-                  context,
-                ).pop(const _ConflictModalResult.changeTime()),
-                child: const Text('Change time'),
-              ),
-              ElevatedButton(
-                onPressed: checkedCount > 0
-                    ? () => Navigator.of(context).pop(
-                        _ConflictModalResult.delete(
-                          Set<String>.from(checkedIds),
-                        ),
-                      )
-                    : null,
-                child: Text('Delete ($checkedCount)'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-
-    if (result == null || result.isCancelled) return false;
-    if (result.isChangeTime) {
-      await _selectOption(_selected);
-      return false;
-    }
-    if (result.isDelete) {
-      for (final entry in allConflicts) {
-        if (!result.selectedIds.contains(entry.group.id)) continue;
-        if (entry.isRunning) {
-          _pendingCancelIds.add(entry.group.id);
-        } else {
-          _pendingDeleteIds.add(entry.group.id);
-        }
-      }
-      final remaining = _evaluateConflicts(
-        allGroups: ref.read(taskRunGroupStreamProvider).value ?? const [],
-        activeSession: ref.read(activePomodoroSessionProvider),
-        fallbackNoticeMinutes: _readNoticeFallbackMinutes(),
-      );
-      setState(() {
-        _currentConflicts = remaining;
-      });
-      if (remaining.isNotEmpty) return false;
-      return true;
-    }
-    return false;
   }
 
   _PlanPreview _buildPlanPreview() {
@@ -1032,19 +895,90 @@ class _TaskGroupPlanningScreenState
   }
 
   int _maxNoticeAllowed(DateTime? scheduledStart, DateTime now) {
+    final allGroups = ref.read(taskRunGroupStreamProvider).value ?? const [];
+    final activeSession = ref.read(activePomodoroSessionProvider);
+    final fallbackNoticeMinutes = _readNoticeFallbackMinutes();
+    return _maxNoticeAllowedForSelection(
+      scheduledStart,
+      now,
+      allGroups: allGroups,
+      activeSession: activeSession,
+      fallbackNoticeMinutes: fallbackNoticeMinutes,
+    );
+  }
+
+  int _maxNoticeAllowedForSelection(
+    DateTime? scheduledStart,
+    DateTime now, {
+    required List<TaskRunGroup> allGroups,
+    required PomodoroSession? activeSession,
+    required int? fallbackNoticeMinutes,
+  }) {
     if (scheduledStart == null) return TaskRunNoticeService.maxNoticeMinutes;
     final seconds = scheduledStart.difference(now).inSeconds;
     if (seconds <= 0) return TaskRunNoticeService.minNoticeMinutes;
     final maxByTime = seconds ~/ 60;
-    return maxByTime.clamp(
+    final previousEnd = _resolveNearestPreviousGroupEnd(
+      scheduledStart: scheduledStart,
+      allGroups: allGroups,
+      activeSession: activeSession,
+      now: now,
+      fallbackNoticeMinutes: fallbackNoticeMinutes,
+    );
+    var maxByPrevious = TaskRunNoticeService.maxNoticeMinutes;
+    if (previousEnd != null) {
+      final minutesBetween = scheduledStart.difference(previousEnd).inMinutes;
+      maxByPrevious = (minutesBetween - 1).clamp(
+        TaskRunNoticeService.minNoticeMinutes,
+        TaskRunNoticeService.maxNoticeMinutes,
+      );
+    }
+    final maxAllowed = maxByTime < maxByPrevious ? maxByTime : maxByPrevious;
+    return maxAllowed.clamp(
       TaskRunNoticeService.minNoticeMinutes,
       TaskRunNoticeService.maxNoticeMinutes,
     );
   }
 
+  DateTime? _resolveNearestPreviousGroupEnd({
+    required DateTime scheduledStart,
+    required List<TaskRunGroup> allGroups,
+    required PomodoroSession? activeSession,
+    required DateTime now,
+    required int? fallbackNoticeMinutes,
+  }) {
+    DateTime? nearestEnd;
+    for (final group in allGroups) {
+      if (group.status == TaskRunStatus.canceled ||
+          group.status == TaskRunStatus.completed) {
+        continue;
+      }
+      if (_pendingCancelIds.contains(group.id) ||
+          _pendingDeleteIds.contains(group.id)) {
+        continue;
+      }
+      final window = resolveConflictWindow(
+        group: group,
+        allGroups: allGroups,
+        activeSession: activeSession,
+        now: now,
+        fallbackNoticeMinutes: fallbackNoticeMinutes,
+      );
+      if (window == null) continue;
+      if (window.end.isAfter(scheduledStart)) continue;
+      if (nearestEnd == null || window.end.isAfter(nearestEnd)) {
+        nearestEnd = window.end;
+      }
+    }
+    return nearestEnd;
+  }
+
   void _applyNoticeSuggestion() {
     final scheduledStart = _scheduledStartForCurrentSelection();
-    final maxAllowed = _maxNoticeAllowed(scheduledStart, _noticeNow);
+    final maxAllowed = _maxNoticeAllowed(
+      scheduledStart,
+      _floorToMinute(_noticeNow),
+    );
     if (_noticeMinutes > maxAllowed) {
       _noticeMinutes = maxAllowed;
     }
@@ -1054,7 +988,10 @@ class _TaskGroupPlanningScreenState
     final scheduledStart = _scheduledStartForCurrentSelection();
     if (scheduledStart == null) return null;
     if (!scheduledStart.isAfter(_noticeNow)) return null;
-    final maxAllowed = _maxNoticeAllowed(scheduledStart, _noticeNow);
+    final maxAllowed = _maxNoticeAllowed(
+      scheduledStart,
+      _floorToMinute(_noticeNow),
+    );
     final globalNotice = _normalizeNotice(widget.args.initialNoticeMinutes);
     if (globalNotice <= maxAllowed) return null;
     if (_noticeMinutes != maxAllowed) return null;
@@ -1179,7 +1116,10 @@ class _TaskGroupPlanningScreenState
 
   String _noticeLabelForCurrentSelection() {
     final scheduledStart = _scheduledStartForCurrentSelection();
-    final maxAllowed = _maxNoticeAllowed(scheduledStart, _noticeNow);
+    final maxAllowed = _maxNoticeAllowed(
+      scheduledStart,
+      _floorToMinute(_noticeNow),
+    );
     if (scheduledStart == null) {
       return 'Current value: ${_noticeMinutes}m (0–15m)';
     }
@@ -1188,10 +1128,16 @@ class _TaskGroupPlanningScreenState
 
   Future<void> _editNotice() async {
     final scheduledStart = _scheduledStartForCurrentSelection();
+    final allGroups = ref.read(taskRunGroupStreamProvider).value ?? const [];
+    final activeSession = ref.read(activePomodoroSessionProvider);
+    final fallbackNoticeMinutes = _readNoticeFallbackMinutes();
     final picked = await _showNoticePicker(
       context,
       current: _noticeMinutes,
       scheduledStart: scheduledStart,
+      allGroups: allGroups,
+      activeSession: activeSession,
+      fallbackNoticeMinutes: fallbackNoticeMinutes,
     );
     if (!mounted || picked == null) return;
     setState(() {
@@ -1204,9 +1150,18 @@ class _TaskGroupPlanningScreenState
     BuildContext context, {
     required int current,
     required DateTime? scheduledStart,
+    required List<TaskRunGroup> allGroups,
+    required PomodoroSession? activeSession,
+    required int? fallbackNoticeMinutes,
   }) async {
     var selected = _normalizeNotice(current);
-    var maxAllowed = _maxNoticeAllowed(scheduledStart, DateTime.now());
+    var maxAllowed = _maxNoticeAllowedForSelection(
+      scheduledStart,
+      _floorToMinute(DateTime.now()),
+      allGroups: allGroups,
+      activeSession: activeSession,
+      fallbackNoticeMinutes: fallbackNoticeMinutes,
+    );
     if (selected > maxAllowed) selected = maxAllowed;
     Timer? ticker;
     void Function(VoidCallback fn)? setModalState;
@@ -1215,7 +1170,13 @@ class _TaskGroupPlanningScreenState
       context: context,
       builder: (dialogContext) {
         ticker ??= Timer.periodic(const Duration(seconds: 1), (_) {
-          final latestMax = _maxNoticeAllowed(scheduledStart, DateTime.now());
+          final latestMax = _maxNoticeAllowedForSelection(
+            scheduledStart,
+            _floorToMinute(DateTime.now()),
+            allGroups: allGroups,
+            activeSession: activeSession,
+            fallbackNoticeMinutes: fallbackNoticeMinutes,
+          );
           if (latestMax == maxAllowed && selected <= latestMax) return;
           setModalState?.call(() {
             maxAllowed = latestMax;
@@ -1656,31 +1617,6 @@ class _ConflictCandidate {
 
   const _ConflictCandidate({required this.group, required this.isRunning});
 }
-
-class _ConflictModalResult {
-  final _ConflictModalAction action;
-  final Set<String> selectedIds;
-
-  const _ConflictModalResult._({
-    required this.action,
-    this.selectedIds = const {},
-  });
-
-  const _ConflictModalResult.cancelled()
-    : this._(action: _ConflictModalAction.cancelled);
-
-  const _ConflictModalResult.changeTime()
-    : this._(action: _ConflictModalAction.changeTime);
-
-  _ConflictModalResult.delete(Set<String> ids)
-    : this._(action: _ConflictModalAction.delete, selectedIds: ids);
-
-  bool get isCancelled => action == _ConflictModalAction.cancelled;
-  bool get isChangeTime => action == _ConflictModalAction.changeTime;
-  bool get isDelete => action == _ConflictModalAction.delete;
-}
-
-enum _ConflictModalAction { cancelled, changeTime, delete }
 
 class _PlanPreview {
   final TaskGroupPlanOption option;
