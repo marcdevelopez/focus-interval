@@ -18963,7 +18963,7 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 **Current branch intent:** Align coordinator tests with the deterministic runtime model from Corte B1 (no legacy late-start queue actions and no running-overlap decision generation).
 **Branch:** `feature/deterministic-conflict-model`
-**Commit:** `pending-local`
+**Commit:** `db01b5a`
 **Scope:** coordinator test suite migration + deterministic assertions only (no runtime code changes)
 
 ### Work completed
@@ -18997,7 +18997,7 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 **Current branch intent:** Complete deterministic conflict-model migration in UI/navigation layers by removing legacy overlap queue/modal/banner flows and aligning visible states with Lost/at-risk contract.
 **Branch:** `feature/deterministic-conflict-model`
-**Commit:** `pending-local`
+**Commit:** `045c5e5`
 **Scope:** Timer/Task List/Groups Hub migration + route cleanup + planning dead-code cleanup + focused regression suite refresh
 
 ### Work completed
