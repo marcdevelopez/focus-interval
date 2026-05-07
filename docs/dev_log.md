@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last closed bug fix: **BUG-029 superseded closure sync completed on 06/05/2026 (`Block 763`, commit `12bd0fa`)**
-Current focus: **Deterministic overlap model implementation (Corte A completed in planning layer)**
+Current focus: **Deterministic overlap model implementation (Corte B1 applied in coordinator layer)**
 Last update: **07/05/2026**
 
 ---
@@ -18922,3 +18922,37 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 - Deterministic model **Corte A** is implemented and locally validated in the planning layer.
 - Next target: coordinator/timer follow-up cuts and broader validation packet refresh.
+
+---
+
+## Block 765 — Deterministic coordinator engine (Corte B1) applied (07/05/2026)
+
+**Current branch intent:** Replace legacy late-start/running-overlap coordinator branches with deterministic execution-window evaluation, preserving AP-1/AP-2 listener safety boundaries.
+**Branch:** `feature/deterministic-conflict-model`
+**Commit:** `pending-local`
+**Scope:** coordinator core logic + provider signal contract (no UI changes)
+
+### Work completed
+
+- `lib/presentation/viewmodels/scheduled_group_coordinator.dart`
+  - Removed legacy late-start queue orchestration branch from `_handleGroupsAsync()` and switched to deterministic per-window evaluation.
+  - Kept backward-compatible postpone finalization (`_finalizePostponedGroupsIfNeeded`) intact for legacy records.
+  - Added deterministic Lost transition for expired scheduled windows via race-safe repo re-read (`_markGroupAsLost`).
+  - Kept defensive cleanup of `runningOverlapDecisionProvider`, but removed generation of new running-overlap decisions from coordinator.
+  - Added at-risk scheduled signal emission while a running blocker is active (data only; UI snackbar deferred to Corte C).
+  - Fixed late auto-start anchoring: running start/session now use `scheduledStart` (not wall-clock `now`) to preserve temporal continuity.
+  - Removed orphaned legacy coordinator symbols tied to running-overlap timers and late-start heartbeat support.
+- `lib/presentation/providers.dart`
+  - Added `atRiskScheduledGroupIdsProvider` as coordinator-to-UI contract for upcoming non-blocking warning surface.
+
+### Local verification
+
+- `flutter analyze` -> PASS (`No issues found!`).
+- `flutter test test/presentation/task_group_planning_screen_conflict_test.dart` -> PASS (`3 passed, 0 failed`).
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> PASS (`All tests passed`).
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` -> FAIL expected (`15 passed, 8 failed`) due legacy late-start/running-overlap assertions pending Corte B2 test migration.
+
+### Status after this block
+
+- Deterministic model **Corte B1** is implemented in coordinator runtime flow.
+- Next target: **Corte B2** — migrate coordinator tests from legacy late-start/running-overlap expectations to deterministic window + Lost/at-risk expectations.

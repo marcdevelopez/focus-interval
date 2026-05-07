@@ -158,8 +158,8 @@ final timerServiceProvider = NotifierProvider<TimerService, TimerRuntimeState>(
 
 final sessionSyncServiceProvider =
     NotifierProvider<SessionSyncService, SessionSyncState>(
-  SessionSyncService.new,
-);
+      SessionSyncService.new,
+    );
 
 //
 // ==============================================================
@@ -326,6 +326,9 @@ class RunningOverlapDecision {
 final scheduledAutoStartGroupIdProvider = StateProvider<String?>((_) => null);
 final runningOverlapDecisionProvider = StateProvider<RunningOverlapDecision?>(
   (_) => null,
+);
+final atRiskScheduledGroupIdsProvider = StateProvider<Set<String>>(
+  (_) => const <String>{},
 );
 final completionDialogVisibleProvider = StateProvider<bool>((_) => false);
 
