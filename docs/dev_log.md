@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last closed bug fix: **BUG-029 superseded closure sync completed on 06/05/2026 (`Block 763`, commit `12bd0fa`)**
-Current focus: **Deterministic overlap model implementation (Corte B1 applied in coordinator layer)**
+Current focus: **Deterministic overlap model implementation (Corte B2 test migration completed; next target Corte C UI wiring)**
 Last update: **07/05/2026**
 
 ---
@@ -18956,3 +18956,37 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 - Deterministic model **Corte B1** is implemented in coordinator runtime flow.
 - Next target: **Corte B2** — migrate coordinator tests from legacy late-start/running-overlap expectations to deterministic window + Lost/at-risk expectations.
+
+---
+
+## Block 766 — Deterministic coordinator test contract migration (Corte B2) completed (07/05/2026)
+
+**Current branch intent:** Align coordinator tests with the deterministic runtime model from Corte B1 (no legacy late-start queue actions and no running-overlap decision generation).
+**Branch:** `feature/deterministic-conflict-model`
+**Commit:** `pending-local`
+**Scope:** coordinator test suite migration + deterministic assertions only (no runtime code changes)
+
+### Work completed
+
+- `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+  - Migrated legacy `late-start queue` tests to deterministic overdue behavior:
+    - overdue scheduled groups are canceled with `canceledReason: lost`
+    - no `ScheduledGroupActionType.lateStartQueue` emission is expected
+    - stale/fresh late-start metadata paths validate no auto-claim writes
+  - Replaced legacy `running overlap decision` expectations with at-risk projection checks:
+    - `runningOverlapDecisionProvider` remains `null`
+    - `atRiskScheduledGroupIdsProvider` reflects execution-window membership when applicable
+    - added explicit keep-alive listeners in tests to avoid autoDispose race artifacts
+  - Removed obsolete helper usage/imports tied to legacy late-start conflict resolution.
+
+### Local verification
+
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` -> PASS (`23 passed, 0 failed`).
+- `flutter test test/presentation/task_group_planning_screen_conflict_test.dart test/presentation/timer_screen_completion_navigation_test.dart` -> PASS (`3 passed, 0 failed`).
+- `flutter analyze` -> PASS (`No issues found!`).
+
+### Status after this block
+
+- Deterministic model **Corte B2** is complete and locally validated.
+- Coordinator runtime behavior (Corte B1) and test contract are now synchronized.
+- Next target: **Corte C** (UI wiring for non-blocking at-risk signal surface).
