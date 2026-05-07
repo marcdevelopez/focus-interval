@@ -18899,7 +18899,7 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 **Current branch intent:** Implement deterministic no-modal overlap handling in planning and align pre-run notice clamp with previous-group boundary rules.
 **Branch:** `feature/deterministic-conflict-model`
-**Commit:** `pending-local`
+**Commit:** `ecbe87e`
 **Scope:** planning screen behavior + focused widget tests
 
 ### Work completed
