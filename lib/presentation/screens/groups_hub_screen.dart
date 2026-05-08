@@ -9,7 +9,6 @@ import 'package:uuid/uuid.dart';
 import '../../data/models/pomodoro_session.dart';
 import '../../data/models/task_run_group.dart';
 import '../../data/models/schema_version.dart';
-import '../../data/repositories/task_run_group_repository.dart';
 import '../../data/services/task_run_notice_service.dart';
 import '../../domain/continuous_plan_load.dart';
 import '../../domain/pomodoro_machine.dart';
@@ -36,12 +35,6 @@ String _formatGroupDateTime(DateTime? value, DateTime now) {
       : _groupsHubDateTimeFormat.format(value);
 }
 
-bool _isLostCanceledGroup(TaskRunGroup group) {
-  if (group.status != TaskRunStatus.canceled) return false;
-  return group.canceledReason == TaskRunCanceledReason.lost ||
-      group.canceledReason == TaskRunCanceledReason.missedSchedule;
-}
-
 class GroupsHubScreen extends ConsumerStatefulWidget {
   const GroupsHubScreen({super.key});
 
@@ -54,7 +47,6 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
   String? _dismissedOwnershipRequestKey;
   String? _dismissedOwnershipRequesterId;
   static const int _completedHistoryLimit = 7;
-  static const int _lostHistoryLimit = 7;
   static const int _canceledHistoryLimit = 7;
   Timer? _nowTickTimer;
   DateTime _now = DateTime.now();
@@ -286,16 +278,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                           .where((g) => g.status == TaskRunStatus.canceled)
                           .toList()
                         ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-                  final lostGroups = canceledGroups
-                      .where(_isLostCanceledGroup)
-                      .toList(growable: false);
-                  final canceledOnlyGroups = canceledGroups
-                      .where((group) => !_isLostCanceledGroup(group))
-                      .toList(growable: false);
-                  final lostSlice = lostGroups
-                      .take(_lostHistoryLimit)
-                      .toList(growable: false);
-                  final canceledSlice = canceledOnlyGroups
+                  final canceledSlice = canceledGroups
                       .take(_canceledHistoryLimit)
                       .toList(growable: false);
 
@@ -303,7 +286,6 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                       runningGroups.isNotEmpty ||
                       scheduledGroups.isNotEmpty ||
                       completedSlice.isNotEmpty ||
-                      lostSlice.isNotEmpty ||
                       canceledSlice.isNotEmpty;
 
                   final children = <Widget>[];
@@ -433,25 +415,6 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                         now: now,
                       ),
                     const SizedBox(height: 20),
-                    _SectionHeader(title: 'Lost'),
-                    if (lostSlice.isEmpty)
-                      const _EmptySection(label: 'No lost groups yet'),
-                    for (final group in lostSlice)
-                      _GroupCard(
-                        group: group,
-                        activeSession: activeSession,
-                        preRunStartOverride: null,
-                        onTap: () => _showSummaryDialog(context, group),
-                        actions: [
-                          _GroupAction(
-                            label: 'Re-plan group',
-                            onPressed: () =>
-                                _handleRunAgain(context, ref, group),
-                          ),
-                        ],
-                        now: now,
-                      ),
-                    const SizedBox(height: 20),
                     _SectionHeader(title: 'Canceled'),
                     if (canceledSlice.isEmpty)
                       const _EmptySection(label: 'No canceled groups yet'),
@@ -562,39 +525,11 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
       excludeGroupId: group.id,
     );
 
-    try {
-      if (conflicts.running.isNotEmpty) {
-        final resolved = await _resolveRunningConflict(
-          context,
-          conflicts.running,
-          repo,
-          selectedRangeStart: conflictStart,
-          selectedRangeEnd: conflictEnd,
-          allGroups: existing,
-          activeSession: activeSession,
-          now: now,
-        );
-        if (!context.mounted) return;
-        if (!resolved) return;
-      }
-
-      if (conflicts.scheduled.isNotEmpty) {
-        final resolved = await _resolveScheduledConflict(
-          context,
-          conflicts.scheduled,
-          repo,
-          selectedRangeStart: conflictStart,
-          selectedRangeEnd: conflictEnd,
-          allGroups: existing,
-          activeSession: activeSession,
-          now: now,
-        );
-        if (!context.mounted) return;
-        if (!resolved) return;
-      }
-    } catch (e) {
-      if (!context.mounted) return;
-      _showSnackBar(context, "Failed to resolve conflicts: $e");
+    if (conflicts.running.isNotEmpty) {
+      _showSnackBar(
+        context,
+        'Another group is already running. Finish it before starting a new one.',
+      );
       return;
     }
 
@@ -990,40 +925,19 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
         now: now,
       );
 
-      try {
-        if (conflicts.running.isNotEmpty) {
-          final resolved = await _resolveRunningConflict(
-            context,
-            conflicts.running,
-            repo,
-            selectedRangeStart: conflictStart,
-            selectedRangeEnd: conflictEnd,
-            allGroups: existing,
-            activeSession: activeSession,
-            now: now,
-          );
-          if (!context.mounted) return;
-          if (!resolved) return;
-        }
-
-        if (conflicts.scheduled.isNotEmpty) {
-          final resolved = await _resolveScheduledConflict(
-            context,
-            conflicts.scheduled,
-            repo,
-            selectedRangeStart: conflictStart,
-            selectedRangeEnd: conflictEnd,
-            allGroups: existing,
-            activeSession: activeSession,
-            now: now,
-          );
-          if (!context.mounted) return;
-          if (!resolved) return;
-        }
-      } catch (e) {
-        if (!context.mounted) return;
-        _showSnackBar(context, "Failed to resolve conflicts: $e");
-        return;
+      if (conflicts.running.isNotEmpty) {
+        _showSnackBar(
+          context,
+          'A conflict appeared while planning. Please try again.',
+        );
+        continue;
+      }
+      if (conflicts.scheduled.isNotEmpty) {
+        _showSnackBar(
+          context,
+          'Scheduling conflict detected. Choose another time.',
+        );
+        continue;
       }
 
       final auth = ref.read(firebaseAuthServiceProvider);
@@ -1178,175 +1092,6 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
         '${conflict.blocker.groupName} ($blockerRange). '
         'Candidate pre-run window: $candidateRange. '
         'Change notice for this re-plan or dismiss.';
-  }
-
-  Future<bool> _resolveRunningConflict(
-    BuildContext context,
-    List<TaskRunGroup> runningGroups,
-    TaskRunGroupRepository repo, {
-    required DateTime selectedRangeStart,
-    required DateTime selectedRangeEnd,
-    required List<TaskRunGroup> allGroups,
-    required PomodoroSession? activeSession,
-    required DateTime now,
-  }) async {
-    final selectedRange = formatConflictRange(
-      selectedRangeStart,
-      selectedRangeEnd,
-      now: now,
-    );
-    final shouldCancel = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Conflict with running group'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Selected range: $selectedRange'),
-            const SizedBox(height: 8),
-            const Text('Running blockers:'),
-            const SizedBox(height: 6),
-            ...runningGroups.map((group) {
-              final window = resolveConflictWindow(
-                group: group,
-                allGroups: allGroups,
-                activeSession: activeSession,
-                now: now,
-                fallbackNoticeMinutes: _noticeFallbackMinutes,
-              );
-              if (window == null) {
-                final fallbackName = group.tasks.isNotEmpty
-                    ? group.tasks.first.name
-                    : 'Task group';
-                return Text('• $fallbackName');
-              }
-              final range = formatConflictRange(
-                window.start,
-                window.end,
-                now: now,
-              );
-              return Text('• ${window.groupName} — $range');
-            }),
-            const SizedBox(height: 8),
-            const Text('Cancel the running group to continue?'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Cancel running group'),
-          ),
-        ],
-      ),
-    );
-    if (shouldCancel != true) return false;
-    final updatedAt = DateTime.now();
-    for (final group in runningGroups) {
-      await repo.save(
-        group.copyWith(
-          status: TaskRunStatus.canceled,
-          canceledReason: TaskRunCanceledReason.user,
-          updatedAt: updatedAt,
-        ),
-      );
-    }
-    final sessionSnapshot = ref.read(activePomodoroSessionProvider);
-    if (sessionSnapshot != null) {
-      final activeGroupId = sessionSnapshot.groupId;
-      final canceledIds = runningGroups.map((group) => group.id).toSet();
-      if (activeGroupId == null || canceledIds.contains(activeGroupId)) {
-        final sessionRepo = ref.read(pomodoroSessionRepositoryProvider);
-        final deviceId = ref.read(deviceInfoServiceProvider).deviceId;
-        if (sessionSnapshot.ownerDeviceId == deviceId) {
-          await sessionRepo.clearSessionAsOwner();
-        } else {
-          await sessionRepo.clearSessionIfGroupNotRunning();
-        }
-      }
-    }
-    return true;
-  }
-
-  Future<bool> _resolveScheduledConflict(
-    BuildContext context,
-    List<TaskRunGroup> scheduledGroups,
-    TaskRunGroupRepository repo, {
-    required DateTime selectedRangeStart,
-    required DateTime selectedRangeEnd,
-    required List<TaskRunGroup> allGroups,
-    required PomodoroSession? activeSession,
-    required DateTime now,
-  }) async {
-    final selectedRange = formatConflictRange(
-      selectedRangeStart,
-      selectedRangeEnd,
-      now: now,
-    );
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Conflict with scheduled group'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Selected range: $selectedRange'),
-            const SizedBox(height: 8),
-            const Text('Scheduled blockers:'),
-            const SizedBox(height: 6),
-            ...scheduledGroups.map((group) {
-              final window = resolveConflictWindow(
-                group: group,
-                allGroups: allGroups,
-                activeSession: activeSession,
-                now: now,
-                fallbackNoticeMinutes: _noticeFallbackMinutes,
-              );
-              if (window == null) {
-                final fallbackName = group.tasks.isNotEmpty
-                    ? group.tasks.first.name
-                    : 'Task group';
-                return Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text('• $fallbackName'),
-                );
-              }
-              final range = formatConflictRange(
-                window.start,
-                window.end,
-                now: now,
-              );
-              return Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text('• ${window.groupName} — $range'),
-              );
-            }),
-            const SizedBox(height: 8),
-            const Text('Delete conflicting scheduled groups to continue?'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete scheduled group'),
-          ),
-        ],
-      ),
-    );
-    if (shouldDelete != true) return false;
-    for (final group in scheduledGroups) {
-      await repo.delete(group.id);
-    }
-    return true;
   }
 
   List<TaskRunItem> _cloneRunItems(List<TaskRunItem> items) {

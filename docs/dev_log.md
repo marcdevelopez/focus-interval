@@ -27,7 +27,7 @@ Formatting rules:
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last closed bug fix: **BUG-029 superseded closure sync completed on 06/05/2026 (`Block 763`, commit `12bd0fa`)**
 Current focus: **Deterministic overlap model rollout completed through Corte C (pending merge and branch closure sync)**
-Last update: **07/05/2026**
+Last update: **08/05/2026**
 
 ---
 
@@ -19046,3 +19046,81 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 - Deterministic model rollout is complete across **Corte A + Corte B1 + Corte B2 + Corte C**.
 - Legacy late-start queue UI route/screen and mirror-overlap modal/banner runtime path are retired.
 - Branch is ready for closure commit + PR to `develop` after hash-stamp sync.
+
+---
+
+## Block 768 — Deterministic at-risk predictive drift warning (08/05/2026)
+
+**Current branch intent:** Close deterministic validation gap by warning when a running/paused group's projected end reaches the next scheduled start, without reintroducing conflict-resolution UI.
+**Branch:** `feature/deterministic-conflict-model-hub`
+**Commit:** `pending-local`
+**Scope:** specs contract update + coordinator trigger update + Run Mode snackbar copy + deterministic regression tests
+
+### Work completed
+
+- `docs/specs.md`
+  - Expanded section 6.4 at-risk warning trigger with predictive drift semantics:
+    - execution-window trigger remains (`scheduledStartTime <= now < theoreticalEndTime`)
+    - new predictive trigger added (`projectedEnd(running/paused) >= scheduledStartTime`) even when `now < scheduledStartTime`
+  - Updated section 10.4.5.a to mirror the same informational-warning trigger contract.
+- `lib/presentation/viewmodels/scheduled_group_coordinator.dart`
+  - Updated `_resolveAtRiskScheduledGroupIds` to mark scheduled groups as at-risk on either:
+    - active execution window, or
+    - predictive drift from the current running/paused blocker projected end.
+  - Added `_resolveProjectedRunningBlockerEnd` helper using paused-session projection (`resolveProjectedRunningEnd`).
+- `lib/presentation/screens/timer_screen.dart`
+  - Refined at-risk snackbar copy to include the first affected scheduled group and start time while keeping the existing single `OK` dismissal action and non-blocking behavior.
+- Tests
+  - `test/presentation/viewmodels/scheduled_group_coordinator_test.dart`
+    - updated pre-window expectation for deterministic predictive trigger,
+    - added explicit no-risk pre-window case when blocker projected end is still before scheduled start,
+    - added paused-projection case that reaches scheduled start before window entry.
+  - `test/presentation/timer_screen_completion_navigation_test.dart`
+    - updated at-risk snackbar expectation to the new contextual message format.
+- `docs/roadmap.md`
+  - Added 08/05/2026 status note for deterministic predictive at-risk warning expansion.
+
+### Local verification
+
+- `flutter analyze` -> PASS (`No issues found!`)
+- `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart` -> PASS (`All tests passed`)
+- `flutter test test/presentation/timer_screen_completion_navigation_test.dart` -> PASS (`All tests passed`)
+
+### Status after this block
+
+- Deterministic at-risk warning now covers both:
+  - scheduled groups already inside execution window, and
+  - scheduled groups at predictive drift risk before scheduled start.
+- Conflict handling remains informational-only (snackbar + `OK`), with no modal and no resolution branch reintroduction.
+
+---
+
+## Block 769 — Deterministic closure packet synchronized (08/05/2026)
+
+**Current branch intent:** Close the deterministic validation packet formally and synchronize closure traceability docs before merge.
+**Branch:** `feature/deterministic-conflict-model-hub`
+**Commit:** `pending-local`
+**Scope:** validation packet status + ledger/dev-log closure sync
+
+### Work completed
+
+- `docs/bugs/validation_deterministic_2026_05_07/plan_validacion_rapida_fix.md`
+  - Updated status to `Closed/OK (08/05/2026)` with closure note for scenarios A-F + regression smoke.
+  - Preserved a non-blocking note for one transient ownership-smoke visual mismatch that could not be reproduced.
+- `docs/validation/validation_ledger.md`
+  - Added `RVP-074` as `Closed/OK` to register deterministic closure packet traceability and evidence paths.
+- `docs/bugs/validation_deterministic_2026_05_07/quick_pass_checklist.md`
+  - Closure check confirmed fully checked (`Exact repro`, `Regression smoke`, `Local gate`).
+
+### Validation evidence confirmed
+
+- Runtime logs with current hash tag `03047b5` are present for:
+  - Android (`2026-05-08_deterministic_03047b5_android_RMX3771_debug.log`)
+  - iOS (`2026-05-08_deterministic_03047b5_ios_debug.log`)
+  - Chrome (`2026-05-08_deterministic_03047b5_chrome_debug.log`)
+- Legacy conflict-modal signature scan on `*_deterministic_03047b5_*.log` returned no matches (`rg` exit code `1` as expected for empty result).
+
+### Status after this block
+
+- Deterministic validation packet (`docs/bugs/validation_deterministic_2026_05_07/`) is now formally **Closed/OK**.
+- Closure traceability is synchronized across plan + checklist + global validation ledger + dev log.

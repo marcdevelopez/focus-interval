@@ -410,10 +410,14 @@ Running/paused priority
   execution.
 - While a running/paused group is active, overlapping scheduled groups are not
   promoted to foreground.
-- While a blocker is active, if a scheduled group has already entered its
-  execution window (`scheduledStartTime <= now < theoreticalEndTime`) and cannot
-  be promoted yet, show a non-blocking warning snackbar with a single `OK`
-  action to make the risk explicit.
+- While a blocker is active, if a scheduled group cannot be promoted yet and
+  either condition is true, show a non-blocking warning snackbar with a single
+  `OK` action to make the risk explicit:
+  - The group already entered its execution window
+    (`scheduledStartTime <= now < theoreticalEndTime`).
+  - Predictive drift is already present:
+    `projectedEnd(active running/paused blocker) >= scheduledStartTime`, even if
+    `now < scheduledStartTime`.
 - The warning is informational only (no conflict modal, no branch options) and
   must be shown at most once per affected group per blocker session.
 - When the blocker ends/cancels, the coordinator re-evaluates scheduled groups
@@ -440,6 +444,8 @@ Lost policy (Perdido)
   - `status = canceled`
   - `canceledReason = lost`
 - Legacy `canceledReason = missedSchedule` is treated as Lost in UI and logic.
+- In Groups Hub, Lost items are shown inside the **Canceled** section (no
+  dedicated Lost section). They are distinguished by `Reason: Lost`.
 - Lost groups are recoverable user actions (re-plan or run-again style flow).
 
 Ownership and authority
@@ -1847,9 +1853,11 @@ The list rebuilds automatically when tasks change.
 - Controls must share a full-size button style (no compact sizing tied to owner/mirror state).
 - The layout must remain stable without overlap or clipping.
 - If one or more scheduled groups are currently blocked by the active
-  running/paused group and are inside their execution windows, show the same
-  informational snackbar with `OK` described in section 6.4. This snackbar does
-  not alter control availability and does not open any conflict-resolution flow.
+  running/paused group and are inside their execution windows, or already in
+  predictive-drift risk (`projectedEnd(blocker) >= scheduledStartTime`), show
+  the same informational snackbar with `OK` described in section 6.4. This
+  snackbar does not alter control availability and does not open any
+  conflict-resolution flow.
 
 ### **10.4.6. Transitions**
 
@@ -2564,6 +2572,9 @@ Entry points
 List fields per group
 
 - **Group name** (primary title on the card)
+- History sections:
+  - `Completed`
+  - `Canceled` (includes manual canceled + Lost items)
 - If status = canceled and canceledReason is present, show a short reason label:
   - interrupted → "Interrupted"
   - conflict → "Conflict"

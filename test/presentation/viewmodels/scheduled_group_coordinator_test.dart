@@ -1627,64 +1627,132 @@ void main() {
       },
     );
 
-    test('keeps at-risk set empty before execution window starts', () async {
-      final groupRepo = FakeTaskRunGroupRepository();
-      final sessionRepo = FakePomodoroSessionRepository();
-      final appModeService = AppModeService.memory();
-      final container = ProviderContainer(
-        overrides: [
-          appModeServiceProvider.overrideWithValue(appModeService),
-          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
-          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
-        ],
-      );
-      addTearDown(() {
-        groupRepo.dispose();
-        sessionRepo.dispose();
-        container.dispose();
-      });
+    test(
+      'marks at-risk set before execution window when projected end reaches start',
+      () async {
+        final groupRepo = FakeTaskRunGroupRepository();
+        final sessionRepo = FakePomodoroSessionRepository();
+        final appModeService = AppModeService.memory();
+        final container = ProviderContainer(
+          overrides: [
+            appModeServiceProvider.overrideWithValue(appModeService),
+            taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+            pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          ],
+        );
+        addTearDown(() {
+          groupRepo.dispose();
+          sessionRepo.dispose();
+          container.dispose();
+        });
 
-      final sub = container.listen<ScheduledGroupAction?>(
-        scheduledGroupCoordinatorProvider,
-        (_, __) {},
-      );
-      addTearDown(sub.close);
+        final sub = container.listen<ScheduledGroupAction?>(
+          scheduledGroupCoordinatorProvider,
+          (_, __) {},
+        );
+        addTearDown(sub.close);
 
-      final coordinator = container.read(
-        scheduledGroupCoordinatorProvider.notifier,
-      );
+        final coordinator = container.read(
+          scheduledGroupCoordinatorProvider.notifier,
+        );
 
-      final now = DateTime.now();
-      final running = _buildRunningGroup(
-        id: 'running-1',
-        start: now.subtract(const Duration(minutes: 30)),
-        theoreticalEnd: now.add(const Duration(minutes: 30)),
-      );
-      final scheduled = _buildScheduledGroup(
-        id: 'scheduled-1',
-        scheduledStart: now.add(const Duration(minutes: 10)),
-        durationMinutes: 30,
-        noticeMinutes: 5,
-      );
-      final preRunStart = scheduled.scheduledStartTime!.subtract(
-        Duration(minutes: 5),
-      );
-      expect(running.theoreticalEndTime.isAfter(preRunStart), isTrue);
-      expect(now.isBefore(preRunStart), isTrue);
+        final now = DateTime.now();
+        final running = _buildRunningGroup(
+          id: 'running-1',
+          start: now.subtract(const Duration(minutes: 30)),
+          theoreticalEnd: now.add(const Duration(minutes: 30)),
+        );
+        final scheduled = _buildScheduledGroup(
+          id: 'scheduled-1',
+          scheduledStart: now.add(const Duration(minutes: 10)),
+          durationMinutes: 30,
+          noticeMinutes: 5,
+        );
+        final preRunStart = scheduled.scheduledStartTime!.subtract(
+          Duration(minutes: 5),
+        );
+        expect(running.theoreticalEndTime.isAfter(preRunStart), isTrue);
+        expect(now.isBefore(preRunStart), isTrue);
 
-      coordinator.debugEvaluateRunningOverlap(
-        running: [running],
-        scheduled: [scheduled],
-        allGroups: [running, scheduled],
-        session: null,
-        now: now,
-      );
+        coordinator.debugEvaluateRunningOverlap(
+          running: [running],
+          scheduled: [scheduled],
+          allGroups: [running, scheduled],
+          session: null,
+          now: now,
+        );
 
-      final atRiskIds = container.read(atRiskScheduledGroupIdsProvider);
-      final decision = container.read(runningOverlapDecisionProvider);
-      expect(atRiskIds, isEmpty);
-      expect(decision, isNull);
-    });
+        final atRiskIds = container.read(atRiskScheduledGroupIdsProvider);
+        final decision = container.read(runningOverlapDecisionProvider);
+        expect(atRiskIds, contains(scheduled.id));
+        expect(decision, isNull);
+      },
+    );
+
+    test(
+      'keeps at-risk set empty before execution window when projected end is before start',
+      () async {
+        final groupRepo = FakeTaskRunGroupRepository();
+        final sessionRepo = FakePomodoroSessionRepository();
+        final appModeService = AppModeService.memory();
+        final container = ProviderContainer(
+          overrides: [
+            appModeServiceProvider.overrideWithValue(appModeService),
+            taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+            pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          ],
+        );
+        addTearDown(() {
+          groupRepo.dispose();
+          sessionRepo.dispose();
+          container.dispose();
+        });
+
+        final sub = container.listen<ScheduledGroupAction?>(
+          scheduledGroupCoordinatorProvider,
+          (_, __) {},
+        );
+        addTearDown(sub.close);
+
+        final coordinator = container.read(
+          scheduledGroupCoordinatorProvider.notifier,
+        );
+
+        final now = DateTime.now();
+        final running = _buildRunningGroup(
+          id: 'running-1',
+          start: now.subtract(const Duration(minutes: 30)),
+          theoreticalEnd: now.add(const Duration(minutes: 5)),
+        );
+        final scheduled = _buildScheduledGroup(
+          id: 'scheduled-1',
+          scheduledStart: now.add(const Duration(minutes: 12)),
+          durationMinutes: 30,
+          noticeMinutes: 5,
+        );
+        final preRunStart = scheduled.scheduledStartTime!.subtract(
+          Duration(minutes: 5),
+        );
+        expect(
+          running.theoreticalEndTime.isBefore(scheduled.scheduledStartTime!),
+          isTrue,
+        );
+        expect(now.isBefore(preRunStart), isTrue);
+
+        coordinator.debugEvaluateRunningOverlap(
+          running: [running],
+          scheduled: [scheduled],
+          allGroups: [running, scheduled],
+          session: null,
+          now: now,
+        );
+
+        final atRiskIds = container.read(atRiskScheduledGroupIdsProvider);
+        final decision = container.read(runningOverlapDecisionProvider);
+        expect(atRiskIds, isEmpty);
+        expect(decision, isNull);
+      },
+    );
 
     test(
       'marks at-risk set for non-owner session when window is active',
@@ -1808,6 +1876,69 @@ void main() {
         final atRiskIds = container.read(atRiskScheduledGroupIdsProvider);
         final decision = container.read(runningOverlapDecisionProvider);
         expect(atRiskIds, isEmpty);
+        expect(decision, isNull);
+      },
+    );
+
+    test(
+      'marks at-risk set when paused projection reaches scheduled start',
+      () async {
+        final groupRepo = FakeTaskRunGroupRepository();
+        final sessionRepo = FakePomodoroSessionRepository();
+        final appModeService = AppModeService.memory();
+        final container = ProviderContainer(
+          overrides: [
+            appModeServiceProvider.overrideWithValue(appModeService),
+            taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+            pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          ],
+        );
+        addTearDown(() {
+          groupRepo.dispose();
+          sessionRepo.dispose();
+          container.dispose();
+        });
+
+        final sub = container.listen<ScheduledGroupAction?>(
+          scheduledGroupCoordinatorProvider,
+          (_, __) {},
+        );
+        addTearDown(sub.close);
+
+        final coordinator = container.read(
+          scheduledGroupCoordinatorProvider.notifier,
+        );
+
+        final now = DateTime.now();
+        final running = _buildRunningGroup(
+          id: 'running-paused-predictive',
+          start: now.subtract(const Duration(minutes: 30)),
+          theoreticalEnd: now.add(const Duration(minutes: 2)),
+        );
+        final scheduled = _buildScheduledGroup(
+          id: 'scheduled-paused-predictive',
+          scheduledStart: now.add(const Duration(minutes: 6)),
+          durationMinutes: 30,
+          noticeMinutes: 5,
+        );
+        final session = _buildPausedSession(
+          groupId: running.id,
+          ownerId: container.read(deviceInfoServiceProvider).deviceId,
+          now: now,
+        );
+
+        coordinator.debugEvaluateRunningOverlap(
+          running: [running],
+          scheduled: [scheduled],
+          allGroups: [running, scheduled],
+          session: session,
+          now: now,
+        );
+
+        final atRiskIds = container.read(atRiskScheduledGroupIdsProvider);
+        final decision = container.read(runningOverlapDecisionProvider);
+        expect(now.isBefore(scheduled.scheduledStartTime!), isTrue);
+        expect(atRiskIds, contains(scheduled.id));
         expect(decision, isNull);
       },
     );

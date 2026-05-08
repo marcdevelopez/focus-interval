@@ -1246,8 +1246,8 @@ void main() {
         findsNothing,
       );
 
-      const warningOne =
-          '1 scheduled group is at risk while this group is active.';
+      final warningOne =
+          '"${scheduled.tasks.first.name}" (start ${DateFormat('HH:mm').format(scheduled.scheduledStartTime!)}) is at risk while this group is active.';
       container.read(atRiskScheduledGroupIdsProvider.notifier).state = {
         scheduled.id,
       };
@@ -2512,62 +2512,125 @@ void main() {
     }
   });
 
-  testWidgets('Groups Hub maps missed-schedule cancellations to Lost label', (
-    tester,
-  ) async {
-    SharedPreferences.setMockInitialValues({});
-    final now = DateTime.now();
-    final groupRepo = FakeTaskRunGroupRepository()
-      ..seed(
-        _buildCanceledGroup(
-          id: 'hub-missed-schedule',
-          now: now,
-        ).copyWith(canceledReason: TaskRunCanceledReason.missedSchedule),
+  testWidgets(
+    'Groups Hub Start now blocks running conflict with snackbar and no modal',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final groupRepo = FakeTaskRunGroupRepository()
+        ..seed(_buildRunningGroup(id: 'hub-conflict-running', now: now))
+        ..seed(_buildScheduledGroup(id: 'hub-conflict-scheduled', now: now));
+      final sessionRepo = FakePomodoroSessionRepository(null);
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
       );
-    final sessionRepo = FakePomodoroSessionRepository(null);
-    final appModeService = AppModeService.memory();
-    var disposed = false;
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+        await _pumpGroupsHubScreen(tester: tester, container: container);
+        await _pumpUntilFound(tester, find.text('Start now'));
 
-    final container = ProviderContainer(
-      overrides: [
-        firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
-        firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
-        taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
-        pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
-        appModeServiceProvider.overrideWithValue(appModeService),
-        soundServiceProvider.overrideWithValue(FakeSoundService()),
-        timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
-      ],
-    );
-    try {
-      await container.read(appModeProvider.notifier).setAccount();
-      await _pumpGroupsHubScreen(tester: tester, container: container);
+        await tester.tap(find.text('Start now'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
 
-      final hubList = find.byType(ListView).first;
-      await _dragUntilFound(
-        tester,
-        scrollable: hubList,
-        target: find.text('Lost'),
-      );
+        expect(
+          find.text(
+            'Another group is already running. Finish it before starting a new one.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.byType(AlertDialog), findsNothing);
+        expect(find.text('Conflict with running group'), findsNothing);
+        expect(find.text('Cancel running group'), findsNothing);
 
-      expect(find.text('Lost'), findsWidgets);
-      expect(find.text('No lost groups yet'), findsNothing);
-      expect(find.text('Missed schedule'), findsNothing);
+        final unchanged = await groupRepo.getById('hub-conflict-scheduled');
+        expect(unchanged, isNotNull);
+        expect(unchanged!.status, TaskRunStatus.scheduled);
 
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump(const Duration(milliseconds: 100));
-      container.dispose();
-      sessionRepo.dispose();
-      groupRepo.dispose();
-      disposed = true;
-    } finally {
-      if (!disposed) {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
         container.dispose();
         sessionRepo.dispose();
         groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
       }
-    }
-  });
+    },
+  );
+
+  testWidgets(
+    'Groups Hub maps missed-schedule cancellations to Lost reason in Canceled',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final now = DateTime.now();
+      final groupRepo = FakeTaskRunGroupRepository()
+        ..seed(
+          _buildCanceledGroup(
+            id: 'hub-missed-schedule',
+            now: now,
+          ).copyWith(canceledReason: TaskRunCanceledReason.missedSchedule),
+        );
+      final sessionRepo = FakePomodoroSessionRepository(null);
+      final appModeService = AppModeService.memory();
+      var disposed = false;
+
+      final container = ProviderContainer(
+        overrides: [
+          firebaseAuthServiceProvider.overrideWithValue(StubAuthService()),
+          firestoreServiceProvider.overrideWithValue(StubFirestoreService()),
+          taskRunGroupRepositoryProvider.overrideWithValue(groupRepo),
+          pomodoroSessionRepositoryProvider.overrideWithValue(sessionRepo),
+          appModeServiceProvider.overrideWithValue(appModeService),
+          soundServiceProvider.overrideWithValue(FakeSoundService()),
+          timeSyncServiceProvider.overrideWithValue(FakeTimeSyncService()),
+        ],
+      );
+      try {
+        await container.read(appModeProvider.notifier).setAccount();
+        await _pumpGroupsHubScreen(tester: tester, container: container);
+
+        final hubList = find.byType(ListView).first;
+        await _dragUntilFound(
+          tester,
+          scrollable: hubList,
+          target: find.text('Canceled'),
+        );
+
+        expect(find.text('Canceled'), findsWidgets);
+        expect(find.text('Lost'), findsWidgets);
+        expect(find.text('Missed schedule'), findsNothing);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 100));
+        container.dispose();
+        sessionRepo.dispose();
+        groupRepo.dispose();
+        disposed = true;
+      } finally {
+        if (!disposed) {
+          container.dispose();
+          sessionRepo.dispose();
+          groupRepo.dispose();
+        }
+      }
+    },
+  );
 
   testWidgets(
     'Groups Hub paused running card updates Ends projection in real time',

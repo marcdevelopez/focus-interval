@@ -468,6 +468,13 @@ NOTE: TimerScreen already depends on the ViewModel (no local timer/demo config).
           Groups Hub with `lost/missedSchedule -> Lost` mapping. Local gate
           PASS (`flutter analyze` + focused deterministic widget/viewmodel
           suites).
+      08/05/2026: Deterministic at-risk warning expanded with predictive drift
+                  trigger (`projectedEnd(running/paused) >= scheduledStart`)
+                  so pause-driven extension warns before the scheduled window
+                  starts; warning remains informational-only (`OK` snackbar).
+      08/05/2026: Deterministic validation closure packet finalized (A-F +
+                  regression smoke) with `03047b5` runtime evidence on Android,
+                  iOS, and Chrome; closure synchronized in validation docs.
       Hive planned for v1.2; logger deferred post-MVP; SharedPreferences used for Local Mode storage.
 ```
 

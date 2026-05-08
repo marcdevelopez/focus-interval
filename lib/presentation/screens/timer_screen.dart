@@ -974,9 +974,48 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       ..addAll(atRiskIds);
 
     final count = atRiskIds.length;
-    final noun = count == 1 ? 'group is' : 'groups are';
-    final message =
-        '$count scheduled $noun at risk while this group is active.';
+    final allGroups = ref.read(taskRunGroupStreamProvider).value ?? const [];
+    final activeSession = ref.read(activePomodoroSessionProvider);
+    final now = DateTime.now();
+    TaskRunGroup? primaryGroup;
+    DateTime? primaryStart;
+    for (final group in allGroups) {
+      if (!atRiskIds.contains(group.id)) continue;
+      final effectiveStart =
+          resolveEffectiveScheduledStart(
+            group: group,
+            allGroups: allGroups,
+            activeSession: activeSession,
+            now: now,
+          ) ??
+          group.scheduledStartTime;
+      if (primaryGroup == null ||
+          (effectiveStart != null &&
+              (primaryStart == null ||
+                  effectiveStart.isBefore(primaryStart)))) {
+        primaryGroup = group;
+        primaryStart = effectiveStart;
+      }
+    }
+    final message = (() {
+      if (primaryGroup == null) {
+        final noun = count == 1 ? 'group is' : 'groups are';
+        return '$count scheduled $noun at risk while this group is active.';
+      }
+      final start = primaryStart;
+      final startLabel = start == null
+          ? '--:--'
+          : DateFormat('HH:mm').format(start);
+      final primaryName = primaryGroup.tasks.isNotEmpty
+          ? primaryGroup.tasks.first.name
+          : 'Scheduled group';
+      if (count == 1) {
+        return '"$primaryName" (start $startLabel) is at risk while this group is active.';
+      }
+      final additional = count - 1;
+      final extraNoun = additional == 1 ? 'group' : 'groups';
+      return '"$primaryName" (start $startLabel) and $additional more scheduled $extraNoun are at risk while this group is active.';
+    })();
 
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
