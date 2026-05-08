@@ -35,12 +35,6 @@ String _formatGroupDateTime(DateTime? value, DateTime now) {
       : _groupsHubDateTimeFormat.format(value);
 }
 
-bool _isLostCanceledGroup(TaskRunGroup group) {
-  if (group.status != TaskRunStatus.canceled) return false;
-  return group.canceledReason == TaskRunCanceledReason.lost ||
-      group.canceledReason == TaskRunCanceledReason.missedSchedule;
-}
-
 class GroupsHubScreen extends ConsumerStatefulWidget {
   const GroupsHubScreen({super.key});
 
@@ -53,7 +47,6 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
   String? _dismissedOwnershipRequestKey;
   String? _dismissedOwnershipRequesterId;
   static const int _completedHistoryLimit = 7;
-  static const int _lostHistoryLimit = 7;
   static const int _canceledHistoryLimit = 7;
   Timer? _nowTickTimer;
   DateTime _now = DateTime.now();
@@ -285,16 +278,7 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                           .where((g) => g.status == TaskRunStatus.canceled)
                           .toList()
                         ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-                  final lostGroups = canceledGroups
-                      .where(_isLostCanceledGroup)
-                      .toList(growable: false);
-                  final canceledOnlyGroups = canceledGroups
-                      .where((group) => !_isLostCanceledGroup(group))
-                      .toList(growable: false);
-                  final lostSlice = lostGroups
-                      .take(_lostHistoryLimit)
-                      .toList(growable: false);
-                  final canceledSlice = canceledOnlyGroups
+                  final canceledSlice = canceledGroups
                       .take(_canceledHistoryLimit)
                       .toList(growable: false);
 
@@ -302,7 +286,6 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                       runningGroups.isNotEmpty ||
                       scheduledGroups.isNotEmpty ||
                       completedSlice.isNotEmpty ||
-                      lostSlice.isNotEmpty ||
                       canceledSlice.isNotEmpty;
 
                   final children = <Widget>[];
@@ -425,25 +408,6 @@ class _GroupsHubScreenState extends ConsumerState<GroupsHubScreen> {
                         actions: [
                           _GroupAction(
                             label: 'Run again',
-                            onPressed: () =>
-                                _handleRunAgain(context, ref, group),
-                          ),
-                        ],
-                        now: now,
-                      ),
-                    const SizedBox(height: 20),
-                    _SectionHeader(title: 'Lost'),
-                    if (lostSlice.isEmpty)
-                      const _EmptySection(label: 'No lost groups yet'),
-                    for (final group in lostSlice)
-                      _GroupCard(
-                        group: group,
-                        activeSession: activeSession,
-                        preRunStartOverride: null,
-                        onTap: () => _showSummaryDialog(context, group),
-                        actions: [
-                          _GroupAction(
-                            label: 'Re-plan group',
                             onPressed: () =>
                                 _handleRunAgain(context, ref, group),
                           ),

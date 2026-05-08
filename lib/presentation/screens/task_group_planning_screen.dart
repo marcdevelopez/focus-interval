@@ -1500,8 +1500,8 @@ class _TaskGroupPlanningScreenState
     );
     if (pickedDate == null) return null;
     if (!context.mounted) return null;
-    final pickedTime = await showTimePicker(
-      context: context,
+    final pickedTime = await _show24HourTimePicker(
+      context,
       initialTime: TimeOfDay.fromDateTime(initial),
       helpText: timeHelpText,
     );
@@ -1524,13 +1524,32 @@ class _TaskGroupPlanningScreenState
       hour: initial.inHours.clamp(0, 23),
       minute: initial.inMinutes.remainder(60),
     );
-    final picked = await showTimePicker(
-      context: context,
+    final picked = await _show24HourTimePicker(
+      context,
       initialTime: initialTime,
       helpText: timeHelpText,
     );
     if (picked == null) return null;
     return Duration(hours: picked.hour, minutes: picked.minute);
+  }
+
+  Future<TimeOfDay?> _show24HourTimePicker(
+    BuildContext context, {
+    required TimeOfDay initialTime,
+    String? helpText,
+  }) {
+    return showTimePicker(
+      context: context,
+      initialTime: initialTime,
+      helpText: helpText,
+      builder: (context, child) {
+        if (child == null) return const SizedBox.shrink();
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child,
+        );
+      },
+    );
   }
 
   void _showSnackBar(String message) {

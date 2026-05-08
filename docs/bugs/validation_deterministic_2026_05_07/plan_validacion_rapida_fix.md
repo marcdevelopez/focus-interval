@@ -2,11 +2,11 @@
 
 ## 1. Header
 
-- Date: 07/05/2026
+- Date: 07/05/2026 (updated 08/05/2026)
 - Branch: `feature/deterministic-conflict-model-hub`
-- Working commit hash: `f6ea1d2` (plus `1b009cd` in same branch)
+- Working commit hash: `03047b5` (post-fix predictive-drift snackbar trigger)
 - Bugs covered: deterministic conflict-model migration closure packet (post PR #185)
-- Target devices: Android owner (`RMX3771`) + macOS mirror (`macos`) + Chrome mirror (`localhost:5001`)
+- Target devices: Android owner (`RMX3771`) + iOS mirror (`ios simulator`) + macOS mirror (`macos`) + Chrome mirror (`localhost:5001`)
 
 ## 2. Objetivo
 
@@ -54,7 +54,7 @@ Steps:
 
 Expected result with fix:
 1. Group is marked canceled with `canceledReason = 'lost'`.
-2. Group appears under `Lost` section, not `Canceled` generic section.
+2. Group appears under `Canceled` section with `Reason: Lost`.
 3. No runtime conflict modal appears.
 
 Reference result without fix:
@@ -79,14 +79,14 @@ Expected result with fix:
 Reference result without fix:
 1. Modal-driven overlap resolution path and repetitive stale prompts could appear.
 
-### Scenario D — Re-plan from Lost keeps deterministic planning behavior
+### Scenario D — Re-plan from canceled Lost item keeps deterministic planning behavior
 
 Preconditions:
-1. At least one group in `Lost` section.
+1. At least one canceled group with `Reason: Lost`.
 2. Existing scheduled/running blockers present.
 
 Steps:
-1. From Lost card, tap `Re-plan group`.
+1. From the canceled lost card, tap `Re-plan group`.
 2. In Plan Group, choose a conflicting slot first, then adjust.
 3. Confirm with a non-conflicting slot.
 
@@ -101,7 +101,7 @@ Reference result without fix:
 ### Scenario E — Planning conflict block uses effective windows and disables Confirm
 
 Preconditions:
-1. Postponed chain exists (`postponedAfterGroupId`) with paused running anchor.
+1. At least one non-terminal blocker exists (`running`, `paused`, or `scheduled`).
 2. Plan Group opened for a new scheduled group.
 
 Steps:
@@ -111,26 +111,49 @@ Steps:
 
 Expected result with fix:
 1. `Confirm` is disabled while conflicts exist.
-2. Chips show effective `groupName/start/end` (paused/postponed aware), not raw stale range.
+2. Chips show effective `groupName/start/end` (running/paused projection aware), not stale range.
 3. No conflict modal appears.
 
 Reference result without fix:
 1. Inline chip could show raw stored range and mislead blocker identification.
+
+### Scenario F — Future start selection remains stable in Plan Group (12:00 regression)
+
+Preconditions:
+1. One running group active (for example ending at `11:59`).
+2. Plan Group opened in Chrome/iOS for a second group.
+
+Steps:
+1. In `Schedule by start time`, edit start to a future value (e.g., `12:00`).
+2. Return to plan card and review selected start label + conflict chip context.
+3. Confirm selected time is still the chosen future value.
+
+Expected result with fix:
+1. Selected start remains at the user-picked future time (e.g., `12:00`).
+2. Planner does not rewrite start to current planning time (`now`) while start is still in the future.
+3. Conflict block reflects the chosen schedule context, not an unintended fallback to current time.
+
+Reference result without fix:
+1. Selected future start could degrade to current local planning time (for example `11:46`), producing a false conflict context.
 
 ## 6. Comandos de ejecución
 
 ```bash
 # Android owner runtime validation
 flutter run -v --debug -d RMX3771 --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true \
-  2>&1 | tee docs/bugs/validation_deterministic_2026_05_07/logs/2026-05-07_deterministic_f6ea1d2_android_RMX3771_debug.log
+  2>&1 | tee docs/bugs/validation_deterministic_2026_05_07/logs/2026-05-08_deterministic_03047b5_android_RMX3771_debug.log
+
+# iOS mirror runtime validation
+flutter run -v --debug -d "iPhone 17 Pro" --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true \
+  2>&1 | tee docs/bugs/validation_deterministic_2026_05_07/logs/2026-05-08_deterministic_03047b5_ios_debug.log
 
 # macOS mirror runtime validation
 flutter run -v --debug -d macos --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true \
-  2>&1 | tee docs/bugs/validation_deterministic_2026_05_07/logs/2026-05-07_deterministic_f6ea1d2_macos_debug.log
+  2>&1 | tee docs/bugs/validation_deterministic_2026_05_07/logs/2026-05-08_deterministic_03047b5_macos_debug.log
 
 # Chrome mirror runtime validation
 flutter run -v --debug -d chrome --web-hostname=localhost --web-port=5001 --dart-define=APP_ENV=prod --dart-define=ALLOW_PROD_IN_DEBUG=true \
-  2>&1 | tee docs/bugs/validation_deterministic_2026_05_07/logs/2026-05-07_deterministic_f6ea1d2_chrome_debug.log
+  2>&1 | tee docs/bugs/validation_deterministic_2026_05_07/logs/2026-05-08_deterministic_03047b5_chrome_debug.log
 
 # Local gate logs
 flutter analyze \
@@ -153,7 +176,7 @@ flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart 
 ```bash
 # Legacy conflict-modal / queue traces should be absent
 grep -nE "Conflict with running group|Conflict with scheduled group|Cancel running group|Delete scheduled group|late-start-queue|lateStartQueue" \
-  docs/bugs/validation_deterministic_2026_05_07/logs/2026-05-07_deterministic_f6ea1d2_*.log
+  docs/bugs/validation_deterministic_2026_05_07/logs/*_deterministic_03047b5_*.log
 ```
 
 If any match appears in runtime logs during scenarios A-E, treat as regression candidate.
@@ -163,7 +186,7 @@ If any match appears in runtime logs during scenarios A-E, treat as regression c
 ```bash
 # Deterministic runtime signals expected across scenarios
 grep -nE "ScheduledActionDiag.*actionType=openTimer|Scheduling conflict|at risk while this group is active|Lost|route=/timer|route=/groups" \
-  docs/bugs/validation_deterministic_2026_05_07/logs/2026-05-07_deterministic_f6ea1d2_*.log
+  docs/bugs/validation_deterministic_2026_05_07/logs/*_deterministic_03047b5_*.log
 ```
 
 Plus visual evidence required in screenshots for scenarios B/C/D/E.
@@ -181,11 +204,12 @@ Close this packet only when all are PASS with attached evidence:
 1. Scenario A PASS (deterministic auto-start in execution window).
 2. Scenario B PASS (overdue -> Lost with correct reason/section).
 3. Scenario C PASS (at-risk snackbar dedup + re-arm; no modal).
-4. Scenario D PASS (Re-plan from Lost remains inline deterministic).
+4. Scenario D PASS (Re-plan from canceled Lost remains inline deterministic).
 5. Scenario E PASS (inline conflict chips use effective windows; Confirm disabled).
-6. Regression smoke PASS (ownership request/transfer flow unaffected, paused projection coherence maintained).
-7. Local gate PASS logs + device logs/screenshots synchronized in this packet.
+6. Scenario F PASS (future start remains stable; no auto-rewrite-to-now regression).
+7. Regression smoke PASS (ownership request/transfer flow unaffected, paused projection coherence maintained).
+8. Local gate PASS logs + device logs/screenshots synchronized in this packet.
 
 ## 10. Status
 
-Open (prepared on 07/05/2026; pending device execution evidence)
+Closed/OK (08/05/2026). All scenarios A-F and regression smoke are covered with device evidence (`03047b5`) on Android + iOS + Chrome. One transient ownership-smoke visual mismatch (`14:37 -> 14:38` in task-item range after transfer/resume while status box stayed `14:37`) was observed once and was not reproducible in repeated attempts.

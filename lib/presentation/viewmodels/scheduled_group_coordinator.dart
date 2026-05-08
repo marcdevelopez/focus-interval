@@ -927,6 +927,11 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
     int? noticeFallbackMinutes,
   }) {
     final ids = <String>{};
+    final projectedRunningBlockerEnd = _resolveProjectedRunningBlockerEnd(
+      allGroups: allGroups,
+      activeSession: activeSession,
+      now: now,
+    );
     for (final group in scheduled) {
       final window = _resolveScheduledExecutionWindow(
         group: group,
@@ -937,11 +942,38 @@ class ScheduledGroupCoordinator extends Notifier<ScheduledGroupAction?> {
       );
       final inExecutionWindow =
           !now.isBefore(window.start) && now.isBefore(window.end);
-      if (inExecutionWindow) {
+      final predictiveDrift =
+          projectedRunningBlockerEnd != null &&
+          now.isBefore(window.start) &&
+          !projectedRunningBlockerEnd.isBefore(window.start);
+      if (inExecutionWindow || predictiveDrift) {
         ids.add(group.id);
       }
     }
     return ids;
+  }
+
+  DateTime? _resolveProjectedRunningBlockerEnd({
+    required List<TaskRunGroup> allGroups,
+    required PomodoroSession? activeSession,
+    required DateTime now,
+  }) {
+    DateTime? latest;
+    for (final group in allGroups) {
+      if (group.status != TaskRunStatus.running) continue;
+      final projectedEnd =
+          resolveProjectedRunningEnd(
+            runningGroup: group,
+            activeSession: activeSession,
+            now: now,
+          ) ??
+          _resolveTheoreticalEndTime(group);
+      if (projectedEnd == null) continue;
+      if (latest == null || projectedEnd.isAfter(latest)) {
+        latest = projectedEnd;
+      }
+    }
+    return latest;
   }
 
   _ScheduledExecutionWindow _resolveScheduledExecutionWindow({
