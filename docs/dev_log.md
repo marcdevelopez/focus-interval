@@ -27,7 +27,7 @@ Formatting rules:
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last closed bug fix: **BUG-029 superseded closure sync completed on 06/05/2026 (`Block 763`, commit `12bd0fa`)**
 Current focus: **Deterministic overlap model rollout completed through Corte C (pending merge and branch closure sync)**
-Last update: **08/05/2026**
+Last update: **15/10/2026**
 
 ---
 
@@ -19124,3 +19124,49 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 - Deterministic validation packet (`docs/bugs/validation_deterministic_2026_05_07/`) is now formally **Closed/OK**.
 - Closure traceability is synchronized across plan + checklist + global validation ledger + dev log.
+
+---
+
+## Block 770 — v1.0 store-release program workspace created; environment diagnosis and safe restore point recorded (15/10/2026)
+
+**Current branch intent:** Process docs — version the approved v1.0 store-release planning artifacts; no runtime, spec, roadmap, backlog, ledger, or rule changes.
+**Branch:** `fix/docs-v1-release-program`
+**Commit:** Recorded in the follow-up hash-stamp commit before publication.
+
+### Work completed
+
+- Added the owner-facing planning artifacts under `docs/features/feature_2026_10_15_v1-store-release/`:
+  - `feature_plan.md`: strategic decisions, approval status, ordered stages, and Stage 1 execution tracking.
+  - `codex_handoff.md`: authorized Stage 1 procedure, including backup, BUG-036, lineage integration, and recovery.
+  - `docs_reconciliation_proposal.md`: D1/D2/D3 proposals only; none is approved or applied by this documentation PR.
+  - Three environment diagnosis logs, force-added with the owner's explicit publication approval for the public repository.
+- Preserved the owner's root notes, `respuesta-claude.md`, and private `docs/nuevas-funcionalidades/` files outside version control.
+- Preserved both pre-existing stashes without applying or dropping them.
+- Completed authorized local lineage bookkeeping in `fix/sync-main-into-develop`:
+  - Commit `9605f4ffc93c79f57d84a6815b074714ef317697` (`merge(git): integrate origin/main into develop lineage (PR #159/#160 ancestry)`).
+  - Parents: `ff30e15` and `65552c4`.
+  - Tree `89374764fc36ce853968b224390d7558cd4528df` is identical to `develop`.
+  - No integration-branch push; `main` and `develop` remain unchanged.
+
+### Environment diagnosis
+
+- The reported Account Mode loading/save failures were reproduced with the default debug environment (`APP_ENV=dev`) while Firebase emulators were unavailable. The captured log records `AppConfig: env=dev emulator=true` and repeated server-fetch failures.
+- With `APP_ENV=prod` and the explicit temporary `ALLOW_PROD_IN_DEBUG=true` override, logs show active execution on the iOS simulator and Android emulator, including Firebase Auth state confirmations on Android.
+- Local Mode and the physical Samsung device work according to the owner's manual checks; no device logs were supplied for those checks.
+- Cold app termination/reopen during a run remains pending regression validation. Repeated Run Mode mount/dispose while the backend is unreachable remains a candidate for reproduction with production Firebase and airplane mode.
+
+### Safe restore point and backup
+
+- Published tag `safety-20261015-develop-ff30e15-pre-main-sync` points to `ff30e15`, the historical validated baseline from 08/05/2026. The tag annotation explicitly records the current 217-pass/2-failure test baseline.
+- The tag covers versioned state only. Personal files, ignored evidence, planning documents, and the pending-merge snapshot were backed up separately by Claude on 15/10/2026 at 13:32.
+- The owner uploaded the five backup files to restricted Google Drive storage; Claude verified their presence and byte sizes. Codex rechecked all three local archive SHA-256 sums successfully before the local merge commit. Remote archive checksums were not independently verified by Codex.
+- Drive links and the private backup registry are not published. Recovery uses a revert PR or an explicit tree-restoration PR, as documented in `codex_handoff.md` section 8; never force-push `develop` or merge an old ancestor tag as a restoration.
+
+### Verification and next gate
+
+- `git fetch --all --prune` completed; `develop...origin/develop` is `0 0`.
+- Canonical bug-log preflight found no non-closed bugs and no open P0/P1 ledger items. Proposed D1 candidates remain unapplied.
+- This branch changes only the three planning documents, three explicitly approved logs, and this dev-log block/header. Code, tests, platform configuration, canonical specs, roadmap, backlog, ledger, and rules are unchanged.
+- `flutter analyze --no-pub` PASS (`No issues found!`, 37.8 s); Markdown whitespace check (`git diff --cached --check -- '*.md'`) PASS. The seven-file publication allowlist and the absence of private Drive links or detected credential tokens were checked before staging. Firebase UIDs in the logs are included under the owner's explicit publication approval. Raw log bytes, including original Flutter trailing whitespace, are preserved rather than normalized.
+- The known full-suite baseline remains 217 passed / 2 missing-`ProviderScope` failures; this documentation step does not claim BUG-036 is fixed. The approved test repair and its real-branch 219/219 gate follow only after this PR is reviewed and merged.
+- Stop before the documentation PR merge for Claude's review; no later Stage 1 step is started yet.
