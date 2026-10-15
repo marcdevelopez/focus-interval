@@ -175,7 +175,7 @@ matriz de 42 ideas decidida.
 |---|---|
 | 1.1 Respaldo | Completado previamente por Claude y el owner. Codex verificó de nuevo las tres sumas SHA-256 locales: OK; no se repitió el respaldo ni la subida. |
 | 1.2 Merge local | Completado: `9605f4ffc93c79f57d84a6815b074714ef317697`, `merge(git): integrate origin/main into develop lineage (PR #159/#160 ancestry)`. Padres: `ff30e15` y `65552c4`. Árbol: `89374764fc36ce853968b224390d7558cd4528df`, idéntico a `develop`. Solo en `fix/sync-main-into-develop`, sin push. |
-| 1.3 Documentación | En preparación en `fix/docs-v1-release-program`, desde `develop` (`ff30e15`). El PR se detiene antes del merge para revisión de Claude. D1/D2/D3 siguen sin aprobar ni aplicar. |
+| 1.3 Documentación | Preparada para revisión en `fix/docs-v1-release-program`, desde `develop` (`ff30e15`). Commit de contenido: `2f5ddf0e4743d573d5fc6c674a40ea2cb6ed2300`, `docs(v1-release): add v1.0 store-release program plan, Stage 1 handoff and doc-reconciliation proposal`. El PR se detiene antes del merge para revisión de Claude. D1/D2/D3 siguen sin aprobar ni aplicar. |
 | 1.4 BUG-036 | Pendiente del merge del PR documental. Los dos tests siguen sin modificar; el 219/219 todavía no se ha comprobado en la rama real. |
 | 1.5–1.6 Integración y verificación | Pendientes de los PRs anteriores y de sus revisiones. `main` y `develop` no se han movido. |
 

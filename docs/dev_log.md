@@ -19131,7 +19131,7 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 **Current branch intent:** Process docs — version the approved v1.0 store-release planning artifacts; no runtime, spec, roadmap, backlog, ledger, or rule changes.
 **Branch:** `fix/docs-v1-release-program`
-**Commit:** Recorded in the follow-up hash-stamp commit before publication.
+**Commit:** `2f5ddf0e4743d573d5fc6c674a40ea2cb6ed2300` (`docs(v1-release): add v1.0 store-release program plan, Stage 1 handoff and doc-reconciliation proposal`).
 
 ### Work completed
 
