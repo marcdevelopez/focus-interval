@@ -25,9 +25,9 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last closed bug fix: **BUG-029 superseded closure sync completed on 06/05/2026 (`Block 763`, commit `12bd0fa`)**
+Last closed bug fix: **BUG-036 planning-screen test harness, Closed/OK on 16/10/2026 (`Block 771`, implementation `40a7a1646951a38c66467f5393816af5ff318d49`); PR #187 integration into develop pending**
 Current focus: **Deterministic overlap model rollout completed through Corte C (pending merge and branch closure sync)**
-Last update: **08/05/2026**
+Last update: **16/10/2026**
 
 ---
 
@@ -19124,3 +19124,95 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 - Deterministic validation packet (`docs/bugs/validation_deterministic_2026_05_07/`) is now formally **Closed/OK**.
 - Closure traceability is synchronized across plan + checklist + global validation ledger + dev log.
+
+---
+
+## Block 770 — v1.0 store-release program workspace created; environment diagnosis and safe restore point recorded (15/10/2026)
+
+**Current branch intent:** Process docs — version the approved v1.0 store-release planning artifacts; no runtime, spec, roadmap, backlog, ledger, or rule changes.
+**Branch:** `fix/docs-v1-release-program`
+**Commit:** `2f5ddf0e4743d573d5fc6c674a40ea2cb6ed2300` (`docs(v1-release): add v1.0 store-release program plan, Stage 1 handoff and doc-reconciliation proposal`).
+
+### Work completed
+
+- Added the owner-facing planning artifacts under `docs/features/feature_2026_10_15_v1-store-release/`:
+  - `feature_plan.md`: strategic decisions, approval status, ordered stages, and Stage 1 execution tracking.
+  - `codex_handoff.md`: authorized Stage 1 procedure, including backup, BUG-036, lineage integration, and recovery.
+  - `docs_reconciliation_proposal.md`: D1/D2/D3 proposals only; none is approved or applied by this documentation PR.
+  - Three environment diagnosis logs, force-added with the owner's explicit publication approval for the public repository.
+- Preserved the owner's root notes, `respuesta-claude.md`, and private `docs/nuevas-funcionalidades/` files outside version control.
+- Preserved both pre-existing stashes without applying or dropping them.
+- Completed authorized local lineage bookkeeping in `fix/sync-main-into-develop`:
+  - Commit `9605f4ffc93c79f57d84a6815b074714ef317697` (`merge(git): integrate origin/main into develop lineage (PR #159/#160 ancestry)`).
+  - Parents: `ff30e15` and `65552c4`.
+  - Tree `89374764fc36ce853968b224390d7558cd4528df` is identical to `develop`.
+  - No integration-branch push; `main` and `develop` remain unchanged.
+
+### Environment diagnosis
+
+- The reported Account Mode loading/save failures were reproduced with the default debug environment (`APP_ENV=dev`) while Firebase emulators were unavailable. The captured log records `AppConfig: env=dev emulator=true` and repeated server-fetch failures.
+- With `APP_ENV=prod` and the explicit temporary `ALLOW_PROD_IN_DEBUG=true` override, logs show active execution on the iOS simulator and Android emulator, including Firebase Auth state confirmations on Android.
+- Local Mode and the physical Samsung device work according to the owner's manual checks; no device logs were supplied for those checks.
+- Cold app termination/reopen during a run remains pending regression validation. Repeated Run Mode mount/dispose while the backend is unreachable remains a candidate for reproduction with production Firebase and airplane mode.
+
+### Safe restore point and backup
+
+- Published tag `safety-20261015-develop-ff30e15-pre-main-sync` points to `ff30e15`, the historical validated baseline from 08/05/2026. The tag annotation explicitly records the current 217-pass/2-failure test baseline.
+- The tag covers versioned state only. Personal files, ignored evidence, planning documents, and the pending-merge snapshot were backed up separately by Claude on 15/10/2026 at 13:32.
+- The owner uploaded the five backup files to restricted Google Drive storage; Claude verified their presence and byte sizes. Codex rechecked all three local archive SHA-256 sums successfully before the local merge commit. Remote archive checksums were not independently verified by Codex.
+- Drive links and the private backup registry are not published. Recovery uses a revert PR or an explicit tree-restoration PR, as documented in `codex_handoff.md` section 8; never force-push `develop` or merge an old ancestor tag as a restoration.
+
+### Verification and next gate
+
+- `git fetch --all --prune` completed; `develop...origin/develop` is `0 0`.
+- Canonical bug-log preflight found no non-closed bugs and no open P0/P1 ledger items. Proposed D1 candidates remain unapplied.
+- This branch changes only the three planning documents, three explicitly approved logs, and this dev-log block/header. Code, tests, platform configuration, canonical specs, roadmap, backlog, ledger, and rules are unchanged.
+- `flutter analyze --no-pub` PASS (`No issues found!`, 37.8 s); Markdown whitespace check (`git diff --cached --check -- '*.md'`) PASS. The seven-file publication allowlist and the absence of private Drive links or detected credential tokens were checked before staging. Firebase UIDs in the logs are included under the owner's explicit publication approval. Raw log bytes, including original Flutter trailing whitespace, are preserved rather than normalized.
+- The known full-suite baseline remains 217 passed / 2 missing-`ProviderScope` failures; this documentation step does not claim BUG-036 is fixed. The approved test repair and its real-branch 219/219 gate follow only after this PR is reviewed and merged.
+- Stop before the documentation PR merge for Claude's review; no later Stage 1 step is started yet.
+
+---
+
+## Block 771 — BUG-036 planning-screen test harness repair and real-branch validation (16/10/2026)
+
+**Current branch intent:** Test-only BUG-036 repair and its three authorized tracking documents; no production code or planning-document changes.
+**Branch:** `fix/planning-screen-test-provider-scope`
+**Base:** `151318227c992c21a5974c8944a587899e1befef` (PR #186 merge commit).
+**Implementation commit:** `40a7a1646951a38c66467f5393816af5ff318d49` (`test(planning): wrap planning screen tests in ProviderScope with deterministic overrides`).
+
+### Integration and scope preflight
+
+- Rechecked PR #186 against approved head `0fdd87602c3cdd7d777584a2deaa375821310885`: two reviewed commits, seven authorized files, base `develop`, mergeable/CLEAN, no additional changes or blocking checks.
+- Merged PR #186 with a merge commit, never squash/rebase: `151318227c992c21a5974c8944a587899e1befef`, parents `ff30e15a5c17b632bf6447ad7b49950fe83c329a` and `0fdd87602c3cdd7d777584a2deaa375821310885`.
+- Updated local `develop` with `git fetch --all --prune`, `git switch develop`, and `git pull --ff-only origin develop`; divergence is `0 0`, Block 770 is present, and the tracked tree/index are clean.
+- Preserved both pre-existing stashes, all personal/ignored files, `main`, and local integration commit `9605f4ffc93c79f57d84a6815b074714ef317697`. The integration branch remains unpublished.
+- No non-closed canonical bugs or open P0/P1 ledger items existed before registering BUG-036 and BUGLOG-036 together. Remaining historical roadmap/spec reconciliation stays in unapproved D1/D2/D3; no runtime behavior is changed by this repair.
+
+### Work completed
+
+- Added `ProviderScope` and the established three overrides only to `test/presentation/task_group_planning_screen_test.dart`: an empty task-group stream, no active session, and pre-run notice `0`.
+- Preserved both original test bodies and assertions byte-for-byte. No production code, other tests, dependency files, planning documents, or runtime contracts changed.
+- Registered BUG-036 and BUGLOG-036 together, initially as Validated pending review and merge; documentary closure is recorded below.
+
+### Real-branch verification
+
+| Command | Result | Actual exit code | Elapsed |
+|---|---|---|---|
+| `flutter analyze` | PASS, no issues | `0` | 38.56 s |
+| `flutter test test/presentation/task_group_planning_screen_test.dart --reporter expanded` | PASS, `2/2` | `0` | 9.85 s |
+| `flutter test --reporter expanded` | PASS, `219/219`; `01:21 +219: All tests passed!` | `0` | 88.35 s |
+
+- Each command ran on `fix/planning-screen-test-provider-scope`; stdout/stderr were captured directly and the actual process exit codes were recorded without a shell pipeline.
+- Tests ran before the implementation commit. The tested file SHA-256 `004446a7a5e17bd3e3f4de241e8b6c47928b981f6349215cdd3f111084aa1ee2` was verified against the committed file bytes.
+- Complete outputs are retained locally under `docs/bugs/validation_bug036_2026_10_16/logs/`:
+  - `2026-10-16_bug036_analyze_40a7a16_macos_debug.log` (exit `0`).
+  - `2026-10-16_bug036_targeted_40a7a16_macos_debug.log` (exit `0`).
+  - `2026-10-16_bug036_40a7a16_macos_debug.log` (exit `0`, 225,977 bytes; SHA-256 `536b44d610b07474cab2759e429a12054bd6addfadfaf48293b5a84bdc6f48b2`).
+- The untruncated full-suite output is attached to the fix PR conversation, preserving the authorized four-file diff. Analyze/targeted output and all exit codes are included in the PR evidence.
+- Device validation is not required for this explicitly authorized harness-only change. No session listener, timer, ownership, or synchronization logic changed.
+
+### Review gate and next action
+
+- Closed/OK (16/10/2026) after Claude's technical/evidence review and the owner's approval of documentary closure; implementation `40a7a1646951a38c66467f5393816af5ff318d49` retains analyze, targeted 2/2, and full-suite 219/219 PASS evidence (all exit codes `0`). This is closure on the fix branch, not integration into `develop`; the closure commit still requires Claude review and explicit owner merge authorization for PR #187.
+- Do not start Stage 1.5, change its diff allowlist, or apply D1/D2/D3, UX classification, CI changes, or prod-debug configuration.
+- The historical plan/handoff wording stays unchanged under the owner's four-file scope. The next action is review of the new BUG-036 PR.

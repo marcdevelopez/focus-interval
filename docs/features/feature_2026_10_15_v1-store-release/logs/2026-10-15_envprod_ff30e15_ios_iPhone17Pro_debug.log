@@ -1,0 +1,158 @@
+Launching lib/main.dart on iPhone 17 Pro in debug mode...
+To ensure your app continues to launch on upcoming iOS versions, UIScene lifecycle support will soon be required. Please see https://flutter.dev/to/uiscene-migration for the migration guide.
+
+Running Xcode build...                                          
+Xcode build done.                                           52,1s
+Syncing files to device iPhone 17 Pro...                        
+flutter: AppConfig: env=prod project=focus-interval emulator=false host=localhost ports=auth:9099,firestore:8080
+Syncing files to device iPhone 17 Pro...                           225ms
+
+Flutter run key commands.
+r Hot reload. 🔥🔥🔥
+R Hot restart.
+h List all available interactive commands.
+d Detach (terminate "flutter run" but leave application running).
+c Clear the screen
+q Quit (terminate the application on the device).
+
+A Dart VM Service on iPhone 17 Pro is available at: http://127.0.0.1:55296/22snBWRfc_4=/
+The Flutter DevTools debugger and profiler on iPhone 17 Pro is available at: http://127.0.0.1:55296/22snBWRfc_4=/devtools/?uri=ws://127.0.0.1:55296/22snBWRfc_4=/ws
+flutter: [CoordinatorLifecycle] event=init vmToken=22d0de36-fcc4-41b5-966e-10d544a62085
+flutter: [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false
+flutter: [RunModeDiag] Active session cleared route=/tasks
+flutter: [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false
+flutter: [RepoNormalize][skip-complete] groupId=7f516bda-e51e-48d8-9009-bdb7c5ffa678 status=running theoreticalEndTime=2026-10-15 09:05:14.574320 now=2026-10-15 09:13:33.961246
+flutter: [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false
+flutter: [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false
+flutter: [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false
+flutter: [StaleClearDiag] vmToken=22d0de36-fcc4-41b5-966e-10d544a62085 sessionGroupId=none lookup=none decision=keep reason=no-active-session
+flutter: [StaleClearDiag] vmToken=22d0de36-fcc4-41b5-966e-10d544a62085 sessionGroupId=none lookup=none decision=keep reason=no-active-session
+flutter: [ScheduledGroups][evaluate] mode=account now=2026-10-15 09:13:34.565687 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+flutter: [ScheduledGroups][no-scheduled] mode=account now=2026-10-15 09:13:34.565687 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+flutter: [ScheduledGroups][evaluate] mode=account now=2026-10-15 09:13:34.573893 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+flutter: [ScheduledGroups][no-scheduled] mode=account now=2026-10-15 09:13:34.573893 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+flutter: [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false
+flutter: [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false
+flutter: [StaleClearDiag] vmToken=22d0de36-fcc4-41b5-966e-10d544a62085 sessionGroupId=none lookup=none decision=keep reason=no-active-session
+flutter: [StaleClearDiag] vmToken=22d0de36-fcc4-41b5-966e-10d544a62085 sessionGroupId=none lookup=none decision=keep reason=no-active-session
+flutter: [ScheduledGroups][no-groups] mode=account now=2026-10-15 09:13:34.654160 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+flutter: [ScheduledGroups][evaluate] mode=account now=2026-10-15 09:13:34.594706 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+flutter: [ScheduledGroups][no-scheduled] mode=account now=2026-10-15 09:13:34.594706 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+flutter: [StaleClearDiag] vmToken=22d0de36-fcc4-41b5-966e-10d544a62085 sessionGroupId=none lookup=none decision=keep reason=no-active-session
+flutter: [ScheduledGroups][no-groups] mode=account now=2026-10-15 09:13:33.227255 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+flutter: [StaleClearDiag] vmToken=22d0de36-fcc4-41b5-966e-10d544a62085 sessionGroupId=none lookup=none decision=keep reason=no-active-session
+flutter: [ScheduledGroups][no-groups] mode=account now=2026-10-15 09:13:33.959057 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+flutter: [StaleClearDiag] vmToken=22d0de36-fcc4-41b5-966e-10d544a62085 sessionGroupId=none lookup=none decision=keep reason=no-active-session
+flutter: [ScheduledGroups][evaluate] mode=account now=2026-10-15 09:13:34.034100 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+flutter: [ExpiryCheck][expire-running-groups-no-active-session] now=2026-10-15 09:13:34.034100 groupId=7f516bda-e51e-48d8-9009-bdb7c5ffa678 groupStatus=running theoreticalEndTime=2026-10-15 09:05:14.574320 endDeltaSeconds=-499 sessionStatus=n/a sessionGroupId=n/a isRunning=false isStale=n/a pausedAt=n/a phaseStartedAt=n/a remainingSeconds=n/a lastUpdatedAt=n/a ownerDeviceId=n/a
+flutter: [ExpiryCheck][mark-running-group-completed] now=2026-10-15 09:13:34.034100 groupId=7f516bda-e51e-48d8-9009-bdb7c5ffa678 groupStatus=running theoreticalEndTime=2026-10-15 09:05:14.574320 endDeltaSeconds=-499 sessionStatus=n/a sessionGroupId=n/a isRunning=false isStale=n/a pausedAt=n/a phaseStartedAt=n/a remainingSeconds=n/a lastUpdatedAt=n/a ownerDeviceId=n/a
+flutter: [ScheduledActionDiag] vmToken=22d0de36-fcc4-41b5-966e-10d544a62085 actionType=openGroupsHub actionToken=1792048415055939 groupId=none groupIds=none anchor=none
+flutter: [RunModeDiag] Auto-start navigate groups hub route=/tasks
+flutter: [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false
+flutter: [RunModeDiag] Active session cleared route=/login
+flutter: [StaleClearDiag] vmToken=22d0de36-fcc4-41b5-966e-10d544a62085 sessionGroupId=none lookup=none decision=keep reason=no-active-session
+flutter: [ScheduledGroups][no-groups] mode=account now=2026-10-15 09:14:17.405756 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+flutter: [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false
+flutter: [RunModeDiag] Active session cleared route=/login
+flutter: [StaleClearDiag] vmToken=22d0de36-fcc4-41b5-966e-10d544a62085 sessionGroupId=none lookup=none decision=keep reason=no-active-session
+flutter: [ScheduledGroups][no-groups] mode=account now=2026-10-15 09:15:02.702175 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+flutter: [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false
+flutter: [RunModeDiag] Active session cleared route=/login
+flutter: [StaleClearDiag] vmToken=22d0de36-fcc4-41b5-966e-10d544a62085 sessionGroupId=none lookup=none decision=keep reason=no-active-session
+flutter: [ScheduledGroups][no-groups] mode=account now=2026-10-15 09:15:09.706774 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+flutter: [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false
+flutter: [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false
+flutter: [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false
+flutter: [RunModeDiag] Active session change group=39b9cced-1bfd-4b67-a13b-511c1bc147f1 status=pomodoroRunning owner=android-5430f911-8864-4d43-af30-29445ea19376 route=/tasks
+flutter: [RunModeDiag] Active session detected. Validating auto-open group=39b9cced-1bfd-4b67-a13b-511c1bc147f1 route=/tasks
+flutter: [StaleClearDiag] vmToken=22d0de36-fcc4-41b5-966e-10d544a62085 sessionGroupId=39b9cced-1bfd-4b67-a13b-511c1bc147f1 lookup=memory:running decision=keep reason=group-running
+flutter: [ScheduledGroups][evaluate] mode=account now=2026-10-15 09:16:05.181520 scheduled=0 overdue=0 activeSession=39b9cced-1bfd-4b67-a13b-511c1bc147f1 sample=n/a
+flutter: Scheduled auto-start suppressed (running group active).
+flutter: [StaleClearDiag] vmToken=22d0de36-fcc4-41b5-966e-10d544a62085 sessionGroupId=39b9cced-1bfd-4b67-a13b-511c1bc147f1 lookup=memory:running decision=keep reason=group-running
+flutter: [ScheduledGroups][evaluate] mode=account now=2026-10-15 09:16:05.185315 scheduled=0 overdue=0 activeSession=39b9cced-1bfd-4b67-a13b-511c1bc147f1 sample=n/a
+flutter: Scheduled auto-start suppressed (running group active).
+flutter: [StaleClearDiag] vmToken=22d0de36-fcc4-41b5-966e-10d544a62085 sessionGroupId=39b9cced-1bfd-4b67-a13b-511c1bc147f1 lookup=repo:running decision=keep reason=repo-running
+flutter: [ScheduledGroups][no-groups] mode=account now=2026-10-15 09:16:04.791130 scheduled=0 overdue=0 activeSession=39b9cced-1bfd-4b67-a13b-511c1bc147f1 sample=n/a
+flutter: [RunModeDiag] Attempting auto-open to TimerScreen group=39b9cced-1bfd-4b67-a13b-511c1bc147f1 route=/tasks
+flutter: [VMLifecycle] init vmToken=96781255-e84a-429d-93e3-19288ce5ebad groupId=none
+flutter: [RunModeDiag] Auto-open confirmed in timer group=39b9cced-1bfd-4b67-a13b-511c1bc147f1 route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [ActiveSession][snapshot] owner=android-5430f911-8864-4d43-af30-29445ea19376 status=pomodoroRunning phase=pomodoro remaining=973 lastUpdatedAt=2026-10-15 09:15:56.095 groupId=39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [SyncOverlay] vmToken=96781255-e84a-429d-93e3-19288ce5ebad groupId=n/a overlayVisibleBefore=false overlayVisibleAfter=true activeReasons=timeSyncUnready primaryReason=timeSyncUnready
+flutter: [ActiveSession][snapshot] owner=android-5430f911-8864-4d43-af30-29445ea19376 status=pomodoroRunning phase=pomodoro remaining=973 lastUpdatedAt=2026-10-15 09:15:56.095 groupId=39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [SessionSync] attach groupId=39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [TimeSync] offset=318ms local=2026-10-15 09:16:06.735180 server=2026-10-15 09:16:06.753
+flutter: [TimeSync] refreshed (session-snapshot) offset=318ms
+flutter: [TimeSync] refreshed (load-group) offset=318ms
+flutter: [SyncOverlay] vmToken=96781255-e84a-429d-93e3-19288ce5ebad groupId=39b9cced-1bfd-4b67-a13b-511c1bc147f1 overlayVisibleBefore=true overlayVisibleAfter=false activeReasons=none primaryReason=none
+flutter: [SessionSub] close vmToken=96781255-e84a-429d-93e3-19288ce5ebad reason=load-group
+flutter: [SessionSub] open (→SSS) vmToken=96781255-e84a-429d-93e3-19288ce5ebad groupId=39b9cced-1bfd-4b67-a13b-511c1bc147f1 reason=load-group
+flutter: [RunModeDiag] Timer load group=39b9cced-1bfd-4b67-a13b-511c1bc147f1 result=PomodoroGroupLoadResult.loaded status=running route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [TimeSync] refreshed (session-snapshot) offset=318ms
+flutter: [ActiveSession][snapshot] owner=android-5430f911-8864-4d43-af30-29445ea19376 status=pomodoroRunning phase=pomodoro remaining=942 lastUpdatedAt=2026-10-15 09:16:27.115 groupId=39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [TimeSync] refreshed (session-snapshot) offset=318ms
+flutter: [RunModeDiag] Active session change group=39b9cced-1bfd-4b67-a13b-511c1bc147f1 status=pomodoroRunning owner=android-5430f911-8864-4d43-af30-29445ea19376 route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [RunModeDiag] Auto-open suppressed (in-flight=false opened=39b9cced-1bfd-4b67-a13b-511c1bc147f1 departed=null route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1)
+flutter: [ActiveSession][snapshot] owner=android-5430f911-8864-4d43-af30-29445ea19376 status=pomodoroRunning phase=pomodoro remaining=911 lastUpdatedAt=2026-10-15 09:16:58.151 groupId=39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [RunModeDiag] Active session change group=39b9cced-1bfd-4b67-a13b-511c1bc147f1 status=pomodoroRunning owner=android-5430f911-8864-4d43-af30-29445ea19376 route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [RunModeDiag] Auto-open suppressed (in-flight=false opened=39b9cced-1bfd-4b67-a13b-511c1bc147f1 departed=null route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1)
+flutter: [TimeSync] offset=133ms local=2026-10-15 09:16:58.307394 server=2026-10-15 09:16:58.311
+flutter: [TimeSync] refreshed (session-snapshot) offset=133ms
+flutter: [ActiveSession][snapshot] owner=android-5430f911-8864-4d43-af30-29445ea19376 status=pomodoroRunning phase=pomodoro remaining=880 lastUpdatedAt=2026-10-15 09:17:29.121 groupId=39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [RunModeDiag] Active session change group=39b9cced-1bfd-4b67-a13b-511c1bc147f1 status=pomodoroRunning owner=android-5430f911-8864-4d43-af30-29445ea19376 route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [RunModeDiag] Auto-open suppressed (in-flight=false opened=39b9cced-1bfd-4b67-a13b-511c1bc147f1 departed=null route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1)
+flutter: [TimeSync] offset=145ms local=2026-10-15 09:17:29.261709 server=2026-10-15 09:17:29.287
+flutter: [TimeSync] refreshed (session-snapshot) offset=145ms
+flutter: [ActiveSession][snapshot] owner=android-5430f911-8864-4d43-af30-29445ea19376 status=pomodoroRunning phase=pomodoro remaining=849 lastUpdatedAt=2026-10-15 09:18:00.100 groupId=39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [RunModeDiag] Active session change group=39b9cced-1bfd-4b67-a13b-511c1bc147f1 status=pomodoroRunning owner=android-5430f911-8864-4d43-af30-29445ea19376 route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [RunModeDiag] Auto-open suppressed (in-flight=false opened=39b9cced-1bfd-4b67-a13b-511c1bc147f1 departed=null route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1)
+flutter: [TimeSync] offset=133ms local=2026-10-15 09:18:00.274422 server=2026-10-15 09:18:00.272
+flutter: [TimeSync] refreshed (session-snapshot) offset=133ms
+flutter: [ActiveSession][snapshot] owner=android-5430f911-8864-4d43-af30-29445ea19376 status=pomodoroRunning phase=pomodoro remaining=818 lastUpdatedAt=2026-10-15 09:18:31.090 groupId=39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [RunModeDiag] Active session change group=39b9cced-1bfd-4b67-a13b-511c1bc147f1 status=pomodoroRunning owner=android-5430f911-8864-4d43-af30-29445ea19376 route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [RunModeDiag] Auto-open suppressed (in-flight=false opened=39b9cced-1bfd-4b67-a13b-511c1bc147f1 departed=null route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1)
+flutter: [TimeSync] offset=124ms local=2026-10-15 09:18:31.270695 server=2026-10-15 09:18:31.255
+flutter: [TimeSync] refreshed (session-snapshot) offset=124ms
+flutter: [ActiveSession][snapshot] owner=android-5430f911-8864-4d43-af30-29445ea19376 status=pomodoroRunning phase=pomodoro remaining=787 lastUpdatedAt=2026-10-15 09:19:02.100 groupId=39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [RunModeDiag] Active session change group=39b9cced-1bfd-4b67-a13b-511c1bc147f1 status=pomodoroRunning owner=android-5430f911-8864-4d43-af30-29445ea19376 route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [RunModeDiag] Auto-open suppressed (in-flight=false opened=39b9cced-1bfd-4b67-a13b-511c1bc147f1 departed=null route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1)
+flutter: [TimeSync] offset=145ms local=2026-10-15 09:19:02.266002 server=2026-10-15 09:19:02.290
+flutter: [TimeSync] refreshed (session-snapshot) offset=145ms
+flutter: [ActiveSession][snapshot] owner=android-5430f911-8864-4d43-af30-29445ea19376 status=pomodoroRunning phase=pomodoro remaining=756 lastUpdatedAt=2026-10-15 09:19:33.120 groupId=39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [RunModeDiag] Active session change group=39b9cced-1bfd-4b67-a13b-511c1bc147f1 status=pomodoroRunning owner=android-5430f911-8864-4d43-af30-29445ea19376 route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [RunModeDiag] Auto-open suppressed (in-flight=false opened=39b9cced-1bfd-4b67-a13b-511c1bc147f1 departed=null route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1)
+flutter: [TimeSync] offset=130ms local=2026-10-15 09:19:33.349876 server=2026-10-15 09:19:33.349
+flutter: [TimeSync] refreshed (session-snapshot) offset=130ms
+flutter: [ActiveSession][snapshot] owner=android-5430f911-8864-4d43-af30-29445ea19376 status=pomodoroRunning phase=pomodoro remaining=725 lastUpdatedAt=2026-10-15 09:20:04.111 groupId=39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [RunModeDiag] Active session change group=39b9cced-1bfd-4b67-a13b-511c1bc147f1 status=pomodoroRunning owner=android-5430f911-8864-4d43-af30-29445ea19376 route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [RunModeDiag] Auto-open suppressed (in-flight=false opened=39b9cced-1bfd-4b67-a13b-511c1bc147f1 departed=null route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1)
+flutter: [TimeSync] offset=121ms local=2026-10-15 09:20:04.311686 server=2026-10-15 09:20:04.310
+flutter: [TimeSync] refreshed (session-snapshot) offset=121ms
+flutter: [ActiveSession][snapshot] owner=android-5430f911-8864-4d43-af30-29445ea19376 status=pomodoroRunning phase=pomodoro remaining=695 lastUpdatedAt=2026-10-15 09:20:34.106 groupId=39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [TimeSync] refreshed (session-snapshot) offset=121ms
+flutter: [RunModeDiag] Active session change group=39b9cced-1bfd-4b67-a13b-511c1bc147f1 status=pomodoroRunning owner=android-5430f911-8864-4d43-af30-29445ea19376 route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [RunModeDiag] Auto-open suppressed (in-flight=false opened=39b9cced-1bfd-4b67-a13b-511c1bc147f1 departed=null route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1)
+flutter: [ActiveSession][snapshot] owner=android-5430f911-8864-4d43-af30-29445ea19376 status=pomodoroRunning phase=pomodoro remaining=665 lastUpdatedAt=2026-10-15 09:21:04.121 groupId=39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [RunModeDiag] Active session change group=39b9cced-1bfd-4b67-a13b-511c1bc147f1 status=pomodoroRunning owner=android-5430f911-8864-4d43-af30-29445ea19376 route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [RunModeDiag] Auto-open suppressed (in-flight=false opened=39b9cced-1bfd-4b67-a13b-511c1bc147f1 departed=null route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1)
+flutter: [TimeSync] offset=111ms local=2026-10-15 09:21:04.309379 server=2026-10-15 09:21:04.295
+flutter: [TimeSync] refreshed (session-snapshot) offset=111ms
+flutter: [ActiveSession][snapshot] owner=android-5430f911-8864-4d43-af30-29445ea19376 status=pomodoroRunning phase=pomodoro remaining=635 lastUpdatedAt=2026-10-15 09:21:34.106 groupId=39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [TimeSync] refreshed (session-snapshot) offset=111ms
+flutter: [RunModeDiag] Active session change group=39b9cced-1bfd-4b67-a13b-511c1bc147f1 status=pomodoroRunning owner=android-5430f911-8864-4d43-af30-29445ea19376 route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [RunModeDiag] Auto-open suppressed (in-flight=false opened=39b9cced-1bfd-4b67-a13b-511c1bc147f1 departed=null route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1)
+flutter: [ActiveSession][snapshot] owner=android-5430f911-8864-4d43-af30-29445ea19376 status=pomodoroRunning phase=pomodoro remaining=604 lastUpdatedAt=2026-10-15 09:22:05.185 groupId=39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [RunModeDiag] Active session change group=39b9cced-1bfd-4b67-a13b-511c1bc147f1 status=pomodoroRunning owner=android-5430f911-8864-4d43-af30-29445ea19376 route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1
+flutter: [RunModeDiag] Auto-open suppressed (in-flight=false opened=39b9cced-1bfd-4b67-a13b-511c1bc147f1 departed=null route=/timer/39b9cced-1bfd-4b67-a13b-511c1bc147f1)
+flutter: [TimeSync] offset=163ms local=2026-10-15 09:22:05.594366 server=2026-10-15 09:22:05.549
+flutter: [TimeSync] refreshed (session-snapshot) offset=163ms
+flutter: [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=true
+flutter: Cancel nav: group stream canceled (attempt 0, root=true)
+flutter: [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false
+flutter: [RunModeDiag] Active session cleared route=/groups
+flutter: [StaleClearDiag] vmToken=22d0de36-fcc4-41b5-966e-10d544a62085 sessionGroupId=none lookup=none decision=keep reason=no-active-session
+flutter: [ScheduledGroups][evaluate] mode=account now=2026-10-15 09:22:27.375321 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+flutter: [ScheduledGroups][no-scheduled] mode=account now=2026-10-15 09:22:27.375321 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+flutter: [StaleClearDiag] vmToken=22d0de36-fcc4-41b5-966e-10d544a62085 sessionGroupId=39b9cced-1bfd-4b67-a13b-511c1bc147f1 lookup=memory:canceled decision=clear reason=group-not-running-in-memory
+flutter: [ScheduledGroups][evaluate] mode=account now=2026-10-15 09:22:26.973899 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+flutter: [ScheduledGroups][no-scheduled] mode=account now=2026-10-15 09:22:26.973899 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+Lost connection to device.

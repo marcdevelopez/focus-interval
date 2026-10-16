@@ -1,0 +1,69 @@
+Launching lib/main.dart on iPhone 17 Pro in debug mode...
+To ensure your app continues to launch on upcoming iOS versions, UIScene lifecycle support will soon be required. Please see https://flutter.dev/to/uiscene-migration for the migration guide.
+
+Running Xcode build...                                          
+Xcode build done.                                           168,4s
+Syncing files to device iPhone 17 Pro...                        
+flutter: AppConfig: env=dev project=focus-interval emulator=true host=localhost ports=auth:9099,firestore:8080
+Syncing files to device iPhone 17 Pro...                           434ms
+
+Flutter run key commands.
+r Hot reload. 🔥🔥🔥
+R Hot restart.
+h List all available interactive commands.
+d Detach (terminate "flutter run" but leave application running).
+c Clear the screen
+q Quit (terminate the application on the device).
+
+A Dart VM Service on iPhone 17 Pro is available at: http://127.0.0.1:52617/iXyZEP3cRCQ=/
+The Flutter DevTools debugger and profiler on iPhone 17 Pro is available at: http://127.0.0.1:52617/iXyZEP3cRCQ=/devtools/?uri=ws://127.0.0.1:52617/iXyZEP3cRCQ=/ws
+flutter: [CoordinatorLifecycle] event=init vmToken=d08a48bb-752f-488a-9c5a-815e5869c4ec
+flutter: [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false
+flutter: [RunModeDiag] Active session cleared route=/tasks
+flutter: [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false
+flutter: [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false
+flutter: [StaleClearDiag] vmToken=d08a48bb-752f-488a-9c5a-815e5869c4ec sessionGroupId=none lookup=none decision=keep reason=no-active-session
+flutter: [ScheduledGroups][no-groups] mode=account now=2026-10-15 08:49:59.977427 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+flutter: [StaleClearDiag] vmToken=d08a48bb-752f-488a-9c5a-815e5869c4ec sessionGroupId=none lookup=none decision=keep reason=no-active-session
+flutter: [ScheduledGroups][no-groups] mode=account now=2026-10-15 08:50:00.742735 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+flutter: [StaleClearDiag] vmToken=d08a48bb-752f-488a-9c5a-815e5869c4ec sessionGroupId=none lookup=none decision=keep reason=no-active-session
+flutter: [ScheduledGroups][evaluate] mode=account now=2026-10-15 08:50:00.797828 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+flutter: [ScheduledGroups][no-scheduled] mode=account now=2026-10-15 08:50:00.797828 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+flutter: [ScheduledGroups] timer-state reason=handle-groups scheduled=false preAlert=false runningExpiry=false
+flutter: [StaleClearDiag] vmToken=d08a48bb-752f-488a-9c5a-815e5869c4ec sessionGroupId=none lookup=none decision=keep reason=no-active-session
+flutter: [ScheduledGroups][evaluate] mode=account now=2026-10-15 08:50:14.683543 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+flutter: [ActiveSession] Server fetch failed. Falling back to cache.
+flutter: [ExpiryCheck][skip-expiry-no-active-session] now=2026-10-15 08:50:14.683543 groupId=n/a groupStatus=n/a theoreticalEndTime=n/a endDeltaSeconds=n/a sessionStatus=n/a sessionGroupId=n/a isRunning=false isStale=n/a pausedAt=n/a phaseStartedAt=n/a remainingSeconds=n/a lastUpdatedAt=n/a ownerDeviceId=n/a
+flutter: [ScheduledGroups][running-open-timer] mode=account now=2026-10-15 08:50:14.683543 scheduled=0 overdue=0 activeSession=n/a sample=n/a
+flutter: [ScheduledActionDiag] vmToken=d08a48bb-752f-488a-9c5a-815e5869c4ec actionType=openTimer actionToken=1792047014816916 groupId=7f516bda-e51e-48d8-9009-bdb7c5ffa678 groupIds=none anchor=none
+flutter: [RunModeDiag] Auto-start navigate group=7f516bda-e51e-48d8-9009-bdb7c5ffa678 route=/tasks
+flutter: Auto-start opening TimerScreen for scheduled group.
+flutter: [VMLifecycle] init vmToken=f6142f93-9fea-4347-85aa-3d09c625bf8a groupId=none
+flutter: [ActiveSession] Server fetch failed. Falling back to cache.
+flutter: [SessionSync] attach groupId=7f516bda-e51e-48d8-9009-bdb7c5ffa678
+flutter: [VMLifecycle] dispose vmToken=f6142f93-9fea-4347-85aa-3d09c625bf8a groupId=7f516bda-e51e-48d8-9009-bdb7c5ffa678
+flutter: [VMLifecycle] init vmToken=9528ffa9-e72a-4812-aff4-ce668af4da65 groupId=none
+flutter: [VMLifecycle] dispose vmToken=9528ffa9-e72a-4812-aff4-ce668af4da65 groupId=none
+flutter: [VMLifecycle] init vmToken=28d2aa56-46fe-45ce-9165-fba4fa5ff0f2 groupId=none
+flutter: [ActiveSession] Server fetch failed. Falling back to cache.
+flutter: [VMLifecycle] dispose vmToken=28d2aa56-46fe-45ce-9165-fba4fa5ff0f2 groupId=7f516bda-e51e-48d8-9009-bdb7c5ffa678
+flutter: [VMLifecycle] init vmToken=a7bb28b9-c064-4ee8-9317-6bdc9729fbcd groupId=none
+flutter: [VMLifecycle] dispose vmToken=a7bb28b9-c064-4ee8-9317-6bdc9729fbcd groupId=none
+flutter: [VMLifecycle] init vmToken=92ae5063-6130-48a5-b830-13a4c890cd78 groupId=none
+flutter: [ActiveSession] Server fetch failed. Falling back to cache.
+flutter: [VMLifecycle] dispose vmToken=92ae5063-6130-48a5-b830-13a4c890cd78 groupId=7f516bda-e51e-48d8-9009-bdb7c5ffa678
+flutter: [VMLifecycle] init vmToken=52f3589b-fa1d-47d1-9425-17b12eda4f18 groupId=none
+flutter: [VMLifecycle] dispose vmToken=52f3589b-fa1d-47d1-9425-17b12eda4f18 groupId=none
+flutter: [VMLifecycle] init vmToken=6a205325-3325-4593-bc04-e6cd94e5dd01 groupId=none
+flutter: [ActiveSession] Server fetch failed. Falling back to cache.
+flutter: [VMLifecycle] dispose vmToken=6a205325-3325-4593-bc04-e6cd94e5dd01 groupId=7f516bda-e51e-48d8-9009-bdb7c5ffa678
+flutter: [VMLifecycle] init vmToken=0e6072e7-97df-4dd1-ba94-7e635293473a groupId=none
+flutter: [ActiveSession] Server fetch failed. Falling back to cache.
+flutter: [VMLifecycle] dispose vmToken=0e6072e7-97df-4dd1-ba94-7e635293473a groupId=7f516bda-e51e-48d8-9009-bdb7c5ffa678
+flutter: [VMLifecycle] init vmToken=0de7d921-dec1-498b-b716-f84f381b67f2 groupId=none
+flutter: [VMLifecycle] dispose vmToken=0de7d921-dec1-498b-b716-f84f381b67f2 groupId=none
+flutter: [VMLifecycle] init vmToken=38983df6-3926-43a7-851f-316b1dc3f67b groupId=none
+flutter: [ActiveSession] Server fetch failed. Falling back to cache.
+flutter: [RepoNormalize][skip-complete] groupId=7f516bda-e51e-48d8-9009-bdb7c5ffa678 status=running theoreticalEndTime=2026-10-15 09:05:14.574320 now=2026-10-15 09:08:26.245755
+
+Application finished.
