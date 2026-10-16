@@ -1,10 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focus_interval/data/models/selected_sound.dart';
 import 'package:focus_interval/data/models/task_run_group.dart';
+import 'package:focus_interval/presentation/providers.dart';
 import 'package:focus_interval/presentation/screens/task_group_planning_screen.dart';
+import 'package:focus_interval/presentation/viewmodels/pre_run_notice_view_model.dart';
+
+class _FixedPreRunNoticeViewModel extends PreRunNoticeViewModel {
+  _FixedPreRunNoticeViewModel(this.value);
+
+  final int value;
+
+  @override
+  Future<int> build() async => value;
+}
 
 TaskRunItem _buildPlanningItem() {
   return const TaskRunItem(
@@ -38,8 +50,19 @@ Future<void> _pumpPlanningScreen(
   required TaskGroupPlanOption option,
 }) async {
   await tester.pumpWidget(
-    MaterialApp(
-      home: TaskGroupPlanningScreen(args: _buildArgs(option: option)),
+    ProviderScope(
+      overrides: [
+        taskRunGroupStreamProvider.overrideWith(
+          (_) => Stream.value(const <TaskRunGroup>[]),
+        ),
+        activePomodoroSessionProvider.overrideWith((_) => null),
+        preRunNoticeMinutesProvider.overrideWith(
+          () => _FixedPreRunNoticeViewModel(0),
+        ),
+      ],
+      child: MaterialApp(
+        home: TaskGroupPlanningScreen(args: _buildArgs(option: option)),
+      ),
     ),
   );
   await tester.pump();
