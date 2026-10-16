@@ -25,7 +25,7 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last closed bug fix: **BUG-029 superseded closure sync completed on 06/05/2026 (`Block 763`, commit `12bd0fa`)**
+Last closed bug fix: **BUG-036 planning-screen test harness, Closed/OK on 16/10/2026 (`Block 771`, implementation `40a7a1646951a38c66467f5393816af5ff318d49`); PR #187 integration into develop pending**
 Current focus: **Deterministic overlap model rollout completed through Corte C (pending merge and branch closure sync)**
 Last update: **16/10/2026**
 
@@ -19192,7 +19192,7 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 - Added `ProviderScope` and the established three overrides only to `test/presentation/task_group_planning_screen_test.dart`: an empty task-group stream, no active session, and pre-run notice `0`.
 - Preserved both original test bodies and assertions byte-for-byte. No production code, other tests, dependency files, planning documents, or runtime contracts changed.
-- Registered BUG-036 and BUGLOG-036 together. After local validation, their status is Validated with review/merge pending, not Closed/OK.
+- Registered BUG-036 and BUGLOG-036 together, initially as Validated pending review and merge; documentary closure is recorded below.
 
 ### Real-branch verification
 
@@ -19213,6 +19213,6 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 
 ### Review gate and next action
 
-- Local implementation and validation are complete. Stop before merging the BUG-036 PR for Claude's review and explicit owner confirmation.
+- Closed/OK (16/10/2026) after Claude's technical/evidence review and the owner's approval of documentary closure; implementation `40a7a1646951a38c66467f5393816af5ff318d49` retains analyze, targeted 2/2, and full-suite 219/219 PASS evidence (all exit codes `0`). This is closure on the fix branch, not integration into `develop`; the closure commit still requires Claude review and explicit owner merge authorization for PR #187.
 - Do not start Stage 1.5, change its diff allowlist, or apply D1/D2/D3, UX classification, CI changes, or prod-debug configuration.
 - The historical plan/handoff wording stays unchanged under the owner's four-file scope. The next action is review of the new BUG-036 PR.

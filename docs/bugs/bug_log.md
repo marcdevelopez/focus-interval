@@ -4205,4 +4205,4 @@ Validation:
 
 Status:
 
-Validated locally (16/10/2026). Analyze, exact two-case repro, and full-suite regression smoke PASS with exit codes `0`. Claude review, explicit owner merge approval, and integration into `develop` remain pending; not Closed/OK.
+Closed/OK (2026-10-16). closed_commit_hash: `40a7a1646951a38c66467f5393816af5ff318d49`. Analyze, exact two-case repro, and full-suite regression smoke PASS with exit codes `0`; Claude completed the technical/evidence review and the owner approved this documentary closure on 16/10/2026. Closure is recorded on the fix branch; review of the closure commit and explicit authorization to merge PR #187 into `develop` remain pending.
