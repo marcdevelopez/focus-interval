@@ -27,7 +27,7 @@ Formatting rules:
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last closed bug fix: **BUG-029 superseded closure sync completed on 06/05/2026 (`Block 763`, commit `12bd0fa`)**
 Current focus: **Deterministic overlap model rollout completed through Corte C (pending merge and branch closure sync)**
-Last update: **15/10/2026**
+Last update: **16/10/2026**
 
 ---
 
@@ -19170,3 +19170,49 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 - `flutter analyze --no-pub` PASS (`No issues found!`, 37.8 s); Markdown whitespace check (`git diff --cached --check -- '*.md'`) PASS. The seven-file publication allowlist and the absence of private Drive links or detected credential tokens were checked before staging. Firebase UIDs in the logs are included under the owner's explicit publication approval. Raw log bytes, including original Flutter trailing whitespace, are preserved rather than normalized.
 - The known full-suite baseline remains 217 passed / 2 missing-`ProviderScope` failures; this documentation step does not claim BUG-036 is fixed. The approved test repair and its real-branch 219/219 gate follow only after this PR is reviewed and merged.
 - Stop before the documentation PR merge for Claude's review; no later Stage 1 step is started yet.
+
+---
+
+## Block 771 — BUG-036 planning-screen test harness repair and real-branch validation (16/10/2026)
+
+**Current branch intent:** Test-only BUG-036 repair and its three authorized tracking documents; no production code or planning-document changes.
+**Branch:** `fix/planning-screen-test-provider-scope`
+**Base:** `151318227c992c21a5974c8944a587899e1befef` (PR #186 merge commit).
+**Implementation commit:** `40a7a1646951a38c66467f5393816af5ff318d49` (`test(planning): wrap planning screen tests in ProviderScope with deterministic overrides`).
+
+### Integration and scope preflight
+
+- Rechecked PR #186 against approved head `0fdd87602c3cdd7d777584a2deaa375821310885`: two reviewed commits, seven authorized files, base `develop`, mergeable/CLEAN, no additional changes or blocking checks.
+- Merged PR #186 with a merge commit, never squash/rebase: `151318227c992c21a5974c8944a587899e1befef`, parents `ff30e15a5c17b632bf6447ad7b49950fe83c329a` and `0fdd87602c3cdd7d777584a2deaa375821310885`.
+- Updated local `develop` with `git fetch --all --prune`, `git switch develop`, and `git pull --ff-only origin develop`; divergence is `0 0`, Block 770 is present, and the tracked tree/index are clean.
+- Preserved both pre-existing stashes, all personal/ignored files, `main`, and local integration commit `9605f4ffc93c79f57d84a6815b074714ef317697`. The integration branch remains unpublished.
+- No non-closed canonical bugs or open P0/P1 ledger items existed before registering BUG-036 and BUGLOG-036 together. Remaining historical roadmap/spec reconciliation stays in unapproved D1/D2/D3; no runtime behavior is changed by this repair.
+
+### Work completed
+
+- Added `ProviderScope` and the established three overrides only to `test/presentation/task_group_planning_screen_test.dart`: an empty task-group stream, no active session, and pre-run notice `0`.
+- Preserved both original test bodies and assertions byte-for-byte. No production code, other tests, dependency files, planning documents, or runtime contracts changed.
+- Registered BUG-036 and BUGLOG-036 together. After local validation, their status is Validated with review/merge pending, not Closed/OK.
+
+### Real-branch verification
+
+| Command | Result | Actual exit code | Elapsed |
+|---|---|---|---|
+| `flutter analyze` | PASS, no issues | `0` | 38.56 s |
+| `flutter test test/presentation/task_group_planning_screen_test.dart --reporter expanded` | PASS, `2/2` | `0` | 9.85 s |
+| `flutter test --reporter expanded` | PASS, `219/219`; `01:21 +219: All tests passed!` | `0` | 88.35 s |
+
+- Each command ran on `fix/planning-screen-test-provider-scope`; stdout/stderr were captured directly and the actual process exit codes were recorded without a shell pipeline.
+- Tests ran before the implementation commit. The tested file SHA-256 `004446a7a5e17bd3e3f4de241e8b6c47928b981f6349215cdd3f111084aa1ee2` was verified against the committed file bytes.
+- Complete outputs are retained locally under `docs/bugs/validation_bug036_2026_10_16/logs/`:
+  - `2026-10-16_bug036_analyze_40a7a16_macos_debug.log` (exit `0`).
+  - `2026-10-16_bug036_targeted_40a7a16_macos_debug.log` (exit `0`).
+  - `2026-10-16_bug036_40a7a16_macos_debug.log` (exit `0`, 225,977 bytes; SHA-256 `536b44d610b07474cab2759e429a12054bd6addfadfaf48293b5a84bdc6f48b2`).
+- The untruncated full-suite output is attached to the fix PR conversation, preserving the authorized four-file diff. Analyze/targeted output and all exit codes are included in the PR evidence.
+- Device validation is not required for this explicitly authorized harness-only change. No session listener, timer, ownership, or synchronization logic changed.
+
+### Review gate and next action
+
+- Local implementation and validation are complete. Stop before merging the BUG-036 PR for Claude's review and explicit owner confirmation.
+- Do not start Stage 1.5, change its diff allowlist, or apply D1/D2/D3, UX classification, CI changes, or prod-debug configuration.
+- The historical plan/handoff wording stays unchanged under the owner's four-file scope. The next action is review of the new BUG-036 PR.

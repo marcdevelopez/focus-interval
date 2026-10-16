@@ -4160,3 +4160,49 @@ Closed/OK (04/05/2026). Implementation commit `88e0bb1` validated with:
 - local gate PASS (`flutter analyze`, `flutter test test/presentation/timer_screen_completion_navigation_test.dart`);
 - macOS quick execution PASS log (`docs/bugs/validation_bug035_2026_05_04/logs/2026-05-04_bug035_4b1c94a_macos_debug.log`) without stuck-key signature matches;
 - explicit user acceptance in thread under the documented non-deterministic repro waiver.
+
+---
+
+## BUG-036 — Planning screen widget tests lack ProviderScope after deterministic Corte A
+
+ID: BUG-036
+Date: 16/10/2026 (UTC+2)
+Platforms: Automated Flutter widget tests on macOS; test harness only
+Priority: P2
+Context: Stage 1.4, authorized after PR #186 merged into `develop` as `151318227c992c21a5974c8944a587899e1befef`.
+
+Symptom:
+
+- The full-suite baseline was 217 passed / 2 failed with `Bad state: No ProviderScope found`.
+- Both failures are the existing schedule-by-range and schedule-by-total adjusted-end notice cases in `test/presentation/task_group_planning_screen_test.dart`.
+
+Root cause:
+
+- Deterministic Corte A commit `ecbe87e` added provider reads in `_TaskGroupPlanningScreenState._maxNoticeAllowed`, reached through `_applyNoticeSuggestion` during initialization.
+- The test harness pumps a bare `MaterialApp`, so the `ConsumerStatefulWidget` has no Riverpod container. The production application already supplies its root `ProviderScope`.
+
+Expected behavior:
+
+- Both existing widget tests mount the planning screen with deterministic provider dependencies and continue asserting `find.textContaining('Adjusted end:')` without weakening their expectations.
+- Production code, other tests, dependency versions, and planning behavior remain unchanged.
+
+Fix scope:
+
+- Wrap only this test harness in `ProviderScope`, with empty groups, no active session, and zero pre-run notice, matching the established conflict-test harness.
+- Branch: `fix/planning-screen-test-provider-scope`, based on synchronized `develop` at `151318227c992c21a5974c8944a587899e1befef`.
+- Implementation commit: `40a7a1646951a38c66467f5393816af5ff318d49` (`test(planning): wrap planning screen tests in ProviderScope with deterministic overrides`). Both original test bodies and assertions are byte-identical to the base version.
+
+Validation:
+
+- Real-branch local gate PASS on 16/10/2026:
+  - `flutter analyze`: no issues; exit code `0`.
+  - `flutter test test/presentation/task_group_planning_screen_test.dart --reporter expanded`: `2/2` PASS; exit code `0`. Both schedule-by-range and schedule-by-total still show the expected adjusted-end notice.
+  - `flutter test --reporter expanded`: `219/219` PASS, ending `01:21 +219: All tests passed!`; exit code `0`.
+- Output was captured directly from each subprocess, without a shell pipeline masking the exit code. Complete outputs are preserved under `docs/bugs/validation_bug036_2026_10_16/logs/`, with the full-suite output attached to the BUG-036 PR conversation without expanding the four-file PR scope.
+- Full-suite evidence: `docs/bugs/validation_bug036_2026_10_16/logs/2026-10-16_bug036_40a7a16_macos_debug.log`, 225,977 bytes, SHA-256 `536b44d610b07474cab2759e429a12054bd6addfadfaf48293b5a84bdc6f48b2`.
+- Tests ran before the implementation commit; the tested file's SHA-256 `004446a7a5e17bd3e3f4de241e8b6c47928b981f6349215cdd3f111084aa1ee2` matches the committed implementation exactly.
+- Device validation is not applicable to this authorized test-harness-only repair; no production behavior changes.
+
+Status:
+
+Validated locally (16/10/2026). Analyze, exact two-case repro, and full-suite regression smoke PASS with exit codes `0`. Claude review, explicit owner merge approval, and integration into `develop` remain pending; not Closed/OK.
