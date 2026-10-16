@@ -25,8 +25,8 @@ Formatting rules:
 # 📍 Current status
 
 Active phase: **20 — Group Naming & Task Visual Identity**
-Last closed bug fix: **BUG-036 planning-screen test harness, Closed/OK on 16/10/2026 (`Block 771`, implementation `40a7a1646951a38c66467f5393816af5ff318d49`); PR #187 integration into develop pending**
-Current focus: **Deterministic overlap model rollout completed through Corte C (pending merge and branch closure sync)**
+Last closed bug fix: **BUG-036 planning-screen test harness, Closed/OK on 16/10/2026 (`Block 771`, implementation `40a7a1646951a38c66467f5393816af5ff318d49`); merged into develop via PR #187 (`6263526c6dec5312ac34ae596a2e004a97709a7f`)**
+Current focus: **v1.0 store release — Stage 1 stabilization (BUG-036 integrated; main-lineage integration prepared locally for review)**
 Last update: **16/10/2026**
 
 ---
@@ -19216,3 +19216,97 @@ Neither entry existed in `develop` canonical docs, so agent preflight scans of `
 - Closed/OK (16/10/2026) after Claude's technical/evidence review and the owner's approval of documentary closure; implementation `40a7a1646951a38c66467f5393816af5ff318d49` retains analyze, targeted 2/2, and full-suite 219/219 PASS evidence (all exit codes `0`). This is closure on the fix branch, not integration into `develop`; the closure commit still requires Claude review and explicit owner merge authorization for PR #187.
 - Do not start Stage 1.5, change its diff allowlist, or apply D1/D2/D3, UX classification, CI changes, or prod-debug configuration.
 - The historical plan/handoff wording stays unchanged under the owner's four-file scope. The next action is review of the new BUG-036 PR.
+
+---
+
+## Block 772 — main → develop lineage integration prepared locally; BUG-018 closure record backfilled; safe restore point (16/10/2026)
+
+**Current branch intent:** Integration/process — reconcile `main` ancestry into `develop` without runtime, test, or configuration changes.
+**Branch:** `fix/sync-main-into-develop`
+**Original lineage merge:** `9605f4ffc93c79f57d84a6815b074714ef317697` (`merge(git): integrate origin/main into develop lineage (PR #159/#160 ancestry)`), parents `ff30e15a5c17b632bf6447ad7b49950fe83c329a` and `65552c4734efc83fa19e06ea57c67e2c141d99ec`.
+**Develop synchronization merge:** `3dfc1153c285916640c696951e21e390b0e43de5` (`merge(git): sync fix/sync-main-into-develop with develop (BUG-036 test fix)`), parents `9605f4ffc93c79f57d84a6815b074714ef317697` and `6263526c6dec5312ac34ae596a2e004a97709a7f`.
+
+### PR #187 integration and BUG-036 closure confirmation
+
+- Claude approved the complete PR, including documentary closure `7f881be743f49082a5907ffe64df8cfd2fd58571`; the owner explicitly authorized a merge commit on 16/10/2026.
+- Rechecked the approved head, three commits, four-file allowlist, synchronized base, clean mergeability, no-loss checklist, existing test/log SHA-256 values, and unique Block 771. No new commits, production changes, or blocking checks were present; the repository has no CI checks.
+- Merged PR #187 as `6263526c6dec5312ac34ae596a2e004a97709a7f`, parents `151318227c992c21a5974c8944a587899e1befef` and `7f881be743f49082a5907ffe64df8cfd2fd58571`; never squash or rebase.
+- Fast-forwarded local `develop` to that merge; `develop...origin/develop = 0 0`. Implementation `40a7a16`, documentary closure `7f881be`, BUG-036/BUGLOG-036 Closed/OK, and Block 771 are contained in `develop`.
+- The two existing adjusted-end planning tests now run inside the production-equivalent root `ProviderScope`, with the three approved neutral overrides; both original assertions remain intact. The approved evidence is analyze PASS, exact repro 2/2 PASS, and full suite 219/219 PASS, all actual exit codes `0`.
+- The pending-integration statements in Block 771, the bug log, and the ledger describe the earlier pre-merge checkpoint. This block records their subsequent integration; the current dev-log header is updated. The bug log, ledger, plan, and handoff remain unchanged under the owner's explicit one-file scope.
+
+### Lineage reconciliation and no-loss checks
+
+- Before integration, `origin/main` held seven commits outside `develop`: the PR #159 merge plus the BUG-018 track merged through PR #160 into `main` instead of `develop` (historical deviation from the branching workflow).
+- BUG-018 runtime/test fixes already exist in `develop` through PR #164: `b10fa02` and `0cc20e0` share patch ID `03a677c7cda8c103a9976f17e469d0fc67a998d0`; `547c6f7` and `79727a4` share patch ID `3535716843d9390c3a1d4e8e59c1058e5cf8ccbb`. The validation packet `docs/bugs/validation_bug018_2026_03_27/` is identical between `origin/main` and `origin/develop`.
+- The original `9605f4f` merge preserved the newer `develop` versions of the three historical documentation conflicts (`bug_log.md`, `dev_log.md`, and `validation_ledger.md`). Its tree is identical to the historical `develop` baseline `ff30e15`; no runtime/test fix is applied twice.
+- Preserved `9605f4f` and merged updated `origin/develop` normally into this branch as `3dfc115`. This synchronization completed without conflicts.
+- Check A, before this block: both `HEAD^{tree}` and `origin/develop^{tree}` are `ac84bb7987643922ed227908352b95ccaa107968`; `git diff --name-only origin/develop` is empty.
+- `origin/main` and `origin/develop` are ancestors of the integration branch; `git rev-list --count HEAD..origin/main = 0`. This proves local preparation only; main-lineage integration into `develop` still requires review, publication, a PR, and a separately authorized merge.
+- Canonical non-closed bugs and open P0/P1 ledger items: zero. Historical specs/roadmap reconciliation remains deferred to D1/D2/D3; no feature or behavior decision is applied here.
+
+### BUG-018 closure record (historical backfill)
+
+On `main`, BUG-018 closure was recorded as Block 671 by `2c19f8e4b47f36be297dcb9e3da5bd2e3b95bf96` (`docs(bug-018): close validation with android long-background PASS`, 27/03/2026). On `develop`, Block 671 records the BUG-016 docs-first plan. That existing block remains unchanged. The complete BUG-018 source block from `origin/main:docs/dev_log.md` is quoted verbatim below; its queue counts and validation results are historical, not a new device-validation claim.
+
+> ## Block 671 — BUG-018 closed after Android long-background revalidation (27/03/2026)
+>
+> **Current branch intent:** BUG-018 closure sync (docs + evidence) after validated fix.
+> **Branch:** `fix/bug018-running-zero-resume`
+> **Fix commit validated:** `547c6f7` (`fix(bug-018): stop owner echo publish amplification in account mode`)
+>
+> ### Validation recap (BUG-018)
+>
+> - Exact repro re-run on Android owner (RMX3771):
+>   - background at ~19:37:55,
+>   - foreground at ~20:00.
+> - Timer resumed on coherent timeline in G2 (no invalid `Ready` state).
+> - Firestore/session snapshots remained coherent after resume.
+>
+> Primary evidence:
+> - `docs/bugs/validation_bug018_2026_03_27/logs/2026-03-27_bug018_547c6f7_android_RMX3771_debug.log`
+> - Key log confirmations:
+>   - `Reconciled owner timeline before publish reason=resume` emitted once.
+>   - Clean phase boundaries: `break-start` x1, `pomodoro-start` x2 (initial + next pomodoro).
+>   - Zero signatures of `running + remaining=0`.
+>   - Resume window coherent: `20:00:55 status=pomodoroRunning remaining=663`.
+>
+> ### Local gate
+>
+> - `flutter analyze` — PASS (27/03/2026).
+> - `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart` — PASS (27/03/2026).
+>
+> ### Documentation synchronized
+>
+> - `docs/bugs/validation_bug018_2026_03_27/plan_validacion_rapida_fix.md` — created and set `Closed/OK`.
+> - `docs/bugs/validation_bug018_2026_03_27/quick_pass_checklist.md` — created with all checks PASS.
+> - `docs/bugs/bug_log.md` — BUG-018 status set to `Closed/OK` with final fix/evidence.
+> - `docs/validation/validation_ledger.md` — BUGLOG-018 moved to `Closed/OK`.
+> - Ledger snapshot updated (active non-closed bug-log entries: 3 → 2).
+>
+> ### Ledger status after this block
+>
+> - Active non-closed bug-log entries: 2 (`BUG-016`, `BUG-017`; both P2 Pending).
+> - Open P1 bug-log entries: 0.
+
+### Safe restore point and preserved local state
+
+- Published tag `safety-20261015-develop-ff30e15-pre-main-sync` still resolves to `ff30e15a5c17b632bf6447ad7b49950fe83c329a`, the versioned baseline recorded in Block 770. Personal/ignored files are covered separately by the existing backup, not by the tag.
+- Recovery follows `docs/features/feature_2026_10_15_v1-store-release/codex_handoff.md` section 8: revert the eventual integration PR's merge commit through a new PR, or make an explicit tree-restoration commit. Never force-push or merge an old ancestor tag as a rollback.
+- Both original stashes, private notes, ignored evidence, backups, and local `main` are preserved. Existing BUG-036 logs are unchanged; their separate backup remains outside this preparation.
+
+### Local verification and review gate
+
+- Check B PASS: `git diff --name-only origin/develop` lists only `docs/dev_log.md`; the explicit code/test/platform/config diff is empty, and `git diff --check origin/develop` passes. Previous dev-log blocks are byte-identical after accounting for the two authorized header replacements; the historical BUG-018 quotation matches its source exactly, and Block 772 is unique after Block 771.
+
+| Command on `fix/sync-main-into-develop` | Result | Actual exit code | Elapsed |
+|---|---|---|---|
+| `flutter analyze` | PASS, no issues | `0` | 40.82 s |
+| `flutter test --reporter expanded` | PASS, `219/219`; `01:21 +219: All tests passed!` | `0` | 89.47 s |
+
+- Both commands ran on synchronization commit `3dfc1153c285916640c696951e21e390b0e43de5` with only this dev-log change in progress. Complete stdout/stderr was captured directly with the actual subprocess return code; no pipeline masked failures. No production or test files changed before or after these runs.
+- Complete local outputs remain ignored by Git under the existing feature directory:
+  - `docs/features/feature_2026_10_15_v1-store-release/logs/2026-10-16_mainsync_analyze_3dfc115_macos_debug.log` (97 bytes; SHA-256 `98e56641aaba7fe44d317df9010ebd4dd90890eb657b5ed2cf8ddd503d9490fb`).
+  - `docs/features/feature_2026_10_15_v1-store-release/logs/2026-10-16_mainsync_3dfc115_macos_debug.log` (226,136 bytes; SHA-256 `b671a890846e030a86cc0b9662381498366f645a08d3348dd395ebf0c911054c`).
+- Authorized diff against `origin/develop`: only this header update and Block 772 in `docs/dev_log.md`. No bug-log, ledger, plan, handoff, code, test, or configuration edits.
+- Stop locally for Claude to review the prepared integration and its evidence. Do not publish this branch or open its PR yet. D1/D2/D3, UX/UI, prod-debug, and Stage 1.6 remain unstarted.
