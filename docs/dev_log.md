@@ -26,7 +26,7 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last closed bug fix: **BUG-036 planning-screen test harness, Closed/OK on 16/10/2026 (`Block 771`, implementation `40a7a1646951a38c66467f5393816af5ff318d49`); merged into develop via PR #187 (`6263526c6dec5312ac34ae596a2e004a97709a7f`)**
-Current focus: **v1.0 store release — Stage 1 stabilization (BUG-036 integrated; main-lineage integration prepared locally for review)**
+Current focus: **BUG-041 documentation/preparation only — Local Mode scheduled auto-start and inconsistent countdowns; Open — pending reproduction. Stage 1 integration is complete through PR #188; Stage 2 implementation is not started in this work.**
 Last update: **16/10/2026**
 
 ---
@@ -19310,3 +19310,36 @@ On `main`, BUG-018 closure was recorded as Block 671 by `2c19f8e4b47f36be297dcb9
   - `docs/features/feature_2026_10_15_v1-store-release/logs/2026-10-16_mainsync_3dfc115_macos_debug.log` (226,136 bytes; SHA-256 `b671a890846e030a86cc0b9662381498366f645a08d3348dd395ebf0c911054c`).
 - Authorized diff against `origin/develop`: only this header update and Block 772 in `docs/dev_log.md`. No bug-log, ledger, plan, handoff, code, test, or configuration edits.
 - Stop locally for Claude to review the prepared integration and its evidence. Do not publish this branch or open its PR yet. D1/D2/D3, UX/UI, prod-debug, and Stage 1.6 remain unstarted.
+
+---
+
+## Block 773 — BUG-041 registered; Local Mode scheduled auto-start and alternating countdowns await reproduction (16/10/2026)
+
+Current branch intent: BUG-041 incident registration and next-session preparation only; no runtime or test implementation.
+**Branch:** `fix/local-scheduled-autostart`
+**Base commit:** `b92c84b0b694cd4061463a61267ecb374314596f` (PR #188 merge into `develop`). No new commit is created in this documentation-only step.
+
+### Authorization and preflight
+
+- The owner reported this incident outside development hours and explicitly authorized only local documentary registration/preparation. Implementation, test edits, device reproduction, publication, PRs, and merges are deferred to later authorization and Claude review.
+- Read the repository instructions and relevant scheduling/Local Mode runtime sources. Confirmed real date: 16/10/2026 (Europe/Madrid, UTC+2).
+- `git fetch --all --prune` completed; `git rev-list --left-right --count develop...origin/develop` returned `0 0`. All pre-existing local branches had `ahead_of_develop = 0`; no runtime/test commits needed integration.
+- No tracked work was pending before branch creation. The four pre-existing untracked private files remain untouched; no stashes, prior logs, or backups were modified.
+- Before registration, canonical non-closed bugs and open P0/P1 ledger items were zero. BUG-041 / BUGLOG-041 were available in both registries; BUG-037 through BUG-040 remain provisionally reserved for D1.
+
+### Incident and documentary result
+
+- Registered BUG-041 / BUGLOG-041 as provisional P1. Bug log status: Open — pending reproduction; ledger status: Pending (the ledger's allowed representation of this open item).
+- Physical Samsung Android, Local Mode without Firebase: one task / one 25-minute pomodoro, scheduled less than five minutes ahead. Pre-Run appeared, but its end left Ready / 25:00 requiring manual Start. After that delayed Start, the owner observed roughly one-second alternation of countdowns, apparently separated by the manual-start delay, including a visit to Groups Hub during execution.
+- The owner observed completion at the planned theoretical end, the expected completion dialog and OK navigation, and a Completed history entry with planned timing. These remain observations to preserve and reproduce, not validation results.
+- Kept the two symptoms under one incident. The countdown-rounding/one-shot-flag race and differing runtime/projection anchors are hypotheses only. Root cause is unestablished; incident build, device details, exact timestamps, logs, and screenshots are still missing.
+- Existing specs already require automatic scheduled start. Added the source references, read-only technical pointers, next-session plan, and pending validation gates inside the bug entry; synchronized the ledger and this log. No validation folder is opened at registration; use the permitted structure and actual creation date when later authorized.
+- The Stage 1 historical 219/219 result is unchanged and does not validate BUG-041. This work does not start Stage 2 or alter specs, roadmap, D1/D2/D3, other features, or production/test files.
+
+### Verification and explicit handoff
+
+- No analyzer, Flutter tests, app launches, or device reproductions were run in this documentary step. Documentary checks cover the three-file allowlist, stable ID/source references, queue counts, unique next block number, and unchanged `develop`/code/test state.
+- Open queue after registration: one provisional P1 (`BUGLOG-041`), no P0. No implementation, fix commit, closure, publication, PR, or merge is claimed.
+- First technical action next session, after explicit owner authorization and Claude review: create a deterministic automated reproduction through the Local Mode scheduled-start entry points, then extend it to delayed manual Start plus Run Mode → Groups Hub → Run Mode and measure both candidate time anchors.
+- Propose a correction only after demonstrating the cause. Required follow-up evidence includes physical Samsung Android Local Mode auto-start, one start only, one coherent countdown across navigation/resume, and correct planned completion/dialog/OK/history; analyzer, focused coordinator/timer/session regression suites, and the full suite remain pending as listed in BUG-041.
+- Stop after local registration. The owner will authorize implementation and Claude review later, during Focus Interval working hours.
