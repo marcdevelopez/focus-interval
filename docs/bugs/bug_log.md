@@ -4291,8 +4291,32 @@ Pending local gate for the future implementation (not executed in this registrat
 - [ ] `flutter test --reporter expanded`.
 - [ ] Physical Android Local Mode exact reproduction and regression evidence recorded in the permitted validation packet before considering closure.
 
+Owner observations — 19/10/2026 and 20/10/2026 (physical Samsung Android, Local Mode, no logs/screenshots/measurements):
+
+- Auto-start failure (19/10, 20/10): when Pre-Run reaches zero, Run Mode shows Ready / 25:00 and requires manual Start, before any Groups Hub visit.
+- Alternation trigger (19/10, 20/10): after manual Start the countdown stays stable until Run Mode → Groups Hub → Run Mode; then it alternates about once per second between two values.
+- No Pause required (20/10): alternation appeared in a run where Pause was never used.
+- Pause effect (20/10, unmeasured): pausing while alternation was active appeared to widen the gap.
+- Background → foreground (19/10): alternation disappeared temporarily; a new Groups Hub → Run Mode visit brought it back.
+- Close and reopen (20/10, one observed run): Run Mode showed a value apparently coherent with the schedule, and later Groups Hub → Run Mode visits did not bring the alternation back. Whether the Android process was terminated or only the activity/engine was recreated is unknown.
+- The two values visually seemed to match the planned start and the manual Start; not measured.
+
+Code-reading findings — 19–20/10/2026 (read-only review; hypotheses, not root cause):
+
+- H1: `_ensurePreRunTimer` truncates with `inSeconds`, so the single zero-crossing call to `_handlePreRunCountdownFinished` can occur up to ~1 s before `scheduledStartTime`. It sets `scheduledAutoStartGroupIdProvider` (its listener consumes the one-shot `_autoStartHandled`), then `_attemptScheduledAutoStart` aborts as "not due" and clears the pending id. At the boundary `ScheduledGroupCoordinator._autoStartGroup` sets `running` with `actualStartTime = scheduledStart`, but `_maybeAutoStartScheduled` is consumed, `updateGroup` does not project, and `_maybeAutoStartRunningGroup` returns early in Local Mode when `actualStartTime != null` (Fix 18, `55879f4`). Expected: persisted group running, ViewModel idle (Ready). Account Mode follows different paths (unverified).
+- H2: manual Start on a running group keeps the group anchored at `scheduledStart` but starts the machine, `phaseStartedAt` and `TimerService.startTick` at the manual-Start time. Two 1 Hz writers feed Run Mode state (`PomodoroMachine` and the persistent `TimerService` via `_applyTimerRuntimeProjection`); Local Mode uses `NoopPomodoroSessionRepository`, so no session snapshot re-anchors `TimerService`. On re-entry, `loadGroup` re-projects only the machine from the group timeline and ignores pause offsets, while resume projection (`_applyGroupTimelineProjection`) is pause-aware and pauses extend `theoreticalEndTime`. Possible gap: manual-Start delay plus paused seconds.
+- Close/reopen likely recreates the provider container, leaving `TimerService` idle and only the Fix 18 projection path (one writer). Unverified.
+- Open: the code read so far does not explain why background → foreground temporarily removes the alternation.
+- Spec deviation to verify: when Run Mode itself promotes a due scheduled group, `_attemptScheduledAutoStart` writes `actualStartTime: now` instead of `scheduledStartTime` (specs 10.4.1).
+
+Revised reproduction order — 20/10/2026 (pending authorization):
+
+R1 Local Pre-Run boundary (persisted vs ViewModel vs displayed state; never-Start variant to theoretical end). R2 controls (no Pre-Run, post-boundary trigger, Start now from Task List and Groups Hub, Account baseline). R3 delayed manual Start + Groups Hub → Run Mode WITHOUT Pause, logging per tick scheduled/actual start, theoretical end, machine, TimerService, ViewModel and displayed values. R4 Pause/Resume variants with exact paused seconds. R5 lifecycle scenarios, not treated as equivalent: in-app navigation, background/foreground, provider-container recreation, device cold start. R6 completion, sounds, transitions, duplicates and regressions.
+
 Fix applied: None.
 
 Status:
 
 Open — pending reproduction (2026-10-16). Ledger ID: BUGLOG-041; ledger status: Pending; provisional P1. Blocker: documentation-only authorization outside the owner's development hours; reproduction, implementation, Claude review, and device validation are pending. closed_commit_hash: `-`; closed_commit_message: `-`.
+
+Update 20/10/2026: owner observations 19–20/10 and code-reading hypotheses recorded (dev-log Block 774). Root cause not established; reproduction and any fix require explicit owner authorization.

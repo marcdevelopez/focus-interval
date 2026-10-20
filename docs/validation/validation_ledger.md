@@ -81,6 +81,13 @@ Use this checklist for every implementation branch before push/PR/merge to preve
 2. Confirm `develop...origin/develop = 0 0`.
 3. Only then move to the next implementation item.
 
+## Snapshot (2026-10-20)
+
+- Branch `fix/local-scheduled-autostart` (local, unpublished): BUG-041 registration committed as `329ac28` (19/10/2026); 19–20/10 owner observations and code-reading hypotheses added (dev-log Block 774).
+- Non-closed canonical bug queue on this branch: **1**, `BUGLOG-041` (provisional P1, Pending; reproduction not started). Open P0: **0**.
+- `develop` (`b92c84b`) does not yet contain BUG-041 until this branch is integrated.
+- Historical snapshots below are unchanged.
+
 ## Snapshot (2026-10-16)
 
 - PR #188 is merged into `develop` as `b92c84b0b694cd4061463a61267ecb374314596f`. After `git fetch --all --prune`, local `develop...origin/develop = 0 0`; no local branch had commits outside `develop` before creating `fix/local-scheduled-autostart`.
@@ -192,7 +199,7 @@ Use this checklist for every implementation branch before push/PR/merge to preve
 
 ### Active bug-log queue (sync 2026-10-16)
 
-- [ ] ID: `BUGLOG-041` | Type: bug | Priority: P1 | Status: Pending | Source: `docs/bugs/bug_log.md:4212` (BUG-041), `docs/specs.md:1655`, `docs/dev_log.md` (Block 773) | Item: Physical Samsung Android, Local Mode without Firebase: one task / one 25-minute pomodoro scheduled less than five minutes ahead remains Ready at 25:00 after Pre-Run; delayed manual Start is followed by apparently alternating planned-start/manual-start countdowns, while completion/history follow planned timing. One incident with two potentially related symptoms; provisional P1, Open — pending reproduction in the bug log. Documentation/preparation only on `fix/local-scheduled-autostart`; reproduction, cause confirmation, implementation, Claude review, and device validation await later owner authorization. BUG-037..BUG-040 remain provisionally reserved for D1. | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: Owner report in conversation, 16/10/2026; next-session plan and unchecked gates in BUG-041. No incident logs/screenshots, exact automated/device reproduction, implemented fix, or new validation result.
+- [ ] ID: `BUGLOG-041` | Type: bug | Priority: P1 | Status: Pending | Source: `docs/bugs/bug_log.md:4212` (BUG-041), `docs/specs.md:1655`, `docs/dev_log.md` (Blocks 773–774) | Item: Physical Samsung Android, Local Mode without Firebase: one task / one 25-minute pomodoro scheduled less than five minutes ahead remains Ready at 25:00 after Pre-Run; delayed manual Start is followed by apparently alternating planned-start/manual-start countdowns, while completion/history follow planned timing. One incident with two potentially related symptoms; provisional P1, Open — pending reproduction in the bug log. Documentation/preparation only on `fix/local-scheduled-autostart`; reproduction, cause confirmation, implementation, Claude review, and device validation await later owner authorization. BUG-037..BUG-040 remain provisionally reserved for D1. | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: Owner report in conversation, 16/10/2026; next-session plan and unchecked gates in BUG-041. No incident logs/screenshots, exact automated/device reproduction, implemented fix, or new validation result.
 
 - [x] ID: `BUGLOG-036` | Type: bug | Priority: P2 | Status: Closed/OK | Source: `docs/bugs/bug_log.md:4166`, `test/presentation/task_group_planning_screen_test.dart:1`, `docs/dev_log.md` (Block 771) | Item: Restore the two existing adjusted-end planning widget tests with ProviderScope and deterministic overrides; no production changes. | closed_commit_hash: `40a7a1646951a38c66467f5393816af5ff318d49` | closed_commit_message: `test(planning): wrap planning screen tests in ProviderScope with deterministic overrides` | evidence: Real-branch `flutter analyze` PASS, targeted 2/2 PASS, full suite 219/219 PASS on 16/10/2026; all actual exit codes `0`. Full output: `docs/bugs/validation_bug036_2026_10_16/logs/2026-10-16_bug036_40a7a16_macos_debug.log` (SHA-256 `536b44d610b07474cab2759e429a12054bd6addfadfaf48293b5a84bdc6f48b2`), attached in PR #187. Claude technical/evidence review complete; documentary closure approved by the owner on 16/10/2026. Closed/OK on the fix branch; closure-commit review and explicitly authorized merge into `develop` pending.
 

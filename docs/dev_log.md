@@ -26,8 +26,8 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last closed bug fix: **BUG-036 planning-screen test harness, Closed/OK on 16/10/2026 (`Block 771`, implementation `40a7a1646951a38c66467f5393816af5ff318d49`); merged into develop via PR #187 (`6263526c6dec5312ac34ae596a2e004a97709a7f`)**
-Current focus: **BUG-041 documentation/preparation only — Local Mode scheduled auto-start and inconsistent countdowns; Open — pending reproduction. Stage 1 integration is complete through PR #188; Stage 2 implementation is not started in this work.**
-Last update: **16/10/2026**
+Current focus: **BUG-041 investigation — Local Mode scheduled auto-start and alternating countdowns; 19–20/10 observations and code-reading hypotheses recorded; reproduction pending authorization.**
+Last update: **20/10/2026**
 
 ---
 
@@ -19343,3 +19343,27 @@ Current branch intent: BUG-041 incident registration and next-session preparatio
 - First technical action next session, after explicit owner authorization and Claude review: create a deterministic automated reproduction through the Local Mode scheduled-start entry points, then extend it to delayed manual Start plus Run Mode → Groups Hub → Run Mode and measure both candidate time anchors.
 - Propose a correction only after demonstrating the cause. Required follow-up evidence includes physical Samsung Android Local Mode auto-start, one start only, one coherent countdown across navigation/resume, and correct planned completion/dialog/OK/history; analyzer, focused coordinator/timer/session regression suites, and the full suite remain pending as listed in BUG-041.
 - Stop after local registration. The owner will authorize implementation and Claude review later, during Focus Interval working hours.
+
+---
+
+## Block 774 — BUG-041 owner observations (19–20/10) and code-reading hypotheses recorded; reproduction plan revised (20/10/2026)
+
+**Current branch intent:** BUG-041 investigation documentation only; no runtime or test changes.
+**Branch:** `fix/local-scheduled-autostart` (local, unpublished)
+**Base:** `329ac28` (BUG-041 registration, committed 19/10/2026 09:16 on `develop` `b92c84b`).
+
+### Clarification of Block 773
+
+- Block 773 recorded the 16/10 working state ("no new commit is created"). The same three-file registration was committed locally as `329ac28` on 19/10/2026. Block 773 is kept unchanged as a historical checkpoint.
+
+### Owner observations and code-reading findings
+
+- Recorded in BUG-041 (sections dated 19–20/10/2026): auto-start failure before any Groups Hub visit; alternation after manual Start plus Groups Hub → Run Mode, also without Pause; Pause apparently widening the gap; background/foreground temporarily clearing it; close/reopen clearing it in one observed run. Owner reports without logs.
+- Hypotheses H1 (premature Pre-Run trigger consuming the one-shot auto-start flag; Fix 18 Local guard blocking recovery) and H2 (two 1 Hz writers with different anchors after manual Start; pause-unaware `loadGroup` projection). Not demonstrated.
+
+### Revised plan and authorization
+
+- Reproduction order R1–R6 as recorded in BUG-041; the first alternation test runs without Pause, and lifecycle scenarios are not treated as equivalent.
+- Owner decisions (20/10, provisional): P1 kept, symptoms grouped, BUG-041 before D1, hypotheses are not root causes.
+- Only these three documentation files change. Reproduction tests, validation packet, fixes, publication and PR require separate authorization.
+- Working-tree hygiene: private untracked files and any `.tmp.driveupload/` created by Google Drive for desktop are never staged (explicit-path staging only).
