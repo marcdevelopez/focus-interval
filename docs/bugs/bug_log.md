@@ -4313,6 +4313,15 @@ Revised reproduction order — 20/10/2026 (pending authorization):
 
 R1 Local Pre-Run boundary (persisted vs ViewModel vs displayed state; never-Start variant to theoretical end). R2 controls (no Pre-Run, post-boundary trigger, Start now from Task List and Groups Hub, Account baseline). R3 delayed manual Start + Groups Hub → Run Mode WITHOUT Pause, logging per tick scheduled/actual start, theoretical end, machine, TimerService, ViewModel and displayed values. R4 Pause/Resume variants with exact paused seconds. R5 lifecycle scenarios, not treated as equivalent: in-app navigation, background/foreground, provider-container recreation, device cold start. R6 completion, sounds, transitions, duplicates and regressions.
 
+Automated reproduction R1 — 20–23/10/2026 (packet `docs/bugs/validation_bug041_2026_10_20/`):
+
+- Method: widget test run with `flutter test` on the macOS host (debug; default Android test platform), single real clock (`LiveTestWidgetsFlutterBinding`), production app shell and real Local repositories, through the gated runner in the packet's `codex_handoff.md`. The test file stays outside Git while it fails by design (sha256 `1d92a9b9…`); run logs are local-only and indexed by sha256 in the packet plan.
+- Attempt 1 (22/10): stopped `INFRA` (observer callbacks received `dynamic` values). Attempt 2 (22/10): stopped `INVALID` (A2/A4 `INVALID:V3` from a clock rule that compared asynchronously captured `now` values across emitters; A1/A3/A5 valid). Attempt 3 (22/10), after the approved V3 correction: `RUNNER_EXIT=1`; R1-A 5/5 and R1-B 1/1 VALID/H1 with `FAIL[S1,S2,S4,S5]` (S3 passes); 219/219 existing tests PASS; real full suite `SUITE_FAIL` with only the five expected R1-A specification failures.
+- Observed in all 11 valid runs of attempt 3: Run Mode opens in Pre-Run by itself; the Pre-Run handler fires 127–905 ms before T0; `Auto-start abort (not due)` follows within 0–1 ms and `Auto-start skip pending=null` about 25–40 ms later; at T0 the coordinator persists `running` with `actualStartTime = T0`; there is no `startFromAutoStart`; Run Mode stays Ready/25:00 with Start enabled through T0+3 s; no start sound.
+- Not demonstrated: which guard blocks the start (`_autoStartHandled` strongly indicated by the post-frame skip; the Fix 18 Local guard inferred; neither return logs anything), causality of the early abort (R2), correspondence with the physical device (R1-D), and H2.
+- Diagnostic finding for R2 (no change authorized): 9 of the 11 runs show two concurrent coordinator start timers; the symptom also occurs with one timer.
+- Owner decisions 23/10/2026: R1 accepted as the automated reproduction of the auto-start symptom only (not root cause, fix or closure). Approved functional requirements, not yet in the specs: after a failed auto-start, a manual Start computes the remaining time from T0 (Start 20 s after T0 shows about 24:40); the normal start sound plays once when the group effectively starts, also if the user left Pre-Run, and is not repeated when Run Mode is reopened.
+
 Fix applied: None.
 
 Status:
@@ -4320,3 +4329,5 @@ Status:
 Open — pending reproduction (2026-10-16). Ledger ID: BUGLOG-041; ledger status: Pending; provisional P1. Blocker: documentation-only authorization outside the owner's development hours; reproduction, implementation, Claude review, and device validation are pending. closed_commit_hash: `-`; closed_commit_message: `-`.
 
 Update 20/10/2026: owner observations 19–20/10 and code-reading hypotheses recorded (dev-log Block 774). Root cause not established; reproduction and any fix require explicit owner authorization.
+
+Update 23/10/2026: automated reproduction R1 accepted by the owner (attempt 3; dev-log Block 775). Root cause not established; R1-D, R2, R3 and any fix require explicit owner authorization.

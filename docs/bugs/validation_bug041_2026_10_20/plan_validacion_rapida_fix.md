@@ -1251,7 +1251,8 @@ No staging, commits, push, PR, merge, device run, R1-C, R2/R3, or production fix
   recorded in the results block.
 - [x] (intento 3) Tracked/staged diffs empty, expected branch/HEAD retained,
   private files and Drive temp files untouched.
-- [ ] (intento 3) Claude's acceptance review and owner's next authorization.
+- [x] (intento 3) Claude's acceptance review (2026-10-22) and owner's formal
+  acceptance of R1 (2026-10-23).
 
 ### Evidence index — local-only logs (recorded 2026-10-23)
 
@@ -1310,14 +1311,20 @@ Bug closure (not this step): requires an approved fix (Step C), regression
 coverage, device validation on the physical Samsung in Local Mode, and the
 closure flow in `CLAUDE.md` section 11. BUG-041 stays Open, P1 provisional.
 
+R1 acceptance (2026-10-23): the owner formally accepted R1 on attempt 3, with
+the reservations of Claude's review of 2026-10-22 (host-level reproduction,
+not the physical device; causality of the early abort and the blocking guard
+not demonstrated; R1 tests fail by design and stay outside Git until the fix;
+V3 corrected once, before attempt 3). The acceptance covers only the automated
+reproduction of the auto-start symptom. It is not a root-cause claim, a fix or
+the closure of BUG-041.
+
 ## Status
 
-Open - 2026-10-22, attempt 3: `RUNNER_EXIT=1`,
-`SEQUENCE=COMPLETED suite_status=FAIL`; full gate `SUITE_FAIL` with
-219 existing tests PASS and only five expected R1 SPEC-FAIL tests.
-R1-A 5/5 VALID/H1 and B1 VALID/H1 share `FAIL[S1,S2,S4,S5]`.
-Automated R1 evidence meets the recorded thresholds on attempt 3 alone;
-Claude's review and the owner's decision are pending. Attempts 1/2 and the
-V3 review remain unchanged. BUG-041 stays Open, P1 provisional; H1/H2 are
-not established as root cause. No production fix, physical-device run,
-commit, push, PR or merge.
+Open - 2026-10-23: R1 accepted by the owner (automated reproduction of the
+auto-start symptom, attempt 3: R1-A 5/5 and R1-B VALID/H1,
+`FAIL[S1,S2,S4,S5]`, 219/219 existing tests PASS, full suite `SUITE_FAIL` with
+only the five expected R1-A specification failures). BUG-041 stays Open, P1
+provisional; H1/H2 are not established as root cause. Next steps, each pending
+owner authorization: R1-D on the physical Samsung, R2 level 1 (causality
+controls), R3 (alternating countdowns). No production fix, push, PR or merge.

@@ -1,8 +1,8 @@
 ## Exact repro
 
 - [x] R1.0 clock probe PASS (2026-10-22; single real clock verified, Flutter exit 0).
-- [ ] R1-A: 5/5 valid, at least 4/5 H1, identical SPEC-FAIL signature including S1 and S5.
-- [ ] R1-B: valid, H1, same SPEC-FAIL signature as R1-A.
+- [x] R1-A: 5/5 valid, at least 4/5 H1, identical SPEC-FAIL signature including S1 and S5 (met by intento 3).
+- [x] R1-B: valid, H1, same SPEC-FAIL signature as R1-A (met by intento 3).
 
 - [x] (intento 2) R1.0 PASS; clock delta 0 ms, timer 302 ms, pump 25,892 us, ticks 1002/2002/3002 ms.
 - [ ] (intento 2) R1-A gate accepted: stopped INVALID; A1/A3/A5 valid SPEC-FAIL, A2/A4 INVALID:V3.
@@ -15,7 +15,7 @@
 ## Regression smoke
 
 - [x] Existing suite 219/219 PASS (runner stage `existing`, 2026-10-22, Flutter exit 0).
-- [ ] Real full suite: only R1 SPEC-FAIL failures; reported as `SUITE_FAIL`, not PASS.
+- [x] Real full suite: only R1 SPEC-FAIL failures; reported as `SUITE_FAIL`, not PASS (met by intento 3).
 - [x] No tracked file modified (`git diff --stat` empty).
 
 - [x] (intento 2) Existing tracked suite 219/219 PASS, Flutter exit 0.
@@ -49,9 +49,9 @@
 
 ## Closure rule
 
-- [ ] R1 closes only after Claude's evidence review and the owner's decision.
+- [x] R1 closes only after Claude's evidence review and the owner's decision (Claude review 2026-10-22; owner acceptance 2026-10-23).
 - [x] BUG-041 stays Open (P1 provisional); bug closure requires an approved fix, device validation and the `CLAUDE.md` section 11 flow.
 - [ ] (intento 2) Claude reviews the exact repair and evidence/V3 results; owner decides any further change/run.
 - [x] (intento 2) BUG-041 remains Open, P1 provisional; H1/H2 not established as root cause.
-- [ ] (intento 3) Claude reviews and accepts the automated R1 evidence; owner decides the next authorized step.
+- [x] (intento 3) Claude reviews and accepts the automated R1 evidence; owner decides the next authorized step (accepted 2026-10-23).
 - [x] (intento 3) BUG-041 remains Open, P1 provisional; no fix, physical-device validation or root-cause claim.

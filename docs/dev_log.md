@@ -26,8 +26,8 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last closed bug fix: **BUG-036 planning-screen test harness, Closed/OK on 16/10/2026 (`Block 771`, implementation `40a7a1646951a38c66467f5393816af5ff318d49`); merged into develop via PR #187 (`6263526c6dec5312ac34ae596a2e004a97709a7f`)**
-Current focus: **BUG-041 investigation — Local Mode scheduled auto-start and alternating countdowns; 19–20/10 observations and code-reading hypotheses recorded; reproduction pending authorization.**
-Last update: **20/10/2026**
+Current focus: **BUG-041 investigation — automated reproduction R1 accepted (23/10/2026); causality (R2), alternating countdowns (R3) and device reproduction (R1-D) pending authorization.**
+Last update: **23/10/2026**
 
 ---
 
@@ -19367,3 +19367,26 @@ Current branch intent: BUG-041 incident registration and next-session preparatio
 - Owner decisions (20/10, provisional): P1 kept, symptoms grouped, BUG-041 before D1, hypotheses are not root causes.
 - Only these three documentation files change. Reproduction tests, validation packet, fixes, publication and PR require separate authorization.
 - Working-tree hygiene: private untracked files and any `.tmp.driveupload/` created by Google Drive for desktop are never staged (explicit-path staging only).
+
+## Block 775 — BUG-041 automated reproduction R1 accepted (attempt 3); validation packet recorded (20–23/10/2026)
+
+**Current branch intent:** BUG-041 investigation documentation; no runtime changes.
+**Branch:** `fix/local-scheduled-autostart` (local, unpublished)
+**Base:** `1561ead` (Block 774).
+
+### Step B — R1 automated reproduction
+
+- Packet `docs/bugs/validation_bug041_2026_10_20/`: plan, checklist and Codex handoff with the gated runners and the two approved test diffs. Single real clock (`LiveTestWidgetsFlutterBinding`), production app shell, real Local repositories.
+- Attempt 1 (22/10): `INFRA` stop; observer callbacks received `dynamic` values (`.name` on enums), fixed by typing the five observers. Attempt 2 (22/10): `INVALID` stop; A2/A4 `INVALID:V3` from a clock rule that compared asynchronously captured `now` values across emitters, replaced by per-line capture checks approved before attempt 3. Attempt 3 (22/10): `RUNNER_EXIT=1`, R1-A 5/5 and R1-B VALID/H1, `FAIL[S1,S2,S4,S5]`, 219/219 existing PASS, full suite `SUITE_FAIL` with only the five expected R1-A failures.
+- Evidence integrity: 28 local-only logs (16 historical, 12 from attempt 3) indexed by sha256 in the plan; the reproduction test stays untracked while it fails by design (sha256 `1d92a9b9…`).
+- Diagnostic finding for R2: two concurrent coordinator start timers in 9 of 11 runs; the symptom also occurs with one.
+
+### Owner decisions (23/10/2026)
+
+- R1 formally accepted, with Claude's reservations of 22/10, as the automated reproduction of the auto-start symptom only. Not a root-cause claim, a fix or closure; BUG-041 stays Open, P1 provisional.
+- Approved functional requirements, not yet in the specs: after a failed auto-start, a manual Start computes the remaining time from T0; the normal start sound plays once when the group effectively starts, also after leaving Pre-Run, and is not repeated when Run Mode is reopened.
+- Next, each pending authorization: R1-D on the physical Samsung, R2 level 1 (test-only causality controls), R3 (alternating countdowns). R2 level 2 (production instrumentation or intervention) is not authorized. D1 stays separate.
+
+### Scope of the R1 documentation commits
+
+- Documentation only: the validation packet; BUG-041 entry; ledger Snapshot (2026-10-23) and `BUGLOG-041`; this block and the header. No runtime, test, spec, roadmap or configuration changes. Blocks up to 774 and earlier snapshots are unchanged.
