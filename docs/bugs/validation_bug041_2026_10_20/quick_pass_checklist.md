@@ -1,0 +1,57 @@
+## Exact repro
+
+- [x] R1.0 clock probe PASS (2026-10-22; single real clock verified, Flutter exit 0).
+- [ ] R1-A: 5/5 valid, at least 4/5 H1, identical SPEC-FAIL signature including S1 and S5.
+- [ ] R1-B: valid, H1, same SPEC-FAIL signature as R1-A.
+
+- [x] (intento 2) R1.0 PASS; clock delta 0 ms, timer 302 ms, pump 25,892 us, ticks 1002/2002/3002 ms.
+- [ ] (intento 2) R1-A gate accepted: stopped INVALID; A1/A3/A5 valid SPEC-FAIL, A2/A4 INVALID:V3.
+- [ ] (intento 2) R1-B: not run after the R1-A gate stopped.
+
+- [x] (intento 3) R1.0 PASS: clock delta 0 ms, timer 302 ms, pump 27,338 us, ticks 1003/2002/3003 ms.
+- [x] (intento 3) R1-A evidence: 5/5 VALID, 5/5 H1, identical FAIL[S1,S2,S4,S5], EXPECTED_SPEC_FAIL gate.
+- [x] (intento 3) R1-B evidence: VALID/H1, same signature as R1-A, EXPECTED_SPEC_FAIL gate.
+
+## Regression smoke
+
+- [x] Existing suite 219/219 PASS (runner stage `existing`, 2026-10-22, Flutter exit 0).
+- [ ] Real full suite: only R1 SPEC-FAIL failures; reported as `SUITE_FAIL`, not PASS.
+- [x] No tracked file modified (`git diff --stat` empty).
+
+- [x] (intento 2) Existing tracked suite 219/219 PASS, Flutter exit 0.
+- [ ] (intento 2) Real full suite: not run after the R1-A gate stopped.
+- [x] (intento 2) Tracked and staged diffs empty; private untracked files preserved.
+
+- [x] (intento 3) Existing tracked suite 219/219 PASS separately and within the real full suite.
+- [x] (intento 3) Real full suite reported SUITE_FAIL, Flutter exit 1: 219 existing PASS, R1.0 PASS, five expected SPEC-FAIL, B1 intentionally skipped.
+- [x] (intento 3) No unexpected failure, invalid run or alternative interleaving; no global PASS claim.
+- [x] (intento 3) Tracked and staged diffs empty; expected branch/HEAD, private files and Drive temp files untouched.
+
+## Local gate
+
+- [x] `flutter analyze` PASS (2026-10-22; no issues, Flutter exit 0).
+- [x] Runner summary log present with `SEQUENCE=STOPPED stage=r1a`; `RUNNER_EXIT=2` recorded in the plan.
+- [x] Unexpected R1-A INFRA stop documented; no rerun and no test edits after the stop.
+
+- [x] (intento 2) Exact authorized repair; format 0 changed; test SHA-256 47b96386eee004d7... before/after execution.
+- [x] (intento 2) flutter analyze PASS, no issues, Flutter exit 0.
+- [x] (intento 2) One runner invocation only; RUNNER_EXIT=2, STOPPED stage=r1a, INVALID:2,SPEC_FAIL:3.
+- [x] (intento 2) Eight original log checksums OK before/after; eight separate _a2_ logs preserved; handoff hash unchanged.
+- [x] (intento 2) Per-run table, full summary, complete A1/A2/A4 traces and V3 invalidations recorded in the plan.
+- [x] (intento 2) No rerun, no post-stop test/runner edit, no R1-C/R2/R3, no production change or Git mutation.
+
+- [x] (intento 3) Exact V3 diff only; format 0 changed; test SHA-256 1d92a9b9629627c6... matches before/after execution.
+- [x] (intento 3) flutter analyze PASS, no issues, Flutter exit 0.
+- [x] (intento 3) One invocation, RUNNER_EXIT=1, SEQUENCE=COMPLETED, suite_status=FAIL.
+- [x] (intento 3) Sixteen historical checksums OK before/after; twelve separate _a3_ logs; handoff/runner unchanged.
+- [x] (intento 3) Full summary, all RESULT lines, per-run table, complete H1 trace, B1 comparison and suite verdict recorded.
+- [x] (intento 3) Attempts 1/2 and Claude V3 review preserved; no extra execution, test edit, production change or Git mutation.
+
+## Closure rule
+
+- [ ] R1 closes only after Claude's evidence review and the owner's decision.
+- [x] BUG-041 stays Open (P1 provisional); bug closure requires an approved fix, device validation and the `CLAUDE.md` section 11 flow.
+- [ ] (intento 2) Claude reviews the exact repair and evidence/V3 results; owner decides any further change/run.
+- [x] (intento 2) BUG-041 remains Open, P1 provisional; H1/H2 not established as root cause.
+- [ ] (intento 3) Claude reviews and accepts the automated R1 evidence; owner decides the next authorized step.
+- [x] (intento 3) BUG-041 remains Open, P1 provisional; no fix, physical-device validation or root-cause claim.
