@@ -5,7 +5,8 @@ Branch: `fix/local-scheduled-autostart` (local, unpublished)
 Commit: `1561ead` (base; the R1 test file and this packet are uncommitted)  
 Bugs covered: `BUG-041` (Open, P1 provisional)  
 Target devices: `flutter test` host on macOS (debug), default test platform Android.
-Physical Samsung validation is out of scope for R1.
+Physical Samsung validation is out of scope for R1; device step R1-D
+(2026-10-30) used a Samsung SM-A176U1, Android 16, installed debug build.
 
 Scope approved by the owner on 2026-10-20: R1.0, R1-A and R1-B only. R1-C (long
 "never press Start" run) is deferred. No fix, no R2/R3. No commits.
@@ -1132,6 +1133,119 @@ evidence from attempt 3 independently of earlier attempts. Confirm whether R1
 is accepted, then let the owner authorize any next step. No production fix,
 further run or Git action is authorized by this record.
 
+### R1-D — physical Samsung reproduction and R3-D variant (2026-10-30)
+
+Authorization: R1-D (B1 backup, C evidence files, B3 functional run, B4
+cleanup) authorized by the owner on 2026-10-23 and started on the owner's
+signal on 2026-10-30; R3-D (B5) authorized on 2026-10-30 after R1-D ended in
+Ready. No code, test, specification, configuration or device-setting change;
+no reinstall or data deletion; the existing installation and data were used.
+
+Setup (read-only checks before the run, recorded in the device log):
+
+- Device: Samsung SM-A176U1, Android 16 (SDK 36), build
+  `BP4A.251205.006.A176U1UES8BZI5`, connected over USB (ADB over Wi-Fi was
+  unavailable that morning).
+- App: `com.marcdevelopez.focusinterval` `1.1.0 (1)`, debuggable, installed on
+  2026-10-14 09:28:11 and not updated since. Build provenance `ff30e15` is
+  inferred from the local reflog, not verified; `lib/`, `android/` and
+  `pubspec` at `ff30e15` are identical to `1561ead`.
+- Local Mode (no stored app-mode key), default 5-minute notice (no stored
+  notice key), Do Not Disturb on, screen timeout 10 minutes.
+- Existing data: 7 completed and 4 canceled groups, none scheduled or running.
+  The owner's private app-data backup of 2026-10-23 was verified intact
+  (sha256) before the run; it stays outside the repository.
+- Clocks: phone +3.60 s ahead of the Mac (three measurements, round trip about
+  0.1 s; +8.10 s on 2026-10-23); Mac +0.11 s from Apple time. Times below are
+  phone-clock times from logcat unless stated otherwise.
+- Capture: logcat (`flutter` and `BUG041` tags), scrcpy recording of the screen
+  and app audio (`.mkv`), and one screenshot at T0+60 s.
+
+Scenario E — R1-D procedure as executed: the owner opened the app, created the
+task "BUG041 R1-D" (one 25-minute pomodoro) and at 09:22 scheduled it for
+T0 = 09:25:00, between 2 and 5 minutes ahead on the phone clock
+(`schedule-start-timer ... start=2026-10-30 09:25:00.000 delay=177s`). Run Mode
+opened in Pre-Run by itself at 09:22:02.9 (`Auto-start navigate` from
+`/tasks`). Nobody touched the phone until T0+60 s.
+
+Signature criteria (defined before the run) and results:
+
+| # | Criterion | Result |
+|---|---|---|
+| 1 | `Auto-start attempt` and `Auto-start abort (not due)` with `now` in [T0−1 s, T0) | Met: attempt 09:24:59.229; abort `now=09:24:59.237575`, 762 ms before T0 |
+| 2 | `Auto-start skip pending=null` shortly after | Met: 09:24:59.257, 20 ms after the abort line |
+| 3 | `start-timer-fired` with `now` ≥ T0 | Met: `now=09:25:00.176325` (+176 ms); a second one at +215 ms |
+| 4 | `scheduledAutoStartGroupId changed prev=null next=<id> screen=<id>` after T0 | Met: 09:25:00.249 (+249 ms) on the same screen; `Auto-start navigate` to the same route at +251 ms |
+| 5 | From criterion 4 to T0+60 s: no `Auto-start attempt`, `Auto-start skip`, `Timer load group` or `startFromAutoStart` | Met: none of them, and no exception in the log |
+| 6 | Ready/25:00 with Start on screen and no start sound at T0 | Met: video frames after T0 and the 09:26 screenshot show Ready, 25:00 and Start; the owner heard no sound on the phone or the Mac |
+
+Result: positive physical-device reproduction of symptom 1 with the R1
+signature. The early abort (762 ms before T0) is inside the R1 range of
+127–905 ms, and the two coordinator start timers match 9 of the 11 valid R1
+runs.
+
+Limits of the capture: the recording's audio track is digital silence
+(−91 dB) from start to end, so it can neither confirm nor exclude a sound;
+the sound part of criterion 6 relies on the owner's listening. The end mark
+was not written to logcat (unquoted parentheses in the device shell); the stop
+time is in the device log. scrcpy ignored SIGINT and stopped about one minute
+after T0+60 s, so the video extends beyond the observation window.
+
+Additional observation (not analysed): during Pre-Run the task item showed
+09:25–09:50; from T0, in Ready, it showed 09:22–09:47, the time at which the
+group was loaded, not T0 (video frames and the T0+60 s screenshot).
+
+Scenario F — R3-D variant (observed only; not an H2 test): the planned R3-D
+(manual Start after the failed auto-start, then Groups Hub -> Run Mode) could
+not be run. The screen turned off about 10 minutes after the last touch,
+before Start was pressed. The `R3D start` mark text describes the planned
+step, not what happened. Observed instead:
+
+- 09:35:11, phone unlocked and app back in the foreground: the coordinator
+  logged `running-open-timer` and `Auto-start navigate` to the same route,
+  with no `Timer load group` and no `startFromAutoStart`. The screen first
+  showed the earlier Ready/25:00 and, about 5 s later in the video, a running
+  countdown with Pause and Cancel, coherent with T0 (14:44 at about 09:35:16;
+  end 09:50:00), a "Pomodoro 1 of 1" card for 09:25–09:50 and "End of group"
+  09:50. The task item still showed 09:22–09:47.
+- 09:37:22 Run Mode -> Groups Hub (group running, ends 09:50); 09:37:34 back in
+  Run Mode: a new ViewModel loaded the group (`Timer load group ...
+  status=running`), then `Auto-start attempt` and `Auto-start abort (state not
+  idle)` cleared the pending id that had been set at T0+249 ms and that nothing
+  had consumed until then.
+- After the return: a single countdown coherent with T0 (12 consecutive
+  per-second video frames 12:22 -> 12:11, no alternation; the owner saw no
+  alternation for 30 s). The task item showed 09:25–09:50.
+- Cleanup B4: the owner canceled the test group at 09:40:38. Final data: 7
+  completed and 5 canceled groups, none scheduled or running.
+
+Classification (2026-10-30):
+
+- Facts: R1-D criteria 1–6 and the R3-D variant observations above. By
+  construction, the early abort happens whenever Run Mode shows Pre-Run during
+  the last second before T0: the 1 s `Timer.periodic` with `inSeconds`
+  truncation reaches 0 inside (T0−1 s, T0]
+  (`lib/presentation/screens/timer_screen.dart:921-931`), where the promotion
+  check (`timer_screen.dart:374-376`) is always "not due".
+- Deductions (from the R1 traces, the R1-D log and an exhaustive reading of
+  the returns; no counterfactual run): (A) after T0 the pending-id path is
+  blocked by the one-shot `_autoStartHandled` (`timer_screen.dart:331`), set
+  before T0 at `timer_screen.dart:334`. It is the only return consistent with
+  the post-frame `skip pending=null` before T0 and with the absence of any
+  attempt or skip after the post-T0 pending change while the same screen stays
+  mounted; it holds in the 11 valid R1 runs and in R1-D. (B) The stream path
+  is closed by the Fix 18 Local guard (`timer_screen.dart:468-470`): with the
+  ViewModel idle, Local Mode without a session
+  (`NoopPomodoroSessionRepository.watchSession()` emits `null`) and
+  `actualStartTime` set, it is the only remaining return. Neither return logs
+  anything.
+- Not demonstrated / hypotheses: causality (that without the early abort the
+  group would start at T0 with the T0 anchor and the start sound); H2 and the
+  alternating countdowns (the R3-D variant had no manual Start and included a
+  background return); whether the 09:22–09:47 range is a second time anchor
+  related to H2; whether the background-return and re-open paths play the
+  start sound (owner requirement of 2026-10-23).
+
 ## Comandos de ejecución
 
 Run from the repo root with the runner embedded in `codex_handoff.md` (executed
@@ -1174,6 +1288,23 @@ date, hash = HEAD, `1561ead`; attempt N >= 2 adds `_a<N>` after the stage id):
 - `<date>_bug041_r1b_1561ead_macos_debug.log` + `_r1b_json_`
 - `<date>_bug041_full_1561ead_macos_debug.log` + `_full_json_`
 
+R1-D and R3-D device commands (2026-10-30), equivalent to the ones run (which
+used the USB serial and a plain redirect). Run from the repo root with the
+phone on USB; `-d` selects the only USB device:
+
+```bash
+V=docs/bugs/validation_bug041_2026_10_20; T=ff30e15_android_SM-A176U1
+adb -d logcat -T 1 -v threadtime -s flutter:V BUG041:V | tee "$V/logs/2026-10-30_bug041_r1d_${T}_debug.log"
+scrcpy -d --audio-source=playback --audio-dup --record="$V/screenshots/2026-10-30_bug041_r1d_${T}.mkv" --record-format=mkv --window-title="BUG041 R1-D"
+adb -d shell log -t BUG041 "'R1D scheduled T0=09:25:00 (owner, phone clock)'"
+adb -d exec-out screencap -p > "$V/screenshots/2026-10-30_bug041_r1d_t0plus60_${T}.png"
+pkill -TERM -f "scrcpy -d"
+```
+
+R3-D used the same commands with `r3d` in the file names and
+`--time-limit=420` for scrcpy. A scrcpy started in the background ignores
+SIGINT, so stop it with SIGTERM; quote device-shell marks as shown.
+
 ## Log analysis - quick scan
 
 Bug present signals:
@@ -1190,6 +1321,18 @@ Fix working signals (for a future fix step; not expected in R1):
 rg -n "BUG041-R1 RESULT .*validity=VALID .*spec=PASS" docs/bugs/validation_bug041_2026_10_20/logs/*_bug041_r1[ab]_*.log
 rg -n "Auto-start startFromAutoStart" docs/bugs/validation_bug041_2026_10_20/logs/*_bug041_r1[ab]_*.log
 ```
+
+R1-D / R3-D device logs (phone clock; T0 = 09:25:00):
+
+```bash
+rg -n "Auto-start (attempt|abort|skip|startFromAutoStart)|start-timer-fired|scheduledAutoStartGroupId changed|Timer load group" docs/bugs/validation_bug041_2026_10_20/logs/2026-10-30_bug041_r[13]d_ff30e15_android_SM-A176U1_debug.log
+```
+
+Bug present: `Auto-start abort (not due)` less than 1 s before T0, then
+`skip pending=null`, then a post-T0 `scheduledAutoStartGroupId changed
+prev=null next=<id>` with no later attempt, skip or load. Fix working (future
+device validation): a start at T0 without user action and no
+`abort (not due)`; the exact log line depends on the approved fix.
 
 ## Verificación local
 
@@ -1254,6 +1397,14 @@ No staging, commits, push, PR, merge, device run, R1-C, R2/R3, or production fix
 - [x] (intento 3) Claude's acceptance review (2026-10-22) and owner's formal
   acceptance of R1 (2026-10-23).
 
+### R1-D local verification (2026-10-30)
+
+- [x] No code, test, specification or configuration change; `flutter analyze`
+  and `flutter test` not required for this device-only step.
+- [x] Tracked and staged diffs empty after the session; the new device
+  evidence is ignored by Git; the R1 test stays at `1d92a9b9...`.
+- [x] The 28 indexed R1 logs still verify OK (`shasum -a 256 -c`).
+
 ### Evidence index — local-only logs (recorded 2026-10-23)
 
 The 28 run logs of attempts 1-3 stay outside Git (`*.log` is ignored as
@@ -1297,6 +1448,27 @@ The R1 reproduction test is also kept outside Git while it fails by design:
 `1d92a9b9629627c6183581247e3d5762a71255f34387aa4fd0bf24312f723c66`. It is to
 be committed together with the fix, when its specification checks pass.
 
+### Evidence index — device evidence (recorded 2026-10-30)
+
+These seven files stay outside Git (`*.log` and `screenshots/*` are ignored).
+They are kept in this folder locally and are to be added to the owner's private
+backup; the videos can show other personal app data. Verify a copy with
+`shasum -a 256 -c` from this packet folder:
+
+```text
+dc29167eb02baa1f4e3d209fc1721dd45564775954e45bcbc43abd56f510211d  logs/2026-10-23_bug041_r1d-device_ff30e15_android_SM-A176U1_debug.log
+0b1936098e9bc9697b56c0d6e91c8614f4b7774de2c8f50f06f8885f1aca38cf  logs/2026-10-30_bug041_r1d-device_ff30e15_android_SM-A176U1_debug.log
+f0094dbab6ec8fc240a649af9d80e370cef058e2cc6b5da8394dd0e8f006b749  logs/2026-10-30_bug041_r1d_ff30e15_android_SM-A176U1_debug.log
+5796ac32b10bdb06adea7f79258f6daa6bfaed50b0f38b707f7eb96cd41a53ac  logs/2026-10-30_bug041_r3d_ff30e15_android_SM-A176U1_debug.log
+73ededc202a78f38398a97ae8e21d4bf5c4bfbb04b26197a068d08d1e7ba63c5  screenshots/2026-10-30_bug041_r1d_ff30e15_android_SM-A176U1.mkv
+12ae6243936e118fa09c9bdb235c4956ca0597f5a7677a99d02f70bca619aa0a  screenshots/2026-10-30_bug041_r1d_t0plus60_ff30e15_android_SM-A176U1.png
+3f9423e5b50152397db4e96c6234aeb85da70ccffc5a7dc2be3d46d72585f877  screenshots/2026-10-30_bug041_r3d_ff30e15_android_SM-A176U1.mkv
+```
+
+The 2026-10-23 device log holds that day's read-only checks (device,
+installation, data, clock offset +8.10 s). The 2026-10-30 device log holds the
+pre-check, the clock offsets and the capture start/stop times of R1-D and R3-D.
+
 ## Criterios de cierre
 
 R1 step (reproduction), evaluated by Claude and decided by the owner:
@@ -1319,12 +1491,22 @@ V3 corrected once, before attempt 3). The acceptance covers only the automated
 reproduction of the auto-start symptom. It is not a root-cause claim, a fix or
 the closure of BUG-041.
 
+R1-D result (2026-10-30): positive physical-device reproduction of the
+auto-start symptom; criteria 1–6 met (R1-D section). Recorded on the owner's
+instruction of 2026-10-30. It confirms the R1 signature on the device. It is
+not a root-cause claim, a fix, an H2 result or the closure of BUG-041; the R3-D
+variant (no manual Start) does not validate H2.
+
 ## Status
 
-Open - 2026-10-23: R1 accepted by the owner (automated reproduction of the
-auto-start symptom, attempt 3: R1-A 5/5 and R1-B VALID/H1,
-`FAIL[S1,S2,S4,S5]`, 219/219 existing tests PASS, full suite `SUITE_FAIL` with
-only the five expected R1-A specification failures). BUG-041 stays Open, P1
-provisional; H1/H2 are not established as root cause. Next steps, each pending
-owner authorization: R1-D on the physical Samsung, R2 level 1 (causality
-controls), R3 (alternating countdowns). No production fix, push, PR or merge.
+Open - 2026-10-30: R1 accepted on 2026-10-23 (automated reproduction,
+attempt 3: R1-A 5/5 and R1-B VALID/H1, `FAIL[S1,S2,S4,S5]`, 219/219 existing
+tests PASS, full suite `SUITE_FAIL` with only the five expected R1-A
+specification failures). R1-D on 2026-10-30: positive reproduction on the
+physical Samsung with the same signature, criteria 1–6 met. R3-D observed only
+as a variant (no manual Start; background return), not an H2 test. BUG-041
+stays Open, P1 provisional; H1/H2 are not established as root cause. Next
+steps, each pending owner authorization: a valid R3-D (manual Start before the
+screen turns off, then Groups Hub -> Run Mode), R2 level 1 (causality
+controls), R3 (alternating countdowns), then the fix proposal. No production
+fix, push, PR or merge.

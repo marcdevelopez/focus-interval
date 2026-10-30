@@ -26,8 +26,8 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last closed bug fix: **BUG-036 planning-screen test harness, Closed/OK on 16/10/2026 (`Block 771`, implementation `40a7a1646951a38c66467f5393816af5ff318d49`); merged into develop via PR #187 (`6263526c6dec5312ac34ae596a2e004a97709a7f`)**
-Current focus: **BUG-041 investigation — automated reproduction R1 accepted (23/10/2026); causality (R2), alternating countdowns (R3) and device reproduction (R1-D) pending authorization.**
-Last update: **23/10/2026**
+Current focus: **BUG-041 investigation — automated R1 (23/10/2026) and physical-device R1-D (30/10/2026) reproductions positive; a valid R3-D, causality (R2) and alternating countdowns (R3) pending authorization.**
+Last update: **30/10/2026**
 
 ---
 
@@ -19390,3 +19390,29 @@ Current branch intent: BUG-041 incident registration and next-session preparatio
 ### Scope of the R1 documentation commits
 
 - Documentation only: the validation packet; BUG-041 entry; ledger Snapshot (2026-10-23) and `BUGLOG-041`; this block and the header. No runtime, test, spec, roadmap or configuration changes. Blocks up to 774 and earlier snapshots are unchanged.
+
+## Block 776 — BUG-041 R1-D positive on the physical Samsung; R3-D variant observed (30/10/2026)
+
+**Current branch intent:** BUG-041 investigation documentation; no runtime changes.
+**Branch:** `fix/local-scheduled-autostart` (local, unpublished)
+**Base:** `0cb1aee` (Block 775).
+
+### R1-D — physical-device reproduction
+
+- Samsung SM-A176U1, Android 16, installed debug build `1.1.0 (1)` (provenance `ff30e15` inferred), Local Mode, default notice, USB with logcat and screen recording. No reinstall, data deletion, setting or code change; private backup verified before the run.
+- One task / one 25-minute pomodoro scheduled for T0 = 09:25:00 (phone clock). Six predefined criteria met: `Auto-start abort (not due)` 762 ms before T0 and `skip pending=null` 20 ms later; coordinator start at +176 ms (second timer at +215 ms); pending id set on the same screen at +249 ms with no later attempt, skip, reload or `startFromAutoStart` until T0+60 s; Ready/25:00 with Start; no start sound heard (the recording's audio track is silent throughout and proves nothing about sound).
+- Classification: the R1 signature is reproduced on the device. The early abort is guaranteed by construction (1 s Pre-Run tick with `inSeconds` truncation). Deductions without a counterfactual run: the one-shot `_autoStartHandled` blocks the post-T0 pending-id path and the Fix 18 Local guard closes the stream path. Causality is not demonstrated.
+
+### R3-D — variant only (not an H2 test)
+
+- The screen turned off before Start could be pressed. On unlock the app returned to the foreground and the run appeared with a countdown coherent with T0, without `startFromAutoStart`; after Run Mode → Groups Hub → Run Mode a new ViewModel consumed the pending id left since T0 (`abort (state not idle)`); one countdown, no alternation. Without a manual Start this does not exercise H2.
+- New observation (not analysed): the task item showed 09:22–09:47 (the 09:22 load time) from T0 until the Groups Hub return, while Pre-Run and the pomodoro card used 09:25–09:50.
+
+### Evidence and next steps
+
+- Seven local-only device files (2026-10-23 read-only checks; 2026-10-30 pre-check, R1-D and R3-D logcat, two videos, T0+60 s screenshot) indexed by sha256 in the packet plan. Test group canceled; final data 7 completed / 5 canceled.
+- BUG-041 stays Open, P1 provisional; it is not corrected or validated. Next, each pending owner authorization: a valid R3-D (manual Start within the 10-minute screen timeout, then Groups Hub → Run Mode), R2 level 1, R3, then the fix proposal. No push, PR or merge.
+
+### Scope of the R1-D documentation commit
+
+- Documentation only: packet plan and checklist; BUG-041 entry; ledger Snapshot (2026-10-30) and `BUGLOG-041`; this block and the header. No runtime, test, spec, roadmap or configuration changes. Blocks up to 775 and earlier snapshots are unchanged.

@@ -12,6 +12,10 @@
 - [x] (intento 3) R1-A evidence: 5/5 VALID, 5/5 H1, identical FAIL[S1,S2,S4,S5], EXPECTED_SPEC_FAIL gate.
 - [x] (intento 3) R1-B evidence: VALID/H1, same signature as R1-A, EXPECTED_SPEC_FAIL gate.
 
+- [x] (R1-D, 2026-10-30) Physical Samsung, Local Mode, installed debug build: signature criteria 1–6 met (abort 762 ms before T0; no start; Ready/25:00 with Start; no sound heard).
+- [x] (R1-D) Device logcat, pre-check log, videos and T0+60 s screenshot indexed by sha256 in the plan.
+- [ ] (R3-D) Valid run (manual Start after the failed auto-start, then Groups Hub -> Run Mode) pending; the 2026-10-30 run was a variant without manual Start.
+
 ## Regression smoke
 
 - [x] Existing suite 219/219 PASS (runner stage `existing`, 2026-10-22, Flutter exit 0).
@@ -26,6 +30,9 @@
 - [x] (intento 3) Real full suite reported SUITE_FAIL, Flutter exit 1: 219 existing PASS, R1.0 PASS, five expected SPEC-FAIL, B1 intentionally skipped.
 - [x] (intento 3) No unexpected failure, invalid run or alternative interleaving; no global PASS claim.
 - [x] (intento 3) Tracked and staged diffs empty; expected branch/HEAD, private files and Drive temp files untouched.
+
+- [x] (R1-D) Cleanup: test group canceled; final data 7 completed / 5 canceled, none scheduled or running.
+- [x] (R1-D) No reinstall, data deletion or device-setting change; private backup verified before the run.
 
 ## Local gate
 
@@ -47,6 +54,8 @@
 - [x] (intento 3) Full summary, all RESULT lines, per-run table, complete H1 trace, B1 comparison and suite verdict recorded.
 - [x] (intento 3) Attempts 1/2 and Claude V3 review preserved; no extra execution, test edit, production change or Git mutation.
 
+- [x] (R1-D) No code, test or configuration change; tracked and staged diffs empty; new evidence ignored by Git.
+
 ## Closure rule
 
 - [x] R1 closes only after Claude's evidence review and the owner's decision (Claude review 2026-10-22; owner acceptance 2026-10-23).
@@ -55,3 +64,4 @@
 - [x] (intento 2) BUG-041 remains Open, P1 provisional; H1/H2 not established as root cause.
 - [x] (intento 3) Claude reviews and accepts the automated R1 evidence; owner decides the next authorized step (accepted 2026-10-23).
 - [x] (intento 3) BUG-041 remains Open, P1 provisional; no fix, physical-device validation or root-cause claim.
+- [x] (R1-D) BUG-041 remains Open, P1 provisional; R1-D is a reproduction, not a root-cause, fix or H2 result.
