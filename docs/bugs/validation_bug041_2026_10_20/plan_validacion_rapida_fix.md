@@ -1,7 +1,7 @@
 # BUG-041 Quick Validation Plan - Step B / R1 (automated reproduction)
 
 Date: 2026-10-20  
-Branch: `fix/local-scheduled-autostart` (local, unpublished)  
+Branch: `fix/local-scheduled-autostart` (published to `origin` on 2026-11-09; no PR)  
 Commit: `1561ead` (base; the R1 test file and this packet are uncommitted)  
 Bugs covered: `BUG-041` (Open, P1 provisional)  
 Target devices: `flutter test` host on macOS (debug), default test platform Android.
@@ -1246,6 +1246,95 @@ Classification (2026-10-30):
   related to H2; whether the background-return and re-open paths play the
   start sound (owner requirement of 2026-10-23).
 
+### Scenario G — valid R3-D run (procedure recorded 2026-11-09; NOT executed)
+
+Status: pending owner authorization. Purpose: observe on the physical Samsung
+the exact sequence of the owner's incidents for symptom 2 (failed auto-start,
+delayed manual Start, Groups Hub -> Run Mode), without Pause and without any
+background return. It is an observation, not an H2 validation and not a fix
+validation.
+
+Preconditions (checked read-only before the run and recorded in the device
+log): phone on USB; Local Mode; Do Not Disturb on; app in the foreground; no
+device-setting change.
+
+- Installed build: it must be the one used in R1-D (`1.1.0 (1)`, installed on
+  2026-10-14 09:28:11, provenance `ff30e15` inferred). If the version, the build
+  number or the install/update time differs, stop before scheduling anything and
+  ask the owner for a new decision.
+- Group baseline: record the real number of groups per status before the run;
+  there must be no scheduled or running group. Otherwise stop and ask the owner.
+- The screen turns off 10 minutes after the last touch; the touches in steps 1,
+  3, 5 and 6 keep every idle interval under about 5.5 minutes.
+
+Steps (phone clock):
+
+0. Claude starts logcat and the scrcpy recording (`--time-limit=600`, stopped
+   with SIGTERM; device-shell marks quoted) and checks that both files grow.
+1. The owner schedules "BUG041 R3-D" (one 25-minute pomodoro) at the first
+   exact minute between 2 and 5 minutes ahead, reports T0 and leaves the phone
+   untouched.
+2. At T0, Ready/25:00 is expected (as in R1-D). Claude checks R1-D criteria
+   1–5 live in logcat. If the group starts by itself, stop: Scenario G does not
+   apply and the run is recorded as observed.
+3. About 20 s after Ready appears, the owner presses Start once and listens for
+   the start sound. The exact delay d is measured from the video (a manual
+   Start writes no log line).
+4. Observe the countdown for 20 s without touching.
+5. Open Groups Hub from the top-bar icon and stay 10 s.
+6. Return to Run Mode and observe for 30 s without touching (alternation,
+   repeated sound).
+7. The owner says "end"; Claude takes a screenshot, writes the end mark and
+   stops the captures.
+8. Cleanup B4, as described below; then Claude stops logcat.
+
+Observations (fixed before the run):
+
+| # | What | Owner requirements of 2026-10-23 | H2 prediction |
+|---|---|---|---|
+| O1 | Value shown when Start is pressed | Computed from T0: about 25:00 − d (≈24:40) | 25:00, anchored at the press |
+| O2 | Countdown before Groups Hub | One stable countdown | Stable (owner observations of 19–20/10) |
+| O3 | 30 s after the return, frame by frame | One countdown, no alternation | Alternates between two values about d apart |
+| O4 | Start sound | Once at Start; not repeated on the return | No prediction |
+| O5 | Task item, pomodoro card and group card in each phase | Coherent with T0 | Possible second anchor (as 09:22–09:47 on 2026-10-30) |
+| O6 | Logcat | R1-D criteria 1–5; group and ViewModel load on the return | — |
+
+Interpretation: alternation with a difference of about d after the return is
+consistent with H2 but does not demonstrate its mechanism (that is R3,
+automated). No alternation means that H2 was not reproduced in that run; it is
+recorded as observed.
+
+Stop conditions: the installed build differs from R1-D; the group baseline
+shows a scheduled or running group; the group starts by itself at T0; the
+screen turns off or the app goes to the background before step 6; any
+unexpected dialog (not resolved during the run; reported).
+
+Interruption and cleanup (B4): only the test group "BUG041 R3-D" is touched,
+and only by the owner, in the app.
+
+- Normal end: after step 7 the owner cancels the test group (Cancel in Run
+  Mode, or from Groups Hub if Run Mode is not shown).
+- Early stop (any stop condition, or the owner's decision at any moment):
+  Claude stops the captures and does not touch the phone; the owner cancels
+  the test group at once, whatever its state (scheduled, Pre-Run or running).
+- Verification: Claude reads the local data read-only and compares it with the
+  baseline: the same counts per status plus one canceled group, and no
+  scheduled or running group.
+- If the test group cannot be canceled, or any other group changes, Claude
+  stops and reports. No other action (deleting data, changing settings,
+  force-stopping or reinstalling the app) without a new owner authorization.
+  Deleting the test task is optional and done only by the owner.
+
+Evidence (local-only, real run date; add `_a2` after `r3d` if a name would
+collide with an existing file): `logs/<date>_bug041_r3d_ff30e15_android_SM-A176U1_debug.log`,
+the video with the same name in `screenshots/` and the end screenshot, indexed
+by sha256 in this plan after the run. Commands: the R1-D/R3-D block in
+"Comandos de ejecución", with `r3d` names and `--time-limit=600`.
+
+Authorization required before execution: functional run with a test group (as
+B3), evidence files (C) and cleanup (B4). Limit: the start sound relies on the
+owner's listening (the scrcpy audio track was silent on 2026-10-30).
+
 ## Comandos de ejecución
 
 Run from the repo root with the runner embedded in `codex_handoff.md` (executed
@@ -1469,6 +1558,33 @@ The 2026-10-23 device log holds that day's read-only checks (device,
 installation, data, clock offset +8.10 s). The 2026-10-30 device log holds the
 pre-check, the clock offsets and the capture start/stop times of R1-D and R3-D.
 
+### Private backup of the device evidence (executed 2026-11-09)
+
+Procedure (approved by the owner; executed by Claude on 2026-11-09):
+
+1. Verify the seven originals against the index above (7/7 OK).
+2. Copy them with `cp -p` (never move) into a new private folder outside the
+   repository on the owner's Mac, keeping `logs/` and `screenshots/`; folder
+   mode 700, file mode 600.
+3. Write `SHA256SUMS.txt` with exactly the seven index lines above, taken from
+   the committed plan, and a `LEEME.txt` describing origin, verification and
+   privacy; run `shasum -a 256 -c SHA256SUMS.txt` (7/7 OK).
+4. Copy that folder into the owner's restricted cloud backup folder
+   (owner-only access) and verify it again (7/7 OK); check with the cloud
+   provider that every file is uploaded with the same size and that access is
+   still owner-only.
+5. Re-verify the originals (7/7 OK). Locations, links and hashes are recorded
+   only in the owner's private, unversioned backup register.
+
+Result (2026-11-09): both copies 7/7 OK; the cloud copy holds the nine files
+with identical sizes (the provider's metadata does not expose SHA-256, so a
+cloud-side hash check requires a download); access owner-only; originals
+unchanged. `SHA256SUMS.txt` sha256:
+`1fb93aead7556af5d695c93a70b99cdb4a0e50ae44767eed4757aeb1e73c03f2`. The
+private app-data backup of 2026-10-23 is not part of it and stays local only,
+by owner decision. The videos can show personal app data; the copies are never
+shared.
+
 ## Criterios de cierre
 
 R1 step (reproduction), evaluated by Claude and decided by the owner:
@@ -1499,14 +1615,16 @@ variant (no manual Start) does not validate H2.
 
 ## Status
 
-Open - 2026-10-30: R1 accepted on 2026-10-23 (automated reproduction,
+Open - 2026-11-09: R1 accepted on 2026-10-23 (automated reproduction,
 attempt 3: R1-A 5/5 and R1-B VALID/H1, `FAIL[S1,S2,S4,S5]`, 219/219 existing
 tests PASS, full suite `SUITE_FAIL` with only the five expected R1-A
 specification failures). R1-D on 2026-10-30: positive reproduction on the
 physical Samsung with the same signature, criteria 1–6 met. R3-D observed only
 as a variant (no manual Start; background return), not an H2 test. BUG-041
-stays Open, P1 provisional; H1/H2 are not established as root cause. Next
-steps, each pending owner authorization: a valid R3-D (manual Start before the
-screen turns off, then Groups Hub -> Run Mode), R2 level 1 (causality
-controls), R3 (alternating countdowns), then the fix proposal. No production
-fix, push, PR or merge.
+stays Open, P1 provisional; H1/H2 are not established as root cause. On
+2026-11-09 the documentation branch was published to `origin` (one-off,
+owner-authorized exception to AGENTS.md rule 10; no PR) and the seven device
+files were backed up privately (two verified copies outside Git). Next steps,
+each pending owner authorization: a valid R3-D (Scenario G, not executed),
+R2 level 1 (causality controls), R3 (alternating countdowns), then the fix
+proposal. No production fix, PR or merge.

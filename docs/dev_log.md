@@ -26,8 +26,8 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last closed bug fix: **BUG-036 planning-screen test harness, Closed/OK on 16/10/2026 (`Block 771`, implementation `40a7a1646951a38c66467f5393816af5ff318d49`); merged into develop via PR #187 (`6263526c6dec5312ac34ae596a2e004a97709a7f`)**
-Current focus: **BUG-041 investigation — automated R1 (23/10/2026) and physical-device R1-D (30/10/2026) reproductions positive; a valid R3-D, causality (R2) and alternating countdowns (R3) pending authorization.**
-Last update: **30/10/2026**
+Current focus: **BUG-041 investigation — automated R1 (23/10/2026) and physical-device R1-D (30/10/2026) reproductions positive; branch published and device evidence backed up (09/11/2026); a valid R3-D (Scenario G), causality (R2) and alternating countdowns (R3) pending authorization.**
+Last update: **09/11/2026**
 
 ---
 
@@ -19416,3 +19416,32 @@ Current branch intent: BUG-041 incident registration and next-session preparatio
 ### Scope of the R1-D documentation commit
 
 - Documentation only: packet plan and checklist; BUG-041 entry; ledger Snapshot (2026-10-30) and `BUGLOG-041`; this block and the header. No runtime, test, spec, roadmap or configuration changes. Blocks up to 775 and earlier snapshots are unchanged.
+
+## Block 777 — BUG-041 branch published, device evidence backed up, R3-D and backup procedures recorded (09/11/2026)
+
+**Current branch intent:** BUG-041 investigation documentation; no runtime changes.
+**Branch:** `fix/local-scheduled-autostart` (published to `origin` on 09/11/2026; no PR)
+**Base:** `deb9438` (Block 776).
+
+### Branch publication — one-off exception to AGENTS.md rule 10
+
+- On 09/11/2026 Codex pushed `fix/local-scheduled-autostart` once to `origin` with upstream, after the pre-checks of the owner-approved task: HEAD `deb943811c72cba06c7ea33def35559eb3560edc`; exactly the five BUG-041 documentation commits (`329ac28`, `1561ead`, `2cddcde`, `0cb1aee`, `deb9438`); seven documentation files (+2870 / −5); no binaries; privacy scan clean. A first attempt stopped before any network action because Drive for desktop's temporary `.tmp.driveupload/` folder appeared as untracked; the task was amended to allow only that folder and restarted.
+- Claude verified: remote HEAD `deb9438`; local/remote 0 0; `develop` (`b92c84b`) and `main` (`65552c4`) unchanged on `origin`; no pull request; no logs, videos, screenshots, untracked test or private files on the remote branch.
+- Rule 10 ("Never push a branch that contains known bugs or unverified fixes"): the owner granted a one-off exception only to publish this BUG-041 documentation as an off-machine copy. The branch has no code, test or configuration change, and the defect is already present in the published `develop`. The exception does not authorize publishing unverified fixes, does not modify the rule and does not apply to other branches. Any later push of this branch needs a new explicit owner authorization.
+
+### Private backup of the device evidence
+
+- Two independent private copies of the seven device files indexed in Block 776 and in the packet plan: one on the owner's Mac outside the repository and one in the owner's restricted cloud backup folder (owner-only access). Copied, never moved; `SHA256SUMS.txt` holds exactly the seven index lines; 7/7 OK for the originals before and after and for both copies; cloud upload verified by file size. Locations and links are kept only in the owner's private, unversioned backup register.
+- The private app-data backup of 23/10/2026 is not included and stays local only, by owner decision.
+
+### Procedures recorded
+
+- Packet plan: Scenario G (valid R3-D: build check and group baseline, manual Start about 20 s after the failed auto-start, Groups Hub → Run Mode, observations O1–O6, stop conditions, interruption and cleanup; not executed) and the private-backup procedure with its result; header branch line and status updated; checklist updated.
+
+### Status and next steps
+
+- BUG-041 stays Open, P1 provisional; no fix and no new device run. Next, each pending owner authorization: the valid R3-D (Scenario G), R2 level 1, R3 automated, then the fix proposal.
+
+### Scope of this documentation commit
+
+- Documentation only: packet plan and checklist; this block and the header. No bug log or ledger change; no runtime, test, spec, roadmap, configuration or agent-rule change. Blocks up to 776 are unchanged.

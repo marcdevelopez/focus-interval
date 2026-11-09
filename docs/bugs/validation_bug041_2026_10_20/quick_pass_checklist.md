@@ -15,6 +15,7 @@
 - [x] (R1-D, 2026-10-30) Physical Samsung, Local Mode, installed debug build: signature criteria 1–6 met (abort 762 ms before T0; no start; Ready/25:00 with Start; no sound heard).
 - [x] (R1-D) Device logcat, pre-check log, videos and T0+60 s screenshot indexed by sha256 in the plan.
 - [ ] (R3-D) Valid run (manual Start after the failed auto-start, then Groups Hub -> Run Mode) pending; the 2026-10-30 run was a variant without manual Start.
+- [x] (R3-D) Valid-run procedure recorded in the plan as Scenario G (2026-11-09); execution pending owner authorization.
 
 ## Regression smoke
 
@@ -55,6 +56,8 @@
 - [x] (intento 3) Attempts 1/2 and Claude V3 review preserved; no extra execution, test edit, production change or Git mutation.
 
 - [x] (R1-D) No code, test or configuration change; tracked and staged diffs empty; new evidence ignored by Git.
+- [x] (R1-D) Private backup of the seven device files: two copies outside Git, 7/7 SHA-256 OK each, originals unchanged (2026-11-09).
+- [x] Branch published to `origin` (2026-11-09; docs only; one-off AGENTS.md rule-10 exception; no PR); remote HEAD verified.
 
 ## Closure rule
 
