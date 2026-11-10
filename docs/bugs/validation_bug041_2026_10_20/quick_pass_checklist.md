@@ -14,8 +14,10 @@
 
 - [x] (R1-D, 2026-10-30) Physical Samsung, Local Mode, installed debug build: signature criteria 1–6 met (abort 762 ms before T0; no start; Ready/25:00 with Start; no sound heard).
 - [x] (R1-D) Device logcat, pre-check log, videos and T0+60 s screenshot indexed by sha256 in the plan.
-- [ ] (R3-D) Valid run (manual Start after the failed auto-start, then Groups Hub -> Run Mode) pending; the 2026-10-30 run was a variant without manual Start.
+- [x] (R3-D) Valid run (manual Start after the failed auto-start, then Groups Hub -> Run Mode) executed on 2026-11-10 as Scenario G; the 2026-10-30 run was a variant without manual Start.
 - [x] (R3-D) Valid-run procedure recorded in the plan as Scenario G (2026-11-09); execution pending owner authorization.
+- [x] (Scenario G, 2026-11-10) Preconditions met (build identical to R1-D, Local Mode, Do Not Disturb, app in the foreground, baseline 7 completed / 5 canceled); R1-D criteria 1–4 met; criterion 5 partial check (T0 to T0+15 s) met.
+- [x] (Scenario G) O1–O6 recorded: Start anchored at the press (25:00 at d ≈ 23.2 s); after the Groups Hub return, two alternating countdowns 24 s apart; start sound once at Start.
 
 ## Regression smoke
 
@@ -34,6 +36,7 @@
 
 - [x] (R1-D) Cleanup: test group canceled; final data 7 completed / 5 canceled, none scheduled or running.
 - [x] (R1-D) No reinstall, data deletion or device-setting change; private backup verified before the run.
+- [x] (Scenario G) Cleanup: only the test group canceled; data = baseline plus one canceled; none scheduled or running.
 
 ## Local gate
 
@@ -58,6 +61,7 @@
 - [x] (R1-D) No code, test or configuration change; tracked and staged diffs empty; new evidence ignored by Git.
 - [x] (R1-D) Private backup of the seven device files: two copies outside Git, 7/7 SHA-256 OK each, originals unchanged (2026-11-09).
 - [x] Branch published to `origin` (2026-11-09; docs only; one-off AGENTS.md rule-10 exception; no PR); remote HEAD verified.
+- [x] (Scenario G) Four evidence files indexed by sha256; two private copies verified (2026-11-10); no code, test or configuration change.
 
 ## Closure rule
 
@@ -68,3 +72,4 @@
 - [x] (intento 3) Claude reviews and accepts the automated R1 evidence; owner decides the next authorized step (accepted 2026-10-23).
 - [x] (intento 3) BUG-041 remains Open, P1 provisional; no fix, physical-device validation or root-cause claim.
 - [x] (R1-D) BUG-041 remains Open, P1 provisional; R1-D is a reproduction, not a root-cause, fix or H2 result.
+- [x] (Scenario G) BUG-041 remains Open, P1 provisional; H2 is consistent with the observations but not demonstrated.

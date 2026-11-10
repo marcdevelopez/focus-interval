@@ -1246,9 +1246,9 @@ Classification (2026-10-30):
   related to H2; whether the background-return and re-open paths play the
   start sound (owner requirement of 2026-10-23).
 
-### Scenario G — valid R3-D run (procedure recorded 2026-11-09; NOT executed)
+### Scenario G — valid R3-D run (procedure recorded 2026-11-09; executed 2026-11-10)
 
-Status: pending owner authorization. Purpose: observe on the physical Samsung
+Status: executed on 2026-11-10 (results below). Purpose: observe on the physical Samsung
 the exact sequence of the owner's incidents for symptom 2 (failed auto-start,
 delayed manual Start, Groups Hub -> Run Mode), without Pause and without any
 background return. It is an observation, not an H2 validation and not a fix
@@ -1334,6 +1334,96 @@ by sha256 in this plan after the run. Commands: the R1-D/R3-D block in
 Authorization required before execution: functional run with a test group (as
 B3), evidence files (C) and cleanup (B4). Limit: the start sound relies on the
 owner's listening (the scrcpy audio track was silent on 2026-10-30).
+
+### Scenario G — execution results (2026-11-10)
+
+Executed on 2026-11-10. The functional sequence of the procedure above (steps
+0–8, observations O1–O6, stop conditions and cleanup) was kept. During the
+capture the helper script's file-naming rule was corrected (capture note
+below); no evidence file was altered.
+
+Authorization, as recorded in the conversation: Claude asked the owner to open
+Focus Interval in the foreground, to give the explicit execution authorization
+(B3 functional run, C evidence, B4 cleanup) and to give the start signal. The
+owner replied "ok", confirming that the app was in the foreground and that 15
+minutes were available, and then followed the execution instructions. Claude
+took that reply as the authorization and said so in the thread. The thread
+contains no literal, explicit authorization of B3, C and B4: this procedural
+discrepancy is recorded here; it does not change the observed results.
+
+Preconditions (device log): Samsung SM-A176U1, Android 16; installed build
+identical to R1-D (`1.1.0 (1)`, installed and last updated 2026-10-14
+09:28:11); Local Mode; default notice; Do Not Disturb on; Focus Interval in the
+foreground; group baseline 7 completed / 5 canceled, none scheduled or
+running; phone clock +2.30 s ahead of the Mac. Capture over USB: logcat, scrcpy
+screen and app audio, end screenshot.
+
+Steps 1–2: the owner scheduled "BUG041 R3-D" at 07:06:51 for T0 = 07:09:00
+(phone clock); Run Mode opened in Pre-Run by itself. R1-D criteria at T0:
+
+- 1 met: `Auto-start attempt` and `Auto-start abort (not due)` with
+  `now=07:08:59.537325`, 463 ms before T0.
+- 2 met: `Auto-start skip pending=null` 19 ms later.
+- 3 met: `start-timer-fired` at +134 ms (a second one at +166 ms).
+- 4 met: pending id set on the same screen at +174 ms.
+- 5 partial check only (owner decision of 2026-11-10): no attempt, skip,
+  group reload or `startFromAutoStart` from T0 to T0+15 s, before the manual
+  Start. This is not the original R1-D criterion 5 (T0 to T0+60 s).
+
+Run Mode showed Ready/25:00 with Start; no sound at T0.
+
+Timing method: the video was aligned with the Pre-Run transition (last "00"
+frame at 404.0 s, first Ready frame at 404.5 s of video time; T0 ≈ 404.15 ±
+0.2 s). The manual Start writes no log line; it falls between the frames at
+427.3 s (Ready) and 427.4 s (running), so d ≈ 23.2 s after T0 (about
+07:09:23 phone time).
+
+Observations (facts, with source):
+
+| # | Observed | Source |
+|---|---|---|
+| O1 | At the manual Start the countdown showed 25:00, then 24:59, 24:58…: anchored at the press, not at T0. The owner requirement of 2026-10-23 would give about 24:37 for d ≈ 23.2 s. This matches the H2 prediction. | Video, 0.1 s frame steps |
+| O2 | Before Groups Hub: one stable countdown (24:58 -> 24:28 in 2 s samples); no foreign value in the 169 frames of a 3 s window (440–443 s). | Video, all frames |
+| O3 | After Run Mode -> Groups Hub (07:09:56.5) -> Run Mode (07:10:11.0), from the first frame after the return to the end of the recording: the press-anchored value (24:12, 24:11…) is shown about 0.85 s of each second and the T0-anchored value (23:48, 23:47…) flashes for about 0.15 s (7–10 frames at about 56 fps). The difference between the two values is constant: 24 s. The owner saw two alternating countdowns. | Video, all frames in three windows (475, 480, 522 s); owner |
+| O4 | Start sound once, at the manual Start (the only non-silent audio segment, 429.4–430.9 s video time, about 2 s after the press; capture latency not measured); silence at T0 and at the Groups Hub return. The owner heard the sound at Start and none at T0. | Audio track; owner |
+| O5 | Task item: 07:09–07:34 in Pre-Run; 07:06–07:31 in Ready (anchored at the 07:06:51 load, the same effect as 09:22–09:47 on 2026-10-30); 07:09–07:34 after Start and after the return. Pomodoro card 07:09–07:34 and group card 07:34 after Start; at minute resolution they cannot distinguish 07:34:00 (T0) from 07:34:23 (press). | Video |
+| O6 | R1-D signature at T0. Leaving Run Mode disposes the ViewModel (07:09:56.5); on the return a new ViewModel loads the group as `running` (07:10:11.0), then `Auto-start attempt` and `Auto-start abort (state not idle)` consume the pending id set at T0+174 ms. No exception. | Logcat |
+
+Relation between the 23.2 s wait and the 24 s difference (arithmetic on the
+observations; the model is H2, not demonstrated): if two once-per-second
+updates, one anchored at T0 and one at the press, each publish whole seconds,
+then at each T0-anchored update the press-anchored countdown is
+ceil(d) = 24 s higher, and the T0-anchored value stays visible until the next
+press-anchored update, about frac(d) ≈ 0.2 s later. The observed constant
+24 s difference and the 0.13–0.18 s flashes match this model. Which components
+produce the two updates, and why they appear only after the Groups Hub return,
+is not demonstrated (R3, automated).
+
+Classification (2026-11-10):
+
+- Observed (facts): both symptoms reproduced on the physical device in one run
+  under the owner's conditions: failed auto-start (R1-D signature, criteria
+  1–4 met, criterion 5 partial check met) and, after a delayed manual Start
+  and a Groups Hub return, two alternating countdowns 24 s apart; the start
+  anchored at the press (O1); the start sound once at Start (O4); the
+  load-anchored task range in Ready (O5).
+- Hypothesis: H2 (two once-per-second updates with different anchors, T0 and
+  the press, both visible after the re-entry) is consistent with O1, O3 and the
+  24 s / 0.2 s arithmetic. Also likely, not confirmed: since the audio track
+  recorded the start sound this time, the silent track of 2026-10-30 probably
+  reflects that no sound played.
+- Pending validation: the mechanism of H2 and of the re-entry trigger (R3,
+  automated); the causality of the early abort (R2 level 1); the fix proposal
+  and its device validation.
+
+Cleanup B4: the owner canceled only the test group (07:11:52.6); Claude verified
+the data read-only: 7 completed / 6 canceled (baseline plus one canceled), none
+scheduled or running.
+
+Capture note: a helper-script naming rule (collision check) was re-evaluated
+after the logcat file existed; it was pinned during the run before any later
+step. All evidence files carry the intended `r3d` names; no `r3d_a2` file was
+created and no evidence file was renamed or modified.
 
 ## Comandos de ejecución
 
@@ -1585,6 +1675,22 @@ private app-data backup of 2026-10-23 is not part of it and stays local only,
 by owner decision. The videos can show personal app data; the copies are never
 shared.
 
+### Evidence index — Scenario G evidence (recorded 2026-11-10)
+
+These four files stay outside Git (`*.log` and `screenshots/*` are ignored).
+On 2026-11-10 they were backed up privately with the 2026-11-09 procedure (two
+verified copies outside Git, 4/4 SHA-256 OK each, cloud copy present with
+identical sizes and owner-only access; locations only in the owner's private
+register). The video can show personal app data. Verify a copy with
+`shasum -a 256 -c` from this packet folder:
+
+```text
+fad9a0908348f9544ce2dbe0e2ac4526a4b0e8eb4bb0449eb088ef1786ac8426  logs/2026-11-10_bug041_r3d_ff30e15_android_SM-A176U1_debug.log
+69af1c88a295bff46dee6c361218a7a4a1836d0dfbe236bf4ecce1c16b986e54  logs/2026-11-10_bug041_r3d-device_ff30e15_android_SM-A176U1_debug.log
+f80cb29ed6c7d61f7219ffbbb66e987d862d03c46d5023a6cf8d2e5ae10f6ba1  screenshots/2026-11-10_bug041_r3d_ff30e15_android_SM-A176U1.mkv
+f5bace45ce0173b1bcfed7d30fd28a1e1990165c27a798d8d345ffc8015edb3f  screenshots/2026-11-10_bug041_r3d_end_ff30e15_android_SM-A176U1.png
+```
+
 ## Criterios de cierre
 
 R1 step (reproduction), evaluated by Claude and decided by the owner:
@@ -1613,18 +1719,24 @@ instruction of 2026-10-30. It confirms the R1 signature on the device. It is
 not a root-cause claim, a fix, an H2 result or the closure of BUG-041; the R3-D
 variant (no manual Start) does not validate H2.
 
+Scenario G result (2026-11-10): valid R3-D run executed; both symptoms
+observed on the physical Samsung in one run (Scenario G results). It is a
+reproduction under the owner's conditions, not a root-cause claim, an H2
+demonstration, a fix or the closure of BUG-041.
+
 ## Status
 
-Open - 2026-11-09: R1 accepted on 2026-10-23 (automated reproduction,
+Open - 2026-11-10: R1 accepted on 2026-10-23 (automated reproduction,
 attempt 3: R1-A 5/5 and R1-B VALID/H1, `FAIL[S1,S2,S4,S5]`, 219/219 existing
 tests PASS, full suite `SUITE_FAIL` with only the five expected R1-A
 specification failures). R1-D on 2026-10-30: positive reproduction on the
-physical Samsung with the same signature, criteria 1–6 met. R3-D observed only
-as a variant (no manual Start; background return), not an H2 test. BUG-041
-stays Open, P1 provisional; H1/H2 are not established as root cause. On
-2026-11-09 the documentation branch was published to `origin` (one-off,
-owner-authorized exception to AGENTS.md rule 10; no PR) and the seven device
-files were backed up privately (two verified copies outside Git). Next steps,
-each pending owner authorization: a valid R3-D (Scenario G, not executed),
-R2 level 1 (causality controls), R3 (alternating countdowns), then the fix
-proposal. No production fix, PR or merge.
+physical Samsung with the same signature, criteria 1–6 met. Scenario G (valid
+R3-D) on 2026-11-10: failed auto-start reproduced again, the delayed manual
+Start anchored at the press, and two alternating countdowns 24 s apart after
+the Groups Hub return (d ≈ 23.2 s). BUG-041 stays Open, P1 provisional; H1/H2
+are not established as root cause (H2 is consistent with the observations but
+not demonstrated). The documentation branch is published to `origin` (no PR);
+the device evidence of 2026-10-30 and 2026-11-10 is backed up privately. Next
+steps, each pending owner authorization: R2 level 1 (causality controls), R3
+automated (alternating countdowns), then the fix proposal. No production fix,
+PR or merge.

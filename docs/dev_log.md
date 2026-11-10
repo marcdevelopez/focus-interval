@@ -26,8 +26,8 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last closed bug fix: **BUG-036 planning-screen test harness, Closed/OK on 16/10/2026 (`Block 771`, implementation `40a7a1646951a38c66467f5393816af5ff318d49`); merged into develop via PR #187 (`6263526c6dec5312ac34ae596a2e004a97709a7f`)**
-Current focus: **BUG-041 investigation — automated R1 (23/10/2026) and physical-device R1-D (30/10/2026) reproductions positive; branch published and device evidence backed up (09/11/2026); a valid R3-D (Scenario G), causality (R2) and alternating countdowns (R3) pending authorization.**
-Last update: **09/11/2026**
+Current focus: **BUG-041 investigation — automated R1 (23/10/2026), physical-device R1-D (30/10/2026) and Scenario G (10/11/2026) reproductions positive; both symptoms observed on the device; causality (R2) and the alternating-countdown mechanism (R3, automated) pending authorization.**
+Last update: **10/11/2026**
 
 ---
 
@@ -19445,3 +19445,31 @@ Current branch intent: BUG-041 incident registration and next-session preparatio
 ### Scope of this documentation commit
 
 - Documentation only: packet plan and checklist; this block and the header. No bug log or ledger change; no runtime, test, spec, roadmap, configuration or agent-rule change. Blocks up to 776 are unchanged.
+
+## Block 778 — BUG-041 Scenario G (valid R3-D) executed on the physical Samsung; evidence backed up (10/11/2026)
+
+**Current branch intent:** BUG-041 investigation documentation; no runtime changes.
+**Branch:** `fix/local-scheduled-autostart` (published to `origin`; no PR)
+**Base:** `a01c891` (Block 777).
+
+### Scenario G — execution
+
+- Executed on 10/11/2026 keeping the functional sequence of the published procedure; a helper-script file-naming rule was corrected during the capture without altering any evidence file.
+- Authorization as recorded: the owner replied "ok" (app in the foreground, 15 minutes available) to Claude's request for the explicit B3/C/B4 authorization and then followed the execution instructions; the thread contains no literal explicit authorization of B3/C/B4. Procedural discrepancy recorded; the observed results are unaffected.
+- Preconditions met: installed build identical to R1-D, Local Mode, Do Not Disturb on, app in the foreground, group baseline 7 completed / 5 canceled.
+- T0 = 07:09:00 (phone clock): failed auto-start with the R1-D signature (`abort (not due)` 463 ms before T0; pending id set at +174 ms); criteria 1–4 met; criterion 5 met only as a partial check (T0 to T0+15 s, owner decision), not over the original T0+60 s window.
+- Observed: the delayed manual Start (d ≈ 23.2 s after T0, located in the video) started at 25:00, anchored at the press (O1); one stable countdown before Groups Hub (O2); after Run Mode → Groups Hub → Run Mode, until the end of the recording, the T0-anchored value flashes about 0.15 s each second between the press-anchored values, always 24 s lower (O3); start sound once at Start, none at T0 or on the return (O4); in Ready the task item showed the load-anchored range 07:06–07:31 (O5); on the return a new ViewModel loads the group and consumes the pending id left since T0 (O6).
+- The 24 s difference equals ceil(d) and the flash length about frac(d) ≈ 0.2 s, as expected from two once-per-second updates anchored at T0 and at the press (the H2 model). H2 is consistent with the observations but not demonstrated.
+- Cleanup B4: only the test group canceled; data = baseline plus one canceled, none active.
+
+### Evidence
+
+- Four local-only files (logcat, device log, video, end screenshot) indexed by sha256 in the packet plan; backed up privately on 10/11/2026 with the 09/11 procedure (two verified copies outside Git, cloud copy with identical sizes and owner-only access; locations only in the owner's private register).
+
+### Status and next steps
+
+- BUG-041 stays Open, P1 provisional; root cause not established; no fix. Next, each pending owner authorization: R2 level 1 (causality controls), R3 automated (alternating-countdown mechanism), then the fix proposal.
+
+### Scope of this documentation commit
+
+- Documentation only: packet plan and checklist; BUG-041 entry; ledger Snapshot (2026-11-10) and `BUGLOG-041`; this block and the header. No runtime, test, spec, roadmap, configuration or agent-rule change. Blocks up to 777 and earlier snapshots are unchanged.
