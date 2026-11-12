@@ -19,6 +19,21 @@ Formatting rules:
 - Block numbers must be strictly increasing and continue from the last block.
 - Never insert new blocks above existing ones.
 - Always verify the current date (e.g., `date`) before writing any date in docs; use the verified date.
+- Choose each new block number as one more than the highest block number on `develop` and on every branch not yet merged into it (`git fetch --all --prune`, then `git branch -a --no-merged origin/develop`), so parallel branches never reuse a number. Recheck before each push.
+- Write a new block on a branch that already contains every lower-numbered published block (fast-forward or merge from `develop` first), so appending at the end keeps file order equal to number order. If two branches still add blocks at the same time, integrate them in number order and place blocks in numeric order when resolving the conflict, without changing their text.
+- Once a block is on `develop` or on a published branch, never edit, renumber or move it; record corrections in a new block or in the historical notes below. Only exception: a number collision found before integration is fixed in the branch not yet integrated, with a dedicated commit that states the old and new numbers.
+
+Historical numbering notes (see Block 779). These anomalies are preserved as written; cite affected blocks by number and title.
+
+| Block numbers | Anomaly |
+|---|---|
+| 394, 395, 396 | Each number is used twice on 16/02/2026: first for backlog ideas (verified presence + heatmap, backlog legend, resume canceled groups), then for bug-log items (mirror desync, Ready-screen recurrence in BUG-001, ownership revert workaround in BUG-002). |
+| 437, 438 | Each number is used twice on 18/02/2026. "Block 438 — Phase 17 conflict resolution + planning total duration" and "Block 437 — Close Phase 17 validation items" sit out of order between Blocks 50 and 51; "Block 437 — Phase 17 test coverage + workflow rule" and "Block 438 — Account-scoped pre-run notice setting" sit in sequence. |
+| 599, 600 | Block 600 (BUG-F25-G) appears before Block 599 (BUG-F25-E), both 19/03/2026. |
+| 677, 678 | Block 678 appears before Block 677 (BUG-016 Patch 2), both 28/03/2026. |
+| 749, 750 | Block 750 is dated 29/04/2026 but follows Block 749, dated 30/04/2026. |
+| 517, 666 | Never used. |
+| Headings | Up to Block 661 headings use `# 🔹 Block` (Block 7 uses `## 🔹 Block`); from Block 662 they use `## Block`. To list every block, search for `^#{1,2} (🔹 )?Block`. |
 
 ---
 
@@ -27,7 +42,7 @@ Formatting rules:
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last closed bug fix: **BUG-036 planning-screen test harness, Closed/OK on 16/10/2026 (`Block 771`, implementation `40a7a1646951a38c66467f5393816af5ff318d49`); merged into develop via PR #187 (`6263526c6dec5312ac34ae596a2e004a97709a7f`)**
 Current focus: **BUG-041 investigation — automated R1 (23/10/2026), physical-device R1-D (30/10/2026) and Scenario G (10/11/2026) reproductions positive; both symptoms observed on the device; causality (R2) and the alternating-countdown mechanism (R3, automated) pending authorization.**
-Last update: **10/11/2026**
+Last update: **12/11/2026**
 
 ---
 
@@ -19473,3 +19488,47 @@ Current branch intent: BUG-041 incident registration and next-session preparatio
 ### Scope of this documentation commit
 
 - Documentation only: packet plan and checklist; BUG-041 entry; ledger Snapshot (2026-11-10) and `BUGLOG-041`; this block and the header. No runtime, test, spec, roadmap, configuration or agent-rule change. Blocks up to 777 and earlier snapshots are unchanged.
+
+---
+
+## Block 779 — Dev-log continuity: BUG-041 records integrated in order (PR #189, R-2 exception), PR #188 record, numbering rules, historical notes and dev-log check tool (12/11/2026)
+
+Current branch intent: process governance only (dev-log continuity, agent preflight and a read-only dev-log check tool); no runtime, app-test, bug-status or validation changes.
+**Branch:** `fix/docs-devlog-continuity`
+**Base commit:** `5d4a9a610a3f2f1680e54108363c25db96724566` (PR #189 merge into `develop`).
+
+### Why
+
+- Owner-requested read-only audit of this file on 12/11/2026. Before PR #189, `develop` ended at Block 772 while Blocks 773–778 (BUG-041, 16/10–10/11/2026) existed only on the published branch `fix/local-scheduled-autostart`, so `develop` showed no open P1 although `BUGLOG-041` was open; its status header (16/10/2026) still described the main-lineage integration as prepared locally; and block numbering had no rule for parallel branches.
+- A simulation showed that adding this block before integrating Blocks 773–778 would force a manual reorder of this file at merge time, while integrating them first keeps file order equal to number order without conflicts.
+- The checks used to verify PR #189 existed only inside agent conversations, so a new agent could not repeat them; they are now versioned as `tools/devlog_check.py`.
+
+### BUG-041 records integrated (PR #189): one-off exception to R-2
+
+- On 12/11/2026 the owner approved a one-off, documentation-only exception to R-2, limited to the seven commits `329ac28`…`685cf53d8acc1f74961b434e81aaf91ae5b0c262`, integrated before BUG-041 device validation. No runtime, test or configuration file was integrated; the BUG-041 fix itself still follows R-2.
+- PR #189 (`fix/local-scheduled-autostart` → `develop`) was opened on 12/11/2026 at 09:26 and merged at 10:05 (UTC+1) as merge commit `5d4a9a610a3f2f1680e54108363c25db96724566`, pinned to head `685cf53` (two parents; tree identical to that head). The branch was kept; BUG-041 work continues on it.
+- `develop` now holds Blocks 773–778, the BUG-041 bug-log entry, its validation packet and the corrected ledger snapshots; `BUGLOG-041` (provisional P1, Pending) is the only open P0/P1 item. Statements in Blocks 773–778 and in the ledger snapshots that `develop` does not yet contain these records, or that the branch has no PR, are historical checkpoints.
+
+### PR #188 record
+
+- PR #188 (`fix/sync-main-into-develop` → `develop`) was opened on 16/10/2026 at 09:41 and merged at 14:33 (UTC+2) as `b92c84b0b694cd4061463a61267ecb374314596f`. Block 772 ends with "Do not publish this branch or open its PR yet"; the review and owner authorization that followed are not recorded in the repository. This block records only facts verifiable in Git and GitHub and does not reconstruct that authorization. Block 772 is unchanged.
+
+### Rules and historical notes
+
+- Three formatting rules added at the top of this file: block numbers are chosen across all unmerged branches; a new block is written on a branch that already contains every lower-numbered published block; published blocks are never edited, renumbered or moved (only exception: a number collision found before integration).
+- "Historical numbering notes" at the top of this file list the anomalies kept as written: Blocks 394–396 and 437–438 used twice, 600 before 599, 678 before 677, Block 750 dated before Block 749, unused 517 and 666, and two heading styles. No block was edited, renumbered or moved.
+- `AGENTS.md` (strict integration gate, step 3) and `CLAUDE.md` §2 (preflight) now also report branches not merged into `origin/develop` and the open P0/P1 items they hold.
+- New `tools/devlog_check.py` (Python 3 standard library only; read-only, no network): `check` verifies a dev log after a merge, PR or branch sync (14 checks: conflict markers, header, preamble, historical content and headings, order, numbering, heading format and dates, separators, completeness); `next` gives the next free block number across `develop` and unmerged branches; `selftest` runs 20 built-in cases with altered, lost, duplicated, reordered and foreign blocks. `AGENTS.md` (strict integration gate, dev-log integrity) and `CLAUDE.md` (R-10) require it for every merge, PR or branch sync that changes this file.
+- Verified without findings: Blocks 773–778 are uniquely numbered and chronological, each added append-only with its header update; their base commits chain; cited hashes resolve (commits, two trees, two patch IDs labelled as such).
+
+### Pending (not done here)
+
+- `fix/local-scheduled-autostart` stays at `685cf53` until R2 level 1 Phase B is executed or explicitly dropped, because the R2 runner prepared locally on that branch pins `EXPECTED_HEAD=685cf53`. Afterwards it fast-forwards to `develop` (`git merge --ff-only origin/develop`) before its next dev-log block, Block 780.
+- At audit time that branch also had uncommitted local work after Block 778 (R2 level 1 preparation; Phase B not authorized). It will be recorded on that branch in its next block, not here.
+- Out of scope: v1.0 planning updates after `feature_plan.md` v1.1, pending the D1/D2/D3 approval described there.
+
+### Verification
+
+- Changed files: `docs/dev_log.md` (15 lines inserted at the top, `Last update` replaced, this block appended), `AGENTS.md` (step 3 replaced; four-line dev-log integrity rule inserted), `CLAUDE.md` (two lines inserted in §2; R-10 inserted in §9), and the new file `tools/devlog_check.py` (SHA-256 `433c1f22…`). Nothing else.
+- Removing the insertions and restoring the replaced lines reproduces `docs/dev_log.md`, `AGENTS.md` and `CLAUDE.md` at `5d4a9a6` byte for byte (SHA-256: dev log `a9b40287…`, `AGENTS.md` `3bdf0b27…`, `CLAUDE.md` `b2593a25…`).
+- `python3 -I tools/devlog_check.py check` (14 checks) ALL PASS against `5d4a9a6`; `python3 -I tools/devlog_check.py selftest` PASS (20 cases); `git diff --check` clean. No Flutter commands were run (documentation and a standalone Python tool only).
