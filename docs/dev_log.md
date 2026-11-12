@@ -26,8 +26,8 @@ Formatting rules:
 
 Active phase: **20 — Group Naming & Task Visual Identity**
 Last closed bug fix: **BUG-036 planning-screen test harness, Closed/OK on 16/10/2026 (`Block 771`, implementation `40a7a1646951a38c66467f5393816af5ff318d49`); merged into develop via PR #187 (`6263526c6dec5312ac34ae596a2e004a97709a7f`)**
-Current focus: **v1.0 store release — Stage 1 stabilization (BUG-036 integrated; main-lineage integration prepared locally for review)**
-Last update: **16/10/2026**
+Current focus: **BUG-041 investigation — automated R1 (23/10/2026), physical-device R1-D (30/10/2026) and Scenario G (10/11/2026) reproductions positive; both symptoms observed on the device; causality (R2) and the alternating-countdown mechanism (R3, automated) pending authorization.**
+Last update: **10/11/2026**
 
 ---
 
@@ -19310,3 +19310,166 @@ On `main`, BUG-018 closure was recorded as Block 671 by `2c19f8e4b47f36be297dcb9
   - `docs/features/feature_2026_10_15_v1-store-release/logs/2026-10-16_mainsync_3dfc115_macos_debug.log` (226,136 bytes; SHA-256 `b671a890846e030a86cc0b9662381498366f645a08d3348dd395ebf0c911054c`).
 - Authorized diff against `origin/develop`: only this header update and Block 772 in `docs/dev_log.md`. No bug-log, ledger, plan, handoff, code, test, or configuration edits.
 - Stop locally for Claude to review the prepared integration and its evidence. Do not publish this branch or open its PR yet. D1/D2/D3, UX/UI, prod-debug, and Stage 1.6 remain unstarted.
+
+---
+
+## Block 773 — BUG-041 registered; Local Mode scheduled auto-start and alternating countdowns await reproduction (16/10/2026)
+
+Current branch intent: BUG-041 incident registration and next-session preparation only; no runtime or test implementation.
+**Branch:** `fix/local-scheduled-autostart`
+**Base commit:** `b92c84b0b694cd4061463a61267ecb374314596f` (PR #188 merge into `develop`). No new commit is created in this documentation-only step.
+
+### Authorization and preflight
+
+- The owner reported this incident outside development hours and explicitly authorized only local documentary registration/preparation. Implementation, test edits, device reproduction, publication, PRs, and merges are deferred to later authorization and Claude review.
+- Read the repository instructions and relevant scheduling/Local Mode runtime sources. Confirmed real date: 16/10/2026 (Europe/Madrid, UTC+2).
+- `git fetch --all --prune` completed; `git rev-list --left-right --count develop...origin/develop` returned `0 0`. All pre-existing local branches had `ahead_of_develop = 0`; no runtime/test commits needed integration.
+- No tracked work was pending before branch creation. The four pre-existing untracked private files remain untouched; no stashes, prior logs, or backups were modified.
+- Before registration, canonical non-closed bugs and open P0/P1 ledger items were zero. BUG-041 / BUGLOG-041 were available in both registries; BUG-037 through BUG-040 remain provisionally reserved for D1.
+
+### Incident and documentary result
+
+- Registered BUG-041 / BUGLOG-041 as provisional P1. Bug log status: Open — pending reproduction; ledger status: Pending (the ledger's allowed representation of this open item).
+- Physical Samsung Android, Local Mode without Firebase: one task / one 25-minute pomodoro, scheduled less than five minutes ahead. Pre-Run appeared, but its end left Ready / 25:00 requiring manual Start. After that delayed Start, the owner observed roughly one-second alternation of countdowns, apparently separated by the manual-start delay, including a visit to Groups Hub during execution.
+- The owner observed completion at the planned theoretical end, the expected completion dialog and OK navigation, and a Completed history entry with planned timing. These remain observations to preserve and reproduce, not validation results.
+- Kept the two symptoms under one incident. The countdown-rounding/one-shot-flag race and differing runtime/projection anchors are hypotheses only. Root cause is unestablished; incident build, device details, exact timestamps, logs, and screenshots are still missing.
+- Existing specs already require automatic scheduled start. Added the source references, read-only technical pointers, next-session plan, and pending validation gates inside the bug entry; synchronized the ledger and this log. No validation folder is opened at registration; use the permitted structure and actual creation date when later authorized.
+- The Stage 1 historical 219/219 result is unchanged and does not validate BUG-041. This work does not start Stage 2 or alter specs, roadmap, D1/D2/D3, other features, or production/test files.
+
+### Verification and explicit handoff
+
+- No analyzer, Flutter tests, app launches, or device reproductions were run in this documentary step. Documentary checks cover the three-file allowlist, stable ID/source references, queue counts, unique next block number, and unchanged `develop`/code/test state.
+- Open queue after registration: one provisional P1 (`BUGLOG-041`), no P0. No implementation, fix commit, closure, publication, PR, or merge is claimed.
+- First technical action next session, after explicit owner authorization and Claude review: create a deterministic automated reproduction through the Local Mode scheduled-start entry points, then extend it to delayed manual Start plus Run Mode → Groups Hub → Run Mode and measure both candidate time anchors.
+- Propose a correction only after demonstrating the cause. Required follow-up evidence includes physical Samsung Android Local Mode auto-start, one start only, one coherent countdown across navigation/resume, and correct planned completion/dialog/OK/history; analyzer, focused coordinator/timer/session regression suites, and the full suite remain pending as listed in BUG-041.
+- Stop after local registration. The owner will authorize implementation and Claude review later, during Focus Interval working hours.
+
+---
+
+## Block 774 — BUG-041 owner observations (19–20/10) and code-reading hypotheses recorded; reproduction plan revised (20/10/2026)
+
+**Current branch intent:** BUG-041 investigation documentation only; no runtime or test changes.
+**Branch:** `fix/local-scheduled-autostart` (local, unpublished)
+**Base:** `329ac28` (BUG-041 registration, committed 19/10/2026 09:16 on `develop` `b92c84b`).
+
+### Clarification of Block 773
+
+- Block 773 recorded the 16/10 working state ("no new commit is created"). The same three-file registration was committed locally as `329ac28` on 19/10/2026. Block 773 is kept unchanged as a historical checkpoint.
+
+### Owner observations and code-reading findings
+
+- Recorded in BUG-041 (sections dated 19–20/10/2026): auto-start failure before any Groups Hub visit; alternation after manual Start plus Groups Hub → Run Mode, also without Pause; Pause apparently widening the gap; background/foreground temporarily clearing it; close/reopen clearing it in one observed run. Owner reports without logs.
+- Hypotheses H1 (premature Pre-Run trigger consuming the one-shot auto-start flag; Fix 18 Local guard blocking recovery) and H2 (two 1 Hz writers with different anchors after manual Start; pause-unaware `loadGroup` projection). Not demonstrated.
+
+### Revised plan and authorization
+
+- Reproduction order R1–R6 as recorded in BUG-041; the first alternation test runs without Pause, and lifecycle scenarios are not treated as equivalent.
+- Owner decisions (20/10, provisional): P1 kept, symptoms grouped, BUG-041 before D1, hypotheses are not root causes.
+- Only these three documentation files change. Reproduction tests, validation packet, fixes, publication and PR require separate authorization.
+- Working-tree hygiene: private untracked files and any `.tmp.driveupload/` created by Google Drive for desktop are never staged (explicit-path staging only).
+
+## Block 775 — BUG-041 automated reproduction R1 accepted (attempt 3); validation packet recorded (20–23/10/2026)
+
+**Current branch intent:** BUG-041 investigation documentation; no runtime changes.
+**Branch:** `fix/local-scheduled-autostart` (local, unpublished)
+**Base:** `1561ead` (Block 774).
+
+### Step B — R1 automated reproduction
+
+- Packet `docs/bugs/validation_bug041_2026_10_20/`: plan, checklist and Codex handoff with the gated runners and the two approved test diffs. Single real clock (`LiveTestWidgetsFlutterBinding`), production app shell, real Local repositories.
+- Attempt 1 (22/10): `INFRA` stop; observer callbacks received `dynamic` values (`.name` on enums), fixed by typing the five observers. Attempt 2 (22/10): `INVALID` stop; A2/A4 `INVALID:V3` from a clock rule that compared asynchronously captured `now` values across emitters, replaced by per-line capture checks approved before attempt 3. Attempt 3 (22/10): `RUNNER_EXIT=1`, R1-A 5/5 and R1-B VALID/H1, `FAIL[S1,S2,S4,S5]`, 219/219 existing PASS, full suite `SUITE_FAIL` with only the five expected R1-A failures.
+- Evidence integrity: 28 local-only logs (16 historical, 12 from attempt 3) indexed by sha256 in the plan; the reproduction test stays untracked while it fails by design (sha256 `1d92a9b9…`).
+- Diagnostic finding for R2: two concurrent coordinator start timers in 9 of 11 runs; the symptom also occurs with one.
+
+### Owner decisions (23/10/2026)
+
+- R1 formally accepted, with Claude's reservations of 22/10, as the automated reproduction of the auto-start symptom only. Not a root-cause claim, a fix or closure; BUG-041 stays Open, P1 provisional.
+- Approved functional requirements, not yet in the specs: after a failed auto-start, a manual Start computes the remaining time from T0; the normal start sound plays once when the group effectively starts, also after leaving Pre-Run, and is not repeated when Run Mode is reopened.
+- Next, each pending authorization: R1-D on the physical Samsung, R2 level 1 (test-only causality controls), R3 (alternating countdowns). R2 level 2 (production instrumentation or intervention) is not authorized. D1 stays separate.
+
+### Scope of the R1 documentation commits
+
+- Documentation only: the validation packet; BUG-041 entry; ledger Snapshot (2026-10-23) and `BUGLOG-041`; this block and the header. No runtime, test, spec, roadmap or configuration changes. Blocks up to 774 and earlier snapshots are unchanged.
+
+## Block 776 — BUG-041 R1-D positive on the physical Samsung; R3-D variant observed (30/10/2026)
+
+**Current branch intent:** BUG-041 investigation documentation; no runtime changes.
+**Branch:** `fix/local-scheduled-autostart` (local, unpublished)
+**Base:** `0cb1aee` (Block 775).
+
+### R1-D — physical-device reproduction
+
+- Samsung SM-A176U1, Android 16, installed debug build `1.1.0 (1)` (provenance `ff30e15` inferred), Local Mode, default notice, USB with logcat and screen recording. No reinstall, data deletion, setting or code change; private backup verified before the run.
+- One task / one 25-minute pomodoro scheduled for T0 = 09:25:00 (phone clock). Six predefined criteria met: `Auto-start abort (not due)` 762 ms before T0 and `skip pending=null` 20 ms later; coordinator start at +176 ms (second timer at +215 ms); pending id set on the same screen at +249 ms with no later attempt, skip, reload or `startFromAutoStart` until T0+60 s; Ready/25:00 with Start; no start sound heard (the recording's audio track is silent throughout and proves nothing about sound).
+- Classification: the R1 signature is reproduced on the device. The early abort is guaranteed by construction (1 s Pre-Run tick with `inSeconds` truncation). Deductions without a counterfactual run: the one-shot `_autoStartHandled` blocks the post-T0 pending-id path and the Fix 18 Local guard closes the stream path. Causality is not demonstrated.
+
+### R3-D — variant only (not an H2 test)
+
+- The screen turned off before Start could be pressed. On unlock the app returned to the foreground and the run appeared with a countdown coherent with T0, without `startFromAutoStart`; after Run Mode → Groups Hub → Run Mode a new ViewModel consumed the pending id left since T0 (`abort (state not idle)`); one countdown, no alternation. Without a manual Start this does not exercise H2.
+- New observation (not analysed): the task item showed 09:22–09:47 (the 09:22 load time) from T0 until the Groups Hub return, while Pre-Run and the pomodoro card used 09:25–09:50.
+
+### Evidence and next steps
+
+- Seven local-only device files (2026-10-23 read-only checks; 2026-10-30 pre-check, R1-D and R3-D logcat, two videos, T0+60 s screenshot) indexed by sha256 in the packet plan. Test group canceled; final data 7 completed / 5 canceled.
+- BUG-041 stays Open, P1 provisional; it is not corrected or validated. Next, each pending owner authorization: a valid R3-D (manual Start within the 10-minute screen timeout, then Groups Hub → Run Mode), R2 level 1, R3, then the fix proposal. No push, PR or merge.
+
+### Scope of the R1-D documentation commit
+
+- Documentation only: packet plan and checklist; BUG-041 entry; ledger Snapshot (2026-10-30) and `BUGLOG-041`; this block and the header. No runtime, test, spec, roadmap or configuration changes. Blocks up to 775 and earlier snapshots are unchanged.
+
+## Block 777 — BUG-041 branch published, device evidence backed up, R3-D and backup procedures recorded (09/11/2026)
+
+**Current branch intent:** BUG-041 investigation documentation; no runtime changes.
+**Branch:** `fix/local-scheduled-autostart` (published to `origin` on 09/11/2026; no PR)
+**Base:** `deb9438` (Block 776).
+
+### Branch publication — one-off exception to AGENTS.md rule 10
+
+- On 09/11/2026 Codex pushed `fix/local-scheduled-autostart` once to `origin` with upstream, after the pre-checks of the owner-approved task: HEAD `deb943811c72cba06c7ea33def35559eb3560edc`; exactly the five BUG-041 documentation commits (`329ac28`, `1561ead`, `2cddcde`, `0cb1aee`, `deb9438`); seven documentation files (+2870 / −5); no binaries; privacy scan clean. A first attempt stopped before any network action because Drive for desktop's temporary `.tmp.driveupload/` folder appeared as untracked; the task was amended to allow only that folder and restarted.
+- Claude verified: remote HEAD `deb9438`; local/remote 0 0; `develop` (`b92c84b`) and `main` (`65552c4`) unchanged on `origin`; no pull request; no logs, videos, screenshots, untracked test or private files on the remote branch.
+- Rule 10 ("Never push a branch that contains known bugs or unverified fixes"): the owner granted a one-off exception only to publish this BUG-041 documentation as an off-machine copy. The branch has no code, test or configuration change, and the defect is already present in the published `develop`. The exception does not authorize publishing unverified fixes, does not modify the rule and does not apply to other branches. Any later push of this branch needs a new explicit owner authorization.
+
+### Private backup of the device evidence
+
+- Two independent private copies of the seven device files indexed in Block 776 and in the packet plan: one on the owner's Mac outside the repository and one in the owner's restricted cloud backup folder (owner-only access). Copied, never moved; `SHA256SUMS.txt` holds exactly the seven index lines; 7/7 OK for the originals before and after and for both copies; cloud upload verified by file size. Locations and links are kept only in the owner's private, unversioned backup register.
+- The private app-data backup of 23/10/2026 is not included and stays local only, by owner decision.
+
+### Procedures recorded
+
+- Packet plan: Scenario G (valid R3-D: build check and group baseline, manual Start about 20 s after the failed auto-start, Groups Hub → Run Mode, observations O1–O6, stop conditions, interruption and cleanup; not executed) and the private-backup procedure with its result; header branch line and status updated; checklist updated.
+
+### Status and next steps
+
+- BUG-041 stays Open, P1 provisional; no fix and no new device run. Next, each pending owner authorization: the valid R3-D (Scenario G), R2 level 1, R3 automated, then the fix proposal.
+
+### Scope of this documentation commit
+
+- Documentation only: packet plan and checklist; this block and the header. No bug log or ledger change; no runtime, test, spec, roadmap, configuration or agent-rule change. Blocks up to 776 are unchanged.
+
+## Block 778 — BUG-041 Scenario G (valid R3-D) executed on the physical Samsung; evidence backed up (10/11/2026)
+
+**Current branch intent:** BUG-041 investigation documentation; no runtime changes.
+**Branch:** `fix/local-scheduled-autostart` (published to `origin`; no PR)
+**Base:** `a01c891` (Block 777).
+
+### Scenario G — execution
+
+- Executed on 10/11/2026 keeping the functional sequence of the published procedure; a helper-script file-naming rule was corrected during the capture without altering any evidence file.
+- Authorization as recorded: the owner replied "ok" (app in the foreground, 15 minutes available) to Claude's request for the explicit B3/C/B4 authorization and then followed the execution instructions; the thread contains no literal explicit authorization of B3/C/B4. Procedural discrepancy recorded; the observed results are unaffected.
+- Preconditions met: installed build identical to R1-D, Local Mode, Do Not Disturb on, app in the foreground, group baseline 7 completed / 5 canceled.
+- T0 = 07:09:00 (phone clock): failed auto-start with the R1-D signature (`abort (not due)` 463 ms before T0; pending id set at +174 ms); criteria 1–4 met; criterion 5 met only as a partial check (T0 to T0+15 s, owner decision), not over the original T0+60 s window.
+- Observed: the delayed manual Start (d ≈ 23.2 s after T0, located in the video) started at 25:00, anchored at the press (O1); one stable countdown before Groups Hub (O2); after Run Mode → Groups Hub → Run Mode, until the end of the recording, the T0-anchored value flashes about 0.15 s each second between the press-anchored values, always 24 s lower (O3); start sound once at Start, none at T0 or on the return (O4); in Ready the task item showed the load-anchored range 07:06–07:31 (O5); on the return a new ViewModel loads the group and consumes the pending id left since T0 (O6).
+- The 24 s difference equals ceil(d) and the flash length about frac(d) ≈ 0.2 s, as expected from two once-per-second updates anchored at T0 and at the press (the H2 model). H2 is consistent with the observations but not demonstrated.
+- Cleanup B4: only the test group canceled; data = baseline plus one canceled, none active.
+
+### Evidence
+
+- Four local-only files (logcat, device log, video, end screenshot) indexed by sha256 in the packet plan; backed up privately on 10/11/2026 with the 09/11 procedure (two verified copies outside Git, cloud copy with identical sizes and owner-only access; locations only in the owner's private register).
+
+### Status and next steps
+
+- BUG-041 stays Open, P1 provisional; root cause not established; no fix. Next, each pending owner authorization: R2 level 1 (causality controls), R3 automated (alternating-countdown mechanism), then the fix proposal.
+
+### Scope of this documentation commit
+
+- Documentation only: packet plan and checklist; BUG-041 entry; ledger Snapshot (2026-11-10) and `BUGLOG-041`; this block and the header. No runtime, test, spec, roadmap, configuration or agent-rule change. Blocks up to 777 and earlier snapshots are unchanged.

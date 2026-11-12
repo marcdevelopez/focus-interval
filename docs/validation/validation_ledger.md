@@ -81,11 +81,40 @@ Use this checklist for every implementation branch before push/PR/merge to preve
 2. Confirm `develop...origin/develop = 0 0`.
 3. Only then move to the next implementation item.
 
+## Snapshot (2026-11-10)
+
+- Branch `fix/local-scheduled-autostart` (published to `origin`, no PR): Scenario G (valid R3-D) executed on the physical Samsung and recorded (dev-log Block 778); both symptoms reproduced in one run. Root cause, fix and device validation pending.
+- Non-closed canonical bug queue on this branch: **1**, `BUGLOG-041` (provisional P1, Pending; R1, R1-D and Scenario G reproductions positive; H2 consistent but not demonstrated; root cause not established). Open P0: **0**.
+- `develop` (`b92c84b`) does not yet contain the BUG-041 records until this branch is integrated.
+- Historical snapshots below are unchanged.
+
+## Snapshot (2026-10-30)
+
+- Branch `fix/local-scheduled-autostart` (local, unpublished): R1-D physical-device reproduction (positive, same signature as R1) and the R3-D variant (no manual Start; not an H2 test) recorded (dev-log Block 776). Root cause, fix and device validation pending.
+- Non-closed canonical bug queue on this branch: **1**, `BUGLOG-041` (provisional P1, Pending; R1 and R1-D reproductions positive, root cause not established). Open P0: **0**.
+- `develop` (`b92c84b`) does not yet contain the BUG-041 records until this branch is integrated.
+- Historical snapshots below are unchanged.
+
+## Snapshot (2026-10-23)
+
+- Branch `fix/local-scheduled-autostart` (local, unpublished): R1 validation packet added and the owner's acceptance of the automated R1 reproduction recorded (attempt 3; dev-log Block 775). Root cause, fix and device validation pending.
+- Non-closed canonical bug queue on this branch: **1**, `BUGLOG-041` (provisional P1, Pending; automated reproduction R1 accepted, root cause not established). Open P0: **0**.
+- `develop` (`b92c84b`) does not yet contain the BUG-041 records until this branch is integrated.
+- Historical snapshots below are unchanged.
+
+## Snapshot (2026-10-20)
+
+- Branch `fix/local-scheduled-autostart` (local, unpublished): BUG-041 registration committed as `329ac28` (19/10/2026); 19–20/10 owner observations and code-reading hypotheses added (dev-log Block 774).
+- Non-closed canonical bug queue on this branch: **1**, `BUGLOG-041` (provisional P1, Pending; reproduction not started). Open P0: **0**.
+- `develop` (`b92c84b`) does not yet contain BUG-041 until this branch is integrated.
+- Historical snapshots below are unchanged.
+
 ## Snapshot (2026-10-16)
 
-- PR #186 merged into `develop` as `151318227c992c21a5974c8944a587899e1befef`; local `develop...origin/develop = 0 0` before creating the fix branch.
-- Non-closed canonical bug queue on this branch: **0**. `BUGLOG-036` is Closed/OK (16/10/2026), implementation `40a7a1646951a38c66467f5393816af5ff318d49`, after local validation, Claude technical/evidence review, and owner approval of documentary closure. Integration into `develop` remains pending review of the closure commit and explicit merge authorization for PR #187.
-- Open P0/P1 ledger items: **0**. Historical snapshots below are unchanged.
+- PR #188 is merged into `develop` as `b92c84b0b694cd4061463a61267ecb374314596f`. After `git fetch --all --prune`, local `develop...origin/develop = 0 0`; no local branch had commits outside `develop` before creating `fix/local-scheduled-autostart`.
+- Non-closed canonical bug queue on this branch: **1**, `BUG-041` / `BUGLOG-041`, provisional P1, Open — pending reproduction. This is a documentation-only registration of failed scheduled auto-start and apparently alternating countdowns on a physical Samsung Android in Local Mode, without Firebase. Reproduction/implementation are not authorized in this step. BUG-037 through BUG-040 remain reserved provisionally for D1.
+- `BUGLOG-036` remains Closed/OK, implementation `40a7a1646951a38c66467f5393816af5ff318d49`; its closure is integrated into `develop` through PR #187 (`6263526c6dec5312ac34ae596a2e004a97709a7f`), as recorded in dev-log Block 772. Earlier pending-integration statements are historical checkpoints.
+- Open P0/P1 ledger items: **1** (provisional P1 `BUGLOG-041`; no open P0). The completed Stage 1 baseline is historical; this incident is unresolved and must be triaged before unrelated new implementation. Historical snapshots below are unchanged.
 
 ## Snapshot (2026-05-06)
 
@@ -190,6 +219,8 @@ Use this checklist for every implementation branch before push/PR/merge to preve
 - [x] ID: `BUG-F25-I` | Type: bug | Priority: P1 | Status: Closed/OK | Source: `docs/bugs/bug_log.md` (BUG-F25-I) | Item: After "Postpone scheduled", canceling the running anchor group incorrectly re-anchors postponed start to current time (`now`) and auto-starts on next minute; postponed schedule should remain fixed after anchor cancel. Fix: sever postponed linkage on canceled anchor in `_finalizePostponedGroupsIfNeeded` (51dcd2d) + return null from `resolvePostponedAnchorEnd` for canceled anchors (6c87009). | closed_commit_hash: `6c87009` | closed_commit_message: `fix(f25-i): ignore canceled anchors in postponed timing resolution` | evidence: Chrome+iOS device validation PASS 19/03/2026 — G2 holds Scheduled: 23:29 after G1 canceled at 23:14; no premature auto-start. Screenshots: screenshots/2026-03-19_f25i_validation_pass.png.
 
 ### Active bug-log queue (sync 2026-10-16)
+
+- [ ] ID: `BUGLOG-041` | Type: bug | Priority: P1 | Status: Pending | Source: `docs/bugs/bug_log.md:4212` (BUG-041), `docs/specs.md:1655`, `docs/dev_log.md` (Blocks 773–778), `docs/bugs/validation_bug041_2026_10_20/` | Item: Physical Samsung Android, Local Mode without Firebase: one task / one 25-minute pomodoro scheduled less than five minutes ahead remains Ready at 25:00 after Pre-Run; delayed manual Start is followed by apparently alternating planned-start/manual-start countdowns, while completion/history follow planned timing. One incident with two potentially related symptoms; provisional P1, Open in the bug log; automated reproduction R1 accepted 23/10/2026, physical-device reproduction R1-D positive 30/10/2026 and Scenario G (valid R3-D) 10/11/2026 reproducing both symptoms on the device; root cause not established. Work on `fix/local-scheduled-autostart`; cause confirmation (R2), the alternating-countdown mechanism (R3, automated), implementation, Claude review and device validation await later owner authorization. BUG-037..BUG-040 remain provisionally reserved for D1. | closed_commit_hash: `-` | closed_commit_message: `-` | evidence: Owner report in conversation, 16/10/2026; automated reproduction R1 accepted 23/10/2026 (attempt 3: R1-A 5/5 and R1-B VALID/H1, `FAIL[S1,S2,S4,S5]`; 219/219 existing PASS; packet `docs/bugs/validation_bug041_2026_10_20/`, local-only logs indexed by sha256); R1-D on the physical Samsung 30/10/2026 (criteria 1–6 met, same signature; R3-D only a variant without manual Start; local-only device evidence indexed by sha256 in the packet); Scenario G 10/11/2026 (failed auto-start, delayed Start anchored at the press, two alternating countdowns 24 s apart for d ≈ 23.2 s after the Groups Hub return; evidence indexed by sha256 and backed up privately). No implemented fix or closure validation.
 
 - [x] ID: `BUGLOG-036` | Type: bug | Priority: P2 | Status: Closed/OK | Source: `docs/bugs/bug_log.md:4166`, `test/presentation/task_group_planning_screen_test.dart:1`, `docs/dev_log.md` (Block 771) | Item: Restore the two existing adjusted-end planning widget tests with ProviderScope and deterministic overrides; no production changes. | closed_commit_hash: `40a7a1646951a38c66467f5393816af5ff318d49` | closed_commit_message: `test(planning): wrap planning screen tests in ProviderScope with deterministic overrides` | evidence: Real-branch `flutter analyze` PASS, targeted 2/2 PASS, full suite 219/219 PASS on 16/10/2026; all actual exit codes `0`. Full output: `docs/bugs/validation_bug036_2026_10_16/logs/2026-10-16_bug036_40a7a16_macos_debug.log` (SHA-256 `536b44d610b07474cab2759e429a12054bd6addfadfaf48293b5a84bdc6f48b2`), attached in PR #187. Claude technical/evidence review complete; documentary closure approved by the owner on 16/10/2026. Closed/OK on the fix branch; closure-commit review and explicitly authorized merge into `develop` pending.
 

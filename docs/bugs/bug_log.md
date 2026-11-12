@@ -4206,3 +4206,152 @@ Validation:
 Status:
 
 Closed/OK (2026-10-16). closed_commit_hash: `40a7a1646951a38c66467f5393816af5ff318d49`. Analyze, exact two-case repro, and full-suite regression smoke PASS with exit codes `0`; Claude completed the technical/evidence review and the owner approved this documentary closure on 16/10/2026. Closure is recorded on the fix branch; review of the closure commit and explicit authorization to merge PR #187 into `develop` remain pending.
+
+---
+
+## BUG-041 — Local scheduled auto-start stays Ready; delayed manual Start exposes alternating countdowns
+
+ID: BUG-041
+Date: 16/10/2026 (UTC+2; incident time not supplied)
+Platforms: Physical Samsung Android device; exact model, Android version, and installed build/commit not yet recorded
+Priority: P1 (provisional; confirm after reproduction)
+Context: Local Mode, without Firebase. One scheduled group containing one task and one 25-minute pomodoro, planned less than five minutes before its start. Effective noticeMinutes, integrity mode, group ID, and exact timestamps are not yet known.
+
+Scope and authorization:
+
+- One incident with two potentially related symptoms: failed scheduled auto-start and inconsistent displayed countdowns after delayed manual Start. Do not split into independent bugs without evidence.
+- Documentation/preparation only, on `fix/local-scheduled-autostart`, based on synchronized `develop` at `b92c84b0b694cd4061463a61267ecb374314596f` (PR #188 merge). This is the investigation baseline, not a confirmed identification of the installed incident build.
+- Stage 1 was completed before this report; its historical 219/219 test result does not validate this incident. Stage 2 implementation has not started in this work.
+- BUG-037 through BUG-040 remain reserved provisionally for D1. BUG-041 / BUGLOG-041 were absent from both canonical registries at registration.
+- Implementation and device reproduction require later explicit owner authorization within Focus Interval working hours and Claude review. No production/test/spec/roadmap/D1/D2/D3 changes, publication, PR, or merge are authorized now.
+
+Owner-reported sequence (not independently reproduced):
+
+1. Schedule the group with less than five minutes until its start in Android Local Mode.
+2. Pre-Run appears with the amber circle and countdown.
+3. At zero, Run Mode stays Ready at 25:00 instead of starting automatically.
+4. Press Start manually after the planned start time.
+5. During the run, including a visit to Groups Hub, observe the Run Mode countdown apparently alternating about once per second between two values. The precise navigation sequence is to be confirmed during reproduction.
+6. The difference appears to match the delay between scheduled start and manual Start. The apparent anchors are the planned start and the manual Start; neither anchor has been verified from logs.
+7. The group ends at its planned theoretical end. The completion dialog appears, OK returns to Groups Hub, and the group is Completed with the planned timing, without an apparent shift for the manual-Start delay.
+
+Observed symptoms:
+
+- Scheduled execution does not begin automatically; user action is needed to leave Ready.
+- After that workaround, displayed remaining time alternates between inconsistent values.
+- Completion timing, completion dialog, OK navigation, and Completed history appeared correct in this incident. Preserve those behaviors when investigating; they are owner observations, not validation results.
+
+Expected behavior (existing specification):
+
+- `docs/specs.md:1655` (10.4.1.a): at the end of Pre-Run, auto-start without user action.
+- `docs/specs.md:1577` (10.4.1): scheduled execution uses actualStartTime = scheduledStartTime and the corresponding theoretical end.
+- `docs/specs.md` sections 6.4, 8.2, and 10.4.4: Local Mode and any timeline projections must present coherent execution state and timing. A late visit to Run Mode must not create a second execution clock.
+- Show one consistent countdown, ring, status, and task/group timing; do not restart the scheduled timeline or emit duplicate starts when handling the scheduled boundary or navigation.
+- No specification change is proposed by this registration.
+
+Root cause:
+
+Not established. No automated exact reproduction or device reproduction has been executed for BUG-041. The earlier chat assessment of a timing race is an unverified hypothesis, not a demonstrated cause.
+
+Technical hypotheses / read-only investigation pointers:
+
+- H1 — `lib/presentation/screens/timer_screen.dart`: `_ensurePreRunTimer` truncates the remaining duration with inSeconds; `_handlePreRunCountdownFinished`, `_maybeAutoStartScheduled`, and `_attemptScheduledAutoStart` combine countdown completion with a one-shot handled flag. Investigate whether a premature attempt can consume the later scheduled-start intent. Boundary ordering and causality remain unproven.
+- H2 — `lib/presentation/viewmodels/pomodoro_view_model.dart`: inspect `_startInternal`, `_markGroupRunningIfNeeded`, `loadGroup`, `_applyGroupTimelineProjection`, and `_applyTimerRuntimeProjection`, together with `lib/data/services/timer_service.dart` (`startTick`, `_ensureTickRunning`). A delayed manual Start may leave runtime/render paths with different time anchors; this could explain alternating countdowns while completion still follows the planned end. This is not yet demonstrated.
+- Inspect `lib/presentation/viewmodels/scheduled_group_coordinator.dart` (`_autoStartGroup`) and `lib/widgets/scheduled_group_auto_starter.dart` (`_openTimerForGroup`) for the scheduled-to-running handoff and same-route behavior.
+- The report concerns device-local execution. Do not attribute it to Firebase ownership, network gaps, or multi-device synchronization without new evidence.
+
+Evidence and limitations:
+
+- Evidence available: owner's report in this conversation on 16/10/2026.
+- No incident logs, screenshots, persisted snapshots, exact timestamps, or confirmed installed build were supplied. No validation packet has been created; the pending plan is recorded here until reproduction/validation is authorized.
+- The apparent one-second cadence and delay-sized difference are observations to measure, not proof of two independent timers or separate defects.
+- This registration records no test success, implemented fix, or closure.
+
+Workaround observed:
+
+Manual Start left Ready but was followed by inconsistent countdowns. Treat this as part of the failing sequence, not a verified safe workaround.
+
+Next-session plan (all steps pending; subject to later owner authorization and Claude review):
+
+1. Recheck the Git/bug-priority gates and confirm the Samsung model/device identifier, installed build, exact navigation sequence, effective notice, and integrity mode. Create the permitted packet `docs/bugs/validation_bug041_2026_10_16/` only if created on 16/10; otherwise use the actual creation date. Review any supplied screenshots before diagnosis or implementation.
+2. First technical action: add a deterministic automated reproduction of the Local Mode scheduled boundary, using a controllable time strategy and the existing production entry points. Cover one task / one 25-minute pomodoro scheduled less than five minutes ahead, subsecond boundary ordering, and repeated coordinator/UI notifications. Establish the failure before proposing a fix; do not rely on real-time waiting alone.
+3. Extend the reproduction with a deliberate delayed manual Start and Run Mode → Groups Hub → Run Mode. Compare runtime state, machine state, actualStartTime, theoreticalEndTime, and displayed remaining time at successive ticks. Verify whether the observed difference equals the delay; demonstrate or reject H1/H2 and their relationship.
+4. After the cause is evidenced, submit a minimal correction proposal for Claude review. It must preserve one authoritative scheduled timeline, start exactly once, keep UI countdowns coherent, and retain correct completion/navigation. Do not implement solely from the current race hypothesis.
+5. Required subsequent validation: physical Samsung Android in Local Mode without Firebase, using the exact owner-reported sequence and logged anchors. Check scheduled auto-start, delayed-Start recovery where reproducible, hub/return and resume, no duplicate starts/start sounds, no alternating clocks, and planned completion/dialog/OK/history timing. Include no-notice, longer-notice, multiple-task/pomodoro, Start now, and pause/resume regression cases as appropriate to the proven fix. Account-mode smoke remains required if shared code is changed.
+
+Pending local gate for the future implementation (not executed in this registration):
+
+- [ ] Exact automated reproduction demonstrates both symptoms or establishes their relationship/limits.
+- [ ] `flutter analyze`.
+- [ ] `flutter test test/presentation/timer_screen_completion_navigation_test.dart` with new regression coverage.
+- [ ] `flutter test test/presentation/viewmodels/scheduled_group_coordinator_test.dart`.
+- [ ] `flutter test test/presentation/viewmodels/pomodoro_view_model_session_gap_test.dart`.
+- [ ] `flutter test test/presentation/viewmodels/pomodoro_view_model_pause_expiry_test.dart`.
+- [ ] `flutter test test/presentation/timer_screen_syncing_overlay_test.dart`.
+- [ ] `flutter test --reporter expanded`.
+- [ ] Physical Android Local Mode exact reproduction and regression evidence recorded in the permitted validation packet before considering closure.
+
+Owner observations — 19/10/2026 and 20/10/2026 (physical Samsung Android, Local Mode, no logs/screenshots/measurements):
+
+- Auto-start failure (19/10, 20/10): when Pre-Run reaches zero, Run Mode shows Ready / 25:00 and requires manual Start, before any Groups Hub visit.
+- Alternation trigger (19/10, 20/10): after manual Start the countdown stays stable until Run Mode → Groups Hub → Run Mode; then it alternates about once per second between two values.
+- No Pause required (20/10): alternation appeared in a run where Pause was never used.
+- Pause effect (20/10, unmeasured): pausing while alternation was active appeared to widen the gap.
+- Background → foreground (19/10): alternation disappeared temporarily; a new Groups Hub → Run Mode visit brought it back.
+- Close and reopen (20/10, one observed run): Run Mode showed a value apparently coherent with the schedule, and later Groups Hub → Run Mode visits did not bring the alternation back. Whether the Android process was terminated or only the activity/engine was recreated is unknown.
+- The two values visually seemed to match the planned start and the manual Start; not measured.
+
+Code-reading findings — 19–20/10/2026 (read-only review; hypotheses, not root cause):
+
+- H1: `_ensurePreRunTimer` truncates with `inSeconds`, so the single zero-crossing call to `_handlePreRunCountdownFinished` can occur up to ~1 s before `scheduledStartTime`. It sets `scheduledAutoStartGroupIdProvider` (its listener consumes the one-shot `_autoStartHandled`), then `_attemptScheduledAutoStart` aborts as "not due" and clears the pending id. At the boundary `ScheduledGroupCoordinator._autoStartGroup` sets `running` with `actualStartTime = scheduledStart`, but `_maybeAutoStartScheduled` is consumed, `updateGroup` does not project, and `_maybeAutoStartRunningGroup` returns early in Local Mode when `actualStartTime != null` (Fix 18, `55879f4`). Expected: persisted group running, ViewModel idle (Ready). Account Mode follows different paths (unverified).
+- H2: manual Start on a running group keeps the group anchored at `scheduledStart` but starts the machine, `phaseStartedAt` and `TimerService.startTick` at the manual-Start time. Two 1 Hz writers feed Run Mode state (`PomodoroMachine` and the persistent `TimerService` via `_applyTimerRuntimeProjection`); Local Mode uses `NoopPomodoroSessionRepository`, so no session snapshot re-anchors `TimerService`. On re-entry, `loadGroup` re-projects only the machine from the group timeline and ignores pause offsets, while resume projection (`_applyGroupTimelineProjection`) is pause-aware and pauses extend `theoreticalEndTime`. Possible gap: manual-Start delay plus paused seconds.
+- Close/reopen likely recreates the provider container, leaving `TimerService` idle and only the Fix 18 projection path (one writer). Unverified.
+- Open: the code read so far does not explain why background → foreground temporarily removes the alternation.
+- Spec deviation to verify: when Run Mode itself promotes a due scheduled group, `_attemptScheduledAutoStart` writes `actualStartTime: now` instead of `scheduledStartTime` (specs 10.4.1).
+
+Revised reproduction order — 20/10/2026 (pending authorization):
+
+R1 Local Pre-Run boundary (persisted vs ViewModel vs displayed state; never-Start variant to theoretical end). R2 controls (no Pre-Run, post-boundary trigger, Start now from Task List and Groups Hub, Account baseline). R3 delayed manual Start + Groups Hub → Run Mode WITHOUT Pause, logging per tick scheduled/actual start, theoretical end, machine, TimerService, ViewModel and displayed values. R4 Pause/Resume variants with exact paused seconds. R5 lifecycle scenarios, not treated as equivalent: in-app navigation, background/foreground, provider-container recreation, device cold start. R6 completion, sounds, transitions, duplicates and regressions.
+
+Automated reproduction R1 — 20–23/10/2026 (packet `docs/bugs/validation_bug041_2026_10_20/`):
+
+- Method: widget test run with `flutter test` on the macOS host (debug; default Android test platform), single real clock (`LiveTestWidgetsFlutterBinding`), production app shell and real Local repositories, through the gated runner in the packet's `codex_handoff.md`. The test file stays outside Git while it fails by design (sha256 `1d92a9b9…`); run logs are local-only and indexed by sha256 in the packet plan.
+- Attempt 1 (22/10): stopped `INFRA` (observer callbacks received `dynamic` values). Attempt 2 (22/10): stopped `INVALID` (A2/A4 `INVALID:V3` from a clock rule that compared asynchronously captured `now` values across emitters; A1/A3/A5 valid). Attempt 3 (22/10), after the approved V3 correction: `RUNNER_EXIT=1`; R1-A 5/5 and R1-B 1/1 VALID/H1 with `FAIL[S1,S2,S4,S5]` (S3 passes); 219/219 existing tests PASS; real full suite `SUITE_FAIL` with only the five expected R1-A specification failures.
+- Observed in all 11 valid runs of attempt 3: Run Mode opens in Pre-Run by itself; the Pre-Run handler fires 127–905 ms before T0; `Auto-start abort (not due)` follows within 0–1 ms and `Auto-start skip pending=null` about 25–40 ms later; at T0 the coordinator persists `running` with `actualStartTime = T0`; there is no `startFromAutoStart`; Run Mode stays Ready/25:00 with Start enabled through T0+3 s; no start sound.
+- Not demonstrated: which guard blocks the start (`_autoStartHandled` strongly indicated by the post-frame skip; the Fix 18 Local guard inferred; neither return logs anything), causality of the early abort (R2), correspondence with the physical device (R1-D), and H2.
+- Diagnostic finding for R2 (no change authorized): 9 of the 11 runs show two concurrent coordinator start timers; the symptom also occurs with one timer.
+- Owner decisions 23/10/2026: R1 accepted as the automated reproduction of the auto-start symptom only (not root cause, fix or closure). Approved functional requirements, not yet in the specs: after a failed auto-start, a manual Start computes the remaining time from T0 (Start 20 s after T0 shows about 24:40); the normal start sound plays once when the group effectively starts, also if the user left Pre-Run, and is not repeated when Run Mode is reopened.
+
+Physical device reproduction R1-D and R3-D variant — 30/10/2026 (packet `docs/bugs/validation_bug041_2026_10_20/`, R1-D section of the plan):
+
+- Setup: Samsung SM-A176U1, Android 16 (build `BP4A.251205.006.A176U1UES8BZI5`), installed debug build `1.1.0 (1)` of 14/10/2026 (provenance `ff30e15` inferred from the local reflog; `lib/`, `android/` and `pubspec` identical to `1561ead`), Local Mode, default 5-minute notice, Do Not Disturb on; USB with logcat and screen recording; phone clock +3.60 s ahead of the Mac. No reinstall, data deletion, setting or code change; the owner's private backup was verified before the run.
+- R1-D (B1/C/B3/B4 authorized 23/10, started on the owner's signal 30/10): one task / one 25-minute pomodoro scheduled at 09:22 for T0 = 09:25:00 (phone clock); Run Mode opened in Pre-Run by itself. Positive reproduction with the R1 signature; the six predefined criteria were met: `Auto-start attempt` and `Auto-start abort (not due)` 762 ms before T0; `Auto-start skip pending=null` 20 ms later; coordinator `start-timer-fired` at +176 ms and +215 ms; `scheduledAutoStartGroupId changed prev=null next=<id>` on the same screen at +249 ms; then no attempt, skip, group reload or `startFromAutoStart` until T0+60 s; Ready/25:00 with Start; the owner heard no start sound. The recording's audio track is silent throughout, so it does not prove the absence of sound.
+- R3-D (B5, authorized 30/10) — variant only, not an H2 test: the screen turned off about 10 minutes after the last touch, before Start could be pressed. On unlock (09:35:11) the app returned to the foreground; the coordinator reopened Run Mode and, without `startFromAutoStart` or a group reload, the run appeared with a countdown coherent with T0 (14:44 at about 09:35:16; end 09:50). After Run Mode → Groups Hub → Run Mode (09:37:22–09:37:34) a new ViewModel loaded the running group and consumed the pending id left since T0 (`Auto-start abort (state not idle)`); afterwards one countdown coherent with T0 and no alternation (per-second video frames; owner observation over 30 s). Without a manual Start this variant does not exercise H2.
+- New observation (not analysed): the task item showed 09:25–09:50 in Pre-Run but 09:22–09:47 (the 09:22 load time) from T0 in Ready and while running after the background return; it showed 09:25–09:50 again after the Groups Hub return.
+- Classification: facts — the R1-D signature and the R3-D observations above, and that the early abort is guaranteed by construction whenever Run Mode shows Pre-Run during the last second before T0 (1 s tick with `inSeconds` truncation). Deductions without a counterfactual run — after T0 the pending-id path is blocked by the one-shot `_autoStartHandled` and the stream path by the Fix 18 Local guard (neither return logs anything); both hold in the 11 valid R1 runs and in R1-D. Not demonstrated — causality, H2, the meaning of the 09:22–09:47 range, and whether the background-return and re-open paths play the start sound.
+- Cleanup B4: test group canceled (final data 7 completed / 5 canceled, none scheduled or running). Evidence: device logcat, pre-check log, R1-D and R3-D videos and the T0+60 s screenshot, local-only and indexed by sha256 in the packet plan.
+
+Physical device reproduction, Scenario G (valid R3-D) — 10/11/2026 (packet `docs/bugs/validation_bug041_2026_10_20/`, "Scenario G — execution results"):
+
+- Setup: same Samsung SM-A176U1 and installed build as R1-D (`1.1.0 (1)` of 14/10/2026), Local Mode, default notice, Do Not Disturb on, app in the foreground; group baseline 7 completed / 5 canceled; USB with logcat and screen/app-audio recording; phone clock +2.30 s ahead of the Mac. No code, data or setting change.
+- Authorization as recorded: Claude asked for the explicit B3/C/B4 authorization; the owner replied "ok" (app in the foreground, 15 minutes available) and then followed the execution instructions. The thread contains no literal explicit authorization of B3/C/B4; this procedural discrepancy is recorded and does not change the observed results. The functional sequence of Scenario G was kept; a helper-script file-naming rule was corrected during the capture without altering any evidence file.
+- Failed auto-start reproduced again: T0 = 07:09:00 (phone clock); `Auto-start abort (not due)` 463 ms before T0 and `skip pending=null` 19 ms later; coordinator start at +134 ms (second at +166 ms); pending id set at +174 ms; R1-D criteria 1–4 met and criterion 5 met as a partial check (T0 to T0+15 s, before the manual Start; not the original T0+60 s window). Ready/25:00 with Start; no sound at T0.
+- Delayed manual Start and Groups Hub return (observed): the owner pressed Start d ≈ 23.2 s after T0 (located in the video; a manual Start writes no log line). The countdown started at 25:00, anchored at the press (the owner requirement of 23/10 would give about 24:37). Before Groups Hub: one stable countdown (all frames of a 3 s window). After Run Mode → Groups Hub → Run Mode (07:09:56.5–07:10:11.0; new ViewModel, group loaded as `running`, pending id from T0 consumed by `Auto-start abort (state not idle)`): until the end of the recording the press-anchored value is shown about 0.85 s of each second and the T0-anchored value flashes for about 0.15 s, always 24 s lower. The owner saw two alternating countdowns. Start sound once at Start (audio track and owner); none at T0 or on the return.
+- Relation between the 23.2 s wait and the 24 s difference: with two once-per-second updates anchored at T0 and at the press, each publishing whole seconds, the press-anchored value is ceil(d) = 24 s higher at each T0-anchored update and the T0-anchored value stays visible for about frac(d) ≈ 0.2 s; the observations match this H2 model, which is not demonstrated.
+- Range observation reproduced: in Ready the task item showed 07:06–07:31 (the 07:06:51 load time), as 09:22–09:47 on 30/10; after Start it showed 07:09–07:34.
+- Classification: observed — both symptoms of BUG-041 on the device in one run under the owner's conditions. Hypothesis — H2 is consistent with O1, O3 and the 24 s / 0.2 s arithmetic. Pending validation — the mechanism of H2 and of the re-entry trigger (R3 automated), the causality of the early abort (R2 level 1), the fix and its device validation.
+- Cleanup B4: only the test group canceled; data = baseline plus one canceled, none active. Evidence: four local-only files indexed by sha256 in the packet plan, backed up privately (two verified copies outside Git).
+
+Fix applied: None.
+
+Status:
+
+Open — pending reproduction (2026-10-16). Ledger ID: BUGLOG-041; ledger status: Pending; provisional P1. Blocker: documentation-only authorization outside the owner's development hours; reproduction, implementation, Claude review, and device validation are pending. closed_commit_hash: `-`; closed_commit_message: `-`.
+
+Update 20/10/2026: owner observations 19–20/10 and code-reading hypotheses recorded (dev-log Block 774). Root cause not established; reproduction and any fix require explicit owner authorization.
+
+Update 23/10/2026: automated reproduction R1 accepted by the owner (attempt 3; dev-log Block 775). Root cause not established; R1-D, R2, R3 and any fix require explicit owner authorization.
+
+Update 30/10/2026: R1-D positive on the physical Samsung (same signature as R1); R3-D observed only as a variant without manual Start (dev-log Block 776). Root cause not established; BUG-041 not corrected or validated. A valid R3-D, R2, R3 and any fix require explicit owner authorization.
+
+Update 10/11/2026: Scenario G (valid R3-D) on the physical Samsung reproduced both symptoms in one run: failed auto-start and, after a delayed manual Start (d ≈ 23.2 s) and a Groups Hub return, two alternating countdowns 24 s apart (dev-log Block 778). H2 is consistent with the observations but not demonstrated; root cause not established; BUG-041 not corrected or validated. R2 level 1, R3 automated and any fix require explicit owner authorization.
