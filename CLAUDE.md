@@ -30,6 +30,8 @@ If you are about to edit any of these files, read the listed docs first:
 - **Mandatory preflight gate**: before proposing "what's next", reconcile all
   non-closed `bug_log.md` entries against `validation_ledger.md`; if mismatch
   exists, sync ledger first and document it in `dev_log.md`.
+  Include open entries that exist only on branches not merged into
+  `origin/develop` (`AGENTS.md`, strict integration gate, step 3).
 
 Active branch: `develop` (created 2026-03-18; fix/feature branches merge here)
 Production branch: `main`
@@ -331,6 +333,12 @@ All work happens on short-lived branches (`fix/xxx`, `feature/xxx`).
   when the PR workflow would delay active mitigation. Record explicit justification
   + timestamp in `docs/dev_log.md` and open a follow-up PR/backfill as soon as
   stability is restored.
+
+**R-10 Dev-log integrity check (mandatory):**
+- Before any merge, PR or branch sync that changes `docs/dev_log.md`, and again on its
+  result, run `python3 -I tools/devlog_check.py check` as defined in `AGENTS.md`
+  (strict integration gate); continue only on `RESULT: ALL PASS`. Choose new block
+  numbers with `python3 -I tools/devlog_check.py next`.
 
 ---
 
