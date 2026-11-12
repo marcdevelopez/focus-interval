@@ -49,7 +49,7 @@ Strict integration gate (always-on hard rule):
 - Before any new implementation, agents must:
   1. Run `git fetch --all --prune`.
   2. Prove `develop...origin/develop = 0 0`.
-  3. Report every local branch with `ahead_of_develop > 0`.
+  3. Report every local branch with `ahead_of_develop > 0`, and every branch not merged into `origin/develop` (`git branch -a --no-merged origin/develop`). For each one, read its `docs/bugs/bug_log.md` and `docs/validation/validation_ledger.md` with `git show <branch>:<path>` and report its open P0/P1 items; they count as open for the bug-priority gates.
   4. Identify runtime/test commits outside `develop` and integrate them first (merge/cherry-pick) before starting unrelated work.
   5. Present the integration audit report before implementing.
 - After any item is marked `Closed/OK` (bug or feature), agents must immediately:
@@ -58,6 +58,10 @@ Strict integration gate (always-on hard rule):
   3. Re-check `develop...origin/develop = 0 0`.
   4. Verify the closure commit is contained in `develop`.
   5. Continue with next task only after steps 1-4 are complete.
+- Dev-log integrity (mandatory for every merge, PR or branch sync that changes `docs/dev_log.md`, including conflict resolution):
+  1. Choose new block numbers with `python3 -I tools/devlog_check.py next` after `git fetch --all --prune`.
+  2. Extract the versions with `git show <ref>:docs/dev_log.md` into a temporary directory outside the repository and run `python3 -I tools/devlog_check.py check <result> <develop version> <branch version>...` before merging and again on the merge result; continue only on `RESULT: ALL PASS`.
+  3. After any change to `tools/devlog_check.py`, run `python3 -I tools/devlog_check.py selftest`; continue only on `SELFTEST: PASS`.
 
 No-loss PR checklist rule (always-on hard rule):
 - Every implementation PR must complete the checklist in:
