@@ -45,7 +45,7 @@ Bug-priority preflight gate (hard rule):
   4. Continue only after the bug queue is explicit and ordered by priority.
 
 Strict integration gate (always-on hard rule):
-- This gate is automatic and mandatory for all agents (Codex, Claude, Gemini, or any future agent). It never requires an owner reminder.
+- This gate is automatic and mandatory for all agents (Codex, Claude, or any future agent). It never requires an owner reminder.
 - Before any new implementation, agents must:
   1. Run `git fetch --all --prune`.
   2. Prove `develop...origin/develop = 0 0`.
@@ -93,7 +93,7 @@ Daily specs hygiene (hard rule):
 - If issues are found, record them immediately and propose fixes before
   implementing new behavior. Specs are the app's supreme source of truth.
 
-## 1️⃣A Role Operating Model (Claude/Codex/Gemini) (hard rule)
+## 1️⃣A Role Operating Model (Claude/Codex) (hard rule)
 
 Canonical role definitions, master workflow, and handoff protocol are maintained in:
 - `docs/team_roles.md`
@@ -103,10 +103,10 @@ Operational split:
 - **Codex**: implementation, debugging, tests, and low-level correctness (the "how").
   Codex is not a blind executor — it reviews fix specifications before implementing.
   If the spec contains a technical error, Codex reports it to Claude before writing code.
-- **Gemini**: full-repository context analysis, large-doc ingestion, cross-module impact scans.
+- **Claude** leads cross-module impact analysis, architectural and UX reviews, and synthesis of long documents; **Codex** supplies repository-wide technical searches, dependency maps, log/JSON/CSV processing, and concrete file-level evidence.
 
-Master workflow (standard path): user → Claude → Gemini (impact scan) → Claude (plan) → Codex (spec review + implementation) → Claude + Gemini (closure review).
-Fast path for P0 bugs: skip Gemini step if it delays the fix; run full path after P0 is resolved.
+Master workflow (standard path): user → Claude (impact assessment and architecture) → Codex (technical scan when needed) → Claude (approved plan) → Codex (spec review, implementation, tests) → Claude (final code and system review).
+Fast path for P0 bugs: limit nonessential technical scans if they delay an urgent fix; document skipped checks and complete the full assessment after stabilization.
 
 Mandatory handoff contract (all directions):
 - Context and scope
@@ -206,7 +206,7 @@ When all three are met: update `plan_validacion_rapida_fix.md`, `quick_pass_chec
 Then merge fix branch → `develop` (never to `main` directly).
 Add a Block to `docs/dev_log.md` documenting the closure with commit hash.
 
-Mandatory user-facing closure communication (all agents: Claude/Codex/Gemini/any AI):
+Mandatory user-facing closure communication (all agents: Claude/Codex/any AI):
 - Before considering the closure fully done, provide a concise recap of each closed
   validation ID with the exact case validated (what was reproduced/checked and what PASS means).
 - End by requesting explicit final user confirmation.
