@@ -2,7 +2,7 @@
 
 Last update: 2026-03-20
 
-This document defines the operational split between Claude, Codex, and Gemini in this repository.
+This document defines the operational split between Claude Code and Codex in this repository.
 It is normative for day-to-day collaboration and must be applied together with:
 - `AGENTS.md`
 - `docs/specs.md`
@@ -19,7 +19,7 @@ If any conflict exists, precedence is:
 
 Primary mission:
 - Own architecture quality, decomposition, invariants, and long-term maintainability.
-- Orchestrate the overall workflow: receive requirements, delegate to Gemini or Codex, and make final design decisions.
+- Orchestrate the overall workflow: receive requirements, assess cross-module impact, delegate technical scans and execution to Codex, and make final design decisions.
 
 Focus:
 - Architecture and boundaries (layering, cohesion, coupling).
@@ -32,17 +32,18 @@ Must deliver:
 - Clear rationale ("why this design").
 - Concrete contracts before implementation (state models, ownership rules, sync invariants).
 - Review findings ordered by severity with exact file/line references.
-- Delegation instructions to Gemini or Codex with explicit scope and expected output.
+- Delegation instructions to Codex with explicit scope, evidence requirements, and expected output.
 
 Must avoid:
 - Deep mechanical edits as the default path when architectural direction is still unclear.
 - Approving implementation that violates architecture contracts, even if tests pass.
-- Starting implementation without first requesting a Gemini impact scan for non-trivial changes
+- Starting implementation without a documented impact assessment for non-trivial changes:
+  Claude reviews architecture and Codex performs scoped technical scans when useful
   (exception: P0 bugs — see Master Workflow fast path below).
 
 Hierarchy rule:
 - Claude has the final word on all design decisions.
-- If Codex or Gemini suggest a structural change, Claude must validate it before adoption.
+- If Codex suggests a structural change, Claude must validate it before adoption.
 
 ---
 
@@ -57,6 +58,8 @@ Focus:
 - Unit/widget/integration test implementation and stabilization.
 - Bug fixing with reproducible evidence.
 - Boilerplate and repetitive code once Claude has defined signatures and purpose.
+- Repository-wide technical dependency searches, file-level impact maps, incremental analysis
+  of large logs/JSON/CSV, and targeted evidence reports for Claude.
 - Syntax conversions, library upgrades, and utility scripts.
 
 Must deliver:
@@ -82,35 +85,15 @@ Spec review rule:
 
 ---
 
-## Role C — Gemini (Context Specialist & Repository Analyst)
+## Cross-cutting analysis — shared, without a third agent
 
-Primary mission:
-- Provide deep, cross-cutting analysis of the full repository that would exceed Claude's
-  practical context window.
-
-Note on access: Gemini operates via GitHub Copilot in VS Code with full autonomous access
-to the repository — it can list directories, search files, read any file, run terminal commands,
-and retrieve logs directly, without requiring manual context from the user.
-
-Focus:
-- Repository impact analysis: scan the full codebase to find hidden dependencies or conflicts
-  before Claude designs a solution.
-- Large document ingestion: read and summarize extensive external docs, PDFs, or API references.
-- Visual / UI review: analyze screenshots of visual bugs or design mockups and propose code structures.
-- Massive data processing: parse large logs, JSON/CSV exports, or audit trails that exceed
-  working memory of other agents.
-
-Must deliver:
-- Concise impact reports (affected modules, risks, edge cases) — not raw file dumps.
-- Targeted summaries that Claude can consume to make architectural decisions.
-
-Must avoid:
-- Making architectural decisions or modifying code without Claude validation.
-- Replacing Claude's own responsibility to understand context from CLAUDE.md and AGENTS.md.
-
-Efficiency rule:
-- Do not invoke Gemini for single-file analysis, simple autocompletion, or trivial lookups;
-  use Claude or Codex directly for those.
+- Claude owns architectural and business impact assessment, synthesis of long documents,
+  UI/UX screenshot interpretation, and final coherence review.
+- Codex performs concrete repository searches, dependency/usage maps, incremental large-data
+  processing, and test-impact identification. It reports exact file paths and risks to Claude.
+- Work in bounded batches for large PDFs and logs; avoid claiming full coverage of partially
+  inspected materials. Architectural decisions remain Claude's responsibility.
+- Technical scans are a support step, not a separate approval authority.
 
 ---
 
@@ -118,47 +101,40 @@ Efficiency rule:
 
 ### Standard path (features, non-urgent fixes, refactors)
 
-1. **Directive (user → Claude):** User requests a feature or fix. Claude takes command.
-2. **Mapping (Claude → Gemini):** Claude asks Gemini to scan the full repo for impact:
-   "Gemini, find how this change affects existing modules and flag hidden dependencies."
-3. **Planning (Claude):** Using Gemini's report, Claude drafts the attack plan and technical specs.
-4. **Execution (Claude → Codex):** Claude delegates repetitive code writing:
-   "Codex, implement the logic for these 3 functions following this plan."
-5. **Closure (Claude + Gemini):** Claude reviews final logic; Gemini confirms the resulting
-   file is coherent with the rest of the system. Mandatory tests (`flutter analyze` + relevant
-   test suite) must still pass — Gemini confirmation does not replace test results.
+1. **Directive (user → Claude):** Claude receives and scopes the request.
+2. **Mapping (Claude + Codex):** Claude determines cross-module risks; where relevant,
+   Codex scans the repository and reports affected files, dependencies, and edge cases.
+3. **Planning (Claude):** Claude produces and approves the plan and specs.
+4. **Execution (Claude → Codex):** Codex reviews technical feasibility, implements within
+   the approved scope, and runs targeted and required tests.
+5. **Closure (Claude):** Claude reads modified files, validates architecture and system
+   coherence, and checks Codex's exact test evidence. User/device acceptance gates remain.
+   Do not claim an independent review unless it was actually performed.
 
 ### Fast path (P0 blockers, active freezes, critical regressions)
 
-When a P0 bug is active (e.g., irrecoverable `Syncing session...`), the Gemini mapping step
-(step 2) is **optional** — skip it if it would delay the fix. The priority is stopping the
-bleeding first. Document the skip and run the full standard path after the P0 is resolved.
+For urgent P0 bugs, document and defer nonessential scans that would delay containment.
+Complete the impact assessment and verification after stabilization.
 
 ---
 
 ## Coordination Golden Rules
 
-1. **Hierarchy:** Claude has the final word on design. Codex and Gemini proposals require
-   Claude validation before adoption.
-2. **Data efficiency:** Do not saturate Claude with raw large files or full log dumps.
-   Use Gemini as a filter — deliver to Claude only the relevant summary.
-3. **Speed:** Do not invoke Gemini for single-line autocompletion or trivial file lookups;
-   Codex is faster for those.
-4. **Whole-system view:** Invoke Gemini whenever you need to "see" the project as a whole,
-   assess cross-module impact, or process data that exceeds practical context limits.
-5. **Specs first:** No role may implement behavior that is not yet defined in `docs/specs.md`.
-   If a gap exists, Claude must update specs before implementation begins.
-6. **Bug-first preflight gate:** Before proposing any next task, all roles must
-   reconcile non-closed entries in `docs/bugs/bug_log.md` with
-   `docs/validation/validation_ledger.md`. If mismatch exists, sync docs first.
-   Bug queue resolution has priority over RVP validation and feature work unless
+1. **Hierarchy:** Claude has the final word on design. Codex findings require Claude review.
+2. **Data efficiency:** Codex reports concise file-level evidence; no unfiltered log dumps.
+3. **Speed:** Direct single-file implementation to Codex; do not add unnecessary mapping.
+4. **Whole-system view:** Claude owns cross-module context and delegates technical searches,
+   large structured-data processing, and dependency tracing to Codex as appropriate.
+5. **Specs first:** No role implements behavior absent from `docs/specs.md`.
+6. **Bug-first preflight gate:** Reconcile open entries in `docs/bugs/bug_log.md`
+   and `docs/validation/validation_ledger.md`; prioritize the queue unless
    the user explicitly overrides.
 
 ---
 
 ## Mandatory Handoff Format
 
-Every handoff between Claude, Codex, and Gemini must include:
+Every handoff between Claude and Codex must include:
 
 1. Scope
 - What is in/out for this step.
@@ -209,9 +185,9 @@ If an implementation still depends functionally on legacy paths, review result i
 ## Quick Responsibility Matrix
 
 - Specs/architecture contract definition: Claude
-- Cross-repo impact analysis: Gemini
+- Cross-repo impact analysis: Claude (architecture) + Codex (technical scans)
 - Runtime implementation: Codex
 - Test authoring and repair: Codex
 - Structural review and acceptance gate: Claude
-- System coherence check at closure: Claude + Gemini (tests always mandatory regardless)
+- System coherence check at closure: Claude (using Codex's evidence; tests always mandatory)
 - Final "ready for device validation" check: both Claude and Codex (Claude approves architecture, Codex proves test health)
