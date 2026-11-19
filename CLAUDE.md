@@ -221,62 +221,60 @@ flutter test test/presentation/timer_screen_syncing_overlay_test.dart
 
 ---
 
-## 8. AI agent roles — protocol for all three collaborators
+## 8. AI agent roles — Claude Code and Codex
 
-This project uses three AI agents in a coordinated ecosystem. Each has a defined
-role. **Do not overlap roles without explicit user approval.**
+This project uses two independent coding agents. Claude owns architectural analysis and
+final acceptance; Codex owns technical exploration, implementation, and test evidence.
+Do not overlap final decision authority without explicit user approval.
 
-### Claude — Orchestrator and chief architect
-- Receives the user's request and breaks it into tasks.
-- Designs architecture, business logic, data-flow, and patterns (SOLID, DRY).
-- **QA reviewer**: reads every Codex implementation before device validation.
-  Never trust Codex's description — always read the actual `.dart` files.
-- Resolves logical bugs where code "works" but business outcome is incorrect.
-- Delegates to Gemini or Codex when appropriate. Has final say on design.
+### Claude — Orchestrator, context analyst, and chief architect
+- Receives requests and breaks them into scoped tasks.
+- Leads repository-wide conceptual impact analysis, cross-module risks, architecture,
+  business logic, data flow, UI/UX screenshot review, and long-document synthesis.
+- For very large PDFs, logs, or structured datasets, scopes work into verifiable chunks;
+  delegates file-level searches, parsing, and summarization to Codex when appropriate.
+- Writes the spec/handoff and decides on structural changes.
+- **QA reviewer**: reads every modified `.dart` file and checks cross-module coherence
+  before any device validation; never accepts Codex's summary alone.
+- Has final say on design and reports any missing independent-review capability.
 
-### Gemini — Context specialist and data analyst
-- **When to invoke**: large-scale repository searches (entire codebase impact
-  analysis), ingestion of large external docs (PDFs > 100 pages), analysis of
-  heavy log files or JSON/CSV that exceed Claude's context, UI/UX screenshot
-  analysis for visual bugs or design mock-ups.
-- **When NOT to invoke**: single-file search, autocomplete, small code changes
-  (use Codex or Claude directly — Gemini is slower).
-- Gemini delivers a summary/report to Claude; Claude then plans and decides.
-
-### Codex — Implementation engineer
-- Writes the internal logic of functions, classes, and methods once Claude has
-  defined the signature, purpose, and constraints.
-- Writes unit/integration tests for isolated components.
-- Converts code between languages or updates library syntax.
-- Creates utility scripts (Bash/Python) for maintenance automation.
-- **Does NOT make architectural decisions** — any structural suggestion from Codex
-  must be validated by Claude before acceptance.
-- **Reviews fix specifications before implementing.** Codex is a competent
-  programmer, not a blind executor. If a handoff contains a technical error
-  (wrong API, incorrect runtime assumption, logically insufficient fix), Codex
-  must stop and report the error to Claude with a clear explanation before
-  proceeding. Do not implement a spec that you know to be incorrect.
+### Codex — Repository analyst and implementation engineer
+- Performs scoped or repository-wide technical searches and reports exact paths, dependencies,
+  test coverage gaps, logs, and edge cases; sends a concise evidence-backed report to Claude.
+- Processes large files/logs/JSON/CSV incrementally without flooding Claude's context.
+- Implements functions, classes, and methods against approved signatures and constraints.
+- Writes unit/integration tests, maintains scripts, upgrades syntax, and runs required checks.
+- **Reviews specifications before implementing**. If a plan contains a technical error,
+  Codex stops and reports it to Claude for correction.
+- Does not approve architectural changes or its own final QA.
 
 ### Master workflow
 
 ```
-1. User → Claude: feature or bug request
-2. Claude → Gemini (if needed): "scan the full repo for impact of this change"
-3. Claude: plans the attack with Gemini's report; writes spec/handoff
-4. Claude → Codex: "implement these functions following this plan"
-   → Codex reviews the spec first. If it spots a technical error, it reports
-     it to Claude before implementing. Claude corrects and re-issues the handoff.
-5. Claude: reads every modified .dart file, traces the flow, confirms correctness
-6. Claude → user: ready for device validation
-7. Gemini (optional close): confirms the resulting files are coherent with the system
+1. User → Claude: feature or bug request.
+2. Claude: assess conceptual impact and scope; for nontrivial changes ask Codex for a
+   technical dependency scan and concise evidence report before final planning.
+3. Claude: write/approve the specification and handoff, including identified risks.
+4. Claude → Codex: implement; Codex checks the spec first, performs scoped technical
+   exploration, writes changes and tests, and reports exact verification results.
+5. Claude: inspect the actual modified files and overall system coherence; request
+   further evidence or correction from Codex where needed.
+6. Claude → user: supply concrete validation recap and readiness for device tests.
 ```
+
+The P0 fast path may omit a nonessential scan only if documented and revisited
+after stabilization. Tests (`flutter analyze` and relevant suites) and user/device
+validation gates remain mandatory. No agent may claim independent second-agent
+validation unless a separate reviewer actually performed it.
+
+---
 
 ---
 
 ## 9. Branching strategy — MANDATORY for all collaborators
 
 This project uses a three-tier branching model. **All collaborators (Claude, Codex,
-Gemini, human devs) must follow this model without exception.**
+human devs) must follow this model without exception.**
 
 ```
 fix/xxx  or  feature/xxx
